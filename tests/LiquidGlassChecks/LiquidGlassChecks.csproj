@@ -10,6 +10,8 @@
     <PackageReference Include="SkiaSharp" />
     <Compile Include="../../src/uWidgets/Services/LiquidGlassRenderer.cs" Link="LiquidGlassRenderer.cs" />
     <Compile Include="../../src/uWidgets/Services/LiquidGlassGpuEffect.cs" Link="LiquidGlassGpuEffect.cs" />
+    <Compile Include="../../src/uWidgets/Services/LiquidGlassV2Effect.cs" Link="LiquidGlassV2Effect.cs" />
+    <Compile Include="../../src/uWidgets/Services/LiquidGlassV2Renderer.cs" Link="LiquidGlassV2Renderer.cs" />
     <Compile Include="../../src/Widgets/Clock/Services/GlyphLiquidGlassRenderer.cs" Link="GlyphLiquidGlassRenderer.cs" />
   </ItemGroup>
 </Project>

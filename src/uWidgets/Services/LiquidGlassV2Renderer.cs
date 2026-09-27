@@ -223,25 +223,31 @@ public static class LiquidGlassV2Renderer
     }
 
     /// <summary>
-    /// Port of the library's <c>gradSdRoundedRect</c>: the SDF gradient at an inflated radius.
-    /// The interior branch is axis-aligned; the epsilon matches the shader's
-    /// <c>max(cornerCoord, float2(1e-5))</c> guard.
+    /// CPU twin of the shader's <c>gradSdRoundedRect</c> (<see cref="LiquidGlassV2Effect"/>):
+    /// the SDF gradient at an inflated radius, restructured to be continuous everywhere. The
+    /// library's field hard-switches the axis along the card diagonals and collapses to a 45°
+    /// spike exactly on the arc-centre lines, and wherever the band grew past ~1.2× the corner
+    /// radius both sliced hard seams into the rim at all four corners — here the corner sector
+    /// keeps the radial fan, the edge strips keep exact edge normals, and the deep interior
+    /// reflects the radial across the diagonal so it continues the fan smoothly.
     /// </summary>
-    private static (float X, float Y) GradSd(float cx, float cy, float halfWidth, float halfHeight, float gradRadius)
+    internal static (float X, float Y) GradSd(float cx, float cy, float halfWidth, float halfHeight, float gradRadius)
     {
         var cornerX = Math.Abs(cx) - (halfWidth - gradRadius);
         var cornerY = Math.Abs(cy) - (halfHeight - gradRadius);
         var sx = cx >= 0 ? 1f : -1f;
         var sy = cy >= 0 ? 1f : -1f;
-        if (cornerX >= 0f || cornerY >= 0f)
+        if (cornerX > 0f && cornerY > 0f)
         {
-            var mx = Math.Max(cornerX, 1e-5f);
-            var my = Math.Max(cornerY, 1e-5f);
-            var len = MathF.Sqrt(mx * mx + my * my);
-            return (sx * mx / len, sy * my / len);
+            var len = MathF.Sqrt(cornerX * cornerX + cornerY * cornerY);
+            return (sx * cornerX / len, sy * cornerY / len);
         }
-        var stepX = cornerX >= cornerY ? 1f : 0f;
-        return (sx * stepX, sy * (1f - stepX));
+        if (cornerX >= 0f) return (sx, 0f);
+        if (cornerY >= 0f) return (0f, sy);
+        var ex = Math.Max(-cornerX, 1e-5f);
+        var ey = Math.Max(-cornerY, 1e-5f);
+        var elen = MathF.Sqrt(ex * ex + ey * ey);
+        return (sx * ey / elen, sy * ex / elen);
     }
 
     private static byte ClampByte(float value) => (byte)Math.Clamp(MathF.Round(value), 0f, 255f);

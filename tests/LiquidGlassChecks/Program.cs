@@ -480,10 +480,12 @@ Console.WriteLine($"All optical checks passed in {timer.ElapsedMilliseconds} ms.
 OpticsProfile.Run(output);
 SoftGlowProfile.Run(output);
 
-// The GPU material is validated last: it can only be compile-checked here (see GpuMaterialCheck),
-// and its failure count has to reach the process exit code rather than throw mid-sheet.
+// The GPU materials are validated last: they can only be compile-checked here (see
+// GpuMaterialCheck / LiquidGlassV2Check), and their failure counts have to reach the process
+// exit code rather than throw mid-sheet.
 var gpuFailures = GpuMaterialCheck.Run();
-if (gpuFailures > 0) Environment.Exit(1);
+var v2Failures = LiquidGlassV2Check.Run();
+if (gpuFailures + v2Failures > 0) Environment.Exit(1);
 
 SKBitmap Decode(Theme material) => SKBitmap.Decode(LiquidGlassRenderer.Render(frame with { Theme = material }, wallpaper));
 void DrawCard(int x, string label, Theme material)

@@ -18,7 +18,11 @@ namespace uWidgets.Services;
 ///   <c>circleMap</c> quarter-circle (<c>1 - sqrt(1 - x²)</c>, peaking exactly at the outline),
 ///   points inward (the background reads as magnified behind a thick glass edge), and its
 ///   direction is the rounded-rect SDF gradient at an inflated radius, blended with the radial
-///   direction when the depth effect is on.</description></item>
+///   direction when the depth effect is on. One deliberate deviation: the gradient is
+///   restructured to be continuous everywhere — the library's field hard-switches the axis
+///   along the card diagonals and collapses to a 45° spike exactly on the arc-centre lines,
+///   and wherever the band grew past ~1.2× the corner radius both sliced hard seams into the
+///   rim at all four corners.</description></item>
 ///   <item><description><b>Chromatic aberration</b> — the library's seven-tap spectral split,
 ///   scaled by the diagonal quadrant factor <c>(x·y)/(hx·hy)</c>: fringes appear on the
 ///   light-facing diagonal and reverse on the other.</description></item>
@@ -317,7 +321,7 @@ uniform float2 lightDir;    // light direction (unit)
 
 const float PI = 3.14159265;
 
-/// The library's rounded-rect SDF and gradient, verbatim.
+/// The library's rounded-rect SDF, verbatim.
 float sdRoundedRect(float2 coord, float2 halfSize, float radius) {
   float2 cornerCoord = abs(coord) - (halfSize - float2(radius));
   float outside = length(max(cornerCoord, 0.0)) - radius;
@@ -325,17 +329,28 @@ float sdRoundedRect(float2 coord, float2 halfSize, float radius) {
   return outside + inside;
 }
 
-/// Gradient of the SDF at an inflated radius; the interior branch is axis-aligned and unit.
-/// The epsilon keeps normalize() off the zero vector (the library divides by zero there).
-/// This dialect has no step() builtin, so the axis pick is a plain ternary.
+/// Gradient of the SDF at an inflated radius, restructured to be continuous everywhere.
+/// The library's field radial-fans the corner sector, clamps negative components to an
+/// epsilon elsewhere and hard-switches the axis along the card diagonals; the clamp
+/// collapses both components to the diagonal exactly on the arc-centre lines, and the
+/// axis switch mirrors the refraction across the diagonals — wherever the refraction
+/// band reaches that deep (band wider than ~1.2x the corner radius, i.e. the factory
+/// optics on any small-radius card) both sliced hard seams into the rim at all four
+/// corners. Here the corner sector keeps the radial fan, the edge strips keep exact
+/// edge normals (matching the radial's limits at the sector boundary), and the deep
+/// interior reflects the radial across the diagonal so it continues the fan smoothly.
 float2 gradSdRoundedRect(float2 coord, float2 halfSize, float radius) {
   float2 cornerCoord = abs(coord) - (halfSize - float2(radius));
-  if (cornerCoord.x >= 0.0 || cornerCoord.y >= 0.0) {
-    return sign(coord) * normalize(max(cornerCoord, float2(1e-5)));
-  } else {
-    float gradX = cornerCoord.x >= cornerCoord.y ? 1.0 : 0.0;
-    return sign(coord) * float2(gradX, 1.0 - gradX);
+  if (cornerCoord.x > 0.0 && cornerCoord.y > 0.0) {
+    return sign(coord) * normalize(cornerCoord);
   }
+  if (cornerCoord.x >= 0.0) {
+    return sign(coord) * float2(1.0, 0.0);
+  }
+  if (cornerCoord.y >= 0.0) {
+    return sign(coord) * float2(0.0, 1.0);
+  }
+  return sign(coord) * normalize(max(float2(-cornerCoord.y, -cornerCoord.x), float2(1e-5)));
 }
 
 float smoothStep(float edge0, float edge1, float value) {
