@@ -183,6 +183,12 @@ public partial class Widget : Window, INotifyPropertyChanged
         ApplyTransparencyHint();
         UpdateContentSize();
         ApplyWidgetRegion();
+
+        // Desktop furniture: the widget lives at the bottom of the z-order for its
+        // whole lifetime — clicking, activating, dragging or re-showing it must not
+        // raise it above ordinary application windows. Secondary panels (weather
+        // forecast & co.) are pinned just above the widget band instead.
+        WidgetZOrder.PinWidgetToBottom(this);
     }
 
     private void OnResized(object? sender, WindowResizedEventArgs e)

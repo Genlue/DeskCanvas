@@ -537,6 +537,10 @@ public partial class BigFolderPopupWindow : Window
         {
             popup.Show();
         }
+
+        // Secondary panel: above the widget band, below ordinary application windows.
+        WidgetZOrder.PinPanelAboveWidgets(popup);
+
         popup.Activate();
     }
 

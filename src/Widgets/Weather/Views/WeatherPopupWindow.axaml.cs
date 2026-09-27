@@ -81,6 +81,9 @@ public partial class WeatherPopupWindow : Window
         else
             popup.Show();
 
+        // Secondary panel: above the widget band, below ordinary application windows.
+        WidgetZOrder.PinPanelAboveWidgets(popup);
+
         popup.Activate();
     }
 

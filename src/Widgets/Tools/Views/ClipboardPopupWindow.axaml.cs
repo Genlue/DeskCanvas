@@ -83,6 +83,9 @@ public partial class ClipboardPopupWindow : Window
         else
             popup.Show();
 
+        // Secondary panel: above the widget band, below ordinary application windows.
+        WidgetZOrder.PinPanelAboveWidgets(popup);
+
         popup.Activate();
     }
 

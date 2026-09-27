@@ -10,7 +10,6 @@
         TransparencyLevelHint="Transparent"
         ShowInTaskbar="False"
         CanResize="False"
-        Topmost="True"
         Width="440"
         Height="540">
 
