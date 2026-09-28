@@ -27,12 +27,13 @@ public class StackedWidgetSettingItem
 public record WidgetStackModel(
     List<StackedWidgetEntry>? Entries = null,
     int SelectedIndex = 0,
-    bool AllowWheelSwitch = true
+    bool AllowWheelSwitch = true,
+    bool WheelSwitchOnlyOnDots = true
 )
 {
     public List<StackedWidgetEntry> Entries { get; init; } = Entries ?? [];
 
-    public WidgetStackModel() : this([], 0, true) {}
+    public WidgetStackModel() : this([], 0, true, true) {}
 
     public static List<StackedWidgetEntry> GetDefaultEntries() => [];
 }

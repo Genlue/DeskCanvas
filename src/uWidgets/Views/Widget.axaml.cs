@@ -592,6 +592,26 @@ public partial class Widget : Window, INotifyPropertyChanged
             ? new Thickness(EffectiveMargin)
             : new Thickness(0));
 
+    /// <summary>
+    /// Margin of the stack pagination dots host. Every surface keeps the dots floating in
+    /// the right margin outside the card — except 毛玻璃 (acrylic): DWM applies the OS blur
+    /// to the whole clipped window region, so an out-of-card strip holding the dots would
+    /// show as a frosted rounded pill behind them. There the dots move inside the card
+    /// (over its right edge), which also lets <see cref="ApplyWidgetRegion"/> clip to the
+    /// card alone.
+    /// </summary>
+    public Thickness StackIndicatorsMargin
+    {
+        get
+        {
+            if (isFrameless) return new Thickness(0, 0, 1, 0);
+            var theme = appSettingsProvider.Get().Theme;
+            return theme.UsesNativeBlur && !theme.UseNativeFrame
+                ? new Thickness(0, 0, WidgetMargin.Right + 1, 0)
+                : new Thickness(0, 0, 1, 0);
+        }
+    }
+
     public IBrush WidgetCardBackground
     {
         get
@@ -958,7 +978,7 @@ public partial class Widget : Window, INotifyPropertyChanged
         Notify(nameof(WidgetOutlineBrush));
     }
 
-    private (int m, int cw, int ch, int cr, int ex, int ey, int ew, int eh, bool extra)? lastAppliedRegion;
+    private (int m, int cw, int ch, int cr)? lastAppliedRegion;
 
     /// <summary>
     /// Clip the native window (and therefore the OS-level acrylic backdrop) to the
@@ -1009,49 +1029,21 @@ public partial class Widget : Window, INotifyPropertyChanged
         var cardHeight = Math.Max(1, height - 2 * margin);
         var cardRadius = (int) Math.Round(ResolveEffectiveRadius(appSettingsProvider.Get().Dimensions.Radius));
 
-        if (HasStackIndicators && StackIndicators is { Count: > 1 } dots)
-        {
-            int dotsCount = dots.Count;
-            int totalDotsHDip = dotsCount * 14 + 6;
-            double dotsYDip = Math.Max(0, (ClientSize.Height - totalDotsHDip) / 2);
-            double dotsXDip = Math.Max(0, ClientSize.Width - Math.Max(14, WidgetMargin.Right));
-            double dotsWDip = Math.Max(14, WidgetMargin.Right);
+        // The stack pagination dots are placed inside the card on this surface
+        // (see StackIndicatorsMargin) — exactly because an out-of-card strip in the native
+        // region would flood with the OS blur. The card rectangle alone therefore also
+        // covers the dots; no extra strip is ever OR-ed in.
+        var key = (margin, cardWidth, cardHeight, cardRadius);
+        if (lastAppliedRegion == key) return;
+        lastAppliedRegion = key;
 
-            int extraX = (int) Math.Round(dotsXDip * scaling);
-            int extraY = (int) Math.Round(dotsYDip * scaling);
-            int extraW = (int) Math.Round(dotsWDip * scaling);
-            int extraH = (int) Math.Round(totalDotsHDip * scaling);
-
-            var key = (margin, cardWidth, cardHeight, cardRadius, extraX, extraY, extraW, extraH, true);
-            if (lastAppliedRegion == key) return;
-            lastAppliedRegion = key;
-
-            InteropService.SetWidgetRegionWithExtra(
-                this,
-                margin,
-                margin,
-                cardWidth,
-                cardHeight,
-                cardRadius,
-                extraX,
-                extraY,
-                extraW,
-                extraH);
-        }
-        else
-        {
-            var key = (margin, cardWidth, cardHeight, cardRadius, 0, 0, 0, 0, false);
-            if (lastAppliedRegion == key) return;
-            lastAppliedRegion = key;
-
-            InteropService.SetWidgetRegion(
-                this,
-                margin,
-                margin,
-                cardWidth,
-                cardHeight,
-                cardRadius);
-        }
+        InteropService.SetWidgetRegion(
+            this,
+            margin,
+            margin,
+            cardWidth,
+            cardHeight,
+            cardRadius);
     }
 
     private void OnAppSettingsUpdated(object sender, AppSettings? oldData, AppSettings newData)
@@ -1106,6 +1098,7 @@ public partial class Widget : Window, INotifyPropertyChanged
             Notify(nameof(GlassMaterial));
             Notify(nameof(ShowsGlassMaterial));
             Notify(nameof(WidgetMargin));
+            Notify(nameof(StackIndicatorsMargin));
             Notify(nameof(WidgetCardBackground));
             Notify(nameof(Radius));
             Notify(nameof(InnerRadius));
@@ -1645,6 +1638,7 @@ public partial class Widget : Window, INotifyPropertyChanged
         {
             AfterResize();
             Notify(nameof(WidgetMargin));
+            Notify(nameof(StackIndicatorsMargin));
             Notify(nameof(Radius));
             Notify(nameof(InnerRadius));
             Notify(nameof(PillRadius));

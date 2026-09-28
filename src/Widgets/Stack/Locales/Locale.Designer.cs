@@ -42,5 +42,6 @@ namespace StackWidgets.Locales {
         public static string Setting_Move_Up => ResourceManager.GetString("Setting_Move_Up", resourceCulture) ?? "上移";
         public static string Setting_Move_Down => ResourceManager.GetString("Setting_Move_Down", resourceCulture) ?? "下移";
         public static string Setting_Allow_Wheel => ResourceManager.GetString("Setting_Allow_Wheel", resourceCulture) ?? "鼠标滚轮切页";
+        public static string Setting_Wheel_Only_On_Dots => ResourceManager.GetString("Setting_Wheel_Only_On_Dots", resourceCulture) ?? "仅圆点处可用滚轮切页";
     }
 }

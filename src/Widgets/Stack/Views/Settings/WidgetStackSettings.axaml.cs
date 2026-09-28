@@ -155,6 +155,7 @@ public partial class WidgetStackSettings : UserControl
     private void LoadFromModel()
     {
         AllowWheelSwitch.IsChecked = model.AllowWheelSwitch;
+        WheelOnlyOnDotsSwitch.IsChecked = model.WheelSwitchOnlyOnDots;
         RefreshList();
     }
 
@@ -199,7 +200,11 @@ public partial class WidgetStackSettings : UserControl
     private void OnToggleChanged(object? sender, RoutedEventArgs e)
     {
         if (isInitializing) return;
-        model = model with { AllowWheelSwitch = AllowWheelSwitch.IsChecked == true };
+        model = model with
+        {
+            AllowWheelSwitch = AllowWheelSwitch.IsChecked == true,
+            WheelSwitchOnlyOnDots = WheelOnlyOnDotsSwitch.IsChecked == true
+        };
         SaveModel();
     }
 

@@ -84,46 +84,6 @@ public class InteropService
     }
 
     /// <summary>
-    /// Clip a native Win32 window to the union of the card rounded rectangle and an extra side strip (such as the pagination dots).
-    /// </summary>
-    public static void SetWidgetRegionWithExtra(
-        Window window,
-        int x, int y, int width, int height, int radius,
-        int extraX, int extraY, int extraWidth, int extraHeight)
-    {
-        if (!OperatingSystem.IsWindows()) return;
-        var handle = window.TryGetPlatformHandle()?.Handle;
-        if (handle == null || handle.Value == IntPtr.Zero) return;
-
-        width = Math.Max(1, width);
-        height = Math.Max(1, height);
-        radius = Math.Clamp(radius, 0, Math.Min(width, height) / 2);
-
-        var hrgnCard = radius > 0
-            ? CreateRoundRectRgn(x, y, x + width + 1, y + height + 1, radius * 2, radius * 2)
-            : CreateRectRgn(x, y, x + width + 1, y + height + 1);
-        if (hrgnCard == IntPtr.Zero) return;
-
-        var pillR = Math.Min(extraWidth, extraHeight);
-        var hrgnExtra = CreateRoundRectRgn(extraX, extraY, extraX + extraWidth + 1, extraY + extraHeight + 1, pillR, pillR);
-        if (hrgnExtra == IntPtr.Zero)
-        {
-            if (SetWindowRgn(handle.Value, hrgnCard, true) == 0)
-                DeleteObject(hrgnCard);
-            return;
-        }
-
-        var hrgnCombined = CreateRectRgn(0, 0, 0, 0);
-        CombineRgn(hrgnCombined, hrgnCard, hrgnExtra, RGN_OR);
-
-        if (SetWindowRgn(handle.Value, hrgnCombined, true) == 0)
-            DeleteObject(hrgnCombined);
-
-        DeleteObject(hrgnCard);
-        DeleteObject(hrgnExtra);
-    }
-
-    /// <summary>
     /// Clip any native Win32 window (such as a PopupRoot) to a rounded rectangle region.
     /// This forces the OS-level DWM AcrylicBlur to strictly follow the exact same rounded
     /// rectangle boundary without bleeding blur into the corner areas.
@@ -226,10 +186,6 @@ public class InteropService
 
     [DllImport("gdi32.dll")]
     private static extern IntPtr CreateRectRgn(int x1, int y1, int x2, int y2);
-
-    [DllImport("gdi32.dll")]
-    private static extern int CombineRgn(IntPtr hrgnDest, IntPtr hrgnSrc1, IntPtr hrgnSrc2, int fnCombineMode);
-    private const int RGN_OR = 2;
 
     [DllImport("user32.dll", SetLastError = true)]
     private static extern int SetWindowRgn(IntPtr hWnd, IntPtr hRgn, bool bRedraw);

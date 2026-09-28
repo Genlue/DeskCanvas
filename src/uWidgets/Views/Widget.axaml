@@ -146,11 +146,15 @@
             </ContentPresenter>
         </Border>
 
-        <!-- Right-side vertical pagination indicator dots for Stack widget (outside card, in rightmost margin of grid cell) -->
+        <!-- Right-side vertical pagination indicator dots for Stack widget. Outside the card
+             (in the rightmost margin of the grid cell) on every surface except 毛玻璃/acrylic:
+             there the native window region cannot hold an out-of-card strip without the OS
+             blur flooding it (a frosted pill behind the dots), so the dots sit inside the
+             card instead — see StackIndicatorsMargin and ApplyWidgetRegion. -->
         <Border Name="StackIndicatorsHost"
                 HorizontalAlignment="Right"
                 VerticalAlignment="Center"
-                Margin="0,0,1,0"
+                Margin="{Binding StackIndicatorsMargin, RelativeSource={RelativeSource AncestorType=views:Widget}}"
                 IsVisible="{Binding HasStackIndicators, RelativeSource={RelativeSource AncestorType=views:Widget}}"
                 PointerWheelChanged="OnStackIndicatorsWheelChanged"
                 ZIndex="85">

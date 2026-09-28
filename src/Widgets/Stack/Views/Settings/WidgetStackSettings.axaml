@@ -30,6 +30,11 @@
                 <ToggleSwitch Name="AllowWheelSwitch" IsCheckedChanged="OnToggleChanged" />
             </controls:Setting>
 
+            <!-- Wheel switching only at the indicator dots (keeps the wheel for the stacked child's own scrolling) -->
+            <controls:Setting Title="{x:Static locales:Locale.Setting_Wheel_Only_On_Dots}">
+                <ToggleSwitch Name="WheelOnlyOnDotsSwitch" IsCheckedChanged="OnToggleChanged" />
+            </controls:Setting>
+
             <!-- Add new widget to stack -->
             <controls:Setting Title="{x:Static locales:Locale.Setting_Add_Widget}">
                 <Grid ColumnDefinitions="*,Auto" Width="260">

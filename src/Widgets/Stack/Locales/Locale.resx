@@ -39,4 +39,7 @@
     <data name="Setting_Allow_Wheel" xml:space="preserve">
         <value>Mouse Wheel Switching</value>
     </data>
+    <data name="Setting_Wheel_Only_On_Dots" xml:space="preserve">
+        <value>Wheel Switching Only At The Dots</value>
+    </data>
 </root>

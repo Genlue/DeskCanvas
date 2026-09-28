@@ -807,6 +807,10 @@ public partial class WidgetStackView : UserControl, IWidgetSelfRefreshing, IStac
         {
             if (model?.Entries == null || !model.AllowWheelSwitch || model.Entries.Count <= 1) return;
 
+            // 仅在圆点处可用滚轮切页：主体上的滚轮原样留给子组件自己的滚动行为，
+            // 切页只由右侧圆点上的滚轮（Widget 宿主的 OnStackIndicatorsWheelChanged）承担。
+            if (model.WheelSwitchOnlyOnDots) return;
+
             if (activeTransitionTimer != null)
             {
                 e.Handled = true;
