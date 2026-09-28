@@ -640,6 +640,18 @@ public static class LiquidGlassWallpaper
             else if ((flat || jumped) && now - firstUnusableAt >= UnusableGraceMs)
             {
                 DesktopCapturer.ForgetResolvedHost();
+                // Forgiving the host alone cannot unstick a genuinely new wallpaper: the temporal
+                // check would keep comparing every incoming frame against the OLD scene's grid and
+                // rejecting it as an overlay transition — a wallpaper switch IS a wild jump against
+                // the scene it replaced, and unlike a transition it never settles back to the old
+                // content. Retire the acceptance reference too, so the next capture validates
+                // against nothing and publishes; the grids re-arm from the current scene then.
+                // lastPublishedSamples stays: it still describes what the surfaces render.
+                lock (SampleGate)
+                {
+                    lastAcceptedSamples = null;
+                    lastAcceptedHost = IntPtr.Zero;
+                }
                 GlassDiagnostics.Event("unusable wallpaper capture persisted — re-resolving the wallpaper host");
             }
         }

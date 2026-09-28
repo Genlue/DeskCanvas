@@ -169,6 +169,14 @@ public sealed class LiquidGlassSurface : Control
     private bool busy;
     private int revision;
 
+    // A sampled frame arrived while this surface was mid-prepare and was dropped (frames are
+    // dropped under load, not queued). For an animated wallpaper the next publish retries the
+    // surface naturally — but when the scene has just gone static (a wallpaper switch to a
+    // still image, a paused video) that dropped frame is the last publish ever, and without a
+    // follow-up the glass would sit on the previous wallpaper until the next real change.
+    // Consumed by exactly one render in RenderMaterial's finally.
+    private int pendingSampledFrame;
+
     /// <summary>The dye bloom grid and the metadata the shader needs to address it.</summary>
     private readonly record struct AuraTexture(SKBitmap? Bitmap, float Columns, float Rows, float Step, float Margin)
     {
@@ -200,6 +208,7 @@ public sealed class LiquidGlassSurface : Control
         attached = false;
         Active.Remove(this);
         revision++;
+        Interlocked.Exchange(ref pendingSampledFrame, 0);
         debounce.Stop();
         if (window != null) window.PositionChanged -= OnPositionChanged;
         window = null;
@@ -228,14 +237,23 @@ public sealed class LiquidGlassSurface : Control
     /// allowed to publish. Bumping here (which is what the sampler used to do) meant that once the
     /// desktop took longer to sample than the interval — the normal case, since every frame
     /// captures the screen and blurs it — every finished frame was discarded as stale, so the glass
-    /// rendered once and then never updated again. Skipping a frame when the surface is busy is the
-    /// intended behaviour: frames are dropped under load, not queued.
+    /// rendered once and then never updated again. Skipping a frame when the surface is busy is
+    /// still the behaviour — frames are dropped under load, not queued — but the drop now queues
+    /// exactly one follow-up render, so the last frame of a scene that has just gone static cannot
+    /// be lost for good (see <see cref="pendingSampledFrame"/>).
     /// </para>
     /// </summary>
     private void RequestSampledFrame()
     {
         if (!attached || !IsVisible || Material?.UsesRenderedGlass != true) return;
-        if (busy) return;
+        if (busy)
+        {
+            // Dropped on purpose — but remember it, so the frame is not lost forever when the
+            // desktop goes still right after (the sampler then publishes nothing new to retry
+            // with). Same contract as FramelessDigital's wallpaperStale follow-up.
+            Interlocked.Exchange(ref pendingSampledFrame, 1);
+            return;
+        }
         RenderMaterial();
     }
 
@@ -400,7 +418,18 @@ public sealed class LiquidGlassSurface : Control
         {
             wallpaper?.Dispose();
             busy = false;
-            if (attached && revision != current) RequestRender();
+            if (attached && revision != current)
+            {
+                // The revision re-render calls Get() and picks up the newest published frame,
+                // which supersedes anything the pending flag could ask for.
+                Interlocked.Exchange(ref pendingSampledFrame, 0);
+                RequestRender();
+            }
+            else if (attached && Interlocked.Exchange(ref pendingSampledFrame, 0) == 1)
+            {
+                // Catch up with the sampled frame that was dropped while this prepare ran.
+                RenderMaterial();
+            }
         }
     }
 
