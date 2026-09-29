@@ -18,6 +18,10 @@ namespace uWidgets.Core.Models;
 /// <param name="Layout">Widgets placed on this screen (positions relative to the screen's working area).</param>
 /// <param name="Margin">This screen's widget margin/padding. <c>null</c> falls back to global AppSettings.Dimensions.Margin.</param>
 /// <param name="Radius">This screen's widget corner radius. <c>null</c> falls back to global AppSettings.Dimensions.Radius.</param>
+/// <param name="HardwareId">EDID hardware id of the monitor this entry belongs to (backfilled
+/// when the screen is seen). Pins the entry to that physical monitor, so a remote tool's
+/// virtual screen — or a same-resolution stand-in — can never adopt it by name.
+/// <c>null</c> = not yet seen with a hardware id (matched by key only).</param>
 public record ScreenLayout(
     string Id,
     string? Key,
@@ -27,7 +31,8 @@ public record ScreenLayout(
     double? ContentScale,
     List<WidgetLayout> Layout,
     double? Margin = null,
-    double? Radius = null)
+    double? Radius = null,
+    string? HardwareId = null)
 {
     /// <summary>
     /// Display name for the UI: the user alias when set, otherwise the friendly name part of the <see cref="Key"/>.
@@ -145,6 +150,60 @@ public record ScreensLayout(List<ScreenLayout> Screens, int Version = 2)
         // Return the SAME instance when nothing was dropped so callers can test
         // for an actual change with ReferenceEquals (avoiding needless re-saves).
         return changed ? this with { Screens = kept } : this;
+    }
+
+    /// <summary>
+    /// Drop stale legacy/anonymous screen entries: entries identified only by a GPU adapter
+    /// name or the anonymous fallback ("Screen|…") that are <b>not</b> currently attached and
+    /// whose every widget is a <see cref="WidgetLayout.SameWidgetAs"/> copy of a widget on a
+    /// currently attached screen. Such entries are leftovers of pre-hardware-id matching and of
+    /// virtual screens (remote-control tools) that briefly adopted widgets during a session;
+    /// after replugging they would never match again — only resurface as phantom duplicates on
+    /// the next identity-less screen. Entries whose widgets exist nowhere else are kept: they
+    /// may be a real monitor that reported no name, and their content is not recoverable.
+    /// </summary>
+    /// <param name="attachedEntries">The entries currently matched to attached screens.</param>
+    public ScreensLayout PruneStaleLegacyEntries(IReadOnlyList<ScreenLayout> attachedEntries)
+    {
+        var attachedIds = attachedEntries.Select(entry => entry.Id).ToHashSet();
+        var attachedWidgets = attachedEntries.SelectMany(entry => entry.Layout).ToList();
+
+        var kept = new List<ScreenLayout>();
+        var changed = false;
+        foreach (var screen in Screens)
+        {
+            if (attachedIds.Contains(screen.Id) || !IsLegacyOrAnonymousKey(screen.Key))
+            {
+                kept.Add(screen);
+                continue;
+            }
+
+            // Every widget must live on an attached screen to call this entry a stale copy
+            // (an empty legacy entry is stale by definition).
+            var allCopies = screen.Layout.All(widget => attachedWidgets.Any(widget.SameWidgetAs));
+            if (!allCopies)
+            {
+                kept.Add(screen);
+                continue;
+            }
+
+            changed = true;
+        }
+
+        return changed ? this with { Screens = kept } : this;
+    }
+
+    /// <summary>Whether <paramref name="key"/> comes from a legacy GPU-adapter key or the
+    /// anonymous fallback — the two key shapes produced before hardware-id matching existed.</summary>
+    private static bool IsLegacyOrAnonymousKey(string? key)
+    {
+        if (key == null) return false;
+        if (key.StartsWith(ScreenIdentity.FallbackName + "|", StringComparison.Ordinal)) return true;
+        return key.Contains("GeForce", StringComparison.OrdinalIgnoreCase)
+               || key.Contains("Radeon", StringComparison.OrdinalIgnoreCase)
+               || key.Contains("Intel", StringComparison.OrdinalIgnoreCase)
+               || key.Contains("Graphics", StringComparison.OrdinalIgnoreCase)
+               || key.Contains("Virtual Display Adapter", StringComparison.OrdinalIgnoreCase);
     }
 
     /// <summary>

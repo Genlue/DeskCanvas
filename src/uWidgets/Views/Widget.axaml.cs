@@ -233,6 +233,31 @@ public partial class Widget : Window, INotifyPropertyChanged
         Position = new PixelPoint((workingArea?.X ?? 0) + settings.X, (workingArea?.Y ?? 0) + settings.Y);
     }
 
+    /// <summary>
+    /// Snap the window back onto its own screen when it was left stranded: Windows keeps
+    /// windows wherever they were when a display disappeared (a remote-control tool's virtual
+    /// screen, an unplugged monitor), which can be coordinates that no attached screen covers.
+    /// The window then sits on dead desktop space — invisible, unclickable — until it is
+    /// repositioned. Called after display-topology changes; a window that is still on any
+    /// attached screen is left exactly where it is.
+    /// </summary>
+    public void EnsureOnScreen()
+    {
+        if (displayMonitor.Attached.Count == 0) return;
+
+        var scaling = Screens.ScreenFromWindow(this)?.Scaling ?? 1.0;
+        var topLeft = Position;
+        var bottomRight = new PixelPoint(
+            Position.X + (int)(Width * scaling),
+            Position.Y + (int)(Height * scaling));
+
+        var visible = displayMonitor.Attached.Any(attached =>
+            attached.Screen.Bounds.Contains(topLeft) || attached.Screen.Bounds.Contains(bottomRight));
+        if (visible) return;
+
+        ApplyPosition();
+    }
+
     public bool ShowEditButton => editWidgetWindow != null;
     public string Edit => $"{Locale.Widget_Edit} \"{widgetLayoutProvider.Get().Type}\"";
 

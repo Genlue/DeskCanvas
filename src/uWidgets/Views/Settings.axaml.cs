@@ -25,7 +25,6 @@ public partial class Settings : Window
 
     private readonly SettingsViewModel viewModel;
     private readonly IAppSettingsProvider appSettingsProvider;
-    private readonly WidgetFactory? widgetFactory;
 
     /// <summary>Periodic check that the acrylic backdrop is still alive while the window is shown.</summary>
     private readonly DispatcherTimer transparencyWatch;
@@ -33,17 +32,24 @@ public partial class Settings : Window
     /// <summary>The transparency level at the previous check, to detect a fresh drop (see VerifyTransparency).</summary>
     private WindowTransparencyLevel lastLevel = WindowTransparencyLevel.None;
 
+    /// <summary>
+    /// Set once this instance has really closed. An Avalonia window can never be re-shown after
+    /// <see cref="Window.Close"/>, and every way back into the app (tray, widget settings, a
+    /// second launch's hand-over) resolves this same singleton — showing it then would throw
+    /// <c>InvalidOperationException</c> on the UI thread and take the whole process down.
+    /// </summary>
+    private bool closedForReal;
+
     public Settings(IAppSettingsProvider appSettingsProvider, IAssemblyProvider assemblyProvider,
         ILayoutProvider layoutProvider, DisplayMonitorService displayMonitor, IWidgetFactory<Window, UserControl> widgetFactory,
         ProfileService profileService, UpdateService updateService)
     {
         viewModel = new SettingsViewModel(appSettingsProvider, assemblyProvider, layoutProvider, displayMonitor, widgetFactory, profileService, updateService);
         this.appSettingsProvider = appSettingsProvider;
-        // Concrete type: HasWidgets is factory bookkeeping the shared SDK interface does not expose.
-        this.widgetFactory = widgetFactory as WidgetFactory;
         DataContext = viewModel;
         Resized += OnResized;
         KeyDown += OnKeyDown;
+        Closed += (_, _) => closedForReal = true;
         // Self-heal is timer-driven only: an Activated-time check fires while the window is
         // still transitioning (level momentarily reads non-acrylic on every re-show) and would
         // tear down and rebuild the composited backdrop on every open.
@@ -69,6 +75,11 @@ public partial class Settings : Window
     /// </summary>
     public void ShowAndActivate()
     {
+        // A closed window cannot come back; bowing out here keeps a hand-over or tray click
+        // from crashing the process on a stale singleton (should not happen — OnClosing hides
+        // the window instead of closing it — but the guard is what contains such a regression).
+        if (closedForReal) return;
+
         if (!IsVisible)
         {
             // A minimized Win32 window sits at the classic (-32000, -32000) rect, so it has to be
@@ -209,18 +220,18 @@ public partial class Settings : Window
     /// Closing the shared settings window normally only hides it.
     /// <para>
     /// Avalonia cannot re-show a closed window, and every widget (plus a hand-over from a second
-    /// launch) resolves this same instance, so closing it for real would leave the app with no
-    /// settings window at all. A genuine exit announces itself through
-    /// <see cref="AppShutdown.Request"/> and closes for real.
-    /// </para>
-    /// <para>
-    /// With no widget window left there is nothing to reuse it for — and closing is then the only
-    /// way out of the app — so that case closes for real too.
+    /// launch) resolves this same instance, so it must never really close while the app lives.
+    /// Letting the close through when the last widget window disappeared would not exit anything
+    /// either — the invisible anchor window keeps the process (tray, timers) alive — it would
+    /// only leave this singleton closed and unshowable, and the next tray click or second-launch
+    /// hand-over would then crash the whole process ("Cannot re-show a closed window"). A genuine
+    /// exit announces itself through <see cref="AppShutdown.Request"/>, which shuts the
+    /// application down explicitly.
     /// </para>
     /// </summary>
     protected override void OnClosing(WindowClosingEventArgs e)
     {
-        if (!AppShutdown.IsShuttingDown && widgetFactory?.HasWidgets == true)
+        if (!AppShutdown.IsShuttingDown)
         {
             e.Cancel = true;
             transparencyWatch.Stop();

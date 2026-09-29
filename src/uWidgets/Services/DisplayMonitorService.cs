@@ -98,22 +98,44 @@ public class DisplayMonitorService(ILayoutProvider layoutProvider)
         var used = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var attached = new List<AttachedScreen>();
 
+        // Handing a nameless leftover device to a screen just to "pair everything up" is how
+        // a real monitor's identity got replaced by an anonymous one (the remote-screen bug):
+        // only pair 1:1 desktops that way, otherwise leave the screen anonymous — it then
+        // simply owns no configuration until a real name/hardware id shows up.
+        var allowFallbackPairing = devices.Count == screens.Count;
+
         foreach (var screen in screens)
         {
-            var device = MatchDevice(screen, devices, used);
+            var device = MatchDevice(screen, devices, used, allowFallbackPairing);
             var identity = new ScreenIdentity(
                 device?.Name ?? string.Empty,
                 device?.FriendlyName ?? "Screen",
                 screen.Bounds.Width,
                 screen.Bounds.Height,
                 screen.IsPrimary,
-                screen.Scaling);
+                screen.Scaling,
+                device?.HardwareId ?? string.Empty);
 
             var config = ScreenMatcher.Match(storedLayout.Screens, identity, consumedConfigIds);
+            var changed = false;
             if (config != null && config.Key != null && config.Key != identity.Key && config.Key.EndsWith($"|{identity.Width}x{identity.Height}"))
             {
+                // A hardware-id match may also fix a stale key: the entry followed this monitor
+                // across a rename (driver update, EDID change), so its key now names it again.
                 config = config with { Key = identity.Key };
-                storedLayout = storedLayout.WithScreen(config);
+                changed = true;
+            }
+            if (config != null && !string.IsNullOrEmpty(identity.HardwareId) && config.HardwareId != identity.HardwareId)
+            {
+                // Pin the entry to this monitor's EDID hardware id: from now on the entry can
+                // only be matched by the physical monitor it was created for, no matter which
+                // name a virtual screen or a driver quirk reports.
+                config = config with { HardwareId = identity.HardwareId };
+                changed = true;
+            }
+            if (changed)
+            {
+                storedLayout = storedLayout.WithScreen(config!);
                 layoutProvider.Save(storedLayout);
             }
             attached.Add(new AttachedScreen(screen, identity, config));
@@ -129,6 +151,16 @@ public class DisplayMonitorService(ILayoutProvider layoutProvider)
         if (signature == lastSignature) return;
 
         lastSignature = signature;
+
+        // Leftovers of legacy/anonymous matching (GPU-adapter keys, remote-tool virtual screens
+        // that briefly adopted widgets during a session) can never match again now that entries
+        // pin to their monitor's hardware id — drop the ones whose widgets already live on an
+        // attached screen, so they neither resurface as phantoms nor clog the screen settings.
+        var pruned = storedLayout.PruneStaleLegacyEntries(
+            attached.Where(a => a.Config != null).Select(a => a.Config!).ToList());
+        if (!ReferenceEquals(pruned, storedLayout))
+            layoutProvider.Save(pruned);
+
         ScreensChanged?.Invoke(this, EventArgs.Empty);
     }
 
@@ -174,7 +206,8 @@ public class DisplayMonitorService(ILayoutProvider layoutProvider)
             null,
             null,
             null,
-            []);
+            [],
+            HardwareId: string.IsNullOrEmpty(attached.Identity.HardwareId) ? null : attached.Identity.HardwareId);
         var screens = layoutProvider.Get().UpsertScreen(entry);
         layoutProvider.Save(screens);
 
@@ -304,7 +337,7 @@ public class DisplayMonitorService(ILayoutProvider layoutProvider)
     [DllImport("user32.dll", CharSet = CharSet.Unicode)]
     private static extern bool EnumDisplaySettings(string? lpszDeviceName, uint iModeNum, ref DEVMODE lpDevMode);
 
-    private sealed record Win32Device(string Name, string FriendlyName, int X, int Y, int Width, int Height);
+    private sealed record Win32Device(string Name, string FriendlyName, string HardwareId, int X, int Y, int Width, int Height);
 
     private static Dictionary<string, string>? cachedWmiNames;
     private static DateTime lastWmiQuery = DateTime.MinValue;
@@ -423,6 +456,7 @@ public class DisplayMonitorService(ILayoutProvider layoutProvider)
             result.Add(new Win32Device(
                 device.DeviceName,
                 friendlyName,
+                hardwareId,
                 mode.dmPositionX,
                 mode.dmPositionY,
                 mode.dmPelsWidth,
@@ -432,7 +466,7 @@ public class DisplayMonitorService(ILayoutProvider layoutProvider)
         return result;
     }
 
-    private static Win32Device? MatchDevice(Screen screen, List<Win32Device> devices, HashSet<string> used)
+    private static Win32Device? MatchDevice(Screen screen, List<Win32Device> devices, HashSet<string> used, bool allowFallbackPairing)
     {
         // 1. Exact coordinate and resolution match (dmPositionX/Y == screen.Bounds.X/Y && Width/Height)
         var exactPos = devices.FirstOrDefault(d => !used.Contains(d.Name)
@@ -454,7 +488,11 @@ public class DisplayMonitorService(ILayoutProvider layoutProvider)
             return exactRes;
         }
 
-        // 3. Fallback to the first unused device
+        // 3. Fallback to the first unused device — only when the whole desktop pairs 1:1;
+        // otherwise this silently renames a screen after a device that merely happens to be
+        // unclaimed (the identity a stored entry would then be keyed on is a lie).
+        if (!allowFallbackPairing) return null;
+
         var fallback = devices.FirstOrDefault(d => !used.Contains(d.Name));
         if (fallback != null) used.Add(fallback.Name);
         return fallback;

@@ -208,7 +208,16 @@ public static class PictureImageLoader
 
                 if (req >= 0 && req < retained.Count && retained[req] != null)
                 {
-                    source = retained[req]!;
+                    // Dependent (delta) frame — the case for virtually every optimized GIF/WEBP:
+                    // start from the frame this one depends on and let the codec composite this
+                    // frame's dirty rect on top. Rendering the prior frame's pixels verbatim
+                    // would freeze the whole animation on its first independent frame.
+                    var result = scratch.DecodeFrame(codec, i, info, req, retained[req]!);
+                    if (!ProducedPixels(result))
+                    {
+                        continue;
+                    }
+                    source = scratch.Bitmap;
                 }
                 else
                 {
@@ -224,10 +233,13 @@ public static class PictureImageLoader
                 bool neededLater = lastDependentIndex.TryGetValue(i, out var lastDep) && lastDep > i;
                 if (neededLater)
                 {
-                    // Keep a private copy so the scratch buffer stays reusable.
+                    // Keep a private copy so the scratch buffer stays reusable. Index-aligned
+                    // with the frame number even if earlier frames were skipped, because the
+                    // RequiredFrame chain addresses these copies by frame index.
+                    while (retained.Count <= i) retained.Add(null);
                     var copy = new SKBitmap(info);
                     source.CopyTo(copy);
-                    retained.Add(copy);
+                    retained[i] = copy;
                 }
                 else
                 {
@@ -407,9 +419,11 @@ public static class PictureImageLoader
 
         public SKBitmap Bitmap => bitmap!;
 
-        /// <summary>Decodes <paramref name="frameIndex"/> into the shared buffer, compositing on
-        /// top of <paramref name="requiredFrame"/> when the format needs it.</summary>
-        public SKCodecResult DecodeFrame(SKCodec codec, int frameIndex, SKImageInfo frameInfo, int requiredFrame)
+        /// <summary>Decodes <paramref name="frameIndex"/> into the shared buffer. When
+        /// <paramref name="requiredFrame"/> is -1 the buffer starts transparent; otherwise pass
+        /// <paramref name="seed"/> (the already-decoded frame this one depends on) and the codec
+        /// composites the new frame's dirty rect over its pixels.</summary>
+        public SKCodecResult DecodeFrame(SKCodec codec, int frameIndex, SKImageInfo frameInfo, int requiredFrame, SKBitmap? seed = null)
         {
             if (bitmap == null || bitmap.Width < frameInfo.Width || bitmap.Height < frameInfo.Height)
             {
@@ -419,14 +433,24 @@ public static class PictureImageLoader
             }
 
             var target = bitmap;
-            if (target.Width != frameInfo.Width || target.Height != frameInfo.Height)
+            if (seed == null)
             {
-                // Buffer is larger than this frame: clear the used area and decode at its origin.
-                target.Erase(SKColors.Transparent, new SKRectI(0, 0, frameInfo.Width, frameInfo.Height));
+                // Fresh decode: the buffer (which may be larger than this frame) must not leak
+                // stale pixels, so clear the used area first.
+                if (target.Width != frameInfo.Width || target.Height != frameInfo.Height)
+                {
+                    target.Erase(SKColors.Transparent, new SKRectI(0, 0, frameInfo.Width, frameInfo.Height));
+                }
+                else
+                {
+                    target.Erase(SKColors.Transparent);
+                }
             }
             else
             {
-                target.Erase(SKColors.Transparent);
+                // Composite on top of the required frame: seed the buffer with its pixels.
+                // Never erase first — that would wipe the background the frame draws over.
+                seed.CopyTo(target);
             }
 
             var options = requiredFrame >= 0

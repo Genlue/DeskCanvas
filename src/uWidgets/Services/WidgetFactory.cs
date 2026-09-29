@@ -287,7 +287,8 @@ public class WidgetFactory(IAssemblyProvider assemblyProvider, ILayoutProvider l
 
     /// <summary>
     /// React to display changes: hide widgets of unplugged screens, recreate widgets
-    /// of screens that just came back (their config is still on disk).
+    /// of screens that just came back (their config is still on disk), and snap windows
+    /// that were stranded on a vanished display back onto their own screen.
     /// </summary>
     public void OnScreensChanged()
     {
@@ -307,6 +308,22 @@ public class WidgetFactory(IAssemblyProvider assemblyProvider, ILayoutProvider l
 
             foreach (var layout in screen.Config.Layout)
                 CreateInternal(screen.Config, layout).Show();
+        }
+
+        // Windows stay wherever they were when a display disappeared (a remote-control
+        // tool's virtual screen, an unplugged monitor) — possibly on dead desktop space
+        // no attached screen covers. Everything that is still on a real screen keeps its
+        // exact position; only stranded windows snap back to their stored slot.
+        foreach (var widget in activeWidgets.Values.SelectMany(list => list.ToList()))
+        {
+            try
+            {
+                widget.EnsureOnScreen();
+            }
+            catch
+            {
+                // Never let one misbehaving widget abort the whole pass.
+            }
         }
     }
 

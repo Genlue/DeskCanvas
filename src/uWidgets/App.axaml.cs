@@ -140,9 +140,22 @@ public class App : Application
         Settings SharedSettingsWindow() => services.GetRequiredService<Settings>();
 
         // A second launch of the exe signals this instance instead of starting a rival process;
-        // surface the settings window so the user sees why nothing new appeared.
+        // surface the settings window so the user sees why nothing new appeared. The hand-over
+        // runs on the UI thread of the running instance — a failure here would kill the whole
+        // app (and leave the user with nothing, since the second launch has already exited), so
+        // it must never throw.
         SingleInstance.Current?.Listen(() =>
-            Dispatcher.UIThread.Post(() => SharedSettingsWindow().ShowAndActivate()));
+            Dispatcher.UIThread.Post(() =>
+            {
+                try
+                {
+                    SharedSettingsWindow().ShowAndActivate();
+                }
+                catch (Exception ex)
+                {
+                    GlassDiagnostics.Event($"settings hand-over failed: {ex.GetType().Name}: {ex.Message}");
+                }
+            }));
 
         // Notification-area icon: the always-reachable way back into a desktop-only app.
         var tray = new TrayIconService(appSettingsProvider, SharedSettingsWindow, widgetFactory);
