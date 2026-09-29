@@ -17,8 +17,10 @@ namespace uWidgets.Views;
 /// Shared template for the widgets' secondary panel windows (weather forecast, reminders,
 /// big folder, clipboard). Everything a panel needs to behave identically lives here:
 ///   - spawn position: centered on the opening widget (clamped to the screen's work area),
-///   - open transition: fade + rise + scale-in on the Material 3 "emphasized decelerate" curve,
-///   - close transition: fade + drop + scale-out on the "emphasized accelerate" curve,
+///   - open transition: the card scales up straight out of the opening widget (render
+///     transform origin pinned to the widget's center) while fading in, on the Material 3
+///     "emphasized decelerate" curve,
+///   - close transition: the card folds back into the widget on the "emphasized accelerate" curve,
 ///   - dismissal: Escape, focus loss (after a grace period), or an explicit Close(),
 ///   - per-panel-type rules: one instance at a time and no immediate re-open after a close.
 /// Derived windows keep their own AXAML, theming and content; they expose the animatable
@@ -35,20 +37,19 @@ public abstract class SecondaryPanelWindow : Window
     private static readonly SplineEasing OpenEasing = new(new KeySpline(0.05, 0.7, 0.1, 1.0));
     private static readonly SplineEasing CloseEasing = new(new KeySpline(0.3, 0.0, 0.8, 0.15));
 
-    private static readonly TimeSpan OpenDuration = TimeSpan.FromMilliseconds(280);
-    private static readonly TimeSpan CloseDuration = TimeSpan.FromMilliseconds(170);
+    private static readonly TimeSpan OpenDuration = TimeSpan.FromMilliseconds(320);
+    private static readonly TimeSpan CloseDuration = TimeSpan.FromMilliseconds(180);
     // Transitions start on the first rendered frame after the value change; pad the close
     // timer so base.Close() never fires while the exit transition is still running.
     private static readonly TimeSpan CloseTimerDuration = CloseDuration + TimeSpan.FromMilliseconds(40);
 
-    private const double OpenScaleFrom = 0.94;
-    private const double OpenRiseFrom = 14.0;
-    private const double CloseScaleTo = 0.97;
-    private const double CloseDropTo = 8.0;
+    // The card grows out of the widget from 60% of its final size — small enough that the
+    // anchored origin reads clearly, large enough that text never looks scrambled mid-flight.
+    private const double OpenScaleFrom = 0.60;
+    private const double CloseScaleTo = 0.60;
     private const int ReopenCooldownMs = 250;
 
     private ScaleTransform? cardScale;
-    private TranslateTransform? cardRise;
     private bool panelLoaded;
     private bool closeAnimationRunning;
     private bool wasActivated;
@@ -59,6 +60,14 @@ public abstract class SecondaryPanelWindow : Window
 
     /// <summary>Physical-pixel center of the widget the panel spawns from; null centers on the primary work area.</summary>
     protected abstract Point? SpawnScreenCenter { get; }
+
+    /// <summary>
+    /// Corner radius (DIP) propagated from the opening widget's card so the panel's corners
+    /// match it exactly; 0 keeps the panel's own AXAML radius. Must be handed to
+    /// <see cref="InitializePanel"/> before derived theming runs, so every glass path
+    /// (live surface, pre-rendered bitmap, native window region) picks it up.
+    /// </summary>
+    protected double SpawnCornerRadius { get; private set; }
 
     /// <summary>
     /// Whether the card may scale and rise. Must stay off when the panel clips itself with a
@@ -83,26 +92,34 @@ public abstract class SecondaryPanelWindow : Window
     protected virtual bool OnPanelEscape() => false;
 
     /// <summary>
-    /// Called by derived constructors right after InitializeComponent: hides the card, wires
-    /// the panel behavior, and registers the window as its type's active panel.
+    /// Called by derived constructors right after InitializeComponent: applies the spawn
+    /// corner radius (before theming runs, so glass surfaces inherit it), hides the card,
+    /// wires the panel behavior, and registers the window as its type's active panel.
     /// </summary>
-    protected void InitializePanel()
+    protected void InitializePanel(double? cornerRadius = null)
     {
+        SpawnCornerRadius = cornerRadius ?? 0;
+
         var card = PanelCard;
         if (card != null)
         {
+            if (SpawnCornerRadius > 0 && card is Border cardBorder)
+                cardBorder.CornerRadius = new CornerRadius(SpawnCornerRadius);
+
             card.Opacity = 0.0;
             if (TransformAnimationEnabled)
             {
                 cardScale = card.RenderTransform as ScaleTransform ?? new ScaleTransform();
-                cardRise = new TranslateTransform();
-                // RenderTransformOrigin (0.5,0.5 in every panel's AXAML) applies to the whole
-                // group, so the card still scales around its center while the rise is a plain
-                // pixel offset.
-                card.RenderTransform = new TransformGroup { Children = { cardRise, cardScale } };
+                card.RenderTransform = cardScale;
                 cardScale.ScaleX = OpenScaleFrom;
                 cardScale.ScaleY = OpenScaleFrom;
-                cardRise.Y = OpenRiseFrom;
+            }
+            else if (card.RenderTransform is ScaleTransform staleScale)
+            {
+                // Panels that clip themselves with a native window region must not carry
+                // the AXAML's decorative zoom transform — it would shrink the card forever.
+                staleScale.ScaleX = 1.0;
+                staleScale.ScaleY = 1.0;
             }
         }
 
@@ -195,29 +212,71 @@ public abstract class SecondaryPanelWindow : Window
         var card = PanelCard;
         if (card == null) return;
 
+        // Pin the scale origin to the opening widget's center (panel position is already
+        // final at this point), so the card visibly grows out of the widget. The origin is
+        // set while the card is still invisible — a late layout can't cause a visible jump.
+        var anchor = ComputeSpawnAnchorOrigin();
+        if (TransformAnimationEnabled && cardScale != null && anchor.HasValue)
+            card.RenderTransformOrigin = anchor.Value;
+
         card.Transitions = new Transitions
         {
             new DoubleTransition { Property = Visual.OpacityProperty, Duration = OpenDuration, Easing = OpenEasing }
         };
 
-        if (TransformAnimationEnabled && cardScale != null && cardRise != null)
+        if (TransformAnimationEnabled && cardScale != null)
         {
             cardScale.Transitions = new Transitions
             {
                 new DoubleTransition { Property = ScaleTransform.ScaleXProperty, Duration = OpenDuration, Easing = OpenEasing },
                 new DoubleTransition { Property = ScaleTransform.ScaleYProperty, Duration = OpenDuration, Easing = OpenEasing }
             };
-            cardRise.Transitions = new Transitions
-            {
-                new DoubleTransition { Property = TranslateTransform.YProperty, Duration = OpenDuration, Easing = OpenEasing }
-            };
 
             cardScale.ScaleX = 1.0;
             cardScale.ScaleY = 1.0;
-            cardRise.Y = 0.0;
         }
 
         card.Opacity = 1.0;
+    }
+
+    /// <summary>
+    /// The widget's center expressed as a relative origin inside the panel card, so the
+    /// scale transition reads as the card growing straight out of the widget (and folding
+    /// back into it on close). Falls back to the card's own center when the spawn point is
+    /// unknown or the card is not laid out yet. Slightly clamped so a work-area-clamped
+    /// panel still folds toward the widget's side rather than from an extreme far-away point.
+    /// </summary>
+    private RelativePoint? ComputeSpawnAnchorOrigin()
+    {
+        try
+        {
+            var spawn = SpawnScreenCenter;
+            var card = PanelCard;
+            if (spawn == null || card == null) return null;
+
+            var screen = Screens.ScreenFromPoint(new PixelPoint(
+                (int)Math.Round(spawn.Value.X),
+                (int)Math.Round(spawn.Value.Y)));
+            double scale = screen?.Scaling > 0 ? screen.Scaling : 1.0;
+
+            // Spawn and Position are physical pixels; the card measures in DIPs.
+            var anchor = new Point(
+                (spawn.Value.X - Position.X) / scale,
+                (spawn.Value.Y - Position.Y) / scale);
+            var topLeft = card.TranslatePoint(new Point(0, 0), this);
+            var size = card.Bounds.Size;
+            if (topLeft == null || size.Width <= 0 || size.Height <= 0) return null;
+
+            double rx = Math.Clamp((anchor.X - topLeft.Value.X) / size.Width, -0.5, 1.5);
+            double ry = Math.Clamp((anchor.Y - topLeft.Value.Y) / size.Height, -0.5, 1.5);
+            return new RelativePoint(rx, ry, RelativeUnit.Relative);
+        }
+        catch
+        {
+            // The anchored zoom is a nicety, never worth breaking the open transition over:
+            // an exception here would leave the card stuck invisible.
+            return null;
+        }
     }
 
     /// <summary>
@@ -252,21 +311,16 @@ public abstract class SecondaryPanelWindow : Window
         };
         card.Opacity = 0.0;
 
-        if (TransformAnimationEnabled && cardScale != null && cardRise != null)
+        if (TransformAnimationEnabled && cardScale != null)
         {
             cardScale.Transitions = new Transitions
             {
                 new DoubleTransition { Property = ScaleTransform.ScaleXProperty, Duration = CloseDuration, Easing = CloseEasing },
                 new DoubleTransition { Property = ScaleTransform.ScaleYProperty, Duration = CloseDuration, Easing = CloseEasing }
             };
-            cardRise.Transitions = new Transitions
-            {
-                new DoubleTransition { Property = TranslateTransform.YProperty, Duration = CloseDuration, Easing = CloseEasing }
-            };
 
             cardScale.ScaleX = CloseScaleTo;
             cardScale.ScaleY = CloseScaleTo;
-            cardRise.Y = CloseDropTo;
         }
 
         var timer = new DispatcherTimer { Interval = CloseTimerDuration };

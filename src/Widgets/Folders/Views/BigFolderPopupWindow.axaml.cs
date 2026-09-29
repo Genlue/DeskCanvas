@@ -118,7 +118,8 @@ public partial class BigFolderPopupWindow : SecondaryPanelWindow
     public BigFolderPopupWindow(
         BigFolderModel model,
         Point? screenCenter = null,
-        Action<BigFolderModel>? onModelChanged = null)
+        Action<BigFolderModel>? onModelChanged = null,
+        double? cornerRadius = null)
     {
         currentModel = model;
         spawnScreenCenter = screenCenter;
@@ -126,7 +127,7 @@ public partial class BigFolderPopupWindow : SecondaryPanelWindow
         transformAnimationEnabled = !UsesNativeBlurTheme();
 
         InitializeComponent();
-        InitializePanel();
+        InitializePanel(cornerRadius);
 
         SyncSettingsControls();
         ApplyTheme();
@@ -149,7 +150,7 @@ public partial class BigFolderPopupWindow : SecondaryPanelWindow
         if (LiquidGlassBgImage.IsVisible)
         {
             var screen = spawnScreenCenter.HasValue ? Screens.ScreenFromPoint(new PixelPoint((int)spawnScreenCenter.Value.X, (int)spawnScreenCenter.Value.Y)) : Screens.Primary;
-            var bmp = LiquidGlassPreRenderService.GetCachedBitmapFor(spawnScreenCenter, Width, Height, screen, Screens.All);
+            var bmp = LiquidGlassPreRenderService.GetCachedBitmapFor(spawnScreenCenter, Width, Height, CardBorder.CornerRadius.TopLeft, screen, Screens.All);
             if (bmp != null)
             {
                 LiquidGlassBgImage.Source = bmp;
@@ -195,7 +196,7 @@ public partial class BigFolderPopupWindow : SecondaryPanelWindow
                 CardBorder.BorderBrush = new SolidColorBrush(Color.FromArgb(90, 255, 255, 255));
 
                 var screen = spawnScreenCenter.HasValue ? Screens.ScreenFromPoint(new PixelPoint((int)spawnScreenCenter.Value.X, (int)spawnScreenCenter.Value.Y)) : Screens.Primary;
-                var bmp = LiquidGlassPreRenderService.GetCachedBitmapFor(spawnScreenCenter, Width, Height, screen, Screens.All);
+                var bmp = LiquidGlassPreRenderService.GetCachedBitmapFor(spawnScreenCenter, Width, Height, CardBorder.CornerRadius.TopLeft, screen, Screens.All);
 
                 if (bmp != null)
                 {
@@ -487,7 +488,8 @@ public partial class BigFolderPopupWindow : SecondaryPanelWindow
         BigFolderModel model,
         Point? screenCenter,
         Window? owner = null,
-        Action<BigFolderModel>? onModelChanged = null)
+        Action<BigFolderModel>? onModelChanged = null,
+        double? cornerRadius = null)
     {
         if (PanelCoolingDown<BigFolderPopupWindow>())
             return;
@@ -495,7 +497,7 @@ public partial class BigFolderPopupWindow : SecondaryPanelWindow
         if (TryCloseActivePanel<BigFolderPopupWindow>())
             return;
 
-        var popup = new BigFolderPopupWindow(model, screenCenter, onModelChanged);
+        var popup = new BigFolderPopupWindow(model, screenCenter, onModelChanged, cornerRadius);
         popup.ShowAsSecondaryPanel(owner);
     }
 
@@ -520,7 +522,9 @@ public partial class BigFolderPopupWindow : SecondaryPanelWindow
             double scaling = screen?.Scaling ?? 1.0;
             int width = (int)Math.Round(ClientSize.Width * scaling);
             int height = (int)Math.Round(ClientSize.Height * scaling);
-            int radius = (int)Math.Round(18 * scaling);
+            // Match the card's own corner radius (propagated from the opening widget),
+            // so the native blur region and the visual card share the same curvature.
+            int radius = (int)Math.Round((SpawnCornerRadius > 0 ? SpawnCornerRadius : 18) * scaling);
 
             width = Math.Max(1, width);
             height = Math.Max(1, height);

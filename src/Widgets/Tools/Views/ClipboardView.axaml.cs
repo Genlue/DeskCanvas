@@ -351,17 +351,30 @@ public partial class ClipboardView : UserControl, IWidgetSelfRefreshing
                 var window = VisualRoot as Window;
                 var screen = window?.Screens.ScreenFromWindow(window) ?? window?.Screens.Primary;
                 bool isDark = ActualThemeVariant == Avalonia.Styling.ThemeVariant.Dark || (theme.DarkMode ?? true);
-                PopupLiquidGlassService.RequestPreRender(screenCenter, 440, 540, 18, theme, isDark, screen, window?.Screens.All);
+                PopupLiquidGlassService.RequestPreRender(screenCenter, 440, 540, SpawnCornerRadius ?? 18, theme, isDark, screen, window?.Screens.All);
             }
         }
         catch { }
+    }
+
+    /// <summary>
+    /// The host widget's visual corner radius, so the popup's corners and its pre-rendered
+    /// glass match the widget card exactly. Null keeps the popup's own default radius.
+    /// </summary>
+    private double? SpawnCornerRadius
+    {
+        get
+        {
+            var r = (VisualRoot as uWidgets.Views.Widget)?.Radius.TopLeft ?? 0;
+            return r > 0 ? r : null;
+        }
     }
 
     public void OnOpenPopupClicked(object? sender, RoutedEventArgs e)
     {
         var (screenCenter, _) = GetScreenCenterAndTopLevel();
         var owner = VisualRoot as Window;
-        ClipboardPopupWindow.ShowPopup(screenCenter, owner);
+        ClipboardPopupWindow.ShowPopup(screenCenter, owner, SpawnCornerRadius);
     }
 
     private void OnOpenBadgePointerPressed(object? sender, PointerPressedEventArgs e)

@@ -114,10 +114,10 @@ public static class PopupLiquidGlassService
         return (targetX, targetY, renderW, renderH, scale, targetScreen!, screensList, left, top, desktopWidth, desktopHeight);
     }
 
-    public static Bitmap? GetCachedBitmapFor(Point? screenCenter, double logicalWidth, double logicalHeight, Screen? targetScreen, IReadOnlyList<Screen>? allScreens)
+    public static Bitmap? GetCachedBitmapFor(Point? screenCenter, double logicalWidth, double logicalHeight, double cornerRadius, Screen? targetScreen, IReadOnlyList<Screen>? allScreens)
     {
         var p = ComputePlacement(screenCenter, logicalWidth, logicalHeight, targetScreen, allScreens);
-        var locKey = $"{(int)p.targetX}_{(int)p.targetY}_{p.renderW}_{p.renderH}";
+        var locKey = LocationKey(p.targetX, p.targetY, p.renderW, p.renderH, cornerRadius);
         lock (renderLock)
         {
             if (locationCache.TryGetValue(locKey, out var bmp))
@@ -127,6 +127,11 @@ public static class PopupLiquidGlassService
             return CachedPopupBitmap;
         }
     }
+
+    // The corner radius is baked into the cached bitmap's rounded alpha; it must be part of
+    // the key so a widget-radius change re-renders instead of surfacing a stale shape.
+    private static string LocationKey(double targetX, double targetY, int renderW, int renderH, double cornerRadius)
+        => $"{(int)targetX}_{(int)targetY}_{renderW}_{renderH}_{Math.Round(cornerRadius)}";
 
     public static void RequestPreRender(
         Point? screenCenter,
@@ -148,8 +153,8 @@ public static class PopupLiquidGlassService
 
         // The key covers the surface as well: the two glass materials share the sampling
         // pipeline but not the recipe, so each carries its own optics into the key.
-        var key = $"{wallpaperRevision}_{(int)p.targetX}_{(int)p.targetY}_{p.renderW}_{p.renderH}_{p.scale}_{isDark}_{LiquidGlassDispatch.OpticsKey(theme)}";
-        var locKey = $"{(int)p.targetX}_{(int)p.targetY}_{p.renderW}_{p.renderH}";
+        var key = $"{wallpaperRevision}_{(int)p.targetX}_{(int)p.targetY}_{p.renderW}_{p.renderH}_{p.scale}_{isDark}_{LiquidGlassDispatch.OpticsKey(theme)}_{Math.Round(cornerRadius)}";
+        var locKey = LocationKey(p.targetX, p.targetY, p.renderW, p.renderH, cornerRadius);
 
         lock (renderLock)
         {
@@ -254,7 +259,7 @@ public static class PopupLiquidGlassService
         if (targetScreen == null) return null;
 
         var p = ComputePlacement(screenCenter, logicalWidth, logicalHeight, targetScreen, allScreens);
-        var locKey = $"{(int)p.targetX}_{(int)p.targetY}_{p.renderW}_{p.renderH}";
+        var locKey = LocationKey(p.targetX, p.targetY, p.renderW, p.renderH, cornerRadius);
 
         try
         {

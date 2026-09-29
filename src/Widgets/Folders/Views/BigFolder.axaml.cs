@@ -461,7 +461,20 @@ public partial class BigFolder : UserControl, IWidgetSelfRefreshing
     {
         var (screenCenter, _) = GetScreenCenterAndTopLevel();
         var owner = VisualRoot as Window;
-        BigFolderPopupWindow.ShowPopup(model, screenCenter, owner, UpdateModel);
+        BigFolderPopupWindow.ShowPopup(model, screenCenter, owner, UpdateModel, SpawnCornerRadius);
+    }
+
+    /// <summary>
+    /// The host widget's visual corner radius, so the popup's corners and its pre-rendered
+    /// glass match the widget card exactly. Null keeps the popup's own default radius.
+    /// </summary>
+    private double? SpawnCornerRadius
+    {
+        get
+        {
+            var r = (VisualRoot as uWidgets.Views.Widget)?.Radius.TopLeft ?? 0;
+            return r > 0 ? r : null;
+        }
     }
 
     private (Point? ScreenCenter, TopLevel? TopLevel) GetScreenCenterAndTopLevel()
@@ -505,7 +518,7 @@ public partial class BigFolder : UserControl, IWidgetSelfRefreshing
                     screenCenter,
                     logicalWidth: 440,
                     logicalHeight: 480,
-                    cornerRadius: 18,
+                    cornerRadius: SpawnCornerRadius ?? 18,
                     theme: appSettings.Theme,
                     isDark: isDark,
                     targetScreen: screen,

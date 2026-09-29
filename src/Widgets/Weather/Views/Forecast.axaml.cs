@@ -44,7 +44,20 @@ public partial class Forecast : UserControl
         if (viewModel == null) return;
         var (screenCenter, _) = GetScreenCenterAndTopLevel();
         var owner = VisualRoot as Window;
-        WeatherPopupWindow.ShowPopup(viewModel, screenCenter, owner);
+        WeatherPopupWindow.ShowPopup(viewModel, screenCenter, owner, SpawnCornerRadius);
+    }
+
+    /// <summary>
+    /// The host widget's visual corner radius, so the popup's corners and its pre-rendered
+    /// glass match the widget card exactly. Null keeps the popup's own default radius.
+    /// </summary>
+    private double? SpawnCornerRadius
+    {
+        get
+        {
+            var r = (VisualRoot as uWidgets.Views.Widget)?.Radius.TopLeft ?? 0;
+            return r > 0 ? r : null;
+        }
     }
 
     private (Point? ScreenCenter, TopLevel? TopLevel) GetScreenCenterAndTopLevel()
@@ -74,7 +87,7 @@ public partial class Forecast : UserControl
                 var window = VisualRoot as Window;
                 var screen = window?.Screens.ScreenFromWindow(window) ?? window?.Screens.Primary;
                 bool isDark = ActualThemeVariant == Avalonia.Styling.ThemeVariant.Dark || (theme.DarkMode ?? true);
-                PopupLiquidGlassService.RequestPreRender(screenCenter, 460, 580, 20, theme, isDark, screen, window?.Screens.All);
+                PopupLiquidGlassService.RequestPreRender(screenCenter, 460, 580, SpawnCornerRadius ?? 20, theme, isDark, screen, window?.Screens.All);
             }
         }
         catch { }

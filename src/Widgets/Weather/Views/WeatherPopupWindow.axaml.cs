@@ -27,13 +27,13 @@ public partial class WeatherPopupWindow : SecondaryPanelWindow
 
     public WeatherPopupWindow() : this(new ForecastViewModel(new Models.ForecastModel("北京", 39.9042, 116.4074, "celsius")), null) { }
 
-    public WeatherPopupWindow(ForecastViewModel viewModel, Point? screenCenter = null)
+    public WeatherPopupWindow(ForecastViewModel viewModel, Point? screenCenter = null, double? cornerRadius = null)
     {
         this.viewModel = viewModel;
         spawnScreenCenter = screenCenter;
 
         InitializeComponent();
-        InitializePanel();
+        InitializePanel(cornerRadius);
 
         HourlyScroll.AddHandler(PointerWheelChangedEvent, OnHourlyWheel, RoutingStrategies.Bubble, true);
 
@@ -44,7 +44,7 @@ public partial class WeatherPopupWindow : SecondaryPanelWindow
         Closed += OnWindowClosed;
     }
 
-    public static void ShowPopup(ForecastViewModel viewModel, Point? screenCenter, Window? owner = null)
+    public static void ShowPopup(ForecastViewModel viewModel, Point? screenCenter, Window? owner = null, double? cornerRadius = null)
     {
         if (PanelCoolingDown<WeatherPopupWindow>())
             return;
@@ -52,7 +52,7 @@ public partial class WeatherPopupWindow : SecondaryPanelWindow
         if (TryCloseActivePanel<WeatherPopupWindow>())
             return;
 
-        var popup = new WeatherPopupWindow(viewModel, screenCenter);
+        var popup = new WeatherPopupWindow(viewModel, screenCenter, cornerRadius);
         popup.ShowAsSecondaryPanel(owner);
     }
 
@@ -125,7 +125,7 @@ public partial class WeatherPopupWindow : SecondaryPanelWindow
                 CardBorder.BorderBrush = new SolidColorBrush(Color.FromArgb(90, 255, 255, 255));
 
                 var screen = spawnScreenCenter.HasValue ? Screens.ScreenFromPoint(new PixelPoint((int)spawnScreenCenter.Value.X, (int)spawnScreenCenter.Value.Y)) : Screens.Primary;
-                var bmp = PopupLiquidGlassService.GetCachedBitmapFor(spawnScreenCenter, Width, Height, screen, Screens.All);
+                var bmp = PopupLiquidGlassService.GetCachedBitmapFor(spawnScreenCenter, Width, Height, CardBorder.CornerRadius.TopLeft, screen, Screens.All);
 
                 if (bmp != null)
                 {
@@ -210,7 +210,7 @@ public partial class WeatherPopupWindow : SecondaryPanelWindow
         if (LiquidGlassBgImage.IsVisible)
         {
             var screen = spawnScreenCenter.HasValue ? Screens.ScreenFromPoint(new PixelPoint((int)spawnScreenCenter.Value.X, (int)spawnScreenCenter.Value.Y)) : Screens.Primary;
-            var bmp = PopupLiquidGlassService.GetCachedBitmapFor(spawnScreenCenter, Width, Height, screen, Screens.All);
+            var bmp = PopupLiquidGlassService.GetCachedBitmapFor(spawnScreenCenter, Width, Height, CardBorder.CornerRadius.TopLeft, screen, Screens.All);
             if (bmp != null)
             {
                 LiquidGlassBgImage.Source = bmp;

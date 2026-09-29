@@ -31,13 +31,13 @@ public partial class ClipboardPopupWindow : SecondaryPanelWindow
 
     public ClipboardPopupWindow() : this(null) { }
 
-    public ClipboardPopupWindow(Point? screenCenter = null)
+    public ClipboardPopupWindow(Point? screenCenter = null, double? cornerRadius = null)
     {
         spawnScreenCenter = screenCenter;
         monitor = ClipboardMonitorService.Instance;
 
         InitializeComponent();
-        InitializePanel();
+        InitializePanel(cornerRadius);
 
         monitor.HistoryChanged += OnHistoryChanged;
         PopupLiquidGlassService.PreRenderCompleted += OnPreRenderCompleted;
@@ -48,7 +48,7 @@ public partial class ClipboardPopupWindow : SecondaryPanelWindow
         Closed += OnWindowClosed;
     }
 
-    public static void ShowPopup(Point? screenCenter, Window? owner = null)
+    public static void ShowPopup(Point? screenCenter, Window? owner = null, double? cornerRadius = null)
     {
         if (PanelCoolingDown<ClipboardPopupWindow>())
             return;
@@ -56,7 +56,7 @@ public partial class ClipboardPopupWindow : SecondaryPanelWindow
         if (TryCloseActivePanel<ClipboardPopupWindow>())
             return;
 
-        var popup = new ClipboardPopupWindow(screenCenter);
+        var popup = new ClipboardPopupWindow(screenCenter, cornerRadius);
         popup.ShowAsSecondaryPanel(owner);
     }
 
@@ -106,7 +106,7 @@ public partial class ClipboardPopupWindow : SecondaryPanelWindow
                 CardBorder.BorderBrush = new SolidColorBrush(Color.FromArgb(90, 255, 255, 255));
 
                 var screen = spawnScreenCenter.HasValue ? Screens.ScreenFromPoint(new PixelPoint((int)spawnScreenCenter.Value.X, (int)spawnScreenCenter.Value.Y)) : Screens.Primary;
-                var bmp = PopupLiquidGlassService.GetCachedBitmapFor(spawnScreenCenter, Width, Height, screen, Screens.All);
+                var bmp = PopupLiquidGlassService.GetCachedBitmapFor(spawnScreenCenter, Width, Height, CardBorder.CornerRadius.TopLeft, screen, Screens.All);
 
                 if (bmp != null)
                 {
@@ -187,7 +187,7 @@ public partial class ClipboardPopupWindow : SecondaryPanelWindow
         if (LiquidGlassBgImage.IsVisible)
         {
             var screen = spawnScreenCenter.HasValue ? Screens.ScreenFromPoint(new PixelPoint((int)spawnScreenCenter.Value.X, (int)spawnScreenCenter.Value.Y)) : Screens.Primary;
-            var bmp = PopupLiquidGlassService.GetCachedBitmapFor(spawnScreenCenter, Width, Height, screen, Screens.All);
+            var bmp = PopupLiquidGlassService.GetCachedBitmapFor(spawnScreenCenter, Width, Height, CardBorder.CornerRadius.TopLeft, screen, Screens.All);
             if (bmp != null)
             {
                 LiquidGlassBgImage.Source = bmp;

@@ -87,14 +87,15 @@ public partial class RemindersPopupWindow : SecondaryPanelWindow
     public RemindersPopupWindow(
         RemindersListModel model,
         Point? screenCenter = null,
-        Action<RemindersListModel>? onModelChanged = null)
+        Action<RemindersListModel>? onModelChanged = null,
+        double? cornerRadius = null)
     {
         currentModel = model;
         spawnScreenCenter = screenCenter;
         this.onModelChanged = onModelChanged;
 
         InitializeComponent();
-        InitializePanel();
+        InitializePanel(cornerRadius);
 
         ItemsList.ItemsSource = items;
 
@@ -112,7 +113,8 @@ public partial class RemindersPopupWindow : SecondaryPanelWindow
         RemindersListModel model,
         Point? screenCenter,
         Window? owner = null,
-        Action<RemindersListModel>? onModelChanged = null)
+        Action<RemindersListModel>? onModelChanged = null,
+        double? cornerRadius = null)
     {
         if (PanelCoolingDown<RemindersPopupWindow>())
             return;
@@ -120,7 +122,7 @@ public partial class RemindersPopupWindow : SecondaryPanelWindow
         if (TryCloseActivePanel<RemindersPopupWindow>())
             return;
 
-        var popup = new RemindersPopupWindow(model, screenCenter, onModelChanged);
+        var popup = new RemindersPopupWindow(model, screenCenter, onModelChanged, cornerRadius);
         popup.ShowAsSecondaryPanel(owner);
     }
 
@@ -170,7 +172,7 @@ public partial class RemindersPopupWindow : SecondaryPanelWindow
                 CardBorder.BorderBrush = new SolidColorBrush(Color.FromArgb(90, 255, 255, 255));
 
                 var screen = spawnScreenCenter.HasValue ? Screens.ScreenFromPoint(new PixelPoint((int)spawnScreenCenter.Value.X, (int)spawnScreenCenter.Value.Y)) : Screens.Primary;
-                var bmp = PopupLiquidGlassService.GetCachedBitmapFor(spawnScreenCenter, Width, Height, screen, Screens.All);
+                var bmp = PopupLiquidGlassService.GetCachedBitmapFor(spawnScreenCenter, Width, Height, CardBorder.CornerRadius.TopLeft, screen, Screens.All);
 
                 if (bmp != null)
                 {
@@ -254,7 +256,7 @@ public partial class RemindersPopupWindow : SecondaryPanelWindow
         if (LiquidGlassBgImage.IsVisible)
         {
             var screen = spawnScreenCenter.HasValue ? Screens.ScreenFromPoint(new PixelPoint((int)spawnScreenCenter.Value.X, (int)spawnScreenCenter.Value.Y)) : Screens.Primary;
-            var bmp = PopupLiquidGlassService.GetCachedBitmapFor(spawnScreenCenter, Width, Height, screen, Screens.All);
+            var bmp = PopupLiquidGlassService.GetCachedBitmapFor(spawnScreenCenter, Width, Height, CardBorder.CornerRadius.TopLeft, screen, Screens.All);
             if (bmp != null)
             {
                 LiquidGlassBgImage.Source = bmp;

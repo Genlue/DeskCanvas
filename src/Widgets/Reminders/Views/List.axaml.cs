@@ -71,7 +71,7 @@ public partial class List : UserControl, IWidgetSelfRefreshing
                 var window = VisualRoot as Window;
                 var screen = window?.Screens.ScreenFromWindow(window) ?? window?.Screens.Primary;
                 bool isDark = ActualThemeVariant == Avalonia.Styling.ThemeVariant.Dark || (theme.DarkMode ?? true);
-                PopupLiquidGlassService.RequestPreRender(screenCenter, 400, 490, 18, theme, isDark, screen, window?.Screens.All);
+                PopupLiquidGlassService.RequestPreRender(screenCenter, 400, 490, SpawnCornerRadius ?? 18, theme, isDark, screen, window?.Screens.All);
             }
         }
         catch { }
@@ -122,7 +122,20 @@ public partial class List : UserControl, IWidgetSelfRefreshing
     {
         var (screenCenter, _) = GetScreenCenterAndTopLevel();
         var owner = VisualRoot as Window;
-        RemindersPopupWindow.ShowPopup(RemindersStore.Get(), screenCenter, owner, UpdateModel);
+        RemindersPopupWindow.ShowPopup(RemindersStore.Get(), screenCenter, owner, UpdateModel, SpawnCornerRadius);
+    }
+
+    /// <summary>
+    /// The host widget's visual corner radius, so the popup's corners and its pre-rendered
+    /// glass match the widget card exactly. Null keeps the popup's own default radius.
+    /// </summary>
+    private double? SpawnCornerRadius
+    {
+        get
+        {
+            var r = (VisualRoot as uWidgets.Views.Widget)?.Radius.TopLeft ?? 0;
+            return r > 0 ? r : null;
+        }
     }
 
     private (Point? ScreenCenter, TopLevel? TopLevel) GetScreenCenterAndTopLevel()
