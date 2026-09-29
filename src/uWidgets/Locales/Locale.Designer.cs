@@ -1563,6 +1563,14 @@ namespace uWidgets.Locales {
             }
         }        
         /// <summary>
+        ///   Looks up a localized string similar to Center on Y axis.
+        /// </summary>
+        public static string Settings_Advanced_GridEditorCenterY {
+            get {
+                return ResourceManager.GetString("Settings_Advanced_GridEditorCenterY", resourceCulture);
+            }
+        }        
+        /// <summary>
         ///   Looks up a localized string similar to ←.
         /// </summary>
         public static string Settings_Advanced_GridEditorNudgeLeft {

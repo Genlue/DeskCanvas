@@ -477,6 +477,9 @@
     <data name="Settings_Advanced_GridEditorCenterX" xml:space="preserve">
         <value>Center on X axis</value>
     </data>
+    <data name="Settings_Advanced_GridEditorCenterY" xml:space="preserve">
+        <value>Center on Y axis</value>
+    </data>
     <data name="Settings_Advanced_GridEditorNudgeLeft" xml:space="preserve">
         <value>←</value>
     </data>

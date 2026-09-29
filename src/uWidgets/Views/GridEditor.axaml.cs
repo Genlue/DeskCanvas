@@ -25,7 +25,7 @@ namespace uWidgets.Views;
 /// The highlighted grid area shows the saved grid and can be dragged to move the
 /// whole grid on that screen;<br/>
 /// Right-click the grid area opens the parameters panel: rows / columns / cell
-/// size, X-centering and fine X/Y nudge buttons.<br/>
+/// size, exact X/Y position inputs, X and Y centering and fine ±1% nudge buttons.<br/>
 /// Every change is saved immediately — into the per-screen configuration, or
 /// into the global <see cref="AppSettings.Grid"/> when editing the legacy entry.
 /// </para>
@@ -61,12 +61,15 @@ public partial class GridEditor : Window
         ColumnsInput.ValueChanged += OnCellParameterChanged;
         RowsInput.ValueChanged += OnCellParameterChanged;
         CellInput.ValueChanged += OnCellParameterChanged;
+        XInput.ValueChanged += OnPositionInputChanged;
+        YInput.ValueChanged += OnPositionInputChanged;
 
         HintText.Text = Locale.Settings_Advanced_GridEditorHint;
         SaveButton.Content = Locale.Settings_Advanced_GridEditorSave;
         // The dismiss button used to be left without content, so it rendered as a blank chip.
         CloseButton.Content = Locale.Settings_Appearance_Glass_Align_Close;
         CenterButton.Content = Locale.Settings_Advanced_GridEditorCenterX;
+        CenterYButton.Content = Locale.Settings_Advanced_GridEditorCenterY;
         NudgeLeftButton.Content = Locale.Settings_Advanced_GridEditorNudgeLeft;
         NudgeRightButton.Content = Locale.Settings_Advanced_GridEditorNudgeRight;
         NudgeUpButton.Content = Locale.Settings_Advanced_GridEditorNudgeUp;
@@ -220,6 +223,8 @@ public partial class GridEditor : Window
         ColumnsInput.ValueChanged -= OnCellParameterChanged;
         RowsInput.ValueChanged -= OnCellParameterChanged;
         CellInput.ValueChanged -= OnCellParameterChanged;
+        XInput.ValueChanged -= OnPositionInputChanged;
+        YInput.ValueChanged -= OnPositionInputChanged;
     }
 
     private void OnKeyDown(object? sender, KeyEventArgs e)
@@ -273,6 +278,8 @@ public partial class GridEditor : Window
         dragging = false;
         e.Pointer.Capture(null);
         SaveGeometry();
+        // Keep the X/Y inputs honest after a drag: the saved percentages just changed.
+        SyncParamInputs();
     }
 
     // ---------- Parameters panel ----------
@@ -309,6 +316,8 @@ public partial class GridEditor : Window
             ColumnsInput.Value = grid.Columns;
             RowsInput.Value = grid.Rows;
             CellInput.Value = (decimal) grid.CellPercent;
+            XInput.Value = (decimal) grid.XPercent;
+            YInput.Value = (decimal) grid.YPercent;
         }
         finally
         {
@@ -337,7 +346,30 @@ public partial class GridEditor : Window
         ApplyGrid();
     }
 
-    // ---------- X centering & nudges ----------
+    // ---------- Position inputs, X/Y centering & nudges ----------
+
+    /// <summary>
+    /// Manual numeric fine-tuning of the grid origin (percent of the working area): the drag
+    /// and the ±1% nudge buttons only move in whole percents, these inputs set it exactly.
+    /// </summary>
+    private void OnPositionInputChanged(object? sender, NumericUpDownValueChangedEventArgs e)
+    {
+        if (syncingInputs) return;
+        if (XInput.Value is not { } x || YInput.Value is not { } y) return;
+
+        var grid = CurrentGrid;
+        var newGrid = grid with
+        {
+            XPercent = Math.Clamp((double) x, 0, 100),
+            YPercent = Math.Clamp((double) y, 0, 100)
+        };
+
+        if (newGrid != grid)
+        {
+            SaveGrid(newGrid);
+            ApplyGrid();
+        }
+    }
 
     private void OnCenterClicked(object? sender, RoutedEventArgs e)
     {
@@ -350,6 +382,35 @@ public partial class GridEditor : Window
             SaveGrid(newGrid);
             ApplyGrid();
         }
+    }
+
+    private void OnCenterYClicked(object? sender, RoutedEventArgs e)
+    {
+        var grid = CurrentGrid;
+        var newGrid = grid with { YPercent = CenteredYPercent(grid) };
+
+        if (newGrid != grid)
+        {
+            SaveGrid(newGrid);
+            ApplyGrid();
+        }
+    }
+
+    /// <summary>
+    /// The Y that centers the grid vertically in the working area. <see cref="GridSettings.CellPercent"/>
+    /// is a percentage of the working-area <b>width</b> while <see cref="GridSettings.YPercent"/> is one
+    /// of its <b>height</b>, so the grid's pixel height (rows × cell) must be converted through the
+    /// screen's aspect ratio before it can be subtracted from 100% of the height.
+    /// </summary>
+    private double CenteredYPercent(GridSettings grid)
+    {
+        var work = ResolveTargetScreen()?.WorkingArea;
+        if (work is { } area && area.Height > 0)
+        {
+            var heightPercent = grid.Rows * grid.CellPercent * area.Width / area.Height;
+            return Math.Clamp((100 - heightPercent) / 2.0, 0, 100);
+        }
+        return Math.Clamp((100 - grid.Rows * grid.CellPercent) / 2.0, 0, 100);
     }
 
     private void OnNudgeLeftClicked(object? sender, RoutedEventArgs e) => Nudge(-1, 0);

@@ -99,7 +99,24 @@
                 <NumericUpDown Name="CellInput" Minimum="0.01" Increment="0.1" FormatString="0.##"
                                Background="#FFFFFF" BorderBrush="#33000000" BorderThickness="1" Foreground="#1C1C1E" />
                 <Separator Margin="0 6" Height="1" Background="#26000000" />
-                <Button Name="CenterButton" Classes="panelButton" Click="OnCenterClicked" HorizontalAlignment="Stretch" />
+                <!-- Fine positioning: the drag and ±1% nudges round to whole percents of the
+                     working area; these inputs set the origin exactly. -->
+                <Grid ColumnDefinitions="*,*">
+                    <StackPanel Grid.Column="0" Margin="0 0 3 0" Spacing="4">
+                        <TextBlock Foreground="#8A000000" FontSize="12" Text="X 位置 (%)" />
+                        <NumericUpDown Name="XInput" Minimum="0" Maximum="100" Increment="0.1" FormatString="0.##"
+                                       Background="#FFFFFF" BorderBrush="#33000000" BorderThickness="1" Foreground="#1C1C1E" />
+                    </StackPanel>
+                    <StackPanel Grid.Column="1" Margin="3 0 0 0" Spacing="4">
+                        <TextBlock Foreground="#8A000000" FontSize="12" Text="Y 位置 (%)" />
+                        <NumericUpDown Name="YInput" Minimum="0" Maximum="100" Increment="0.1" FormatString="0.##"
+                                       Background="#FFFFFF" BorderBrush="#33000000" BorderThickness="1" Foreground="#1C1C1E" />
+                    </StackPanel>
+                </Grid>
+                <Grid ColumnDefinitions="*,*">
+                    <Button Name="CenterButton" Classes="panelButton" Grid.Column="0" Margin="0 0 3 0" Click="OnCenterClicked" HorizontalAlignment="Stretch" />
+                    <Button Name="CenterYButton" Classes="panelButton" Grid.Column="1" Margin="3 0 0 0" Click="OnCenterYClicked" HorizontalAlignment="Stretch" />
+                </Grid>
                 <Grid ColumnDefinitions="*,*,*,*">
                     <Button Name="NudgeLeftButton" Classes="panelButton" Grid.Column="0" Margin="0 0 3 0" Click="OnNudgeLeftClicked" />
                     <Button Name="NudgeRightButton" Classes="panelButton" Grid.Column="1" Margin="3 0 3 0" Click="OnNudgeRightClicked" />
