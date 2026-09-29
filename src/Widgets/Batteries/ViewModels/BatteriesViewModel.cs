@@ -322,6 +322,35 @@ public class BatteriesViewModel : INotifyPropertyChanged, IDisposable
         appSettingsProvider.DataChanged -= OnSettingsChanged;
     }
 
+    // ------------------------------------------------------------------
+    //  Fullscreen suspension (host: IWidgetSuspendable)
+    // ------------------------------------------------------------------
+
+    private bool suspended;
+
+    /// <summary>
+    /// Called by the host when every attached screen is covered (see <c>IWidgetSuspendable</c>).
+    /// The 3 s poll is the most expensive recurring work this widget owns — with ShowPeripherals
+    /// on it walks the whole device tree through SetupAPI every tick — and the result cannot be
+    /// seen while covered. Idempotent.
+    /// </summary>
+    public void Suspend()
+    {
+        if (suspended) return;
+        suspended = true;
+        timer.Stop();
+    }
+
+    /// <summary>Undoes <see cref="Suspend"/>; polls once immediately so the readout is fresh
+    /// even if the suspension lasted longer than several poll intervals.</summary>
+    public void Resume()
+    {
+        if (!suspended) return;
+        suspended = false;
+        PollPowerStatus();
+        timer.Start();
+    }
+
     public event PropertyChangedEventHandler? PropertyChanged;
     protected void OnPropertyChanged([CallerMemberName] string? propName = null) =>
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propName));

@@ -29,6 +29,12 @@ public partial class WidgetStackView : UserControl, IWidgetSelfRefreshing, IStac
     private readonly IWidgetLayoutProvider widgetLayoutProvider;
     private readonly IAssemblyProvider assemblyProvider;
     private readonly IAppSettingsProvider? appSettingsProvider;
+
+    /// <summary>Cached so Unloaded can unsubscribe: an anonymous lambda left on the
+    /// process-lifetime appSettingsProvider rooted every instance forever (Gallery previews,
+    /// rebuilds), one leaked view per visit.</summary>
+    private readonly DataChangedEvent<AppSettings>? onAppDataChanged;
+
     private WidgetStackModel model;
     private DispatcherTimer? saveDebounceTimer;
     private bool isSavingSelf;
@@ -114,13 +120,19 @@ public partial class WidgetStackView : UserControl, IWidgetSelfRefreshing, IStac
                 saveDebounceTimer.Stop();
                 SaveModelDirect();
             }
+
+            if (appSettingsProvider != null && onAppDataChanged != null)
+            {
+                appSettingsProvider.DataChanged -= onAppDataChanged;
+            }
         };
 
         ActualThemeVariantChanged += (_, _) => UpdateAllCardStyles();
 
         if (this.appSettingsProvider != null)
         {
-            this.appSettingsProvider.DataChanged += (_, _, _) => Dispatcher.UIThread.Post(UpdateAllCardStyles);
+            onAppDataChanged = (_, _, _) => Dispatcher.UIThread.Post(UpdateAllCardStyles);
+            this.appSettingsProvider.DataChanged += onAppDataChanged;
         }
 
         PropertyChanged += (s, e) =>

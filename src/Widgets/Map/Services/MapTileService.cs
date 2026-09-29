@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.IO;
 using System.Net.Http;
 using System.Threading;
@@ -28,6 +29,17 @@ public class MapTileService : IDisposable
 
     private const int MaxMemoryCacheTiles = 400;
     private const int TargetCacheTilesAfterEviction = 320;
+
+    /// <summary>Disk cache budget and the level it is pruned back to. Tiles are ~10-60 KB PNGs;
+    /// without a cap the cache grew for the lifetime of the machine — every panned zoom level
+    /// of every provider kept its files forever.</summary>
+    private const long MaxDiskCacheBytes = 512L * 1024 * 1024;
+    private const long TargetDiskCacheBytesAfterPrune = 384L * 1024 * 1024;
+
+    /// <summary>Process-wide prune throttle: a new service instance is built for every MapView
+    /// (including each Gallery visit), and enumerating the whole cache that often is pointless.</summary>
+    private static long lastDiskPruneAt;
+
     private readonly ConcurrentDictionary<string, Bitmap> memoryCache = new();
     private readonly ConcurrentQueue<string> evictionQueue = new();
     private readonly ConcurrentDictionary<string, byte> activeRequests = new();
@@ -49,6 +61,8 @@ public class MapTileService : IDisposable
         {
             // Ignore directory creation issues; will fallback to memory-only
         }
+
+        PruneDiskCacheIfNeeded();
     }
 
     /// <summary>
@@ -176,6 +190,62 @@ public class MapTileService : IDisposable
     private string GetDiskCachePath(MapProvider provider, int z, int x, int y)
     {
         return Path.Combine(cacheBaseDir, provider.ToString(), z.ToString(), $"{x}_{y}.png");
+    }
+
+    /// <summary>
+    /// Keeps the disk cache inside <see cref="MaxDiskCacheBytes"/> by deleting the oldest tiles
+    /// first. Runs off the UI thread and at most once per 6 h per process, so a Gallery visit or a
+    /// widget rebuild never pays for a directory walk; a tile deleted mid-read simply fails its
+    /// decode in <see cref="GetTile"/> and is re-downloaded.
+    /// </summary>
+    private void PruneDiskCacheIfNeeded()
+    {
+        var now = Environment.TickCount64;
+        var last = Interlocked.Read(ref lastDiskPruneAt);
+        if (now - last < TimeSpan.FromHours(6).TotalMilliseconds) return;
+        if (Interlocked.CompareExchange(ref lastDiskPruneAt, now, last) != last) return;
+
+        Task.Run(() =>
+        {
+            try
+            {
+                if (!Directory.Exists(cacheBaseDir)) return;
+
+                long total = 0;
+                var files = new List<(string Path, long Size, DateTime Written)>();
+                foreach (var path in Directory.EnumerateFiles(cacheBaseDir, "*", SearchOption.AllDirectories))
+                {
+                    try
+                    {
+                        var info = new FileInfo(path);
+                        if (info.Exists)
+                        {
+                            total += info.Length;
+                            files.Add((path, info.Length, info.LastWriteTimeUtc));
+                        }
+                    }
+                    catch { }
+                }
+
+                if (total <= MaxDiskCacheBytes) return;
+
+                files.Sort((a, b) => a.Written.CompareTo(b.Written));   // oldest first
+                foreach (var (path, size, _) in files)
+                {
+                    if (total <= TargetDiskCacheBytesAfterPrune) break;
+                    try
+                    {
+                        File.Delete(path);
+                        total -= size;
+                    }
+                    catch { }
+                }
+            }
+            catch
+            {
+                // Pruning is best effort; the cache keeps working unpruned.
+            }
+        });
     }
 
     private static string GetTileUrl(MapProvider provider, int z, int x, int y, string? baiduApiKey)

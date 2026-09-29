@@ -389,4 +389,40 @@ public class MusicViewModel : INotifyPropertyChanged, IDisposable
     /// <summary>True once <see cref="Dispose"/> ran; the view uses this to know it must rebuild and
     /// rebind a fresh view model when it is loaded again.</summary>
     public bool IsDisposed => isDisposed;
+
+    // ------------------------------------------------------------------
+    //  Fullscreen suspension (host: IWidgetSuspendable)
+    // ------------------------------------------------------------------
+
+    private bool suspended;
+
+    /// <summary>
+    /// Called by the host when every attached screen is covered (see <c>IWidgetSuspendable</c>).
+    /// Stops the 250 ms progress timer — every tick invalidates the position bindings and forces a
+    /// real render pass, even though the widget is behind the covering window — and pauses the
+    /// 1.5 s SMTC poll. The push-based media events stay attached: they cost nothing between fires.
+    /// Idempotent; a disposed view model ignores it.
+    /// </summary>
+    public void Suspend()
+    {
+        if (isDisposed || suspended) return;
+        suspended = true;
+
+        timer.Stop();
+        mediaService.PausePolling();
+    }
+
+    /// <summary>Undoes <see cref="Suspend"/>: restarts the progress timer and the SMTC poll.</summary>
+    public void Resume()
+    {
+        if (isDisposed || !suspended) return;
+        suspended = false;
+
+        // The position is a Stopwatch delta anchored at lastSyncTimestamp; re-anchor it so the
+        // paused stretch does not surface as a jump on the first tick after resume.
+        lastSyncTimestamp = Stopwatch.GetTimestamp();
+
+        mediaService.ResumePolling();
+        timer.Start();
+    }
 }

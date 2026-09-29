@@ -12,7 +12,7 @@ using uWidgets.Services;
 
 namespace Batteries.Views;
 
-public partial class BatteriesView : UserControl, IWidgetSelfRefreshing
+public partial class BatteriesView : UserControl, IWidgetSelfRefreshing, IWidgetSuspendable
 {
     private readonly IWidgetLayoutProvider? layoutProvider;
     private BatteriesViewModel? viewModel;
@@ -149,4 +149,11 @@ public partial class BatteriesView : UserControl, IWidgetSelfRefreshing
         }
         catch { }
     }
+
+    /// <summary>Stops the 3 s power/peripheral poll while the desktop is covered by a fullscreen
+    /// or maximized window (see <c>IWidgetSuspendable</c>).</summary>
+    public void Suspend() => viewModel?.Suspend();
+
+    /// <summary>Restarts the poll after <see cref="Suspend"/>, refreshing once immediately.</summary>
+    public void Resume() => viewModel?.Resume();
 }

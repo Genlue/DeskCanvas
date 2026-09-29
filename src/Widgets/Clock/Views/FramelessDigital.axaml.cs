@@ -34,6 +34,10 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
     private bool IsDesktopWidget => window is uWidgets.Views.Widget;
     private Bitmap? liquidGlassBitmap;
 
+    // Per-second Acrylic region recompute buffers (see UpdateWindowRegion).
+    private RenderTargetBitmap? regionBitmap;
+    private byte[]? regionBuffer;
+
     // Cache of pre-rendered liquid glass frames keyed by time string
     private readonly Dictionary<string, (DateTime ValidTime, Bitmap Bitmap)> liquidGlassCache = new();
     private readonly HashSet<string> inFlightRenders = new();
@@ -165,6 +169,10 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
         ClearLiquidGlassCache();
         liquidGlassBitmap?.Dispose();
         liquidGlassBitmap = null;
+
+        regionBitmap?.Dispose();
+        regionBitmap = null;
+        regionBuffer = null;
     }
 
     private void OnWallpaperInvalidated()
@@ -841,17 +849,33 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
         var pixelW = Math.Max(1, (int)Math.Ceiling(width * scaling));
         var pixelH = Math.Max(1, (int)Math.Ceiling(height * scaling));
 
-        using var rtb = new RenderTargetBitmap(new PixelSize(pixelW, pixelH), new Vector(96 * scaling, 96 * scaling));
+        // Both buffers are reused across calls: with ShowSeconds this runs once per second and a
+        // fresh RenderTargetBitmap plus a fresh full-window byte[] (2.5-8 MB, straight onto the
+        // LOH) per call kept gen2 collections running all day.
+        var size = new PixelSize(pixelW, pixelH);
+        var rtb = regionBitmap;
+        if (rtb == null || rtb.PixelSize != size)
+        {
+            rtb?.Dispose();
+            rtb = regionBitmap = new RenderTargetBitmap(size, new Vector(96 * scaling, 96 * scaling));
+        }
+
         using (var ctx = rtb.CreateDrawingContext())
         {
             ctx.DrawGeometry(Brushes.Black, null, geometry);
         }
 
-        var buffer = new byte[pixelW * pixelH * 4];
+        var bytesNeeded = pixelW * pixelH * 4;
+        var buffer = regionBuffer;
+        if (buffer == null || buffer.Length < bytesNeeded)
+        {
+            buffer = regionBuffer = new byte[bytesNeeded];
+        }
+
         var handle = GCHandle.Alloc(buffer, GCHandleType.Pinned);
         try
         {
-            rtb.CopyPixels(new PixelRect(0, 0, pixelW, pixelH), handle.AddrOfPinnedObject(), buffer.Length, pixelW * 4);
+            rtb.CopyPixels(new PixelRect(0, 0, pixelW, pixelH), handle.AddrOfPinnedObject(), bytesNeeded, pixelW * 4);
             var spans = ExtractSpans(buffer, pixelW, pixelH);
             InteropService.SetWindowRegionFromSpans(window, spans);
             hasRegionSet = spans.Count > 0;

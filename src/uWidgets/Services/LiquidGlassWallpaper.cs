@@ -150,6 +150,9 @@ public static class LiquidGlassWallpaper
         UpdateTimerState();
     }
 
+    /// <summary>True while the desktop is covered by a fullscreen/maximized application (SuspendLiveSampling).</summary>
+    public static bool IsSuspended => suspended;
+
     /// <summary>True when the user's 实时采样 switch is on.</summary>
     public static bool LiveSamplingEnabled => liveSamplingEnabled;
 
@@ -315,6 +318,20 @@ public static class LiquidGlassWallpaper
                 return new WallpaperSnapshot(null, new SKColor(32, 38, 48));
             try
             {
+                // Fullscreen suspension: the desktop capture was just released to hand its
+                // memory to the covering application, and nothing that renders while covered
+                // can be seen. Do NOT re-capture on demand — a resize, a theme flip or a
+                // wallpaper event during a game would otherwise silently rebuild exactly what
+                // SuspendAll released. Hand back whatever frame is still cached, or a flat
+                // placeholder that degrades the glass to its cheap fallback; live sampling
+                // restores a real frame on resume.
+                if (suspended)
+                {
+                    if (cached is { LiveCapture: true }) return cached;
+                    if (stale != null) return stale;
+                    return new WallpaperSnapshot(null, new SKColor(32, 38, 48));
+                }
+
                 // Live sampling on: reuse the frame while it is fresh (so every widget samples
                 // the same instant), otherwise grab a new one. Live sampling off: the frozen
                 // frame wins; a single one-shot capture runs only if there is nothing to freeze.

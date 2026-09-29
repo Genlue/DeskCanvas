@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Threading;
 using Windows.Media.Control;
 using Windows.Storage.Streams;
 using Music.Models;
@@ -453,6 +454,25 @@ public class MediaManagerService : IDisposable
         if (appId.Contains("msedge", StringComparison.OrdinalIgnoreCase)) return "Edge";
         if (appId.Contains("firefox", StringComparison.OrdinalIgnoreCase)) return "Firefox";
         return Path.GetFileNameWithoutExtension(appId);
+    }
+
+    /// <summary>
+    /// Stops the 1.5 s SMTC poll while the desktop is covered by a fullscreen or maximized
+    /// application (host suspension, see <c>IWidgetSuspendable</c>). The push-based WinRT event
+    /// subscriptions stay attached: they cost nothing between fires and a track change during
+    /// suspension still refreshes the (invisible) widget state.
+    /// </summary>
+    public void PausePolling()
+    {
+        if (disposed) return;
+        try { pollTimer?.Change(Timeout.Infinite, Timeout.Infinite); } catch { }
+    }
+
+    /// <summary>Restart the SMTC poll after <see cref="PausePolling"/>. Idempotent.</summary>
+    public void ResumePolling()
+    {
+        if (disposed) return;
+        try { pollTimer?.Change(TimeSpan.FromSeconds(1), TimeSpan.FromMilliseconds(1500)); } catch { }
     }
 
     /// <summary>

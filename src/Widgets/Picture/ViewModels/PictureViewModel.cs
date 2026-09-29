@@ -42,7 +42,6 @@ public class PictureViewModel : ReactiveObject, IDisposable
     private readonly DispatcherTimer disposeTimer;
 
     private readonly Dictionary<string, DecodedPicture> pictureCache = new(StringComparer.OrdinalIgnoreCase);
-    private readonly HashSet<DecodedPicture> disposed = new(ReferenceEqualityComparer.Instance);
     private readonly List<DecodedPicture> pendingDispose = [];
     private readonly Random random = new();
     private double currentTransitionStep;
@@ -93,6 +92,9 @@ public class PictureViewModel : ReactiveObject, IDisposable
     private void ConfigureSlideshowTimer()
     {
         slideshowTimer.Stop();
+
+        // Suspended (desktop covered): Resume() calls this again once the desktop is back.
+        if (isSuspended) return;
 
         if (model.Interval == SlideshowInterval.Manual || model.Order == PlayOrder.Fixed)
             return;
@@ -233,7 +235,7 @@ public class PictureViewModel : ReactiveObject, IDisposable
     /// </summary>
     private void ReleasePicture(DecodedPicture picture)
     {
-        if (disposed.Contains(picture) || pendingDispose.Contains(picture))
+        if (picture.IsDisposed || pendingDispose.Contains(picture))
             return;
 
         if (IsInUse(picture))
@@ -243,10 +245,11 @@ public class PictureViewModel : ReactiveObject, IDisposable
         ScheduleDispose();
     }
 
-    /// <summary>Disposes a picture exactly once.</summary>
+    /// <summary>Disposes a picture exactly once (<see cref="DecodedPicture.Dispose"/> is
+    /// idempotent; the counter must be too).</summary>
     private void DisposePicture(DecodedPicture picture)
     {
-        if (!disposed.Add(picture)) return;
+        if (picture.IsDisposed) return;
         picturesDisposed++;
         picture.Dispose();
     }
@@ -326,6 +329,10 @@ public class PictureViewModel : ReactiveObject, IDisposable
     private void LoadCurrentPicture(bool immediate)
     {
         if (isDisposed) return;
+
+        // Suspended (desktop covered): nothing may decode or re-arm a timer. The model was
+        // already updated, so Resume() reloads whatever is current when the desktop returns.
+        if (isSuspended) return;
 
         var items = model.GetItems();
         if (items.Count == 0)
@@ -529,6 +536,81 @@ public class PictureViewModel : ReactiveObject, IDisposable
     public bool DoubleClickToOpen => model.DoubleClickToOpen;
 
     // ------------------------------------------------------------------
+    //  Fullscreen suspension (host: IWidgetSuspendable)
+    // ------------------------------------------------------------------
+
+    private bool isSuspended;
+
+    /// <summary>Diagnostics: whether the host currently has this widget suspended.</summary>
+    public bool IsSuspended => isSuspended;
+
+    /// <summary>Diagnostics: whether the slideshow timer is currently armed.</summary>
+    public bool IsSlideshowRunning => slideshowTimer.IsEnabled;
+
+    /// <summary>Diagnostics: whether an animation is currently playing.</summary>
+    public bool IsAnimationRunning => gifAnimationTimer.IsEnabled;
+
+    /// <summary>
+    /// Called by the host when every attached screen is covered by a fullscreen or maximized
+    /// application (see <c>IWidgetSuspendable</c>). This widget is driven by its <b>own</b>
+    /// timers — none of them runs on the shared TimerService clocks the host pauses — so
+    /// without suspending it keeps playing GIFs frame by frame (a render pass per frame) and
+    /// keeps decoding every slideshow step behind the covering window: constant CPU plus a
+    /// steady stream of decode allocations for pixels nobody can see, while the decoded
+    /// animations (up to ~64 MB each at the frame budget) stay pinned in RAM.
+    /// <para>
+    /// Stops every timer the widget owns and releases ALL decoded pictures. Mirrors the
+    /// Dispose() ordering: rendering slots are detached before any bitmap is freed, so no
+    /// render pass can reach a disposed bitmap. <see cref="Resume"/> re-decodes and restarts.
+    /// Idempotent.
+    /// </para>
+    /// </summary>
+    public void Suspend()
+    {
+        if (isSuspended || isDisposed) return;
+        isSuspended = true;
+
+        // Detach the renderer from every bitmap before freeing them — the same ordering
+        // guarantee as Dispose().
+        ClearSlots();
+        activePicture = null;
+        currentGifFrameIndex = 0;
+
+        foreach (var pic in pictureCache.Values)
+        {
+            DisposePicture(pic);
+        }
+        pictureCache.Clear();
+
+        foreach (var pic in pendingDispose)
+        {
+            DisposePicture(pic);
+        }
+        pendingDispose.Clear();
+
+        // ClearSlots' property updates can re-arm the dispose timer through the slot setters,
+        // so the timers are stopped last: after this nothing the widget owns may tick.
+        slideshowTimer.Stop();
+        transitionTimer.Stop();
+        gifAnimationTimer.Stop();
+        disposeTimer.Stop();
+    }
+
+    /// <summary>Undoes <see cref="Suspend"/>: re-decodes the current picture (with the model
+    /// as of the last <see cref="ApplyModel"/>, if any) and restarts the slideshow and
+    /// animation timers. Idempotent.</summary>
+    public void Resume()
+    {
+        if (!isSuspended || isDisposed) return;
+        isSuspended = false;
+
+        // Same path as a freshly created widget: everything the suspension released is
+        // rebuilt from the stored model here.
+        ConfigureSlideshowTimer();
+        LoadCurrentPicture(immediate: true);
+    }
+
+    // ------------------------------------------------------------------
     //  Teardown
     // ------------------------------------------------------------------
 
@@ -563,13 +645,5 @@ public class PictureViewModel : ReactiveObject, IDisposable
         // Deliberately no GC.Collect here: forcing a collection on every widget unload caused
         // a full blocking GC on the UI thread. Bitmaps release their native memory in Dispose().
         GC.SuppressFinalize(this);
-    }
-
-    /// <summary>Reference-equality comparer for the pin set (Bitmaps are identity objects).</summary>
-    private sealed class ReferenceEqualityComparer : IEqualityComparer<DecodedPicture>
-    {
-        public static readonly ReferenceEqualityComparer Instance = new();
-        public bool Equals(DecodedPicture? x, DecodedPicture? y) => ReferenceEquals(x, y);
-        public int GetHashCode(DecodedPicture obj) => System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(obj);
     }
 }

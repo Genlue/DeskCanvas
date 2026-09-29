@@ -14,7 +14,7 @@ namespace Pomodoro.Views;
 public partial class PomodoroView : UserControl, IWidgetSelfRefreshing
 {
     private readonly IWidgetLayoutProvider? layoutProvider;
-    private readonly PomodoroViewModel viewModel;
+    private PomodoroViewModel? viewModel;
     private WidgetTier currentTier = (WidgetTier)(-1);
 
     public PomodoroView() : this(new PomodoroModel(), null) { }
@@ -32,15 +32,30 @@ public partial class PomodoroView : UserControl, IWidgetSelfRefreshing
         InitializeComponent();
 
         Loaded += OnLoaded;
+        Unloaded += OnUnloaded;
         SizeChanged += OnSizeChanged;
     }
 
     private void OnLoaded(object? sender, RoutedEventArgs e)
     {
+        // OnUnloaded disposes the view model (a running countdown would otherwise tick, beep
+        // and spawn toasts forever from a detached view), so a re-mounted cached page rebuilds
+        // one here — same pattern as Monitor/Progress.
+        if (viewModel is { IsDisposed: true } or null)
+        {
+            viewModel = new PomodoroViewModel(viewModel?.Model ?? new PomodoroModel());
+            DataContext = viewModel;
+        }
+
         if (Bounds.Width > 0 && Bounds.Height > 0)
         {
             ApplySize(Bounds.Size);
         }
+    }
+
+    private void OnUnloaded(object? sender, RoutedEventArgs e)
+    {
+        viewModel?.Dispose();
     }
 
     private void OnSizeChanged(object? sender, SizeChangedEventArgs e)
@@ -89,7 +104,7 @@ public partial class PomodoroView : UserControl, IWidgetSelfRefreshing
             var updated = settings.Deserialize<PomodoroModel>();
             if (updated != null)
             {
-                viewModel.UpdateModel(updated);
+                viewModel?.UpdateModel(updated);
             }
         }
         catch { }
@@ -97,17 +112,17 @@ public partial class PomodoroView : UserControl, IWidgetSelfRefreshing
 
     private void OnPlayPauseClicked(object? sender, RoutedEventArgs e)
     {
-        viewModel.StartOrPause();
+        viewModel?.StartOrPause();
     }
 
     private void OnResetClicked(object? sender, RoutedEventArgs e)
     {
-        viewModel.Reset();
+        viewModel?.Reset();
     }
 
     private void OnSkipClicked(object? sender, RoutedEventArgs e)
     {
-        viewModel.Skip();
+        viewModel?.Skip();
     }
 
     private void OnSelectPhaseClicked(object? sender, RoutedEventArgs e)
@@ -116,7 +131,7 @@ public partial class PomodoroView : UserControl, IWidgetSelfRefreshing
         {
             if (Enum.TryParse<PomodoroPhase>(tag, out var phase))
             {
-                viewModel.SwitchPhase(phase);
+                viewModel?.SwitchPhase(phase);
             }
         }
     }
@@ -127,7 +142,7 @@ public partial class PomodoroView : UserControl, IWidgetSelfRefreshing
         {
             if (Enum.TryParse<PomodoroPhase>(tag, out var phase))
             {
-                viewModel.SwitchPhase(phase);
+                viewModel?.SwitchPhase(phase);
             }
         }
     }

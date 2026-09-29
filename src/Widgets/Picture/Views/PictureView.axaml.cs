@@ -12,7 +12,7 @@ using uWidgets.Core.Models;
 
 namespace Picture.Views;
 
-public partial class PictureView : UserControl, IWidgetSelfRefreshing
+public partial class PictureView : UserControl, IWidgetSelfRefreshing, IWidgetSuspendable
 {
     private readonly PictureViewModel viewModel;
     private readonly IWidgetLayoutProvider? widgetLayoutProvider;
@@ -109,4 +109,15 @@ public partial class PictureView : UserControl, IWidgetSelfRefreshing
             }
         }
     }
+
+    /// <summary>
+    /// Stops playback and releases every decoded picture while the desktop is covered by a
+    /// fullscreen or maximized window (see <c>IWidgetSuspendable</c>). Without this the GIF
+    /// timer keeps driving a render pass per frame and the slideshow keeps decoding pictures
+    /// that nobody can see.
+    /// </summary>
+    public void Suspend() => viewModel.Suspend();
+
+    /// <summary>Re-decodes the current picture and restarts playback after <see cref="Suspend"/>.</summary>
+    public void Resume() => viewModel.Resume();
 }

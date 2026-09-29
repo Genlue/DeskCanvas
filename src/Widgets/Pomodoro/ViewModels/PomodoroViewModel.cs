@@ -17,6 +17,7 @@ public class PomodoroViewModel : INotifyPropertyChanged
     private int totalSeconds;
     private int completedSessions;
     private readonly DispatcherTimer timer;
+    private bool disposed;
 
     public PomodoroViewModel(PomodoroModel? initialModel = null)
     {
@@ -32,6 +33,25 @@ public class PomodoroViewModel : INotifyPropertyChanged
     }
 
     public PomodoroModel Model => model;
+
+    /// <summary>Diagnostics: whether <see cref="Dispose"/> tore this view model down.</summary>
+    public bool IsDisposed => disposed;
+
+    /// <summary>
+    /// Teardown (view Unloaded): stops the countdown and detaches its tick handler. A running
+    /// DispatcherTimer roots this whole view model from the dispatcher — without this, a widget
+    /// deleted mid-session keeps ticking, beeping and spawning toast processes forever.
+    /// Idempotent.
+    /// </summary>
+    public void Dispose()
+    {
+        if (disposed) return;
+        disposed = true;
+
+        timer.Stop();
+        timer.Tick -= OnTimerTick;
+        State = PomodoroState.Idle;
+    }
 
     public PomodoroPhase Phase
     {

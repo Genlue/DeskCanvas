@@ -132,6 +132,15 @@ public class WallpaperWatcherService : IDisposable
         debounceTimer.Stop();
         if (disposed) return;
 
+        // Fullscreen suspension: the desktop capture is released while covered, and Invalidate +
+        // RefreshAll would immediately re-capture it (and re-render every glass card) for pixels
+        // nobody can see. Re-arm instead — the change is picked up as soon as the desktop returns.
+        if (LiquidGlassWallpaper.IsSuspended)
+        {
+            debounceTimer.Start();
+            return;
+        }
+
         // 1. Invalidate desktop capture and file caches
         LiquidGlassWallpaper.Invalidate();
 
@@ -154,6 +163,13 @@ public class WallpaperWatcherService : IDisposable
     {
         followUpTimer.Stop();
         if (disposed) return;
+
+        // Same suspension rule as OnDebounceTick: re-arm, refresh after the desktop returns.
+        if (LiquidGlassWallpaper.IsSuspended)
+        {
+            followUpTimer.Start();
+            return;
+        }
 
         LiquidGlassWallpaper.Invalidate();
         LiquidGlassSurface.RefreshAll();

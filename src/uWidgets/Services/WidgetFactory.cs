@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Threading.Tasks;
 using Avalonia.Controls;
 using uWidgets.Core.Interfaces;
 using uWidgets.Core.Models;
@@ -257,7 +258,15 @@ public class WidgetFactory(IAssemblyProvider assemblyProvider, ILayoutProvider l
         LiquidGlassWallpaper.SuspendLiveSampling();
         LiquidGlassWallpaper.Release();
 
-        InteropService.TrimProcessMemory();
+        // The shared blurred backdrops pin the released captures alive through their reference
+        // count — without this they would survive the whole fullscreen period (up to three
+        // full-desktop bitmaps, tens of MB each on a large desktop).
+        LiquidGlassSourceCache.Clear();
+
+        // Off the UI thread: this is a double compacting GC; synchronously here it stalled the
+        // fullscreen transition for as long as the heap took to compact (MemoryTrimmerService
+        // runs the same trim on a worker for the same reason).
+        Task.Run(InteropService.TrimProcessMemory);
     }
 
     /// <summary>Resume the timers and let the widgets rebuild the released caches.</summary>

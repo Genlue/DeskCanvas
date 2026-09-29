@@ -234,6 +234,11 @@ public class DotMatrixControl : Control
         }
     }
 
+    /// <summary>The dot the tooltip is currently shown for. Pointer moves fire for every pixel of
+    /// travel; re-running SetTip/SetIsOpen for the same dot made Avalonia tear down and rebuild the
+    /// popup each time, so sweeping the 365-dot grid produced hundreds of open/close cycles.</summary>
+    private int? lastHoverIndex;
+
     protected override void OnPointerMoved(PointerEventArgs e)
     {
         base.OnPointerMoved(e);
@@ -259,7 +264,10 @@ public class DotMatrixControl : Control
                 int index = row * cols + col;
                 if (index >= 0 && index < total)
                 {
+                    if (index == lastHoverIndex) return;
+
                     var text = DotTooltipFunc(index);
+                    lastHoverIndex = index;
                     if (!string.IsNullOrEmpty(text))
                     {
                         ToolTip.SetTip(this, text);
@@ -270,12 +278,14 @@ public class DotMatrixControl : Control
             }
         }
 
+        lastHoverIndex = null;
         ToolTip.SetIsOpen(this, false);
     }
 
     protected override void OnPointerExited(PointerEventArgs e)
     {
         base.OnPointerExited(e);
+        lastHoverIndex = null;
         ToolTip.SetIsOpen(this, false);
     }
 }

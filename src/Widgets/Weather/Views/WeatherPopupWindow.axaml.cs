@@ -1,35 +1,29 @@
 using System;
-using System.ComponentModel;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using Avalonia;
-using Avalonia.Animation;
-using Avalonia.Animation.Easings;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Media;
 using Avalonia.Platform;
 using Avalonia.Styling;
-using Avalonia.Threading;
 using uWidgets.Core.Models.Settings;
 using uWidgets.Core.Services;
 using uWidgets.Services;
+using uWidgets.Views;
 using Weather.ViewModels;
 
 namespace Weather.Views;
 
-public partial class WeatherPopupWindow : Window
+public partial class WeatherPopupWindow : SecondaryPanelWindow
 {
-    private static WeatherPopupWindow? activePopup;
-    private static DateTime lastCloseTime = DateTime.MinValue;
-
     private readonly ForecastViewModel viewModel;
     private readonly Point? spawnScreenCenter;
-    private DateTime loadedTime = DateTime.MinValue;
 
-    private ScaleTransform? ZoomTransform => CardBorder.RenderTransform as ScaleTransform;
+    protected override Visual? PanelCard => CardBorder;
+    protected override Point? SpawnScreenCenter => spawnScreenCenter;
 
     public WeatherPopupWindow() : this(new ForecastViewModel(new Models.ForecastModel("北京", 39.9042, 116.4074, "celsius")), null) { }
 
@@ -39,19 +33,7 @@ public partial class WeatherPopupWindow : Window
         spawnScreenCenter = screenCenter;
 
         InitializeComponent();
-
-        CardBorder.Opacity = 0.0;
-        if (ZoomTransform is { } t)
-        {
-            t.ScaleX = 0.90;
-            t.ScaleY = 0.90;
-        }
-
-        Loaded += OnWindowLoaded;
-        Deactivated += OnWindowDeactivated;
-        Closing += OnWindowClosing;
-        Closed += OnWindowClosed;
-        KeyDown += OnWindowKeyDown;
+        InitializePanel();
 
         HourlyScroll.AddHandler(PointerWheelChangedEvent, OnHourlyWheel, RoutingStrategies.Bubble, true);
 
@@ -59,32 +41,19 @@ public partial class WeatherPopupWindow : Window
         ApplyTheme();
 
         PopupLiquidGlassService.PreRenderCompleted += OnPreRenderCompleted;
+        Closed += OnWindowClosed;
     }
 
     public static void ShowPopup(ForecastViewModel viewModel, Point? screenCenter, Window? owner = null)
     {
-        if ((DateTime.UtcNow - lastCloseTime).TotalMilliseconds < 250)
+        if (PanelCoolingDown<WeatherPopupWindow>())
             return;
 
-        if (activePopup != null)
-        {
-            try { activePopup.Close(); } catch { }
-            activePopup = null;
+        if (TryCloseActivePanel<WeatherPopupWindow>())
             return;
-        }
 
         var popup = new WeatherPopupWindow(viewModel, screenCenter);
-        activePopup = popup;
-
-        if (owner != null)
-            popup.Show(owner);
-        else
-            popup.Show();
-
-        // Secondary panel: above the widget band, below ordinary application windows.
-        WidgetZOrder.PinPanelAboveWidgets(popup);
-
-        popup.Activate();
+        popup.ShowAsSecondaryPanel(owner);
     }
 
     private void BindData()
@@ -111,89 +80,12 @@ public partial class WeatherPopupWindow : Window
         SunText.Text = viewModel.SunsetSunrise.Time;
     }
 
-    private void OnWindowLoaded(object? sender, RoutedEventArgs e)
+    protected override void OnPanelLoaded()
     {
-        loadedTime = DateTime.UtcNow;
-        PositionWindow();
         if (LiquidGlassSurfaceControl.IsVisible)
         {
             LiquidGlassSurfaceControl.RequestRender(immediate: true);
         }
-        PlayZoomInAnimation();
-    }
-
-    private void PositionWindow()
-    {
-        Screen? screen = null;
-        if (spawnScreenCenter.HasValue)
-        {
-            screen = Screens.ScreenFromPoint(new PixelPoint(
-                (int)Math.Round(spawnScreenCenter.Value.X),
-                (int)Math.Round(spawnScreenCenter.Value.Y)));
-        }
-        screen ??= Screens.Primary;
-        if (screen == null) return;
-
-        double scale = screen.Scaling > 0 ? screen.Scaling : 1.0;
-        double physWidth = Width * scale;
-        double physHeight = Height * scale;
-
-        double targetX;
-        double targetY;
-
-        if (spawnScreenCenter.HasValue)
-        {
-            targetX = spawnScreenCenter.Value.X - physWidth / 2.0;
-            targetY = spawnScreenCenter.Value.Y - physHeight / 2.0;
-        }
-        else
-        {
-            targetX = screen.WorkingArea.X + (screen.WorkingArea.Width - physWidth) / 2.0;
-            targetY = screen.WorkingArea.Y + (screen.WorkingArea.Height - physHeight) / 2.0;
-        }
-
-        var work = screen.WorkingArea;
-        double margin = 16 * scale;
-        targetX = Math.Clamp(targetX, work.X + margin, work.X + Math.Max(0, work.Width - physWidth - margin));
-        targetY = Math.Clamp(targetY, work.Y + margin, work.Y + Math.Max(0, work.Height - physHeight - margin));
-
-        Position = new PixelPoint((int)Math.Round(targetX), (int)Math.Round(targetY));
-    }
-
-    private void PlayZoomInAnimation()
-    {
-        CardBorder.Transitions = new Transitions
-        {
-            new DoubleTransition
-            {
-                Property = Visual.OpacityProperty,
-                Duration = TimeSpan.FromMilliseconds(200),
-                Easing = new CubicEaseOut()
-            }
-        };
-
-        if (ZoomTransform is { } transform)
-        {
-            transform.Transitions = new Transitions
-            {
-                new DoubleTransition
-                {
-                    Property = ScaleTransform.ScaleXProperty,
-                    Duration = TimeSpan.FromMilliseconds(220),
-                    Easing = new BackEaseOut()
-                },
-                new DoubleTransition
-                {
-                    Property = ScaleTransform.ScaleYProperty,
-                    Duration = TimeSpan.FromMilliseconds(220),
-                    Easing = new BackEaseOut()
-                }
-            };
-            transform.ScaleX = 1.0;
-            transform.ScaleY = 1.0;
-        }
-
-        CardBorder.Opacity = 1.0;
     }
 
     private void ApplyTheme()
@@ -350,33 +242,9 @@ public partial class WeatherPopupWindow : Window
         Close();
     }
 
-    private void OnWindowKeyDown(object? sender, KeyEventArgs e)
-    {
-        if (e.Key == Key.Escape)
-        {
-            Close();
-            e.Handled = true;
-        }
-    }
-
-    private void OnWindowDeactivated(object? sender, EventArgs e)
-    {
-        if ((DateTime.UtcNow - loadedTime).TotalMilliseconds > 300)
-        {
-            Close();
-        }
-    }
-
-    private void OnWindowClosing(object? sender, CancelEventArgs e)
-    {
-        lastCloseTime = DateTime.UtcNow;
-    }
-
     private void OnWindowClosed(object? sender, EventArgs e)
     {
         LiquidGlassSurfaceControl.IsVisible = false;
         PopupLiquidGlassService.PreRenderCompleted -= OnPreRenderCompleted;
-        if (activePopup == this)
-            activePopup = null;
     }
 }

@@ -1,8 +1,6 @@
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using Avalonia;
-using Avalonia.Animation;
-using Avalonia.Animation.Easings;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Input;
@@ -18,11 +16,12 @@ using Folders.Services;
 using uWidgets.Core.Models.Settings;
 using uWidgets.Core.Services;
 using uWidgets.Services;
+using uWidgets.Views;
 using Grid = Avalonia.Controls.Grid;
 
 namespace Folders.Views;
 
-public partial class BigFolderPopupWindow : Window
+public partial class BigFolderPopupWindow : SecondaryPanelWindow
 {
     [DllImport("gdi32.dll")]
     private static extern IntPtr CreateRoundRectRgn(int x1, int y1, int x2, int y2, int cx, int cy);
@@ -95,21 +94,22 @@ public partial class BigFolderPopupWindow : Window
         set => SetValue(PopupGridColumnsProperty, value);
     }
 
-    private static BigFolderPopupWindow? activePopup;
-    private static DateTime lastCloseTime = DateTime.MinValue;
     private readonly Point? spawnScreenCenter;
     private BigFolderModel currentModel;
     private readonly Action<BigFolderModel>? onModelChanged;
-    private bool isActivated = false;
-    private DateTime activationTime;
-    private DateTime loadedTime;
+    // The native-blur theme clips this window with SetWindowRgn; a window region cannot
+    // follow a render transform, so the transition falls back to opacity only.
+    private readonly bool transformAnimationEnabled;
     private bool suppressSettingsEvents = false;
     private bool isClosing = false;
 
     private LowLevelMouseProc? mouseHookProc;
     private IntPtr hookHandle = IntPtr.Zero;
 
-    private ScaleTransform? ZoomTransform => CardBorder?.RenderTransform as ScaleTransform;
+    protected override Visual? PanelCard => CardBorder;
+    protected override Point? SpawnScreenCenter => spawnScreenCenter;
+    protected override bool TransformAnimationEnabled => transformAnimationEnabled;
+    protected override int DeactivateCloseGraceMs => 150;
 
     public BigFolderPopupWindow() : this(new BigFolderModel(), null, null) { }
 
@@ -123,28 +123,24 @@ public partial class BigFolderPopupWindow : Window
         currentModel = model;
         spawnScreenCenter = screenCenter;
         this.onModelChanged = onModelChanged;
+        transformAnimationEnabled = !UsesNativeBlurTheme();
 
         InitializeComponent();
-
-        CardBorder.Opacity = 0.0;
-        if (ZoomTransform is { } t)
-        {
-            t.ScaleX = 0.85;
-            t.ScaleY = 0.85;
-        }
-
-        Loaded += OnWindowLoaded;
-        Activated += OnWindowActivated;
-        Deactivated += OnWindowDeactivated;
-        Closing += OnWindowClosing;
-        Closed += OnWindowClosed;
-        KeyDown += OnWindowKeyDown;
+        InitializePanel();
 
         SyncSettingsControls();
         ApplyTheme();
         PopulateItems();
 
         LiquidGlassPreRenderService.PreRenderCompleted += OnPreRenderCompleted;
+        Closing += OnWindowClosing;
+        Closed += OnWindowClosed;
+    }
+
+    private static bool UsesNativeBlurTheme()
+    {
+        try { return new AppSettingsProvider().Get().Theme.UsesNativeBlur; }
+        catch { return false; }
     }
 
     private void OnPreRenderCompleted()
@@ -412,37 +408,15 @@ public partial class BigFolderPopupWindow : Window
     private void OnWindowClosing(object? sender, WindowClosingEventArgs e)
     {
         isClosing = true;
-        lastCloseTime = DateTime.UtcNow;
         UninstallMouseHook();
-    }
-
-    private void OnWindowActivated(object? sender, EventArgs e)
-    {
-        if (!isActivated)
-        {
-            isActivated = true;
-            activationTime = DateTime.UtcNow;
-        }
-    }
-
-    private void OnWindowDeactivated(object? sender, EventArgs e)
-    {
-        if (!isClosing && isActivated && (DateTime.UtcNow - activationTime).TotalMilliseconds > 150)
-        {
-            isClosing = true;
-            Close();
-        }
     }
 
     private void OnWindowClosed(object? sender, EventArgs e)
     {
         isClosing = true;
         LiquidGlassSurfaceControl.IsVisible = false;
-        lastCloseTime = DateTime.UtcNow;
         UninstallMouseHook();
         LiquidGlassPreRenderService.PreRenderCompleted -= OnPreRenderCompleted;
-        if (activePopup == this)
-            activePopup = null;
     }
 
     private void InstallMouseHook()
@@ -478,7 +452,7 @@ public partial class BigFolderPopupWindow : Window
 
     private IntPtr HookCallback(int nCode, IntPtr wParam, IntPtr lParam)
     {
-        if (nCode >= 0 && !isClosing && (DateTime.UtcNow - loadedTime).TotalMilliseconds > 150)
+        if (nCode >= 0 && !isClosing && (DateTime.UtcNow - LoadedAtUtc).TotalMilliseconds > 150)
         {
             int msg = wParam.ToInt32();
             if (msg is WM_LBUTTONDOWN or WM_RBUTTONDOWN or WM_MBUTTONDOWN
@@ -515,33 +489,14 @@ public partial class BigFolderPopupWindow : Window
         Window? owner = null,
         Action<BigFolderModel>? onModelChanged = null)
     {
-        if ((DateTime.UtcNow - lastCloseTime).TotalMilliseconds < 250)
-        {
+        if (PanelCoolingDown<BigFolderPopupWindow>())
             return;
-        }
 
-        if (activePopup != null)
-        {
-            try { activePopup.Close(); } catch { }
-            activePopup = null;
+        if (TryCloseActivePanel<BigFolderPopupWindow>())
             return;
-        }
 
         var popup = new BigFolderPopupWindow(model, screenCenter, onModelChanged);
-        activePopup = popup;
-        if (owner != null)
-        {
-            popup.Show(owner);
-        }
-        else
-        {
-            popup.Show();
-        }
-
-        // Secondary panel: above the widget band, below ordinary application windows.
-        WidgetZOrder.PinPanelAboveWidgets(popup);
-
-        popup.Activate();
+        popup.ShowAsSecondaryPanel(owner);
     }
 
     private void ApplyWindowRegion()
@@ -584,105 +539,14 @@ public partial class BigFolderPopupWindow : Window
         }
     }
 
-    private void OnWindowLoaded(object? sender, RoutedEventArgs e)
+    protected override void OnPanelLoaded()
     {
-        loadedTime = DateTime.UtcNow;
-        PositionWindow();
         ApplyWindowRegion();
         if (LiquidGlassSurfaceControl.IsVisible)
         {
             LiquidGlassSurfaceControl.RequestRender(immediate: true);
         }
-        PlayZoomInAnimation();
         InstallMouseHook();
-    }
-
-    private void PositionWindow()
-    {
-        Screen? screen = null;
-        if (spawnScreenCenter.HasValue)
-        {
-            screen = Screens.ScreenFromPoint(new PixelPoint(
-                (int)Math.Round(spawnScreenCenter.Value.X),
-                (int)Math.Round(spawnScreenCenter.Value.Y)));
-        }
-        screen ??= Screens.Primary;
-        if (screen == null) return;
-
-        double scale = screen.Scaling > 0 ? screen.Scaling : 1.0;
-        double physWidth = Width * scale;
-        double physHeight = Height * scale;
-
-        double targetX;
-        double targetY;
-
-        if (spawnScreenCenter.HasValue)
-        {
-            targetX = spawnScreenCenter.Value.X - physWidth / 2.0;
-            targetY = spawnScreenCenter.Value.Y - physHeight / 2.0;
-        }
-        else
-        {
-            targetX = screen.WorkingArea.X + (screen.WorkingArea.Width - physWidth) / 2.0;
-            targetY = screen.WorkingArea.Y + (screen.WorkingArea.Height - physHeight) / 2.0;
-        }
-
-        var work = screen.WorkingArea;
-        double margin = 16 * scale;
-        targetX = Math.Clamp(targetX, work.X + margin, work.X + Math.Max(0, work.Width - physWidth - margin));
-        targetY = Math.Clamp(targetY, work.Y + margin, work.Y + Math.Max(0, work.Height - physHeight - margin));
-
-        Position = new PixelPoint((int)Math.Round(targetX), (int)Math.Round(targetY));
-    }
-
-    private void PlayZoomInAnimation()
-    {
-        Theme theme;
-        try { theme = new AppSettingsProvider().Get().Theme; }
-        catch { theme = new Theme(DarkMode: true, AccentColor: null, OpacityLevel: 0.8, Monochrome: false, UseNativeFrame: false, FontFamily: "Inter"); }
-
-        CardBorder.Transitions = new Transitions
-        {
-            new DoubleTransition
-            {
-                Property = Visual.OpacityProperty,
-                Duration = TimeSpan.FromMilliseconds(200),
-                Easing = new CubicEaseOut()
-            }
-        };
-
-        if (ZoomTransform is { } transform)
-        {
-            if (theme.UsesNativeBlur)
-            {
-                transform.Transitions = null;
-                transform.ScaleX = 1.0;
-                transform.ScaleY = 1.0;
-            }
-            else
-            {
-                transform.Transitions = new Transitions
-                {
-                    new DoubleTransition
-                    {
-                        Property = ScaleTransform.ScaleXProperty,
-                        Duration = TimeSpan.FromMilliseconds(220),
-                        Easing = new BackEaseOut()
-                    },
-                    new DoubleTransition
-                    {
-                        Property = ScaleTransform.ScaleYProperty,
-                        Duration = TimeSpan.FromMilliseconds(220),
-                        Easing = new BackEaseOut()
-                    }
-                };
-
-                transform.ScaleX = 1.0;
-                transform.ScaleY = 1.0;
-            }
-        }
-
-        CardBorder.Opacity = 1.0;
     }
 
     private void OnCloseClicked(object? sender, RoutedEventArgs e)
@@ -698,18 +562,14 @@ public partial class BigFolderPopupWindow : Window
         }
     }
 
-    private void OnWindowKeyDown(object? sender, KeyEventArgs e)
+    protected override bool OnPanelEscape()
     {
-        if (e.Key == Key.Escape)
+        if (SettingsDrawer.IsVisible)
         {
-            if (SettingsDrawer.IsVisible)
-            {
-                SettingsDrawer.IsVisible = false;
-                e.Handled = true;
-                return;
-            }
-            Close();
+            SettingsDrawer.IsVisible = false;
+            return true;
         }
+        return false;
     }
 
     private void OnItemClicked(object? sender, PointerPressedEventArgs e)

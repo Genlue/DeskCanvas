@@ -21,7 +21,7 @@ public enum MusicTier
     Large4x4
 }
 
-public partial class Music : UserControl, IWidgetSelfRefreshing
+public partial class Music : UserControl, IWidgetSelfRefreshing, IWidgetSuspendable
 {
     /// <summary>The layout model is kept outside the view model so a fresh view model can be built
     /// with the same settings when the view is re-added to the visual tree after an unload.</summary>
@@ -67,12 +67,11 @@ public partial class Music : UserControl, IWidgetSelfRefreshing
 
     private void OnUnloaded(object? sender, RoutedEventArgs e)
     {
-        SizeChanged -= OnSizeChanged;
-        Loaded -= OnLoaded;
-        Unloaded -= OnUnloaded;
-
         // Disposing here (not in the finalizer) is what stops the 250 ms DispatcherTimer, the 1.5 s
         // SMTC poll timer and the media-service event subscriptions from outliving the widget.
+        // The Loaded/Unloaded subscriptions themselves stay attached: they are instance handlers
+        // on the control (they root nothing), and dropping them would strand a re-added view —
+        // the rebuild in OnLoaded would never run again.
         viewModel.Dispose();
     }
 
@@ -80,6 +79,16 @@ public partial class Music : UserControl, IWidgetSelfRefreshing
     {
         UpdateLayoutTier(e.NewSize);
     }
+
+    /// <summary>
+    /// Stops the progress timer and the SMTC poll while the desktop is covered by a fullscreen or
+    /// maximized window (see <c>IWidgetSuspendable</c>) — playback keeps running in the player,
+    /// only the widget's own polling/render churn is paused.
+    /// </summary>
+    public void Suspend() => viewModel.Suspend();
+
+    /// <summary>Restarts the progress timer and the SMTC poll after <see cref="Suspend"/>.</summary>
+    public void Resume() => viewModel.Resume();
 
     public void UpdateLayoutTier(Size size)
     {

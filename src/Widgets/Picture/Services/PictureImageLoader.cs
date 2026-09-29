@@ -32,6 +32,13 @@ public sealed class DecodedPicture : IDisposable
     public IReadOnlyList<PictureFrame> Frames { get; }
     public Bitmap PrimaryBitmap => Frames.Count > 0 ? Frames[0].Bitmap : null!;
 
+    /// <summary>
+    /// Disposal flag. Disposing twice must be a no-op (frame bitmaps cannot be disposed
+    /// twice), and the flag is also what lets the view model know a picture is dead without
+    /// keeping every disposed picture alive in a set.
+    /// </summary>
+    public bool IsDisposed { get; private set; }
+
     public DecodedPicture(IReadOnlyList<PictureFrame> frames)
     {
         Frames = frames ?? [];
@@ -39,6 +46,9 @@ public sealed class DecodedPicture : IDisposable
 
     public void Dispose()
     {
+        if (IsDisposed) return;
+        IsDisposed = true;
+
         foreach (var frame in Frames)
         {
             frame.Dispose();

@@ -22,13 +22,24 @@ public partial class ClipboardView : UserControl, IWidgetSelfRefreshing
     private readonly DispatcherTimer toastTimer;
     private WidgetTier currentTier = (WidgetTier)(-1);
 
-    public ClipboardView() : this(new ClipboardModel()) { }
+    /// <summary>
+    /// Preview/designer path. Must NOT push the default model into the monitor singleton:
+    /// the Gallery instantiates one real control per widget type, and an UpdateSettings from
+    /// that preview used to reset the user's capture settings and permanently trim history
+    /// entries (and their PNG files) down to the default limit.
+    /// </summary>
+    public ClipboardView() : this(new ClipboardModel(), applySettingsToMonitor: false) { }
 
-    public ClipboardView(ClipboardModel model)
+    public ClipboardView(ClipboardModel model) : this(model, applySettingsToMonitor: true) { }
+
+    private ClipboardView(ClipboardModel model, bool applySettingsToMonitor)
     {
         this.model = model;
         monitor = ClipboardMonitorService.Instance;
-        monitor.UpdateSettings(model);
+        if (applySettingsToMonitor)
+        {
+            monitor.UpdateSettings(model);
+        }
 
         InitializeComponent();
         ApplyTier(WidgetTier.Small);
@@ -80,6 +91,10 @@ public partial class ClipboardView : UserControl, IWidgetSelfRefreshing
         monitor.HistoryChanged -= OnHistoryChanged;
         SizeChanged -= OnSizeChanged;
         PointerEntered -= OnPointerEntered;
+
+        // Same teardown as TranslatorView: a toast caught mid-display would otherwise keep
+        // this detached view alive (and hold its bindings) for up to the toast interval.
+        toastTimer.Stop();
     }
 
     private void OnSizeChanged(object? sender, SizeChangedEventArgs e)
