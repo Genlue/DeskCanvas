@@ -41,9 +41,9 @@
                                   Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}"
                                   Opacity="0.9"
                                   IsVisible="{Binding HasDevice}" />
-                        <!-- Charging Badge -->
+                        <!-- Charging Badge: macOS style, centered on the ring's top -->
                         <Border IsVisible="{Binding IsCharging}"
-                                Canvas.Left="78" Canvas.Top="8"
+                                Canvas.Left="43" Canvas.Top="-7"
                                 Width="24" Height="24" CornerRadius="12"
                                 Background="{Binding StatusBrush}">
                             <Path Width="12" Height="14" Stretch="Fill"
@@ -96,11 +96,11 @@
                                   Opacity="0.9"
                                   IsVisible="{Binding HasDevice}" />
                         <Border IsVisible="{Binding IsCharging}"
-                                Canvas.Left="78" Canvas.Top="8"
+                                Canvas.Left="43" Canvas.Top="-7"
                                 Width="24" Height="24" CornerRadius="12"
-                                Background="#34C759">
+                                Background="{Binding StatusBrush}">
                             <Path Width="12" Height="14" Stretch="Fill"
-                                  Fill="White"
+                                  Fill="{Binding ChargingBadgeForeground}"
                                   HorizontalAlignment="Center" VerticalAlignment="Center"
                                   Data="M 12,2 L 4,13 L 10,13 L 8,22 L 18,10 L 12,10 Z" />
                         </Border>
@@ -149,11 +149,11 @@
                                   Opacity="0.9"
                                   IsVisible="{Binding HasDevice}" />
                         <Border IsVisible="{Binding IsCharging}"
-                                Canvas.Left="78" Canvas.Top="8"
+                                Canvas.Left="43" Canvas.Top="-7"
                                 Width="24" Height="24" CornerRadius="12"
-                                Background="#34C759">
+                                Background="{Binding StatusBrush}">
                             <Path Width="12" Height="14" Stretch="Fill"
-                                  Fill="White"
+                                  Fill="{Binding ChargingBadgeForeground}"
                                   HorizontalAlignment="Center" VerticalAlignment="Center"
                                   Data="M 12,2 L 4,13 L 10,13 L 8,22 L 18,10 L 12,10 Z" />
                         </Border>
@@ -202,11 +202,11 @@
                                   Opacity="0.9"
                                   IsVisible="{Binding HasDevice}" />
                         <Border IsVisible="{Binding IsCharging}"
-                                Canvas.Left="78" Canvas.Top="8"
+                                Canvas.Left="43" Canvas.Top="-7"
                                 Width="24" Height="24" CornerRadius="12"
-                                Background="#34C759">
+                                Background="{Binding StatusBrush}">
                             <Path Width="12" Height="14" Stretch="Fill"
-                                  Fill="White"
+                                  Fill="{Binding ChargingBadgeForeground}"
                                   HorizontalAlignment="Center" VerticalAlignment="Center"
                                   Data="M 12,2 L 4,13 L 10,13 L 8,22 L 18,10 L 12,10 Z" />
                         </Border>

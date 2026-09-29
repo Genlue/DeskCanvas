@@ -111,6 +111,24 @@ public partial class BigFolderPopupWindow : SecondaryPanelWindow
     protected override bool TransformAnimationEnabled => transformAnimationEnabled;
     protected override int DeactivateCloseGraceMs => 150;
 
+    // The panel base plays the zoom's glass frames from the host's popup glass service; this
+    // popup's non-live glass comes from Folders' own pre-render service, so both overrides
+    // point there.
+    protected override IReadOnlyList<PanelAnimationFrame>? QueryGlassFrames()
+    {
+        return LiquidGlassPreRenderService.TryGetGlassFrames(
+            spawnScreenCenter, Width, Height, CardBorder.CornerRadius.TopLeft, ResolveSpawnScreen(), Screens.All,
+            out var frames)
+            ? frames
+            : null;
+    }
+
+    protected override void SetGlassFramesNotification(bool enabled)
+    {
+        if (enabled) LiquidGlassPreRenderService.FrameStripCompleted += OnGlassFramesReady;
+        else LiquidGlassPreRenderService.FrameStripCompleted -= OnGlassFramesReady;
+    }
+
     public BigFolderPopupWindow() : this(new BigFolderModel(), null, null) { }
 
     public BigFolderPopupWindow(List<string> items) : this(new BigFolderModel(items), null, null) { }

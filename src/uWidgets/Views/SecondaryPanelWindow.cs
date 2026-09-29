@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Avalonia;
 using Avalonia.Animation;
 using Avalonia.Animation.Easings;
@@ -9,9 +10,14 @@ using Avalonia.Interactivity;
 using Avalonia.Media;
 using Avalonia.Platform;
 using Avalonia.Threading;
+using Avalonia.VisualTree;
 using uWidgets.Services;
+using uWidgets.Views.Controls;
 
 namespace uWidgets.Views;
+
+/// <summary>One pre-rendered glass frame of a panel's open/close animation, drawn for the card rect covered at <see cref="Scale"/>.</summary>
+public readonly record struct PanelAnimationFrame(double Scale, Avalonia.Media.Imaging.Bitmap Bitmap);
 
 /// <summary>
 /// Shared template for the widgets' secondary panel windows (weather forecast, reminders,
@@ -54,6 +60,20 @@ public abstract class SecondaryPanelWindow : Window
     private bool closeAnimationRunning;
     private bool wasActivated;
     private DateTime activatedAtUtc;
+
+    // ---- Glass transition during the open/close zoom ----
+    // The card's glass must follow the zoom: with live wallpaper sampling the GPU surface
+    // re-parameterises its shader for every interpolated scale, and without it a strip of
+    // pre-rendered frames (one per covered scale, cached by PopupLiquidGlassService) is played
+    // back through the card's backdrop image. Both paths are driven by the scale transform's
+    // per-tick property changes, so they stay exactly in phase with the visible zoom.
+    private RelativePoint? spawnAnchor;
+    private LiquidGlassSurface? glassSurface;
+    private Image? glassBackdropImage;
+    private IImage? glassRestSource;
+    private bool usingGlassFrames;
+    private bool glassFramesPending;
+    private IReadOnlyList<PanelAnimationFrame>? glassFrames;
 
     /// <summary>The card visual that carries the open/close transition (the panel's root border).</summary>
     protected abstract Visual? PanelCard { get; }
@@ -113,6 +133,8 @@ public abstract class SecondaryPanelWindow : Window
                 card.RenderTransform = cardScale;
                 cardScale.ScaleX = OpenScaleFrom;
                 cardScale.ScaleY = OpenScaleFrom;
+                // Every interpolated tick drives the glass with the scale it covers.
+                cardScale.PropertyChanged += OnCardScalePropertyChanged;
             }
             else if (card.RenderTransform is ScaleTransform staleScale)
             {
@@ -193,6 +215,7 @@ public abstract class SecondaryPanelWindow : Window
         if (ActivePanels.TryGetValue(type, out var current) && ReferenceEquals(current, this))
             ActivePanels.Remove(type);
         LastCloseTimes[type] = DateTime.UtcNow;
+        SetGlassFramesNotification(false);
     }
 
     private void OnPanelKeyDown(object? sender, KeyEventArgs e)
@@ -216,6 +239,8 @@ public abstract class SecondaryPanelWindow : Window
         // final at this point), so the card visibly grows out of the widget. The origin is
         // set while the card is still invisible — a late layout can't cause a visible jump.
         var anchor = ComputeSpawnAnchorOrigin();
+        spawnAnchor = anchor;
+        ResolveGlassAnimationTargets();
         if (TransformAnimationEnabled && cardScale != null && anchor.HasValue)
             card.RenderTransformOrigin = anchor.Value;
 
@@ -237,6 +262,148 @@ public abstract class SecondaryPanelWindow : Window
         }
 
         card.Opacity = 1.0;
+    }
+
+    // ---- Glass transition playback ----
+
+    /// <summary>
+    /// Resolve the glass visuals once, at Loaded: the live surface (any panel has exactly one)
+    /// and the pre-rendered backdrop image, keeping the image's at-rest source so frame
+    /// playback can put it back when the zoom settles.
+    /// </summary>
+    private void ResolveGlassAnimationTargets()
+    {
+        glassSurface = this.GetVisualDescendants().OfType<LiquidGlassSurface>().FirstOrDefault();
+        glassBackdropImage = this.GetVisualDescendants()
+            .OfType<Image>()
+            .FirstOrDefault(v => v.Name == "LiquidGlassBgImage");
+        glassRestSource = glassBackdropImage?.Source;
+        if (glassBackdropImage != null)
+            SetGlassFramesNotification(true);
+    }
+
+    private void OnCardScalePropertyChanged(object? sender, AvaloniaPropertyChangedEventArgs e)
+    {
+        if (!panelLoaded) return;
+        if (e.Property != ScaleTransform.ScaleXProperty && e.Property != ScaleTransform.ScaleYProperty) return;
+        UpdateGlassForScale(cardScale?.ScaleX ?? 1.0);
+    }
+
+    protected void OnGlassFramesReady()
+    {
+        // A strip finished rendering (hover prewarm) or loading from disk mid-zoom: catch up.
+        if (!panelLoaded || glassFrames != null) return;
+        glassFramesPending = false;
+        UpdateGlassForScale(cardScale?.ScaleX ?? 1.0);
+    }
+
+    /// <summary>Feed the interpolated card scale to whichever glass path is active.</summary>
+    private void UpdateGlassForScale(double t)
+    {
+        var card = PanelCard;
+        if (card == null) return;
+
+        if (t >= 0.999)
+        {
+            RestoreGlassAtRest();
+            return;
+        }
+
+        // Live wallpaper sampling: the surface recomputes its optics for the rect the card
+        // currently covers — real glass at animation rate.
+        if (glassSurface is { IsVisible: true })
+        {
+            glassSurface.SetAnimationFrameScale(t, AnchorRelativeToSurface(glassSurface, card));
+            return;
+        }
+
+        // Pre-rendered strip: swap in the frame drawn for the closest covered scale. The
+        // frames fill the card, so the card's own zoom maps each one 1:1 onto its rect.
+        var image = glassBackdropImage;
+        if (image == null || !image.IsVisible) return;
+
+        if (glassFrames == null)
+        {
+            if (glassFramesPending) return;
+            glassFramesPending = true;
+            glassFrames = QueryGlassFrames();
+            if (glassFrames == null) return;
+        }
+
+        PanelAnimationFrame? match = null;
+        foreach (var frame in glassFrames)
+        {
+            if (frame.Scale >= t - 0.002)
+            {
+                match = frame;
+                break;
+            }
+        }
+        match ??= glassFrames[glassFrames.Count - 1];
+
+        usingGlassFrames = true;
+        image.Source = match.Value.Bitmap;
+    }
+
+    private void RestoreGlassAtRest()
+    {
+        glassSurface?.SetAnimationFrameScale(1.0, default);
+        if (!usingGlassFrames) return;
+        usingGlassFrames = false;
+        if (glassBackdropImage != null && glassRestSource != null)
+            glassBackdropImage.Source = glassRestSource;
+    }
+
+    /// <summary>The card-space anchor re-expressed inside the glass surface's bounds.</summary>
+    private Point AnchorRelativeToSurface(LiquidGlassSurface surface, Visual card)
+    {
+        var anchor = spawnAnchor ?? new RelativePoint(0.5, 0.5, RelativeUnit.Relative);
+        var point = anchor.ToPixels(card.Bounds.Size);
+        var topLeft = surface.TranslatePoint(new Point(0, 0), card);
+        var size = surface.Bounds.Size;
+        if (topLeft == null || size.Width <= 0 || size.Height <= 0) return point;
+        return new Point(
+            (point.X - topLeft.Value.X) / size.Width,
+            (point.Y - topLeft.Value.Y) / size.Height);
+    }
+
+    /// <summary>The screen the panel spawns on (primary when the spawn point is unknown).</summary>
+    protected Screen? ResolveSpawnScreen()
+    {
+        if (SpawnScreenCenter.HasValue)
+        {
+            var spawn = new PixelPoint(
+                (int)Math.Round(SpawnScreenCenter.Value.X),
+                (int)Math.Round(SpawnScreenCenter.Value.Y));
+            return Screens.ScreenFromPoint(spawn) ?? Screens.Primary;
+        }
+        return Screens.Primary;
+    }
+
+    /// <summary>The corner radius the panel's glass is drawn with (the spawn radius, or the panel's own).</summary>
+    protected double GlassCardCornerRadius =>
+        PanelCard is Border border ? border.CornerRadius.TopLeft : SpawnCornerRadius;
+
+    /// <summary>
+    /// This panel's cached glass animation frames (ascending scale), or null when none is
+    /// available yet. The default asks the host's popup glass service; a panel fed by another
+    /// service overrides this and <see cref="SetGlassFramesNotification"/>.
+    /// </summary>
+    protected virtual IReadOnlyList<PanelAnimationFrame>? QueryGlassFrames()
+    {
+        if (glassBackdropImage == null) return null;
+        return PopupLiquidGlassService.TryGetGlassFrames(
+            SpawnScreenCenter, Width, Height, GlassCardCornerRadius, ResolveSpawnScreen(), Screens.All,
+            out var frames)
+            ? frames
+            : null;
+    }
+
+    /// <summary>(Un)subscribe the "glass frames became ready" notification.</summary>
+    protected virtual void SetGlassFramesNotification(bool enabled)
+    {
+        if (enabled) PopupLiquidGlassService.FrameStripCompleted += OnGlassFramesReady;
+        else PopupLiquidGlassService.FrameStripCompleted -= OnGlassFramesReady;
     }
 
     /// <summary>

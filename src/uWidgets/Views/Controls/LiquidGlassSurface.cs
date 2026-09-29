@@ -212,12 +212,99 @@ public sealed class LiquidGlassSurface : Control
         debounce.Stop();
         if (window != null) window.PositionChanged -= OnPositionChanged;
         window = null;
+        ClearAnimationAuras();
+        animationScale = 1.0;
         ReleasePrepared();
         LiquidGlassWallpaper.RefreshSamplerState();
         base.OnDetachedFromVisualTree(e);
     }
 
     private void OnPositionChanged(object? sender, PixelPointEventArgs e) => RequestRender();
+
+    // ---- Panel open/close animation ----
+    // While a SecondaryPanelWindow's card transition animates its scale, the window reports the
+    // interpolated factor here. The glass is then drawn for the rect the card actually covers at
+    // that moment — refraction width, lens and dye field sized to the scaled frame, sampling the
+    // wallpaper where the scaled rect really sits — instead of being a stretched picture of the
+    // final frame. The shared backdrop covers the whole desktop, so re-parameterising costs one
+    // shader build; only the soft recipe's dye field has to be rebuilt per scale.
+    private double animationScale = 1.0;
+    private Point animationAnchor;
+    private readonly Dictionary<int, AnimationAura> animationAuras = new();
+
+    /// <summary>Ref-counted scaled-frame dye field, so a queued draw op keeps its bitmap alive after the animation moved on and the per-scale cache dropped it (same contract as <see cref="Prepared"/>).</summary>
+    private sealed class AnimationAura : IDisposable
+    {
+        private int references = 1;
+
+        public AnimationAura(AuraTexture texture) { Texture = texture; }
+
+        public AuraTexture Texture { get; }
+
+        public void AddRef() => Interlocked.Increment(ref references);
+
+        public void Dispose()
+        {
+            if (Interlocked.Decrement(ref references) > 0) return;
+            try { Texture.Bitmap?.Dispose(); } catch { }
+        }
+    }
+
+    /// <summary>
+    /// Report the panel card's current animated scale (1.0 = at rest) and the scale anchor as a
+    /// relative point inside this surface's bounds. Every value change repaints the surface with
+    /// optics recomputed for the covered rect; the render pipeline itself (backdrop, debounce,
+    /// prepare) is untouched.
+    /// </summary>
+    public void SetAnimationFrameScale(double scale, Point anchorRelativeToSurface)
+    {
+        if (!attached || Material?.UsesRenderedGlass != true) return;
+        var clamped = Math.Clamp(scale, 0.05, 1.0);
+        if (clamped >= 0.999)
+        {
+            if (animationScale >= 0.999) return;
+            animationScale = 1.0;
+            ClearAnimationAuras();
+            InvalidateVisual();
+            return;
+        }
+        animationScale = clamped;
+        animationAnchor = anchorRelativeToSurface;
+        InvalidateVisual();
+    }
+
+    private void ClearAnimationAuras()
+    {
+        if (animationAuras.Count == 0) return;
+        foreach (var aura in animationAuras.Values) aura.Dispose();
+        animationAuras.Clear();
+    }
+
+    /// <summary>The frame geometry for the card rect the transition currently covers. The returned aura (soft recipe only) is handed to the draw operation, which takes its own reference.</summary>
+    private LiquidGlassRenderer.Frame BuildAnimationFrame(Prepared snapshot, out AnimationAura? aura)
+    {
+        var t = animationScale;
+        var frame = snapshot.Frame;
+        var scaled = frame with
+        {
+            Width = Math.Max(1, (int)MathF.Round(frame.Width * (float)t)),
+            Height = Math.Max(1, (int)MathF.Round(frame.Height * (float)t)),
+            Radius = (float)(frame.Radius * t),
+            DesktopX = frame.DesktopX + (float)(animationAnchor.X * (1 - t) * frame.Width),
+            DesktopY = frame.DesktopY + (float)(animationAnchor.Y * (1 - t) * frame.Height),
+        };
+
+        aura = null;
+        if (!frame.Theme.IsSoftGlow || snapshot.Source == null) return scaled;
+
+        var key = (int)MathF.Round((float)t * 100);
+        if (!animationAuras.TryGetValue(key, out aura))
+        {
+            aura = new AnimationAura(BuildAura(scaled, snapshot.Source));
+            animationAuras[key] = aura;
+        }
+        return scaled;
+    }
 
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
     {
@@ -529,6 +616,23 @@ public sealed class LiquidGlassSurface : Control
         var current = prepared;
         if (current is { Source: not null })
         {
+            if (animationScale < 0.999)
+            {
+                // The per-scale re-parameterisation is polish, never worth a render-thread
+                // exception over: on any surprise, draw the at-rest material.
+                try
+                {
+                    var animatedFrame = BuildAnimationFrame(current, out var aura);
+                    context.Custom(new GlassDrawOperation(current, Material, rect, animatedFrame, aura));
+                    return;
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"Animated glass frame failed: {ex}");
+                    ClearAnimationAuras();
+                    animationScale = 1.0;
+                }
+            }
             context.Custom(new GlassDrawOperation(current, Material, rect));
             return;
         }
@@ -568,18 +672,29 @@ public sealed class LiquidGlassSurface : Control
         private readonly Prepared prepared;
         private readonly GlassSource source;
         private readonly AuraTexture aura;
+        private readonly AnimationAura? animationAura;
         private readonly LiquidGlassRenderer.Frame frame;
         private readonly Theme material;
         private int disposed;
 
         public Rect Bounds { get; }
 
-        public GlassDrawOperation(Prepared prepared, Theme material, Rect bounds)
+        public GlassDrawOperation(Prepared prepared, Theme material, Rect bounds,
+            LiquidGlassRenderer.Frame? frameOverride = null, AnimationAura? auraOverride = null)
         {
             this.prepared = prepared;
             source = prepared.Source!;
-            aura = prepared.Aura;
-            frame = prepared.Frame;
+            frame = frameOverride ?? prepared.Frame;
+            if (auraOverride != null)
+            {
+                animationAura = auraOverride;
+                auraOverride.AddRef();
+                aura = auraOverride.Texture;
+            }
+            else
+            {
+                aura = prepared.Aura;
+            }
             this.material = material;
             Bounds = bounds;
             prepared.AddRef();
@@ -595,7 +710,11 @@ public sealed class LiquidGlassSurface : Control
 
         public void Dispose()
         {
-            if (Interlocked.Exchange(ref disposed, 1) == 0) prepared.Dispose();
+            if (Interlocked.Exchange(ref disposed, 1) == 0)
+            {
+                animationAura?.Dispose();
+                prepared.Dispose();
+            }
         }
 
         public void Render(ImmediateDrawingContext context)
