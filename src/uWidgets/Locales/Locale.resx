@@ -372,6 +372,15 @@
     <data name="Settings_Appearance_OutlineWidth_Subtitle" xml:space="preserve">
         <value>Highlight ring thickness in DIPs; 0 hides the outline (default)</value>
     </data>
+    <data name="Settings_Appearance_TextShadow_Title" xml:space="preserve">
+        <value>Global text shadow</value>
+    </data>
+    <data name="Settings_Appearance_TextShadow_Subtitle" xml:space="preserve">
+        <value>Add a soft drop shadow to all widget text for readability over busy wallpapers (off by default)</value>
+    </data>
+    <data name="Settings_Appearance_TextShadow_Strength" xml:space="preserve">
+        <value>Shadow strength</value>
+    </data>
     <data name="Settings_Advanced_GridMode" xml:space="preserve">
         <value>Grid</value>
     </data>

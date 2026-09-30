@@ -57,6 +57,14 @@ namespace uWidgets.Core.Models.Settings;
 /// </param>
     /// <param name="LiquidGlass">Static glass optics of 液态玻璃; null uses the default parameters.</param>
     /// <param name="LiquidGlassV2">Static optics of 新液态玻璃 (<see cref="SurfaceStyle.LiquidGlassV2"/>); null uses the default parameters.</param>
+    /// <param name="TextShadowEnabled">
+    /// 全局文字阴影: when on, every <c>TextBlock</c> inside a desktop widget window gets a soft
+    /// drop shadow so text stays readable over busy wallpapers. Default off.
+    /// </param>
+    /// <param name="TextShadowStrength">
+    /// 全局文字阴影 strength, 0-100. Scales the shadow's blur radius, depth and opacity; the
+    /// whole effect is off while <see cref="TextShadowEnabled"/> is false.
+    /// </param>
     public record Theme(
         bool? DarkMode, 
         string? AccentColor, 
@@ -72,7 +80,9 @@ namespace uWidgets.Core.Models.Settings;
         MonochromeStyle? MonochromeVariant = null,
         bool AutoTheme = false,
         LiquidGlassSettings? LiquidGlass = null,
-        LiquidGlassV2Settings? LiquidGlassV2 = null)
+        LiquidGlassV2Settings? LiquidGlassV2 = null,
+        bool TextShadowEnabled = false,
+        double TextShadowStrength = 50)
 {
     /// <summary>Default highlight-ring color when <see cref="OutlineColor"/> is not set
     /// (soft gray-white, less stark than pure white).</summary>
@@ -192,4 +202,7 @@ namespace uWidgets.Core.Models.Settings;
     /// when <see cref="MonochromeVariant"/> is not set.
     /// </summary>
     public MonochromeStyle EffectiveMonochromeVariant => MonochromeVariant ?? DefaultMonochromeVariant;
+
+    /// <summary>Clamped 0-1 strength of the global widget text shadow (0 = faintest, 1 = strongest).</summary>
+    public double EffectiveTextShadowStrength => Math.Clamp(TextShadowStrength, 0, 100) / 100.0;
 }

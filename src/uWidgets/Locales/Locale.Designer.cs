@@ -725,6 +725,33 @@ namespace uWidgets.Locales {
                 return ResourceManager.GetString("Settings_Appearance_OutlineWidth_Subtitle", resourceCulture);
             }
         }
+
+        /// <summary>
+        ///   Looks up a localized string similar to 全局文字阴影.
+        /// </summary>
+        public static string Settings_Appearance_TextShadow_Title {
+            get {
+                return ResourceManager.GetString("Settings_Appearance_TextShadow_Title", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to 为组件上的所有文字添加柔和投影（默认关闭）.
+        /// </summary>
+        public static string Settings_Appearance_TextShadow_Subtitle {
+            get {
+                return ResourceManager.GetString("Settings_Appearance_TextShadow_Subtitle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to 阴影强度.
+        /// </summary>
+        public static string Settings_Appearance_TextShadow_Strength {
+            get {
+                return ResourceManager.GetString("Settings_Appearance_TextShadow_Strength", resourceCulture);
+            }
+        }
         
         /// <summary>
         ///   Looks up a localized string similar to Outline width.

@@ -471,6 +471,15 @@
   <data name="Settings_Appearance_OutlineWidth_Subtitle" xml:space="preserve">
     <value>高光描边的粗细（DIP），0 = 关闭描边（默认）</value>
   </data>
+  <data name="Settings_Appearance_TextShadow_Title" xml:space="preserve">
+    <value>全局文字阴影</value>
+  </data>
+  <data name="Settings_Appearance_TextShadow_Subtitle" xml:space="preserve">
+    <value>为组件上的所有文字添加柔和投影，提升复杂壁纸上的可读性（默认关闭）</value>
+  </data>
+  <data name="Settings_Appearance_TextShadow_Strength" xml:space="preserve">
+    <value>阴影强度</value>
+  </data>
     <data name="Settings_Advanced_GridMode" xml:space="preserve">
         <value>网格</value>
     </data>

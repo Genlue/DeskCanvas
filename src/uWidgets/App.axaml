@@ -25,6 +25,7 @@
         <Style Selector="Window">
             <Setter Property="FontFamily" Value="{DynamicResource FontFamily}" />
         </Style>
+
         <!-- Context menus share the app look: Mica-like surface (the same system
              chrome tint the Settings window uses), the app font, rounded corners
              and accent-tinted hover/pressed items. -->

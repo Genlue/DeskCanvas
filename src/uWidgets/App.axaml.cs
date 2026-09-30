@@ -87,6 +87,10 @@ public class App : Application
             }, DispatcherPriority.Render);
         });
 
+        // 全局文字阴影: any TextBlock that attaches inside a desktop widget window picks up
+        // the current shadow (see WidgetTextShadow — settings/dialog/panel text is excluded).
+        WidgetTextShadow.Install();
+
         services.GetRequiredService<WallpaperWatcherService>();
 
         var profileService = services.GetRequiredService<ProfileService>();

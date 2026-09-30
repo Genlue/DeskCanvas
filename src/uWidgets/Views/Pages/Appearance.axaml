@@ -265,19 +265,35 @@
             <NumericUpDown MinWidth="130" Minimum="0" Maximum="1" Increment="0.05" Value="{Binding OpacityLevel}" />
         </controls:Setting>
         <StackPanel IsVisible="{Binding ShowGlassSettings}">
-            <controls:Setting Icon="{DynamicResource WidgetSize}" 
-                Title="{x:Static locales:Locale.Settings_Appearance_OutlineColor_Title}" 
+            <controls:Setting Icon="{DynamicResource WidgetSize}"
+                Title="{x:Static locales:Locale.Settings_Appearance_OutlineColor_Title}"
                 Subtitle="{x:Static locales:Locale.Settings_Appearance_OutlineColor_Subtitle}">
                 <ColorPicker Height="36" Width="72"
-                             Color="{Binding OutlineColor}" 
+                             Color="{Binding OutlineColor}"
                              IsAlphaVisible="True" />
             </controls:Setting>
-            <controls:Setting Icon="{DynamicResource WidgetSize}" 
-                Title="{x:Static locales:Locale.Settings_Appearance_OutlineWidth_Title}" 
+            <controls:Setting Icon="{DynamicResource WidgetSize}"
+                Title="{x:Static locales:Locale.Settings_Appearance_OutlineWidth_Title}"
                 Subtitle="{x:Static locales:Locale.Settings_Appearance_OutlineWidth_Subtitle}">
                 <NumericUpDown MinWidth="130" Minimum="0" Maximum="6" Increment="0.5" FormatString="{}{0:0.#}" Value="{Binding OutlineWidth}" />
             </controls:Setting>
         </StackPanel>
+        <controls:Setting Icon="{DynamicResource Font}"
+            Title="{x:Static locales:Locale.Settings_Appearance_TextShadow_Title}"
+            Subtitle="{x:Static locales:Locale.Settings_Appearance_TextShadow_Subtitle}">
+            <StackPanel Orientation="Vertical" Spacing="6" HorizontalAlignment="Right">
+                <ToggleSwitch IsChecked="{Binding TextShadowEnabled}" HorizontalAlignment="Right" />
+                <Grid ColumnDefinitions="*,130" Width="264" Margin="14 0 0 0"
+                      IsVisible="{Binding ShowTextShadowStrength}">
+                    <Slider Minimum="0" Maximum="100" TickFrequency="5" IsSnapToTickEnabled="True" Margin="0 0 10 0"
+                            Value="{Binding TextShadowStrength, Mode=TwoWay}" VerticalAlignment="Center"
+                            AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_TextShadow_Strength}" />
+                    <NumericUpDown Grid.Column="1" Minimum="0" Maximum="100" Increment="5" FormatString="F0"
+                                   Value="{Binding TextShadowStrength}"
+                                   AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_TextShadow_Strength}" />
+                </Grid>
+            </StackPanel>
+        </controls:Setting>
         <controls:Setting Icon="{DynamicResource Color}" 
                           Title="{x:Static locales:Locale.Settings_Appearance_AccentColor_Title}"
                           IsVisible="{Binding ShowAccentSetting}">

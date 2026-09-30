@@ -515,6 +515,38 @@ public class AppearanceViewModel : ReactiveObject
     }
 
     /// <summary>
+    /// 全局文字阴影 (default off): when on, every TextBlock inside a desktop widget window
+    /// gets a soft drop shadow for readability over busy wallpapers.
+    /// </summary>
+    public bool TextShadowEnabled
+    {
+        get => appSettingsProvider.Get().Theme.TextShadowEnabled;
+        set
+        {
+            var settings = appSettingsProvider.Get();
+            if (settings.Theme.TextShadowEnabled == value) return;
+            SaveTheme(settings.Theme with { TextShadowEnabled = value });
+            this.RaisePropertyChanged(nameof(ShowTextShadowStrength));
+        }
+    }
+
+    /// <summary>True while the 全局文字阴影 strength slider is shown (shadow enabled).</summary>
+    public bool ShowTextShadowStrength => TextShadowEnabled;
+
+    /// <summary>全局文字阴影 strength, 0-100 (scales the shadow's blur, depth and opacity).</summary>
+    public double TextShadowStrength
+    {
+        get => appSettingsProvider.Get().Theme.TextShadowStrength;
+        set
+        {
+            var settings = appSettingsProvider.Get();
+            var strength = Math.Clamp(value, 0, 100);
+            if (Math.Abs(settings.Theme.TextShadowStrength - strength) < 0.001) return;
+            SaveTheme(settings.Theme with { TextShadowStrength = strength });
+        }
+    }
+
+    /// <summary>
     /// The monochrome color source options (黑白 / 强调色).
     /// </summary>
     public MonochromeVariantViewModel[] MonochromeVariants { get; } =
