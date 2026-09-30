@@ -23,7 +23,7 @@
                             </Path.Data>
                         </Path>
                         <!-- Active Arc -->
-                        <Path StrokeThickness="8" StrokeDashArray="31.416,31.416" StrokeLineCap="Round"
+                        <Path StrokeThickness="8" StrokeDashArray="39.27,39.27" StrokeLineCap="Round"
                               StrokeDashOffset="{Binding StrokeDashOffset}"
                               Stroke="{Binding StatusBrush}"
                               IsVisible="{Binding HasDevice}"
@@ -78,7 +78,7 @@
                                 <EllipseGeometry Center="55,55" RadiusX="50" RadiusY="50" />
                             </Path.Data>
                         </Path>
-                        <Path StrokeThickness="8" StrokeDashArray="31.416,31.416" StrokeLineCap="Round"
+                        <Path StrokeThickness="8" StrokeDashArray="39.27,39.27" StrokeLineCap="Round"
                               StrokeDashOffset="{Binding StrokeDashOffset}"
                               Stroke="{Binding StatusBrush}"
                               IsVisible="{Binding HasDevice}"
@@ -131,7 +131,7 @@
                                 <EllipseGeometry Center="55,55" RadiusX="50" RadiusY="50" />
                             </Path.Data>
                         </Path>
-                        <Path StrokeThickness="8" StrokeDashArray="31.416,31.416" StrokeLineCap="Round"
+                        <Path StrokeThickness="8" StrokeDashArray="39.27,39.27" StrokeLineCap="Round"
                               StrokeDashOffset="{Binding StrokeDashOffset}"
                               Stroke="{Binding StatusBrush}"
                               IsVisible="{Binding HasDevice}"
@@ -184,7 +184,7 @@
                                 <EllipseGeometry Center="55,55" RadiusX="50" RadiusY="50" />
                             </Path.Data>
                         </Path>
-                        <Path StrokeThickness="8" StrokeDashArray="31.416,31.416" StrokeLineCap="Round"
+                        <Path StrokeThickness="8" StrokeDashArray="39.27,39.27" StrokeLineCap="Round"
                               StrokeDashOffset="{Binding StrokeDashOffset}"
                               Stroke="{Binding StatusBrush}"
                               IsVisible="{Binding HasDevice}"

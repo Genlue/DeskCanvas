@@ -109,8 +109,11 @@ public class BatteryDeviceItem : INotifyPropertyChanged
 
     public double ProgressFraction => hasDevice ? (Percentage / 100.0) : 0.0;
 
-    // Radius 50, stroke thickness 10 -> Circumference = 2 * PI * 50 = 314.159. Relative to stroke: 31.416
-    public double StrokeDashOffset => 31.416 * (1.0 - ProgressFraction);
+    // 半径 50、StrokeThickness 8 → 周长 2π×50 ≈ 314.159；StrokeDashArray 的单位是描边宽度，
+    // 故整圈 ≈ 314.159/8 ≈ 39.27 单位（旧值 31.416 是按描边 10 标定的，改粗度后立刻失配）。
+    private const double FullCircleDash = 39.27;
+
+    public double StrokeDashOffset => FullCircleDash * (1.0 - ProgressFraction);
 
     public IBrush StatusBrush
     {

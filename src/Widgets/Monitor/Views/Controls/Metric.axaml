@@ -22,7 +22,7 @@
                    FontSize="34" FontWeight="SemiBold" LetterSpacing="-1"
                    Foreground="{Binding IndicatorBrush, RelativeSource={RelativeSource AncestorType=local:Metric}, FallbackValue={DynamicResource SystemControlForegroundBaseHighBrush}, TargetNullValue={DynamicResource SystemControlForegroundBaseHighBrush}}"
                    Text="{Binding Text}" />
-        <Path StrokeThickness="8" StrokeDashArray="31.4,31.4" StrokeLineCap="Round"
+        <Path StrokeThickness="8" StrokeDashArray="39.27,39.27" StrokeLineCap="Round"
               StrokeDashOffset="{Binding StrokeDashOffset}"
               Stroke="{Binding IndicatorBrush, RelativeSource={RelativeSource AncestorType=local:Metric}, FallbackValue={DynamicResource SystemControlForegroundBaseHighBrush}, TargetNullValue={DynamicResource SystemControlForegroundBaseHighBrush}}"
               RenderTransformOrigin="55,55" Name="ProgressBar">
