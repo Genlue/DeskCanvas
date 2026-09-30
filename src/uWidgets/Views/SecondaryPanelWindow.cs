@@ -16,9 +16,6 @@ using uWidgets.Views.Controls;
 
 namespace uWidgets.Views;
 
-/// <summary>One pre-rendered glass frame of a panel's open/close animation, drawn for the card rect covered at <see cref="Scale"/>.</summary>
-public readonly record struct PanelAnimationFrame(double Scale, Avalonia.Media.Imaging.Bitmap Bitmap);
-
 /// <summary>
 /// Shared template for the widgets' secondary panel windows (weather forecast, reminders,
 /// big folder, clipboard). Everything a panel needs to behave identically lives here:
@@ -28,6 +25,9 @@ public readonly record struct PanelAnimationFrame(double Scale, Avalonia.Media.I
 ///     "emphasized decelerate" curve,
 ///   - close transition: the card folds back into the widget on the "emphasized accelerate" curve,
 ///   - dismissal: Escape, focus loss (after a grace period), or an explicit Close(),
+///   - glass: the card is drawn by the same <see cref="LiquidGlassSurface"/> the widget card
+///     uses, and the surface is fed the zoom's interpolated scale so its optics animate with
+///     the visible transition (with or without live wallpaper sampling),
 ///   - per-panel-type rules: one instance at a time and no immediate re-open after a close.
 /// Derived windows keep their own AXAML, theming and content; they expose the animatable
 /// card via <see cref="PanelCard"/> and call <see cref="InitializePanel"/> right after
@@ -62,18 +62,16 @@ public abstract class SecondaryPanelWindow : Window
     private DateTime activatedAtUtc;
 
     // ---- Glass transition during the open/close zoom ----
-    // The card's glass must follow the zoom: with live wallpaper sampling the GPU surface
-    // re-parameterises its shader for every interpolated scale, and without it a strip of
-    // pre-rendered frames (one per covered scale, cached by PopupLiquidGlassService) is played
-    // back through the card's backdrop image. Both paths are driven by the scale transform's
-    // per-tick property changes, so they stay exactly in phase with the visible zoom.
+    // The card's glass must follow the zoom: the liquid-glass surface re-parameterises its
+    // shader for every interpolated scale (SetAnimationFrameScale), driven by the scale
+    // transform's per-tick property changes so it stays exactly in phase with the visible zoom.
+    // This is the *same* path the primary widget card uses, with or without live wallpaper
+    // sampling — with sampling off the shared wallpaper frame is simply frozen, which is still
+    // a full-quality backdrop. (Panels used to switch to a strip of pre-rendered bitmaps when
+    // sampling was off; that strip lagged behind the surface, masked the animating glass with a
+    // static bitmap, and fell back to a flat translucent scrim until it was ready.)
     private RelativePoint? spawnAnchor;
     private LiquidGlassSurface? glassSurface;
-    private Image? glassBackdropImage;
-    private IImage? glassRestSource;
-    private bool usingGlassFrames;
-    private bool glassFramesPending;
-    private IReadOnlyList<PanelAnimationFrame>? glassFrames;
 
     /// <summary>The card visual that carries the open/close transition (the panel's root border).</summary>
     protected abstract Visual? PanelCard { get; }
@@ -85,7 +83,7 @@ public abstract class SecondaryPanelWindow : Window
     /// Corner radius (DIP) propagated from the opening widget's card so the panel's corners
     /// match it exactly; 0 keeps the panel's own AXAML radius. Must be handed to
     /// <see cref="InitializePanel"/> before derived theming runs, so every glass path
-    /// (live surface, pre-rendered bitmap, native window region) picks it up.
+    /// (glass surface, native window region) picks it up.
     /// </summary>
     protected double SpawnCornerRadius { get; private set; }
 
@@ -105,7 +103,7 @@ public abstract class SecondaryPanelWindow : Window
     /// <summary>True while the exit animation is playing (all close paths are no-ops then).</summary>
     protected bool CloseAnimationRunning => closeAnimationRunning;
 
-    /// <summary>Extra load work (focus, glass pre-render, window region, hooks); positioning and the open animation are handled by the base.</summary>
+    /// <summary>Extra load work (focus, glass surface, window region, hooks); positioning and the open animation are handled by the base.</summary>
     protected virtual void OnPanelLoaded() { }
 
     /// <summary>Return true to consume Escape (e.g. close an inner drawer instead of the panel).</summary>
@@ -215,7 +213,6 @@ public abstract class SecondaryPanelWindow : Window
         if (ActivePanels.TryGetValue(type, out var current) && ReferenceEquals(current, this))
             ActivePanels.Remove(type);
         LastCloseTimes[type] = DateTime.UtcNow;
-        SetGlassFramesNotification(false);
     }
 
     private void OnPanelKeyDown(object? sender, KeyEventArgs e)
@@ -267,19 +264,12 @@ public abstract class SecondaryPanelWindow : Window
     // ---- Glass transition playback ----
 
     /// <summary>
-    /// Resolve the glass visuals once, at Loaded: the live surface (any panel has exactly one)
-    /// and the pre-rendered backdrop image, keeping the image's at-rest source so frame
-    /// playback can put it back when the zoom settles.
+    /// Resolve the glass visual once, at Loaded: any panel has exactly one glass surface, and
+    /// the zoom feeds it the scale it currently covers.
     /// </summary>
     private void ResolveGlassAnimationTargets()
     {
         glassSurface = this.GetVisualDescendants().OfType<LiquidGlassSurface>().FirstOrDefault();
-        glassBackdropImage = this.GetVisualDescendants()
-            .OfType<Image>()
-            .FirstOrDefault(v => v.Name == "LiquidGlassBgImage");
-        glassRestSource = glassBackdropImage?.Source;
-        if (glassBackdropImage != null)
-            SetGlassFramesNotification(true);
     }
 
     private void OnCardScalePropertyChanged(object? sender, AvaloniaPropertyChangedEventArgs e)
@@ -289,15 +279,7 @@ public abstract class SecondaryPanelWindow : Window
         UpdateGlassForScale(cardScale?.ScaleX ?? 1.0);
     }
 
-    protected void OnGlassFramesReady()
-    {
-        // A strip finished rendering (hover prewarm) or loading from disk mid-zoom: catch up.
-        if (!panelLoaded || glassFrames != null) return;
-        glassFramesPending = false;
-        UpdateGlassForScale(cardScale?.ScaleX ?? 1.0);
-    }
-
-    /// <summary>Feed the interpolated card scale to whichever glass path is active.</summary>
+    /// <summary>Feed the interpolated card scale to the glass surface.</summary>
     private void UpdateGlassForScale(double t)
     {
         var card = PanelCard;
@@ -305,53 +287,14 @@ public abstract class SecondaryPanelWindow : Window
 
         if (t >= 0.999)
         {
-            RestoreGlassAtRest();
+            glassSurface?.SetAnimationFrameScale(1.0, default);
             return;
         }
 
-        // Live wallpaper sampling: the surface recomputes its optics for the rect the card
-        // currently covers — real glass at animation rate.
+        // The surface recomputes its optics for the rect the card currently covers — real glass
+        // at animation rate, identically whether or not live wallpaper sampling is on.
         if (glassSurface is { IsVisible: true })
-        {
             glassSurface.SetAnimationFrameScale(t, AnchorRelativeToSurface(glassSurface, card));
-            return;
-        }
-
-        // Pre-rendered strip: swap in the frame drawn for the closest covered scale. The
-        // frames fill the card, so the card's own zoom maps each one 1:1 onto its rect.
-        var image = glassBackdropImage;
-        if (image == null || !image.IsVisible) return;
-
-        if (glassFrames == null)
-        {
-            if (glassFramesPending) return;
-            glassFramesPending = true;
-            glassFrames = QueryGlassFrames();
-            if (glassFrames == null) return;
-        }
-
-        PanelAnimationFrame? match = null;
-        foreach (var frame in glassFrames)
-        {
-            if (frame.Scale >= t - 0.002)
-            {
-                match = frame;
-                break;
-            }
-        }
-        match ??= glassFrames[glassFrames.Count - 1];
-
-        usingGlassFrames = true;
-        image.Source = match.Value.Bitmap;
-    }
-
-    private void RestoreGlassAtRest()
-    {
-        glassSurface?.SetAnimationFrameScale(1.0, default);
-        if (!usingGlassFrames) return;
-        usingGlassFrames = false;
-        if (glassBackdropImage != null && glassRestSource != null)
-            glassBackdropImage.Source = glassRestSource;
     }
 
     /// <summary>The card-space anchor re-expressed inside the glass surface's bounds.</summary>
@@ -383,28 +326,6 @@ public abstract class SecondaryPanelWindow : Window
     /// <summary>The corner radius the panel's glass is drawn with (the spawn radius, or the panel's own).</summary>
     protected double GlassCardCornerRadius =>
         PanelCard is Border border ? border.CornerRadius.TopLeft : SpawnCornerRadius;
-
-    /// <summary>
-    /// This panel's cached glass animation frames (ascending scale), or null when none is
-    /// available yet. The default asks the host's popup glass service; a panel fed by another
-    /// service overrides this and <see cref="SetGlassFramesNotification"/>.
-    /// </summary>
-    protected virtual IReadOnlyList<PanelAnimationFrame>? QueryGlassFrames()
-    {
-        if (glassBackdropImage == null) return null;
-        return PopupLiquidGlassService.TryGetGlassFrames(
-            SpawnScreenCenter, Width, Height, GlassCardCornerRadius, ResolveSpawnScreen(), Screens.All,
-            out var frames)
-            ? frames
-            : null;
-    }
-
-    /// <summary>(Un)subscribe the "glass frames became ready" notification.</summary>
-    protected virtual void SetGlassFramesNotification(bool enabled)
-    {
-        if (enabled) PopupLiquidGlassService.FrameStripCompleted += OnGlassFramesReady;
-        else PopupLiquidGlassService.FrameStripCompleted -= OnGlassFramesReady;
-    }
 
     /// <summary>
     /// The widget's center expressed as a relative origin inside the panel card, so the

@@ -1,4 +1,4 @@
-<Window xmlns="https://github.com/avaloniaui"
+﻿<Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:locales="clr-namespace:Reminders.Locales"
         xmlns:models="clr-namespace:Reminders.Models"
@@ -84,12 +84,9 @@
             </Border.RenderTransform>
 
             <Panel>
-                <!-- LiquidGlass Dynamic Surface (live wallpaper sampling) -->
+                <!-- LiquidGlass surface: the same material path the widget card uses —
+                     live wallpaper sampling when enabled, the frozen shared frame when not. -->
                 <controls:LiquidGlassSurface x:Name="LiquidGlassSurfaceControl" CornerRadius="18" Margin="0" IsVisible="False" />
-
-                <!-- LiquidGlass Background Image (pre-rendered ahead of time) -->
-                <Image x:Name="LiquidGlassBgImage" Stretch="Fill" IsVisible="False" />
-                <Border x:Name="LiquidGlassOverlay" Background="Transparent" IsVisible="False" />
 
                 <Grid RowDefinitions="Auto,*,Auto">
                 <!-- Header (Row 0) -->

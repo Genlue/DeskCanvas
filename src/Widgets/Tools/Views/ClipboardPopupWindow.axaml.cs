@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -40,7 +40,6 @@ public partial class ClipboardPopupWindow : SecondaryPanelWindow
         InitializePanel(cornerRadius);
 
         monitor.HistoryChanged += OnHistoryChanged;
-        PopupLiquidGlassService.PreRenderCompleted += OnPreRenderCompleted;
 
         ApplyTheme();
         RefreshList();
@@ -81,50 +80,34 @@ public partial class ClipboardPopupWindow : SecondaryPanelWindow
             theme = new Theme(DarkMode: true, AccentColor: null, OpacityLevel: 0.8, Monochrome: false, UseNativeFrame: false, FontFamily: "Inter");
         }
 
-        bool isDark = ActualThemeVariant == ThemeVariant.Dark || (theme.DarkMode ?? true);
+        // Colour mode "follow system" is DarkMode == null, which must resolve to the *live*
+        // variant — the same single source of truth the widget card and the theme preview use
+        // (see ThemeButton.IsDark). Treating null as dark painted every panel dark on a light
+        // system.
+        bool isDark = theme.DarkMode ?? ActualThemeVariant == ThemeVariant.Dark;
 
         if (theme.UsesRenderedGlass)
         {
+            // Rendered glass always goes through the live surface — the very same path the
+            // primary widget card uses. The surface re-parameterises its optics for the panel's
+            // open/close zoom (SetAnimationFrameScale), so the animation shows real glass per
+            // tick whether or not live sampling is on: with sampling off the shared wallpaper
+            // frame is merely frozen, which is still a full-quality backdrop.
+            // The old "sampling off → play a pre-rendered bitmap / frame strip" branch is gone:
+            // it lagged behind the surface, masked the animated glass with a static bitmap, and
+            // fell back to a flat translucent scrim whenever the pre-render had not finished.
             TransparencyLevelHint = [WindowTransparencyLevel.Transparent];
-            if (LiquidGlassWallpaper.LiveSamplingEnabled)
-            {
-                LiquidGlassSurfaceControl.Material = theme;
-                LiquidGlassSurfaceControl.CornerRadius = CardBorder.CornerRadius;
-                LiquidGlassSurfaceControl.IsVisible = true;
-                LiquidGlassBgImage.IsVisible = false;
-                LiquidGlassOverlay.IsVisible = false;
-                CardBorder.Background = Brushes.Transparent;
-                CardBorder.BorderBrush = new SolidColorBrush(Color.FromArgb(90, 255, 255, 255));
-                LiquidGlassSurfaceControl.RequestRender(immediate: true);
-            }
-            else
-            {
-                LiquidGlassSurfaceControl.IsVisible = false;
-                LiquidGlassBgImage.IsVisible = true;
-                LiquidGlassOverlay.IsVisible = false;
-                CardBorder.Background = Brushes.Transparent;
-                CardBorder.BorderBrush = new SolidColorBrush(Color.FromArgb(90, 255, 255, 255));
-
-                var screen = spawnScreenCenter.HasValue ? Screens.ScreenFromPoint(new PixelPoint((int)spawnScreenCenter.Value.X, (int)spawnScreenCenter.Value.Y)) : Screens.Primary;
-                var bmp = PopupLiquidGlassService.GetCachedBitmapFor(spawnScreenCenter, Width, Height, CardBorder.CornerRadius.TopLeft, screen, Screens.All);
-
-                if (bmp != null)
-                {
-                    LiquidGlassBgImage.Source = bmp;
-                }
-                else
-                {
-                    CardBorder.Background = new SolidColorBrush(isDark ? Color.FromArgb(40, 28, 28, 32) : Color.FromArgb(40, 245, 245, 248));
-                    _ = TriggerDirectLiquidGlassRender(theme, isDark, screen);
-                }
-            }
+            LiquidGlassSurfaceControl.Material = theme;
+            LiquidGlassSurfaceControl.CornerRadius = CardBorder.CornerRadius;
+            LiquidGlassSurfaceControl.IsVisible = true;
+            CardBorder.Background = Brushes.Transparent;
+            CardBorder.BorderBrush = new SolidColorBrush(Color.FromArgb(90, 255, 255, 255));
+            LiquidGlassSurfaceControl.RequestRender(immediate: true);
         }
         else if (theme.IsColorful)
         {
             LiquidGlassSurfaceControl.IsVisible = false;
             TransparencyLevelHint = [WindowTransparencyLevel.Transparent];
-            LiquidGlassBgImage.IsVisible = false;
-            LiquidGlassOverlay.IsVisible = false;
             CardBorder.Background = new SolidColorBrush(isDark ? Color.Parse("#1C1C1E") : Color.Parse("#FFFFFF"));
             CardBorder.BorderBrush = new SolidColorBrush(isDark ? Color.FromArgb(60, 255, 255, 255) : Color.FromArgb(40, 0, 0, 0));
         }
@@ -132,8 +115,6 @@ public partial class ClipboardPopupWindow : SecondaryPanelWindow
         {
             LiquidGlassSurfaceControl.IsVisible = false;
             TransparencyLevelHint = [WindowTransparencyLevel.Transparent];
-            LiquidGlassBgImage.IsVisible = false;
-            LiquidGlassOverlay.IsVisible = false;
             var hex = isDark ? theme.EffectiveSolidBackgroundDark : theme.EffectiveSolidBackgroundLight;
             var baseColor = Color.TryParse(hex, out var parsed) ? parsed : (isDark ? Color.FromRgb(46, 46, 46) : Colors.White);
             byte alpha = (byte)Math.Clamp(Math.Round(theme.OpacityLevel * 255), 40, 255);
@@ -144,8 +125,6 @@ public partial class ClipboardPopupWindow : SecondaryPanelWindow
         {
             LiquidGlassSurfaceControl.IsVisible = false;
             TransparencyLevelHint = [WindowTransparencyLevel.AcrylicBlur];
-            LiquidGlassBgImage.IsVisible = false;
-            LiquidGlassOverlay.IsVisible = false;
             byte alpha = (byte)Math.Clamp(Math.Round(theme.OpacityLevel * 220), 40, 240);
             CardBorder.Background = new SolidColorBrush(isDark ? Color.FromArgb(alpha, 28, 28, 32) : Color.FromArgb(alpha, 245, 245, 248));
             CardBorder.BorderBrush = new SolidColorBrush(isDark ? Color.FromArgb(55, 255, 255, 255) : Color.FromArgb(35, 0, 0, 0));
@@ -153,47 +132,6 @@ public partial class ClipboardPopupWindow : SecondaryPanelWindow
 
         IBrush subTextBrush = isDark ? new SolidColorBrush(Color.FromArgb(200, 255, 255, 255)) : new SolidColorBrush(Color.FromArgb(180, 0, 0, 0));
         CloseButton.Foreground = subTextBrush;
-    }
-
-    private async Task TriggerDirectLiquidGlassRender(Theme theme, bool isDark, Screen? screen)
-    {
-        try
-        {
-            var bmp = await PopupLiquidGlassService.RenderDirectAsync(
-                spawnScreenCenter,
-                Width,
-                Height,
-                CardBorder.CornerRadius.TopLeft,
-                theme,
-                isDark,
-                screen,
-                Screens.All);
-
-            if (bmp != null)
-            {
-                LiquidGlassBgImage.Source = bmp;
-                CardBorder.Background = Brushes.Transparent;
-            }
-        }
-        catch (Exception ex)
-        {
-            System.Diagnostics.Debug.WriteLine($"[ClipboardPopupWindow] TriggerDirectLiquidGlassRender failed: {ex.Message}");
-        }
-    }
-
-    private void OnPreRenderCompleted()
-    {
-        if (LiquidGlassWallpaper.LiveSamplingEnabled) return;
-        if (LiquidGlassBgImage.IsVisible)
-        {
-            var screen = spawnScreenCenter.HasValue ? Screens.ScreenFromPoint(new PixelPoint((int)spawnScreenCenter.Value.X, (int)spawnScreenCenter.Value.Y)) : Screens.Primary;
-            var bmp = PopupLiquidGlassService.GetCachedBitmapFor(spawnScreenCenter, Width, Height, CardBorder.CornerRadius.TopLeft, screen, Screens.All);
-            if (bmp != null)
-            {
-                LiquidGlassBgImage.Source = bmp;
-                CardBorder.Background = Brushes.Transparent;
-            }
-        }
     }
 
     private void OnHistoryChanged()
@@ -303,6 +241,5 @@ public partial class ClipboardPopupWindow : SecondaryPanelWindow
     {
         LiquidGlassSurfaceControl.IsVisible = false;
         monitor.HistoryChanged -= OnHistoryChanged;
-        PopupLiquidGlassService.PreRenderCompleted -= OnPreRenderCompleted;
     }
 }

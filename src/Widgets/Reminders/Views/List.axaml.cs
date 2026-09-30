@@ -29,7 +29,6 @@ public partial class List : UserControl, IWidgetSelfRefreshing
         Content = new ListSmall(this, viewModel);
         SizeChanged += OnSizeChanged;
         Unloaded += OnUnloaded;
-        PointerEntered += OnPointerEntered;
         RemindersStore.ModelChanged += OnStoreModelChanged;
         InitializeComponent();
     }
@@ -51,30 +50,7 @@ public partial class List : UserControl, IWidgetSelfRefreshing
     {
         SizeChanged -= OnSizeChanged;
         Unloaded -= OnUnloaded;
-        PointerEntered -= OnPointerEntered;
         RemindersStore.ModelChanged -= OnStoreModelChanged;
-    }
-
-    private void OnPointerEntered(object? sender, Avalonia.Input.PointerEventArgs e)
-    {
-        PreRenderLiquidGlassPopup();
-    }
-
-    private void PreRenderLiquidGlassPopup()
-    {
-        try
-        {
-            var theme = new uWidgets.Core.Services.AppSettingsProvider().Get().Theme;
-            if (theme.UsesRenderedGlass)
-            {
-                var (screenCenter, _) = GetScreenCenterAndTopLevel();
-                var window = VisualRoot as Window;
-                var screen = window?.Screens.ScreenFromWindow(window) ?? window?.Screens.Primary;
-                bool isDark = ActualThemeVariant == Avalonia.Styling.ThemeVariant.Dark || (theme.DarkMode ?? true);
-                PopupLiquidGlassService.RequestPreRender(screenCenter, 400, 490, SpawnCornerRadius ?? 18, theme, isDark, screen, window?.Screens.All);
-            }
-        }
-        catch { }
     }
 
     private void OnSizeChanged(object? sender, SizeChangedEventArgs e)
@@ -126,8 +102,8 @@ public partial class List : UserControl, IWidgetSelfRefreshing
     }
 
     /// <summary>
-    /// The host widget's visual corner radius, so the popup's corners and its pre-rendered
-    /// glass match the widget card exactly. Null keeps the popup's own default radius.
+    /// The host widget's visual corner radius, so the popup's corners and its glass match the
+    /// widget card exactly. Null keeps the popup's own default radius.
     /// </summary>
     private double? SpawnCornerRadius
     {

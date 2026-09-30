@@ -1,4 +1,4 @@
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.Runtime.InteropServices;
 using Avalonia;
 using Avalonia.Controls;
@@ -111,24 +111,6 @@ public partial class BigFolderPopupWindow : SecondaryPanelWindow
     protected override bool TransformAnimationEnabled => transformAnimationEnabled;
     protected override int DeactivateCloseGraceMs => 150;
 
-    // The panel base plays the zoom's glass frames from the host's popup glass service; this
-    // popup's non-live glass comes from Folders' own pre-render service, so both overrides
-    // point there.
-    protected override IReadOnlyList<PanelAnimationFrame>? QueryGlassFrames()
-    {
-        return LiquidGlassPreRenderService.TryGetGlassFrames(
-            spawnScreenCenter, Width, Height, CardBorder.CornerRadius.TopLeft, ResolveSpawnScreen(), Screens.All,
-            out var frames)
-            ? frames
-            : null;
-    }
-
-    protected override void SetGlassFramesNotification(bool enabled)
-    {
-        if (enabled) LiquidGlassPreRenderService.FrameStripCompleted += OnGlassFramesReady;
-        else LiquidGlassPreRenderService.FrameStripCompleted -= OnGlassFramesReady;
-    }
-
     public BigFolderPopupWindow() : this(new BigFolderModel(), null, null) { }
 
     public BigFolderPopupWindow(List<string> items) : this(new BigFolderModel(items), null, null) { }
@@ -151,7 +133,6 @@ public partial class BigFolderPopupWindow : SecondaryPanelWindow
         ApplyTheme();
         PopulateItems();
 
-        LiquidGlassPreRenderService.PreRenderCompleted += OnPreRenderCompleted;
         Closing += OnWindowClosing;
         Closed += OnWindowClosed;
     }
@@ -160,21 +141,6 @@ public partial class BigFolderPopupWindow : SecondaryPanelWindow
     {
         try { return new AppSettingsProvider().Get().Theme.UsesNativeBlur; }
         catch { return false; }
-    }
-
-    private void OnPreRenderCompleted()
-    {
-        if (LiquidGlassWallpaper.LiveSamplingEnabled) return;
-        if (LiquidGlassBgImage.IsVisible)
-        {
-            var screen = spawnScreenCenter.HasValue ? Screens.ScreenFromPoint(new PixelPoint((int)spawnScreenCenter.Value.X, (int)spawnScreenCenter.Value.Y)) : Screens.Primary;
-            var bmp = LiquidGlassPreRenderService.GetCachedBitmapFor(spawnScreenCenter, Width, Height, CardBorder.CornerRadius.TopLeft, screen, Screens.All);
-            if (bmp != null)
-            {
-                LiquidGlassBgImage.Source = bmp;
-                CardBorder.Background = Brushes.Transparent;
-            }
-        }
     }
 
     private void ApplyTheme()
@@ -189,50 +155,34 @@ public partial class BigFolderPopupWindow : SecondaryPanelWindow
             theme = new Theme(DarkMode: true, AccentColor: null, OpacityLevel: 0.8, Monochrome: false, UseNativeFrame: false, FontFamily: "Inter");
         }
 
-        bool isDark = ActualThemeVariant == ThemeVariant.Dark || (theme.DarkMode ?? true);
+        // Colour mode "follow system" is DarkMode == null, which must resolve to the *live*
+        // variant — the same single source of truth the widget card and the theme preview use
+        // (see ThemeButton.IsDark). Treating null as dark painted every panel dark on a light
+        // system.
+        bool isDark = theme.DarkMode ?? ActualThemeVariant == ThemeVariant.Dark;
 
         if (theme.UsesRenderedGlass)
         {
+            // Rendered glass always goes through the live surface — the very same path the
+            // primary widget card uses. The surface re-parameterises its optics for the panel's
+            // open/close zoom (SetAnimationFrameScale), so the animation shows real glass per
+            // tick whether or not live sampling is on: with sampling off the shared wallpaper
+            // frame is merely frozen, which is still a full-quality backdrop.
+            // The old "sampling off → play a pre-rendered bitmap / frame strip" branch is gone:
+            // it lagged behind the surface, masked the animated glass with a static bitmap, and
+            // fell back to a flat translucent scrim whenever the pre-render had not finished.
             TransparencyLevelHint = [WindowTransparencyLevel.Transparent];
-            if (LiquidGlassWallpaper.LiveSamplingEnabled)
-            {
-                LiquidGlassSurfaceControl.Material = theme;
-                LiquidGlassSurfaceControl.CornerRadius = CardBorder.CornerRadius;
-                LiquidGlassSurfaceControl.IsVisible = true;
-                LiquidGlassBgImage.IsVisible = false;
-                LiquidGlassOverlay.IsVisible = false;
-                CardBorder.Background = Brushes.Transparent;
-                CardBorder.BorderBrush = new SolidColorBrush(Color.FromArgb(90, 255, 255, 255));
-                LiquidGlassSurfaceControl.RequestRender(immediate: true);
-            }
-            else
-            {
-                LiquidGlassSurfaceControl.IsVisible = false;
-                LiquidGlassBgImage.IsVisible = true;
-                LiquidGlassOverlay.IsVisible = false;
-                CardBorder.Background = Brushes.Transparent;
-                CardBorder.BorderBrush = new SolidColorBrush(Color.FromArgb(90, 255, 255, 255));
-
-                var screen = spawnScreenCenter.HasValue ? Screens.ScreenFromPoint(new PixelPoint((int)spawnScreenCenter.Value.X, (int)spawnScreenCenter.Value.Y)) : Screens.Primary;
-                var bmp = LiquidGlassPreRenderService.GetCachedBitmapFor(spawnScreenCenter, Width, Height, CardBorder.CornerRadius.TopLeft, screen, Screens.All);
-
-                if (bmp != null)
-                {
-                    LiquidGlassBgImage.Source = bmp;
-                }
-                else
-                {
-                    CardBorder.Background = new SolidColorBrush(isDark ? Color.FromArgb(40, 28, 28, 32) : Color.FromArgb(40, 245, 245, 248));
-                    _ = TriggerDirectLiquidGlassRender(theme, isDark, screen);
-                }
-            }
+            LiquidGlassSurfaceControl.Material = theme;
+            LiquidGlassSurfaceControl.CornerRadius = CardBorder.CornerRadius;
+            LiquidGlassSurfaceControl.IsVisible = true;
+            CardBorder.Background = Brushes.Transparent;
+            CardBorder.BorderBrush = new SolidColorBrush(Color.FromArgb(90, 255, 255, 255));
+            LiquidGlassSurfaceControl.RequestRender(immediate: true);
         }
         else if (theme.EffectiveSurface == SurfaceStyle.Solid)
         {
             LiquidGlassSurfaceControl.IsVisible = false;
             TransparencyLevelHint = [WindowTransparencyLevel.Transparent];
-            LiquidGlassBgImage.IsVisible = false;
-            LiquidGlassOverlay.IsVisible = false;
 
             var hex = isDark ? theme.EffectiveSolidBackgroundDark : theme.EffectiveSolidBackgroundLight;
             var baseColor = Color.TryParse(hex, out var parsed) ? parsed : (isDark ? Color.FromRgb(46, 46, 46) : Colors.White);
@@ -244,8 +194,6 @@ public partial class BigFolderPopupWindow : SecondaryPanelWindow
         {
             LiquidGlassSurfaceControl.IsVisible = false;
             TransparencyLevelHint = [WindowTransparencyLevel.AcrylicBlur];
-            LiquidGlassBgImage.IsVisible = false;
-            LiquidGlassOverlay.IsVisible = false;
 
             byte alpha = (byte)Math.Clamp(Math.Round(theme.OpacityLevel * 220), 40, 240);
             CardBorder.Background = new SolidColorBrush(isDark ? Color.FromArgb(alpha, 28, 28, 32) : Color.FromArgb(alpha, 245, 245, 248));
@@ -257,32 +205,6 @@ public partial class BigFolderPopupWindow : SecondaryPanelWindow
         TitleText.Foreground = textBrush;
         CloseButton.Foreground = subTextBrush;
         SettingsButton.Foreground = subTextBrush;
-    }
-
-    private async Task TriggerDirectLiquidGlassRender(Theme theme, bool isDark, Screen? screen)
-    {
-        try
-        {
-            var bmp = await LiquidGlassPreRenderService.RenderDirectAsync(
-                spawnScreenCenter,
-                Width,
-                Height,
-                CardBorder.CornerRadius.TopLeft,
-                theme,
-                isDark,
-                screen,
-                Screens.All);
-
-            if (bmp != null)
-            {
-                LiquidGlassBgImage.Source = bmp;
-                CardBorder.Background = Brushes.Transparent;
-            }
-        }
-        catch (Exception ex)
-        {
-            Debug.WriteLine($"[BigFolderPopupWindow] TriggerDirectLiquidGlassRender failed: {ex.Message}");
-        }
     }
 
     private void SyncSettingsControls()
@@ -435,7 +357,6 @@ public partial class BigFolderPopupWindow : SecondaryPanelWindow
         isClosing = true;
         LiquidGlassSurfaceControl.IsVisible = false;
         UninstallMouseHook();
-        LiquidGlassPreRenderService.PreRenderCompleted -= OnPreRenderCompleted;
     }
 
     private void InstallMouseHook()

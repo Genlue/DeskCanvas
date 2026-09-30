@@ -8,9 +8,9 @@ namespace uWidgets.Services;
 /// <see cref="SurfaceStyle.LiquidGlassV2"/> goes to <see cref="LiquidGlassV2Renderer"/>, the
 /// older 液态玻璃/柔光 recipes stay on <see cref="LiquidGlassRenderer"/>.
 /// <para>
-/// The popup pre-render services (host and Folders' reflection bridge) and the CPU fallback of
-/// <see cref="LiquidGlassSurface"/> all funnel through here, so a material switch never leaves a
-/// popup or a software-rendered card on the wrong recipe.
+/// Every wallpaper-sampled glass render funnels through here — the CPU fallback of
+/// <see cref="LiquidGlassSurface"/> and the panel/clock render paths — so a material switch
+/// never leaves a card on the wrong recipe.
 /// </para>
 /// </summary>
 public static class LiquidGlassDispatch
@@ -29,7 +29,7 @@ public static class LiquidGlassDispatch
 
     /// <summary>
     /// Cache-key fragment naming the active material and the optics that change what a render
-    /// looks like — used by the popup pre-render caches to tell recipes apart.
+    /// looks like — used by the material caches to tell recipes apart.
     /// </summary>
     public static string OpticsKey(Theme theme)
     {

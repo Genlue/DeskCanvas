@@ -8,7 +8,7 @@ namespace uWidgets.Services;
 /// <summary>
 /// CPU renderer of the 新液态玻璃 material (<see cref="SurfaceStyle.LiquidGlassV2"/>): the
 /// per-pixel twin of <see cref="LiquidGlassV2Effect"/>, used as the software-rendering fallback
-/// and by the popup pre-render paths.
+/// (and for the clock's pre-rendered frames).
 /// <para>
 /// A faithful port of Kyant0/AndroidLiquidGlass 2.0's optical model — the rounded-rect refraction
 /// lens with depth effect and diagonal chromatic aberration, vibrancy, the surface scrim and the

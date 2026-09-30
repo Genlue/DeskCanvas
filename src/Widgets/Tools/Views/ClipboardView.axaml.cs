@@ -58,7 +58,6 @@ public partial class ClipboardView : UserControl, IWidgetSelfRefreshing
         Loaded += OnLoaded;
         Unloaded += OnUnloaded;
         SizeChanged += OnSizeChanged;
-        PointerEntered += OnPointerEntered;
 
         RefreshDisplay();
     }
@@ -90,7 +89,6 @@ public partial class ClipboardView : UserControl, IWidgetSelfRefreshing
     {
         monitor.HistoryChanged -= OnHistoryChanged;
         SizeChanged -= OnSizeChanged;
-        PointerEntered -= OnPointerEntered;
 
         // Same teardown as TranslatorView: a toast caught mid-display would otherwise keep
         // this detached view alive (and hold its bindings) for up to the toast interval.
@@ -335,31 +333,9 @@ public partial class ClipboardView : UserControl, IWidgetSelfRefreshing
         toastTimer.Start();
     }
 
-    private void OnPointerEntered(object? sender, PointerEventArgs e)
-    {
-        PreRenderLiquidGlassPopup();
-    }
-
-    private void PreRenderLiquidGlassPopup()
-    {
-        try
-        {
-            var theme = new uWidgets.Core.Services.AppSettingsProvider().Get().Theme;
-            if (theme.UsesRenderedGlass)
-            {
-                var (screenCenter, _) = GetScreenCenterAndTopLevel();
-                var window = VisualRoot as Window;
-                var screen = window?.Screens.ScreenFromWindow(window) ?? window?.Screens.Primary;
-                bool isDark = ActualThemeVariant == Avalonia.Styling.ThemeVariant.Dark || (theme.DarkMode ?? true);
-                PopupLiquidGlassService.RequestPreRender(screenCenter, 440, 540, SpawnCornerRadius ?? 18, theme, isDark, screen, window?.Screens.All);
-            }
-        }
-        catch { }
-    }
-
     /// <summary>
-    /// The host widget's visual corner radius, so the popup's corners and its pre-rendered
-    /// glass match the widget card exactly. Null keeps the popup's own default radius.
+    /// The host widget's visual corner radius, so the popup's corners and its glass match the
+    /// widget card exactly. Null keeps the popup's own default radius.
     /// </summary>
     private double? SpawnCornerRadius
     {

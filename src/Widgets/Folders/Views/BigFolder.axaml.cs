@@ -132,37 +132,7 @@ public partial class BigFolder : UserControl, IWidgetSelfRefreshing
         }
 
         Dispatcher.UIThread.Post(RecomputeAndPopulate);
-        SchedulePreRender(100);
     }
-
-    private DispatcherTimer? preRenderDebounceTimer;
-
-    private void SchedulePreRender(int delayMs = 150)
-    {
-        if (preRenderDebounceTimer == null)
-        {
-            preRenderDebounceTimer = new DispatcherTimer();
-            preRenderDebounceTimer.Tick += (_, _) =>
-            {
-                preRenderDebounceTimer.Stop();
-                TriggerLiquidGlassPreRender();
-            };
-        }
-        preRenderDebounceTimer.Stop();
-        preRenderDebounceTimer.Interval = TimeSpan.FromMilliseconds(delayMs);
-        preRenderDebounceTimer.Start();
-    }
-
-    private void OnWallpaperChanged()
-    {
-        SchedulePreRender(50);
-    }
-
-    /// <summary>
-    /// Single stable delegate instance for the static <c>WallpaperInvalidated</c> event, so a
-    /// load/unload cycle can always detach exactly what it attached.
-    /// </summary>
-    private Action? wallpaperInvalidatedHandler;
 
     private void OnLoaded(object? sender, RoutedEventArgs e)
     {
@@ -177,37 +147,10 @@ public partial class BigFolder : UserControl, IWidgetSelfRefreshing
                 WidgetOleDropTarget.RegisterWmDropFiles(handle, OnOleDrop, OnOleDragActive);
             }
         }
-
-        if (VisualRoot is Window win)
-        {
-            win.PositionChanged += OnWindowPositionChanged;
-        }
-
-        wallpaperInvalidatedHandler ??= OnWallpaperChanged;
-        LiquidGlassBridge.UnsubscribeWallpaperInvalidated(wallpaperInvalidatedHandler);
-        LiquidGlassBridge.SubscribeWallpaperInvalidated(wallpaperInvalidatedHandler);
-        SchedulePreRender(200);
-    }
-
-    private void OnWindowPositionChanged(object? sender, PixelPointEventArgs e)
-    {
-        SchedulePreRender(150);
     }
 
     private void OnUnloaded(object? sender, RoutedEventArgs e)
     {
-        preRenderDebounceTimer?.Stop();
-
-        // WallpaperInvalidated is a static event: without this detach the view (and its whole
-        // item/icon graph) stays rooted for the lifetime of the process.
-        if (wallpaperInvalidatedHandler != null)
-            LiquidGlassBridge.UnsubscribeWallpaperInvalidated(wallpaperInvalidatedHandler);
-
-        if (VisualRoot is Window win)
-        {
-            win.PositionChanged -= OnWindowPositionChanged;
-        }
-
         if (VisualRoot is TopLevel topLevel && topLevel.TryGetPlatformHandle()?.Handle is { } handle)
         {
             WidgetOleDropTarget.Unregister(handle);
@@ -223,7 +166,6 @@ public partial class BigFolder : UserControl, IWidgetSelfRefreshing
                 Math.Abs(e.NewSize.Height - e.PreviousSize.Height) > 1)
             {
                 RecomputeAndPopulate();
-                SchedulePreRender(150);
             }
         }
     }
@@ -465,8 +407,8 @@ public partial class BigFolder : UserControl, IWidgetSelfRefreshing
     }
 
     /// <summary>
-    /// The host widget's visual corner radius, so the popup's corners and its pre-rendered
-    /// glass match the widget card exactly. Null keeps the popup's own default radius.
+    /// The host widget's visual corner radius, so the popup's corners and its glass match the
+    /// widget card exactly. Null keeps the popup's own default radius.
     /// </summary>
     private double? SpawnCornerRadius
     {
@@ -492,40 +434,6 @@ public partial class BigFolder : UserControl, IWidgetSelfRefreshing
             return (null, topLevel);
         }
         return (null, null);
-    }
-
-    private void TriggerLiquidGlassPreRender()
-    {
-        try
-        {
-            if (Bounds.Width <= 0 || Bounds.Height <= 0)
-            {
-                Dispatcher.UIThread.Post(TriggerLiquidGlassPreRender, DispatcherPriority.Loaded);
-                return;
-            }
-
-            var appSettings = new uWidgets.Core.Services.AppSettingsProvider().Get();
-            if (appSettings.Theme.UsesRenderedGlass)
-            {
-                var (screenCenter, topLevel) = GetScreenCenterAndTopLevel();
-                var window = VisualRoot as Window ?? topLevel as Window;
-                var screen = (screenCenter.HasValue && window != null
-                    ? window.Screens.ScreenFromPoint(new PixelPoint((int)Math.Round(screenCenter.Value.X), (int)Math.Round(screenCenter.Value.Y)))
-                    : null) ?? window?.Screens.Primary;
-
-                bool isDark = topLevel?.ActualThemeVariant == ThemeVariant.Dark || (appSettings.Theme.DarkMode ?? true);
-                LiquidGlassPreRenderService.RequestPreRender(
-                    screenCenter,
-                    logicalWidth: 440,
-                    logicalHeight: 480,
-                    cornerRadius: SpawnCornerRadius ?? 18,
-                    theme: appSettings.Theme,
-                    isDark: isDark,
-                    targetScreen: screen,
-                    allScreens: window?.Screens.All);
-            }
-        }
-        catch { }
     }
 
     private const double HoverScale = 1.15;
