@@ -6,7 +6,7 @@ using Folders.Views.Settings;
 using uWidgets.Core.Models.Attributes;
 
 [assembly: AssemblyCompany("creewick")]
-[assembly: AssemblyVersion("0.2.1")]
+[assembly: AssemblyVersion("0.2.2")]
 
 [assembly: WidgetInfo(typeof(Folder), typeof(FolderModel), typeof(FolderSettings), "Folders_Title", "Folders_Subtitle")]
 [assembly: WidgetInfo(typeof(BigFolder), typeof(BigFolderModel), typeof(BigFolderSettings), "Folders_BigFolder_Title", "Folders_BigFolder_Subtitle", defaultColumns: 2, defaultRows: 2)]
