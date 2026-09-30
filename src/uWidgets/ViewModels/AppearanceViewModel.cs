@@ -62,6 +62,12 @@ public class AppearanceViewModel : ReactiveObject
             this.RaisePropertyChanged(nameof(OutlineColor));
             this.RaisePropertyChanged(nameof(OutlineWidth));
             this.RaisePropertyChanged(nameof(DarkMode));
+            // The shadow row has a slider *and* a numeric box side by side, so both have to be
+            // told about a change: the slider moves this property two-way, and without the
+            // announcement below the box kept showing the value it was built with.
+            this.RaisePropertyChanged(nameof(TextShadowEnabled));
+            this.RaisePropertyChanged(nameof(ShowTextShadowStrength));
+            this.RaisePropertyChanged(nameof(TextShadowStrength));
             // The accent controls read the settings directly, so they have to announce changes made
             // elsewhere (another settings window, a profile switch, …) instead of keeping a stale
             // colour on screen.
