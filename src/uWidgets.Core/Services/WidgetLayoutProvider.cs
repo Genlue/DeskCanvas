@@ -24,23 +24,44 @@ public class WidgetLayoutProvider(ILayoutProvider layoutProvider, string screenI
         DataChanging?.Invoke(this, widgetLayout, data);
         var screens = layoutProvider.Get();
         var screen = screens.FindById(ScreenId);
-        if (screen == null) return;
+        var index = screen == null ? -1 : ResolveIndex(screen.Layout);
 
-        var layout = screen.Layout;
-        var index = ResolveIndex(layout);
-
-        // The layout owns the set of widgets: a save may only UPDATE an entry that is
-        // already there. Appending when the entry is missing resurrected widgets the
-        // user had just left behind — most visibly during a profile switch, where the
-        // still-alive widgets of the outgoing profile re-added themselves to the freshly
-        // loaded layout (persisted to disk, so the duplicate sets survived a restart).
         if (index < 0)
         {
+            // Self-heal screen-identity drift. The widget window is alive, so its entry
+            // exists in SOME stored screen configuration — but this provider's ScreenId
+            // can go stale (docked/undocked topology changes, regenerated screen ids),
+            // and dropping every save then silently broke everything the widget writes:
+            // settings edits never persisted ("add folder fails") and drag positions
+            // reverted on the next activation ("widget jumps back"). Search every stored
+            // screen for the entry and rebind instead — this still only ever UPDATES an
+            // existing entry, never appends one (the resurrected-widget guard below).
+            foreach (var candidate in screens.Screens)
+            {
+                var candidateIndex = WidgetLayout.IndexOfIdentity(candidate.Layout, widgetLayout!);
+                if (candidateIndex < 0) continue;
+
+                screen = candidate;
+                index = candidateIndex;
+                ScreenId = candidate.Id;
+                break;
+            }
+        }
+
+        if (screen == null || index < 0)
+        {
+            // The layout owns the set of widgets: a save may only UPDATE an entry that is
+            // already there. Appending when the entry is missing resurrected widgets the
+            // user had just left behind — most visibly during a profile switch, where the
+            // still-alive widgets of the outgoing profile re-added themselves to the
+            // freshly loaded layout (persisted to disk, so the duplicate sets survived a
+            // restart).
             System.Diagnostics.Debug.WriteLine(
                 $"[WidgetLayoutProvider] {data.Type}/{data.SubType} is no longer in screen '{ScreenId}' — save ignored");
             return;
         }
 
+        var layout = screen.Layout;
         layout = layout.Select((item, i) => i == index ? data : item).ToList();
 
         layoutProvider.Save(screens.WithScreen(screen with { Layout = layout }));

@@ -151,7 +151,12 @@ public partial class Widget : Window, INotifyPropertyChanged
         Resized += OnResized;
         PointerPressed += OnPointerPressed;
         AddHandler(PointerPressedEvent, OnPreviewPointerPressed, RoutingStrategies.Tunnel);
-        PointerReleased += OnPointerReleased;
+        // handledEventsToo: an inner control that marks the release as handled (Button,
+        // ToggleSwitch, a drag-aware view…) used to stop the route before the window and
+        // silently skip the position commit — the widget then jumped back to its stored
+        // position on the next activation. AfterMove is idempotent, so a second call from
+        // the deterministic post-drag commit below costs nothing.
+        AddHandler(PointerReleasedEvent, OnPointerReleased, RoutingStrategies.Bubble, handledEventsToo: true);
         widgetLayoutProvider.DataChanged += OnWidgetLayoutUpdated;
         appSettingsProvider.DataChanged += OnAppSettingsUpdated;
         layoutProvider.DataChanged += OnLayoutDataUpdated;
@@ -1237,7 +1242,7 @@ public partial class Widget : Window, INotifyPropertyChanged
     {
         PointerPressed -= OnPointerPressed;
         RemoveHandler(PointerPressedEvent, OnPreviewPointerPressed);
-        PointerReleased -= OnPointerReleased;
+        RemoveHandler(PointerReleasedEvent, OnPointerReleased);
         Resized -= OnResized;
         Activated -= OnActivated;
         Opened -= OnOpened;
@@ -1324,13 +1329,13 @@ public partial class Widget : Window, INotifyPropertyChanged
 
         ToolTip.SetIsOpen(this, false);
         e.Handled = true;
-        BeginMoveDrag(e);
+        BeginMoveDragWithCommit(e);
     }
 
     public void OnPointerPressed(object? sender, PointerPressedEventArgs e)
     {
         if (appSettingsProvider.Get().Layout.LockPosition) return;
-        
+
         // In manual grid mode, ignore drag if the click landed in the outer grid margin
         if (appSettingsProvider.Get().Layout.GridMode == GridMode.Manual)
         {
@@ -1344,8 +1349,27 @@ public partial class Widget : Window, INotifyPropertyChanged
 
         ToolTip.SetIsOpen(this, false);
         if (e.GetCurrentPoint(this).Properties.IsRightButtonPressed) return;
-        
+
+        BeginMoveDragWithCommit(e);
+    }
+
+    /// <summary>
+    /// Start the native move drag and commit the position deterministically when it ends.
+    /// <para>
+    /// Avalonia runs the native move loop inside a posted Send-priority callback (see
+    /// <c>WindowImpl.BeginMoveDrag</c>), which swallows the physical mouse-up — the
+    /// <see cref="OnPointerReleased"/> that is supposed to run <see cref="AfterMove"/> is
+    /// synthesized afterwards at client point (0,0) and only fires if nothing in the tree
+    /// handles it and the legacy mouse pipeline delivers it. When it does not, the dragged
+    /// position was never saved and the widget visibly jumped back to its stored position
+    /// on the next activation (dragged "from a distance"). Queuing the commit behind the
+    /// move callback makes the save independent of the release event for every widget.
+    /// </para>
+    /// </summary>
+    private void BeginMoveDragWithCommit(PointerPressedEventArgs e)
+    {
         BeginMoveDrag(e);
+        Dispatcher.UIThread.Post(AfterMove, DispatcherPriority.Background);
     }
 
     private void AfterMove()

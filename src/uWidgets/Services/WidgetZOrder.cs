@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using Avalonia.Controls;
 using Avalonia.Threading;
+using static Avalonia.Controls.Win32Properties;
 
 namespace uWidgets.Services;
 
@@ -79,18 +80,18 @@ public static class WidgetZOrder
         var hwnd = HwndOf(window);
         if (hwnd == IntPtr.Zero) return;
 
-        SeverNativeOwner(hwnd);
+        window.Closed += (_, _) =>
+        {
+            lock (gate) widgetHandles.Remove(hwnd);
+        };
+
+        SeverNativeOwner(window, hwnd);
 
         lock (gate)
         {
             PruneDeadHandles();
             if (!widgetHandles.Contains(hwnd)) widgetHandles.Add(hwnd);
         }
-
-        window.Closed += (_, _) =>
-        {
-            lock (gate) widgetHandles.Remove(hwnd);
-        };
 
         AttachZOrderHook(window, () => HwndBottom);
     }
@@ -116,7 +117,7 @@ public static class WidgetZOrder
         if (hwnd == IntPtr.Zero) return;
 
         window.Topmost = false;
-        SeverNativeOwner(hwnd);
+        SeverNativeOwner(window, hwnd);
 
         AttachZOrderHook(window, () => ResolvePanelInsertAfter(hwnd));
     }
@@ -128,11 +129,29 @@ public static class WidgetZOrder
     /// the reason the link existed in the first place. See the type remarks for
     /// why an owned window can never rest in the bottom band.
     /// </summary>
-    private static void SeverNativeOwner(IntPtr hwnd)
+    /// <remarks>
+    /// Two ordering rules keep the taskbar button from ever flashing:
+    /// <list type="number">
+    /// <item><b>WS_EX_TOOLWINDOW goes on BEFORE the owner link is severed.</b> While the
+    /// window is visible, the gap between "unowned" and "tool window" is a taskbar-visible
+    /// window — Explorer creates the uWidgetsPlus taskbar button for it and tears it down
+    /// a moment later (the brief taskbar flash when a secondary panel opens).</item>
+    /// <item><b>The tool-window bit is re-asserted through
+    /// <see cref="Win32Properties.AddWindowStylesCallback"/></b> — Avalonia recomputes the
+    /// whole exStyle from scratch on every style update (ShowWindow, state changes,
+    /// transparency switches…) and would silently drop a bit we inject once; with the owner
+    /// link severed there is nothing left to keep the button away, so it would come back
+    /// for good. The callback runs inside every recomputation, so the bit always survives.</item>
+    /// </list>
+    /// </remarks>
+    private static void SeverNativeOwner(Window window, IntPtr hwnd)
     {
-        SetWindowLongPtr(hwnd, GWL_HWNDPARENT, IntPtr.Zero);
         var exStyle = GetWindowLong(hwnd, GWL_EXSTYLE);
         SetWindowLongPtr(hwnd, GWL_EXSTYLE, new IntPtr(exStyle | WS_EX_TOOLWINDOW));
+        SetWindowLongPtr(hwnd, GWL_HWNDPARENT, IntPtr.Zero);
+
+        AddWindowStylesCallback(window, (style, exStyle) =>
+            (style, exStyle | WS_EX_TOOLWINDOW));
     }
 
     /// <summary>
