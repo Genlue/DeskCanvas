@@ -24,7 +24,7 @@
                            Text="{Binding CityName}" />
                 <TextBlock x:Name="Digital0" Grid.Row="2" IsVisible="False"
                            HorizontalAlignment="Stretch" TextAlignment="Center"
-                           FontSize="20" FontWeight="Bold" LetterSpacing="-1"
+                           FontSize="20" FontWeight="SemiBold" LetterSpacing="-1"
                            Margin="0,0,0,0"
                            Text="{Binding DigitalTimeText}" />
             </Grid>
@@ -43,7 +43,7 @@
                            Text="{Binding CityName}" />
                 <TextBlock x:Name="Digital1" Grid.Row="2" IsVisible="False"
                            HorizontalAlignment="Stretch" TextAlignment="Center"
-                           FontSize="20" FontWeight="Bold" LetterSpacing="-1"
+                           FontSize="20" FontWeight="SemiBold" LetterSpacing="-1"
                            Margin="0,0,0,0"
                            Text="{Binding DigitalTimeText}" />
             </Grid>
@@ -62,7 +62,7 @@
                            Text="{Binding CityName}" />
                 <TextBlock x:Name="Digital2" Grid.Row="2" IsVisible="False"
                            HorizontalAlignment="Stretch" TextAlignment="Center"
-                           FontSize="20" FontWeight="Bold" LetterSpacing="-1"
+                           FontSize="20" FontWeight="SemiBold" LetterSpacing="-1"
                            Margin="0,0,0,0"
                            Text="{Binding DigitalTimeText}" />
             </Grid>
@@ -81,7 +81,7 @@
                            Text="{Binding CityName}" />
                 <TextBlock x:Name="Digital3" Grid.Row="2" IsVisible="False"
                            HorizontalAlignment="Stretch" TextAlignment="Center"
-                           FontSize="20" FontWeight="Bold" LetterSpacing="-1"
+                           FontSize="20" FontWeight="SemiBold" LetterSpacing="-1"
                            Margin="0,0,0,0"
                            Text="{Binding DigitalTimeText}" />
             </Grid>

@@ -168,7 +168,7 @@
                     <!-- Inner Time Text -->
                     <StackPanel Canvas.Left="0" Canvas.Top="34" Width="110" HorizontalAlignment="Center">
                         <TextBlock Text="{Binding TimeText}"
-                                   FontSize="22" FontWeight="Bold" LetterSpacing="-0.5"
+                                   FontSize="22" FontWeight="SemiBold" LetterSpacing="-0.5"
                                    TextAlignment="Center" HorizontalAlignment="Center"
                                    Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}" />
                         <TextBlock Text="{Binding CycleProgressText}"
@@ -222,7 +222,7 @@
                         </Path>
                         <StackPanel Canvas.Left="0" Canvas.Top="38" Width="110" HorizontalAlignment="Center">
                             <TextBlock Text="{Binding TimeText}"
-                                       FontSize="22" FontWeight="Bold" LetterSpacing="-0.5"
+                                       FontSize="22" FontWeight="SemiBold" LetterSpacing="-0.5"
                                        TextAlignment="Center" HorizontalAlignment="Center"
                                        Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}" />
                         </StackPanel>
@@ -319,7 +319,7 @@
                     </Path>
                     <StackPanel Canvas.Left="0" Canvas.Top="32" Width="110" HorizontalAlignment="Center">
                         <TextBlock Text="{Binding TimeText}"
-                                   FontSize="24" FontWeight="Bold" LetterSpacing="-0.5"
+                                   FontSize="24" FontWeight="SemiBold" LetterSpacing="-0.5"
                                    TextAlignment="Center" HorizontalAlignment="Center"
                                    Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}" />
                         <TextBlock Text="{Binding PhaseTitle}"

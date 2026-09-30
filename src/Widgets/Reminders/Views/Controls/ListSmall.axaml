@@ -68,8 +68,8 @@
                                                               MinWidth="0"
                                                               x:DataType="models:ReminderModel" DataContext="{Binding}" 
                                                               LostFocus="EditReminder" />
-                                <Path Grid.Row="1" Grid.Column="1" Height="1" Stretch="Fill" Opacity="0.2" Margin="8,0"
-                                      StrokeThickness="1.5" StrokeDashArray="1,1" StrokeDashOffset="1"
+                                <Path Grid.Row="1" Grid.Column="1" Height="1" Stretch="Fill" Opacity="0.12" Margin="8,0"
+                                      StrokeThickness="1"
                                       Stroke="{DynamicResource SystemControlForegroundBaseHighBrush}" >
                                     <Path.Data>
                                         <LineGeometry StartPoint="0,0" EndPoint="1,0"/>

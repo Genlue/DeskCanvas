@@ -45,7 +45,7 @@
                    HorizontalAlignment="Right" VerticalAlignment="Top"
                    Text="{Binding CurrentMinMax}" />
         <Path Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2" Margin="0 4"
-              Height="1" Stretch="Fill" Opacity="0.2" StrokeThickness="1.5"
+              Height="1" Stretch="Fill" Opacity="0.12" StrokeThickness="1"
               Stroke="{DynamicResource WeatherForegroundBrush}" >
             <Path.Data>
                 <LineGeometry StartPoint="0,0" EndPoint="1,0"/>
@@ -61,7 +61,7 @@
                                       Foreground="{DynamicResource WeatherIconBrush}" 
                                       VerticalAlignment="Center" Margin="0 4"
                                       Data="{Binding Icon}" />
-                            <TextBlock Grid.Row="2" Text="{Binding Temperature}" HorizontalAlignment="Center" VerticalAlignment="Bottom" FontWeight="Bold" />
+                            <TextBlock Grid.Row="2" Text="{Binding Temperature}" HorizontalAlignment="Center" VerticalAlignment="Bottom" FontWeight="SemiBold" />
                         </Grid>
                     </DataTemplate>
                 </ItemsControl.ItemTemplate>
@@ -73,7 +73,7 @@
             </ItemsControl>
         </ScrollViewer>
         <Path Grid.Row="5" Grid.Column="0" Grid.ColumnSpan="2" Margin="0 4"
-              Height="1" Stretch="Fill" Opacity="0.2" StrokeThickness="1.5"
+              Height="1" Stretch="Fill" Opacity="0.12" StrokeThickness="1"
               Stroke="{DynamicResource WeatherForegroundBrush}" >
             <Path.Data>
                 <LineGeometry StartPoint="0,0" EndPoint="1,0"/>
@@ -89,7 +89,7 @@
                                       Margin="0 -2 0 0"
                                       Foreground="{DynamicResource WeatherIconBrush}" 
                                       Data="{Binding Icon}" />
-                            <TextBlock Grid.Column="2" Text="{Binding Min}" Opacity="0.5" HorizontalAlignment="Right" FontWeight="Bold" />
+                            <TextBlock Grid.Column="2" Text="{Binding Min}" Opacity="0.5" HorizontalAlignment="Right" FontWeight="SemiBold" />
                             <Path Grid.Column="3" Margin="10 4 10 0" 
                                   Height="5" Stretch="Fill" Opacity="0.2" StrokeThickness="5" StrokeLineCap="Round"
                                   Stroke="{DynamicResource WeatherForegroundBrush}" >
@@ -110,7 +110,7 @@
                                     </Path.Data>
                                 </Path>
                             </Grid>
-                            <TextBlock Grid.Column="4" Text="{Binding Max}" HorizontalAlignment="Right" FontWeight="Bold" />
+                            <TextBlock Grid.Column="4" Text="{Binding Max}" HorizontalAlignment="Right" FontWeight="SemiBold" />
                         </Grid>
                     </DataTemplate>
                 </ItemsControl.ItemTemplate>

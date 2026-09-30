@@ -58,7 +58,7 @@
                             Spacing="6"
                             VerticalAlignment="Center">
                     <TextBlock Text="{Binding TemperatureText}"
-                               FontWeight="Bold"
+                               FontWeight="SemiBold"
                                FontSize="26"
                                LetterSpacing="-0.5"
                                VerticalAlignment="Center"
@@ -78,7 +78,7 @@
                      HorizontalAlignment="Left"
                      VerticalAlignment="Bottom">
                 <TextBlock Text="{Binding TimeText}"
-                           FontWeight="Bold"
+                           FontWeight="SemiBold"
                            FontSize="60"
                            FontFamily="Inter, Segoe UI, -apple-system, sans-serif"
                            LetterSpacing="-1.5"

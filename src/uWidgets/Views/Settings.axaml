@@ -24,9 +24,16 @@
             <Setter Property="Background" Value="{DynamicResource SettingsBackground}" />
         </Style>
         <Style Selector="ListBoxItem">
-            <Setter Property="CornerRadius" Value="6" />
+            <Setter Property="CornerRadius" Value="8" />
             <Setter Property="Margin" Value="2,1" />
             <Setter Property="Padding" Value="10,7" />
+        </Style>
+        <!-- iOS/macOS 风格的控件圆角：下拉框与按钮统一 8px -->
+        <Style Selector="ComboBox">
+            <Setter Property="CornerRadius" Value="8" />
+        </Style>
+        <Style Selector="Button">
+            <Setter Property="CornerRadius" Value="8" />
         </Style>
         <Style Selector="ListBoxItem:selected /template/ ContentPresenter">
             <Setter Property="Background" Value="{DynamicResource SystemRevealListLowColor}" />                
@@ -63,8 +70,8 @@
                                         <TextBlock Text="{Binding Text}" 
                                                    FontSize="11" 
                                                    FontWeight="SemiBold" 
-                                                   Foreground="{DynamicResource SystemAccentColor}"
-                                                   Margin="2,8,0,0"
+                                                   Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                                                   Margin="4,10,0,2"
                                                    IsVisible="{Binding IsHeader}" />
 
                                         <!-- Separator Line -->

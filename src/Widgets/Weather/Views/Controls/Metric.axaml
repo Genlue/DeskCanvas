@@ -5,8 +5,8 @@
              x:DataType="viewModels:MetricViewModel">
     <Viewbox Stretch="Uniform">
         <Canvas Width="110" Height="110">
-            <Path StrokeThickness="10" StrokeDashArray="21,21" StrokeLineCap="Round"
-                  Opacity="0.2"
+            <Path StrokeThickness="8" StrokeDashArray="21,21" StrokeLineCap="Round"
+                  Opacity="0.15"
                   Stroke="{DynamicResource SystemControlForegroundBaseHighBrush}"
                   RenderTransformOrigin="55,55">
                 <Path.RenderTransform>
@@ -16,7 +16,7 @@
                     <EllipseGeometry Center="55,55" RadiusX="50" RadiusY="50" />
                 </Path.Data>
             </Path>
-            <Path StrokeThickness="10" StrokeLineCap="Round"
+            <Path StrokeThickness="8" StrokeLineCap="Round"
                   StrokeDashArray="{Binding StrokeDashArray}"
                   IsVisible="{Binding IsProgressVisible}"
                   Stroke="{DynamicResource WeatherGaugeBrush}"

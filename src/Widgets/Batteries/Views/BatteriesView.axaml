@@ -16,14 +16,14 @@
                 <Viewbox Grid.Row="0" Stretch="Uniform" ClipToBounds="False">
                     <Canvas Width="110" Height="110">
                         <!-- Track -->
-                        <Path Opacity="0.15" StrokeThickness="10"
+                        <Path Opacity="0.15" StrokeThickness="8"
                               Stroke="{DynamicResource SystemControlForegroundBaseHighBrush}">
                             <Path.Data>
                                 <EllipseGeometry Center="55,55" RadiusX="50" RadiusY="50" />
                             </Path.Data>
                         </Path>
                         <!-- Active Arc -->
-                        <Path StrokeThickness="10" StrokeDashArray="31.416,31.416" StrokeLineCap="Round"
+                        <Path StrokeThickness="8" StrokeDashArray="31.416,31.416" StrokeLineCap="Round"
                               StrokeDashOffset="{Binding StrokeDashOffset}"
                               Stroke="{Binding StatusBrush}"
                               IsVisible="{Binding HasDevice}"
@@ -37,9 +37,9 @@
                         </Path>
                         <!-- Center Icon (enlarged 46x46 centered at 32,32) -->
                         <PathIcon Data="{Binding IconData}"
-                                  Canvas.Left="32" Canvas.Top="32" Width="46" Height="46"
+                                  Canvas.Left="35" Canvas.Top="35" Width="40" Height="40"
                                   Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}"
-                                  Opacity="0.9"
+                                  Opacity="0.85"
                                   IsVisible="{Binding HasDevice}" />
                         <!-- Charging Badge: macOS style, centered on the ring's top -->
                         <Border IsVisible="{Binding IsCharging}"
@@ -72,13 +72,13 @@
                 </Grid.RowDefinitions>
                 <Viewbox Grid.Row="0" Stretch="Uniform" ClipToBounds="False">
                     <Canvas Width="110" Height="110">
-                        <Path Opacity="0.15" StrokeThickness="10"
+                        <Path Opacity="0.15" StrokeThickness="8"
                               Stroke="{DynamicResource SystemControlForegroundBaseHighBrush}">
                             <Path.Data>
                                 <EllipseGeometry Center="55,55" RadiusX="50" RadiusY="50" />
                             </Path.Data>
                         </Path>
-                        <Path StrokeThickness="10" StrokeDashArray="31.416,31.416" StrokeLineCap="Round"
+                        <Path StrokeThickness="8" StrokeDashArray="31.416,31.416" StrokeLineCap="Round"
                               StrokeDashOffset="{Binding StrokeDashOffset}"
                               Stroke="{Binding StatusBrush}"
                               IsVisible="{Binding HasDevice}"
@@ -91,9 +91,9 @@
                             </Path.Data>
                         </Path>
                         <PathIcon Data="{Binding IconData}"
-                                  Canvas.Left="32" Canvas.Top="32" Width="46" Height="46"
+                                  Canvas.Left="35" Canvas.Top="35" Width="40" Height="40"
                                   Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}"
-                                  Opacity="0.9"
+                                  Opacity="0.85"
                                   IsVisible="{Binding HasDevice}" />
                         <Border IsVisible="{Binding IsCharging}"
                                 Canvas.Left="43" Canvas.Top="-7"
@@ -125,13 +125,13 @@
                 </Grid.RowDefinitions>
                 <Viewbox Grid.Row="0" Stretch="Uniform" ClipToBounds="False">
                     <Canvas Width="110" Height="110">
-                        <Path Opacity="0.15" StrokeThickness="10"
+                        <Path Opacity="0.15" StrokeThickness="8"
                               Stroke="{DynamicResource SystemControlForegroundBaseHighBrush}">
                             <Path.Data>
                                 <EllipseGeometry Center="55,55" RadiusX="50" RadiusY="50" />
                             </Path.Data>
                         </Path>
-                        <Path StrokeThickness="10" StrokeDashArray="31.416,31.416" StrokeLineCap="Round"
+                        <Path StrokeThickness="8" StrokeDashArray="31.416,31.416" StrokeLineCap="Round"
                               StrokeDashOffset="{Binding StrokeDashOffset}"
                               Stroke="{Binding StatusBrush}"
                               IsVisible="{Binding HasDevice}"
@@ -144,9 +144,9 @@
                             </Path.Data>
                         </Path>
                         <PathIcon Data="{Binding IconData}"
-                                  Canvas.Left="32" Canvas.Top="32" Width="46" Height="46"
+                                  Canvas.Left="35" Canvas.Top="35" Width="40" Height="40"
                                   Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}"
-                                  Opacity="0.9"
+                                  Opacity="0.85"
                                   IsVisible="{Binding HasDevice}" />
                         <Border IsVisible="{Binding IsCharging}"
                                 Canvas.Left="43" Canvas.Top="-7"
@@ -178,13 +178,13 @@
                 </Grid.RowDefinitions>
                 <Viewbox Grid.Row="0" Stretch="Uniform" ClipToBounds="False">
                     <Canvas Width="110" Height="110">
-                        <Path Opacity="0.15" StrokeThickness="10"
+                        <Path Opacity="0.15" StrokeThickness="8"
                               Stroke="{DynamicResource SystemControlForegroundBaseHighBrush}">
                             <Path.Data>
                                 <EllipseGeometry Center="55,55" RadiusX="50" RadiusY="50" />
                             </Path.Data>
                         </Path>
-                        <Path StrokeThickness="10" StrokeDashArray="31.416,31.416" StrokeLineCap="Round"
+                        <Path StrokeThickness="8" StrokeDashArray="31.416,31.416" StrokeLineCap="Round"
                               StrokeDashOffset="{Binding StrokeDashOffset}"
                               Stroke="{Binding StatusBrush}"
                               IsVisible="{Binding HasDevice}"
@@ -197,9 +197,9 @@
                             </Path.Data>
                         </Path>
                         <PathIcon Data="{Binding IconData}"
-                                  Canvas.Left="32" Canvas.Top="32" Width="46" Height="46"
+                                  Canvas.Left="35" Canvas.Top="35" Width="40" Height="40"
                                   Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}"
-                                  Opacity="0.9"
+                                  Opacity="0.85"
                                   IsVisible="{Binding HasDevice}" />
                         <Border IsVisible="{Binding IsCharging}"
                                 Canvas.Left="43" Canvas.Top="-7"

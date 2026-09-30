@@ -4,8 +4,7 @@
              x:Class="uWidgets.Views.Controls.Setting">
     <UserControl.Template>
         <ControlTemplate>
-            <Border CornerRadius="6" BorderThickness="1" Padding="14,10"
-                    BorderBrush="{DynamicResource ToolTipBorderBrush}" 
+            <Border CornerRadius="10" BorderThickness="0" Padding="16,12"
                     Background="{DynamicResource SystemControlBackgroundAltHighBrush}">
                 <Grid ColumnDefinitions="Auto,*,Auto">
                     <PathIcon Grid.RowSpan="2" Height="24" VerticalAlignment="Center" Margin="0 0 14 0"
@@ -14,7 +13,7 @@
                     <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,10,0">
                         <TextBlock VerticalAlignment="Center"
                                    Text="{Binding Title, RelativeSource={RelativeSource AncestorType=controls:Setting}}" />
-                        <TextBlock IsVisible="{Binding SubtitleVisible, RelativeSource={RelativeSource AncestorType=controls:Setting}}" Opacity="0.7" FontSize="12" Margin="0 4 0 0"
+                        <TextBlock IsVisible="{Binding SubtitleVisible, RelativeSource={RelativeSource AncestorType=controls:Setting}}" Opacity="0.6" FontSize="12" Margin="0 3 0 0"
                                    TextWrapping="Wrap"
                                    Text="{Binding Subtitle, RelativeSource={RelativeSource AncestorType=controls:Setting}}" />
                     </StackPanel>

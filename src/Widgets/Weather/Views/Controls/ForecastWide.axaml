@@ -54,7 +54,7 @@
                                       Foreground="{DynamicResource WeatherIconBrush}" 
                                       VerticalAlignment="Center" Margin="0 4"
                                       Data="{Binding Icon}" />
-                            <TextBlock Grid.Row="2" Text="{Binding Temperature}" HorizontalAlignment="Center" VerticalAlignment="Bottom" FontWeight="Bold" />
+                            <TextBlock Grid.Row="2" Text="{Binding Temperature}" HorizontalAlignment="Center" VerticalAlignment="Bottom" FontWeight="SemiBold" />
                         </Grid>
                     </DataTemplate>
                 </ItemsControl.ItemTemplate>
