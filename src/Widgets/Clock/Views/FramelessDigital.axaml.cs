@@ -133,10 +133,7 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
         lastRegionKey = null;
         hasRegionSet = false;
         SetupTimer();
-        UpdateTransparencyLevel();
-        ClearLiquidGlassCache();
-        RequestBackdropRender();
-        InvalidateVisual();
+        ApplyCurrentMaterial();
     }
 
     private void OnUnloaded(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
@@ -212,11 +209,7 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
             return;
         }
 
-        lastRegionKey = null;
-        ClearLiquidGlassCache();
-        UpdateTransparencyLevel();
-        RequestBackdropRender();
-        InvalidateVisual();
+        ApplyCurrentMaterial();
     }
 
     private void OnSizeChanged()
@@ -257,9 +250,7 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
         suspended = false;
         lastRegionKey = null;
         SetupTimer();
-        UpdateTransparencyLevel();
-        RequestBackdropRender();
-        InvalidateVisual();
+        ApplyCurrentMaterial();
     }
 
     private void OnWindowPositionChanged(object? sender, PixelPointEventArgs e)
@@ -275,19 +266,7 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
 
     private void OnAppSettingsChanged(object sender, AppSettings? oldData, AppSettings newData)
     {
-        lastRegionKey = null;
-        ClearLiquidGlassCache();
-        UpdateTransparencyLevel();
-
-        var (isAcrylic, _, _) = ResolveEffectiveTheme();
-        if (window != null && IsDesktopWidget && !isAcrylic && hasRegionSet)
-        {
-            InteropService.ClearWidgetRegion(window);
-            hasRegionSet = false;
-        }
-
-        RequestBackdropRender();
-        InvalidateVisual();
+        ApplyCurrentMaterial();
     }
 
     public void Refresh(WidgetLayout layout)
@@ -305,11 +284,8 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
                 {
                     model = updated;
                     lastRegionKey = null;
-                    ClearLiquidGlassCache();
                     SetupTimer();
-                    UpdateTransparencyLevel();
-                    RequestBackdropRender();
-                    InvalidateVisual();
+                    ApplyCurrentMaterial();
                 }
             }
             catch (Exception ex)
@@ -336,10 +312,46 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
     /// global 液态玻璃 / 柔光 recipe reaches the numerals through the glyph glass pipeline, a global
     /// 毛玻璃 gives the OS acrylic backdrop and a global 纯色 a plain fill.
     /// </summary>
+    private FramelessMaterial CurrentMaterial => FramelessThemeResolver.Resolve(appSettingsProvider?.Get().Theme);
+
     private (bool IsAcrylic, bool IsLiquidGlass, bool IsSolid) ResolveEffectiveTheme()
     {
-        var material = FramelessThemeResolver.Resolve(appSettingsProvider?.Get().Theme);
+        var material = CurrentMaterial;
         return (material.IsAcrylic, material.IsRenderedGlass, material.IsSolid);
+    }
+
+    /// <summary>
+    /// The ONE path that (re)materializes the clock. Every invalidating event — window load,
+    /// a global theme change, a light/dark variant change, a model refresh, suspend/resume —
+    /// funnels through here, so the side effects (glyph cache, window transparency, glyph
+    /// window region, backdrop re-render) can never drift out of sync with the resolved
+    /// material again. This used to be re-implemented per handler with hand-picked subsets
+    /// of the four steps, which is exactly how "the frameless clock stopped following the
+    /// global theme" kept regressing: one missed step in one handler left the widget stuck
+    /// on the previous material.
+    /// <para>
+    /// The pre-rendered frames are always rebuilt: beyond the material, global theme edits
+    /// (accent, optics, 染色强度, font) all reach the glyph renderer too, and diffing every
+    /// one of them is exactly the fragility this method exists to remove. Rebuilding is
+    /// cheap and only happens on a user-initiated settings change. The window-region
+    /// teardown and transparency hint are idempotent and run unconditionally as well.
+    /// </para>
+    /// </summary>
+    private void ApplyCurrentMaterial()
+    {
+        lastRegionKey = null;
+        ClearLiquidGlassCache();
+
+        UpdateTransparencyLevel();
+
+        if (window != null && IsDesktopWidget && !CurrentMaterial.IsAcrylic && hasRegionSet)
+        {
+            InteropService.ClearWidgetRegion(window);
+            hasRegionSet = false;
+        }
+
+        RequestBackdropRender();
+        InvalidateVisual();
     }
 
     // Cached hint arrays: UpdateTransparencyLevel runs on every wallpaper invalidation (every
@@ -742,7 +754,9 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
         {
             if (IsDesktopWidget)
             {
-                var regionKey = $"{timeStr}_{targetW}_{targetH}_{model.FontFamily}_{model.FontWeight}_{model.StretchFill}";
+                // Material + variant are part of the key so a theme switch can never leave a
+                // glyph region shaped for the previous material on the window.
+                var regionKey = $"{timeStr}_{targetW}_{targetH}_{model.FontFamily}_{model.FontWeight}_{model.StretchFill}_{isDark}_{isAcrylic}_{isLiquidGlass}";
                 if (regionKey != lastRegionKey || !hasRegionSet)
                 {
                     lastRegionKey = regionKey;
