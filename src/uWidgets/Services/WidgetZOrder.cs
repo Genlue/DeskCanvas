@@ -54,12 +54,15 @@ public static class WidgetZOrder
     private const uint SWP_NOMOVE = 0x0002;
     private const uint SWP_NOZORDER = 0x0004;
     private const uint SWP_NOACTIVATE = 0x0010;
+    private const uint SWP_FRAMECHANGED = 0x0020;
     private const uint GW_HWNDNEXT = 2;
     private const uint GW_HWNDPREV = 3;
+    private const uint GW_OWNER = 4;
     private const int GWL_EXSTYLE = -20;
     private const int GWL_HWNDPARENT = -8;
-    private const int WS_EX_TOOLWINDOW = 0x00000080;
-    private const int WS_EX_TOPMOST = 0x00000008;
+    private const uint WS_EX_TOPMOST = 0x00000008;
+    private const uint WS_EX_TOOLWINDOW = 0x00000080;
+    private const uint WS_EX_APPWINDOW = 0x00040000;
 
     private static readonly IntPtr HwndTop = IntPtr.Zero;
     private static readonly IntPtr HwndBottom = new(1);
@@ -130,28 +133,71 @@ public static class WidgetZOrder
     /// why an owned window can never rest in the bottom band.
     /// </summary>
     /// <remarks>
-    /// Two ordering rules keep the taskbar button from ever flashing:
+    /// Three rules keep the taskbar button from ever appearing. They are all needed: the shell
+    /// decides on a button from the window's <i>live</i> extended style, and we are deliberately
+    /// removing the owner link that would otherwise suppress the button for free.
     /// <list type="number">
-    /// <item><b>WS_EX_TOOLWINDOW goes on BEFORE the owner link is severed.</b> While the
-    /// window is visible, the gap between "unowned" and "tool window" is a taskbar-visible
-    /// window — Explorer creates the uWidgetsPlus taskbar button for it and tears it down
-    /// a moment later (the brief taskbar flash when a secondary panel opens).</item>
-    /// <item><b>The tool-window bit is re-asserted through
-    /// <see cref="Win32Properties.AddWindowStylesCallback"/></b> — Avalonia recomputes the
-    /// whole exStyle from scratch on every style update (ShowWindow, state changes,
-    /// transparency switches…) and would silently drop a bit we inject once; with the owner
-    /// link severed there is nothing left to keep the button away, so it would come back
-    /// for good. The callback runs inside every recomputation, so the bit always survives.</item>
+    /// <item><b>WS_EX_TOOLWINDOW goes on BEFORE the owner link is severed.</b> While the window is
+    /// visible, the gap between "unowned" and "tool window" is a taskbar-visible window — Explorer
+    /// creates the uWidgetsPlus taskbar button for it and tears it down a moment later (the brief
+    /// taskbar flash when a secondary panel opens).</item>
+    /// <item><b>WS_EX_APPWINDOW is cleared at the same time.</b> APPWINDOW outranks TOOLWINDOW, so a
+    /// single stale APPWINDOW bit re-enables the button no matter how firmly the tool-window bit is
+    /// set — and Avalonia does set it: its style recomputation writes
+    /// <c>exStyle |= WS_EX_APPWINDOW</c> whenever the properties it holds say <c>ShowInTaskbar</c>.
+    /// Clearing it here (and in the callback below, which runs after every recomputation) makes the
+    /// window ineligible instead of merely "usually ineligible".</item>
+    /// <item><b>The style change is flushed with SWP_FRAMECHANGED.</b> The window manager caches
+    /// extended-style data for an already-visible window, so a bit poked with SetWindowLong may not
+    /// reach the state the shell reads until the window is re-evaluated — which is exactly why the
+    /// flash was intermittent (it depended on which of the following placements ended up flushing
+    /// the change first). SWP_FRAMECHANGED forces that evaluation immediately.</item>
     /// </list>
+    /// The tool-window bit is additionally re-asserted through
+    /// <see cref="Win32Properties.AddWindowStylesCallback"/>: Avalonia recomputes the whole exStyle
+    /// from scratch on every style update (ShowWindow, state changes, transparency switches…) and
+    /// would silently drop a bit injected once.
     /// </remarks>
     private static void SeverNativeOwner(Window window, IntPtr hwnd)
     {
-        var exStyle = GetWindowLong(hwnd, GWL_EXSTYLE);
-        SetWindowLongPtr(hwnd, GWL_EXSTYLE, new IntPtr(exStyle | WS_EX_TOOLWINDOW));
+        ApplyToolWindowStyle(hwnd);
         SetWindowLongPtr(hwnd, GWL_HWNDPARENT, IntPtr.Zero);
 
         AddWindowStylesCallback(window, (style, exStyle) =>
-            (style, exStyle | WS_EX_TOOLWINDOW));
+            (style, ForceToolWindow(exStyle)));
+
+        SetWindowPos(hwnd, IntPtr.Zero, 0, 0, 0, 0,
+            SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED);
+    }
+
+    /// <summary>
+    /// The exact extended style every band member must carry: WS_EX_TOOLWINDOW set — that is what
+    /// keeps the window out of the taskbar and Alt-Tab once its owner link is gone — and
+    /// WS_EX_APPWINDOW clear, because APPWINDOW wins over TOOLWINDOW and would bring the very
+    /// taskbar button back.
+    /// </summary>
+    private static uint ForceToolWindow(uint exStyle) =>
+        (exStyle | WS_EX_TOOLWINDOW) & ~WS_EX_APPWINDOW;
+
+    /// <summary>Write <see cref="ForceToolWindow"/> back, but only when a bit is actually wrong.</summary>
+    private static void ApplyToolWindowStyle(IntPtr hwnd)
+    {
+        var exStyle = unchecked((uint)GetWindowLong(hwnd, GWL_EXSTYLE));
+        var wanted = ForceToolWindow(exStyle);
+        if (wanted != exStyle)
+            SetWindowLongPtr(hwnd, GWL_EXSTYLE, new IntPtr(unchecked((int)wanted)));
+    }
+
+    /// <summary>
+    /// Drop an owner link that came back. Band members must be ownerless for their whole lifetime
+    /// (see the type remarks), and something re-parenting one is not hypothetical: Avalonia's
+    /// <c>UpdateWindowProperties</c> does it on every style recomputation for a
+    /// <c>ShowInTaskbar=false</c> window it believes has no parent.
+    /// </summary>
+    private static void EnsureUnowned(IntPtr hwnd)
+    {
+        if (GetWindow(hwnd, GW_OWNER) != IntPtr.Zero)
+            SetWindowLongPtr(hwnd, GWL_HWNDPARENT, IntPtr.Zero);
     }
 
     /// <summary>
@@ -206,7 +252,7 @@ public static class WidgetZOrder
     }
 
     private static bool IsTopmostWindow(IntPtr hwnd) =>
-        (GetWindowLong(hwnd, GWL_EXSTYLE) & WS_EX_TOPMOST) != 0;
+        (unchecked((uint)GetWindowLong(hwnd, GWL_EXSTYLE)) & WS_EX_TOPMOST) != 0;
 
     /// <summary>
     /// Install the z-order enforcement hook on the window and apply the initial
@@ -254,6 +300,22 @@ public static class WidgetZOrder
         IntPtr Hook(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam, ref bool handled)
         {
             if (msg != WM_WINDOWPOSCHANGED || selfPlacement) return IntPtr.Zero;
+
+            // Self-healing taskbar guard. Every show, activation, state or transparency change
+            // lands here, and any of them can be preceded by an Avalonia style recomputation that
+            // wrote WS_EX_APPWINDOW back in (see SeverNativeOwner) — the shell reads the live
+            // style, so the window must not be left eligible even for one placement. One
+            // GetWindowLong in the common case; the write only happens when a bit is wrong.
+            ApplyToolWindowStyle(hwnd);
+
+            // ...and the owner link, for the other half of the same problem: Avalonia's
+            // UpdateWindowProperties re-parents an ownerless ShowInTaskbar=false window back onto
+            // its shared offscreen window on every style recomputation, which silently undoes the
+            // severing the band depends on. Setting and clearing an owner on a visible window also
+            // makes the shell re-evaluate the window's taskbar presence, so this is a second route
+            // by which the button used to come back. Re-severed whenever one reappears; the check
+            // itself is a single GetWindow.
+            EnsureUnowned(hwnd);
 
             // The flags cannot be trusted as a "no z-change happened" shortcut:
             // system-initiated owned-group maintenance moves windows while carrying
