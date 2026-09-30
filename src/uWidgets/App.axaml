@@ -36,13 +36,16 @@
             <Setter Property="BorderThickness" Value="1" />
             <Setter Property="CornerRadius" Value="8" />
         </Style>
+        <!-- Widget right-click menu: fixed 8px radius — a menu is a menu, it should not
+             inherit the widget card's radius (which can be 36+). Items nest inside it:
+             menu 8 − padding 5 → item 4. -->
         <Style Selector="ContextMenu.WidgetContextMenu">
-            <Setter Property="CornerRadius" Value="{DynamicResource WidgetCardCornerRadius}" />
+            <Setter Property="CornerRadius" Value="8" />
             <Setter Property="Padding" Value="5" />
             <Setter Property="ClipToBounds" Value="True" />
         </Style>
         <Style Selector="ContextMenu.WidgetContextMenu MenuItem">
-            <Setter Property="CornerRadius" Value="{DynamicResource WidgetInnerCornerRadius}" />
+            <Setter Property="CornerRadius" Value="4" />
             <Setter Property="Margin" Value="2,1" />
         </Style>
         <Style Selector="MenuFlyoutPresenter">

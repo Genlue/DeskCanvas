@@ -626,9 +626,10 @@ public partial class Widget : Window, INotifyPropertyChanged
     /// Margin of the stack pagination dots host. Every surface keeps the dots floating in
     /// the right margin outside the card — except 毛玻璃 (acrylic): DWM applies the OS blur
     /// to the whole clipped window region, so an out-of-card strip holding the dots would
-    /// show as a frosted rounded pill behind them. There the dots move inside the card
-    /// (over its right edge), which also lets <see cref="ApplyWidgetRegion"/> clip to the
-    /// card alone.
+    /// show as a frosted tab behind them (translucent fills there read as glass, and an opaque
+    /// one as a foreign slab — the strip's own backdrop is <i>blurred wallpaper</i>). There the
+    /// dots move inside the card (over its right edge), which also lets
+    /// <see cref="ApplyWidgetRegion"/> clip to the card alone.
     /// </summary>
     public Thickness StackIndicatorsMargin
     {
@@ -1061,8 +1062,9 @@ public partial class Widget : Window, INotifyPropertyChanged
 
         // The stack pagination dots are placed inside the card on this surface
         // (see StackIndicatorsMargin) — exactly because an out-of-card strip in the native
-        // region would flood with the OS blur. The card rectangle alone therefore also
-        // covers the dots; no extra strip is ever OR-ed in.
+        // region would flood with the OS blur, and no fill for it works there: a translucent one
+        // reads as frosted glass, an opaque one as a slab of a different material. The card
+        // rectangle alone therefore also covers the dots; no extra strip is ever OR-ed in.
         var key = (margin, cardWidth, cardHeight, cardRadius);
         if (lastAppliedRegion == key) return;
         lastAppliedRegion = key;

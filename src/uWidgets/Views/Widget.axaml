@@ -74,13 +74,15 @@
     </Window.ContextMenu> 
     
     <Window.Styles>
+        <!-- 右键菜单固定 8px 圆角（与全局 ContextMenu 一致），不再跟随组件卡片圆角；
+             菜单项圆角按「菜单半径 − 内边距」内嵌：8 − 5 → 4。 -->
         <Style Selector="ContextMenu.WidgetContextMenu">
-            <Setter Property="CornerRadius" Value="{DynamicResource WidgetCardCornerRadius}" />
+            <Setter Property="CornerRadius" Value="8" />
             <Setter Property="Padding" Value="5" />
             <Setter Property="ClipToBounds" Value="True" />
         </Style>
         <Style Selector="ContextMenu.WidgetContextMenu MenuItem">
-            <Setter Property="CornerRadius" Value="{DynamicResource WidgetInnerCornerRadius}" />
+            <Setter Property="CornerRadius" Value="4" />
             <Setter Property="Margin" Value="2,1" />
         </Style>
         <Style Selector="Border:not(:pointerover) ScrollViewer">
@@ -147,10 +149,11 @@
         </Border>
 
         <!-- Right-side vertical pagination indicator dots for Stack widget. Outside the card
-             (in the rightmost margin of the grid cell) on every surface except 毛玻璃/acrylic:
-             there the native window region cannot hold an out-of-card strip without the OS
-             blur flooding it (a frosted pill behind the dots), so the dots sit inside the
-             card instead — see StackIndicatorsMargin and ApplyWidgetRegion. -->
+             (in the rightmost margin of the grid cell) on every surface, so the dots sit in the
+             same place whatever the theme is. On 毛玻璃 the card is clipped by the native window
+             region, and no backing for an out-of-card strip works there — a translucent one reads
+             as frosted glass, an opaque one as a foreign slab — so the dots move inside the card
+             instead; see StackIndicatorsMargin and ApplyWidgetRegion. -->
         <Border Name="StackIndicatorsHost"
                 HorizontalAlignment="Right"
                 VerticalAlignment="Center"
