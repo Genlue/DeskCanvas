@@ -204,6 +204,12 @@
   <data name="Clock_FontWeight" xml:space="preserve">
     <value>字体粗细</value>
   </data>
+  <data name="Clock_FontWeight_Thin" xml:space="preserve">
+    <value>细</value>
+  </data>
+  <data name="Clock_FontWeight_Thick" xml:space="preserve">
+    <value>粗</value>
+  </data>
   <data name="Clock_FontWeight_100" xml:space="preserve">
     <value>极细 Thin (100)</value>
   </data>

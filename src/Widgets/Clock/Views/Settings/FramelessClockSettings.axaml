@@ -30,15 +30,21 @@
                 </ComboBox>
             </controls:Setting>
 
-            <!-- 字体粗细 -->
+            <!-- 字体粗细: a continuous slider with no numbers. A discrete weight picker was
+                 meaningless for the curated fonts (each ships a single face, so every step resolved
+                 to the same one); the widget now maps the slider's travel onto the family's real
+                 range and synthesises the rest, so this always reads 最细 → 最粗. -->
             <controls:Setting Title="{x:Static locales:Locale.Clock_FontWeight}">
-                <ComboBox ItemsSource="{Binding FontWeightOptions}" SelectedItem="{Binding SelectedFontWeightOption}" Width="160">
-                    <ComboBox.ItemTemplate>
-                        <DataTemplate x:DataType="viewModels:FontWeightOption">
-                            <TextBlock Text="{Binding DisplayName}" Margin="0 4"/>
-                        </DataTemplate>
-                    </ComboBox.ItemTemplate>
-                </ComboBox>
+                <Grid ColumnDefinitions="Auto,200,Auto" VerticalAlignment="Center">
+                    <TextBlock Grid.Column="0" Text="{x:Static locales:Locale.Clock_FontWeight_Thin}"
+                               FontSize="11" Opacity="0.7" Margin="0 0 8 0" VerticalAlignment="Center" />
+                    <Slider Grid.Column="1" Minimum="100" Maximum="900" TickFrequency="1"
+                            IsSnapToTickEnabled="True" TickPlacement="None" VerticalAlignment="Center"
+                            Value="{Binding FontWeightSlider}"
+                            AutomationProperties.Name="{x:Static locales:Locale.Clock_FontWeight}" />
+                    <TextBlock Grid.Column="2" Text="{x:Static locales:Locale.Clock_FontWeight_Thick}"
+                               FontSize="11" Opacity="0.7" Margin="8 0 0 0" VerticalAlignment="Center" />
+                </Grid>
             </controls:Setting>
 
             <!-- 拉伸模式 -->

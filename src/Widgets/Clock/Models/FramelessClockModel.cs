@@ -9,6 +9,13 @@ namespace Clock.Models;
 /// <c>RefractionWidth</c> (边缘折射宽度) properties were all removed; stale values in
 /// <c>layout.json</c> are ignored by deserialization.
 /// </para>
+/// <para>
+/// <c>FontWeight</c> is a 100-900 <b>position</b> on the widget's own weight axis (the 字体粗细
+/// slider), not a raw OpenType request: the widget maps it onto the faces the selected family
+/// actually provides and grows the strokes synthetically above the reference weight, so the upper
+/// part of the slider responds even for a family that ships a single heavy face. See
+/// <c>FramelessDigital.ResolveWeightedTypeface</c>.
+/// </para>
 /// </summary>
 public record FramelessClockModel(
     bool Use24Hours = true,

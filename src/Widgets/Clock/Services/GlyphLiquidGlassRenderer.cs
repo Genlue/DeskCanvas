@@ -33,10 +33,33 @@ public static class GlyphLiquidGlassRenderer
 
         // Distance field + result buffers come from the pool (see Scratch): one frame needs ~29
         // bytes per pixel in eight arrays, and the clock draws a frame every minute/second.
-        var scratch = RentScratch(width * height);
+        var scratch = RentScratch(width * height, Math.Max(width, height));
         try
         {
             return RenderCore(frame, wallpaper, glyphMask, refractionWidth, scratch, optics, scale, width, height, sigma);
+        }
+        finally
+        {
+            ReturnScratch(scratch);
+        }
+    }
+
+    /// <summary>
+    /// The sub-pixel depth field of a glyph mask, in pixels: for every pixel inside the glyph, the
+    /// distance from its centre to the nearest point of the glyph outline (negative outside the
+    /// outline). Exposed so the field itself can be asserted numerically against an analytic shape
+    /// in <c>tests/ClockGlassChecks</c> — the rim line, the lens band and the normals are all read
+    /// from it, so its accuracy *is* the edge quality.
+    /// </summary>
+    public static float[] ComputeDepthField(byte[] mask, int width, int height)
+    {
+        var scratch = RentScratch(width * height, Math.Max(width, height));
+        try
+        {
+            ComputeDistanceField(mask, width, height, scratch, out _, out _);
+            var field = new float[width * height];
+            Array.Copy(scratch.Dist, field, field.Length);
+            return field;
         }
         finally
         {
@@ -489,6 +512,7 @@ public static class GlyphLiquidGlassRenderer
     private sealed class Scratch
     {
         public int Capacity;
+        public int LineCapacity;
         public float[] Dist = [];
         public float[] Nx = [];
         public float[] Ny = [];
@@ -498,20 +522,42 @@ public static class GlyphLiquidGlassRenderer
         public float[] TempGy = [];
         public SKColor[] Pixels = [];
 
-        /// <summary>Grow the buffers to hold <paramref name="size"/> pixels.</summary>
-        public void EnsureCapacity(int size)
-        {
-            if (Capacity >= size) return;
+        /// <summary>Transform workspace: the seeds, the squared-distance result and the 1-D helpers.</summary>
+        public float[] Seed = [];
+        public float[] Squared = [];
+        public float[] Line = [];
+        public float[] LineOut = [];
+        public int[] Envelope = [];
+        public float[] Boundaries = [];
 
-            Dist = new float[size];
-            Nx = new float[size];
-            Ny = new float[size];
-            RawGx = new float[size];
-            RawGy = new float[size];
-            TempGx = new float[size];
-            TempGy = new float[size];
-            Pixels = new SKColor[size];
-            Capacity = size;
+        /// <summary>Grow the buffers to hold <paramref name="size"/> pixels and
+        /// <paramref name="lineLength"/>-long transform lines.</summary>
+        public void EnsureCapacity(int size, int lineLength)
+        {
+            if (Capacity < size)
+            {
+                Dist = new float[size];
+                Nx = new float[size];
+                Ny = new float[size];
+                RawGx = new float[size];
+                RawGy = new float[size];
+                TempGx = new float[size];
+                TempGy = new float[size];
+                Pixels = new SKColor[size];
+                Seed = new float[size];
+                Squared = new float[size];
+                Capacity = size;
+            }
+
+            if (LineCapacity < lineLength)
+            {
+                Line = new float[lineLength];
+                LineOut = new float[lineLength];
+                Envelope = new int[lineLength];
+                // One extra slot: the envelope stores a boundary per parabola plus the trailing +∞.
+                Boundaries = new float[lineLength + 1];
+                LineCapacity = lineLength;
+            }
         }
     }
 
@@ -519,7 +565,7 @@ public static class GlyphLiquidGlassRenderer
     private static readonly Stack<Scratch> scratchPool = new();
 
     /// <summary>Take a set of buffers sized for <paramref name="size"/> pixels (never blocks a frame).</summary>
-    private static Scratch RentScratch(int size)
+    private static Scratch RentScratch(int size, int lineLength)
     {
         Scratch scratch;
         lock (scratchGate)
@@ -527,7 +573,7 @@ public static class GlyphLiquidGlassRenderer
             scratch = scratchPool.Count > 0 ? scratchPool.Pop() : new Scratch();
         }
 
-        scratch.EnsureCapacity(size);
+        scratch.EnsureCapacity(size, lineLength);
         return scratch;
     }
 
@@ -540,9 +586,36 @@ public static class GlyphLiquidGlassRenderer
         }
     }
 
+    /// <summary>
+    /// Builds the sub-pixel depth field plus the smoothed outward normal field the whole material
+    /// is read from. Two properties make it accurate enough for a 1.5 px rim line, and both are
+    /// needed — the field is sampled for the lens displacement, the rim line, the edge dye and the
+    /// directional specular, so any wobble in it shows up directly on the numerals:
+    /// <list type="number">
+    /// <item><b>The distance transform is exact.</b> The previous 3×3 chamfer approximation
+    /// quantised every distance to 1 or √2, and — the part that actually hurt — the quantisation
+    /// depended on the *local edge direction*: the first ring inside the glyph measured ~1 px along
+    /// an axis-aligned edge and ~1.414 px along a 45° one. On a slanted contour that alternation
+    /// repeats pixel by pixel, and with a rim line barely 1.5 px wide it modulated the rim's
+    /// brightness by several times from one pixel to the next. That is the "毛刺 / 断断续续"
+    /// (burred, dashed) edge: continuous along the top of a stroke, broken into dots along its
+    /// slanted sides. Replacing the sweep with the exact transform is what removes it — measured
+    /// against an analytic disc, the near-field outline error drops from 0.40 px to 0.15 px
+    /// (see <c>tests/ClockGlassChecks</c>).</item>
+    /// <item><b>The anti-aliased coverage is used instead of a hard 50% threshold.</b> A font
+    /// rasteriser's coverage *is* the sub-pixel position of the outline within a boundary pixel
+    /// (c ≈ t + 0.5 for an edge at signed distance t from the pixel centre), so an anti-aliased
+    /// pixel now reports where the outline runs through it (0.03 px mean error) instead of being
+    /// pinned to the pixel grid.</item>
+    /// </list>
+    /// Pixels a whole pixel or more inside the glyph keep the classic bitmap-seeded ±0.5 px
+    /// quantisation (there is no sub-pixel information beyond the boundary pixel itself), but it is
+    /// a smooth radial staircase rather than the direction-dependent alternation described above.
+    /// </summary>
     private static void ComputeDistanceField(byte[] mask, int width, int height, Scratch scratch,
         out float maxStrokeDepth, out float avgStrokeDepth)
     {
+        const float INF = 1e20f;
         var size = width * height;
         var dist = scratch.Dist;
         var nx = scratch.Nx;
@@ -557,56 +630,43 @@ public static class GlyphLiquidGlassRenderer
         Array.Clear(scratch.TempGx, 0, size);
         Array.Clear(scratch.TempGy, 0, size);
 
-        const float INF = 1e6f;
+        // Seeds: background pixels (coverage below the 50% level) are the sources of the transform,
+        // glyph pixels are infinite. What comes back is the squared distance to the nearest
+        // background pixel *centre*, which the coverage term below turns into a distance to the
+        // outline itself.
+        var seed = scratch.Seed;
         for (var i = 0; i < size; i++)
         {
-            dist[i] = (mask[i] > 128) ? INF : 0f;
+            seed[i] = mask[i] < 128 ? 0f : INF;
         }
 
-        // 2-pass Euclidean Distance Transform (forward pass)
-        for (var y = 1; y < height; y++)
+        DistanceTransformExact(seed, scratch.Squared, width, height, scratch);
+
+        var squared = scratch.Squared;
+        for (var i = 0; i < size; i++)
         {
-            var row = y * width;
-            for (var x = 1; x < width - 1; x++)
-            {
-                var idx = row + x;
-                if (dist[idx] > 0f)
-                {
-                    var d1 = dist[idx - 1] + 1f;
-                    var d2 = dist[idx - width] + 1f;
-                    var d3 = dist[idx - width - 1] + 1.414f;
-                    var d4 = dist[idx - width + 1] + 1.414f;
-                    dist[idx] = Math.Min(dist[idx], Math.Min(Math.Min(d1, d2), Math.Min(d3, d4)));
-                }
-            }
+            var coverage = mask[i] * (1f / 255f);
+            // Straight-edge identity along the inward normal: the outline sits 1.5 px beyond the
+            // centre of the nearest background pixel, and the pixel's own coverage says where in
+            // its last half pixel it crosses — exact for an anti-aliased boundary pixel, and the
+            // classic ±0.5 px grid estimate further inside. The max() keeps pixels whose outline
+            // passes *outside* them on the correct (negative) side.
+            var depth = MathF.Sqrt(squared[i]) + coverage - 1.5f;
+            var local = coverage - 0.5f;
+            dist[i] = local > depth ? local : depth;
         }
 
-        // Backward pass
-        for (var y = height - 2; y >= 0; y--)
-        {
-            var row = y * width;
-            for (var x = width - 2; x >= 1; x--)
-            {
-                var idx = row + x;
-                if (dist[idx] > 0f)
-                {
-                    var d1 = dist[idx + 1] + 1f;
-                    var d2 = dist[idx + width] + 1f;
-                    var d3 = dist[idx + width + 1] + 1.414f;
-                    var d4 = dist[idx + width - 1] + 1.414f;
-                    dist[idx] = Math.Min(dist[idx], Math.Min(Math.Min(d1, d2), Math.Min(d3, d4)));
-                }
-            }
-        }
-
-        // Calculate stroke depth statistics
+        // Calculate stroke depth statistics. Pixels the transform could not reach (a mask with no
+        // background at all) carry a sentinel far larger than any real stroke, and must not drag
+        // the stroke-radius estimate with them.
+        var depthCap = Math.Min(width, height);
         var maxD = 0f;
         var sumD = 0.0;
         var count = 0;
         for (var i = 0; i < size; i++)
         {
             var d = dist[i];
-            if (d > 0f && d < INF / 2f)
+            if (d > 0f && d < depthCap)
             {
                 if (d > maxD) maxD = d;
                 sumD += d;
@@ -701,6 +761,76 @@ public static class GlyphLiquidGlassRenderer
             }
         }
     }
+
+    /// <summary>
+    /// Exact squared Euclidean distance transform of a separable function
+    /// (Felzenszwalb &amp; Huttenlocher, "Distance Transforms of Sampled Functions", 2012):
+    /// <c>D(q) = min_p f(p) + (q − p)²</c>, computed as two independent 1-D passes over the rows
+    /// and then the columns. Linear time and — unlike the chamfer sweep it replaces — free of the
+    /// direction-dependent error that made the glyph contours ragged.
+    /// </summary>
+    private static void DistanceTransformExact(float[] seed, float[] result, int width, int height, Scratch scratch)
+    {
+        var line = scratch.Line;
+        var lineOut = scratch.LineOut;
+
+        for (var y = 0; y < height; y++)
+        {
+            var row = y * width;
+            for (var x = 0; x < width; x++) line[x] = seed[row + x];
+            DistanceTransformLine(line, lineOut, width, scratch);
+            for (var x = 0; x < width; x++) result[row + x] = lineOut[x];
+        }
+
+        for (var x = 0; x < width; x++)
+        {
+            for (var y = 0; y < height; y++) line[y] = result[y * width + x];
+            DistanceTransformLine(line, lineOut, height, scratch);
+            for (var y = 0; y < height; y++) result[y * width + x] = lineOut[y];
+        }
+    }
+
+    /// <summary>
+    /// One dimension of the transform: the lower envelope of the parabolas
+    /// <c>f(p) + (q − p)²</c>, sampled at every index of a line of length <paramref name="n"/>.
+    /// The envelope is built as its parabola boundaries are found, then walked once — hence O(n).
+    /// </summary>
+    private static void DistanceTransformLine(float[] f, float[] d, int n, Scratch scratch)
+    {
+        var v = scratch.Envelope;
+        var z = scratch.Boundaries;
+
+        var k = 0;
+        v[0] = 0;
+        z[0] = float.NegativeInfinity;
+        z[1] = float.PositiveInfinity;
+
+        for (var q = 1; q < n; q++)
+        {
+            var s = ParabolaIntersection(f, v[k], q);
+            while (k > 0 && s <= z[k])
+            {
+                k--;
+                s = ParabolaIntersection(f, v[k], q);
+            }
+            k++;
+            v[k] = q;
+            z[k] = s;
+            z[k + 1] = float.PositiveInfinity;
+        }
+
+        k = 0;
+        for (var q = 0; q < n; q++)
+        {
+            while (z[k + 1] < q) k++;
+            var delta = (float)(q - v[k]);
+            d[q] = delta * delta + f[v[k]];
+        }
+    }
+
+    /// <summary>Where the parabolas centred at <paramref name="p"/> and <paramref name="q"/> cross.</summary>
+    private static float ParabolaIntersection(float[] f, int p, int q) =>
+        ((f[q] + q * (float)q) - (f[p] + p * (float)p)) / (2f * q - 2f * p);
 
     private static float Displacement(float depth, float lensWidth, float lensShift)
     {

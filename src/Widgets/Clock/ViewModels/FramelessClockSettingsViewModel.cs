@@ -4,15 +4,12 @@ using System.Linq;
 using System.Text.Json;
 using Avalonia.Media;
 using Avalonia.Styling;
-using Clock.Locales;
 using Clock.Models;
 using ReactiveUI;
 using uWidgets.Core.Interfaces;
 using uWidgets.Services;
 
 namespace Clock.ViewModels;
-
-public record FontWeightOption(int Value, string DisplayName);
 
 public record ClockFontOption(string? FontFamily, string DisplayName, string Description);
 
@@ -89,40 +86,23 @@ public class FramelessClockSettingsViewModel : ReactiveObject
         set => UpdateModel(model with { StretchFill = value });
     }
 
-    public IReadOnlyList<FontWeightOption> FontWeightOptions { get; } =
-    [
-        new(100, Locale.Clock_FontWeight_100),
-        new(200, Locale.Clock_FontWeight_200),
-        new(300, Locale.Clock_FontWeight_300),
-        new(400, Locale.Clock_FontWeight_400),
-        new(500, Locale.Clock_FontWeight_500),
-        new(600, Locale.Clock_FontWeight_600),
-        new(700, Locale.Clock_FontWeight_700),
-        new(800, Locale.Clock_FontWeight_800),
-        new(900, Locale.Clock_FontWeight_900),
-    ];
-
-    public FontWeightOption SelectedFontWeightOption
-    {
-        get => FontWeightOptions.FirstOrDefault(o => o.Value == model.FontWeight) ?? FontWeightOptions[6];
-        set
-        {
-            if (value != null)
-            {
-                FontWeight = value.Value;
-            }
-        }
-    }
-
-    public int FontWeight
+    /// <summary>
+    /// 字体粗细 as a continuous 100-900 position (the slider's range), not a discrete OpenType
+    /// weight. The widget resolves the position against the selected family: it uses the real faces
+    /// the family provides and fills whatever the family cannot reach with a synthetic stroke, so
+    /// the travel always reads 最细 → 最粗 — including for the curated single-face fonts (华为超窄体
+    /// ships one Black face, Impact one Regular), where nine discrete weight steps all resolved to
+    /// the same face and the old picker looked completely dead.
+    /// </summary>
+    public double FontWeightSlider
     {
         get => model.FontWeight;
         set
         {
-            var clamped = Math.Clamp((int)Math.Round(value / 100.0) * 100, 100, 900);
-            UpdateModel(model with { FontWeight = clamped });
-            this.RaisePropertyChanged(nameof(FontWeight));
-            this.RaisePropertyChanged(nameof(SelectedFontWeightOption));
+            var position = (int)Math.Round(Math.Clamp(value, 100, 900));
+            if (position == model.FontWeight) return;
+            UpdateModel(model with { FontWeight = position });
+            this.RaisePropertyChanged(nameof(FontWeightSlider));
         }
     }
 

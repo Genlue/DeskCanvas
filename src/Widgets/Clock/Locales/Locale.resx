@@ -105,6 +105,12 @@
     <data name="Clock_FontWeight" xml:space="preserve">
         <value>Font Weight</value>
     </data>
+    <data name="Clock_FontWeight_Thin" xml:space="preserve">
+        <value>Thin</value>
+    </data>
+    <data name="Clock_FontWeight_Thick" xml:space="preserve">
+        <value>Thick</value>
+    </data>
     <data name="Clock_FontWeight_100" xml:space="preserve">
         <value>Thin (100)</value>
     </data>

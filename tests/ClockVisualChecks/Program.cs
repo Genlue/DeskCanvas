@@ -66,6 +66,8 @@ class Program
             RenderAndVerify(outDir, tc.CaseName, tc.Width, tc.Height, tc.Model);
         }
 
+        TestWeightAxis(outDir);
+
         TestPreCachingAndAutoCleanup();
 
         Console.WriteLine($"\nAll Frameless Clock checks completed successfully! Output folder: {outDir}");
@@ -127,6 +129,106 @@ class Program
         bmp.Save(outFile);
         Console.WriteLine($"  -> Saved: {outFile} ({pixelW}x{pixelH} px)");
         Console.WriteLine($"  PASS: {caseName} rendered without error.");
+    }
+
+    /// <summary>
+    /// 字体粗细 is a slider now, and a slider that stops responding is exactly the defect it
+    /// replaced: the nine-step picker was dead on the curated single-face fonts (华为锁屏超窄体 ships
+    /// one Black face, Impact one Regular — every step resolved to the same face) and dead above
+    /// Bold on the default Inter. The widget answers the upper part of the travel with a synthetic
+    /// stroke, so this renders the ink each position actually produces and requires it to grow.
+    /// </summary>
+    private static void TestWeightAxis(string outDir)
+    {
+        Console.WriteLine("\n--- 字体粗细 slider axis ---");
+
+        var positions = new[] { 100, 700, 900 };
+        var families = new (string Label, string? Family)[]
+        {
+            ("华为超窄体 (single Black face)", "HarmonyOS Sans Condensed"),
+            ("default family", null)
+        };
+
+        var failures = new List<string>();
+        foreach (var (label, family) in families)
+        {
+            var ink = new double[positions.Length];
+            for (var i = 0; i < positions.Length; i++)
+            {
+                ink[i] = MeasureInk(outDir, family, positions[i], out var pixels);
+                Console.WriteLine($"  {label,-32} weight {positions[i]}: ink {ink[i]:P2} ({pixels} px)");
+            }
+
+            // The top of the travel must always respond — that is the part that used to be dead.
+            if (ink[2] <= ink[1] * 1.03)
+            {
+                failures.Add($"{label}: the top of the slider no longer thickens the numerals "
+                             + $"({ink[2]:P2} vs {ink[1]:P2})");
+            }
+
+            // Where the family really has the range, the lower travel has to respond as well.
+            if (family == null && ink[1] <= ink[0] * 1.2)
+            {
+                failures.Add($"the default family renders its real weights: 700 must be visibly "
+                             + $"heavier than 100 ({ink[1]:P2} vs {ink[0]:P2})");
+            }
+        }
+
+        if (failures.Count > 0)
+        {
+            Console.WriteLine("  [FAIL] " + string.Join("\n  [FAIL] ", failures));
+            throw new Exception($"字体粗细 axis checks failed: {failures.Count}");
+        }
+
+        Console.WriteLine("  [PASS] the slider thickens the numerals for every family");
+    }
+
+    /// <summary>Fraction of the rendered widget covered by the numerals, plus the pixel count.</summary>
+    private static double MeasureInk(string outDir, string? family, int weight, out int inkPixels)
+    {
+        const double width = 312, height = 152;
+        var model = new FramelessClockModel(
+            Use24Hours: true, FontFamily: family, FontWeight: weight, StretchFill: true);
+
+        // No settings provider: the acrylic path draws the numerals straight from the geometry, so
+        // the ink measured here is the geometry the weight resolved to.
+        var view = new FramelessDigital(model) { Width = width, Height = height };
+        view.Measure(new Size(width, height));
+        view.Arrange(new Rect(0, 0, width, height));
+        view.UpdateLayout();
+
+        const double scale = 2.0;
+        var pixelW = (int)Math.Ceiling(width * scale);
+        var pixelH = (int)Math.Ceiling(height * scale);
+        using var bmp = new RenderTargetBitmap(new PixelSize(pixelW, pixelH), new Vector(96 * scale, 96 * scale));
+        bmp.Render(view);
+
+        var buffer = new byte[pixelW * pixelH * 4];
+        var handle = System.Runtime.InteropServices.GCHandle.Alloc(
+            buffer, System.Runtime.InteropServices.GCHandleType.Pinned);
+        try
+        {
+            bmp.CopyPixels(new PixelRect(0, 0, pixelW, pixelH), handle.AddrOfPinnedObject(),
+                buffer.Length, pixelW * 4);
+        }
+        finally
+        {
+            handle.Free();
+        }
+
+        inkPixels = 0;
+        for (var i = 3; i < buffer.Length; i += 4)
+        {
+            if (buffer[i] > 32) inkPixels++;
+        }
+
+        if (outDir.Length > 0)
+        {
+            var name = $"weight-axis-{family ?? "default"}-{weight}".Replace(' ', '-');
+            bmp.Save(Path.Combine(outDir, $"{name}.png"));
+        }
+
+        return (double)inkPixels / (pixelW * pixelH);
     }
 
     private static void TestPreCachingAndAutoCleanup()

@@ -284,6 +284,18 @@ namespace Clock.Locales {
             }
         }
 
+        public static string Clock_FontWeight_Thin {
+            get {
+                return ResourceManager.GetString("Clock_FontWeight_Thin", resourceCulture);
+            }
+        }
+
+        public static string Clock_FontWeight_Thick {
+            get {
+                return ResourceManager.GetString("Clock_FontWeight_Thick", resourceCulture);
+            }
+        }
+
         public static string Clock_FontWeight_100 {
             get {
                 return ResourceManager.GetString("Clock_FontWeight_100", resourceCulture);
