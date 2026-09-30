@@ -91,7 +91,12 @@
         </Style>
         <Style Selector="Border:pointerover ScrollViewer">
             <Setter Property="VerticalScrollBarVisibility" Value="Auto" />
-            <Setter Property="HorizontalScrollBarVisibility" Value="Auto" />
+            <!-- 横向必须是 Hidden（可滚动、永不显示滚动条），不能是 Auto：
+                 组件卡片（清单名、搜索、天气横滚等）一律不允许出现横向滚动条，
+                 而 Hidden 仍保留横向滚轮滚动与文本框光标跟随。
+                 这里是全应用唯一给悬停发横向可见性的地方——改成 Hidden 后，
+                 横向滚动条在卡片里结构性不可能出现。 -->
+            <Setter Property="HorizontalScrollBarVisibility" Value="Hidden" />
         </Style>
         <Style Selector=":is(UserControl)">
             <Setter Property="Margin" Value="12" />

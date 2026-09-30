@@ -1,6 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:controls="clr-namespace:uWidgets.Views.Controls;assembly=uWidgets"
+             xmlns:local="clr-namespace:Reminders.Views.Controls"
              xmlns:viewModels="clr-namespace:Reminders.ViewModels"
              xmlns:models="clr-namespace:Reminders.Models"
              xmlns:locales="clr-namespace:Reminders.Locales"
@@ -8,6 +9,18 @@
              x:DataType="viewModels:RemindersViewModel"
              Margin="12,8,6,6">
     <UserControl.Styles>
+        <!-- 一级界面编辑开关：默认禁用卡片上的一切文本编辑（清单名 + 每条事项）。
+             两个样式键事实：① ClickThroughTextBox 的样式键是 TextBox（StyleKeyOverride），
+             类型选择器按样式键精确匹配，controls|ClickThroughTextBox 永远匹配不到；
+             ② 根控件自己的样式键是 ListSmall，也不是 UserControl——祖先选择器必须写
+             local|ListSmall。附加属性与 ScrollViewer.HorizontalScrollBarVisibility
+             设在 TextBox 上同构。 -->
+        <Style Selector="TextBox">
+            <Setter Property="controls:ClickThroughTextBox.AllowEdit" Value="False" />
+        </Style>
+        <Style Selector="local|ListSmall.editable TextBox">
+            <Setter Property="controls:ClickThroughTextBox.AllowEdit" Value="True" />
+        </Style>
         <Style Selector="Button.RemindersAddBtn">
             <Setter Property="Cursor" Value="Hand" />
         </Style>

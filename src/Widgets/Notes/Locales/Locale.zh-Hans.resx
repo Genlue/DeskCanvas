@@ -193,4 +193,13 @@
   <data name="Notes_Preset_Failed" xml:space="preserve">
     <value>失败：预设文件无效或不可读</value>
   </data>
+  <data name="Notes_AllowInlineEdit" xml:space="preserve">
+    <value>双击组件卡片直接编辑内容</value>
+  </data>
+  <data name="Notes_Panel_Open" xml:space="preserve">
+    <value>打开笔记面板</value>
+  </data>
+  <data name="Notes_Panel_ReadOnly" xml:space="preserve">
+    <value>文件夹来源在此面板只读，请直接编辑磁盘上的 Markdown 文件</value>
+  </data>
 </root>

@@ -153,4 +153,13 @@
     <data name="Notes_Preset_Failed" xml:space="preserve">
         <value>Failed: invalid or unreadable preset</value>
     </data>
+    <data name="Notes_AllowInlineEdit" xml:space="preserve">
+        <value>Edit content by double-click on the widget card</value>
+    </data>
+    <data name="Notes_Panel_Open" xml:space="preserve">
+        <value>Open note panel</value>
+    </data>
+    <data name="Notes_Panel_ReadOnly" xml:space="preserve">
+        <value>Folder source is read-only here — edit the markdown files on disk</value>
+    </data>
 </root>

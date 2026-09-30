@@ -756,7 +756,7 @@ public partial class Widget : Window, INotifyPropertyChanged
 
     public bool ToolTipVisible => ShowResizeHandle;
     public bool WidgetExtendClientArea => appSettingsProvider.Get().Theme.UseNativeFrame;
-    public void EditWidget() => editWidgetWindow?.Invoke().ShowDialog(this);
+    public void EditWidget() => editWidgetWindow?.Invoke().Show();
 
     private IFixedSizeWidget? FixedSizeWidget => ContentPresenter.Content as IFixedSizeWidget;
     public bool IsFixedWidget => FixedSizeWidget != null;

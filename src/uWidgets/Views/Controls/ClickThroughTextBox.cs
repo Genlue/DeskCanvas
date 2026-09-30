@@ -13,6 +13,30 @@ namespace uWidgets.Views.Controls;
 public class ClickThroughTextBox : TextBox
 {
     protected override Type StyleKeyOverride => typeof(TextBox);
+
+    /// <summary>
+    /// 卡片内联编辑开关（附加属性，默认 true）。
+    /// <para>
+    /// 必须是<b>附加属性</b>而不是实例 StyledProperty：本控件覆写了
+    /// <c>StyleKeyOverride = typeof(TextBox)</c>，Avalonia 样式系统的类型选择器
+    /// 按"样式键"匹配——<c>Selector="controls|ClickThroughTextBox"</c> 这类写法
+    /// <b>永远匹配不到</b>本控件的实例。改成附加属性后，样式经由 TextBox 选择器
+    /// （按样式键命中）设置 <c>controls:ClickThroughTextBox.AllowEdit</c>，
+    /// 与 <c>ScrollViewer.HorizontalScrollBarVisibility</c> 设在 TextBox 上的既有
+    /// 先例完全同构。视图代码也可直接 <c>SetAllowEdit(box, bool)</c>。
+    /// </para>
+    /// </summary>
+    public static readonly AttachedProperty<bool> AllowEditProperty =
+        AvaloniaProperty.RegisterAttached<ClickThroughTextBox, Control, bool>(
+            "AllowEdit", defaultValue: true);
+
+    public static bool GetAllowEdit(Control element) => element.GetValue(AllowEditProperty);
+
+    public static void SetAllowEdit(Control element, bool value) => element.SetValue(AllowEditProperty, value);
+
+    /// <summary>Whether double-click may activate the editor (see <see cref="AllowEditProperty"/>).</summary>
+    private bool AllowEdit => GetValue(AllowEditProperty);
+
     public FlyoutBase? DefaultContextFlyout { get; set; }
 
     /// <summary>
@@ -123,6 +147,19 @@ public class ClickThroughTextBox : TextBox
 
     private void OnPointerPressed(object? sender, PointerPressedEventArgs e)
     {
+        if (!AllowEdit)
+        {
+            // Inline editing is disabled (widget setting): behave as pure card
+            // surface — forward the press so the widget can be dragged, never
+            // activate the caret, the flyout or the word selection.
+            if (!IsFocused && VisualRoot is Widget card)
+            {
+                card.OnPointerPressed(sender, e);
+                e.Handled = true;
+            }
+            return;
+        }
+
         if (!IsFocused && e.ClickCount == 1 && VisualRoot is Widget widget)
         {
             // First single click: pass through so the widget can be dragged;

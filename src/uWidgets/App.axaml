@@ -26,6 +26,13 @@
             <Setter Property="FontFamily" Value="{DynamicResource FontFamily}" />
         </Style>
 
+        <!-- 滚动条滑块圆端（全局素材）: 配合资源里 0.25 的收起缩放（2px→4px），
+             端头全圆呈长条药丸状；悬停展开态（16px）同样是圆端。
+             Fluent 模板自身以 TemplateBinding 传递 CornerRadius，样式优先级高于模板值。 -->
+        <Style Selector="ScrollBar /template/ Thumb">
+            <Setter Property="CornerRadius" Value="999" />
+        </Style>
+
         <!-- Context menus share the app look: Mica-like surface (the same system
              chrome tint the Settings window uses), the app font, rounded corners
              and accent-tinted hover/pressed items. -->
@@ -136,6 +143,15 @@
             <CornerRadius x:Key="WidgetCardCornerRadius">16</CornerRadius>
             <CornerRadius x:Key="WidgetInnerCornerRadius">11</CornerRadius>
             <CornerRadius x:Key="WidgetPillCornerRadius">6</CornerRadius>
+
+            <!-- 滚动条（共享素材）: Fluent 原生滚动条机制的覆盖层。
+                 Fluent 未展开滑块 = 16px × scaleX(0.125) = 2px 细长方形；
+                 这里把收起比例提到 0.25（4px）——比未展开时稍微粗一点，
+                 配合 Application.Styles 里的 CornerRadius=999 变成圆端长条。
+                 只覆盖资源与滑块圆角，Fluent 的展开/隐藏/翻页机制原封不动，
+                 所有组件（设置页/组件/弹窗/菜单）的 ScrollBar 自动引用。 -->
+            <TransformOperations x:Key="VerticalSmallScrollThumbScaleTransform">scaleX(0.25) translateX(-3px)</TransformOperations>
+            <TransformOperations x:Key="HorizontalSmallScrollThumbScaleTransform">scaleY(0.25) translateY(-3px)</TransformOperations>
         </ResourceDictionary>
     </Application.Resources>
     

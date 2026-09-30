@@ -93,18 +93,20 @@
             </Style>
 
             <!-- Unfocused state: solid gray buttons, glyphs strictly hidden even on hover -->
-            <!-- Light theme unfocused: bg #DFDFDF, border #C4C4C4 -->
+            <!-- Fallback unfocused: MUST come before the .light/.dark variants — Avalonia
+                 styles apply in definition order (later setters win), so a fallback placed
+                 after them would override the light gray with the dark gray in light mode. -->
+            <Style Selector="Border.TitleBarRoot.unfocused Button.TrafficLight">
+                <Setter Property="Background" Value="#DFDFDF" />
+                <Setter Property="BorderBrush" Value="#C4C4C4" />
+            </Style>
+            <!-- Light theme unfocused: bg #DFDFDF, border #C4C4C4 (macOS inactive gray) -->
             <Style Selector="Border.TitleBarRoot.unfocused.light Button.TrafficLight">
                 <Setter Property="Background" Value="#DFDFDF" />
                 <Setter Property="BorderBrush" Value="#C4C4C4" />
             </Style>
             <!-- Dark theme unfocused: bg #3C3C3C, border #4A4A4A -->
             <Style Selector="Border.TitleBarRoot.unfocused.dark Button.TrafficLight">
-                <Setter Property="Background" Value="#3C3C3C" />
-                <Setter Property="BorderBrush" Value="#4A4A4A" />
-            </Style>
-            <!-- Fallback unfocused -->
-            <Style Selector="Border.TitleBarRoot.unfocused Button.TrafficLight">
                 <Setter Property="Background" Value="#3C3C3C" />
                 <Setter Property="BorderBrush" Value="#4A4A4A" />
             </Style>

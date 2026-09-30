@@ -2,12 +2,21 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:viewModels="clr-namespace:Reminders.ViewModels"
              xmlns:controls="clr-namespace:uWidgets.Views.Controls;assembly=uWidgets"
+             xmlns:local="clr-namespace:Reminders.Views.Controls"
              xmlns:models="clr-namespace:Reminders.Models"
              xmlns:locales="clr-namespace:Reminders.Locales"
              x:Class="Reminders.Views.Controls.ListWide"
              x:DataType="viewModels:RemindersViewModel"
              Margin="12,8,6,6">
     <UserControl.Styles>
+        <!-- 一级界面编辑开关：样式键事实见 ListSmall.axaml 注释。
+             祖先选择器必须是 local|ListWide（根控件的样式键是它自己的类型）。 -->
+        <Style Selector="TextBox">
+            <Setter Property="controls:ClickThroughTextBox.AllowEdit" Value="False" />
+        </Style>
+        <Style Selector="local|ListWide.editable TextBox">
+            <Setter Property="controls:ClickThroughTextBox.AllowEdit" Value="True" />
+        </Style>
         <Style Selector="Button.RemindersAddBtn">
             <Setter Property="Cursor" Value="Hand" />
         </Style>

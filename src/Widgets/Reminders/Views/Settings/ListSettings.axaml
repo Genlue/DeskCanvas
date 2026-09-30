@@ -5,6 +5,9 @@
              x:Class="Reminders.Views.Settings.ListSettings">
     <ScrollViewer>
         <StackPanel Orientation="Vertical" Spacing="5">
+            <controls:Setting Title="{x:Static locales:Locale.Reminders_AllowInlineEdit}">
+                <ToggleSwitch Name="AllowInlineEditToggle" Checked="AllowInlineEditChanged" Unchecked="AllowInlineEditChanged" />
+            </controls:Setting>
             <controls:Setting Title="{x:Static locales:Locale.Reminders_DeleteOnCheck}">
                 <ToggleSwitch Name="DeleteOnCheckToggle" Checked="DeleteOnCheckChanged" Unchecked="DeleteOnCheckChanged" />
             </controls:Setting>

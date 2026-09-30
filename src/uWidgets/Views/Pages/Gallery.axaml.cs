@@ -133,8 +133,6 @@ public partial class Gallery : UserControl, INotifyPropertyChanged
         var preview = button!.DataContext as WidgetPreviewViewModel;
         if (preview == null) return;
 
-        // Absolute screen position of the clicked cell (physical pixels).
-        var pointer = button.PointToScreen(new Point(0, 0));
         var settingsWindow = VisualRoot as Window;
         var attached = settingsWindow != null ? displayMonitor.Find(settingsWindow) : null;
         if (attached == null)
@@ -143,14 +141,22 @@ public partial class Gallery : UserControl, INotifyPropertyChanged
             var legacy = layoutProvider.Get().FindById(ScreensLayout.LegacyPrimaryId)
                          ?? new ScreenLayout(ScreensLayout.LegacyPrimaryId, null, null, null, null, null, []);
             var (defaultW, defaultH) = DefaultSize(settingsWindow, preview.DefaultColumns, preview.DefaultRows);
-            var legacyLayout = new WidgetLayout(preview.Type, preview.Subtype, pointer.X, pointer.Y, 
+            var pointer = button.PointToScreen(new Point(0, 0));
+            var legacyLayout = new WidgetLayout(preview.Type, preview.Subtype, pointer.X, pointer.Y,
                 defaultW, defaultH, null);
             widgetFactory.Add(legacy, legacyLayout).Show();
             return;
         }
 
-        var screenConfig = attached.Config ?? displayMonitor.EnsureConfig(attached);
-        var (x, y, w, h) = ComputePlacement(screenConfig, attached, new Point(pointer.X, pointer.Y), preview.DefaultColumns, preview.DefaultRows);
+        // attached.Config is a SNAPSHOT taken at the last monitor poll (up to ~1.5s
+        // stale, see DisplayMonitorService.CurrentConfig): a widget added or removed
+        // moments ago is invisible in it — two rapid clicks then reused the same free
+        // cell (overlap), and a just-deleted row-0 gap stayed "occupied" so the next
+        // widget skipped to row 2. Re-read the entry by id to see the layout as it is
+        // right now; EnsureConfig still covers brand-new screens with no entry yet.
+        var screenConfig = displayMonitor.CurrentConfig(settingsWindow!)
+                           ?? displayMonitor.EnsureConfig(attached);
+        var (x, y, w, h) = ComputePlacement(screenConfig, attached, preview.DefaultColumns, preview.DefaultRows);
         var widgetLayout = new WidgetLayout(preview.Type, preview.Subtype, x, y, w, h, null);
         widgetFactory.Add(screenConfig, widgetLayout).Show();
     }
@@ -158,32 +164,111 @@ public partial class Gallery : UserControl, INotifyPropertyChanged
     /// <summary>
     /// Compute the initial placement (position relative to the owning screen's
     /// working area + size) for a new widget on the target screen.
+    /// <para>
+    /// Widgets live on the bottom desktop band (below every application window), so
+    /// dropping a new card at the clicked position would bury it under the settings
+    /// window and the widgets already there — the user then has to drag windows away
+    /// just to grab it. Instead the card goes into the FIRST UNOCCUPIED slot,
+    /// scanning the screen's grid left → right, top → bottom. Only when no cell can
+    /// fit the widget's span does it fall back to the grid origin (top-left corner),
+    /// ignoring occupancy and covering whatever sits there.
+    /// </para>
     /// </summary>
     private (int X, int Y, int Width, int Height) ComputePlacement(
-        ScreenLayout screenConfig, AttachedScreen attached, Point pointer, int defaultCols = 2, int defaultRows = 2)
+        ScreenLayout screenConfig, AttachedScreen attached, int defaultCols = 2, int defaultRows = 2)
     {
         var settings = appSettingsProvider.Get();
         var screen = attached.Screen;
         var area = screen.WorkingArea;
+        var scaling = screen.Scaling;
 
         int width;
         int height;
 
         if (settings.Layout.GridMode != GridMode.Manual)
         {
+            // Free placement (no grid): tile the working area with the widget's own
+            // footprint (left → right, top → bottom), first slot without overlap wins.
             width = (int) (defaultCols * settings.Dimensions.Size + (defaultCols - 1) * settings.Dimensions.Margin);
             height = (int) (defaultRows * settings.Dimensions.Size + (defaultRows - 1) * settings.Dimensions.Margin);
-            return ((int)(pointer.X - area.X), (int)(pointer.Y - area.Y), width, height);
+            var (freeX, freeY) = FindFreeSpot(screenConfig.Layout, area, scaling, width, height);
+            return (freeX, freeY, width, height);
         }
 
         var grid = screenConfig.Grid ?? settings.Grid ?? uWidgets.Core.Models.Settings.Grid.Default;
         var (cell, gridX, gridY) = GridMetrics.Resolve(grid, area.X, area.Y, area.Width, area.Height);
-        var scaling = screen.Scaling;
         width = (int) Math.Round(defaultCols * cell / scaling);
         height = (int) Math.Round(defaultRows * cell / scaling);
-        var x = gridX + (int) Math.Round((pointer.X - gridX) / (double) cell) * cell;
-        var y = gridY + (int) Math.Round((pointer.Y - gridY) / (double) cell) * cell;
-        return (x - area.X, y - area.Y, width, height);
+        var widthPhys = (int) Math.Round(width * scaling);
+        var heightPhys = (int) Math.Round(height * scaling);
+
+        // Candidate origins are only those where the whole span stays inside the grid.
+        var columns = Math.Max(1, grid.Columns);
+        var rows = Math.Max(1, grid.Rows);
+        var spanCols = Math.Clamp(defaultCols, 1, columns);
+        var spanRows = Math.Clamp(defaultRows, 1, rows);
+
+        for (var row = 0; row + spanRows <= rows; row++)
+        {
+            for (var col = 0; col + spanCols <= columns; col++)
+            {
+                var x = gridX + col * cell;
+                var y = gridY + row * cell;
+                if (!IntersectsAnyWidget(screenConfig.Layout, area, scaling, x, y, widthPhys, heightPhys))
+                    return (x - area.X, y - area.Y, width, height);
+            }
+        }
+
+        // Grid full (or widget larger than the grid): start at the top-left corner,
+        // ignoring occupancy — the new card covers whatever is there.
+        return (gridX - area.X, gridY - area.Y, width, height);
+    }
+
+    /// <summary>
+    /// Scan the working area with the widget's own footprint as the step
+    /// (left → right, top → bottom) for the first position that does not intersect
+    /// any widget already on the screen; the working-area origin is the "full"
+    /// fallback. Returns coordinates relative to the working area.
+    /// </summary>
+    private (int X, int Y) FindFreeSpot(
+        IReadOnlyList<WidgetLayout> layout, PixelRect area, double scaling, int widthDip, int heightDip)
+    {
+        var widthPhys = Math.Max(1, (int) Math.Round(widthDip * scaling));
+        var heightPhys = Math.Max(1, (int) Math.Round(heightDip * scaling));
+        var columns = Math.Max(1, area.Width / widthPhys);
+        var rows = Math.Max(1, area.Height / heightPhys);
+
+        for (var row = 0; row < rows; row++)
+        {
+            for (var col = 0; col < columns; col++)
+            {
+                var x = area.X + col * widthPhys;
+                var y = area.Y + row * heightPhys;
+                if (!IntersectsAnyWidget(layout, area, scaling, x, y, widthPhys, heightPhys))
+                    return (x - area.X, y - area.Y);
+            }
+        }
+
+        return (0, 0);
+    }
+
+    /// <summary>Whether a candidate rectangle (physical pixels) intersects any widget
+    /// already stored on this screen (stored positions are working-area-relative).</summary>
+    private static bool IntersectsAnyWidget(
+        IReadOnlyList<WidgetLayout> layout, PixelRect area, double scaling,
+        int x, int y, int widthPhys, int heightPhys)
+    {
+        foreach (var widget in layout)
+        {
+            var wx = widget.X + area.X;
+            var wy = widget.Y + area.Y;
+            var ww = (int) Math.Round(widget.Width * scaling);
+            var wh = (int) Math.Round(widget.Height * scaling);
+            if (x < wx + ww && wx < x + widthPhys && y < wy + wh && wy < y + heightPhys)
+                return true;
+        }
+
+        return false;
     }
 
     private (int Width, int Height) DefaultSize(Window? settingsWindow, int defaultCols = 2, int defaultRows = 2)

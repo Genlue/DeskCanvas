@@ -64,6 +64,12 @@ public record MarkdownTypography(
 /// <param name="SelectedFiles">Folder mode: explicit file names (when <see cref="RecentFiles"/> is off).</param>
 /// <param name="BodyPadding">Left/right inner padding of the note body text (DIPs).</param>
 /// <param name="MarkdownStyle">Markdown typography overrides (see <see cref="MarkdownTypography"/>).</param>
+/// <param name="AllowInlineEdit">
+/// Allow editing the content by double-clicking the widget card. Default
+/// <c>false</c>: the card is read-only and a double-click (or the header's
+/// expand button) opens the secondary panel, where the note is edited. Can be
+/// turned on in the widget settings.
+/// </param>
 public record NoteModel(
     string? Title = null,
     string? Content = null,
@@ -78,4 +84,5 @@ public record NoteModel(
     int DocumentCount = 3,
     List<string>? SelectedFiles = null,
     int BodyPadding = 4,
-    MarkdownTypography? MarkdownStyle = null);
+    MarkdownTypography? MarkdownStyle = null,
+    bool AllowInlineEdit = false);

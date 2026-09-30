@@ -7,7 +7,8 @@
         ExtendClientAreaToDecorationsHint="True"
         ExtendClientAreaChromeHints="NoChrome"
         ExtendClientAreaTitleBarHeightHint="60"
-        WindowStartupLocation="CenterOwner"
+        ShowInTaskbar="True"
+        WindowStartupLocation="CenterScreen"
         Width="480" Height="520" MinWidth="440" MinHeight="460" CanResize="True"
         x:DataType="views:EditWidget">
     <Grid ColumnDefinitions="Auto,*,Auto" RowDefinitions="Auto, Auto,*"

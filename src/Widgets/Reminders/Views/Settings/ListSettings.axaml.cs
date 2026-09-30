@@ -16,7 +16,23 @@ public partial class ListSettings : UserControl
     {
         this.widgetLayoutProvider = widgetLayoutProvider;
         InitializeComponent();
+        AllowInlineEditToggle.IsChecked = RemindersStore.Get().AllowInlineEdit;
         DeleteOnCheckToggle.IsChecked = RemindersStore.Get().DeleteOnCheck;
+    }
+
+    private void AllowInlineEditChanged(object? sender, RoutedEventArgs e)
+    {
+        var model = RemindersStore.Get();
+        model = model with { AllowInlineEdit = AllowInlineEditToggle.IsChecked == true };
+        RemindersStore.Save(model, this);
+
+        try
+        {
+            var layout = widgetLayoutProvider.Get();
+            layout = layout with { Settings = JsonSerializer.SerializeToElement(model) };
+            widgetLayoutProvider.Save(layout);
+        }
+        catch { }
     }
 
     private void DeleteOnCheckChanged(object? sender, RoutedEventArgs e)

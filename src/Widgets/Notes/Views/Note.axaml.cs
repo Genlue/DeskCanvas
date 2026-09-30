@@ -107,6 +107,9 @@ public partial class Note : UserControl, IWidgetSelfRefreshing
         RenderScroll.IsVisible = false;
         FileScroll.IsVisible = false;
         TitleBox.IsHitTestVisible = true;
+        // Widget-settings switch: double-click on the card edits inline only when
+        // explicitly allowed; the header's expand button always opens the panel.
+        ClickThroughTextBox.SetAllowEdit(TitleBox, Model.AllowInlineEdit);
 
         var padding = Math.Clamp(model.BodyPadding, 0, 64);
         RenderScroll.Padding = new Thickness(padding, 0);
@@ -241,6 +244,7 @@ public partial class Note : UserControl, IWidgetSelfRefreshing
                 MinHeight = 0,
                 FontSize = BodyFontSize(compact),
             };
+            ClickThroughTextBox.SetAllowEdit(box, model.AllowInlineEdit);
             box.LostFocus += (_, _) => NoteFiles.Write(path, box.Text);
             return box;
         }
@@ -289,7 +293,7 @@ public partial class Note : UserControl, IWidgetSelfRefreshing
             color = Color.TryParse(model.HeaderColor, out var custom) ? custom : Color.Parse("#3376CD");
         }
 
-        TitleBox.Background = new SolidColorBrush(color, opacity);
+        HeaderBorder.Background = new SolidColorBrush(color, opacity);
     }
 
     private Color ResolveAccent()
@@ -318,7 +322,12 @@ public partial class Note : UserControl, IWidgetSelfRefreshing
 
         if (e.ClickCount >= 2)
         {
-            beginEdit();
+            // 默认（一级界面编辑关闭）双击打开二级面板；在组件设置里允许
+            // "双击编辑"后才是就地进入编辑模式。
+            if (Model.AllowInlineEdit)
+                beginEdit();
+            else
+                OpenPopup();
             e.Handled = true;
             return;
         }
@@ -329,6 +338,56 @@ public partial class Note : UserControl, IWidgetSelfRefreshing
             (VisualRoot as Widget)?.OnPointerPressed(this, e);
             e.Handled = true;
         }
+    }
+
+    // ---------- secondary panel ----------
+
+    public void OpenPopupClick(object? sender, RoutedEventArgs e) => OpenPopup();
+
+    /// <summary>Open the secondary panel: a full-size editor for the note
+    /// (internal / single-file source) or a read-only preview (folder source).</summary>
+    public void OpenPopup()
+    {
+        var (screenCenter, _) = GetScreenCenterAndTopLevel();
+        var owner = VisualRoot as Window;
+        NotePopupWindow.ShowPopup(Model, screenCenter, owner, OnPanelModelChanged, SpawnCornerRadius);
+    }
+
+    /// <summary>
+    /// The host widget's visual corner radius, so the popup's corners and its glass match
+    /// the widget card exactly. Null keeps the popup's own default radius.
+    /// </summary>
+    private double? SpawnCornerRadius
+    {
+        get
+        {
+            var r = (VisualRoot as Widget)?.Radius.TopLeft ?? 0;
+            return r > 0 ? r : null;
+        }
+    }
+
+    private (Point? ScreenCenter, TopLevel? TopLevel) GetScreenCenterAndTopLevel()
+    {
+        if (VisualRoot is Visual rootVisual && VisualRoot is TopLevel topLevel)
+        {
+            var bounds = Bounds;
+            var centerLocal = new Point(bounds.Width / 2, bounds.Height / 2);
+            var rootPoint = this.TranslatePoint(centerLocal, rootVisual);
+            if (rootPoint.HasValue)
+            {
+                var screenPoint = topLevel.PointToScreen(rootPoint.Value);
+                return (new Point(screenPoint.X, screenPoint.Y), topLevel);
+            }
+        }
+        return (null, null);
+    }
+
+    private void OnPanelModelChanged(NoteModel newModel)
+    {
+        if (newModel.Source == NoteSource.Internal)
+            UpdateModel(newModel);   // persists into the widget settings and refreshes the card
+        else
+            Rebuild();               // file/folder: the documents changed on disk
     }
 
     private static void ActivateEditor(TextBox editor) =>

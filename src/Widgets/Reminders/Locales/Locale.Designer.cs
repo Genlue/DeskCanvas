@@ -103,6 +103,15 @@ namespace Reminders.Locales {
                 return ResourceManager.GetString("Reminders_DeleteOnCheck", resourceCulture);
             }
         }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Edit list name and items on the widget card.
+        /// </summary>
+        public static string Reminders_AllowInlineEdit {
+            get {
+                return ResourceManager.GetString("Reminders_AllowInlineEdit", resourceCulture);
+            }
+        }
         
         /// <summary>
         ///   Looks up a localized string similar to Get quick access to one of your reminder lists.

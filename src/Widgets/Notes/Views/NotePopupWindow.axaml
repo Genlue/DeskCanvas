@@ -1,0 +1,122 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:locales="clr-namespace:Notes.Locales"
+        xmlns:controls="clr-namespace:uWidgets.Views.Controls;assembly=uWidgets"
+        x:Class="Notes.Views.NotePopupWindow"
+        Title="Notes"
+        SystemDecorations="None"
+        Background="Transparent"
+        TransparencyLevelHint="Transparent"
+        ShowInTaskbar="False"
+        CanResize="False"
+        Width="460"
+        Height="540">
+
+    <Window.Styles>
+        <!-- Circle Icon Button -->
+        <Style Selector="Button.icon-btn">
+            <Setter Property="Width" Value="28" />
+            <Setter Property="Height" Value="28" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="CornerRadius" Value="14" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="Cursor" Value="Hand" />
+        </Style>
+        <Style Selector="Button.icon-btn:pointerover">
+            <Setter Property="Background" Value="#25808080" />
+        </Style>
+        <Style Selector="Button.icon-btn:pressed">
+            <Setter Property="Background" Value="#40808080" />
+        </Style>
+    </Window.Styles>
+
+    <Panel Background="Transparent">
+        <!-- Main Card Border with Zoom Transform -->
+        <Border x:Name="CardBorder"
+                Margin="0"
+                CornerRadius="18"
+                BorderThickness="1"
+                RenderTransformOrigin="0.5,0.5"
+                ClipToBounds="True">
+            <Border.RenderTransform>
+                <ScaleTransform ScaleX="0.95" ScaleY="0.95" />
+            </Border.RenderTransform>
+
+            <Panel>
+                <!-- LiquidGlass surface: the same material path the widget card uses -->
+                <controls:LiquidGlassSurface x:Name="LiquidGlassSurfaceControl" CornerRadius="18" Margin="0" IsVisible="False" />
+
+                <Grid RowDefinitions="Auto,*,Auto">
+                    <!-- Header (Row 0): title + subtitle line + close -->
+                    <Grid Grid.Row="0" Margin="18,14,14,10" ColumnDefinitions="*,Auto">
+                        <StackPanel Grid.Column="0" VerticalAlignment="Center" Spacing="2">
+                            <TextBox x:Name="TitleBox"
+                                     FontSize="16"
+                                     FontWeight="Bold"
+                                     BorderThickness="0"
+                                     Background="Transparent"
+                                     Padding="0"
+                                     MinHeight="22"
+                                     Watermark="{x:Static locales:Locale.Notes_Title}"
+                                     LostFocus="OnTitleLostFocus"
+                                     KeyDown="OnTitleKeyDown"
+                                     ScrollViewer.HorizontalScrollBarVisibility="Disabled" />
+                            <TextBlock x:Name="SubtitleText"
+                                       FontSize="11"
+                                       Opacity="0.6" />
+                        </StackPanel>
+
+                        <!-- Close Button ✕ -->
+                        <Button Grid.Column="1"
+                                x:Name="CloseButton"
+                                Classes="icon-btn"
+                                Content="✕"
+                                Click="OnCloseClicked"
+                                VerticalAlignment="Center" />
+                    </Grid>
+
+                    <!-- Divider -->
+                    <Path Grid.Row="0" VerticalAlignment="Bottom" Height="1" Stretch="Fill" Opacity="0.15"
+                          StrokeThickness="1" Stroke="{DynamicResource SystemControlForegroundBaseHighBrush}">
+                        <Path.Data>
+                            <LineGeometry StartPoint="0,0" EndPoint="1,0"/>
+                        </Path.Data>
+                    </Path>
+
+                    <!-- Center: body editor / read-only preview -->
+                    <ScrollViewer Grid.Row="1" Padding="16,10,16,10" HorizontalScrollBarVisibility="Disabled">
+                        <Panel>
+                            <TextBox x:Name="BodyEditor"
+                                     IsVisible="False"
+                                     AcceptsReturn="True"
+                                     TextWrapping="Wrap"
+                                     Background="Transparent"
+                                     BorderThickness="0"
+                                     Padding="0"
+                                     MinHeight="280"
+                                     FontSize="13"
+                                     LostFocus="OnBodyLostFocus"
+                                     ScrollViewer.HorizontalScrollBarVisibility="Disabled" />
+                            <StackPanel x:Name="PreviewHost" IsVisible="False" Spacing="4" />
+                        </Panel>
+                    </ScrollViewer>
+
+                    <!-- Footer: updated stamp / source path / read-only hint -->
+                    <Border Grid.Row="2"
+                            BorderThickness="0,1,0,0"
+                            BorderBrush="#20808080"
+                            Padding="16,8,16,10">
+                        <TextBlock x:Name="FooterText"
+                                   FontSize="11"
+                                   Opacity="0.5"
+                                   TextTrimming="CharacterEllipsis" />
+                    </Border>
+                </Grid>
+            </Panel>
+        </Border>
+    </Panel>
+</Window>

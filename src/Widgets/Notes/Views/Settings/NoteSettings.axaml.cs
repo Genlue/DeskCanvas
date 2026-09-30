@@ -78,6 +78,8 @@ public partial class NoteSettings : UserControl
 
         MarkdownToggle.Click += (_, _) =>
             UpdateModel(m => m with { Markdown = MarkdownToggle.IsChecked == true });
+        AllowInlineEditToggle.Click += (_, _) =>
+            UpdateModel(m => m with { AllowInlineEdit = AllowInlineEditToggle.IsChecked == true });
         StyleToggle.Click += (_, _) =>
         {
             var enabled = StyleToggle.IsChecked == true;
@@ -191,6 +193,7 @@ public partial class NoteSettings : UserControl
     private void Load(NoteModel model)
     {
         MarkdownToggle.IsChecked = model.Markdown;
+        AllowInlineEditToggle.IsChecked = model.AllowInlineEdit;
 
         var style = model.MarkdownStyle;
         StyleToggle.IsChecked = style?.Enabled ?? false;

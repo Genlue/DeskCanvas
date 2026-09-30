@@ -8,6 +8,9 @@
             <controls:Setting Title="{x:Static locales:Locale.Notes_Markdown}">
                 <ToggleSwitch Name="MarkdownToggle" />
             </controls:Setting>
+            <controls:Setting Title="{x:Static locales:Locale.Notes_AllowInlineEdit}">
+                <ToggleSwitch Name="AllowInlineEditToggle" />
+            </controls:Setting>
             <controls:Setting Title="{x:Static locales:Locale.Notes_Markdown_Style}"
                               Subtitle="{x:Static locales:Locale.Notes_Markdown_Style_Subtitle}">
                 <ToggleSwitch Name="StyleToggle" />

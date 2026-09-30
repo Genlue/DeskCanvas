@@ -58,8 +58,16 @@ public class RemindersViewModel : ReactiveObject
         model = newModel;
         SyncReminders(newModel.Reminders);
         this.RaisePropertyChanged(nameof(ListName));
+        this.RaisePropertyChanged(nameof(AllowInlineEdit));
         this.RaisePropertyChanged(nameof(Count));
     }
+
+    /// <summary>
+    /// Whether the card's text boxes may be activated for editing (widget setting).
+    /// Bound to <c>ClickThroughTextBox.AllowEdit</c> by the card views; flipping the
+    /// setting live re-evaluates every box without rebuilding the card.
+    /// </summary>
+    public bool AllowInlineEdit => model.AllowInlineEdit;
 
     /// <summary>
     /// Reconcile <see cref="Reminders"/> with the given model list through

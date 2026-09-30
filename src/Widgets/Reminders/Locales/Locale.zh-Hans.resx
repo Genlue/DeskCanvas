@@ -79,4 +79,7 @@
   <data name="Reminders_DeleteOnCheck" xml:space="preserve">
     <value>打勾后立即删除条目</value>
   </data>
+  <data name="Reminders_AllowInlineEdit" xml:space="preserve">
+    <value>在组件卡片上直接编辑清单名与条目</value>
+  </data>
 </root>

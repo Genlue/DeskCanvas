@@ -337,5 +337,32 @@ namespace Notes.Locales {
                 return ResourceManager.GetString("Notes_Preset_Failed", resourceCulture);
             }
         }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Edit content by double-click on the widget card.
+        /// </summary>
+        public static string Notes_AllowInlineEdit {
+            get {
+                return ResourceManager.GetString("Notes_AllowInlineEdit", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Open note panel.
+        /// </summary>
+        public static string Notes_Panel_Open {
+            get {
+                return ResourceManager.GetString("Notes_Panel_Open", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Folder source is read-only here — edit the markdown files on disk.
+        /// </summary>
+        public static string Notes_Panel_ReadOnly {
+            get {
+                return ResourceManager.GetString("Notes_Panel_ReadOnly", resourceCulture);
+            }
+        }
     }
 }
