@@ -342,16 +342,64 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
         lastRegionKey = null;
         ClearLiquidGlassCache();
 
-        UpdateTransparencyLevel();
-
-        if (window != null && IsDesktopWidget && !CurrentMaterial.IsAcrylic && hasRegionSet)
-        {
-            InteropService.ClearWidgetRegion(window);
-            hasRegionSet = false;
-        }
+        // Transparency first, glyph region second — the order is load-bearing when leaving 毛玻璃.
+        // The acrylic backdrop is confined by the glyph region, so clearing the region while the
+        // backdrop is still live is precisely the "the whole grid cell is covered with frosted
+        // glass" state. Killing the backdrop first means the region clear can never expose it.
+        UpdateTransparencyLevel(force: true);
+        ClearGlyphRegionIfNotAcrylic();
 
         RequestBackdropRender();
         InvalidateVisual();
+
+        // The platform does not always honour a level switch in the same turn (and the backdrop
+        // can outlive the material that asked for it), so verify what actually happened instead
+        // of trusting the assignment.
+        VerifyMaterialWindowState();
+    }
+
+    /// <summary>Drop the window's glyph region once the material is no longer 毛玻璃 (see the ordering note in <see cref="ApplyCurrentMaterial"/>).</summary>
+    private void ClearGlyphRegionIfNotAcrylic()
+    {
+        if (window == null || !IsDesktopWidget) return;
+        if (CurrentMaterial.IsAcrylic || !hasRegionSet) return;
+        InteropService.ClearWidgetRegion(window);
+        hasRegionSet = false;
+    }
+
+    /// <summary>
+    /// Check that the window really ended up in the state the resolved material needs, and heal
+    /// it if not: a non-毛玻璃 material must not keep the OS acrylic backdrop (with the glyph
+    /// region gone that backdrop covers the whole cell), and 毛玻璃 must have a region and a live
+    /// backdrop. Bounded to a few passes, so a platform that genuinely refuses a level cannot
+    /// turn this into an endless backdrop rebuild.
+    /// </summary>
+    private void VerifyMaterialWindowState(int attemptsLeft = 3)
+    {
+        Dispatcher.UIThread.Post(() =>
+        {
+            if (window == null || !IsDesktopWidget) return;
+
+            var wantAcrylic = CurrentMaterial.IsAcrylic;
+            var level = window.ActualTransparencyLevel;
+            var levelOk = wantAcrylic
+                ? level == WindowTransparencyLevel.AcrylicBlur
+                : level != WindowTransparencyLevel.AcrylicBlur;
+
+            if (levelOk)
+            {
+                ClearGlyphRegionIfNotAcrylic();
+                return;
+            }
+
+            Debug.WriteLine($"[FramelessClock] material {(wantAcrylic ? "毛玻璃" : "非毛玻璃")} but the window's backdrop is {level} — re-asserting");
+            window.TransparencyLevelHint = [WindowTransparencyLevel.None];
+            window.TransparencyLevelHint = wantAcrylic ? [WindowTransparencyLevel.AcrylicBlur] : [WindowTransparencyLevel.Transparent];
+            ClearGlyphRegionIfNotAcrylic();
+
+            if (attemptsLeft > 1)
+                DispatcherTimer.RunOnce(() => VerifyMaterialWindowState(attemptsLeft - 1), TimeSpan.FromMilliseconds(120));
+        }, DispatcherPriority.Background);
     }
 
     // Cached hint arrays: UpdateTransparencyLevel runs on every wallpaper invalidation (every
@@ -361,13 +409,20 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
     private static readonly WindowTransparencyLevel[] AcrylicHint = [WindowTransparencyLevel.AcrylicBlur];
     private static readonly WindowTransparencyLevel[] TransparentHint = [WindowTransparencyLevel.Transparent];
 
-    private void UpdateTransparencyLevel()
+    private void UpdateTransparencyLevel(bool force = false)
     {
         if (window == null || !IsDesktopWidget) return;
         var (isAcrylic, _, _) = ResolveEffectiveTheme();
         var hint = isAcrylic ? AcrylicHint : TransparentHint;
-        if (!hint.SequenceEqual(window.TransparencyLevelHint))
-            window.TransparencyLevelHint = hint;
+        if (!force && hint.SequenceEqual(window.TransparencyLevelHint)) return;
+
+        // Toggle through None instead of assigning the target directly: the Win32 impl
+        // short-circuits an assignment whose content it already holds, and a backdrop that
+        // outlives its material has no other way back. None → target is a real level change the
+        // platform always re-applies — the same idiom as the settings window's
+        // ForceTransparencyReapply.
+        window.TransparencyLevelHint = [WindowTransparencyLevel.None];
+        window.TransparencyLevelHint = hint;
     }
 
     private void OnTimerTick()
