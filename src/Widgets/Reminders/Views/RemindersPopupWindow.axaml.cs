@@ -15,11 +15,11 @@ using Avalonia.Threading;
 using Reminders.Locales;
 using Reminders.Models;
 using Reminders.Services;
-using uWidgets.Core.Interfaces;
-using uWidgets.Core.Models.Settings;
-using uWidgets.Core.Services;
-using uWidgets.Services;
-using uWidgets.Views;
+using DeskCanvas.Core.Interfaces;
+using DeskCanvas.Core.Models.Settings;
+using DeskCanvas.Core.Services;
+using DeskCanvas.Services;
+using DeskCanvas.Views;
 
 namespace Reminders.Views;
 

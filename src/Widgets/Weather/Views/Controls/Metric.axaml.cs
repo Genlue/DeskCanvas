@@ -1,7 +1,7 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
-using uWidgets.Services;
+using DeskCanvas.Services;
 
 namespace Weather.Views.Controls;
 

@@ -121,7 +121,7 @@ public partial class World : UserControl
     private (int Columns, int Rows)? FindHostSpan()
     {
         for (var node = this.GetVisualParent(); node != null; node = node.GetVisualParent())
-            if (node is uWidgets.Views.Widget widget)
+            if (node is DeskCanvas.Views.Widget widget)
                 return widget.CurrentSpan;
         return null;
     }

@@ -1,8 +1,8 @@
 using System;
 using System.Threading.Tasks;
 using SkiaSharp;
-using uWidgets.Core.Models.Settings;
-using uWidgets.Services;
+using DeskCanvas.Core.Models.Settings;
+using DeskCanvas.Services;
 
 namespace Clock.Services;
 

@@ -1,7 +1,7 @@
 using System.Globalization;
 using Calendar.Models;
 using ReactiveUI;
-using uWidgets.Services;
+using DeskCanvas.Services;
 
 namespace Calendar.ViewModels;
 

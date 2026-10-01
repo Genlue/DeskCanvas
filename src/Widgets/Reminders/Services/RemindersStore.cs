@@ -6,7 +6,7 @@ using System.Text.Json;
 using Avalonia.Threading;
 using Reminders.Locales;
 using Reminders.Models;
-using uWidgets.Core;
+using DeskCanvas.Core;
 
 namespace Reminders.Services;
 

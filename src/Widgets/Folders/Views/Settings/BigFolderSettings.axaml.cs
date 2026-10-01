@@ -8,8 +8,8 @@ using Avalonia.Platform.Storage;
 using Folders.Locales;
 using Folders.Models;
 using Folders.Services;
-using uWidgets.Core.Interfaces;
-using uWidgets.Core.Models;
+using DeskCanvas.Core.Interfaces;
+using DeskCanvas.Core.Models;
 
 #pragma warning disable CA1416
 
@@ -289,7 +289,7 @@ public partial class BigFolderSettings : UserControl
 
         var folder = await storageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions
         {
-            Title = "uWidgets",
+            Title = "DeskCanvas",
             AllowMultiple = true
         });
 
@@ -306,7 +306,7 @@ public partial class BigFolderSettings : UserControl
 
         var files = await storageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
         {
-            Title = "uWidgets",
+            Title = "DeskCanvas",
             AllowMultiple = true
         });
 

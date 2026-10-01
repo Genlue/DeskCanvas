@@ -2,7 +2,7 @@ using System.Text.Json;
 using Monitor.Locales;
 using Monitor.Models;
 using ReactiveUI;
-using uWidgets.Core.Interfaces;
+using DeskCanvas.Core.Interfaces;
 
 namespace Monitor.ViewModels;
 

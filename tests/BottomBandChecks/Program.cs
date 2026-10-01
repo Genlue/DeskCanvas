@@ -4,7 +4,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Themes.Fluent;
 using Avalonia.Threading;
-using uWidgets.Services;
+using DeskCanvas.Services;
 
 namespace BottomBandChecks;
 
@@ -275,7 +275,7 @@ internal static class Program
     /// <summary>
     /// True when the shell would give this window a taskbar button: it must be visible, must not be
     /// a tool window, and must be either unowned or explicitly marked WS_EX_APPWINDOW (which even
-    /// overrides WS_EX_TOOLWINDOW). This is the state the "uWidgetsPlus flashes in the taskbar"
+    /// overrides WS_EX_TOOLWINDOW). This is the state the "DeskCanvas flashes in the taskbar"
     /// report came from, turned into an assertion.
     /// </summary>
     private static bool TaskbarEligible(Window window)

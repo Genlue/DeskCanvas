@@ -3,7 +3,7 @@ using Avalonia.Media;
 using Avalonia.Styling;
 using Calendar.Models;
 using ReactiveUI;
-using uWidgets.Core.Interfaces;
+using DeskCanvas.Core.Interfaces;
 
 namespace Calendar.ViewModels;
 

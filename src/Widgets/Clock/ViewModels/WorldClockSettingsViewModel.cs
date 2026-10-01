@@ -2,7 +2,7 @@ using System.Text.Json;
 using Clock.Locales;
 using Clock.Models;
 using ReactiveUI;
-using uWidgets.Core.Interfaces;
+using DeskCanvas.Core.Interfaces;
 
 namespace Clock.ViewModels;
 

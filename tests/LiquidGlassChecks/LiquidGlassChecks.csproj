@@ -6,12 +6,12 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="../../src/uWidgets.Core/uWidgets.Core.csproj" />
+    <ProjectReference Include="../../src/DeskCanvas.Core/DeskCanvas.Core.csproj" />
     <PackageReference Include="SkiaSharp" />
-    <Compile Include="../../src/uWidgets/Services/LiquidGlassRenderer.cs" Link="LiquidGlassRenderer.cs" />
-    <Compile Include="../../src/uWidgets/Services/LiquidGlassGpuEffect.cs" Link="LiquidGlassGpuEffect.cs" />
-    <Compile Include="../../src/uWidgets/Services/LiquidGlassV2Effect.cs" Link="LiquidGlassV2Effect.cs" />
-    <Compile Include="../../src/uWidgets/Services/LiquidGlassV2Renderer.cs" Link="LiquidGlassV2Renderer.cs" />
+    <Compile Include="../../src/DeskCanvas/Services/LiquidGlassRenderer.cs" Link="LiquidGlassRenderer.cs" />
+    <Compile Include="../../src/DeskCanvas/Services/LiquidGlassGpuEffect.cs" Link="LiquidGlassGpuEffect.cs" />
+    <Compile Include="../../src/DeskCanvas/Services/LiquidGlassV2Effect.cs" Link="LiquidGlassV2Effect.cs" />
+    <Compile Include="../../src/DeskCanvas/Services/LiquidGlassV2Renderer.cs" Link="LiquidGlassV2Renderer.cs" />
     <Compile Include="../../src/Widgets/Clock/Services/GlyphLiquidGlassRenderer.cs" Link="GlyphLiquidGlassRenderer.cs" />
   </ItemGroup>
 </Project>

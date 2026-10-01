@@ -1,6 +1,6 @@
 using Avalonia.Controls;
 using Avalonia.Interactivity;
-using uWidgets.Core.Interfaces;
+using DeskCanvas.Core.Interfaces;
 using Weather.Models.Geocoding;
 using Weather.Services;
 using Weather.ViewModels;

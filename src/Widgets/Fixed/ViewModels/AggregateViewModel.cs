@@ -9,7 +9,7 @@ using Avalonia.Styling;
 using FixedWidgets.Models;
 using FixedWidgets.Services;
 using ReactiveUI;
-using uWidgets.Services;
+using DeskCanvas.Services;
 
 namespace FixedWidgets.ViewModels;
 

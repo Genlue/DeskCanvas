@@ -1,7 +1,7 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:locales="clr-namespace:Notes.Locales"
-        xmlns:controls="clr-namespace:uWidgets.Views.Controls;assembly=uWidgets"
+        xmlns:controls="clr-namespace:DeskCanvas.Views.Controls;assembly=DeskCanvas"
         x:Class="Notes.Views.NotePopupWindow"
         Title="Notes"
         SystemDecorations="None"

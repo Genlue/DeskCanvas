@@ -1,6 +1,6 @@
 using Avalonia.Controls;
 using Monitor.ViewModels;
-using uWidgets.Core.Interfaces;
+using DeskCanvas.Core.Interfaces;
 
 namespace Monitor.Views.Settings;
 

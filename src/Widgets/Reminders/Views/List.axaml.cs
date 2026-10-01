@@ -7,9 +7,9 @@ using Reminders.Models;
 using Reminders.Services;
 using Reminders.ViewModels;
 using Reminders.Views.Controls;
-using uWidgets.Core.Interfaces;
-using uWidgets.Core.Models;
-using uWidgets.Services;
+using DeskCanvas.Core.Interfaces;
+using DeskCanvas.Core.Models;
+using DeskCanvas.Services;
 
 namespace Reminders.Views;
 
@@ -109,7 +109,7 @@ public partial class List : UserControl, IWidgetSelfRefreshing
     {
         get
         {
-            var r = (VisualRoot as uWidgets.Views.Widget)?.Radius.TopLeft ?? 0;
+            var r = (VisualRoot as DeskCanvas.Views.Widget)?.Radius.TopLeft ?? 0;
             return r > 0 ? r : null;
         }
     }

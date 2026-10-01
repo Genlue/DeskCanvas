@@ -9,10 +9,10 @@ using Avalonia.Interactivity;
 using Avalonia.Media;
 using Avalonia.Platform;
 using Avalonia.Styling;
-using uWidgets.Core.Models.Settings;
-using uWidgets.Core.Services;
-using uWidgets.Services;
-using uWidgets.Views;
+using DeskCanvas.Core.Models.Settings;
+using DeskCanvas.Core.Services;
+using DeskCanvas.Services;
+using DeskCanvas.Views;
 using Weather.ViewModels;
 
 namespace Weather.Views;

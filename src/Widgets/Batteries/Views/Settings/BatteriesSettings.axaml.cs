@@ -7,8 +7,8 @@ using Avalonia.Layout;
 using Avalonia.Media;
 using Batteries.Models;
 using Batteries.Services;
-using uWidgets.Core.Interfaces;
-using uWidgets.Core.Models;
+using DeskCanvas.Core.Interfaces;
+using DeskCanvas.Core.Models;
 
 namespace Batteries.Views.Settings;
 

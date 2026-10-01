@@ -3,7 +3,7 @@ using Progress.Locales;
 using Progress.Models;
 using Progress.Views;
 using Progress.Views.Settings;
-using uWidgets.Core.Models.Attributes;
+using DeskCanvas.Core.Models.Attributes;
 
 [assembly: AssemblyCompany("creewick")]
 [assembly: AssemblyVersion("1.0.0")]

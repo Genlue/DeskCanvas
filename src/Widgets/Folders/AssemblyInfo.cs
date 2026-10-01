@@ -3,7 +3,7 @@ using Folders.Locales;
 using Folders.Models;
 using Folders.Views;
 using Folders.Views.Settings;
-using uWidgets.Core.Models.Attributes;
+using DeskCanvas.Core.Models.Attributes;
 
 [assembly: AssemblyCompany("creewick")]
 [assembly: AssemblyVersion("0.2.2")]

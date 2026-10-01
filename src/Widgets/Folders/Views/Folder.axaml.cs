@@ -17,7 +17,7 @@ using Avalonia.Threading;
 using Folders.Locales;
 using Folders.Models;
 using Folders.Services;
-using uWidgets.Core.Interfaces;
+using DeskCanvas.Core.Interfaces;
 namespace Folders.Views;
 
 public partial class Folder : UserControl

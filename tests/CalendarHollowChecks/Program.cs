@@ -57,7 +57,7 @@ class Program
         // The marker brush is resolved through the app's own resource dictionaries, so load the
         // same styles the app switches on (accent + monochrome + the rendered-glass material).
         foreach (var style in new[] { "Accent.axaml", "MonochromeBlackWhite.axaml", "LiquidGlass.axaml" })
-            app.Styles.Add(new StyleInclude(new Uri("avares://uWidgets/")) { Source = new Uri("avares://uWidgets/Styles/" + style) });
+            app.Styles.Add(new StyleInclude(new Uri("avares://DeskCanvas/")) { Source = new Uri("avares://DeskCanvas/Styles/" + style) });
         app.Resources["SystemAccentColor"] = Color.Parse("#0A84FF");
         app.Resources["SystemAccentColorDark1"] = Color.Parse("#0A84FF");
         app.Resources["SystemAccentColorLight1"] = Color.Parse("#0A84FF");

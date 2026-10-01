@@ -6,8 +6,8 @@ using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Tools.Models;
 using Tools.Services.Translation;
-using uWidgets.Core.Interfaces;
-using uWidgets.Core.Models;
+using DeskCanvas.Core.Interfaces;
+using DeskCanvas.Core.Models;
 
 namespace Tools.Views.Settings;
 

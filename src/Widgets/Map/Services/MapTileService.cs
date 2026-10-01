@@ -24,7 +24,7 @@ public class MapTileService : IDisposable
 
     static MapTileService()
     {
-        HttpClient.DefaultRequestHeaders.UserAgent.ParseAdd("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36 uWidgets/1.9.3");
+        HttpClient.DefaultRequestHeaders.UserAgent.ParseAdd("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36 DeskCanvas/1.9.3");
     }
 
     private const int MaxMemoryCacheTiles = 400;
@@ -51,7 +51,7 @@ public class MapTileService : IDisposable
     public MapTileService()
     {
         var localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-        cacheBaseDir = Path.Combine(localAppData, "uWidgets", "Cache", "Map");
+        cacheBaseDir = Path.Combine(localAppData, "DeskCanvas", "Cache", "Map");
         try
         {
             if (!Directory.Exists(cacheBaseDir))

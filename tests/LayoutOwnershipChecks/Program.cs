@@ -1,7 +1,7 @@
 using System.Text.Json;
-using uWidgets.Core.Interfaces;
-using uWidgets.Core.Models;
-using uWidgets.Core.Services;
+using DeskCanvas.Core.Interfaces;
+using DeskCanvas.Core.Models;
+using DeskCanvas.Core.Services;
 
 namespace LayoutOwnershipChecks;
 

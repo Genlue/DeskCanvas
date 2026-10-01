@@ -3,7 +3,7 @@ using Music.Locales;
 using Music.Models;
 using Music.Views;
 using Music.Views.Settings;
-using uWidgets.Core.Models.Attributes;
+using DeskCanvas.Core.Models.Attributes;
 
 [assembly: AssemblyCompany("creewick")]
 [assembly: AssemblyVersion("1.0.0")]

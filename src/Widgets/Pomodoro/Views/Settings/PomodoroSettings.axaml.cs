@@ -3,8 +3,8 @@ using System.Text.Json;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Pomodoro.Models;
-using uWidgets.Core.Interfaces;
-using uWidgets.Core.Models;
+using DeskCanvas.Core.Interfaces;
+using DeskCanvas.Core.Models;
 
 namespace Pomodoro.Views.Settings;
 

@@ -1,11 +1,11 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using uWidgets.Core.Interfaces;
-using uWidgets.Core.Models;
-using uWidgets.Core.Models.Settings;
-using uWidgets.Services;
-using GridSettings = uWidgets.Core.Models.Settings.Grid;
+using DeskCanvas.Core.Interfaces;
+using DeskCanvas.Core.Models;
+using DeskCanvas.Core.Models.Settings;
+using DeskCanvas.Services;
+using GridSettings = DeskCanvas.Core.Models.Settings.Grid;
 
 namespace MultiScreenGridChecks;
 

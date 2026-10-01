@@ -7,8 +7,8 @@ using Avalonia.VisualTree;
 using Music.Models;
 using Music.ViewModels;
 using Music.Views.Controls;
-using uWidgets.Core.Interfaces;
-using uWidgets.Core.Models;
+using DeskCanvas.Core.Interfaces;
+using DeskCanvas.Core.Models;
 
 namespace Music.Views;
 
@@ -167,7 +167,7 @@ public partial class Music : UserControl, IWidgetSelfRefreshing, IWidgetSuspenda
     private (int Columns, int Rows)? FindHostSpan()
     {
         for (var node = this.GetVisualParent(); node != null; node = node.GetVisualParent())
-            if (node is uWidgets.Views.Widget widget)
+            if (node is DeskCanvas.Views.Widget widget)
                 return widget.CurrentSpan;
         return null;
     }

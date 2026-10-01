@@ -13,8 +13,8 @@ using Avalonia.Threading;
 using Folders.Locales;
 using Folders.Models;
 using Folders.Services;
-using uWidgets.Core.Interfaces;
-using uWidgets.Core.Models;
+using DeskCanvas.Core.Interfaces;
+using DeskCanvas.Core.Models;
 
 #pragma warning disable CA1416
 

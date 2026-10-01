@@ -5,7 +5,7 @@ using Avalonia.Interactivity;
 using Weather.Models;
 using Weather.ViewModels;
 using Weather.Views.Controls;
-using uWidgets.Services;
+using DeskCanvas.Services;
 
 namespace Weather.Views;
 
@@ -49,7 +49,7 @@ public partial class Forecast : UserControl
     {
         get
         {
-            var r = (VisualRoot as uWidgets.Views.Widget)?.Radius.TopLeft ?? 0;
+            var r = (VisualRoot as DeskCanvas.Views.Widget)?.Radius.TopLeft ?? 0;
             return r > 0 ? r : null;
         }
     }

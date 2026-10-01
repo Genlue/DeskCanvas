@@ -8,7 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\uWidgets.Core\uWidgets.Core.csproj" />
+    <ProjectReference Include="..\..\src\DeskCanvas.Core\DeskCanvas.Core.csproj" />
   </ItemGroup>
 
 </Project>

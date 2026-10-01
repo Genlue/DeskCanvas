@@ -4,8 +4,8 @@ using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
 using Music.Models;
 using Music.Services;
-using uWidgets.Core.Interfaces;
-using uWidgets.Core.Models;
+using DeskCanvas.Core.Interfaces;
+using DeskCanvas.Core.Models;
 
 namespace Music.Views.Settings;
 

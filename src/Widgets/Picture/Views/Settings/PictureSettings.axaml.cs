@@ -11,8 +11,8 @@ using Avalonia.Platform.Storage;
 using Picture.Locales;
 using Picture.Models;
 using Picture.Services;
-using uWidgets.Core.Interfaces;
-using uWidgets.Core.Models;
+using DeskCanvas.Core.Interfaces;
+using DeskCanvas.Core.Models;
 
 namespace Picture.Views.Settings;
 

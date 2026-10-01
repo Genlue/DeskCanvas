@@ -93,7 +93,7 @@ class Program
     {
         try
         {
-            Avalonia.AppBuilder.Configure<uWidgets.App>()
+            Avalonia.AppBuilder.Configure<DeskCanvas.App>()
                 .UsePlatformDetect()
                 .WithInterFont()
                 .SetupWithoutStarting();

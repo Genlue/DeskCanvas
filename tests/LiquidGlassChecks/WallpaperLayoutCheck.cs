@@ -1,7 +1,7 @@
 using System.Diagnostics;
 using SkiaSharp;
-using uWidgets.Core.Models.Settings;
-using uWidgets.Services;
+using DeskCanvas.Core.Models.Settings;
+using DeskCanvas.Services;
 
 /// <summary>
 /// Ground-truth wallpaper layout check: compare the production renderer's

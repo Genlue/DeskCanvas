@@ -8,9 +8,9 @@ using Avalonia.Interactivity;
 using Avalonia.Threading;
 using Tools.Models;
 using Tools.Services;
-using uWidgets.Core.Interfaces;
-using uWidgets.Core.Models;
-using uWidgets.Services;
+using DeskCanvas.Core.Interfaces;
+using DeskCanvas.Core.Models;
+using DeskCanvas.Services;
 
 namespace Tools.Views;
 
@@ -341,7 +341,7 @@ public partial class ClipboardView : UserControl, IWidgetSelfRefreshing
     {
         get
         {
-            var r = (VisualRoot as uWidgets.Views.Widget)?.Radius.TopLeft ?? 0;
+            var r = (VisualRoot as DeskCanvas.Views.Widget)?.Radius.TopLeft ?? 0;
             return r > 0 ? r : null;
         }
     }

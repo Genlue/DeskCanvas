@@ -1,6 +1,6 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:controls="clr-namespace:uWidgets.Views.Controls;assembly=uWidgets"
+             xmlns:controls="clr-namespace:DeskCanvas.Views.Controls;assembly=DeskCanvas"
              xmlns:locales="clr-namespace:Notes.Locales"
              x:Class="Notes.Views.Settings.NoteSettings">
     <ScrollViewer>
@@ -93,6 +93,9 @@
             <controls:Setting Title="{x:Static locales:Locale.Notes_Body_Padding}">
                 <NumericUpDown Name="BodyPaddingBox" MinWidth="128" Minimum="0" Maximum="64"
                                Increment="2" FormatString="F0" ParsingNumberStyle="Integer" />
+            </controls:Setting>
+            <controls:Setting Title="{x:Static locales:Locale.Notes_ShowTitle}">
+                <ToggleSwitch Name="ShowTitleToggle" />
             </controls:Setting>
             <controls:Setting Title="{x:Static locales:Locale.Notes_Header_Color}">
                 <StackPanel Orientation="Horizontal" Spacing="8">

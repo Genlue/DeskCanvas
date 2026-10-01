@@ -1,0 +1,122 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:viewModels="clr-namespace:DeskCanvas.ViewModels"
+        xmlns:controls="clr-namespace:DeskCanvas.Views.Controls"
+        Width="1000" Height="650" MinWidth="600" MinHeight="300"
+        x:Class="DeskCanvas.Views.Settings"
+        Background="Transparent"
+        TransparencyLevelHint="AcrylicBlur, None"
+        TransparencyBackgroundFallback="{DynamicResource SettingsBackground}"
+        ExtendClientAreaToDecorationsHint="True"
+        ExtendClientAreaTitleBarHeightHint="50"
+        WindowStartupLocation="CenterScreen"
+        Title="Settings"
+        x:DataType="viewModels:SettingsViewModel">
+
+    <Window.Styles>
+        <!-- The surface tint is style-driven (not a local attribute) so code can swap it for the
+             fully opaque fallback by toggling the "opaque" class when the acrylic backdrop drops
+             (see Settings.ApplySurfaceFallback). -->
+        <Style Selector="Border#WindowSurface">
+            <Setter Property="Background" Value="{DynamicResource SettingsWindowBackground}" />
+        </Style>
+        <Style Selector="Border#WindowSurface.opaque">
+            <Setter Property="Background" Value="{DynamicResource SettingsBackground}" />
+        </Style>
+        <Style Selector="ListBoxItem">
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="Margin" Value="2,1" />
+            <Setter Property="Padding" Value="10,7" />
+        </Style>
+        <!-- iOS/macOS 风格的控件圆角：下拉框与按钮统一 8px -->
+        <Style Selector="ComboBox">
+            <Setter Property="CornerRadius" Value="8" />
+        </Style>
+        <Style Selector="Button">
+            <Setter Property="CornerRadius" Value="8" />
+        </Style>
+        <Style Selector="ListBoxItem:selected /template/ ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource SystemRevealListLowColor}" />                
+        </Style>
+        <Style Selector="ListBoxItem" x:DataType="viewModels:PageViewModel">
+            <Setter Property="IsHitTestVisible" Value="{Binding IsItem}" />
+            <Setter Property="Focusable" Value="{Binding IsItem}" />
+        </Style>
+    </Window.Styles>
+    
+    <!-- The window's own glass surface. It is clipped to exactly the radius Avalonia's
+         WinUIComposition backdrop is rounded with (SettingsWindowCornerRadius), so the blurred
+         backdrop and the 0.80-opacity tint share one single corner outline. Without the clip the
+         square tint rectangle painted past the backdrop's arc, leaving a no-blur notch in every
+         corner that looked like a second, transparent corner. -->
+    <Border x:Name="WindowSurface"
+            CornerRadius="{DynamicResource SettingsWindowCornerRadius}"
+            ClipToBounds="True">
+        <Grid RowDefinitions="Auto,*">
+        <controls:LiquidGlassSurface x:Name="GlassSurface" Grid.RowSpan="2" SettingsSurface="False" />
+        <!-- macOS traffic lights title bar (native system buttons are hidden
+             via code when this mode is active) -->
+        <controls:TrafficLightTitleBar x:Name="TrafficBar" Grid.Row="0" IsVisible="False" />
+        <TextBlock Name="AppTitle" IsHitTestVisible="False" Margin="16 16 0  16" FontWeight="Bold">DeskCanvas</TextBlock>
+        <SplitView Name="SplitView" Grid.Row="1" IsPaneOpen="True" DisplayMode="CompactInline" PaneBackground="Transparent" OpenPaneLength="240" CompactPaneLength="60">
+            <SplitView.Pane>
+                <ScrollViewer>
+                    <StackPanel Margin="0 0 12 0">
+                        <ListBox Name="ListBox" Background="Transparent" SelectionMode="Single" ItemsSource="{Binding AllItems}" SelectionChanged="OnMenuItemChanged">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate DataType="viewModels:PageViewModel">
+                                    <Panel>
+                                        <!-- Header Section Title -->
+                                        <TextBlock Text="{Binding Text}" 
+                                                   FontSize="11" 
+                                                   FontWeight="SemiBold" 
+                                                   Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                                                   Margin="4,10,0,2"
+                                                   IsVisible="{Binding IsHeader}" />
+
+                                        <!-- Separator Line -->
+                                        <Rectangle Height="1" 
+                                                   Fill="{DynamicResource SystemControlForegroundBaseLowBrush}" 
+                                                   Opacity="0.25" 
+                                                   Margin="0,2" 
+                                                   IsVisible="{Binding IsSeparator}" />
+
+                                        <!-- Regular Nav Item -->
+                                        <StackPanel Orientation="Horizontal" Spacing="12" IsVisible="{Binding IsItem}">
+                                            <PathIcon Data="{Binding Icon}" Height="16" Width="16" />
+                                            <TextBlock Text="{Binding Text}" VerticalAlignment="Center" />
+                                        </StackPanel>
+                                    </Panel>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                    </StackPanel>
+                </ScrollViewer>
+            </SplitView.Pane>
+            <SplitView.Content>
+                <Grid RowDefinitions="Auto, *" ColumnDefinitions="*, Auto" MaxWidth="800">
+                    <TextBlock Grid.Row="0" Grid.Column="0" FontSize="28" FontWeight="SemiBold" Text="{Binding CurrentPageTitle}" Margin="0 0 0 32" />
+                    <StackPanel Grid.Row="0" Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Top" Spacing="4" Margin="16 0">
+                        <Button Click="Restart" Background="{DynamicResource SystemControlBackgroundAltHighBrush}">
+                            <PathIcon Data="{DynamicResource Refresh}" />
+                        </Button>
+                        <Button Click="Exit" Background="{DynamicResource SystemControlBackgroundAltHighBrush}">
+                            <PathIcon Data="{DynamicResource Power}" />
+                        </Button>
+                    </StackPanel>
+                    <ScrollViewer Grid.Row="1" Grid.ColumnSpan="2">
+                        <TransitioningContentControl Margin="0 0 16 16" Content="{Binding CurrentPage}">
+                            <TransitioningContentControl.PageTransition>
+                                <CompositePageTransition>
+                                    <CrossFade Duration="0:00:00.000" />
+                                    <PageSlide Orientation="Vertical" SlideInEasing="CubicEaseOut" Duration="0:00:00.300" />
+                                </CompositePageTransition>
+                            </TransitioningContentControl.PageTransition>
+                        </TransitioningContentControl>
+                    </ScrollViewer>
+                </Grid>
+            </SplitView.Content>
+        </SplitView>
+        </Grid>
+    </Border>
+</Window>

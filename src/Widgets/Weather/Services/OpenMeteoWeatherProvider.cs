@@ -1,6 +1,6 @@
 using System.Globalization;
 using System.Text.Json;
-using uWidgets.Core.Services;
+using DeskCanvas.Core.Services;
 using Weather.Models.Forecast;
 using Weather.Models.Geocoding;
 

@@ -1,7 +1,7 @@
 using System.Diagnostics;
 using SkiaSharp;
-using uWidgets.Core.Models.Settings;
-using uWidgets.Services;
+using DeskCanvas.Core.Models.Settings;
+using DeskCanvas.Services;
 
 /// <summary>
 /// Optical quality checks for the iOS-style liquid-glass material. The material
@@ -581,7 +581,7 @@ public static class OpticsProfile
     {
         try
         {
-            var path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "uWidgets", "appSettings.json");
+            var path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "DeskCanvas", "appSettings.json");
             if (!File.Exists(path)) return null;
             using var document = System.Text.Json.JsonDocument.Parse(File.ReadAllText(path));
             if (!document.RootElement.TryGetProperty("Theme", out var theme)) return null;

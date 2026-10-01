@@ -46,7 +46,7 @@ class Program
             CurrentEngineId = "google",
             ClearInputAfterSearch = true,
             SaveHistory = true,
-            RecentHistory = ["Avalonia 11", "SkiaSharp 2.88", "C# .NET 8", "uWidgets"]
+            RecentHistory = ["Avalonia 11", "SkiaSharp 2.88", "C# .NET 8", "DeskCanvas"]
         };
 
         foreach (var (name, w, h) in testSizes)
@@ -68,7 +68,7 @@ class Program
     private static void TestHorizontalScrolling()
     {
         Console.WriteLine("\n--- Testing Universal Horizontal Scrolling Logic ---");
-        uWidgets.Services.HorizontalScrollHelper.RegisterGlobal();
+        DeskCanvas.Services.HorizontalScrollHelper.RegisterGlobal();
         Console.WriteLine("  PASS: HorizontalScrollHelper.RegisterGlobal succeeded.");
 
         // Check offset math: UP -> LEFT (decrease), DOWN -> RIGHT (increase)

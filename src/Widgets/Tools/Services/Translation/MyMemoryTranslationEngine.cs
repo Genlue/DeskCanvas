@@ -26,7 +26,7 @@ public class MyMemoryTranslationEngine : ITranslationEngine
         string url = $"https://api.mymemory.translated.net/get?q={Uri.EscapeDataString(text)}&langpair={langPair}";
 
         using var request = new HttpRequestMessage(HttpMethod.Get, url);
-        request.Headers.Add("User-Agent", "uWidgets/1.7.2");
+        request.Headers.Add("User-Agent", "DeskCanvas/1.7.2");
 
         using var response = await httpClient.SendAsync(request, cancellationToken);
         response.EnsureSuccessStatusCode();

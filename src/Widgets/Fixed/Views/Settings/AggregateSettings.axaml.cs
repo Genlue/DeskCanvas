@@ -11,8 +11,8 @@ using Avalonia.Media;
 using FixedWidgets.Locales;
 using FixedWidgets.Models;
 using FixedWidgets.Services;
-using uWidgets.Core.Interfaces;
-using uWidgets.Core.Models;
+using DeskCanvas.Core.Interfaces;
+using DeskCanvas.Core.Models;
 
 namespace FixedWidgets.Views.Settings;
 

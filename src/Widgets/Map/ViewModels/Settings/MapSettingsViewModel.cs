@@ -5,7 +5,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
 using Map.Models;
-using uWidgets.Core.Interfaces;
+using DeskCanvas.Core.Interfaces;
 
 namespace Map.ViewModels.Settings;
 

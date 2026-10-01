@@ -1,4 +1,4 @@
-using uWidgets.Core.Models.Settings;
+using DeskCanvas.Core.Models.Settings;
 
 namespace Clock.Services;
 

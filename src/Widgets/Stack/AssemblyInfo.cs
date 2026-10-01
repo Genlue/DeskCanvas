@@ -3,9 +3,9 @@ using StackWidgets.Locales;
 using StackWidgets.Models;
 using StackWidgets.Views;
 using StackWidgets.Views.Settings;
-using uWidgets.Core.Models.Attributes;
+using DeskCanvas.Core.Models.Attributes;
 
-[assembly: AssemblyCompany("uWidgets")]
+[assembly: AssemblyCompany("DeskCanvas")]
 [assembly: AssemblyVersion("1.0.0")]
 
 [assembly: WidgetInfo(typeof(WidgetStackView), typeof(WidgetStackModel), typeof(WidgetStackSettings), "Stack_Widget_Title", "Stack_Widget_Subtitle", defaultColumns: 2, defaultRows: 2)]

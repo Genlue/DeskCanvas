@@ -4,7 +4,7 @@
         <TargetFramework>net8.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
-        <OutputPath>..\..\uWidgets\bin\$(Configuration)\$(TargetFramework)\Widgets</OutputPath>
+        <OutputPath>..\..\DeskCanvas\bin\$(Configuration)\$(TargetFramework)\Widgets</OutputPath>
         <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
         <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
         <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
@@ -15,14 +15,14 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\..\uWidgets\uWidgets.csproj">
+        <ProjectReference Include="..\..\DeskCanvas\DeskCanvas.csproj">
             <Private>false</Private>
             <ExcludeAssets>runtime</ExcludeAssets>
         </ProjectReference>
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\..\uWidgets.Core\uWidgets.Core.csproj">
+        <ProjectReference Include="..\..\DeskCanvas.Core\DeskCanvas.Core.csproj">
             <Private>false</Private>
             <ExcludeAssets>runtime</ExcludeAssets>
         </ProjectReference>

@@ -7,8 +7,8 @@ using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Search.Models;
 using Search.Services;
-using uWidgets.Core.Interfaces;
-using uWidgets.Core.Models;
+using DeskCanvas.Core.Interfaces;
+using DeskCanvas.Core.Models;
 
 namespace Search.Views.Settings;
 

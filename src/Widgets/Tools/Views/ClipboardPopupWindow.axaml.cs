@@ -12,10 +12,10 @@ using Avalonia.Styling;
 using Avalonia.Threading;
 using Tools.Models;
 using Tools.Services;
-using uWidgets.Core.Models.Settings;
-using uWidgets.Core.Services;
-using uWidgets.Services;
-using uWidgets.Views;
+using DeskCanvas.Core.Models.Settings;
+using DeskCanvas.Core.Services;
+using DeskCanvas.Services;
+using DeskCanvas.Views;
 
 namespace Tools.Views;
 

@@ -3,9 +3,9 @@ using FixedWidgets.Locales;
 using FixedWidgets.Models;
 using FixedWidgets.Views;
 using FixedWidgets.Views.Settings;
-using uWidgets.Core.Models.Attributes;
+using DeskCanvas.Core.Models.Attributes;
 
-[assembly: AssemblyCompany("uWidgets")]
+[assembly: AssemblyCompany("DeskCanvas")]
 [assembly: AssemblyVersion("1.0.1")]
 
 [assembly: WidgetInfo(typeof(AggregateView), typeof(AggregateModel), typeof(AggregateSettings), "Fixed_Aggregate_Title", "Fixed_Aggregate_Subtitle", defaultColumns: 4, defaultRows: 2)]

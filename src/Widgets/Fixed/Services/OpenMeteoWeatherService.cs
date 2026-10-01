@@ -8,7 +8,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Avalonia.Media;
 using FixedWidgets.Models;
-using uWidgets.Core.Services;
+using DeskCanvas.Core.Services;
 
 namespace FixedWidgets.Services;
 

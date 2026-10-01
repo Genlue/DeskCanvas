@@ -7,8 +7,8 @@ using Avalonia.VisualTree;
 using Search.Models;
 using Search.ViewModels;
 using Search.Views.Controls;
-using uWidgets.Core.Interfaces;
-using uWidgets.Core.Models;
+using DeskCanvas.Core.Interfaces;
+using DeskCanvas.Core.Models;
 
 namespace Search.Views;
 
@@ -121,7 +121,7 @@ public partial class SearchView : UserControl, IWidgetSelfRefreshing
     private (int Columns, int Rows)? FindHostSpan()
     {
         for (var node = this.GetVisualParent(); node != null; node = node.GetVisualParent())
-            if (node is uWidgets.Views.Widget widget)
+            if (node is DeskCanvas.Views.Widget widget)
                 return widget.CurrentSpan;
         return null;
     }

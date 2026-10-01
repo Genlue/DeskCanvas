@@ -1,6 +1,6 @@
 using System.Text.Json;
 using ReactiveUI;
-using uWidgets.Core.Interfaces;
+using DeskCanvas.Core.Interfaces;
 using Weather.Locales;
 using Weather.Models;
 using Weather.Models.Geocoding;

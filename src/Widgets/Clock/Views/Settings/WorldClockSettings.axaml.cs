@@ -1,6 +1,6 @@
 using Avalonia.Controls;
 using Clock.ViewModels;
-using uWidgets.Core.Interfaces;
+using DeskCanvas.Core.Interfaces;
 
 namespace Clock.Views.Settings;
 

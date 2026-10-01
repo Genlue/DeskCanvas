@@ -1,6 +1,6 @@
 using Avalonia.Controls;
 using Calendar.ViewModels;
-using uWidgets.Core.Interfaces;
+using DeskCanvas.Core.Interfaces;
 
 namespace Calendar.Views.Settings;
 

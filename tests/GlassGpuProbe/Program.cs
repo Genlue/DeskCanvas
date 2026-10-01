@@ -6,8 +6,8 @@ using Avalonia.Rendering.SceneGraph;
 using Avalonia.Skia;
 using Avalonia.Threading;
 using SkiaSharp;
-using uWidgets.Core.Models.Settings;
-using uWidgets.Services;
+using DeskCanvas.Core.Models.Settings;
+using DeskCanvas.Services;
 
 namespace GlassGpuProbe;
 
@@ -61,7 +61,7 @@ internal sealed class ProbeApp : Application
             SystemDecorations = SystemDecorations.None,
             ShowInTaskbar = false,
             Topmost = true,
-            Title = "uWidgets glass GPU probe",
+            Title = "DeskCanvas glass GPU probe",
             Content = new ProbeControl()
         };
         window.Show();

@@ -7,8 +7,8 @@ using Avalonia.Input;
 using Avalonia.Interactivity;
 using Picture.Models;
 using Picture.ViewModels;
-using uWidgets.Core.Interfaces;
-using uWidgets.Core.Models;
+using DeskCanvas.Core.Interfaces;
+using DeskCanvas.Core.Models;
 
 namespace Picture.Views;
 

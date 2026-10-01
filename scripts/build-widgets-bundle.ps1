@@ -1,12 +1,12 @@
 #requires -Version 5.1
 <#
 .SYNOPSIS
-    Builds the widget bundle zip embedded into the single-file uWidgets.exe.
+    Builds the widget bundle zip embedded into the single-file DeskCanvas.exe.
 
 .DESCRIPTION
     Publishes every widget project (flat, like the official Widgets layout),
     removes pdb/xml/runtimeconfig, and zips the result. Called by the
-    BuildWidgetsBundle MSBuild target in src\uWidgets\uWidgets.csproj.
+    BuildWidgetsBundle MSBuild target in src\DeskCanvas\DeskCanvas.csproj.
 
 .PARAMETER WidgetsSourceDir
     Directory containing the widget projects (src\Widgets).
@@ -15,7 +15,7 @@
     Temporary flat staging directory for the widget publish output.
 
 .PARAMETER ZipPath
-    Destination path of the bundle zip (embedded as uWidgets.Resources.widgets.zip).
+    Destination path of the bundle zip (embedded as DeskCanvas.Resources.widgets.zip).
 
 .PARAMETER Configuration
     Build configuration (Release/Debug).

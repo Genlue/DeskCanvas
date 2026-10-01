@@ -7,11 +7,11 @@ using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Threading;
 using StackWidgets.Models;
-using uWidgets.Core.Interfaces;
-using uWidgets.Core.Models;
-using uWidgets.Core.Models.Attributes;
-using uWidgets.Services;
-using uWidgets.Views;
+using DeskCanvas.Core.Interfaces;
+using DeskCanvas.Core.Models;
+using DeskCanvas.Core.Models.Attributes;
+using DeskCanvas.Services;
+using DeskCanvas.Views;
 
 namespace StackWidgets.Views.Settings;
 
@@ -58,7 +58,7 @@ public partial class WidgetStackSettings : UserControl
     public WidgetStackSettings(IWidgetLayoutProvider? widgetLayoutProvider, IAssemblyProvider? assemblyProvider = null)
     {
         this.widgetLayoutProvider = widgetLayoutProvider!;
-        this.assemblyProvider = assemblyProvider ?? (uWidgets.App.Services?.GetService(typeof(IAssemblyProvider)) as IAssemblyProvider)!;
+        this.assemblyProvider = assemblyProvider ?? (DeskCanvas.App.Services?.GetService(typeof(IAssemblyProvider)) as IAssemblyProvider)!;
         model = widgetLayoutProvider?.Get().GetModel<WidgetStackModel>() ?? new WidgetStackModel();
 
         InitializeComponent();
@@ -265,7 +265,7 @@ public partial class WidgetStackSettings : UserControl
 
         try
         {
-            var layoutProvider = uWidgets.App.Services?.GetService(typeof(ILayoutProvider)) as ILayoutProvider;
+            var layoutProvider = DeskCanvas.App.Services?.GetService(typeof(ILayoutProvider)) as ILayoutProvider;
             if (layoutProvider != null)
             {
                 var screens = layoutProvider.Get();

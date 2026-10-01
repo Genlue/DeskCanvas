@@ -1,0 +1,38 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="DeskCanvas.Views.InputDialog"
+        SystemDecorations="None"
+        Background="Transparent"
+        TransparencyLevelHint="Transparent"
+        CanResize="False"
+        ShowInTaskbar="False"
+        WindowStartupLocation="CenterOwner"
+        SizeToContent="WidthAndHeight">
+    <Border Background="{DynamicResource SettingsBackground}"
+            CornerRadius="10"
+            BoxShadow="0 4 16 0 #80000000"
+            Padding="24"
+            Margin="16">
+        <StackPanel Spacing="14" Width="360">
+            <TextBlock x:Name="TitleText"
+                       FontWeight="SemiBold"
+                       FontSize="15" />
+            <TextBlock x:Name="PromptText"
+                       FontSize="13"
+                       Opacity="0.8"
+                       TextWrapping="Wrap" />
+            <TextBox x:Name="InputBox"
+                     FontSize="14"
+                     KeyDown="OnInputBoxKeyDown" />
+            <TextBlock x:Name="ErrorText"
+                       FontSize="12"
+                       Foreground="#ff4d4f"
+                       IsVisible="False"
+                       TextWrapping="Wrap" />
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8" Margin="0 4 0 0">
+                <Button x:Name="CancelButton" Content="取消" Click="OnCancel" />
+                <Button x:Name="ConfirmButton" Classes="accent" Content="确定" Click="OnConfirm" />
+            </StackPanel>
+        </StackPanel>
+    </Border>
+</Window>

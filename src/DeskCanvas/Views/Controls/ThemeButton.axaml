@@ -1,0 +1,46 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="clr-namespace:DeskCanvas.Views.Controls"
+             x:Class="DeskCanvas.Views.Controls.ThemeButton"
+             x:DataType="controls:ThemeButton" Margin="6 2">
+    <StackPanel HorizontalAlignment="Center" Spacing="4">
+        <Button Click="Apply" Padding="2" CornerRadius="7" Background="Transparent"
+                BorderThickness="2" BorderBrush="{Binding SelectionBrush}"
+                AutomationProperties.Name="{Binding ThemeName}">
+            <Canvas Width="120" Height="90" ClipToBounds="True">
+                <Border Width="120" Height="90" CornerRadius="4" ClipToBounds="True">
+                    <Image Stretch="UniformToFill" Source="{Binding Wallpaper}" />
+                </Border>
+                <Border Canvas.Left="70" Canvas.Top="40" Width="45" Height="45" ClipToBounds="True"
+                        IsVisible="{Binding IsFrosted}"
+                        CornerRadius="{Binding WidgetCornerRadius}">
+                    <Image Width="120" Height="90" Stretch="UniformToFill" Source="{Binding Wallpaper}">
+                        <Image.Effect>
+                            <BlurEffect Radius="30" />
+                        </Image.Effect>
+                    </Image>
+                </Border>
+                <Rectangle Width="120" Height="90" RadiusX="4" RadiusY="4" IsVisible="{Binding DimWallpaper}"
+                           Fill="#40000000"/>
+                <Border Canvas.Left="70" Canvas.Top="40" Width="45" Height="45" 
+                        IsVisible="{Binding !IsRenderedGlass}"
+                        CornerRadius="{Binding WidgetCornerRadius}"
+                        Background="{Binding WidgetBackground}"
+                        BorderThickness="{Binding PreviewBorderThickness}"
+                        BorderBrush="{Binding PreviewBorderBrush}"
+                        BoxShadow="{Binding WidgetShadow}" />
+                <controls:LiquidGlassSurface Canvas.Left="70" Canvas.Top="40" Width="45" Height="45"
+                                            Preview="True" Material="{Binding GlassMaterial}"
+                                            CornerRadius="10" IsVisible="{Binding IsRenderedGlass}" />
+                <TextBlock Canvas.Left="70" Canvas.Top="48" Width="45"
+                           TextAlignment="Center" VerticalAlignment="Center"
+                           FontSize="28" LineHeight="24" Text="Aa"
+                           FontFamily="{Binding WidgetFontFamily}"
+                           Foreground="{Binding WidgetForeground}" />
+            </Canvas>
+        </Button>
+        <TextBlock FontSize="12" HorizontalAlignment="Center"
+                   Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                   Text="{Binding ThemeName}" />
+    </StackPanel>
+</UserControl>

@@ -13,10 +13,10 @@ using Avalonia.Threading;
 using Folders.Locales;
 using Folders.Models;
 using Folders.Services;
-using uWidgets.Core.Models.Settings;
-using uWidgets.Core.Services;
-using uWidgets.Services;
-using uWidgets.Views;
+using DeskCanvas.Core.Models.Settings;
+using DeskCanvas.Core.Services;
+using DeskCanvas.Services;
+using DeskCanvas.Views;
 using Grid = Avalonia.Controls.Grid;
 
 namespace Folders.Views;

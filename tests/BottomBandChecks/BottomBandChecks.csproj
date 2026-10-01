@@ -12,8 +12,8 @@
     <PackageReference Include="Avalonia.Desktop" />
     <PackageReference Include="Avalonia.Themes.Fluent" />
     <PackageReference Include="Avalonia.Fonts.Inter" />
-    <ProjectReference Include="..\..\src\uWidgets.Core\uWidgets.Core.csproj" />
-    <ProjectReference Include="..\..\src\uWidgets\uWidgets.csproj" />
+    <ProjectReference Include="..\..\src\DeskCanvas.Core\DeskCanvas.Core.csproj" />
+    <ProjectReference Include="..\..\src\DeskCanvas\DeskCanvas.csproj" />
   </ItemGroup>
 
 </Project>

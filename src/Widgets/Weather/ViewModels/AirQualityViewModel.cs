@@ -1,5 +1,5 @@
 using ReactiveUI;
-using uWidgets.Services;
+using DeskCanvas.Services;
 using Weather.Models;
 using Weather.Services;
 

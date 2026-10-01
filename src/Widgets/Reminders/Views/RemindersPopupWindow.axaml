@@ -3,7 +3,7 @@
         xmlns:locales="clr-namespace:Reminders.Locales"
         xmlns:models="clr-namespace:Reminders.Models"
         xmlns:local="clr-namespace:Reminders.Views"
-        xmlns:controls="clr-namespace:uWidgets.Views.Controls;assembly=uWidgets"
+        xmlns:controls="clr-namespace:DeskCanvas.Views.Controls;assembly=DeskCanvas"
         x:Class="Reminders.Views.RemindersPopupWindow"
         Title="Reminders"
         SystemDecorations="None"

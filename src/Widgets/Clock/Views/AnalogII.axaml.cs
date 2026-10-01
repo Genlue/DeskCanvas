@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using Avalonia.Controls;
 using Clock.Models;
 using Clock.ViewModels;
-using uWidgets.Core.Interfaces;
+using DeskCanvas.Core.Interfaces;
 
 namespace Clock.Views;
 

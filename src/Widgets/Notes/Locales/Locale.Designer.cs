@@ -348,6 +348,15 @@ namespace Notes.Locales {
         }
 
         /// <summary>
+        ///   Looks up a localized string similar to Show title bar.
+        /// </summary>
+        public static string Notes_ShowTitle {
+            get {
+                return ResourceManager.GetString("Notes_ShowTitle", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   Looks up a localized string similar to Open note panel.
         /// </summary>
         public static string Notes_Panel_Open {

@@ -36,7 +36,7 @@ public class ClipboardMonitorService
     {
         storageDir = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "uWidgets");
+            "DeskCanvas");
         cacheDir = Path.Combine(storageDir, "ClipboardCache");
         historyFilePath = Path.Combine(storageDir, "clipboard_history.json");
 

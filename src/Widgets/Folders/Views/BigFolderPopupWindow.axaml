@@ -2,7 +2,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:locales="clr-namespace:Folders.Locales"
         xmlns:local="clr-namespace:Folders.Views"
-        xmlns:controls="clr-namespace:uWidgets.Views.Controls;assembly=uWidgets"
+        xmlns:controls="clr-namespace:DeskCanvas.Views.Controls;assembly=DeskCanvas"
         x:Class="Folders.Views.BigFolderPopupWindow"
         Title="Big Folder"
         SystemDecorations="None"

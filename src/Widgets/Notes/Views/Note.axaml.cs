@@ -12,11 +12,11 @@ using Notes.Locales;
 using Notes.Models;
 using Notes.Services;
 using Notes.ViewModels;
-using uWidgets.Core.Interfaces;
-using uWidgets.Core.Models;
-using uWidgets.Core.Models.Settings;
-using uWidgets.Views.Controls;
-using uWidgets.Views;
+using DeskCanvas.Core.Interfaces;
+using DeskCanvas.Core.Models;
+using DeskCanvas.Core.Models.Settings;
+using DeskCanvas.Views.Controls;
+using DeskCanvas.Views;
 
 namespace Notes.Views;
 
@@ -102,7 +102,10 @@ public partial class Note : UserControl, IWidgetSelfRefreshing
 
         TitleBox.Height = 44;
         TitleBox.FontSize = 16;
-        Divider.IsVisible = true;
+        // Title bar toggle (widget setting, default on): off collapses the header
+        // and the divider below it — the body then owns the whole card.
+        HeaderBorder.IsVisible = model.ShowTitle;
+        Divider.IsVisible = model.ShowTitle;
         ContentBox.IsVisible = false;
         RenderScroll.IsVisible = false;
         FileScroll.IsVisible = false;

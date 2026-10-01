@@ -1,5 +1,5 @@
 using System.Diagnostics;
-using uWidgets.Services;
+using DeskCanvas.Services;
 
 namespace FullscreenChecks;
 

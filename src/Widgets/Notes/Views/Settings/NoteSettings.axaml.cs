@@ -9,8 +9,8 @@ using Avalonia.Styling;
 using Notes.Locales;
 using Notes.Models;
 using Notes.Services;
-using uWidgets.Core.Interfaces;
-using uWidgets.Services;
+using DeskCanvas.Core.Interfaces;
+using DeskCanvas.Services;
 
 namespace Notes.Views.Settings;
 
@@ -80,6 +80,8 @@ public partial class NoteSettings : UserControl
             UpdateModel(m => m with { Markdown = MarkdownToggle.IsChecked == true });
         AllowInlineEditToggle.Click += (_, _) =>
             UpdateModel(m => m with { AllowInlineEdit = AllowInlineEditToggle.IsChecked == true });
+        ShowTitleToggle.Click += (_, _) =>
+            UpdateModel(m => m with { ShowTitle = ShowTitleToggle.IsChecked == true });
         StyleToggle.Click += (_, _) =>
         {
             var enabled = StyleToggle.IsChecked == true;
@@ -194,6 +196,7 @@ public partial class NoteSettings : UserControl
     {
         MarkdownToggle.IsChecked = model.Markdown;
         AllowInlineEditToggle.IsChecked = model.AllowInlineEdit;
+        ShowTitleToggle.IsChecked = model.ShowTitle;
 
         var style = model.MarkdownStyle;
         StyleToggle.IsChecked = style?.Enabled ?? false;

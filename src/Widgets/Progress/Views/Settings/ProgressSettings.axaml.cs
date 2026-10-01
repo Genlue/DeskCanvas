@@ -6,8 +6,8 @@ using Avalonia.Interactivity;
 using Avalonia.Media;
 using Progress.Locales;
 using Progress.Models;
-using uWidgets.Core.Interfaces;
-using uWidgets.Core.Models;
+using DeskCanvas.Core.Interfaces;
+using DeskCanvas.Core.Models;
 
 namespace Progress.Views.Settings;
 

@@ -3,7 +3,7 @@ using Tools.Locales;
 using Tools.Models;
 using Tools.Views;
 using Tools.Views.Settings;
-using uWidgets.Core.Models.Attributes;
+using DeskCanvas.Core.Models.Attributes;
 
 [assembly: AssemblyCompany("creewick")]
 [assembly: AssemblyVersion("1.0.1")]

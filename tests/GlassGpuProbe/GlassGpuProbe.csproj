@@ -15,10 +15,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\uWidgets.Core\uWidgets.Core.csproj" />
-    <Compile Include="..\..\src\uWidgets\Services\LiquidGlassGpuEffect.cs" Link="LiquidGlassGpuEffect.cs" />
-    <Compile Include="..\..\src\uWidgets\Services\LiquidGlassRenderer.cs" Link="LiquidGlassRenderer.cs" />
-    <Compile Include="..\..\src\uWidgets\Services\LiquidGlassSource.cs" Link="LiquidGlassSource.cs" />
+    <ProjectReference Include="..\..\src\DeskCanvas.Core\DeskCanvas.Core.csproj" />
+    <Compile Include="..\..\src\DeskCanvas\Services\LiquidGlassGpuEffect.cs" Link="LiquidGlassGpuEffect.cs" />
+    <Compile Include="..\..\src\DeskCanvas\Services\LiquidGlassRenderer.cs" Link="LiquidGlassRenderer.cs" />
+    <Compile Include="..\..\src\DeskCanvas\Services\LiquidGlassSource.cs" Link="LiquidGlassSource.cs" />
   </ItemGroup>
 
 </Project>

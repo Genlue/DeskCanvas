@@ -70,6 +70,11 @@ public record MarkdownTypography(
 /// expand button) opens the secondary panel, where the note is edited. Can be
 /// turned on in the widget settings.
 /// </param>
+/// <param name="ShowTitle">
+/// Show the colored title bar on the card. Default <c>true</c>; when off the
+/// header (and the divider below it) collapse and the body owns the whole card —
+/// the secondary panel stays reachable via double-click.
+/// </param>
 public record NoteModel(
     string? Title = null,
     string? Content = null,
@@ -85,4 +90,5 @@ public record NoteModel(
     List<string>? SelectedFiles = null,
     int BodyPadding = 4,
     MarkdownTypography? MarkdownStyle = null,
-    bool AllowInlineEdit = false);
+    bool AllowInlineEdit = false,
+    bool ShowTitle = true);

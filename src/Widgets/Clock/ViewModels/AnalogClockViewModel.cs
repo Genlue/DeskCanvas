@@ -1,6 +1,6 @@
 using Clock.Models;
 using ReactiveUI;
-using uWidgets.Services;
+using DeskCanvas.Services;
 using Locale = Clock.Locales.Locale;
 
 namespace Clock.ViewModels;

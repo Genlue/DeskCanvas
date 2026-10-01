@@ -1,13 +1,13 @@
 <Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
      xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui">
-  <Package Name="uWidgetsPlus"
+  <Package Name="DeskCanvas"
            Manufacturer="Genlue"
-           Version="2.6.1"
+           Version="2.7.0"
            UpgradeCode="9E38A34F-7561-4B9F-8463-7186F0BA0930"
            Scope="perMachine"
            Language="1033">
 
-    <SummaryInformation Description="uWidgetsPlus Installer"
+    <SummaryInformation Description="DeskCanvas Installer"
                         Manufacturer="Genlue" />
 
     <MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed." />
@@ -17,18 +17,18 @@
     <!-- Application Icon & ARP Metadata -->
     <Icon Id="AppIcon" SourceFile=".github\images\icon.ico" />
     <Property Id="ARPPRODUCTICON" Value="AppIcon" />
-    <Property Id="ARPHELPLINK" Value="https://github.com/Genlue/uWidgetsPlus" />
-    <Property Id="ARPURLINFOABOUT" Value="https://github.com/Genlue/uWidgetsPlus" />
+    <Property Id="ARPHELPLINK" Value="https://github.com/Genlue/DeskCanvas" />
+    <Property Id="ARPURLINFOABOUT" Value="https://github.com/Genlue/DeskCanvas" />
     <Property Id="ARPCONTACT" Value="Genlue" />
     <Property Id="ARPCOMMENTS" Value="macOS styled desktop widgets for Windows" />
 
     <!-- Directory Structure -->
     <StandardDirectory Id="ProgramFiles64Folder">
-      <Directory Id="INSTALLFOLDER" Name="uWidgetsPlus" />
+      <Directory Id="INSTALLFOLDER" Name="DeskCanvas" />
     </StandardDirectory>
 
     <StandardDirectory Id="ProgramMenuFolder">
-      <Directory Id="ApplicationProgramsFolder" Name="uWidgetsPlus" />
+      <Directory Id="ApplicationProgramsFolder" Name="DeskCanvas" />
     </StandardDirectory>
 
     <StandardDirectory Id="DesktopFolder" />
@@ -37,22 +37,22 @@
     <ComponentGroup Id="ProductComponents">
       <!-- Main Application Executable -->
       <Component Id="MainExecutable" Directory="INSTALLFOLDER" Guid="*">
-        <File Id="uWidgetsExe"
-              Source="dist\win-x64\uWidgets.exe"
+        <File Id="DeskCanvasExe"
+              Source="dist\win-x64\DeskCanvas.exe"
               KeyPath="yes" />
       </Component>
 
       <!-- Start Menu Shortcut -->
       <Component Id="ApplicationShortcut" Directory="ApplicationProgramsFolder" Guid="*">
         <Shortcut Id="ApplicationStartMenuShortcut"
-                  Name="uWidgetsPlus"
-                  Description="uWidgetsPlus - Desktop Widgets for Windows"
-                  Target="[!uWidgetsExe]"
+                  Name="DeskCanvas"
+                  Description="DeskCanvas - Desktop Widgets for Windows"
+                  Target="[!DeskCanvasExe]"
                   WorkingDirectory="INSTALLFOLDER"
                   Icon="AppIcon" />
         <RemoveFolder Id="CleanUpAppFolder" Directory="ApplicationProgramsFolder" On="uninstall" />
         <RegistryValue Root="HKCU"
-                       Key="Software\Genlue\uWidgetsPlus"
+                       Key="Software\Genlue\DeskCanvas"
                        Name="startMenuShortcut"
                        Type="integer"
                        Value="1"
@@ -62,13 +62,13 @@
       <!-- Desktop Shortcut -->
       <Component Id="DesktopShortcutComponent" Directory="DesktopFolder" Guid="*">
         <Shortcut Id="AppDesktopShortcut"
-                  Name="uWidgetsPlus"
-                  Description="uWidgetsPlus - Desktop Widgets for Windows"
-                  Target="[!uWidgetsExe]"
+                  Name="DeskCanvas"
+                  Description="DeskCanvas - Desktop Widgets for Windows"
+                  Target="[!DeskCanvasExe]"
                   WorkingDirectory="INSTALLFOLDER"
                   Icon="AppIcon" />
         <RegistryValue Root="HKCU"
-                       Key="Software\Genlue\uWidgetsPlus"
+                       Key="Software\Genlue\DeskCanvas"
                        Name="desktopShortcut"
                        Type="integer"
                        Value="1"
@@ -77,7 +77,7 @@
     </ComponentGroup>
 
     <!-- Features -->
-    <Feature Id="MainFeature" Title="uWidgetsPlus" Level="1">
+    <Feature Id="MainFeature" Title="DeskCanvas" Level="1">
       <ComponentGroupRef Id="ProductComponents" />
     </Feature>
 

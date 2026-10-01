@@ -31,28 +31,28 @@ jobs:
           dotnet-version: 8.0.x
 
       - name: Build
-        run: dotnet build .\src\uWidgets.sln --configuration Release
+        run: dotnet build .\src\DeskCanvas.sln --configuration Release
 
       - name: Upload build
         if: ${{ matrix.runtime == 'win-x64' }}
         uses: actions/upload-artifact@v4
         with:
           name: build
-          path: .\src\uWidgets\bin\Release\net8.0
+          path: .\src\DeskCanvas\bin\Release\net8.0
 
       - name: Publish App
         run: |
-          dotnet publish .\src\uWidgets\uWidgets.csproj `
+          dotnet publish .\src\DeskCanvas\DeskCanvas.csproj `
           --configuration Release `
           --runtime ${{ matrix.runtime }} `
-          --output .\src\uWidgets\bin\Publish\${{ matrix.runtime }} `
+          --output .\src\DeskCanvas\bin\Publish\${{ matrix.runtime }} `
           --self-contained false `
           /p:PublishReadyToRun=true
 
       - name: Publish Widgets
         run: |
           $widgetsPath = ".\src\Widgets"
-          $publishPath = ".\src\uWidgets\bin\Publish\${{ matrix.runtime }}"
+          $publishPath = ".\src\DeskCanvas\bin\Publish\${{ matrix.runtime }}"
           $outputPath = "$publishPath\Widgets"
           if (-not (Test-Path -Path $outputPath)) {
             New-Item -Path $outputPath -ItemType Directory -Force
@@ -78,14 +78,14 @@ jobs:
       - name: Archive
         run: |
           Compress-Archive `
-            -Path .\src\uWidgets\bin\Publish\${{ matrix.runtime }} `
-            -DestinationPath .\src\uWidgets\bin\Publish\${{ matrix.runtime }}.zip
+            -Path .\src\DeskCanvas\bin\Publish\${{ matrix.runtime }} `
+            -DestinationPath .\src\DeskCanvas\bin\Publish\${{ matrix.runtime }}.zip
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
           name: publish-${{ matrix.runtime }}
-          path: .\src\uWidgets\bin\Publish\${{ matrix.runtime }}.zip
+          path: .\src\DeskCanvas\bin\Publish\${{ matrix.runtime }}.zip
 
   release:
     runs-on: windows-latest
@@ -102,12 +102,12 @@ jobs:
         with:
           pattern: publish-*
           merge-multiple: true
-          path: .\src\uWidgets\bin\Publish
+          path: .\src\DeskCanvas\bin\Publish
 
       - name: Get Assembly Version
         id: version
         run: |
-          $filePath = ".\src\uWidgets\AssemblyInfo.cs"
+          $filePath = ".\src\DeskCanvas\AssemblyInfo.cs"
           $content = [string](Get-Content $filePath)
 
           if ($content -match '\[assembly: AssemblyVersion\("([0-9]+\.[0-9]+\.[0-9]+)"\)\]') {
@@ -148,7 +148,7 @@ jobs:
         uses: actions/upload-release-asset@v1
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: .\src\uWidgets\bin\Publish\win-x86.zip
+          asset_path: .\src\DeskCanvas\bin\Publish\win-x86.zip
           asset_name: win-x86.zip
           asset_content_type: application/zip
         env:
@@ -158,7 +158,7 @@ jobs:
         uses: actions/upload-release-asset@v1
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: .\src\uWidgets\bin\Publish\win-x64.zip
+          asset_path: .\src\DeskCanvas\bin\Publish\win-x64.zip
           asset_name: win-x64.zip
           asset_content_type: application/zip
         env:
@@ -168,7 +168,7 @@ jobs:
         uses: actions/upload-release-asset@v1
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: .\src\uWidgets\bin\Publish\win-arm64.zip
+          asset_path: .\src\DeskCanvas\bin\Publish\win-arm64.zip
           asset_name: win-arm64.zip
           asset_content_type: application/zip
         env:
@@ -197,7 +197,7 @@ jobs:
         run: |
           ls .
           ls .\build
-          xmldoc2md .\build\uWidgets.Core.dll `
+          xmldoc2md .\build\DeskCanvas.Core.dll `
           --output .\new-wiki\API `
           --platform github-pages `
           --index-page-name API `

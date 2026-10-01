@@ -6,8 +6,8 @@ using Avalonia.Media;
 using Avalonia.Styling;
 using Clock.Models;
 using ReactiveUI;
-using uWidgets.Core.Interfaces;
-using uWidgets.Services;
+using DeskCanvas.Core.Interfaces;
+using DeskCanvas.Services;
 
 namespace Clock.ViewModels;
 

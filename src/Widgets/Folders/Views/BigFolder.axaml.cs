@@ -15,8 +15,8 @@ using Avalonia.Threading;
 using Folders.Locales;
 using Folders.Models;
 using Folders.Services;
-using uWidgets.Core.Interfaces;
-using uWidgets.Core.Models;
+using DeskCanvas.Core.Interfaces;
+using DeskCanvas.Core.Models;
 
 namespace Folders.Views;
 
@@ -183,7 +183,7 @@ public partial class BigFolder : UserControl, IWidgetSelfRefreshing
         if (width <= 10 && height <= 10)
             return ((int)Math.Max(1, Math.Round(width)), (int)Math.Max(1, Math.Round(height)));
 
-        // In uWidgets: unit = ~95px (Size 80 + Margin 15).
+        // In DeskCanvas: unit = ~95px (Size 80 + Margin 15).
         // 1x1: ~80-100px -> 1
         // 2x2: ~170-210px -> 2
         // 4x2: ~350-420px x ~170-210px -> 4 x 2
@@ -414,7 +414,7 @@ public partial class BigFolder : UserControl, IWidgetSelfRefreshing
     {
         get
         {
-            var r = (VisualRoot as uWidgets.Views.Widget)?.Radius.TopLeft ?? 0;
+            var r = (VisualRoot as DeskCanvas.Views.Widget)?.Radius.TopLeft ?? 0;
             return r > 0 ? r : null;
         }
     }

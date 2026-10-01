@@ -1,8 +1,8 @@
 using System.Reflection;
 using System.Text.RegularExpressions;
 using SkiaSharp;
-using uWidgets.Core.Models.Settings;
-using uWidgets.Services;
+using DeskCanvas.Core.Models.Settings;
+using DeskCanvas.Services;
 
 /// <summary>
 /// Validation for the GPU material (液态玻璃 on the GPU).
@@ -10,7 +10,7 @@ using uWidgets.Services;
 /// <b>What can and cannot be checked here.</b> Skia's runtime-effect shaders are GPU-only in this
 /// SkiaSharp build: compiling one is safe anywhere, but <i>drawing</i> one on a raster canvas
 /// terminates the process with an uncatchable SEHException. That is exactly the trap
-/// <see cref="uWidgets.Views.Controls.LiquidGlassSurface"/> guards against with its GrContext
+/// <see cref="DeskCanvas.Views.Controls.LiquidGlassSurface"/> guards against with its GrContext
 /// check, and it is why this file stops at shader construction: it proves the SkSL compiles, that
 /// every uniform the C# side binds exists, and that the derived optics are finite and sane. Actual
 /// pixels have to be eyeballed on a real GPU.
@@ -145,7 +145,7 @@ internal static class GpuMaterialCheck
 
         // Bitmap shaders here sample nearest, so the material interpolates its own lookups. Losing
         // that would show up as stair-stepping around the lens and a blocky backdrop.
-        var gpuSourcePath = Path.GetFullPath(@"src/uWidgets/Services/LiquidGlassGpuEffect.cs");
+        var gpuSourcePath = Path.GetFullPath(@"src/DeskCanvas/Services/LiquidGlassGpuEffect.cs");
         var gpuSource = File.Exists(gpuSourcePath) ? File.ReadAllText(gpuSourcePath) : "";
         Check(gpuSource.Contains("contentTexel") && gpuSource.Contains("auraTexel"),
             "the GPU material interpolates its backdrop and dye-grid lookups by hand");
@@ -231,7 +231,7 @@ internal static class GpuMaterialCheck
         // Drawing a runtime-effect shader without a GPU context kills the process outright, so
         // the draw operation has to ask the lease for one before it draws. Avalonia.Skia is not
         // referenced here, so the guard is asserted at the source level.
-        var surfaceSource = Path.GetFullPath(@"src/uWidgets/Views/Controls/LiquidGlassSurface.cs");
+        var surfaceSource = Path.GetFullPath(@"src/DeskCanvas/Views/Controls/LiquidGlassSurface.cs");
         var text = File.Exists(surfaceSource) ? File.ReadAllText(surfaceSource) : "";
         Check(text.Contains("lease.GrContext == null"),
             "software-backend guard is present in the glass draw operation");

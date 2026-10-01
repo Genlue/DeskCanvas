@@ -196,6 +196,9 @@
   <data name="Notes_AllowInlineEdit" xml:space="preserve">
     <value>双击组件卡片直接编辑内容</value>
   </data>
+  <data name="Notes_ShowTitle" xml:space="preserve">
+    <value>显示标题栏</value>
+  </data>
   <data name="Notes_Panel_Open" xml:space="preserve">
     <value>打开笔记面板</value>
   </data>

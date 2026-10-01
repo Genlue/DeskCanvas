@@ -10,9 +10,9 @@ using Avalonia.Threading;
 using Batteries.Locales;
 using Batteries.Models;
 using Batteries.Services;
-using uWidgets.Core.Interfaces;
-using uWidgets.Core.Models.Settings;
-using uWidgets.Core.Services;
+using DeskCanvas.Core.Interfaces;
+using DeskCanvas.Core.Models.Settings;
+using DeskCanvas.Core.Services;
 
 namespace Batteries.ViewModels;
 
@@ -202,7 +202,7 @@ public class BatteriesViewModel : INotifyPropertyChanged, IDisposable
     {
         model = initialModel ?? new BatteriesModel();
         appSettingsProvider = settingsProvider 
-            ?? (uWidgets.App.Services?.GetService(typeof(IAppSettingsProvider)) as IAppSettingsProvider) 
+            ?? (DeskCanvas.App.Services?.GetService(typeof(IAppSettingsProvider)) as IAppSettingsProvider) 
             ?? new AppSettingsProvider();
 
         Items = [

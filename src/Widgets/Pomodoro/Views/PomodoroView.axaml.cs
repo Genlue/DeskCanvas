@@ -5,9 +5,9 @@ using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Pomodoro.Models;
 using Pomodoro.ViewModels;
-using uWidgets.Core.Interfaces;
-using uWidgets.Core.Models;
-using uWidgets.Services;
+using DeskCanvas.Core.Interfaces;
+using DeskCanvas.Core.Models;
+using DeskCanvas.Services;
 
 namespace Pomodoro.Views;
 

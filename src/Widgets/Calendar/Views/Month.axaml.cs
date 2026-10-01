@@ -5,7 +5,7 @@ using Avalonia.Media;
 using Avalonia.Styling;
 using Calendar.Models;
 using Calendar.ViewModels;
-using uWidgets.Services;
+using DeskCanvas.Services;
 
 namespace Calendar.Views;
 

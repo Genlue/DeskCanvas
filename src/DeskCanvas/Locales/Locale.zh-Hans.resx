@@ -1,0 +1,1008 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <!-- 
+    Microsoft ResX Schema 
+    
+    Version 2.0
+    
+    The primary goals of this format is to allow a simple XML format 
+    that is mostly human readable. The generation and parsing of the 
+    various data types are done through the TypeConverter classes 
+    associated with the data types.
+    
+    Example:
+    
+    ... ado.net/XML headers & schema ...
+    <resheader name="resmimetype">text/microsoft-resx</resheader>
+    <resheader name="version">2.0</resheader>
+    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
+    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
+    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
+    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
+    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
+        <value>[base64 mime encoded serialized .NET Framework object]</value>
+    </data>
+    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
+        <comment>This is a comment</comment>
+    </data>
+                
+    There are any number of "resheader" rows that contain simple 
+    name/value pairs.
+    
+    Each data row contains a name, and value. The row also contains a 
+    type or mimetype. Type corresponds to a .NET class that support 
+    text/value conversion through the TypeConverter architecture. 
+    Classes that don't support this are serialized and stored with the 
+    mimetype set.
+    
+    The mimetype is used for serialized objects, and tells the 
+    ResXResourceReader how to depersist the object. This is currently not 
+    extensible. For a given mimetype the value must be set accordingly:
+    
+    Note - application/x-microsoft.net.object.binary.base64 is the format 
+    that the ResXResourceWriter will generate, however the reader can 
+    read any of the formats listed below.
+    
+    mimetype: application/x-microsoft.net.object.binary.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
+            : and then encoded with base64 encoding.
+    
+    mimetype: application/x-microsoft.net.object.soap.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
+            : and then encoded with base64 encoding.
+
+    mimetype: application/x-microsoft.net.object.bytearray.base64
+    value   : The object must be serialized into a byte array 
+            : using a System.ComponentModel.TypeConverter
+            : and then encoded with base64 encoding.
+    -->
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Settings_Appearance" xml:space="preserve">
+    <value>外观</value>
+  </data>
+  <data name="Settings_General" xml:space="preserve">
+    <value>常规</value>
+  </data>
+  <data name="Settings_About" xml:space="preserve">
+    <value>关于</value>
+  </data>
+  <data name="Settings_Appearance_Colors" xml:space="preserve">
+    <value>颜色</value>
+  </data>
+  <data name="Settings_Appearance_DarkMode_Title" xml:space="preserve">
+    <value>选择模式</value>
+  </data>
+  <data name="Settings_Appearance_DarkMode_Subtitle" xml:space="preserve">
+    <value>更改小部件中显示的颜色</value>
+  </data>
+  <data name="Settings_Appearance_DarkMode_True" xml:space="preserve">
+    <value>暗</value>
+  </data>
+  <data name="Settings_Appearance_DarkMode_False" xml:space="preserve">
+    <value>亮</value>
+  </data>
+  <data name="Settings_Appearance_DarkMode_Null" xml:space="preserve">
+    <value>跟随系统</value>
+  </data>
+  <data name="Settings_Appearance_DarkMode_Auto" xml:space="preserve">
+    <value>自动</value>
+  </data>
+  <data name="Settings_Appearance_Transparency_Title" xml:space="preserve">
+    <value>透明效果</value>
+  </data>
+  <data name="Settings_Appearance_Transparency_Subtitle" xml:space="preserve">
+    <value>小部件将呈现半透明状态</value>
+  </data>
+  <data name="Settings_Appearance_AccentColor_Title" xml:space="preserve">
+    <value>强调色</value>
+  </data>
+  <data name="Settings_Advanced_Size" xml:space="preserve">
+    <value>尺寸</value>
+  </data>
+  <data name="Settings_Advanced_WidgetSize_Title" xml:space="preserve">
+    <value>尺寸</value>
+  </data>
+  <data name="Settings_Advanced_WidgetMargin_Title" xml:space="preserve">
+    <value>小部件边距</value>
+  </data>
+  <data name="Widget_Remove" xml:space="preserve">
+    <value>移除小部件</value>
+  </data>
+  <data name="Widget_Size" xml:space="preserve">
+    <value>尺寸</value>
+  </data>
+  <data name="Widget_Scale" xml:space="preserve">
+    <value>缩放比例</value>
+  </data>
+  <data name="Widget_Scale_Reset" xml:space="preserve">
+    <value>恢复默认</value>
+  </data>
+  <data name="Widget_Size_Small" xml:space="preserve">
+    <value>小</value>
+  </data>
+  <data name="Widget_Size_Medium" xml:space="preserve">
+    <value>中</value>
+  </data>
+  <data name="Widget_Size_Large" xml:space="preserve">
+    <value>大</value>
+  </data>
+  <data name="Widget_Size_ExtraLarge" xml:space="preserve">
+    <value>超大</value>
+  </data>
+  <data name="Widget_Size_Custom" xml:space="preserve">
+    <value>自定义…</value>
+  </data>
+  <data name="Widget_Size_Custom_Title" xml:space="preserve">
+    <value>自定义尺寸</value>
+  </data>
+  <data name="Widget_Size_Columns" xml:space="preserve">
+    <value>列数</value>
+  </data>
+  <data name="Widget_Size_Rows" xml:space="preserve">
+    <value>行数</value>
+  </data>
+  <data name="Widget_Edit" xml:space="preserve">
+    <value>编辑</value>
+  </data>
+  <data name="Widget_OpenSettings" xml:space="preserve">
+    <value>编辑小部件</value>
+  </data>
+  <data name="Settings" xml:space="preserve">
+    <value>设置</value>
+  </data>
+  <data name="Widget" xml:space="preserve">
+    <value>小部件</value>
+  </data>
+  <data name="Settings_About_Version" xml:space="preserve">
+    <value>版本</value>
+  </data>
+  <data name="Settings_About_Actions" xml:space="preserve">
+    <value>更多</value>
+  </data>
+  <data name="Settings_About_Repository" xml:space="preserve">
+    <value>GitHub 存储库</value>
+  </data>
+  <data name="Settings_About_ReportBug" xml:space="preserve">
+    <value>反馈 bug</value>
+  </data>
+  <data name="Settings_General_Language_Title" xml:space="preserve">
+    <value>显示语言</value>
+  </data>
+  <data name="Settings_General_Language_Subtitle" xml:space="preserve">
+    <value>DeskCanvas 将以所选语言显示</value>
+  </data>
+  <data name="Settings_Advanced_WidgetMargin_Subtitle" xml:space="preserve">
+    <value>组件与网格线之间的边距（像素）</value>
+  </data>
+  <data name="Settings_Advanced_WidgetSize_Subtitle" xml:space="preserve">
+    <value>1×1 虚拟网格单位的大小（像素）</value>
+  </data>
+  <data name="Settings_General_Exit_Title" xml:space="preserve">
+    <value>退出程序</value>
+  </data>
+  <data name="Settings_General_Exit_Action" xml:space="preserve">
+    <value>退出</value>
+  </data>
+  <data name="Settings_General_Restart_Action" xml:space="preserve">
+    <value>重启</value>
+  </data>
+  <data name="Settings_General_Restart_Title" xml:space="preserve">
+    <value>重启程序</value>
+  </data>
+  <data name="Settings_General_Language" xml:space="preserve">
+    <value>语言</value>
+  </data>
+  <data name="Settings_General_Actions" xml:space="preserve">
+    <value>更多</value>
+  </data>
+  <data name="Settings_About_Repository_Action" xml:space="preserve">
+    <value>访问</value>
+  </data>
+  <data name="Settings_About_MyRepository" xml:space="preserve">
+    <value>我的仓库</value>
+  </data>
+  <data name="Settings_About_OriginalRepository" xml:space="preserve">
+    <value>原作者仓库</value>
+  </data>
+  <data name="Settings_About_OriginalReportBug" xml:space="preserve">
+    <value>向原作者反馈 bug</value>
+  </data>
+  <data name="Widgets" xml:space="preserve">
+    <value>小部件</value>
+  </data>
+  <data name="Settings_Advanced_SnapPosition_Title" xml:space="preserve">
+    <value>对齐位置</value>
+  </data>
+  <data name="Settings_Advanced_SnapPosition_Subtitle" xml:space="preserve">
+    <value>将小部件位置与网格对齐</value>
+  </data>
+  <data name="Widget_Save" xml:space="preserve">
+    <value>确定</value>
+  </data>
+  <data name="Settings_Appearance_Monochrome_Title" xml:space="preserve">
+    <value>单色主题</value>
+  </data>
+  <data name="Settings_Appearance_Monochrome_Subtitle" xml:space="preserve">
+    <value>小部件元素以相同的颜色显示</value>
+  </data>
+  <data name="Settings_Appearance_Monochrome_Variant_BlackWhite" xml:space="preserve">
+    <value>黑白</value>
+  </data>
+  <data name="Settings_Appearance_Monochrome_Variant_Accent" xml:space="preserve">
+    <value>强调色</value>
+  </data>
+  <data name="Settings_Appearance_Surface_Frosted" xml:space="preserve">
+    <value>毛玻璃</value>
+  </data>
+  <data name="Settings_Appearance_Surface_Solid" xml:space="preserve">
+    <value>纯色</value>
+  </data>
+  <data name="Settings_Appearance_Surface_Colorful" xml:space="preserve">
+    <value>多彩</value>
+  </data>
+  <data name="Settings_Appearance_SolidBackground_Title" xml:space="preserve">
+    <value>背景颜色</value>
+  </data>
+  <data name="Settings_Appearance_SolidBackground_Subtitle" xml:space="preserve">
+    <value>分别自定义深色与浅色模式下的背景颜色，不透明度仍由上方滑块控制</value>
+  </data>
+  <data name="Settings_Appearance_SolidBackground_Dark" xml:space="preserve">
+    <value>深色模式</value>
+  </data>
+  <data name="Settings_Appearance_SolidBackground_Light" xml:space="preserve">
+    <value>浅色模式</value>
+  </data>
+  <data name="Settings_Appearance_SolidBackground_ApplyToLight" xml:space="preserve">
+    <value>应用到浅色</value>
+  </data>
+  <data name="Settings_Appearance_SolidBackground_ApplyToDark" xml:space="preserve">
+    <value>应用到深色</value>
+  </data>
+  <data name="Update_SoftwareUpdate" xml:space="preserve">
+    <value>软件更新</value>
+  </data>
+  <data name="Update_UpdateFormat" xml:space="preserve">
+    <value>DeskCanvas {0} 可供下载</value>
+  </data>
+  <data name="Update_Download" xml:space="preserve">
+    <value>下载</value>
+  </data>
+  <data name="Update_Later" xml:space="preserve">
+    <value>以后再说</value>
+  </data>
+  <data name="Update_SkipThisVersion" xml:space="preserve">
+    <value>跳过此版本</value>
+  </data>
+  <data name="Settings_Appearance_AccentColor_Null" xml:space="preserve">
+    <value>跟随系统</value>
+  </data>
+  <data name="Settings_Appearance_AccentColor_Manual" xml:space="preserve">
+    <value>手动</value>
+  </data>
+  <data name="Settings_General_Startup_Title" xml:space="preserve">
+    <value>开机自启</value>
+  </data>
+  <data name="Settings_General_Startup_Subtitle" xml:space="preserve">
+    <value>该程序将在系统启动时自动启动</value>
+  </data>
+  <data name="Settings_General_Startup" xml:space="preserve">
+    <value>启动</value>
+  </data>
+  <data name="Settings_Advanced_SnapSize_Title" xml:space="preserve">
+    <value>对齐尺寸</value>
+  </data>
+  <data name="Settings_Advanced_SnapSize_Subtitle" xml:space="preserve">
+    <value>将小部件大小与网格对齐</value>
+  </data>
+  <data name="Settings_Advanced_LockSize_Title" xml:space="preserve">
+    <value>锁定尺寸</value>
+  </data>
+  <data name="Settings_Advanced_LockPosition_Title" xml:space="preserve">
+    <value>锁定位置</value>
+  </data>
+  <data name="Settings_Advanced_LockSize_Subtitle" xml:space="preserve">
+    <value>防止意外调整小部件大小</value>
+  </data>
+  <data name="Settings_Advanced_LockPosition_Subtitle" xml:space="preserve">
+    <value>防止意外重新定位小部件</value>
+  </data>
+  <data name="Settings_Advanced_Position" xml:space="preserve">
+    <value>位置</value>
+  </data>
+  <data name="Settings_Advanced" xml:space="preserve">
+    <value>高级</value>
+  </data>
+  <data name="Settings_Advanced_WidgetRadius_Title" xml:space="preserve">
+    <value>小部件圆角大小</value>
+  </data>
+  <data name="Settings_Advanced_WidgetRadius_Subtitle" xml:space="preserve">
+    <value>小部件角半径</value>
+  </data>
+  <data name="Settings_RestartRequired" xml:space="preserve">
+    <value>重新启动应用程序以应用更改</value>
+  </data>
+  <data name="Settings_AdminRequired" xml:space="preserve">
+    <value>以管理员身份运行应用程序来更改此设置</value>
+  </data>
+  <data name="Settings_Advanced_Dimensions" xml:space="preserve">
+    <value>形状</value>
+  </data>
+  <data name="Settings_Appearance_ApplyTheme" xml:space="preserve">
+    <value>应用主题</value>
+  </data>
+  <data name="Settings_Appearance_Presets_Windows_Title" xml:space="preserve">
+    <value>Windows 风格</value>
+  </data>
+  <data name="Settings_Appearance_Presets_Windows_Subtitle" xml:space="preserve">
+    <value>Segoe UI 字体，尖锐边框，原生边框</value>
+  </data>
+  <data name="Settings_Appearance_Presets_Apply" xml:space="preserve">
+    <value>应用</value>
+  </data>
+  <data name="Settings_Appearance_Presets_Apple_Title" xml:space="preserve">
+    <value>Apple 风格</value>
+  </data>
+  <data name="Settings_Appearance_Presets_Apple_Subtitle" xml:space="preserve">
+    <value>Inter 字体，圆边框，无边框，无阴影</value>
+  </data>
+  <data name="Settings_Advanced_Appearance" xml:space="preserve">
+    <value>外观</value>
+  </data>
+  <data name="Settings_Advanced_FontFamily_Title" xml:space="preserve">
+    <value>字体</value>
+  </data>
+  <data name="Settings_Advanced_FontFamily_Subtitle" xml:space="preserve">
+    <value>小部件使用的字体</value>
+  </data>
+  <data name="Settings_Advanced_UseNativeFrame_Subtitle" xml:space="preserve">
+    <value>使用原生窗口框架</value>
+  </data>
+  <data name="Settings_Advanced_UseNativeFrame_Title" xml:space="preserve">
+    <value>原生框架</value>
+  </data>
+  <data name="Settings_Advanced_TitleBarStyle_Title" xml:space="preserve">
+    <value>标题栏样式</value>
+  </data>
+  <data name="Settings_Advanced_TitleBarStyle_Subtitle" xml:space="preserve">
+    <value>设置窗口的标题栏（系统按钮或 MacOS 红绿灯）</value>
+  </data>
+  <data name="Settings_Advanced_TitleBarStyle_Native" xml:space="preserve">
+    <value>原生样式</value>
+  </data>
+  <data name="Settings_Advanced_TitleBarStyle_TrafficLights" xml:space="preserve">
+    <value>MacOS 样式</value>
+  </data>
+  <data name="Settings_Advanced_TitleBarSize_Title" xml:space="preserve">
+    <value>红绿灯尺寸</value>
+  </data>
+  <data name="Settings_Advanced_TitleBarSize_Subtitle" xml:space="preserve">
+    <value>红绿灯圆点直径（整体等比缩放）；12px 为 macOS 标准</value>
+  </data>
+  <data name="TrafficLight_Close" xml:space="preserve">
+    <value>关闭</value>
+  </data>
+  <data name="TrafficLight_Minimize" xml:space="preserve">
+    <value>最小化</value>
+  </data>
+  <data name="TrafficLight_Maximize" xml:space="preserve">
+    <value>最大化</value>
+  </data>
+  <data name="TrafficLight_Restore" xml:space="preserve">
+    <value>还原</value>
+  </data>
+  <data name="TrafficLight_Zoom" xml:space="preserve">
+    <value>缩放</value>
+  </data>
+  <data name="Settings_Appearance_OpacityLevel_Title" xml:space="preserve">
+    <value>不透明度</value>
+  </data>
+  <data name="Settings_Appearance_OpacityLevel_Subtitle" xml:space="preserve">
+    <value>小部件背景的不透明度</value>
+  </data>
+  <data name="Settings_Appearance_OutlineColor_Title" xml:space="preserve">
+    <value>描边颜色</value>
+  </data>
+  <data name="Settings_Appearance_OutlineColor_Subtitle" xml:space="preserve">
+    <value>开启描边时的高光颜色（含透明度）；左上与右下最浓，向右上与左下渐变消失</value>
+  </data>
+  <data name="Settings_Appearance_OutlineWidth_Title" xml:space="preserve">
+    <value>描边粗细</value>
+  </data>
+  <data name="Settings_Appearance_OutlineWidth_Subtitle" xml:space="preserve">
+    <value>高光描边的粗细（DIP），0 = 关闭描边（默认）</value>
+  </data>
+  <data name="Settings_Appearance_TextShadow_Title" xml:space="preserve">
+    <value>全局文字阴影</value>
+  </data>
+  <data name="Settings_Appearance_TextShadow_Subtitle" xml:space="preserve">
+    <value>为组件上的所有文字添加柔和投影，提升复杂壁纸上的可读性（默认关闭）</value>
+  </data>
+  <data name="Settings_Appearance_TextShadow_Strength" xml:space="preserve">
+    <value>阴影强度</value>
+  </data>
+    <data name="Settings_Advanced_GridMode" xml:space="preserve">
+        <value>网格</value>
+    </data>
+    <data name="Settings_Advanced_GridMode_Title" xml:space="preserve">
+        <value>网格模式</value>
+    </data>
+    <data name="Settings_Advanced_GridMode_Subtitle" xml:space="preserve">
+        <value>组件在桌面上的排列方式</value>
+    </data>
+    <data name="Settings_Advanced_GridMode_Virtual" xml:space="preserve">
+        <value>虚拟网格</value>
+    </data>
+    <data name="Settings_Advanced_GridMode_Manual" xml:space="preserve">
+        <value>自定义网格</value>
+    </data>
+    <data name="Settings_Advanced_GridMode_Free" xml:space="preserve">
+        <value>自由布局</value>
+    </data>
+    <data name="Settings_Advanced_GridColumns_Title" xml:space="preserve">
+        <value>列数</value>
+    </data>
+    <data name="Settings_Advanced_GridColumns_Subtitle" xml:space="preserve">
+        <value>网格列数（n）</value>
+    </data>
+    <data name="Settings_Advanced_GridRows_Title" xml:space="preserve">
+        <value>行数</value>
+    </data>
+    <data name="Settings_Advanced_GridRows_Subtitle" xml:space="preserve">
+        <value>网格行数（m）</value>
+    </data>
+    <data name="Settings_Advanced_GridCellSize_Title" xml:space="preserve">
+        <value>格子大小</value>
+    </data>
+    <data name="Settings_Advanced_GridCellSize_Subtitle" xml:space="preserve">
+        <value>格子边长（屏幕宽度的百分比，纵向沿用该像素值，保证正方形）</value>
+    </data>
+    <data name="Settings_Advanced_GridPosition_Title" xml:space="preserve">
+        <value>网格位置</value>
+    </data>
+    <data name="Settings_Advanced_GridPosition_Subtitle" xml:space="preserve">
+        <value>网格区域 X/Y（工作区的百分比）</value>
+    </data>
+    <data name="Settings_Advanced_GridEdit" xml:space="preserve">
+        <value>编辑网格</value>
+    </data>
+    <data name="Settings_Advanced_GridEdit_Subtitle" xml:space="preserve">
+        <value>在桌面上拖动网格可移动位置，拖动右下角手柄可调整格子大小</value>
+    </data>
+    <data name="Settings_Advanced_GridEditorHint" xml:space="preserve">
+        <value>拖动网格移动位置 · 在右侧面板编辑行列与格子大小 · Esc 关闭</value>
+    </data>
+    <data name="Settings_Advanced_GridEditorInfo" xml:space="preserve">
+        <value>{0} × {1} · 格子 {2} px</value>
+    </data>
+    <data name="Settings_Advanced_Network" xml:space="preserve">
+        <value>网络</value>
+    </data>
+    <data name="Settings_Advanced_Proxy_Title" xml:space="preserve">
+        <value>HTTP 代理</value>
+    </data>
+    <data name="Settings_Advanced_Proxy_Subtitle" xml:space="preserve">
+        <value>天气与更新请求的网络连接方式。直连可绕过失效的系统代理</value>
+    </data>
+    <data name="Settings_Advanced_Proxy_Direct" xml:space="preserve">
+        <value>直连</value>
+    </data>
+    <data name="Settings_Advanced_Proxy_System" xml:space="preserve">
+        <value>系统代理</value>
+    </data>
+    <data name="Settings_Advanced_Proxy_Custom" xml:space="preserve">
+        <value>自定义…</value>
+    </data>
+    <data name="Settings_Advanced_ProxyCustom_Title" xml:space="preserve">
+        <value>自定义代理地址</value>
+    </data>
+    <data name="Settings_Advanced_ProxyCustom_Subtitle" xml:space="preserve">
+        <value>代理模式为“自定义”时生效</value>
+    </data>
+    <data name="Settings_Advanced_ProxyCustom_Watermark" xml:space="preserve">
+        <value>http://host:port</value>
+    </data>
+    <data name="Settings_Advanced_UpdateUrl_Title" xml:space="preserve">
+        <value>更新源</value>
+    </data>
+    <data name="Settings_Advanced_UpdateUrl_Subtitle" xml:space="preserve">
+        <value>自定义更新地址（releases/latest 页面）；留空则禁用更新检查</value>
+    </data>
+    <data name="Widget_Size_Single" xml:space="preserve">
+        <value>1×1</value>
+    </data>
+    <data name="Widget_Size_Grid" xml:space="preserve">
+        <value>网格大小</value>
+    </data>
+    <data name="Settings_Appearance_FontSearchWatermark" xml:space="preserve">
+        <value>搜索字体…</value>
+    </data>
+    <data name="Settings_Appearance_FontNoResults" xml:space="preserve">
+        <value>没有匹配的字体</value>
+    </data>
+    <data name="Settings_Advanced_GridEditorSave" xml:space="preserve">
+        <value>保存并关闭</value>
+    </data>
+    <data name="Settings_Advanced_GridEditorCenterX" xml:space="preserve">
+        <value>X 轴居中</value>
+    </data>
+    <data name="Settings_Advanced_GridEditorCenterY" xml:space="preserve">
+        <value>Y 轴居中</value>
+    </data>
+    <data name="Settings_Advanced_GridEditorNudgeLeft" xml:space="preserve">
+        <value>←</value>
+    </data>
+    <data name="Settings_Advanced_GridEditorNudgeRight" xml:space="preserve">
+        <value>→</value>
+    </data>
+    <data name="Settings_Advanced_GridEditorNudgeUp" xml:space="preserve">
+        <value>↑</value>
+    </data>
+    <data name="Settings_Advanced_GridEditorNudgeDown" xml:space="preserve">
+        <value>↓</value>
+    </data>
+    <data name="Settings_Advanced_Backup" xml:space="preserve">
+        <value>备份与恢复</value>
+    </data>
+    <data name="Settings_Advanced_BackupExport_Title" xml:space="preserve">
+        <value>导出备份</value>
+    </data>
+    <data name="Settings_Advanced_BackupExport_Subtitle" xml:space="preserve">
+        <value>将软件设置、网格配置、卡片布局与卡片内容保存到单个文件</value>
+    </data>
+    <data name="Settings_Advanced_BackupImport_Title" xml:space="preserve">
+        <value>导入备份</value>
+    </data>
+    <data name="Settings_Advanced_BackupImport_Subtitle" xml:space="preserve">
+        <value>从备份文件恢复软件设置、网格配置与卡片布局</value>
+    </data>
+    <data name="Settings_Advanced_BackupImport_Confirm" xml:space="preserve">
+        <value>导入将用备份内容替换当前的软件设置与卡片布局，并重启应用使更改生效。确定继续吗？</value>
+    </data>
+    <data name="Settings_Advanced_Backup_ImportButton" xml:space="preserve">
+        <value>导入并重启</value>
+    </data>
+    <data name="Settings_Advanced_Backup_CancelButton" xml:space="preserve">
+        <value>取消</value>
+    </data>
+    <data name="Settings_Advanced_Backup_OkButton" xml:space="preserve">
+        <value>确定</value>
+    </data>
+    <data name="Settings_Advanced_Backup_InvalidFile" xml:space="preserve">
+        <value>备份文件无效或已损坏，无法导入。</value>
+    </data>
+    <data name="Settings_Advanced_Backup_Error" xml:space="preserve">
+        <value>备份操作失败：{0}</value>
+    </data>
+    <data name="Settings_MultiScreen" xml:space="preserve">
+        <value>屏幕</value>
+    </data>
+    <data name="Settings_MultiScreen_Description" xml:space="preserve">
+        <value>每个显示器独立管理自己的小组件布局、网格与内容缩放。按型号与分辨率识别屏幕；拔掉屏幕时组件自动隐藏，重新连接后自动恢复原位。每块屏幕可分别导出/导入为独立备份文件。</value>
+    </data>
+    <data name="Settings_MultiScreen_Connected" xml:space="preserve">
+        <value>已连接</value>
+    </data>
+    <data name="Settings_MultiScreen_NotConnected" xml:space="preserve">
+        <value>未连接</value>
+    </data>
+    <data name="Settings_MultiScreen_AttachedHeader" xml:space="preserve">
+        <value>已连接的显示器</value>
+    </data>
+    <data name="Settings_MultiScreen_DetachedHeader" xml:space="preserve">
+        <value>已保存配置但未连接</value>
+    </data>
+    <data name="Settings_MultiScreen_EditGrid" xml:space="preserve">
+        <value>编辑网格</value>
+    </data>
+    <data name="Settings_MultiScreen_ResetGrid" xml:space="preserve">
+        <value>恢复默认网格</value>
+    </data>
+    <data name="Settings_MultiScreen_Grid_Custom" xml:space="preserve">
+        <value>网格：{0}列 × {1}行 · 格子 {2:0.#}% · 偏移 ({3:0.#}%, {4:0.#}%)</value>
+    </data>
+    <data name="Settings_MultiScreen_Grid_Default" xml:space="preserve">
+        <value>网格：跟随全局默认 ({0}列 × {1}行)</value>
+    </data>
+    <data name="Settings_Advanced_GridTargetScreen" xml:space="preserve">
+        <value>目标屏幕</value>
+    </data>
+    <data name="Settings_Advanced_GridTargetScreen_Subtitle" xml:space="preserve">
+        <value>选择要配置或编辑网格的显示器（全局或指定屏幕）</value>
+    </data>
+    <data name="Settings_Advanced_GridTargetScreen_Global" xml:space="preserve">
+        <value>全局默认 (所有未独立定制的屏幕)</value>
+    </data>
+    <data name="Settings_MultiScreen_Export" xml:space="preserve">
+        <value>导出该屏</value>
+    </data>
+    <data name="Settings_MultiScreen_Import" xml:space="preserve">
+        <value>导入该屏</value>
+    </data>
+    <data name="Settings_MultiScreen_Delete" xml:space="preserve">
+        <value>删除配置</value>
+    </data>
+    <data name="Settings_MultiScreen_AliasPlaceholder" xml:space="preserve">
+        <value>别名（可选）</value>
+    </data>
+    <data name="Settings_MultiScreen_ContentScale" xml:space="preserve">
+        <value>内容缩放</value>
+    </data>
+    <data name="Settings_MultiScreen_Rebind" xml:space="preserve">
+        <value>绑定配置</value>
+    </data>
+    <data name="Settings_MultiScreen_RebindHint" xml:space="preserve">
+        <value>把某个已保存的配置手动分配到这块屏幕</value>
+    </data>
+    <data name="Settings_MultiScreen_ImportConfirm" xml:space="preserve">
+        <value>把 {0} 的屏幕配置导入到这里？</value>
+    </data>
+    <data name="Settings_MultiScreen_WidgetCount" xml:space="preserve">
+        <value>组件数：{0}</value>
+    </data>
+    <data name="Settings_Appearance_Surface_LiquidGlass" xml:space="preserve">
+        <value>柔光玻璃</value>
+    </data>
+    <data name="Settings_Appearance_Surface_LiquidGlassV2" xml:space="preserve">
+        <value>液态玻璃</value>
+    </data>
+    <data name="Settings_Appearance_V2_Blur" xml:space="preserve">
+        <value>模糊</value>
+    </data>
+    <data name="Settings_Appearance_V2_BlurHint" xml:space="preserve">
+        <value>轻微的背景模糊——玻璃后依然可读，如同 iOS 材质。</value>
+    </data>
+    <data name="Settings_Appearance_V2_Refraction" xml:space="preserve">
+        <value>折射</value>
+    </data>
+    <data name="Settings_Appearance_V2_RefractionHint" xml:space="preserve">
+        <value>边缘透镜：沿轮廓达到峰值的四分之一圆弯曲并放大背景，内部保持原样。</value>
+    </data>
+    <data name="Settings_Appearance_V2_Dispersion" xml:space="preserve">
+        <value>色散</value>
+    </data>
+    <data name="Settings_Appearance_V2_DispersionHint" xml:space="preserve">
+        <value>沿边缘位移的七档光谱分离，在受光对角线上最强。</value>
+    </data>
+    <data name="Settings_Appearance_V2_Highlight" xml:space="preserve">
+        <value>边缘高光</value>
+    </data>
+    <data name="Settings_Appearance_V2_HighlightHint" xml:space="preserve">
+        <value>发丝描边：加色混合的白光，左上与右下对角受光，如同 iOS 的双亮边。</value>
+    </data>
+    <data name="Settings_Appearance_V2_Vibrancy" xml:space="preserve">
+        <value>活力</value>
+    </data>
+    <data name="Settings_Appearance_V2_VibrancyHint" xml:space="preserve">
+        <value>iOS vibrancy 色彩提升；33 ≈ 参考配方的饱和 ×1.5。</value>
+    </data>
+    <data name="Settings_Appearance_Surface_SoftGlow" xml:space="preserve">
+        <value>柔光玻璃</value>
+    </data>
+    <data name="Settings_Appearance_SoftGlow_Title" xml:space="preserve">
+        <value>柔光玻璃 · 静态</value>
+    </data>
+    <data name="Settings_Appearance_SoftGlow_Description" xml:space="preserve">
+        <value>与液态玻璃同源的壁纸折射材质，改用柔光配方：宽阔而轻柔的折射取代透镜环、弥散光晕取代硬质亮边，并可选全光谱色散。调整即时生效，文字保持清晰。</value>
+    </data>
+    <data name="Settings_Appearance_SoftGlow_Glow" xml:space="preserve">
+        <value>柔光晕</value>
+    </data>
+    <data name="Settings_Appearance_SoftGlow_GlowHint" xml:space="preserve">
+        <value>0–100% · 边缘弥散光晕的强度</value>
+    </data>
+    <data name="Settings_Appearance_SoftGlow_Spectrum" xml:space="preserve">
+        <value>光谱弥散</value>
+    </data>
+    <data name="Settings_Appearance_SoftGlow_SpectrumHint" xml:space="preserve">
+        <value>0–100% · 由三通道色散过渡到红→紫全光谱</value>
+    </data>
+    <data name="Settings_Appearance_SoftGlow_DyeSpread" xml:space="preserve">
+        <value>染色扩散</value>
+    </data>
+    <data name="Settings_Appearance_SoftGlow_DyeSpreadHint" xml:space="preserve">
+        <value>0–100% · 边缘染色向卡内扩散的程度；0 = 染色只留在最外一圈，卡面完全不被染色覆盖</value>
+    </data>
+    <data name="Settings_Appearance_Glass_Title" xml:space="preserve">
+        <value>液态玻璃</value>
+    </data>
+    <data name="Settings_Appearance_Glass_Blur" xml:space="preserve">
+        <value>模糊度</value>
+    </data>
+    <data name="Settings_Appearance_Glass_BlurHint" xml:space="preserve">
+        <value>0–100 · 0 为清晰底图</value>
+    </data>
+    <data name="Settings_Appearance_Glass_Refraction" xml:space="preserve">
+        <value>折射强度</value>
+    </data>
+    <data name="Settings_Appearance_Glass_RefractionHint" xml:space="preserve">
+        <value>0–100% · 控制边缘图像弯折</value>
+    </data>
+    <data name="Settings_Appearance_Glass_EdgeWidth" xml:space="preserve">
+        <value>玻璃边缘宽度</value>
+    </data>
+    <data name="Settings_Appearance_Glass_EdgeWidthHint" xml:space="preserve">
+        <value>4–80 · 控制折射区域宽度</value>
+    </data>
+    <data name="Settings_Appearance_Glass_Highlight" xml:space="preserve">
+        <value>高光强度</value>
+    </data>
+    <data name="Settings_Appearance_Glass_HighlightHint" xml:space="preserve">
+        <value>0–100% · 边缘亮线与内侧反光</value>
+    </data>
+    <data name="Settings_Appearance_Glass_BackdropClarity" xml:space="preserve">
+        <value>背景清晰度</value>
+    </data>
+    <data name="Settings_Appearance_Glass_BackdropClarityHint" xml:space="preserve">
+        <value>25–100% · 壁纸采样分辨率；越低越快，100% 为原生</value>
+    </data>
+    <data name="Settings_Appearance_Glass_Dispersion" xml:space="preserve">
+        <value>色散强度</value>
+    </data>
+    <data name="Settings_Appearance_Glass_DispersionHint" xml:space="preserve">
+        <value>0–100% · 折射边缘的彩色分离</value>
+    </data>
+    <data name="Settings_Appearance_Glass_LightAngle" xml:space="preserve">
+        <value>光照方向</value>
+    </data>
+    <data name="Settings_Appearance_Glass_LightAngleHint" xml:space="preserve">
+        <value>0–360° · 225° 为左上方光源</value>
+    </data>
+    <data name="Settings_Appearance_Glass_EdgeTint" xml:space="preserve">
+        <value>边缘染色</value>
+    </data>
+    <data name="Settings_Appearance_Glass_EdgeTintHint" xml:space="preserve">
+        <value>0–100% · 自动按边缘内外的实际颜色柔和染色,0 为关闭</value>
+    </data>
+    <data name="Settings_Appearance_Glass_Align" xml:space="preserve">
+        <value>壁纸对准校正…</value>
+    </data>
+    <data name="Settings_Appearance_Glass_Align_Title" xml:space="preserve">
+        <value>壁纸对准校正</value>
+    </data>
+    <data name="Settings_Appearance_Glass_Align_Hint" xml:space="preserve">
+        <value>调整水平/垂直偏移，直到小组件玻璃中的背景与真实壁纸重合。每次调整即时生效（对所有小组件）。</value>
+    </data>
+    <data name="Settings_Appearance_Glass_Align_Horizontal" xml:space="preserve">
+        <value>水平偏移</value>
+    </data>
+    <data name="Settings_Appearance_Glass_Align_Vertical" xml:space="preserve">
+        <value>垂直偏移</value>
+    </data>
+    <data name="Settings_Appearance_Glass_Align_Reset" xml:space="preserve">
+        <value>重置偏移</value>
+    </data>
+    <data name="Settings_Appearance_Glass_Align_Close" xml:space="preserve">
+        <value>关闭</value>
+    </data>
+    <data name="Settings_Appearance_Glass_Reset" xml:space="preserve">
+        <value>重置玻璃参数</value>
+    </data>
+    <data name="Settings_Appearance_Glass_LiveSampling" xml:space="preserve">
+        <value>实时采样动态壁纸</value>
+    </data>
+    <data name="Settings_Appearance_Glass_LiveSamplingHint" xml:space="preserve">
+        <value>持续采样桌面，让视频/动态壁纸在玻璃后保持实时；关闭后冻结当前帧</value>
+    </data>
+    <data name="Settings_Appearance_Glass_LiveSamplingInterval" xml:space="preserve">
+        <value>采样间隔（毫秒）</value>
+    </data>
+    <data name="Settings_Appearance_Glass_LiveSamplingIntervalHint" xml:space="preserve">
+        <value>3–1000 毫秒 · 越短越流畅、开销越大；模糊背景下 100 毫秒（10 fps）已足够顺滑</value>
+    </data>
+    <data name="Settings_Appearance_Glass_Refresh" xml:space="preserve">
+        <value>刷新壁纸</value>
+    </data>
+    <data name="Settings_Profiles" xml:space="preserve">
+        <value>配置方案</value>
+    </data>
+    <data name="Profiles_MenuTitle" xml:space="preserve">
+        <value>配置方案</value>
+    </data>
+    <data name="Profiles_Manage" xml:space="preserve">
+        <value>管理方案…</value>
+    </data>
+    <data name="Profiles_CurrentActive" xml:space="preserve">
+        <value>当前使用中</value>
+    </data>
+    <data name="Profiles_Switch" xml:space="preserve">
+        <value>切换</value>
+    </data>
+    <data name="Profiles_New" xml:space="preserve">
+        <value>新建方案</value>
+    </data>
+    <data name="Profiles_New_Title" xml:space="preserve">
+        <value>新建配置方案</value>
+    </data>
+    <data name="Profiles_New_Prompt" xml:space="preserve">
+        <value>请输入方案名称：</value>
+    </data>
+    <data name="Profiles_Rename" xml:space="preserve">
+        <value>重命名</value>
+    </data>
+    <data name="Profiles_Rename_Title" xml:space="preserve">
+        <value>重命名配置方案</value>
+    </data>
+    <data name="Profiles_Rename_Prompt" xml:space="preserve">
+        <value>请输入新名称：</value>
+    </data>
+    <data name="Profiles_Delete" xml:space="preserve">
+        <value>删除</value>
+    </data>
+    <data name="Profiles_Delete_Confirm" xml:space="preserve">
+        <value>确定要删除配置方案“{0}”吗？此操作无法撤销。</value>
+    </data>
+    <data name="Profiles_Duplicate" xml:space="preserve">
+        <value>复制</value>
+    </data>
+    <data name="Profiles_Export" xml:space="preserve">
+        <value>导出</value>
+    </data>
+    <data name="Profiles_Import" xml:space="preserve">
+        <value>导入</value>
+    </data>
+    <data name="Profiles_NameExists" xml:space="preserve">
+        <value>该方案名称已存在</value>
+    </data>
+    <data name="Profiles_NameInvalid" xml:space="preserve">
+        <value>方案名称包含非法字符或为空</value>
+    </data>
+    <data name="Profiles_Section_List" xml:space="preserve">
+        <value>方案列表</value>
+    </data>
+    <data name="Profiles_Section_Subtitle" xml:space="preserve">
+        <value>支持保存多套小组件排版与外观配置，随时一键切换</value>
+    </data>
+    <data name="Cancel" xml:space="preserve">
+        <value>取消</value>
+    </data>
+    <data name="Tray_OpenSettings" xml:space="preserve">
+        <value>打开设置</value>
+    </data>
+    <data name="Tray_HideWidgets" xml:space="preserve">
+        <value>隐藏组件</value>
+    </data>
+    <data name="Tray_ShowWidgets" xml:space="preserve">
+        <value>显示组件</value>
+    </data>
+    <data name="Tray_ShowIcon" xml:space="preserve">
+        <value>显示托盘图标</value>
+    </data>
+    <data name="Tray_HideIcon" xml:space="preserve">
+        <value>隐藏托盘图标</value>
+    </data>
+    <data name="Tray_Exit" xml:space="preserve">
+        <value>退出</value>
+    </data>
+    <data name="Settings_Advanced_Tray" xml:space="preserve">
+        <value>托盘</value>
+    </data>
+    <data name="Settings_Advanced_TrayIcon_Subtitle" xml:space="preserve">
+        <value>通知区域图标；关闭后可在组件右键菜单中重新打开</value>
+    </data>
+    <data name="Settings_General_Update_Title" xml:space="preserve">
+        <value>软件更新</value>
+    </data>
+    <data name="Settings_General_Update_Subtitle" xml:space="preserve">
+        <value>检查并获取最新版本和新功能</value>
+    </data>
+    <data name="Settings_General_Update_Interval" xml:space="preserve">
+        <value>自动检查更新</value>
+    </data>
+    <data name="Settings_General_Update_Interval_Subtitle" xml:space="preserve">
+        <value>设置后台自动检查更新的频率</value>
+    </data>
+    <data name="Settings_General_Update_Interval_Disabled" xml:space="preserve">
+        <value>已禁用 (从不检查)</value>
+    </data>
+    <data name="Settings_General_Update_Interval_OnStartup" xml:space="preserve">
+        <value>每次启动时</value>
+    </data>
+    <data name="Settings_General_Update_Interval_Every6Hours" xml:space="preserve">
+        <value>每 6 小时</value>
+    </data>
+    <data name="Settings_General_Update_Interval_Every12Hours" xml:space="preserve">
+        <value>每 12 小时</value>
+    </data>
+    <data name="Settings_General_Update_Interval_Daily" xml:space="preserve">
+        <value>每天 (推荐)</value>
+    </data>
+    <data name="Settings_General_Update_Interval_Weekly" xml:space="preserve">
+        <value>每周</value>
+    </data>
+    <data name="Settings_General_Update_CheckNow" xml:space="preserve">
+        <value>检查更新</value>
+    </data>
+    <data name="Settings_General_Update_Checking" xml:space="preserve">
+        <value>正在检查更新...</value>
+    </data>
+    <data name="Settings_General_Update_AlreadyLatest" xml:space="preserve">
+        <value>当前已是最新版本 ({0})</value>
+    </data>
+    <data name="Settings_General_Update_FoundNew" xml:space="preserve">
+        <value>发现新版本: {0}</value>
+    </data>
+    <data name="Settings_General_Update_CheckFailed" xml:space="preserve">
+        <value>检查更新失败，请检查网络</value>
+    </data>
+    <data name="Settings_General_Update_LastChecked" xml:space="preserve">
+        <value>上次检查时间: {0}</value>
+    </data>
+    <data name="Update_DownloadingFormat" xml:space="preserve">
+        <value>正在下载安装包... {0:0.0} MB / {1:0.0} MB ({2:0}%)</value>
+    </data>
+    <data name="Update_DownloadFailed" xml:space="preserve">
+        <value>下载失败: {0}</value>
+    </data>
+    <data name="Update_InstallNow" xml:space="preserve">
+        <value>立即安装</value>
+    </data>
+    <data name="Update_ReadyToInstall" xml:space="preserve">
+        <value>下载完成，点击“立即安装”启动安装程序</value>
+    </data>
+    <data name="Update_Installing" xml:space="preserve">
+        <value>正在启动安装程序并退出程序...</value>
+    </data>
+    <data name="Update_WhatsNew" xml:space="preserve">
+        <value>更新日志</value>
+    </data>
+</root>

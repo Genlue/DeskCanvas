@@ -1,6 +1,6 @@
 using SkiaSharp;
-using uWidgets.Core.Models.Settings;
-using uWidgets.Services;
+using DeskCanvas.Core.Models.Settings;
+using DeskCanvas.Services;
 
 /// <summary>
 /// Checks for 柔光玻璃 (soft glow glass, <see cref="SurfaceStyle.SoftGlow"/>).

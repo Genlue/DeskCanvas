@@ -4,7 +4,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
-using uWidgets.Core.Services;
+using DeskCanvas.Core.Services;
 
 namespace Map.Services;
 
@@ -30,7 +30,7 @@ public static class GeoLocationService
 
             var url = "http://ip-api.com/json/?fields=status,message,country,regionName,city,lat,lon&lang=zh-CN";
             using var request = new HttpRequestMessage(HttpMethod.Get, url);
-            request.Headers.Add("User-Agent", "uWidgets-Map/1.0");
+            request.Headers.Add("User-Agent", "DeskCanvas-Map/1.0");
 
             using var response = await HttpClient.SendAsync(request, cts.Token).ConfigureAwait(false);
             if (response.IsSuccessStatusCode)
@@ -59,7 +59,7 @@ public static class GeoLocationService
 
             var url = "https://ipwho.is/?lang=zh-CN";
             using var request = new HttpRequestMessage(HttpMethod.Get, url);
-            request.Headers.Add("User-Agent", "uWidgets-Map/1.0");
+            request.Headers.Add("User-Agent", "DeskCanvas-Map/1.0");
 
             using var response = await HttpClient.SendAsync(request, cts.Token).ConfigureAwait(false);
             if (response.IsSuccessStatusCode)
@@ -305,7 +305,7 @@ public static class GeoLocationService
             // BigDataCloud Client Reverse Geocode API (免费、无 Key、全球可用、中文地名丰富)
             var url = $"https://api.bigdatacloud.net/data/reverse-geocode-client?latitude={lat:F5}&longitude={lon:F5}&localityLanguage=zh";
             using var request = new HttpRequestMessage(HttpMethod.Get, url);
-            request.Headers.Add("User-Agent", "uWidgets-Map/1.0");
+            request.Headers.Add("User-Agent", "DeskCanvas-Map/1.0");
 
             using var response = await HttpClient.SendAsync(request, cts.Token).ConfigureAwait(false);
             if (response.IsSuccessStatusCode)

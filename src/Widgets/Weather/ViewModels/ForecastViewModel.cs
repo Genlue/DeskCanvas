@@ -1,7 +1,7 @@
 using Avalonia.Controls;
 using Avalonia.Media;
 using ReactiveUI;
-using uWidgets.Services;
+using DeskCanvas.Services;
 using Weather.Models;
 using Weather.Models.Forecast;
 using Weather.Services;

@@ -1,7 +1,7 @@
 using System.Text;
 using SkiaSharp;
-using uWidgets.Core.Models.Settings;
-using uWidgets.Services;
+using DeskCanvas.Core.Models.Settings;
+using DeskCanvas.Services;
 
 namespace GlassGpuProbe;
 

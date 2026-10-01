@@ -10,9 +10,9 @@ using Avalonia.Styling;
 using Avalonia.Themes.Fluent;
 using Clock.Models;
 using Clock.Views;
-using uWidgets.Core.Interfaces;
-using uWidgets.Core.Models;
-using uWidgets.Core.Models.Settings;
+using DeskCanvas.Core.Interfaces;
+using DeskCanvas.Core.Models;
+using DeskCanvas.Core.Models.Settings;
 
 namespace ClockVisualChecks;
 

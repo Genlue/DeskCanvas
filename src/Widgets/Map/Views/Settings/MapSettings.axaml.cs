@@ -1,6 +1,6 @@
 using Avalonia.Controls;
 using Map.ViewModels.Settings;
-using uWidgets.Core.Interfaces;
+using DeskCanvas.Core.Interfaces;
 
 namespace Map.Views.Settings;
 

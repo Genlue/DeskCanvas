@@ -1,11 +1,11 @@
 #requires -Version 5.1
 <#
 .SYNOPSIS
-    One-click build & package for the uWidgets fork.
+    One-click build & package for the DeskCanvas fork.
 
 .DESCRIPTION
-    Produces a single-file uWidgets.exe with all widgets embedded (widgets are
-    extracted to %LocalAppData%\uWidgets on first run, so they stay hot-updatable).
+    Produces a single-file DeskCanvas.exe with all widgets embedded (widgets are
+    extracted to %LocalAppData%\DeskCanvas on first run, so they stay hot-updatable).
 
     Portable mode (-Portable) additionally copies the Widgets folder and JSON
     settings next to the exe (classic official layout) and zips the whole thing.
@@ -20,7 +20,7 @@
     Also produce the classic portable zip (exe + Widgets + json files).
 
 .EXAMPLE
-    ./build.ps1                       # dist\win-x64\uWidgets.exe (single file)
+    ./build.ps1                       # dist\win-x64\DeskCanvas.exe (single file)
     ./build.ps1 -Runtime win-arm64    # ARM64 single file
     ./build.ps1 -Portable             # single file + portable zip
 #>
@@ -38,20 +38,20 @@ param(
 
 $ErrorActionPreference = "Stop"
 $root = $PSScriptRoot
-$project = Join-Path $root "src\uWidgets\uWidgets.csproj"
+$project = Join-Path $root "src\DeskCanvas\DeskCanvas.csproj"
 $dist = Join-Path $root "dist\$Runtime"
 
 if (-not (Test-Path $project)) { throw "Project not found: $project" }
 
-# Stop any running uWidgets instances to prevent file lock during publish
-$running = Get-Process -Name "uWidgets" -ErrorAction SilentlyContinue
+# Stop any running DeskCanvas instances to prevent file lock during publish
+$running = Get-Process -Name "DeskCanvas" -ErrorAction SilentlyContinue
 if ($running) {
-    Write-Warning "uWidgets is currently running. Stopping process to overwrite output binary..."
-    Stop-Process -Name "uWidgets" -Force -ErrorAction SilentlyContinue
+    Write-Warning "DeskCanvas is currently running. Stopping process to overwrite output binary..."
+    Stop-Process -Name "DeskCanvas" -Force -ErrorAction SilentlyContinue
     Start-Sleep -Milliseconds 500
 }
 
-Write-Host "==> Publishing uWidgets ($Configuration, $Runtime, single-file)..." -ForegroundColor Cyan
+Write-Host "==> Publishing DeskCanvas ($Configuration, $Runtime, single-file)..." -ForegroundColor Cyan
 dotnet publish $project `
     -c $Configuration `
     -r $Runtime `
@@ -66,7 +66,7 @@ Get-ChildItem $dist -File | Where-Object {
     $_.Extension -in ".pdb", ".xml" -or $_.Name -in "appSettings.json", "layout.json", "icon.ico"
 } | Remove-Item -Force -ErrorAction SilentlyContinue
 
-$exe = Join-Path $dist "uWidgets.exe"
+$exe = Join-Path $dist "DeskCanvas.exe"
 if (-not (Test-Path $exe)) { throw "Single-file exe not found: $exe" }
 Write-Host "==> Single file: $exe ($([math]::Round((Get-Item $exe).Length / 1MB, 1)) MB)" -ForegroundColor Green
 
@@ -77,18 +77,18 @@ if ($Portable) {
     New-Item -ItemType Directory -Path $portableDir -Force | Out-Null
 
     Copy-Item $exe $portableDir
-    Copy-Item (Join-Path $root "src\uWidgets\appSettings.json") $portableDir
-    Copy-Item (Join-Path $root "src\uWidgets\layout.json") $portableDir
+    Copy-Item (Join-Path $root "src\DeskCanvas\appSettings.json") $portableDir
+    Copy-Item (Join-Path $root "src\DeskCanvas\layout.json") $portableDir
 
-    $widgetsSrc = Join-Path $project "..\uWidgets\bin\$Configuration\net8.0\Widgets"
-    if (-not (Test-Path $widgetsSrc)) { $widgetsSrc = Join-Path $root "src\uWidgets\bin\$Configuration\net8.0\Widgets" }
+    $widgetsSrc = Join-Path $project "..\DeskCanvas\bin\$Configuration\net8.0\Widgets"
+    if (-not (Test-Path $widgetsSrc)) { $widgetsSrc = Join-Path $root "src\DeskCanvas\bin\$Configuration\net8.0\Widgets" }
     if (Test-Path $widgetsSrc) {
         Copy-Item $widgetsSrc (Join-Path $portableDir "Widgets") -Recurse
     } else {
         Write-Warning "Widgets build output not found at $widgetsSrc — portable zip will lack widgets."
     }
 
-    $zip = Join-Path $root "dist\uWidgets-$Runtime-portable.zip"
+    $zip = Join-Path $root "dist\DeskCanvas-$Runtime-portable.zip"
     if (Test-Path $zip) { Remove-Item $zip -Force }
     Compress-Archive -Path "$portableDir\*" -DestinationPath $zip
     Write-Host "==> Portable zip: $zip" -ForegroundColor Green
@@ -103,9 +103,9 @@ if ($Msi) {
     $wxsVer = if ($verMatch.Success) { $verMatch.Groups[1].Value } else { "1.8.1" }
 
     # Keep the installer's version in step with the app. The app version lives in
-    # src\uWidgets\AssemblyInfo.cs, so reading it here means a release can never ship an MSI
+    # src\DeskCanvas\AssemblyInfo.cs, so reading it here means a release can never ship an MSI
     # that claims the previous version (which is exactly what happened with 1.9.3).
-    $assemblyInfo = Get-Content (Join-Path $root "src\uWidgets\AssemblyInfo.cs") -Raw
+    $assemblyInfo = Get-Content (Join-Path $root "src\DeskCanvas\AssemblyInfo.cs") -Raw
     $appVerMatch = [regex]::Match($assemblyInfo, 'AssemblyVersion\("([0-9\.]+)"\)')
     if ($appVerMatch.Success -and $appVerMatch.Groups[1].Value -ne $wxsVer) {
         $appVer = $appVerMatch.Groups[1].Value
@@ -115,7 +115,7 @@ if ($Msi) {
     }
     $msiDir = Join-Path $root "dist\installer"
     if (-not (Test-Path $msiDir)) { New-Item -ItemType Directory -Path $msiDir -Force | Out-Null }
-    $msiOut = Join-Path $msiDir "uWidgetsPlus-$wxsVer-$Runtime.msi"
+    $msiOut = Join-Path $msiDir "DeskCanvas-$wxsVer-$Runtime.msi"
     $arch = switch ($Runtime) {
         "win-x64" { "x64" }
         "win-x86" { "x86" }

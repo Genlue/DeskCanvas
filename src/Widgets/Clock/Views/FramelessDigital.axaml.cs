@@ -16,10 +16,10 @@ using Avalonia.Styling;
 using Avalonia.Threading;
 using Clock.Models;
 using Clock.Services;
-using uWidgets.Core.Interfaces;
-using uWidgets.Core.Models;
-using uWidgets.Core.Models.Settings;
-using uWidgets.Services;
+using DeskCanvas.Core.Interfaces;
+using DeskCanvas.Core.Models;
+using DeskCanvas.Core.Models.Settings;
+using DeskCanvas.Services;
 
 namespace Clock.Views;
 
@@ -31,7 +31,7 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
 
     private UpdateTimer? currentTimer;
     private Window? window;
-    private bool IsDesktopWidget => window is uWidgets.Views.Widget;
+    private bool IsDesktopWidget => window is DeskCanvas.Views.Widget;
     private Bitmap? liquidGlassBitmap;
 
     // Per-second Acrylic region recompute buffers (see UpdateWindowRegion).
@@ -550,7 +550,7 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
         var desktopWidth = (screens?.Max(s => s.Bounds.Right) ?? 1920) - left;
         var desktopHeight = (screens?.Max(s => s.Bounds.Bottom) ?? 1080) - top;
 
-        var widget = window as uWidgets.Views.Widget;
+        var widget = window as DeskCanvas.Views.Widget;
         var (cols, rows) = widget?.CurrentSpan ?? (0, 0);
 
         var frame = new LiquidGlassRenderer.Frame(

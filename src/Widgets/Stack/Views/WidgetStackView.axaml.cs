@@ -15,12 +15,12 @@ using Avalonia.Media;
 using Avalonia.Styling;
 using Avalonia.Threading;
 using StackWidgets.Models;
-using uWidgets.Core.Interfaces;
-using uWidgets.Core.Models;
-using uWidgets.Core.Models.Attributes;
-using uWidgets.Core.Models.Settings;
-using AppTheme = uWidgets.Core.Models.Settings.Theme;
-using uWidgets.Views;
+using DeskCanvas.Core.Interfaces;
+using DeskCanvas.Core.Models;
+using DeskCanvas.Core.Models.Attributes;
+using DeskCanvas.Core.Models.Settings;
+using AppTheme = DeskCanvas.Core.Models.Settings.Theme;
+using DeskCanvas.Views;
 
 namespace StackWidgets.Views;
 
@@ -99,7 +99,7 @@ public partial class WidgetStackView : UserControl, IWidgetSelfRefreshing, IStac
         this.model = model ?? new WidgetStackModel();
         this.widgetLayoutProvider = widgetLayoutProvider;
         this.assemblyProvider = assemblyProvider;
-        this.appSettingsProvider = appSettingsProvider ?? (uWidgets.App.Services?.GetService(typeof(IAppSettingsProvider)) as IAppSettingsProvider) ?? new uWidgets.Core.Services.AppSettingsProvider();
+        this.appSettingsProvider = appSettingsProvider ?? (DeskCanvas.App.Services?.GetService(typeof(IAppSettingsProvider)) as IAppSettingsProvider) ?? new DeskCanvas.Core.Services.AppSettingsProvider();
 
         InitializeComponent();
         Classes.Add("Flush");
@@ -582,7 +582,7 @@ public partial class WidgetStackView : UserControl, IWidgetSelfRefreshing, IStac
         var startAngle = 360.0 - cornerAngle;
         var color = Color.TryParse(theme.EffectiveOutlineColor, out var parsed)
             ? parsed
-            : Color.Parse(uWidgets.Core.Models.Settings.Theme.DefaultOutlineColor);
+            : Color.Parse(DeskCanvas.Core.Models.Settings.Theme.DefaultOutlineColor);
         var clear = Colors.Transparent;
 
         return new ConicGradientBrush

@@ -1,7 +1,7 @@
 using Monitor.Models;
 using Monitor.Services;
 using ReactiveUI;
-using uWidgets.Services;
+using DeskCanvas.Services;
 
 namespace Monitor.ViewModels;
 

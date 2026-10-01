@@ -8,10 +8,10 @@ using Avalonia.Threading;
 using Map.Models;
 using Map.Services;
 using Map.ViewModels;
-using uWidgets.Core.Interfaces;
-using uWidgets.Core.Models;
-using uWidgets.Core.Models.Settings;
-using uWidgets.Services;
+using DeskCanvas.Core.Interfaces;
+using DeskCanvas.Core.Models;
+using DeskCanvas.Core.Models.Settings;
+using DeskCanvas.Services;
 
 namespace Map.Views;
 

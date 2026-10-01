@@ -10,10 +10,10 @@ using Clock.Services;
 using Clock.Views;
 using Microsoft.Extensions.DependencyInjection;
 using SkiaSharp;
-using uWidgets.Core.Interfaces;
-using uWidgets.Core.Models;
-using uWidgets.Core.Models.Settings;
-using uWidgets.Services;
+using DeskCanvas.Core.Interfaces;
+using DeskCanvas.Core.Models;
+using DeskCanvas.Core.Models.Settings;
+using DeskCanvas.Services;
 
 namespace ClockThemeChecks;
 

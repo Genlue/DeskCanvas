@@ -3,8 +3,8 @@ using System.Globalization;
 using Avalonia.Media;
 using Progress.Models;
 using ReactiveUI;
-using uWidgets.Core.Interfaces;
-using uWidgets.Services;
+using DeskCanvas.Core.Interfaces;
+using DeskCanvas.Services;
 
 namespace Progress.ViewModels;
 
@@ -32,7 +32,7 @@ public class ProgressViewModel : ReactiveObject, IDisposable
         UpdateProgress();
     }
 
-    private void OnAppSettingsChanged(object sender, uWidgets.Core.Models.Settings.AppSettings? oldData, uWidgets.Core.Models.Settings.AppSettings newData)
+    private void OnAppSettingsChanged(object sender, DeskCanvas.Core.Models.Settings.AppSettings? oldData, DeskCanvas.Core.Models.Settings.AppSettings newData)
     {
         if (model.FollowAccentColor)
         {

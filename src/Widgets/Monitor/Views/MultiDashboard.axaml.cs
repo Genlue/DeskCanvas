@@ -5,7 +5,7 @@ using Avalonia.Layout;
 using Avalonia.VisualTree;
 using Monitor.Models;
 using Monitor.ViewModels;
-using uWidgets.Services;
+using DeskCanvas.Services;
 
 namespace Monitor.Views;
 
@@ -141,7 +141,7 @@ public partial class MultiDashboard : UserControl
     private (int Columns, int Rows)? FindHostSpan()
     {
         for (var node = this.GetVisualParent(); node != null; node = node.GetVisualParent())
-            if (node is uWidgets.Views.Widget widget)
+            if (node is DeskCanvas.Views.Widget widget)
                 return widget.CurrentSpan;
         return null;
     }

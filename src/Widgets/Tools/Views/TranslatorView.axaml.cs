@@ -15,9 +15,9 @@ using Avalonia.VisualTree;
 using Tools.Models;
 using Tools.Services;
 using Tools.Services.Translation;
-using uWidgets.Core.Interfaces;
-using uWidgets.Core.Models;
-using uWidgets.Services;
+using DeskCanvas.Core.Interfaces;
+using DeskCanvas.Core.Models;
+using DeskCanvas.Services;
 
 namespace Tools.Views;
 
@@ -334,7 +334,7 @@ public partial class TranslatorView : UserControl, IWidgetSelfRefreshing
         CornerRadius? targetInner = null;
         CornerRadius? targetPill = null;
 
-        var widget = this.FindAncestorOfType<uWidgets.Views.Widget>();
+        var widget = this.FindAncestorOfType<DeskCanvas.Views.Widget>();
         if (widget != null)
         {
             targetInner = widget.InnerRadius;

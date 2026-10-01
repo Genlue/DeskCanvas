@@ -3,7 +3,7 @@ using Search.Locales;
 using Search.Models;
 using Search.Views;
 using Search.Views.Settings;
-using uWidgets.Core.Models.Attributes;
+using DeskCanvas.Core.Models.Attributes;
 
 [assembly: AssemblyCompany("creewick")]
 [assembly: AssemblyVersion("1.0.0")]

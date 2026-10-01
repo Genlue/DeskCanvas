@@ -2,8 +2,8 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text.Json;
 using SkiaSharp;
-using uWidgets.Core.Models.Settings;
-using uWidgets.Services;
+using DeskCanvas.Core.Models.Settings;
+using DeskCanvas.Services;
 
 var output = Path.GetFullPath(args.FirstOrDefault() ?? "dist/glass-checks");
 Directory.CreateDirectory(output);
@@ -83,25 +83,25 @@ Check(theme.IsGlass && theme.IsLiquidGlass && !theme.UsesNativeBlur, "liquid gla
 var restored = JsonSerializer.Deserialize<Theme>(JsonSerializer.Serialize(theme))!;
 Check(restored == theme, "all glass parameters survive JSON round trip");
 
-var defaultAttr = new uWidgets.Core.Models.Attributes.WidgetInfoAttribute(typeof(object));
+var defaultAttr = new DeskCanvas.Core.Models.Attributes.WidgetInfoAttribute(typeof(object));
 Check(defaultAttr.DefaultColumns == 2 && defaultAttr.DefaultRows == 2, "WidgetInfoAttribute default 2x2");
-var customAttr = new uWidgets.Core.Models.Attributes.WidgetInfoAttribute(typeof(object), defaultColumns: 1, defaultRows: 1);
+var customAttr = new DeskCanvas.Core.Models.Attributes.WidgetInfoAttribute(typeof(object), defaultColumns: 1, defaultRows: 1);
 Check(customAttr.DefaultColumns == 1 && customAttr.DefaultRows == 1, "WidgetInfoAttribute custom 1x1");
 
-var toolsDll = Path.GetFullPath("src/uWidgets/bin/Debug/net8.0/Widgets/Tools.dll");
+var toolsDll = Path.GetFullPath("src/DeskCanvas/bin/Debug/net8.0/Widgets/Tools.dll");
 if (File.Exists(toolsDll))
 {
     AppDomain.CurrentDomain.AssemblyResolve += (_, ea) =>
     {
         var name = new System.Reflection.AssemblyName(ea.Name).Name;
-        var cand1 = Path.GetFullPath($"src/uWidgets/bin/Debug/net8.0/{name}.dll");
+        var cand1 = Path.GetFullPath($"src/DeskCanvas/bin/Debug/net8.0/{name}.dll");
         if (File.Exists(cand1)) return System.Reflection.Assembly.LoadFrom(cand1);
-        var cand2 = Path.GetFullPath($"src/uWidgets/bin/Debug/net8.0/Widgets/{name}.dll");
+        var cand2 = Path.GetFullPath($"src/DeskCanvas/bin/Debug/net8.0/Widgets/{name}.dll");
         if (File.Exists(cand2)) return System.Reflection.Assembly.LoadFrom(cand2);
         return null;
     };
     var toolsAsm = System.Reflection.Assembly.LoadFrom(toolsDll);
-    var localeAttr = toolsAsm.GetCustomAttributes(typeof(uWidgets.Core.Models.Attributes.LocaleAttribute), false).FirstOrDefault() as uWidgets.Core.Models.Attributes.LocaleAttribute;
+    var localeAttr = toolsAsm.GetCustomAttributes(typeof(DeskCanvas.Core.Models.Attributes.LocaleAttribute), false).FirstOrDefault() as DeskCanvas.Core.Models.Attributes.LocaleAttribute;
     Check(localeAttr != null && localeAttr.DisplayName == "Tools", "Tools assembly defines LocaleAttribute with Tools category");
 
     var widgetInfos = System.Reflection.CustomAttributeData.GetCustomAttributes(toolsAsm)
@@ -149,11 +149,11 @@ if (File.Exists(toolsDll))
     }
 }
 
-var searchDll = Path.GetFullPath("src/uWidgets/bin/Debug/net8.0/Widgets/Search.dll");
+var searchDll = Path.GetFullPath("src/DeskCanvas/bin/Debug/net8.0/Widgets/Search.dll");
 if (File.Exists(searchDll))
 {
     var searchAsm = System.Reflection.Assembly.LoadFrom(searchDll);
-    var localeAttr = searchAsm.GetCustomAttributes(typeof(uWidgets.Core.Models.Attributes.LocaleAttribute), false).FirstOrDefault() as uWidgets.Core.Models.Attributes.LocaleAttribute;
+    var localeAttr = searchAsm.GetCustomAttributes(typeof(DeskCanvas.Core.Models.Attributes.LocaleAttribute), false).FirstOrDefault() as DeskCanvas.Core.Models.Attributes.LocaleAttribute;
     Check(localeAttr != null && localeAttr.DisplayName == "Search", "Search assembly defines LocaleAttribute with Search category");
 
     var widgetInfos = System.Reflection.CustomAttributeData.GetCustomAttributes(searchAsm)
@@ -181,7 +181,7 @@ if (File.Exists(searchDll))
             var inst = Activator.CreateInstance(viewType);
             Check(inst != null, "SearchView default ctor creates instance");
 
-            var asmProvider = new uWidgets.Core.Services.AssemblyProvider(new EmptyServiceProvider());
+            var asmProvider = new DeskCanvas.Core.Services.AssemblyProvider(new EmptyServiceProvider());
 
             // Gallery mode: WidgetFactory.CreateControl invokes Activate with empty args
             var instGallery = asmProvider.Activate(viewType);
@@ -201,7 +201,7 @@ if (File.Exists(searchDll))
 }
 
 System.Reflection.Assembly? clockAsm = null;
-var clockDll = Path.GetFullPath("src/uWidgets/bin/Debug/net8.0/Widgets/Clock.dll");
+var clockDll = Path.GetFullPath("src/DeskCanvas/bin/Debug/net8.0/Widgets/Clock.dll");
 if (File.Exists(clockDll))
 {
     clockAsm = System.Reflection.Assembly.LoadFrom(clockDll);
@@ -215,8 +215,8 @@ if (File.Exists(clockDll))
     Check(framelessViewType != null, "Clock defines Clock.Views.FramelessDigital");
     if (framelessViewType != null)
     {
-        Check(typeof(uWidgets.Core.Interfaces.IFramelessWidget).IsAssignableFrom(framelessViewType), "FramelessDigital implements IFramelessWidget");
-        Check(typeof(uWidgets.Core.Interfaces.IWidgetSelfRefreshing).IsAssignableFrom(framelessViewType), "FramelessDigital implements IWidgetSelfRefreshing");
+        Check(typeof(DeskCanvas.Core.Interfaces.IFramelessWidget).IsAssignableFrom(framelessViewType), "FramelessDigital implements IFramelessWidget");
+        Check(typeof(DeskCanvas.Core.Interfaces.IWidgetSelfRefreshing).IsAssignableFrom(framelessViewType), "FramelessDigital implements IWidgetSelfRefreshing");
 
         var modelType = clockAsm.GetType("Clock.Models.FramelessClockModel");
         Check(modelType != null, "Clock defines FramelessClockModel");
@@ -233,13 +233,13 @@ if (File.Exists(clockDll))
             Check(modelType.GetProperty("RefractionWidth") == null, "FramelessClockModel no longer declares RefractionWidth");
         }
 
-        var asmProvider = new uWidgets.Core.Services.AssemblyProvider(new EmptyServiceProvider());
+        var asmProvider = new DeskCanvas.Core.Services.AssemblyProvider(new EmptyServiceProvider());
         var instGallery = asmProvider.Activate(framelessViewType);
         Check(instGallery != null, "AssemblyProvider.Activate creates FramelessDigital instance for preview");
     }
 }
 
-var foldersDll = Path.GetFullPath("src/uWidgets/bin/Debug/net8.0/Widgets/Folders.dll");
+var foldersDll = Path.GetFullPath("src/DeskCanvas/bin/Debug/net8.0/Widgets/Folders.dll");
 if (File.Exists(foldersDll))
 {
     var foldersAsm = System.Reflection.Assembly.LoadFrom(foldersDll);
@@ -597,14 +597,14 @@ struct BITMAP
     public IntPtr bmBits;
 }
 
-class DummyWidgetLayoutProvider : uWidgets.Core.Interfaces.IWidgetLayoutProvider
+class DummyWidgetLayoutProvider : DeskCanvas.Core.Interfaces.IWidgetLayoutProvider
 {
     public string ScreenId { get; set; } = "default";
-    public uWidgets.Core.Models.WidgetLayout Get() => null!;
-    public void Save(uWidgets.Core.Models.WidgetLayout data) { }
+    public DeskCanvas.Core.Models.WidgetLayout Get() => null!;
+    public void Save(DeskCanvas.Core.Models.WidgetLayout data) { }
     public void Remove() { }
-    public event uWidgets.Core.Interfaces.DataChangedEvent<uWidgets.Core.Models.WidgetLayout>? DataChanging;
-    public event uWidgets.Core.Interfaces.DataChangedEvent<uWidgets.Core.Models.WidgetLayout>? DataChanged;
+    public event DeskCanvas.Core.Interfaces.DataChangedEvent<DeskCanvas.Core.Models.WidgetLayout>? DataChanging;
+    public event DeskCanvas.Core.Interfaces.DataChangedEvent<DeskCanvas.Core.Models.WidgetLayout>? DataChanged;
 }
 
 class EmptyServiceProvider : IServiceProvider

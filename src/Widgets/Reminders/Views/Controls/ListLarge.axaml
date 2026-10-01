@@ -1,7 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:viewModels="clr-namespace:Reminders.ViewModels"
-             xmlns:controls="clr-namespace:uWidgets.Views.Controls;assembly=uWidgets"
+             xmlns:controls="clr-namespace:DeskCanvas.Views.Controls;assembly=DeskCanvas"
              xmlns:local="clr-namespace:Reminders.Views.Controls"
              xmlns:models="clr-namespace:Reminders.Models"
              xmlns:locales="clr-namespace:Reminders.Locales"
@@ -16,6 +16,14 @@
         </Style>
         <Style Selector="local|ListLarge.editable TextBox">
             <Setter Property="controls:ClickThroughTextBox.AllowEdit" Value="True" />
+        </Style>
+        <!-- 编辑关闭时抹掉 hover 高亮（PART_BorderElement 事实见 ListSmall.axaml）；
+             editable 模式下恢复 Fluent 默认 hover 底色。 -->
+        <Style Selector="TextBox:pointerover /template/ Border#PART_BorderElement">
+            <Setter Property="Background" Value="Transparent" />
+        </Style>
+        <Style Selector="local|ListLarge.editable TextBox:pointerover /template/ Border#PART_BorderElement">
+            <Setter Property="Background" Value="{DynamicResource TextControlBackgroundPointerOver}" />
         </Style>
         <Style Selector="Button.RemindersAddBtn">
             <Setter Property="Cursor" Value="Hand" />

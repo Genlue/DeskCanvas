@@ -3,7 +3,7 @@ using Map.Locales;
 using Map.Models;
 using Map.Views;
 using Map.Views.Settings;
-using uWidgets.Core.Models.Attributes;
+using DeskCanvas.Core.Models.Attributes;
 
 [assembly: AssemblyCompany("creewick")]
 [assembly: AssemblyVersion("1.0.0")]

@@ -9,9 +9,9 @@ using Avalonia.Styling;
 using Notes.Locales;
 using Notes.Models;
 using Notes.Services;
-using uWidgets.Core.Models.Settings;
-using uWidgets.Core.Services;
-using uWidgets.Views;
+using DeskCanvas.Core.Models.Settings;
+using DeskCanvas.Core.Services;
+using DeskCanvas.Views;
 
 namespace Notes.Views;
 

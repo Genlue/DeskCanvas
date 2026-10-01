@@ -1,5 +1,5 @@
 using System.Reflection;
-using uWidgets.Core.Models.Attributes;
+using DeskCanvas.Core.Models.Attributes;
 using Weather.Locales;
 using Weather.Models;
 using Weather.Views;

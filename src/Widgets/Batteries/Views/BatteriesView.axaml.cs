@@ -6,9 +6,9 @@ using Avalonia.Interactivity;
 using Avalonia.VisualTree;
 using Batteries.Models;
 using Batteries.ViewModels;
-using uWidgets.Core.Interfaces;
-using uWidgets.Core.Models;
-using uWidgets.Services;
+using DeskCanvas.Core.Interfaces;
+using DeskCanvas.Core.Models;
+using DeskCanvas.Services;
 
 namespace Batteries.Views;
 
@@ -128,7 +128,7 @@ public partial class BatteriesView : UserControl, IWidgetSelfRefreshing, IWidget
     private (int Columns, int Rows)? FindHostSpan()
     {
         for (var node = this.GetVisualParent(); node != null; node = node.GetVisualParent())
-            if (node is uWidgets.Views.Widget widget)
+            if (node is DeskCanvas.Views.Widget widget)
                 return widget.CurrentSpan;
         return null;
     }
