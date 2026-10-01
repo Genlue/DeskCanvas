@@ -81,10 +81,10 @@ public class ThemeService : IThemeService
             ? new FontFamily("avares://Avalonia.Fonts.Inter#Inter")
             : new FontFamily(theme.FontFamily);
 
-        // 全局文字阴影 (设置 → 外观): a soft drop shadow behind every TextBlock inside a
-        // desktop widget window, so text stays readable over busy wallpapers. The effect is
-        // pushed to the live widget windows by WidgetTextShadow (see its remarks for why the
-        // application happens in code instead of a style).
+        // 全局元素阴影 (设置 → 外观): a soft drop shadow behind widget text and elem-shadow-marked
+        // template parts (progress pills, metric rings), so content stays readable over busy
+        // wallpapers. The effect is pushed to the live widget windows by WidgetTextShadow (see its
+        // remarks for why the application happens in code instead of a style).
         WidgetTextShadow.Update(theme);
 
         // OS-level acrylic (the Transparent style sets the AcrylicBlur hint on the

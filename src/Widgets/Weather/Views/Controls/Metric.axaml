@@ -18,7 +18,7 @@
                     <EllipseGeometry Center="55,55" RadiusX="50" RadiusY="50" />
                 </Path.Data>
             </Path>
-            <Path StrokeThickness="8" StrokeLineCap="Round"
+            <Path Classes="elem-shadow" StrokeThickness="8" StrokeLineCap="Round"
                   StrokeDashArray="{Binding StrokeDashArray}"
                   IsVisible="{Binding IsProgressVisible}"
                   Stroke="{DynamicResource WeatherGaugeBrush}"

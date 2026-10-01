@@ -153,7 +153,7 @@
                     </Path>
 
                     <!-- Active Arc (Radius 48, Stroke 7 -> dash 43.085) -->
-                    <Path StrokeThickness="7" StrokeDashArray="43.085,43.085" StrokeLineCap="Round"
+                    <Path Classes="elem-shadow" StrokeThickness="7" StrokeDashArray="43.085,43.085" StrokeLineCap="Round"
                           StrokeDashOffset="{Binding StrokeDashOffset}"
                           Stroke="{Binding PhaseBrush}"
                           RenderTransformOrigin="55,55">
@@ -209,7 +209,7 @@
                                 <EllipseGeometry Center="55,55" RadiusX="48" RadiusY="48" />
                             </Path.Data>
                         </Path>
-                        <Path StrokeThickness="7" StrokeDashArray="43.085,43.085" StrokeLineCap="Round"
+                        <Path Classes="elem-shadow" StrokeThickness="7" StrokeDashArray="43.085,43.085" StrokeLineCap="Round"
                               StrokeDashOffset="{Binding StrokeDashOffset}"
                               Stroke="{Binding PhaseBrush}"
                               RenderTransformOrigin="55,55">
@@ -306,7 +306,7 @@
                             <EllipseGeometry Center="55,55" RadiusX="48" RadiusY="48" />
                         </Path.Data>
                     </Path>
-                    <Path StrokeThickness="7" StrokeDashArray="43.085,43.085" StrokeLineCap="Round"
+                    <Path Classes="elem-shadow" StrokeThickness="7" StrokeDashArray="43.085,43.085" StrokeLineCap="Round"
                           StrokeDashOffset="{Binding StrokeDashOffset}"
                           Stroke="{Binding PhaseBrush}"
                           RenderTransformOrigin="55,55">

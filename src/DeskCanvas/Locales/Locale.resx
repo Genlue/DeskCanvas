@@ -373,10 +373,10 @@
         <value>Highlight ring thickness in DIPs; 0 hides the outline (default)</value>
     </data>
     <data name="Settings_Appearance_TextShadow_Title" xml:space="preserve">
-        <value>Global text shadow</value>
+        <value>Global element shadows</value>
     </data>
     <data name="Settings_Appearance_TextShadow_Subtitle" xml:space="preserve">
-        <value>Add a soft drop shadow to all widget text for readability over busy wallpapers (off by default)</value>
+        <value>Add a soft drop shadow to widget text and elements like progress bars for readability over busy wallpapers (off by default)</value>
     </data>
     <data name="Settings_Appearance_TextShadow_Strength" xml:space="preserve">
         <value>Shadow strength</value>

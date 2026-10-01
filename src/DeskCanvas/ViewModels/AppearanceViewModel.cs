@@ -521,8 +521,9 @@ public class AppearanceViewModel : ReactiveObject
     }
 
     /// <summary>
-    /// 全局文字阴影 (default off): when on, every TextBlock inside a desktop widget window
-    /// gets a soft drop shadow for readability over busy wallpapers.
+    /// 全局元素阴影 (default off): when on, every TextBlock inside a desktop widget window
+    /// gets a soft drop shadow for readability over busy wallpapers, and template parts marked
+    /// with the elem-shadow class (progress pills, metric rings) float the same way.
     /// </summary>
     public bool TextShadowEnabled
     {

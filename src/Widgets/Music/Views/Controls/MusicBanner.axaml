@@ -19,7 +19,7 @@
             <Setter Property="Foreground" Value="{DynamicResource MusicAccentBrush}"/>
             <Setter Property="Template">
                 <ControlTemplate>
-                    <Border Name="ProgressBarRoot"
+                    <Border Name="ProgressBarRoot" Classes="elem-shadow"
                             Background="{TemplateBinding Background}"
                             ClipToBounds="True"
                             Height="{TemplateBinding Height}">

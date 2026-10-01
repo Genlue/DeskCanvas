@@ -23,7 +23,7 @@
                             </Path.Data>
                         </Path>
                         <!-- Active Arc -->
-                        <Path StrokeThickness="8" StrokeDashArray="39.27,39.27" StrokeLineCap="Round"
+                        <Path Classes="elem-shadow" StrokeThickness="8" StrokeDashArray="39.27,39.27" StrokeLineCap="Round"
                               StrokeDashOffset="{Binding StrokeDashOffset}"
                               Stroke="{Binding StatusBrush}"
                               IsVisible="{Binding HasDevice}"
@@ -36,7 +36,7 @@
                             </Path.Data>
                         </Path>
                         <!-- Center Icon (enlarged 46x46 centered at 32,32) -->
-                        <PathIcon Data="{Binding IconData}"
+                        <PathIcon Classes="elem-shadow" Data="{Binding IconData}"
                                   Canvas.Left="35" Canvas.Top="35" Width="40" Height="40"
                                   Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}"
                                   Opacity="0.85"
@@ -78,7 +78,7 @@
                                 <EllipseGeometry Center="55,55" RadiusX="50" RadiusY="50" />
                             </Path.Data>
                         </Path>
-                        <Path StrokeThickness="8" StrokeDashArray="39.27,39.27" StrokeLineCap="Round"
+                        <Path Classes="elem-shadow" StrokeThickness="8" StrokeDashArray="39.27,39.27" StrokeLineCap="Round"
                               StrokeDashOffset="{Binding StrokeDashOffset}"
                               Stroke="{Binding StatusBrush}"
                               IsVisible="{Binding HasDevice}"
@@ -90,7 +90,7 @@
                                 <EllipseGeometry Center="55,55" RadiusX="50" RadiusY="50" />
                             </Path.Data>
                         </Path>
-                        <PathIcon Data="{Binding IconData}"
+                        <PathIcon Classes="elem-shadow" Data="{Binding IconData}"
                                   Canvas.Left="35" Canvas.Top="35" Width="40" Height="40"
                                   Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}"
                                   Opacity="0.85"
@@ -131,7 +131,7 @@
                                 <EllipseGeometry Center="55,55" RadiusX="50" RadiusY="50" />
                             </Path.Data>
                         </Path>
-                        <Path StrokeThickness="8" StrokeDashArray="39.27,39.27" StrokeLineCap="Round"
+                        <Path Classes="elem-shadow" StrokeThickness="8" StrokeDashArray="39.27,39.27" StrokeLineCap="Round"
                               StrokeDashOffset="{Binding StrokeDashOffset}"
                               Stroke="{Binding StatusBrush}"
                               IsVisible="{Binding HasDevice}"
@@ -143,7 +143,7 @@
                                 <EllipseGeometry Center="55,55" RadiusX="50" RadiusY="50" />
                             </Path.Data>
                         </Path>
-                        <PathIcon Data="{Binding IconData}"
+                        <PathIcon Classes="elem-shadow" Data="{Binding IconData}"
                                   Canvas.Left="35" Canvas.Top="35" Width="40" Height="40"
                                   Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}"
                                   Opacity="0.85"
@@ -184,7 +184,7 @@
                                 <EllipseGeometry Center="55,55" RadiusX="50" RadiusY="50" />
                             </Path.Data>
                         </Path>
-                        <Path StrokeThickness="8" StrokeDashArray="39.27,39.27" StrokeLineCap="Round"
+                        <Path Classes="elem-shadow" StrokeThickness="8" StrokeDashArray="39.27,39.27" StrokeLineCap="Round"
                               StrokeDashOffset="{Binding StrokeDashOffset}"
                               Stroke="{Binding StatusBrush}"
                               IsVisible="{Binding HasDevice}"
@@ -196,7 +196,7 @@
                                 <EllipseGeometry Center="55,55" RadiusX="50" RadiusY="50" />
                             </Path.Data>
                         </Path>
-                        <PathIcon Data="{Binding IconData}"
+                        <PathIcon Classes="elem-shadow" Data="{Binding IconData}"
                                   Canvas.Left="35" Canvas.Top="35" Width="40" Height="40"
                                   Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}"
                                   Opacity="0.85"

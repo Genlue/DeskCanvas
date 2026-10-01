@@ -6,7 +6,7 @@ using Weather.Views;
 using Weather.Views.Settings;
 
 [assembly: AssemblyCompany("creewick")]
-[assembly: AssemblyVersion("1.4.5")]
+[assembly: AssemblyVersion("1.4.6")]
 
 [assembly: WidgetInfo(typeof(Forecast), typeof(ForecastModel), typeof(ForecastSettings), "Weather_Forecast_Title", "Weather_Forecast_Subtitle")]
 [assembly: WidgetInfo(typeof(Temperature), typeof(ForecastModel), typeof(ForecastSettings), "Weather_Temperature_Title", "Weather_Temperature_Subtitle")]

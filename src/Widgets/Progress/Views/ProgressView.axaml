@@ -33,7 +33,8 @@
         </Grid>
 
         <!-- Dot Matrix -->
-        <controls:DotMatrixControl Grid.Row="1"
+        <controls:DotMatrixControl Classes="elem-shadow"
+                                   Grid.Row="1"
                                    TotalDots="{Binding TotalDots}"
                                    PassedDots="{Binding PassedDots}"
                                    HasCurrentDot="{Binding HasCurrentDot}"

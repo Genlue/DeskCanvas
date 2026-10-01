@@ -12,7 +12,7 @@
                 <EllipseGeometry Center="55,55" RadiusX="50" RadiusY="50" />
             </Path.Data>
         </Path>
-        <PathIcon Name="Icon"
+        <PathIcon Name="Icon" Classes="elem-shadow"
                   Foreground="{Binding IndicatorBrush, RelativeSource={RelativeSource AncestorType=local:Metric}, FallbackValue={DynamicResource SystemControlForegroundBaseHighBrush}, TargetNullValue={DynamicResource SystemControlForegroundBaseHighBrush}}"
                   Canvas.Top="35" Canvas.Left="35" Width="40" Height="40"
                   Opacity="0.85"
@@ -25,7 +25,7 @@
         <Path StrokeThickness="8" StrokeDashArray="39.27,39.27" StrokeLineCap="Round"
               StrokeDashOffset="{Binding StrokeDashOffset}"
               Stroke="{Binding IndicatorBrush, RelativeSource={RelativeSource AncestorType=local:Metric}, FallbackValue={DynamicResource SystemControlForegroundBaseHighBrush}, TargetNullValue={DynamicResource SystemControlForegroundBaseHighBrush}}"
-              RenderTransformOrigin="55,55" Name="ProgressBar">
+              RenderTransformOrigin="55,55" Name="ProgressBar" Classes="elem-shadow">
             <Path.RenderTransform>
                 <RotateTransform Angle="-90" />
             </Path.RenderTransform>
