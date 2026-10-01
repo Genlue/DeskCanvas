@@ -156,8 +156,17 @@
     <data name="Notes_AllowInlineEdit" xml:space="preserve">
         <value>Edit content by double-click on the widget card</value>
     </data>
-    <data name="Notes_ShowTitle" xml:space="preserve">
-        <value>Show title bar</value>
+    <data name="Notes_TitleBar_Mode" xml:space="preserve">
+        <value>Title bar</value>
+    </data>
+    <data name="Notes_TitleBar_BarAndTitle" xml:space="preserve">
+        <value>Bar with title</value>
+    </data>
+    <data name="Notes_TitleBar_BarOnly" xml:space="preserve">
+        <value>Bar only</value>
+    </data>
+    <data name="Notes_TitleBar_Hidden" xml:space="preserve">
+        <value>No bar</value>
     </data>
     <data name="Notes_Panel_Open" xml:space="preserve">
         <value>Open note panel</value>

@@ -55,6 +55,7 @@ public static class WidgetZOrder
     private const uint SWP_NOZORDER = 0x0004;
     private const uint SWP_NOACTIVATE = 0x0010;
     private const uint SWP_FRAMECHANGED = 0x0020;
+    private const uint SWP_NOOWNERZORDER = 0x0200;
     private const uint GW_HWNDNEXT = 2;
     private const uint GW_HWNDPREV = 3;
     private const uint GW_OWNER = 4;
@@ -272,7 +273,16 @@ public static class WidgetZOrder
             selfPlacement = true;
             try
             {
-                SetWindowPos(hwnd, resolveInsertAfter(), 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
+                // SWP_NOOWNERZORDER: move this window alone. Without it the z-insertion
+                // re-anchors the whole owned group — the open context menu (and its
+                // submenus, and any ComboBox dropdown) is pulled down from wherever it
+                // floats to directly above this window, which for a bottom-band widget
+                // visibly sinks the menu below every other window the moment a band
+                // correction runs (e.g. clicking the grid-size stepper resizes the
+                // widget). Owned windows must only stay ABOVE their owner, which the
+                // downward correction cannot break, so leaving them untouched is safe.
+                SetWindowPos(hwnd, resolveInsertAfter(), 0, 0, 0, 0,
+                    SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_NOOWNERZORDER);
             }
             finally
             {

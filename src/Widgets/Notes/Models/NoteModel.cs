@@ -1,6 +1,23 @@
 namespace Notes.Models;
 
 /// <summary>
+/// What stays of the note card's colored top bar (顶栏). The historic two-state
+/// "show title bar" switch expanded into this: the bar and its title text are
+/// separately disposable, but they are one setting, not two.
+/// </summary>
+public enum NoteHeaderMode
+{
+    /// <summary>顶栏与标题: the colored bar with its editable title text — the factory look.</summary>
+    BarAndTitle = 0,
+
+    /// <summary>仅顶栏: the colored bar stays (expand button included) but shows no title text.</summary>
+    BarOnly = 1,
+
+    /// <summary>隐藏顶栏: the bar and the divider below it collapse and the body owns the whole card.</summary>
+    Hidden = 2,
+}
+
+/// <summary>
 /// Where the note's body comes from.
 /// </summary>
 public enum NoteSource
@@ -70,10 +87,18 @@ public record MarkdownTypography(
 /// expand button) opens the secondary panel, where the note is edited. Can be
 /// turned on in the widget settings.
 /// </param>
-/// <param name="ShowTitle">
-/// Show the colored title bar on the card. Default <c>true</c>; when off the
-/// header (and the divider below it) collapse and the body owns the whole card —
+/// <param name="HeaderMode">
+/// 顶栏 mode: bar with title text, bare bar, or no bar at all (see
+/// <see cref="NoteHeaderMode"/>). Default <see cref="NoteHeaderMode.BarAndTitle"/>; when the bar
+/// is hidden the divider below it collapses too and the body owns the whole card —
 /// the secondary panel stays reachable via double-click.
+/// </param>
+/// <param name="ShowTitle">
+/// Legacy two-state switch from before the 顶栏 became three-way, kept so old configs
+/// load with their original look. <c>false</c> still means <see cref="NoteHeaderMode.Hidden"/>,
+/// with precedence over <see cref="HeaderMode"/>; the settings UI keeps it in step
+/// (<c>false</c> exactly when the mode is <see cref="NoteHeaderMode.Hidden"/>), so only
+/// configs predating this field ever rely on it.
 /// </param>
 public record NoteModel(
     string? Title = null,
@@ -91,4 +116,12 @@ public record NoteModel(
     int BodyPadding = 4,
     MarkdownTypography? MarkdownStyle = null,
     bool AllowInlineEdit = false,
-    bool ShowTitle = true);
+    NoteHeaderMode HeaderMode = NoteHeaderMode.BarAndTitle,
+    bool ShowTitle = true)
+{
+    /// <summary>The mode the card actually renders with, honouring the legacy switch.</summary>
+    [System.Text.Json.Serialization.JsonIgnore]
+    public NoteHeaderMode EffectiveHeaderMode => ShowTitle
+        ? HeaderMode
+        : NoteHeaderMode.Hidden;
+}

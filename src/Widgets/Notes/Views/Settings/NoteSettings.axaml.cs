@@ -52,6 +52,10 @@ public partial class NoteSettings : UserControl
         InitializeComponent();
 
         HeaderModeBox.ItemsSource = new[] { Locale.Notes_Header_FollowAccent, Locale.Notes_Header_Custom };
+        TitleBarBox.ItemsSource = new[]
+        {
+            Locale.Notes_TitleBar_BarAndTitle, Locale.Notes_TitleBar_BarOnly, Locale.Notes_TitleBar_Hidden,
+        };
         SourceBox.ItemsSource = new[] { Locale.Notes_Source_Internal, Locale.Notes_Source_File, Locale.Notes_Source_Folder };
         OrderBox.ItemsSource = new[] { Locale.Notes_Order_Recent, Locale.Notes_Order_Manual };
 
@@ -80,8 +84,15 @@ public partial class NoteSettings : UserControl
             UpdateModel(m => m with { Markdown = MarkdownToggle.IsChecked == true });
         AllowInlineEditToggle.Click += (_, _) =>
             UpdateModel(m => m with { AllowInlineEdit = AllowInlineEditToggle.IsChecked == true });
-        ShowTitleToggle.Click += (_, _) =>
-            UpdateModel(m => m with { ShowTitle = ShowTitleToggle.IsChecked == true });
+        TitleBarBox.SelectionChanged += (_, _) =>
+        {
+            if (TitleBarBox.SelectedIndex < 0) return;
+            var mode = (NoteHeaderMode)Math.Max(0, TitleBarBox.SelectedIndex);
+            // ShowTitle is the legacy two-state key; it is kept in step with the mode
+            // (false exactly for a hidden bar) so configs saved before the three-way
+            // mode migrate on the first pick and never fight the new field afterwards.
+            UpdateModel(m => m with { HeaderMode = mode, ShowTitle = mode != NoteHeaderMode.Hidden });
+        };
         StyleToggle.Click += (_, _) =>
         {
             var enabled = StyleToggle.IsChecked == true;
@@ -196,7 +207,7 @@ public partial class NoteSettings : UserControl
     {
         MarkdownToggle.IsChecked = model.Markdown;
         AllowInlineEditToggle.IsChecked = model.AllowInlineEdit;
-        ShowTitleToggle.IsChecked = model.ShowTitle;
+        TitleBarBox.SelectedIndex = (int)model.EffectiveHeaderMode;
 
         var style = model.MarkdownStyle;
         StyleToggle.IsChecked = style?.Enabled ?? false;

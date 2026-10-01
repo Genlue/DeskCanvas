@@ -94,8 +94,8 @@
                 <NumericUpDown Name="BodyPaddingBox" MinWidth="128" Minimum="0" Maximum="64"
                                Increment="2" FormatString="F0" ParsingNumberStyle="Integer" />
             </controls:Setting>
-            <controls:Setting Title="{x:Static locales:Locale.Notes_ShowTitle}">
-                <ToggleSwitch Name="ShowTitleToggle" />
+            <controls:Setting Title="{x:Static locales:Locale.Notes_TitleBar_Mode}">
+                <ComboBox Name="TitleBarBox" MinWidth="168" />
             </controls:Setting>
             <controls:Setting Title="{x:Static locales:Locale.Notes_Header_Color}">
                 <StackPanel Orientation="Horizontal" Spacing="8">

@@ -102,10 +102,15 @@ public partial class Note : UserControl, IWidgetSelfRefreshing
 
         TitleBox.Height = 44;
         TitleBox.FontSize = 16;
-        // Title bar toggle (widget setting, default on): off collapses the header
-        // and the divider below it — the body then owns the whole card.
-        HeaderBorder.IsVisible = model.ShowTitle;
-        Divider.IsVisible = model.ShowTitle;
+        // 顶栏 mode (widget setting): the full bar with its editable title, the bare bar
+        // (expand button only), or no bar at all — bar and the divider below it collapse
+        // and the body owns the whole card.
+        var header = model.EffectiveHeaderMode;
+        HeaderBorder.IsVisible = header != NoteHeaderMode.Hidden;
+        Divider.IsVisible = header != NoteHeaderMode.Hidden;
+        TitleBox.IsVisible = header == NoteHeaderMode.BarAndTitle;
+        // The bare bar keeps the factory height: the title box (44 px) defines it when visible.
+        HeaderBorder.MinHeight = header == NoteHeaderMode.BarOnly ? 44 : 0;
         ContentBox.IsVisible = false;
         RenderScroll.IsVisible = false;
         FileScroll.IsVisible = false;

@@ -348,11 +348,38 @@ namespace Notes.Locales {
         }
 
         /// <summary>
-        ///   Looks up a localized string similar to Show title bar.
+        ///   Looks up a localized string similar to Title bar.
         /// </summary>
-        public static string Notes_ShowTitle {
+        public static string Notes_TitleBar_Mode {
             get {
-                return ResourceManager.GetString("Notes_ShowTitle", resourceCulture);
+                return ResourceManager.GetString("Notes_TitleBar_Mode", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Bar with title.
+        /// </summary>
+        public static string Notes_TitleBar_BarAndTitle {
+            get {
+                return ResourceManager.GetString("Notes_TitleBar_BarAndTitle", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Bar only.
+        /// </summary>
+        public static string Notes_TitleBar_BarOnly {
+            get {
+                return ResourceManager.GetString("Notes_TitleBar_BarOnly", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to No bar.
+        /// </summary>
+        public static string Notes_TitleBar_Hidden {
+            get {
+                return ResourceManager.GetString("Notes_TitleBar_Hidden", resourceCulture);
             }
         }
 

@@ -121,7 +121,14 @@ internal static class LiquidGlassSourceCache
         // their own clarity/blur values on the shared cache.
         var glass = frame.Theme.EffectiveGlass;
         var scale = Math.Clamp((float)(glass.BackdropClarity / 100.0), MinBackdropScale, 1f);
-        var sigma = (float)glass.Blur * frame.Scale / 8f * scale;
+        // The blur is stated in **desktop pixels**, not backdrop-texture pixels. Build draws the
+        // wallpaper under a canvas scaled by `scale`, and Skia maps an image filter's sigma
+        // through the CTM — so the CTM's one `scale` is the desktop-px → texture-px conversion,
+        // and pre-multiplying here as well would square it: the texture received
+        // 模糊 · scale², i.e. the very same 模糊 value read ever softer the lower 背景清晰度
+        // was set (a quarter of the blur at the 25% default). Matches the CPU renderers, which
+        // blur at `Blur · frame.Scale / 8` render px on unscaled canvases.
+        var sigma = (float)glass.Blur * frame.Scale / 8f;
         var key = new GlassSourceKey(wallpaper, sigma, scale);
 
         GlassSource? built;
@@ -199,6 +206,8 @@ internal static class LiquidGlassSourceCache
 
             var canvas = surface.Canvas;
             canvas.Clear(wallpaper.Background);
+            // sigma arrives in desktop px and is converted to texture px by the Scale below —
+            // Skia maps an image filter's sigma through the CTM (see Get for why that matters).
             using var filter = sigma > 0.05f ? SKImageFilter.CreateBlur(sigma, sigma, SKShaderTileMode.Clamp) : null;
             using var paint = new SKPaint { IsAntialias = true, FilterQuality = SKFilterQuality.High, ImageFilter = filter };
             canvas.Save();

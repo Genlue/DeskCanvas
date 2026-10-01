@@ -9,6 +9,7 @@
     <ProjectReference Include="../../src/DeskCanvas.Core/DeskCanvas.Core.csproj" />
     <PackageReference Include="SkiaSharp" />
     <Compile Include="../../src/DeskCanvas/Services/LiquidGlassRenderer.cs" Link="LiquidGlassRenderer.cs" />
+    <Compile Include="../../src/DeskCanvas/Services/LiquidGlassSource.cs" Link="LiquidGlassSource.cs" />
     <Compile Include="../../src/DeskCanvas/Services/LiquidGlassGpuEffect.cs" Link="LiquidGlassGpuEffect.cs" />
     <Compile Include="../../src/DeskCanvas/Services/LiquidGlassV2Effect.cs" Link="LiquidGlassV2Effect.cs" />
     <Compile Include="../../src/DeskCanvas/Services/LiquidGlassV2Renderer.cs" Link="LiquidGlassV2Renderer.cs" />
