@@ -23,23 +23,54 @@ using DeskCanvas.Services;
 
 namespace Clock.Views;
 
+/// <summary>
+/// The 无边框时钟: a clock whose numerals ARE the widget — no card, no plate; the glyphs render
+/// straight onto the desktop in the global material.
+/// <para>
+/// Architecture contract — the part that must survive every future edit. This widget's history is
+/// a chain of "stopped following the global theme" regressions, each one an event handler that
+/// re-implemented a hand-picked subset of the rematerialize steps and missed one:
+/// <list type="number">
+/// <item><see cref="material"/> is the ONE snapshot of the resolved global material. It is written
+/// in exactly one place — <see cref="ApplyCurrentMaterial"/> — and only read everywhere else. A
+/// single frame therefore can never mix two materials, and a widget stuck on an old material
+/// means "the event never fired", a single debuggable failure, not "two methods disagreed".</item>
+/// <item>There are exactly TWO invalidation entries, and a new event picks one of them instead of
+/// re-implementing steps inline:
+/// <see cref="ApplyCurrentMaterial"/> for anything that can change the material (theme change,
+/// light/dark variant change, model refresh, suspend/resume, load) — the full rebuild; and
+/// <see cref="RefreshBackdrop"/> for content-only changes (wallpaper advanced, size, position) —
+/// which never touches transparency, window region ownership or the resolved material.</item>
+/// </list>
+/// </para>
+/// <para>
+/// The clock has <b>no per-widget material override</b>: its surface always follows the global
+/// app theme (see <see cref="FramelessThemeResolver"/>) and its glass optics always follow the
+/// global liquid glass settings.
+/// </para>
+/// </summary>
 public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSelfRefreshing, IWidgetSuspendable
 {
     private FramelessClockModel model;
     private readonly IWidgetLayoutProvider? widgetLayoutProvider;
     private readonly IAppSettingsProvider? appSettingsProvider;
 
+    /// <summary>The resolved global material, snapshotted by <see cref="ApplyCurrentMaterial"/>.</summary>
+    private FramelessMaterial material;
+
     private UpdateTimer? currentTimer;
     private Window? window;
     private bool IsDesktopWidget => window is DeskCanvas.Views.Widget;
+
+    // The frame currently composited on screen, plus the pre-rendered frames around it.
+    // The field name is part of the widget's checked contract (tests/ClockThemeChecks reads it).
     private Bitmap? liquidGlassBitmap;
+    private readonly FramelessGlassFrameCache frameCache = new();
 
     // Per-second Acrylic region recompute buffers (see UpdateWindowRegion).
     private RenderTargetBitmap? regionBitmap;
     private byte[]? regionBuffer;
 
-    // Cache of pre-rendered liquid glass frames keyed by time string
-    private readonly Dictionary<string, (DateTime ValidTime, Bitmap Bitmap)> liquidGlassCache = new();
     private readonly HashSet<string> inFlightRenders = new();
     private CancellationTokenSource? preRenderCts;
 
@@ -54,7 +85,6 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
     /// </summary>
     private const long CacheBudgetBytes = 48L * 1024 * 1024;
 
-    private Geometry? cachedGeometry;
     private string? lastRegionKey;
     private bool hasRegionSet;
 
@@ -76,6 +106,10 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
         this.model = model;
         this.widgetLayoutProvider = widgetLayoutProvider;
         this.appSettingsProvider = appSettingsProvider;
+
+        // Initial snapshot: previews and the checks resolve a material before the window ever
+        // loads, and it must already be the global theme's — not a blank default.
+        material = FramelessThemeResolver.Resolve(appSettingsProvider?.Get().Theme);
 
         InitializeComponent();
         Classes.Add("Frameless");
@@ -164,8 +198,7 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
         currentTimer = null;
 
         ClearLiquidGlassCache();
-        liquidGlassBitmap?.Dispose();
-        liquidGlassBitmap = null;
+        SetDisplayedFrame(null);
 
         regionBitmap?.Dispose();
         regionBitmap = null;
@@ -195,8 +228,7 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
             return;
         }
 
-        RequestBackdropRender();
-        InvalidateVisual();
+        RefreshBackdrop(clearCache: false, resetRegionKey: false);
     }
 
     private void OnActualThemeVariantChanged(object? sender, EventArgs e)
@@ -214,10 +246,20 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
 
     private void OnSizeChanged()
     {
-        lastRegionKey = null;
-        ClearLiquidGlassCache();
-        RequestBackdropRender();
-        InvalidateVisual();
+        // Every cached frame was rendered for the old pixel size; the window region is shaped for
+        // the old glyph box too. A full backdrop refresh, but the material is untouched.
+        RefreshBackdrop(clearCache: true);
+    }
+
+    private void OnWindowPositionChanged(object? sender, PixelPointEventArgs e)
+    {
+        if (!IsDesktopWidget || !material.IsRenderedGlass) return;
+
+        // The glass backdrop samples the wallpaper by desktop position: when the window moves, the
+        // sample offsets move with it, so the cached frames — and any render in flight against the
+        // old offsets — are all stale. The glyph shapes do not depend on position: no region reset,
+        // and no InvalidateVisual — the new frame posts its own when it lands.
+        RefreshBackdrop(clearCache: true, invalidate: false, resetRegionKey: false);
     }
 
     /// <summary>
@@ -235,7 +277,6 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
     {
         suspended = true;
         ClearLiquidGlassCache();
-        cachedGeometry = null;
 
         // A widget that has not produced a frame yet (its first render was cancelled by the clear
         // above, or had not started) would otherwise sit on the flat fallback wash for as long as
@@ -248,20 +289,8 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
     public void Resume()
     {
         suspended = false;
-        lastRegionKey = null;
         SetupTimer();
         ApplyCurrentMaterial();
-    }
-
-    private void OnWindowPositionChanged(object? sender, PixelPointEventArgs e)
-    {
-        if (!IsDesktopWidget) return;
-        var (_, isLiquidGlass, _) = ResolveEffectiveTheme();
-        if (isLiquidGlass)
-        {
-            ClearLiquidGlassCache();
-            RequestBackdropRender();
-        }
     }
 
     private void OnAppSettingsChanged(object sender, AppSettings? oldData, AppSettings newData)
@@ -283,8 +312,6 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
                 if (updated != null)
                 {
                     model = updated;
-                    lastRegionKey = null;
-                    SetupTimer();
                     ApplyCurrentMaterial();
                 }
             }
@@ -307,28 +334,30 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
     }
 
     /// <summary>
-    /// The clock's material, resolved from the <b>global</b> theme (see
-    /// <see cref="FramelessThemeResolver"/>): the widget has no per-widget theme override, so the
-    /// global 液态玻璃 / 柔光 recipe reaches the numerals through the glyph glass pipeline, a global
-    /// 毛玻璃 gives the OS acrylic backdrop and a global 纯色 a plain fill.
+    /// The material the widget currently renders with — the snapshot taken by the last
+    /// <see cref="ApplyCurrentMaterial"/>, not a fresh resolution. Every read site (the render
+    /// branches, the window transparency, the verification loop) sees the same answer, so one
+    /// frame can never straddle a theme change.
     /// </summary>
-    private FramelessMaterial CurrentMaterial => FramelessThemeResolver.Resolve(appSettingsProvider?.Get().Theme);
-
-    private (bool IsAcrylic, bool IsLiquidGlass, bool IsSolid) ResolveEffectiveTheme()
-    {
-        var material = CurrentMaterial;
-        return (material.IsAcrylic, material.IsRenderedGlass, material.IsSolid);
-    }
+    private FramelessMaterial CurrentMaterial => material;
 
     /// <summary>
-    /// The ONE path that (re)materializes the clock. Every invalidating event — window load,
-    /// a global theme change, a light/dark variant change, a model refresh, suspend/resume —
-    /// funnels through here, so the side effects (glyph cache, window transparency, glyph
-    /// window region, backdrop re-render) can never drift out of sync with the resolved
-    /// material again. This used to be re-implemented per handler with hand-picked subsets
-    /// of the four steps, which is exactly how "the frameless clock stopped following the
-    /// global theme" kept regressing: one missed step in one handler left the widget stuck
-    /// on the previous material.
+    /// The material as the (acrylic, rendered-glass, solid) triple the render branches switch on.
+    /// Kept as its own member: <c>tests/ClockThemeChecks</c> drives it by reflection to pin the
+    /// theme-following contract.
+    /// </summary>
+    private (bool IsAcrylic, bool IsLiquidGlass, bool IsSolid) ResolveEffectiveTheme()
+        => (material.IsAcrylic, material.IsRenderedGlass, material.IsSolid);
+
+    /// <summary>
+    /// The ONE path that (re)materializes the clock, and the ONLY writer of
+    /// <see cref="material"/>. Every material-affecting event — window load, a global theme
+    /// change, a light/dark variant change, a model refresh, suspend/resume — funnels through
+    /// here, so the side effects (material snapshot, glyph cache, window transparency, glyph
+    /// window region, backdrop re-render) can never drift out of sync with the resolved material.
+    /// This used to be re-implemented per handler with hand-picked subsets of the steps, which is
+    /// exactly how "the frameless clock stopped following the global theme" kept regressing: one
+    /// missed step in one handler left the widget stuck on the previous material.
     /// <para>
     /// The pre-rendered frames are always rebuilt: beyond the material, global theme edits
     /// (accent, optics, 染色强度, font) all reach the glyph renderer too, and diffing every
@@ -339,6 +368,10 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
     /// </summary>
     private void ApplyCurrentMaterial()
     {
+        // Snapshot first: everything below (branches, region keys, verification) reads this one
+        // answer, so a theme change mid-pipeline can never produce a half-old half-new widget.
+        material = FramelessThemeResolver.Resolve(appSettingsProvider?.Get().Theme);
+
         lastRegionKey = null;
         ClearLiquidGlassCache();
 
@@ -358,11 +391,29 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
         VerifyMaterialWindowState();
     }
 
+    /// <summary>
+    /// The content-only refresh path: the wallpaper advanced, the widget was resized or moved.
+    /// The resolved material is untouched — no transparency changes, no region ownership
+    /// changes — only the rendered backdrop is brought up to date. Material-affecting events must
+    /// go to <see cref="ApplyCurrentMaterial"/> instead.
+    /// </summary>
+    /// <param name="clearCache">Drop the pre-rendered frames (size/position-dependent content).</param>
+    /// <param name="invalidate">Repaint now; false when the new frame posts its own invalidation.</param>
+    /// <param name="resetRegionKey">Force the glyph window region to be recomputed on the next
+    /// acrylic render; false when the glyph shapes cannot have changed (a pure window move).</param>
+    private void RefreshBackdrop(bool clearCache, bool invalidate = true, bool resetRegionKey = true)
+    {
+        if (resetRegionKey) lastRegionKey = null;
+        if (clearCache) ClearLiquidGlassCache();
+        RequestBackdropRender();
+        if (invalidate) InvalidateVisual();
+    }
+
     /// <summary>Drop the window's glyph region once the material is no longer 毛玻璃 (see the ordering note in <see cref="ApplyCurrentMaterial"/>).</summary>
     private void ClearGlyphRegionIfNotAcrylic()
     {
         if (window == null || !IsDesktopWidget) return;
-        if (CurrentMaterial.IsAcrylic || !hasRegionSet) return;
+        if (material.IsAcrylic || !hasRegionSet) return;
         InteropService.ClearWidgetRegion(window);
         hasRegionSet = false;
     }
@@ -380,7 +431,7 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
         {
             if (window == null || !IsDesktopWidget) return;
 
-            var wantAcrylic = CurrentMaterial.IsAcrylic;
+            var wantAcrylic = material.IsAcrylic;
             var level = window.ActualTransparencyLevel;
             var levelOk = wantAcrylic
                 ? level == WindowTransparencyLevel.AcrylicBlur
@@ -412,8 +463,7 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
     private void UpdateTransparencyLevel(bool force = false)
     {
         if (window == null || !IsDesktopWidget) return;
-        var (isAcrylic, _, _) = ResolveEffectiveTheme();
-        var hint = isAcrylic ? AcrylicHint : TransparentHint;
+        var hint = material.IsAcrylic ? AcrylicHint : TransparentHint;
         if (!force && hint.SequenceEqual(window.TransparencyLevelHint)) return;
 
         // Toggle through None instead of assigning the target directly: the Win32 impl
@@ -427,8 +477,7 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
 
     private void OnTimerTick()
     {
-        var (_, isLiquidGlass, _) = ResolveEffectiveTheme();
-        if (isLiquidGlass)
+        if (material.IsRenderedGlass)
         {
             var now = GetCurrentTime();
             var timeStr = FormatTime(now);
@@ -437,16 +486,9 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
             EvictExpiredCacheEntries(now);
 
             // 2. Check if current frame was already pre-cached in background
-            if (liquidGlassCache.TryGetValue(timeStr, out var cached))
+            if (frameCache.TryGet(timeStr, out var cached))
             {
-                if (liquidGlassBitmap != cached.Bitmap)
-                {
-                    if (liquidGlassBitmap != null && !IsBitmapInCache(liquidGlassBitmap))
-                    {
-                        liquidGlassBitmap.Dispose();
-                    }
-                    liquidGlassBitmap = cached.Bitmap;
-                }
+                SetDisplayedFrame(cached);
             }
             else
             {
@@ -463,11 +505,9 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
 
     private void RequestBackdropRender()
     {
-        var (_, isLiquidGlass, _) = ResolveEffectiveTheme();
-        if (!isLiquidGlass)
+        if (!material.IsRenderedGlass)
         {
-            liquidGlassBitmap?.Dispose();
-            liquidGlassBitmap = null;
+            SetDisplayedFrame(null);
             return;
         }
 
@@ -491,7 +531,7 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
             {
                 var upcoming = now.AddSeconds(s);
                 var key = FormatTime(upcoming);
-                if (!liquidGlassCache.ContainsKey(key) && !inFlightRenders.Contains(key))
+                if (!frameCache.Contains(key) && !inFlightRenders.Contains(key))
                 {
                     SchedulePreRender(upcoming, isImmediate: false);
                 }
@@ -502,7 +542,7 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
             // Pre-cache the next minute frame
             var nextMinute = now.AddMinutes(1);
             var key = FormatTime(nextMinute);
-            if (!liquidGlassCache.ContainsKey(key) && !inFlightRenders.Contains(key))
+            if (!frameCache.Contains(key) && !inFlightRenders.Contains(key))
             {
                 SchedulePreRender(nextMinute, isImmediate: false);
             }
@@ -512,27 +552,27 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
     private void SchedulePreRender(DateTime targetTime, bool isImmediate)
     {
         if (Bounds.Width < 1 || Bounds.Height < 1) return;
-        var (_, isLiquidGlass, _) = ResolveEffectiveTheme();
-        if (!isLiquidGlass) return;
+        if (!material.IsRenderedGlass) return;
 
         var key = FormatTime(targetTime);
-        if (liquidGlassCache.ContainsKey(key) || inFlightRenders.Contains(key)) return;
+        if (frameCache.Contains(key) || inFlightRenders.Contains(key)) return;
 
         var scaling = window?.RenderScaling ?? 1.0;
         var width = Math.Max(1, (int)Math.Ceiling(Bounds.Width * scaling));
         var height = Math.Max(1, (int)Math.Ceiling(Bounds.Height * scaling));
 
         var theme = appSettingsProvider?.Get().Theme;
-        var stretchedGeometry = BuildStretchedGeometry(key, Bounds.Width, Bounds.Height);
+        var stretchedGeometry = FramelessGlyphGeometry.BuildStretch(
+            key, Bounds.Width, Bounds.Height, model.FontFamily, model.FontWeight, model.StretchFill, theme);
         if (stretchedGeometry == null) return;
 
-        byte[] glyphMask = ExtractGlyphMask(stretchedGeometry, Bounds.Width, Bounds.Height, scaling, width, height);
+        byte[] glyphMask = FramelessGlyphGeometry.ExtractMask(stretchedGeometry, Bounds.Width, Bounds.Height, scaling, width, height);
 
         // The material is whatever the global theme says — the clock carries no per-widget theme
         // override, and no widget-level optics override either: the edge tint and the lens width
         // both come from the global liquid glass settings. 液态玻璃 therefore renders the current
         // merged optics (with the global 柔光晕 / 光谱弥散 knobs selecting the soft recipe).
-        var effectiveTheme = theme ?? new Theme(null, null, 0.8, false, false, "Segoe UI");
+        var effectiveTheme = theme ?? FallbackTheme;
 
         if (model.EnableOverlay)
         {
@@ -587,21 +627,12 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
                     using var ms = new MemoryStream(pngBytes);
                     var bmp = new Bitmap(ms);
 
-                    if (liquidGlassCache.TryGetValue(key, out var existing))
-                    {
-                        if (existing.Bitmap != liquidGlassBitmap)
-                            existing.Bitmap.Dispose();
-                    }
-                    liquidGlassCache[key] = (targetTime, bmp);
+                    frameCache.Store(key, targetTime, bmp);
 
                     var currentNow = GetCurrentTime();
                     if (key == FormatTime(currentNow))
                     {
-                        if (liquidGlassBitmap != null && !IsBitmapInCache(liquidGlassBitmap))
-                        {
-                            liquidGlassBitmap.Dispose();
-                        }
-                        liquidGlassBitmap = bmp;
+                        SetDisplayedFrame(bmp);
                         InvalidateVisual();
                     }
                 }
@@ -627,52 +658,21 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
         });
     }
 
+    /// <summary>Renderer-side fallback when no settings carry a theme (previews): keeps the
+    /// pipeline fed with valid optics instead of null-checking every field downstream.</summary>
+    private static readonly Theme FallbackTheme = new(null, null, 0.8, false, false, "Segoe UI");
+
     private void EvictExpiredCacheEntries(DateTime now)
     {
-        var expiredKeys = new List<string>();
-        foreach (var (key, (validTime, _)) in liquidGlassCache)
-        {
-            bool isExpired = model.ShowSeconds
-                ? validTime < now.AddSeconds(-2)
-                : validTime < now.AddMinutes(-2);
-
-            if (isExpired)
-            {
-                expiredKeys.Add(key);
-            }
-        }
-
-        foreach (var key in expiredKeys)
-        {
-            if (liquidGlassCache.Remove(key, out var entry))
-            {
-                if (entry.Bitmap != liquidGlassBitmap)
-                {
-                    entry.Bitmap.Dispose();
-                }
-            }
-        }
-
         // Capacity safeguard. Every entry is a full-window bitmap, so the cap is a memory budget
         // rather than a frame count: 6 frames cover the current minute plus the rolling lookahead,
         // and the hard ceiling keeps a full-screen frameless clock from parking hundreds of
         // megabytes of pre-rendered frames (the old flat cap of 70 allowed ~580 MB at 1080p).
         var scaling = window?.RenderScaling ?? 1.0;
         var frameBytes = Math.Max(1L, (long)(Math.Ceiling(Bounds.Width * scaling) * Math.Ceiling(Bounds.Height * scaling) * 4));
-        var maxFrames = Math.Clamp(CacheBudgetBytes / frameBytes, 6, 12);
+        var maxFrames = (int)Math.Clamp(CacheBudgetBytes / frameBytes, 6, 12);
 
-        while (liquidGlassCache.Count > maxFrames)
-        {
-            var oldest = liquidGlassCache.OrderBy(kv => kv.Value.ValidTime).FirstOrDefault();
-            if (oldest.Key != null && liquidGlassCache.Remove(oldest.Key, out var entry))
-            {
-                if (entry.Bitmap != liquidGlassBitmap)
-                {
-                    entry.Bitmap.Dispose();
-                }
-            }
-            else break;
-        }
+        frameCache.EvictExpired(now, model.ShowSeconds ? TimeSpan.FromSeconds(2) : TimeSpan.FromMinutes(2), maxFrames);
     }
 
     private void ClearLiquidGlassCache()
@@ -682,23 +682,22 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
         preRenderCts = new CancellationTokenSource();
         inFlightRenders.Clear();
 
-        foreach (var entry in liquidGlassCache.Values)
-        {
-            if (entry.Bitmap != liquidGlassBitmap)
-            {
-                entry.Bitmap.Dispose();
-            }
-        }
-        liquidGlassCache.Clear();
+        frameCache.Clear();
     }
 
-    private bool IsBitmapInCache(Bitmap bitmap)
+    /// <summary>
+    /// Swap the frame composited on screen. The old bitmap is disposed only if the cache no
+    /// longer holds it — it may be stored under another key (the lookahead) and must survive.
+    /// </summary>
+    private void SetDisplayedFrame(Bitmap? value)
     {
-        foreach (var entry in liquidGlassCache.Values)
+        if (ReferenceEquals(liquidGlassBitmap, value)) return;
+        if (liquidGlassBitmap != null && !frameCache.Holds(liquidGlassBitmap))
         {
-            if (entry.Bitmap == bitmap) return true;
+            liquidGlassBitmap.Dispose();
         }
-        return false;
+        liquidGlassBitmap = value;
+        frameCache.SetDisplayed(value);
     }
 
     private string FormatTime(DateTime dt)
@@ -717,17 +716,16 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
         if (targetW <= 1 || targetH <= 1) return;
 
         var now = GetCurrentTime();
-        var hh = model.Use24Hours ? "HH" : "hh";
-        var ss = model.ShowSeconds ? ":ss" : "";
-        var timeStr = now.ToString($"{hh}:mm{ss}", CultureInfo.InvariantCulture);
+        var timeStr = FormatTime(now);
 
         var theme = appSettingsProvider?.Get().Theme;
-        var stretchedGeometry = BuildStretchedGeometry(timeStr, targetW, targetH);
+        var stretchedGeometry = FramelessGlyphGeometry.BuildStretch(
+            timeStr, targetW, targetH, model.FontFamily, model.FontWeight, model.StretchFill, theme);
         if (stretchedGeometry == null) return;
-        cachedGeometry = stretchedGeometry;
 
         var isDark = ActualThemeVariant == ThemeVariant.Dark;
-        var (isAcrylic, isLiquidGlass, _) = ResolveEffectiveTheme();
+        var isAcrylic = material.IsAcrylic;
+        var isLiquidGlass = material.IsRenderedGlass;
 
         // Theme 1: OS-level Acrylic (Real-time hardware DWM blur behind the glyphs)
         if (isAcrylic)
@@ -764,26 +762,15 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
             return;
         }
 
-        // Ensure window region is cleared for Liquid Glass and Solid themes (clean 32-bit alpha)
-        if (hasRegionSet && window != null && IsDesktopWidget)
-        {
-            InteropService.ClearWidgetRegion(window);
-            hasRegionSet = false;
-        }
+        // Liquid glass and solid render through clean 32-bit alpha — no native region, ever.
+        ClearGlyphRegionIfNotAcrylic();
 
         // Theme 2: Optical Liquid Glass (Per-pixel raymarched refraction inside numerals)
         if (isLiquidGlass)
         {
-            if (liquidGlassCache.TryGetValue(timeStr, out var cached))
+            if (frameCache.TryGet(timeStr, out var cached))
             {
-                if (liquidGlassBitmap != cached.Bitmap)
-                {
-                    if (liquidGlassBitmap != null && !IsBitmapInCache(liquidGlassBitmap))
-                    {
-                        liquidGlassBitmap.Dispose();
-                    }
-                    liquidGlassBitmap = cached.Bitmap;
-                }
+                SetDisplayedFrame(cached);
             }
 
             if (liquidGlassBitmap != null)
@@ -917,34 +904,6 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
         return spans;
     }
 
-    private static byte[] ExtractGlyphMask(Geometry? geometry, double width, double height, double scaling, int pixelW, int pixelH)
-    {
-        var mask = new byte[pixelW * pixelH];
-        if (geometry == null || pixelW <= 0 || pixelH <= 0) return mask;
-
-        using var rtb = new RenderTargetBitmap(new PixelSize(pixelW, pixelH), new Vector(96 * scaling, 96 * scaling));
-        using (var ctx = rtb.CreateDrawingContext())
-        {
-            ctx.DrawGeometry(Brushes.Black, null, geometry);
-        }
-
-        var buffer = new byte[pixelW * pixelH * 4];
-        var handle = GCHandle.Alloc(buffer, GCHandleType.Pinned);
-        try
-        {
-            rtb.CopyPixels(new PixelRect(0, 0, pixelW, pixelH), handle.AddrOfPinnedObject(), buffer.Length, pixelW * 4);
-            for (int i = 0; i < mask.Length; i++)
-            {
-                mask[i] = buffer[i * 4 + 3];
-            }
-        }
-        finally
-        {
-            handle.Free();
-        }
-        return mask;
-    }
-
     private static void DrawSpecularRim(DrawingContext context, Geometry geometry, double targetW, double targetH, bool isDark, FramelessClockModel model, Theme? theme)
     {
         // The rim dye strength follows the global 边缘染色强度 (LiquidGlassSettings.EdgeTint): the
@@ -1024,152 +983,13 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
         return DateTime.Now;
     }
 
-    /// <summary>Where the synthetic stroke starts to grow: the widget's default 字体粗细. Everything
-    /// at or below it is rendered by the family's real faces, exactly as before.</summary>
-    private const int SyntheticWeightReference = 700;
-
-    /// <summary>Stem growth at the top of the slider, in em — ≈ one Regular→Bold step, so 900 reads
-    /// as "the heaviest this font can go" rather than as an accident.</summary>
-    private const double SyntheticWeightMaxEm = 0.06;
-
-    /// <summary>
-    /// The glyph geometry for one time string: the typeface for the current family and weight,
-    /// stretched to fill the target box. One entry point, so the clip, the native window region,
-    /// the glyph mask and the rim line all work off exactly the same outline.
-    /// </summary>
-    private Geometry? BuildStretchedGeometry(string text, double targetW, double targetH)
-    {
-        var (typeface, syntheticPenWidth) = ResolveWeightedTypeface(appSettingsProvider?.Get().Theme);
-
-        var formattedText = new FormattedText(
-            text,
-            CultureInfo.InvariantCulture,
-            FlowDirection.LeftToRight,
-            typeface,
-            100.0,
-            Brushes.Black);
-
-        var rawGeometry = formattedText.BuildGeometry(new Point(0, 0));
-        if (rawGeometry == null) return null;
-
-        // Synthetic weight: a stroked outline grows every stem by the pen width (half per side).
-        // The union with the filled glyph is what makes it a heavier *letter* rather than a hollow
-        // outline — and it is taken as a union because Geometry.GetWidenedGeometry is documented as
-        // the stroke of the outline, which combined with the fill is the thickened shape either way.
-        var outline = rawGeometry;
-        if (syntheticPenWidth > 0.001)
-        {
-            var pen = new Pen(Brushes.Black, syntheticPenWidth)
-            {
-                LineJoin = PenLineJoin.Round,
-                LineCap = PenLineCap.Round
-            };
-            if (rawGeometry.GetWidenedGeometry(pen) is { } stroked)
-                outline = new CombinedGeometry(GeometryCombineMode.Union, rawGeometry, stroked);
-        }
-
-        // The stretch is measured on the outline we will actually draw, so a heavier weight fills
-        // the cell instead of overflowing it.
-        var tight = outline.Bounds;
-        if (tight.Width <= 0 || tight.Height <= 0) return null;
-
-        Matrix matrix;
-        if (model.StretchFill)
-        {
-            var sx = targetW / tight.Width;
-            var sy = targetH / tight.Height;
-            matrix = Matrix.CreateTranslation(-tight.X, -tight.Y) * Matrix.CreateScale(sx, sy);
-        }
-        else
-        {
-            var scale = Math.Min(targetW / tight.Width, targetH / tight.Height);
-            var actualW = tight.Width * scale;
-            var actualH = tight.Height * scale;
-            var ox = (targetW - actualW) / 2.0;
-            var oy = (targetH - actualH) / 2.0;
-            matrix = Matrix.CreateTranslation(-tight.X, -tight.Y)
-                   * Matrix.CreateScale(scale, scale)
-                   * Matrix.CreateTranslation(ox, oy);
-        }
-
-        var stretched = outline.Clone();
-        stretched.Transform = new MatrixTransform(matrix);
-        return stretched;
-    }
-
-    /// <summary>
-    /// The typeface for the current settings, plus the width of the synthetic weight stroke to add
-    /// to the outline (in the 100-unit em the geometry is built at; 0 for no stroke).
-    ///
-    /// <para>
-    /// 字体粗细 is a <b>position</b> on the widget's own axis (100-900, the slider's travel), not a
-    /// raw OpenType request, because a family only has the weights its font files provide. The
-    /// previous control offered nine labelled weights, and on the curated fonts — 华为锁屏超窄体
-    /// ships a single Black face, Impact a single Regular — every one of the nine resolved to the
-    /// same face, so the setting was completely dead; on the default Inter, whose heaviest face is
-    /// Bold, the top two steps were dead as well.
-    /// </para>
-    /// <para>
-    /// So the position is resolved in two parts: the family's real faces answer everything up to
-    /// the reference weight (the widget default, 700), and above it the strokes are grown
-    /// synthetically. Nothing at or below the reference changes — the historic look is preserved
-    /// bit for bit — while 700→900 is live for every font, including the single-face ones.
-    /// </para>
-    /// </summary>
-    private (Typeface Typeface, double SyntheticPenWidth) ResolveWeightedTypeface(Theme? theme)
-    {
-        var familyKey = model.FontFamily ?? theme?.FontFamily ?? string.Empty;
-        var position = Math.Clamp(model.FontWeight, 100, 900);
-
-        var family = ResolveFontFamily(familyKey);
-        var actual = ResolveFaceWeight(familyKey, family, (FontWeight)position);
-
-        var growthEm = position <= SyntheticWeightReference
-            ? 0.0
-            : (position - SyntheticWeightReference) / (double)(900 - SyntheticWeightReference) * SyntheticWeightMaxEm;
-
-        return (new Typeface(family, FontStyle.Normal, (FontWeight)position), growthEm * 100.0);
-    }
-
-    /// <summary>
-    /// The OpenType weight of the face the font manager actually picks for <paramref name="weight"/>
-    /// — the only way to find out whether a family can honour a request at all. Cached per
-    /// (family, weight): it runs on the UI thread for every render (the geometry is rebuilt per
-    /// frame), and the answer never changes while the app runs.
-    /// </summary>
-    private static int ResolveFaceWeight(string familyKey, FontFamily family, FontWeight weight)
-    {
-        var cacheKey = (familyKey, (int)weight);
-        if (FaceWeightCache.TryGetValue(cacheKey, out var cached)) return cached;
-
-        var resolved = (int)weight;
-        if (FontManager.Current.TryGetGlyphTypeface(
-                new Typeface(family, FontStyle.Normal, weight), out var glyphTypeface))
-            resolved = (int)glyphTypeface.Weight;
-
-        FaceWeightCache[cacheKey] = resolved;
-        return resolved;
-    }
-
-    private static readonly Dictionary<(string Family, int Weight), int> FaceWeightCache = new();
-
-    private static FontFamily ResolveFontFamily(string? fontName)
-    {
-        if (string.IsNullOrWhiteSpace(fontName))
-            return new FontFamily("Segoe UI");
-
-        if (fontName.Equals("HarmonyOS Sans Condensed", StringComparison.OrdinalIgnoreCase))
-        {
-            return new FontFamily("avares://Clock/Assets/Fonts#HarmonyOS Sans Condensed, HarmonyOS Sans Condensed, Segoe UI");
-        }
-
-        return new FontFamily(fontName);
-    }
-
     /// <summary>Last-resort overlay colour, used only when neither the accent nor a custom hex resolves.</summary>
     private static readonly Color DefaultOverlayColor = Color.FromRgb(0, 120, 215);
 
-    /// <summary>The overlay wash colour, already carrying the model's opacity.</summary>
+    /// <summary>
+    /// The overlay wash colour, already carrying the model's opacity. A static member on purpose:
+    /// <c>tests/ClockThemeChecks</c> drives it by reflection to pin the accent-following contract.
+    /// </summary>
     private static Color ResolveOverlayColor(FramelessClockModel model, Theme? theme)
     {
         var baseColor = model.FollowAccentColor
