@@ -1,4 +1,4 @@
-# Memory / cache-bloat audit — uWidgets widget assemblies
+# Memory / cache-bloat audit — DeskCanvas widget assemblies
 
 Scope audited (as assigned): `src/Widgets/Picture`, `Music`, `Monitor`, `Tools`, `Weather`, `Notes`,
 `Calendar`, `Progress`, `Fixed`, `Search`. All claims below were read from source; file:line cited.
@@ -11,18 +11,18 @@ current ~700 MB. **Folders and Clock were outside my assigned scope** and are on
 unverified leads at the end — they are in the live set and deserve their own pass.
 
 Host behaviour that multiplies every leak below:
-* `src/uWidgets/Views/Widget.axaml.cs:787-790` — on any settings change the host calls
+* `src/DeskCanvas/Views/Widget.axaml.cs:787-790` — on any settings change the host calls
   `Refresh()` only for `IWidgetSelfRefreshing` views; **all other views are re-created**
   (`ContentPresenter.Content = userControl()`). Weather (Forecast/AirQuality/Pressure/Temperature/
   SunriseSunset), Monitor (SingleMetric, MultiDashboard) and Calendar (Month, Date) are **not**
   `IWidgetSelfRefreshing` (grep of `: UserControl, IWidgetSelfRefreshing` → only Folders/Music/Notes/
   Fixed/Picture/Reminders/Clock/Progress/Search/Tools views). So **one widget instance is leaked per
   settings save** for every "never disposed" item below.
-* `src/uWidgets/Views/Pages/Gallery.axaml.cs:60-70` builds one **real** widget control per
+* `src/DeskCanvas/Views/Pages/Gallery.axaml.cs:60-70` builds one **real** widget control per
   `WidgetInfo` attribute (`widgetFactory.CreateControl(...)`), and `Gallery.axaml:45` puts it in a
   `ContentPresenter`. Visiting the Gallery page instantiates Music, Weather, Monitor/SingleMetric,
   Calendar/Month … → the same leaks, once per visit.
-* `src/uWidgets/Services/UpdateTimer.cs:12,28-46` — the static timer subscribers are a plain
+* `src/DeskCanvas/Services/UpdateTimer.cs:12,28-46` — the static timer subscribers are a plain
   `List<Action>` (strong refs). Unsubscribing is the *only* way to release; forgetting it leaks the
   subscriber **and** keeps its work running forever (`TimerService.cs:9-24`).
 
@@ -362,6 +362,6 @@ Monitor/Progress/Calendar per-tick objects (all small, gen0).
   every cache entry is disposed.
 * `src/Widgets/Clock/Views/FramelessDigital.axaml.cs:480-571` (live: Clock/FramelessDigital) — a bitmap
   cache with several explicit `Dispose` paths and a `preRenderCts`; needs its own eviction/dispose audit.
-* `src/uWidgets/Services/UpdateTimer.cs:24` — 7 static `UpdateTimer`s each subscribe
+* `src/DeskCanvas/Services/UpdateTimer.cs:24` — 7 static `UpdateTimer`s each subscribe
   `SystemEvents.SessionSwitch` and are never disposed (process-scope; fine in practice).
 * Localisation `Locale.Designer.cs` `ResourceManager` statics (`src/Widgets/*/Locales`) — bounded.

@@ -1,11 +1,11 @@
 using System.Diagnostics;
 using System.Text.Json;
 using SkiaSharp;
-using uWidgets.Core.Models.Settings;
-using uWidgets.Services;
+using DeskCanvas.Core.Models.Settings;
+using DeskCanvas.Services;
 using probe;
 
-// uWidgets' shipping CPU liquid-glass renderer, measured and rendered against the
+// DeskCanvas' shipping CPU liquid-glass renderer, measured and rendered against the
 // shared synthetic backdrop. The Android AGSL port is exercised in the Avalonia
 // probe, because SkiaSharp 2.88.8 can only rasterize SkSL on a GPU context.
 var mode = args.ElementAtOrDefault(0) ?? "uw";
@@ -83,7 +83,7 @@ static double TimeMs(Action action, int iterations)
 }
 
 Console.WriteLine();
-Console.WriteLine("uWidgets LiquidGlassRenderer (CPU, incl. PNG encode), best of N:");
+Console.WriteLine("DeskCanvas LiquidGlassRenderer (CPU, incl. PNG encode), best of N:");
 var small = TimeMs(() => RenderUWidgets(Card, Card, Backdrop.CardX, Backdrop.CardY, Radius).Dispose(), 5);
 Console.WriteLine($"  {Card}x{Card} ({Card * Card / 1000.0:F0}k px): {small:F1} ms");
 var big = TimeMs(() => RenderUWidgets(1200, 800, 0, 0, Radius).Dispose(), 3);

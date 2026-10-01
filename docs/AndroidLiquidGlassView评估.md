@@ -1,12 +1,12 @@
-# AndroidLiquidGlassView 研究评估（对 uWidgets 是否有帮助）
+# AndroidLiquidGlassView 研究评估（对 DeskCanvas 是否有帮助）
 
 - **对象**：<https://github.com/QmDeve/AndroidLiquidGlassView>（MIT，(c) 2025-2026 QmDeve，v1.0.5）
-- **评估基准**：uWidgets 1.7.x 的「液态玻璃」材质（`LiquidGlassRenderer` + `LiquidGlassSurface` + `LiquidGlassWallpaper`，见 `项目解构报告.md` §18）
-- **结论一句话**：**它的"光学模型"不值得照搬，但它的"执行模型"很值得抄**——整条光学链路就是一个片元着色器 + GPU runtime effect。本次已把它的 AGSL 逐行移植成 Skia SkSL，并在 **Avalonia 11.1.3 + SkiaSharp 2.88.8 的 GPU 通道**上跑通：420×420 单卡 **0.25 ms**，同尺寸 uWidgets 现有 CPU 渲染器 **46.3 ms**（约 **185×**）。同时发现一个必须避开的坑：**SkiaSharp 2.88.8 在 CPU/软件渲染下光栅化 SkSL 会直接崩进程**。
+- **评估基准**：DeskCanvas 1.7.x 的「液态玻璃」材质（`LiquidGlassRenderer` + `LiquidGlassSurface` + `LiquidGlassWallpaper`，见 `项目解构报告.md` §18）
+- **结论一句话**：**它的"光学模型"不值得照搬，但它的"执行模型"很值得抄**——整条光学链路就是一个片元着色器 + GPU runtime effect。本次已把它的 AGSL 逐行移植成 Skia SkSL，并在 **Avalonia 11.1.3 + SkiaSharp 2.88.8 的 GPU 通道**上跑通：420×420 单卡 **0.25 ms**，同尺寸 DeskCanvas 现有 CPU 渲染器 **46.3 ms**（约 **185×**）。同时发现一个必须避开的坑：**SkiaSharp 2.88.8 在 CPU/软件渲染下光栅化 SkSL 会直接崩进程**。
 - **另外一条结论（专项调研）**：Windows 上**没有**受支持的"实时桌面 backdrop 进自定义着色器"路径（组合器的自定义 HLSL 被 `[NoComposition]` 禁用；WGC/DXGI/放大镜各有硬伤，详见 §6）。所以"液态玻璃跟手动态壁纸"仍是不确定项，而"GPU 光学 + 现有抓图源"是确定能拿到收益的一步。
 - **证据目录**：`docs/glass-study/`（对比图、移植后的 SkSL 全文、本次所有探针源码）
 - **落地结果（已实现）**：本报告的 §5-A/B 已按"取长补短"落成第五个外观主题 **柔光玻璃（`SurfaceStyle.SoftGlow`）**——
-  保留 uWidgets 自己的 `BevelField` 法线场与光照模型（即本报告判定"不要照搬"的那部分），只吸收 Android 库真正强的地方：
+  保留 DeskCanvas 自己的 `BevelField` 法线场与光照模型（即本报告判定"不要照搬"的那部分），只吸收 Android 库真正强的地方：
   **弥散柔光（无硬边亮线）+ 七抽光谱色散**。见 `项目解构报告.md` §33、`docs/soft-glow/`。
   GPU runtime effect（§5-A 的第一条，实测 0.25 ms/卡）仍**未**实施，是下一步的独立工作项。
 
@@ -21,11 +21,11 @@
 | `core/src/main/res/raw/liquidglass_effect.agsl` | **核心**：186 行 AGSL 片元着色器（光学模型全在这里） |
 | `core/.../Config.java` | 参数容器（corners/refraction/blur/dispersion/tint/contrast/whitePoint/chroma/depth） |
 
-关键点（与 uWidgets 的可比性）：
+关键点（与 DeskCanvas 的可比性）：
 
 1. **它折射的不是"系统桌面"，而是同一个窗口里位于玻璃下方的那个 View**。
    `record()` 里 `target.draw(rec)` 把内容源 View 录进 RenderNode，`host`/`target` 的窗口坐标差做平移。
-   所以它和 uWidgets 的"把壁纸快照当折射源"是**同一类问题**（折射一张位图），只是它的位图**由系统每帧重新录制**，天然逐帧实时。
+   所以它和 DeskCanvas 的"把壁纸快照当折射源"是**同一类问题**（折射一张位图），只是它的位图**由系统每帧重新录制**，天然逐帧实时。
 2. **光学模型只有三件事**：SDF 圆角矩形 → 球冠形位移剖面 `circleMap` → 7 次采样做光谱色散；外加线性 sRGB 里的饱和度/对比度/白点/tint。
    **它没有任何高光/描边/镜面/边缘染色**——iOS 那种"亮边"在这个库里是**没有**的。
 3. 参数面很窄：`refractionHeight`（12–50dp）、`refractionOffset`（20–120dp，取负）、`dispersion`（0–1）、`blurRadius`、`tint`、`contrast`、`whitePoint`、`chromaMultiplier`、`depthEffect=0.3`。
@@ -46,13 +46,13 @@ if (-sd >= refractionHeight)  → 中心平坦区：直通采样 + saturate + �
 
 ---
 
-## 2. 与 uWidgets 现状逐项对比
+## 2. 与 DeskCanvas 现状逐项对比
 
-| 维度 | AndroidLiquidGlassView | uWidgets 现状（1.7.x） | 谁更强 |
+| 维度 | AndroidLiquidGlassView | DeskCanvas 现状（1.7.x） | 谁更强 |
 |------|------------------------|------------------------|--------|
-| 折射剖面 | `circleMap` 球冠，外缘 0、峰值靠内 | `sin(πt)·(1−t)^1.4` 弯月剖面，带峰值位置/放大率/二阶差分断言 | uWidgets（有量化回归） |
-| 法线场 | SDF 梯度 ⨁ 径向深度梯度（`depthEffect` 混合） | `BevelField`：圆角纯径向、直边纯正交、切点 C¹、**无中轴折痕** | **uWidgets 明显更强**（见 §4 图注） |
-| 高光 | **无** | 定向发丝边（1.6 DIP）+ 双叶镜面（exp 28/8）+ Fresnel 掠射 + Screen 混合 + 天光垂向渐变 | **uWidgets 明显更强** |
+| 折射剖面 | `circleMap` 球冠，外缘 0、峰值靠内 | `sin(πt)·(1−t)^1.4` 弯月剖面，带峰值位置/放大率/二阶差分断言 | DeskCanvas（有量化回归） |
+| 法线场 | SDF 梯度 ⨁ 径向深度梯度（`depthEffect` 混合） | `BevelField`：圆角纯径向、直边纯正交、切点 C¹、**无中轴折痕** | **DeskCanvas 明显更强**（见 §4 图注） |
+| 高光 | **无** | 定向发丝边（1.6 DIP）+ 双叶镜面（exp 28/8）+ Fresnel 掠射 + Screen 混合 + 天光垂向渐变 | **DeskCanvas 明显更强** |
 | 色散 | **7 次采样的光谱色散**（红→紫，按象限变号） | RGB 三通道沿法线 ±n 位移（3 次采样） | **Android 更物理**（廉价且更好看） |
 | 饱和度/色调 | 线性 sRGB 内做 saturate + chroma + contrast + whitePoint + tint | 屏幕空间饱和度 1.20 + 自适应霜化 + 涂层不透明度 | 各有取舍 |
 | 采样源 | **同窗口 View，RenderNode 逐帧录制** → 真·实时 | Progman 抓图快照（2s TTL）+ 壁纸文件回退，静态 | **Android 的执行方式更强** |
@@ -65,7 +65,7 @@ if (-sd >= refractionHeight)  → 中心平坦区：直通采样 + saturate + �
 
 探针工程（源码已存入 `docs/glass-study/probe/`）：
 
-- `Program.uwidgets-reference.cs` + `Shader.cs` + `Backdrop.cs`：控制台探针，用同一张合成"壁纸"跑 uWidgets 现有 CPU 渲染器并计时；
+- `Program.deskcanvas-reference.cs` + `Shader.cs` + `Backdrop.cs`：控制台探针，用同一张合成"壁纸"跑 DeskCanvas 现有 CPU 渲染器并计时；
 - `Program.avalonia-gpu-probe.cs`：Avalonia Win32 窗口探针，经 `ISkiaSharpApiLeaseFeature` 拿到 Skia 画布，用 `SKRuntimeEffect` 画移植后的 Android 着色器，并计时/导出 PNG。
 
 ### 3.1 移植工作量：4 处纯语法差异
@@ -93,8 +93,8 @@ if (-sd >= refractionHeight)  → 中心平坦区：直通采样 + saturate + �
 
 | 渲染路径 | 尺寸 | 耗时 |
 |----------|------|------|
-| uWidgets `LiquidGlassRenderer`（CPU，含 PNG 编码） | 420×420（176k px） | **46.3 ms** |
-| uWidgets `LiquidGlassRenderer`（CPU，含 PNG 编码） | 1200×800（960k px） | **184.5 ms** |
+| DeskCanvas `LiquidGlassRenderer`（CPU，含 PNG 编码） | 420×420（176k px） | **46.3 ms** |
+| DeskCanvas `LiquidGlassRenderer`（CPU，含 PNG 编码） | 1200×800（960k px） | **184.5 ms** |
 | Android AGSL→SkSL（GPU），仅绘制 | 420×420 | **0.25 ms** |
 | Android AGSL→SkSL（GPU），绘制 + PNG 编码 + 解码 | 420×420 | 14.56 ms |
 | Android AGSL→SkSL（GPU），调参版（blur 9 + tint） | 420×420 | **0.37 ms** |
@@ -111,11 +111,11 @@ if (-sd >= refractionHeight)  → 中心平坦区：直通采样 + saturate + �
 `docs/glass-study/01-compare.png`（同一张合成壁纸、同一 420×420 区域、同一圆角 32）：
 
 1. 左 1：原图（20 px 网格便于看弯曲）；
-2. 左 2：**uWidgets 现版**——网格近乎笔直，边缘极克制，有涂层与亮边；
+2. 左 2：**DeskCanvas 现版**——网格近乎笔直，边缘极克制，有涂层与亮边；
 3. 左 3：**Android 默认**——网格在边缘明显弯折，**圆角处出现"蝴蝶结/螺旋"折痕**（左上、左下最明显），且没有亮边，观感更平；
 4. 左 4：Android 调参版（blur 9 + tint）——变成偏磨砂的糊状，边缘弯折被模糊吃掉。
 
-原因很明确：它把 **SDF 梯度**与**径向梯度**按 `depthEffect` 混合当法线（`grad = normalize(shapeGrad + 0.3*normalize(centered))`），在圆角扇区两者方向不一致 → 折痕。uWidgets §18.3 正是为了解决这个"X 型/蝴蝶结折痕"才写了 `BevelField`。**用它的模型替换现有模型 = 画质倒退。**
+原因很明确：它把 **SDF 梯度**与**径向梯度**按 `depthEffect` 混合当法线（`grad = normalize(shapeGrad + 0.3*normalize(centered))`），在圆角扇区两者方向不一致 → 折痕。DeskCanvas §18.3 正是为了解决这个"X 型/蝴蝶结折痕"才写了 `BevelField`。**用它的模型替换现有模型 = 画质倒退。**
 
 ---
 
@@ -123,19 +123,19 @@ if (-sd >= refractionHeight)  → 中心平坦区：直通采样 + saturate + �
 
 ### ✅ 值得拿（按性价比排序）
 
-**A.（最高价值）把 uWidgets 自己的光学模型改写成 SkSL，跑在 GPU 上**
-- 画质用 uWidgets 的（弯月剖面 + BevelField + 定向亮边 + 双叶镜面），执行方式用 Android 库的（GPU runtime effect）；
+**A.（最高价值）把 DeskCanvas 自己的光学模型改写成 SkSL，跑在 GPU 上**
+- 画质用 DeskCanvas 的（弯月剖面 + BevelField + 定向亮边 + 双叶镜面），执行方式用 Android 库的（GPU runtime effect）；
 - 接入点：`LiquidGlassSurface.Render()` 里，`Material?.IsLiquidGlass == true` 且**有 GPU 上下文**时，改为 `context.Custom(new GlassDrawOp(...))`，在 `ICustomDrawOperation.Render` 里 `context.TryGetFeature<ISkiaSharpApiLeaseFeature>()` 取画布直接画；`LiquidGlassRenderer` 保留为软件渲染回退与测试 oracle；
 - 收益：0.25 ms/卡 → 拖拽/缩放/换参**逐帧跟随**（现在要等 90 ms 防抖 + 2 s 抓图 TTL）；不再有 PNG 编码往返；超大组件不必降采样；
-- 成本：约 1 个 SkSL 文件（150–250 行，uWidgets 现有公式是现成的）+ 一个 draw op + 一处守卫，**0.5–1 天**。
+- 成本：约 1 个 SkSL 文件（150–250 行，DeskCanvas 现有公式是现成的）+ 一个 draw op + 一处守卫，**0.5–1 天**。
 - 注意：`SKImage`/`SKShader` 的创建要在渲染线程做（`SKRuntimeEffect` 只编译一次并缓存）；材质参数变化只需更新 uniforms 对象。
 
 **B. 借它的 7 次采样光谱色散**
-- 现在 uWidgets 只做 RGB 三通道分离；改成"沿法线 7 抽样 + 光谱权重"，是**低成本、高收益**的观感升级（尤其高 `Dispersion` 档）；
+- 现在 DeskCanvas 只做 RGB 三通道分离；改成"沿法线 7 抽样 + 光谱权重"，是**低成本、高收益**的观感升级（尤其高 `Dispersion` 档）；
 - 代价：`tests/LiquidGlassChecks` 里"色散 0% 时 |R−B| 恒为 0 / 100% 时边缘 13.2 级"的断言需要同步更新。
 
 **C. 借它的"采样源抽象"**
-- 它把"折射源"做成 shader 的 `content` 输入，与光学模型解耦；uWidgets 现在是 `LiquidGlassWallpaper` 硬绑 Progman 抓图。把采样源抽成"一张 `SKImage`/着色器"后，未来换任何实时源（见 §6）都只动一处。
+- 它把"折射源"做成 shader 的 `content` 输入，与光学模型解耦；DeskCanvas 现在是 `LiquidGlassWallpaper` 硬绑 Progman 抓图。把采样源抽成"一张 `SKImage`/着色器"后，未来换任何实时源（见 §6）都只动一处。
 
 **D.（低优先级）交互手感**
 - `LiquidTracker`（弹性/果冻拖拽）+ 触摸处径向光晕（`RadialGradient` 40% 白）+ 按下 1.02× 缩放。桌面组件上可做成"悬停光晕跟随指针 / 拖拽时的轻微果冻"，与玻璃材质气质契合。属于锦上添花。
@@ -163,7 +163,7 @@ Android 库之所以"实时"，靠的是 `RenderNode` + `RenderEffect`——**�
 | `DwmRegisterThumbnail` | ✅ | — | ❌ 无回读 API | ❌ 不能当纹理源 |
 | WinAppSDK `DesktopAcrylicController` / `SystemBackdrop` | ✅ | — | ✅ | ❌ 只有系统材质，叠不了自定义效果 |
 
-补充事实（都与 uWidgets 直接相关）：
+补充事实（都与 DeskCanvas 直接相关）：
 
 1. **Avalonia 内部的 backdrop brush 拿不到**：`WinUiCompositionUtils` / `WinUiCompositedWindow` 全是 `internal`，唯一公开旋钮只有 `Win32PlatformOptions.WinUICompositionBackdropCornerRadius`；想插自己的 visual 只能反射进 MicroCom 私有字段（高危）。**注意**：Avalonia 在 Win11 22000+ 用的是 `ICompositor3::CreateHostBackdropBrush()`，而微软明确写了该 brush **"应用无法回读像素"**。
 2. **圆角裁剪可以比 `SetWindowRgn` 更好**：WinUIComposition 模式下 Avalonia 已用 `ICompositor5.CreateRoundedRectangleGeometry` + `ICompositor6.CreateGeometricClipWithGeometry` 给 backdrop visual 打几何裁剪（抗锯齿），优于 `SetWindowRgn`（锯齿 + 每次改区域触发重排）。这与 `项目解构报告.md` §8.1-3 的"后续建议"是同一条线索，值得单独排期。
@@ -200,10 +200,10 @@ Android 库之所以"实时"，靠的是 `RenderNode` + `RenderEffect`——**�
 ## 8. 落地建议（最小改动版）
 
 ```
-src/uWidgets/Services/LiquidGlassShader.sksl           ← 新：uWidgets 光学模型的 SkSL 版（B 方案的 7 抽色散可并入）
-src/uWidgets/Services/LiquidGlassEffect.cs             ← 新：SKRuntimeEffect 编译缓存 + uniforms 组装（单例、线程安全）
-src/uWidgets/Views/Controls/LiquidGlassSurface.cs      ← 改：GPU 时 context.Custom(new GlassDrawOp(...))；无 GPU 时保持现状
-src/uWidgets/Views/Controls/GlassDrawOp.cs             ← 新：ICustomDrawOperation + ISkiaSharpApiLeaseFeature + GrContext 守卫
+src/DeskCanvas/Services/LiquidGlassShader.sksl           ← 新：DeskCanvas 光学模型的 SkSL 版（B 方案的 7 抽色散可并入）
+src/DeskCanvas/Services/LiquidGlassEffect.cs             ← 新：SKRuntimeEffect 编译缓存 + uniforms 组装（单例、线程安全）
+src/DeskCanvas/Views/Controls/LiquidGlassSurface.cs      ← 改：GPU 时 context.Custom(new GlassDrawOp(...))；无 GPU 时保持现状
+src/DeskCanvas/Views/Controls/GlassDrawOp.cs             ← 新：ICustomDrawOperation + ISkiaSharpApiLeaseFeature + GrContext 守卫
 tests/LiquidGlassChecks/                               ← 改：CPU 渲染器降级为 oracle；新增 GPU 冒烟（开窗 1 帧 + 导 PNG + 与 oracle 比对容差）
 项目解构报告.md §18.4                                  ← 改：渲染管线与性能一节更新为 GPU 主路径
 ```
@@ -216,8 +216,8 @@ tests/LiquidGlassChecks/                               ← 改：CPU 渲染器�
 
 - `docs/glass-study/liquidglass_effect.sksl` —— Android 库着色器的 **SkSL 移植全文**（含方言差异注释，可直接喂给 `SKRuntimeEffect`）
 - `docs/glass-study/probe/` —— 本次全部探针源码
-  - `Program.uwidgets-reference.cs`：uWidgets CPU 渲染器计时/出图
+  - `Program.deskcanvas-reference.cs`：DeskCanvas CPU 渲染器计时/出图
   - `Program.avalonia-gpu-probe.cs`：Avalonia GPU runtime effect 探针（计时 + 出图 + 软件渲染崩溃复现）
   - `Shader.cs`、`Backdrop.cs`、`Diag.cs`：着色器、合成壁纸、最小化崩溃定位
-- 图片：`01-compare.png`（四方对比）、`02-android-shader-default.png`、`03-android-shader-tuned.png`、`04-uwidgets-current.png`、`05-backdrop-source.png`
+- 图片：`01-compare.png`（四方对比）、`02-android-shader-default.png`、`03-android-shader-tuned.png`、`04-deskcanvas-current.png`、`05-backdrop-source.png`
 - 上游参考：[QmDeve/AndroidLiquidGlassView](https://github.com/QmDeve/AndroidLiquidGlassView)；文档站 <https://liquidglass.qmdeve.com/>

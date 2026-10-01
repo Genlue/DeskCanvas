@@ -1,17 +1,17 @@
-## uWidgetsPlus (uWidgets+)
+# DeskCanvas
 
 <img src=".github/images/icon-light.png#gh-light-mode-only" width="120" alt="Logo" align="right">
 <img src=".github/images/icon-dark.png#gh-dark-mode-only" width="120" alt="Logo" align="right">
 
 <div align="center">
-  <h3>🎨 Windows 下一代 macOS 风格多功能桌面小组件增强套件</h3>
+  <h3>🎨 Windows 下一代 macOS 风格多功能桌面小组件套件</h3>
   <p>基于 Avalonia 11 + .NET 8 打造 · 硬件级实时毛玻璃 · 3D 光学液态玻璃 · 手机锁屏艺术大字时钟 · 灵活桌面网格系统</p>
 </div>
 
 <h3 align="center">
-  <b><a href="https://github.com/Genlue/uWidgetsPlus/releases">下载最新版本</a></b> ・
-  <a href="https://github.com/Genlue/uWidgetsPlus/issues">问题反馈</a> ・
-  <a href="项目解构报告.md">项目解构报告</a>
+  <b><a href="https://github.com/Genlue/DeskCanvas/releases">下载最新版本</a></b> ・
+  <a href="https://github.com/Genlue/DeskCanvas/issues">问题反馈</a> ・
+  <a href="docs/项目解构报告.md">项目解构报告</a>
 </h3>
 
 <div align="center">
@@ -30,84 +30,78 @@
 
 ---
 
-## 🌟 核心特色与重大升级
+## 🌟 核心特色
 
 ### 1. 🕒 无边框艺术大字时钟（Frameless Clock）
 - **满格顶天立地**：数字直接占据整个小组件单元格，上下严格贴紧边缘（消除字体自带空隙），支持横向自由拉伸（`StretchFill`）与等比居中；
-- **精选手机锁屏艺术大字集**：
-  - 🔥 **华为锁屏超窄体**（`HarmonyOS Sans Condensed`）：免安装内置打包，专为大字纵向拉伸设计，视觉极其震撼；
-  - 🔥 **iOS 16 经典厚重块体**（`Impact`）：美式重型力量感大字；
-  - 🔥 **德国工业精工 DIN**（`Bahnschrift`）：严谨规整现代几何窄体；
-  - 🔥 **超粗硬核无衬线**（`Arial Black`）：超宽实心黑体，视觉存在感极强；
-  - 🔥 **iOS 高定复古衬线**（`Georgia`）：粗细笔触优雅对比；
-  - 🔥 **包豪斯极简几何**（`Century Gothic`）：纯粹圆融现代线条；
-  - 🔥 **赛博极客终端等宽**（`Cascadia Code`）、**自由随性手写**（`Ink Free`）、**古典罗马体**（`Palatino`）等；
-- **全阶梯字重调节**：从 `100 Thin` 纤细至 `900 Black` 浓黑随心切换；
-- **独立视觉主题覆盖**：可在该小组件设置中单独指定主题（跟随全局 / 毛玻璃 / 液态玻璃 / 纯色）；
-- **自定义遮罩与官方选色器**：支持叠加半透明微光遮罩，配备 Avalonia 官方 `ColorPicker` 选色模块与十六进制文本框双向联动。
+- **精选手机锁屏艺术大字集**：华为锁屏超窄体（`HarmonyOS Sans Condensed`，内置打包）、iOS 经典厚重块体（`Impact`）、德国工业精工 DIN（`Bahnschrift`）、超粗硬核（`Arial Black`）、复古衬线（`Georgia`）、包豪斯几何（`Century Gothic`）、`Cascadia Code`、`Ink Free`、`Palatino` 等全部系统字体；
+- **全阶梯字重调节**（`100 Thin` – `900 Black`）、小组件级独立主题覆盖、官方 `ColorPicker` 遮罩选色与十六进制双向联动。
 
-### 2. 💎 三大深度适配视觉材质
-- 🪟 **毛玻璃（Acrylic Blur）· OS 硬件实时模糊**：
-  - 基于 Win32 原生多边形扫描线 `ExtCreateRegion`（`RGNDATA`），将数字字形与卡片实时绑定为物理 HWND Region；
-  - Windows DWM 硬件级逐帧对桌面采样合成，对**动态壁纸（Wallpaper Engine 等）、视频壁纸及后台窗口移动实现 60fps/144fps 零延迟实时跟手**；
-  - 支持可选高光渐变外描边（颜色与粗细自定义）。
-- 💧 **液态玻璃（Liquid Glass）· 3D 光学物理折射**：
-  - 2D 欧几里得距离场（EDT）精密计算字符轮廓法线，模拟真实的凹凸透镜折射位移（Lens Refraction）、色散光斑（Dispersion）、3D 镜面高光与微细倒角；
-  - **精细化边缘控制**：将折射带宽收窄至 `1.5dp ~ 4.5dp`，数字主体保持水晶般通透平整，杜绝字符过度扭曲；
-  - **后台异步预缓存引擎（Background Pre-Caching）**：当前分钟 $T$ 渲染的同时，后台线程静默预渲染下一分钟 $T+1\text{m}$ 帧；**整点切换时 0ms 瞬间命中缓存**，彻底告别渲染卡顿；
-  - **严密全自动内存清理（Zero-Leak Auto-Cleanup）**：时间推进自动 Dispose 释放旧帧；窗口移动、缩放、字体/主题更改或组件卸载时立即取消任务并销毁缓存位图，杜绝内存泄漏。
-- 🎨 **纯色（Solid Fill）· 纯粹矢量抗锯齿填充**：
-  - 纯净抗锯齿矢量填充，支持透明度滑块与色彩定制，零模糊、极度省电。
+### 2. 💎 四大深度适配视觉材质
+- 🪟 **毛玻璃（Acrylic）· OS 硬件实时模糊**：Win32 原生 `ExtCreateRegion`（`RGNDATA`）把数字字形扫描线直接绑成 HWND Region；DWM 硬件级逐帧采样桌面，对动态壁纸（Wallpaper Engine）、视频壁纸实现 60/144fps 零延迟实时跟手；
+- 💧 **液态玻璃（Liquid Glass）· 3D 光学物理折射**：欧几里得距离场（EDT）精密计算字符轮廓法线，真实凹凸透镜折射、色散光斑与镜面高光，GPU（Skia 运行时着色器）加速 + CPU 回退双路径；
+- 💎 **液态玻璃 2.0**：对 [Kyant0/AndroidLiquidGlass](https://github.com/Kyant0/AndroidLiquidGlass) 2.0 光学模型的忠实 GPU 移植——圆角矩形折射透镜 + 深度效果 + 斜向色散 + 发丝级描边高光；
+- 🎨 **纯色（Solid）**：纯粹矢量抗锯齿填充，透明度滑块与强调色定制，零模糊、极度省电。
 
-### 3. 📐 灵活专业桌面网格系统（Grid Management）
-- **三大放置模式**：
-  - **自定义网格（Manual Grid）**：将桌面划分为 $m \times n$ 个正方形格子，按百分比响应式存储，自适应多分辨率与缩放；
-  - **虚拟网格（Virtual Grid）**；
-  - **自由拖拽模式（Free Placement）**；
-- 组件自适应格子吸附对齐，支持自定义组件间距与圆角大小。
+### 3. 🪟 二级面板 · Material 3 动效
+天气、清单、大文件夹、剪贴板、笔记共用统一的二级面板：从触发组件**锚点缩放展开**（圆角全程跟随组件），玻璃与一级组件完全同源；开合过渡严格遵循 [Material Design 3 motion tokens](https://m3.material.io/styles/motion/easing-and-duration/tokens-specs)（进场 `emphasized decelerate`、退场 `emphasized accelerate`）。
 
-### 4. 🧩 丰富完备的小组件家族
-- ⏰ **时钟（Clock）**：指针表盘（3 种风格）、数字时钟、世界时钟（支持多表盘独立自定义城市名称与中心数字时钟联动）、无边框艺术时钟；
-- 📁 **文件夹与文件（Folders）**：桌面文件夹快捷入口、实时内容更新监视、单文件启动快捷入口；
-- 🌤️ **天气（Weather）**：横向平滑滚轮浏览、7 天详细预报、日出日落、紫外线、空气质量（支持自定义代理）；
-- 📊 **系统监视（Monitor）**：单指标轻量仪表、多指标全能看板（CPU / 内存 / 磁盘 / 网络 / 电池）；
-- 📝 **便签备忘（Notes）**：桌面随时快捷记录；
-- ✅ **待办提醒（Reminders）**：交互式清单与任务计数统计；
-- 🎵 **音乐控制（Music）** 与 🔍 **搜索工具（Search）**。
+### 4. 📐 灵活桌面网格系统
+手动网格（m×n 方格按百分比存储，跨分辨率/跨 DPI 自适应）、虚拟网格与自由放置三种模式；组件吸附单元格，边距与圆角自定义，永久钉在桌面置底层。
 
-### 5. 🚀 单文件开箱即用（Single-File Executable）
-- 编译生成单个 `uWidgets.exe`（~58 MB），内置小组件包内容哈希检测与运行时极速解压，无需复杂安装，即开即用。
+### 5. 🧩 丰富的小组件生态（17 款内置）
+⏰ 时钟（模拟×3 / 数字 / 世界时钟 / 无边框）· 📅 日历 · 🌤️ 天气（7 日预报、日出日落、紫外线、空气质量、代理）· 📊 系统监控 · 📝 笔记（Markdown 排版、二级面板）· ✅ 清单（交互式待办 + 二级面板）· 📁 文件夹（桌面快速启动器 + 实时文件监听）· 🎵 音乐控制 · 🔍 搜索 · 📈 进度 · 🖼️ 相册 · 🔋 电池 · 🗺️ 地图 · 🍅 番茄钟 · 📚 堆叠 · 🧰 工具 · 📌 固定（多组件聚合卡）
+
+### 6. 🚀 单文件分发
+构建产出自带组件包（内容哈希校验、首次启动解包）的单文件 `DeskCanvas.exe`；组件解包到 `%LocalAppData%\DeskCanvas`，可直接替换 DLL 热更新。每个版本同步提供 WiX v5 打包的 MSI 安装器。
 
 ---
 
-## 🛠️ 从源码构建（Building from Source）
+## 🛠️ 从源码构建
 
-### 前置条件
-- Windows 10 / 11 (x64)
-- [.NET 8.0 SDK](https://dotnet.microsoft.com/download/dotnet/8.0) 或更高版本
-- PowerShell 7 (pwsh) 或 Windows PowerShell
+### 环境要求
+- Windows 10 / 11（x64）
+- [.NET 8.0 SDK](https://dotnet.microsoft.com/download/dotnet/8.0) 或更高
+- PowerShell（pwsh 或 Windows PowerShell）；构建 MSI 需 WiX v5
 
 ### 构建命令
 ```powershell
 # 克隆仓库
-git clone https://github.com/Genlue/uWidgetsPlus.git
-cd uWidgetsPlus
+git clone https://github.com/Genlue/DeskCanvas.git
+cd DeskCanvas
 
-# 一键编译并生成单文件 EXE
+# 编译打包单文件 EXE
 powershell -ExecutionPolicy Bypass -File .\build.ps1
 
-# 一键编译并生成 Windows 标准 MSI 安装包
+# 额外产出经典便携版 zip（exe + Widgets + 配置）
+powershell -ExecutionPolicy Bypass -File .\build.ps1 -Portable
+
+# 编译打包 Windows MSI 安装器
 powershell -ExecutionPolicy Bypass -File .\build.ps1 -Msi
 
-# 产物输出路径
-# dist/win-x64/uWidgets.exe
-# dist/installer/uWidgetsPlus-1.7.5-win-x64.msi
+# 产物位置：
+# dist/win-x64/DeskCanvas.exe
+# dist/DeskCanvas-win-x64-portable.zip
+# dist/installer/DeskCanvas-2.7.0-win-x64.msi
 ```
 
 ---
 
-## 📄 开源许可与致谢
+## 📄 许可证与开源致谢
 
-- 衍生并增强自开源项目 [creewick/uWidgets](https://github.com/creewick/uWidgets)
-- 基于 [MIT License](LICENSE) 开源发布
-- 感谢 [Avalonia UI](https://avaloniaui.net/) 与 [SkiaSharp](https://github.com/mono/SkiaSharp) 社区提供强大的跨平台图形渲染能力。
+### 许可证
+DeskCanvas 采用 [知识共享 署名-非商业性使用-相同方式共享 4.0 国际许可协议（CC BY-NC-SA 4.0）](LICENSE.txt) 授权，与上游项目一致。
+
+### 开源致谢
+本项目站在以下开源项目的肩膀上：
+
+| 项目 | 许可证 | 贡献 |
+|---|---|---|
+| [creewick/uWidgets](https://github.com/creewick/uWidgets) | CC BY-NC-SA 4.0 | 上游项目——DeskCanvas 由它 fork 而来 |
+| [Kyant0/AndroidLiquidGlass](https://github.com/Kyant0/AndroidLiquidGlass) | Apache-2.0 | 「液态玻璃 2.0」材质是对其光学模型（圆角矩形折射透镜、深度效果、色散、描边高光）的忠实移植 |
+| [QmDeve/AndroidLiquidGlassView](https://github.com/QmDeve/AndroidLiquidGlassView) | MIT | 为 Avalonia 评估液态玻璃渲染时的参考实现 |
+| [Material Design 3](https://m3.material.io/styles/motion/easing-and-duration/tokens-specs) | CC BY 4.0（规范） | 二级面板开合动画的缓动令牌（`emphasized decelerate/accelerate`） |
+| [Avalonia UI](https://github.com/AvaloniaUI/Avalonia) | MIT | 跨平台 .NET UI 框架 |
+| [SkiaSharp](https://github.com/mono/SkiaSharp) | MIT | 2D 图形库与 GPU 玻璃合成器使用的运行时着色器 |
+
+> 说明：本项目曾以 **uWidgetsPlus**（uWidgets 的 fork）名义发布，自 v2.7.0 起更名为 **DeskCanvas**。旧数据目录 `%LocalAppData%\uWidgets` 会在首次启动时自动迁移到 `%LocalAppData%\DeskCanvas`。

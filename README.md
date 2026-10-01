@@ -1,17 +1,17 @@
-## uWidgetsPlus (uWidgets+)
+# DeskCanvas
 
 <img src=".github/images/icon-light.png#gh-light-mode-only" width="120" alt="Logo" align="right">
 <img src=".github/images/icon-dark.png#gh-dark-mode-only" width="120" alt="Logo" align="right">
 
 <div align="center">
-  <h3>🎨 Next-Generation macOS-Style Desktop Widgets Suite for Windows</h3>
+  <h3>🎨 macOS-Style Desktop Widgets Suite for Windows</h3>
   <p>Built with Avalonia 11 + .NET 8 · Hardware Acrylic Blur · 3D Liquid Glass Optics · Lockscreen Art-Font Clock · Flexible Desktop Grid Engine</p>
 </div>
 
 <h3 align="center">
-  <b><a href="https://github.com/Genlue/uWidgetsPlus/releases">Download Latest Release</a></b> ・
-  <a href="https://github.com/Genlue/uWidgetsPlus/issues">Report an Issue</a> ・
-  <a href="项目解构报告.md">Architecture Report (中文)</a>
+  <b><a href="https://github.com/Genlue/DeskCanvas/releases">Download Latest Release</a></b> ・
+  <a href="https://github.com/Genlue/DeskCanvas/issues">Report an Issue</a> ・
+  <a href="docs/项目解构报告.md">Architecture Report (中文)</a>
 </h3>
 
 <div align="center">
@@ -30,53 +30,30 @@
 
 ---
 
-## 🌟 Key Highlights & Major Enhancements
+## 🌟 Key Highlights
 
 ### 1. 🕒 Frameless Display Clock
-- **Full Cell Stretched Bounds**: Numerals directly occupy the entire widget grid unit without card margins or extra font leading gaps ($y=0$ to $y=H$). Supports non-uniform stretching (`StretchFill`) or uniform proportional centering;
-- **Curated Mobile Lockscreen Display Fonts**:
-  - 🔥 **HarmonyOS Sans Condensed**: Embedded in assembly, purpose-built for dramatic vertical expansion without clipping;
-  - 🔥 **Impact**: Heavyweight, bold, punchy classic iOS lockscreen numerals;
-  - 🔥 **Bahnschrift (DIN)**: Precision German industrial geometric condensed design;
-  - 🔥 **Arial Black**: Ultra-wide heavyweight grotesque sans-serif;
-  - 🔥 **Georgia**: Sophisticated contrast editorial lockscreen serif;
-  - 🔥 **Century Gothic**: Bauhaus geometric curves;
-  - 🔥 **Cascadia Code**, **Ink Free**, **Palatino Linotype**, and all Windows system installed fonts;
-- **Full Font-Weight Spectrum**: Seamless selection across 100 Thin to 900 Black;
-- **Per-Widget Theme Override**: Select individual theme mode (Follow Global / Acrylic / Liquid Glass / Solid) directly from widget settings;
-- **Color Overlay & Native ColorPicker**: Features standard Avalonia `ColorPicker` for color overlay tinting with live bidirectional hex `#RRGGBB` synchronization.
+- **Full-cell stretched bounds**: numerals occupy the entire widget cell with no card margins or font leading gaps; supports non-uniform stretching or uniform proportional centering;
+- **Curated lockscreen display fonts**: HarmonyOS Sans Condensed (embedded), Impact, Bahnschrift (DIN), Arial Black, Georgia, Century Gothic, Cascadia Code, Ink Free, Palatino Linotype and every installed system font;
+- **Full font-weight spectrum** (100 Thin – 900 Black), per-widget theme override, color overlay with a native `ColorPicker` and live hex sync.
 
-### 2. 💎 Three Deeply Adapted Visual Materials
-- 🪟 **Acrylic Blur (OS-Level Live Hardware Blur)**:
-  - Utilizes Win32 `ExtCreateRegion` (`RGNDATA`) to dynamically bind numeral glyph scanline spans directly to the HWND region;
-  - Windows DWM hardware samples desktop background underneath at **60fps/144fps zero-latency**, tracking Wallpaper Engine live wallpapers and background video playback seamlessly;
-  - Optional specular gradient outline rim.
-- 💧 **Liquid Glass (3D Optical Refraction Model)**:
-  - Euclidean Distance Transform (EDT) computes accurate surface normals across stroke contours, rendering authentic convex/concave lens displacement, chromatic dispersion, 3D specular glints, and bevel lines;
-  - **Refined Edge Optics**: Refraction width is strictly clamped to a delicate `1.5dp ~ 4.5dp` rim, keeping numeral centers crystal clear and flat;
-  - **Background Pre-Caching Engine**: Asynchronously pre-renders the next minute frame ($T+1\text{m}$) in background threads (`Task.Run` + `CancellationToken`), achieving **instant 0ms cache-hit switching** on the minute tick;
-  - **Zero-Leak Automatic Cleanup**: Evicts and disposes expired Bitmaps on every tick; immediately flushes and disposes cached textures upon window move, resize, font/theme change, or widget unload.
-- 🎨 **Solid Fill (Vector Anti-Aliased Fill)**:
-  - Pure geometric anti-aliased fill with configurable opacity slider and theme accent colors.
+### 2. 💎 Four Deeply Adapted Visual Materials
+- 🪟 **Acrylic Blur (OS-level live hardware blur)** — Win32 `ExtCreateRegion` (`RGNDATA`) binds glyph scanline spans directly to the HWND region; DWM samples the desktop underneath at 60/144 fps with zero latency, tracking live wallpapers (Wallpaper Engine) and background video seamlessly;
+- 💧 **Liquid Glass (3D optical refraction model)** — Euclidean Distance Transform computes surface normals across stroke contours for convex/concave lens displacement, chromatic dispersion and specular glints, with a GPU (Skia runtime shader) fast path and a CPU fallback;
+- 💎 **Liquid Glass 2.0** — a faithful GPU port of [Kyant0/AndroidLiquidGlass](https://github.com/Kyant0/AndroidLiquidGlass) 2.0's optical model: rounded-rect refraction lens with depth effect, diagonal chromatic aberration and hairline outline highlight;
+- 🎨 **Solid Fill** — pure anti-aliased vector fill with opacity slider and accent colors.
 
-### 3. 📐 Advanced Desktop Grid Management
-- **Three Placement Modes**:
-  - **Manual Grid**: Divides desktop into $m \times n$ square cells, stored as percentages for responsive multi-resolution and DPI adaptation;
-  - **Virtual Grid**;
-  - **Free Placement**;
-- Widgets snap to cells with customizable margins and corner radiuses.
+### 3. 🪟 Secondary Panels with Material 3 Motion
+Weather forecast, reminders, big folders, clipboard and notes open in shared secondary panels that **grow out of the triggering widget** (anchor-scaled, corner radius propagated) with glass rendered by the same surface as level-1 widgets. The open/close transitions follow the [Material Design 3 motion tokens](https://m3.material.io/styles/motion/easing-and-duration/tokens-specs) (`emphasized decelerate` in, `emphasized accelerate` out).
 
-### 4. 🧩 Complete Widget Ecosystem
-- ⏰ **Clock**: Analog (3 styles), Digital, World Clock (independent dual/quad face custom city naming + synchronized center digital readout), Frameless Clock;
-- 📁 **Folders & Files**: Desktop folder quick launcher, real-time file change monitoring, single-file desktop launcher;
-- 🌤️ **Weather**: Smooth horizontal wheel scrolling, 7-day forecast, sunrise/sunset, UV index, air quality (with HTTP proxy support);
-- 📊 **System Monitor**: Lightweight single metric dials, multi-dashboard overview (CPU, RAM, Disk, Network, Battery);
-- 📝 **Notes**: Quick desktop notes;
-- ✅ **Reminders**: Interactive checklist with task counters;
-- 🎵 **Music Controls** & 🔍 **Search Utility**.
+### 4. 📐 Advanced Desktop Grid Management
+Manual grid (m×n square cells stored as percentages, responsive across resolutions and DPI), virtual grid and free placement; widgets snap to cells with customizable margins and corner radius, always pinned to the desktop bottom band.
 
-### 5. 🚀 Standalone Single-File Distribution
-- Builds to a self-contained `uWidgets.exe` (~58 MB) with content-hash-verified embedded widget bundle extraction on first launch.
+### 5. 🧩 Widget Ecosystem (17 built-in widgets)
+⏰ Clock (analog ×3 / digital / world clock / frameless) · 📅 Calendar · 🌤️ Weather (7-day forecast, sun times, UV, AQI, proxy) · 📊 System Monitor · 📝 Notes (Markdown typography, secondary panel) · ✅ Reminders (interactive checklist with secondary panel) · 📁 Folders (desktop quick launcher with live file watching) · 🎵 Music controls · 🔍 Search · 📈 Progress · 🖼️ Picture · 🔋 Batteries · 🗺️ Map · 🍅 Pomodoro · 📚 Stack · 🧰 Tools · 📌 Fixed (multi-widget aggregate cards)
+
+### 6. 🚀 Standalone Single-File Distribution
+Builds to a self-contained `DeskCanvas.exe` with a content-hash-verified embedded widget bundle; widgets are extracted to `%LocalAppData%\DeskCanvas` on first run and stay hot-updatable. An MSI installer (WiX v5) is also produced per release.
 
 ---
 
@@ -85,29 +62,46 @@
 ### Prerequisites
 - Windows 10 / 11 (x64)
 - [.NET 8.0 SDK](https://dotnet.microsoft.com/download/dotnet/8.0) or higher
-- PowerShell 7 (pwsh) or Windows PowerShell
+- PowerShell (pwsh or Windows PowerShell); WiX v5 for the MSI
 
-### Build Command
+### Build Commands
 ```powershell
 # Clone the repository
-git clone https://github.com/Genlue/uWidgetsPlus.git
-cd uWidgetsPlus
+git clone https://github.com/Genlue/DeskCanvas.git
+cd DeskCanvas
 
 # Compile and package single-file EXE
 powershell -ExecutionPolicy Bypass -File .\build.ps1
 
-# Compile and package Windows standard MSI Installer
+# Also produce the classic portable zip (exe + Widgets + settings)
+powershell -ExecutionPolicy Bypass -File .\build.ps1 -Portable
+
+# Compile and package the Windows MSI installer
 powershell -ExecutionPolicy Bypass -File .\build.ps1 -Msi
 
-# Output binary location:
-# dist/win-x64/uWidgets.exe
-# dist/installer/uWidgetsPlus-1.7.5-win-x64.msi
+# Output locations:
+# dist/win-x64/DeskCanvas.exe
+# dist/DeskCanvas-win-x64-portable.zip
+# dist/installer/DeskCanvas-2.7.0-win-x64.msi
 ```
 
 ---
 
 ## 📄 License & Credits
 
-- Derived and enhanced from [creewick/uWidgets](https://github.com/creewick/uWidgets)
-- Licensed under the [MIT License](LICENSE)
-- Special thanks to the [Avalonia UI](https://avaloniaui.net/) and [SkiaSharp](https://github.com/mono/SkiaSharp) communities.
+### License
+DeskCanvas is licensed under the [Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License (CC BY-NC-SA 4.0)](LICENSE.txt), the same license as the upstream project.
+
+### Credits
+This project would not exist without the following open-source projects:
+
+| Project | License | Contribution |
+|---|---|---|
+| [creewick/uWidgets](https://github.com/creewick/uWidgets) | CC BY-NC-SA 4.0 | Upstream project — DeskCanvas started as a fork of it |
+| [Kyant0/AndroidLiquidGlass](https://github.com/Kyant0/AndroidLiquidGlass) | Apache-2.0 | The "Liquid Glass 2.0" material is a faithful port of its optical model (rounded-rect refraction lens, depth effect, chromatic aberration, outline highlight) |
+| [QmDeve/AndroidLiquidGlassView](https://github.com/QmDeve/AndroidLiquidGlassView) | MIT | Reference implementation studied while evaluating liquid-glass rendering for Avalonia |
+| [Material Design 3](https://m3.material.io/styles/motion/easing-and-duration/tokens-specs) | CC BY 4.0 (spec) | Motion easing tokens (`emphasized decelerate/accelerate`) for the secondary-panel open/close animations |
+| [Avalonia UI](https://github.com/AvaloniaUI/Avalonia) | MIT | Cross-platform .NET UI framework |
+| [SkiaSharp](https://github.com/mono/SkiaSharp) | MIT | 2D graphics and the runtime shader used by the GPU glass compositors |
+
+> Note: the project was formerly published as **uWidgetsPlus** (a fork of uWidgets); it has been renamed to **DeskCanvas** since v2.7.0. Data in `%LocalAppData%\uWidgets` is migrated to `%LocalAppData%\DeskCanvas` automatically on first launch.

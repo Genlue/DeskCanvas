@@ -63,7 +63,7 @@ internal sealed class GlassDrawOp : ICustomDrawOperation
             Log.W("SKSL COMPILE (AGSL port): " + (effect is null ? "FAILED " + errors : "OK"));
             if (effect is null) return;
 
-            // Same 420x420 crop as the uWidgets reference render.
+            // Same 420x420 crop as the DeskCanvas reference render.
             using var content = SKShader.CreateImage(backdropImage, SKShaderTileMode.Clamp, SKShaderTileMode.Clamp,
                 SKMatrix.CreateTranslation(-Backdrop.CardX, -Backdrop.CardY));
 
