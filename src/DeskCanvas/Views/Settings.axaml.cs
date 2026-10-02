@@ -125,6 +125,29 @@ public partial class Settings : Window
     }
 
     /// <summary>
+    /// Restore from a minimized state. Windows brings a minimized window back <b>without</b>
+    /// recompositing its backdrop, and the drop happens while the window is not being rendered — so
+    /// it is invisible to <see cref="VerifyTransparency"/>'s "fresh dropout" rule (by the time the
+    /// next tick runs, <c>lastLevel</c> already records the dropped level and the drop no longer
+    /// reads as fresh). The result is the reported symptom: the window comes back showing the bare
+    /// desktop through everything but the traffic lights.
+    /// </summary>
+    private void OnRestoredFromMinimized()
+    {
+        // Re-assert the hint (a real level change always rebuilds the backdrop) and re-evaluate the
+        // opaque fallback against whatever level the platform reports afterwards. Posted so it runs
+        // once the platform has actually processed the restore.
+        Dispatcher.UIThread.Post(() =>
+        {
+            if (closedForReal) return;
+            ApplySurfaceFallback();
+            ForceTransparencyReapply();
+            ApplySurfaceFallback();
+            InvalidateVisual();
+        }, DispatcherPriority.Loaded);
+    }
+
+    /// <summary>
     /// Force the platform to rebuild the acrylic backdrop. Toggling through <c>None</c> is a real
     /// level change, which the Win32 impl always re-applies — an equal-content re-assert alone
     /// might be short-circuited.
@@ -185,6 +208,12 @@ public partial class Settings : Window
         base.OnPropertyChanged(change);
         if (change.Property == TopLevel.ActualTransparencyLevelProperty)
             ApplySurfaceFallback();
+
+        // A minimized window is restored without its backdrop being recomposed — see
+        // OnRestoredFromMinimized for why the periodic verification cannot catch this one.
+        if (change.Property == WindowStateProperty
+            && change.NewValue is WindowState.Normal && change.OldValue is WindowState.Minimized)
+            OnRestoredFromMinimized();
     }
 
     /// <summary>

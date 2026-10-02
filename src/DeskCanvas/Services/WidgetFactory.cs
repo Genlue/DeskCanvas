@@ -23,6 +23,12 @@ public class WidgetFactory(IAssemblyProvider assemblyProvider, ILayoutProvider l
     DisplayMonitorService displayMonitor, Func<Settings> settingsWindow)
     : IWidgetFactory<Window, UserControl>
 {
+    /// <summary>Shared widget-construction seam; the sidebar host uses the same instance type.</summary>
+    private readonly WidgetRuntimeFactory runtime = new(assemblyProvider);
+
+    /// <summary>The shared widget runtime factory (assembly loading, content/edit-window creation).</summary>
+    public WidgetRuntimeFactory Runtime => runtime;
+
     private readonly Dictionary<string, List<Widget>> activeWidgets = [];
 
     /// <summary>
@@ -338,42 +344,16 @@ public class WidgetFactory(IAssemblyProvider assemblyProvider, ILayoutProvider l
 
     private UserControl CreateWidgetControl(Type type, WidgetLayoutProvider? widgetLayoutProvider, object? model)
     {
-        List<object> args = [];
-
-        if (NeedsWidgetLayoutProvider(type) && widgetLayoutProvider != null)
-            args.Add(widgetLayoutProvider);
-
-        if (model != null)
-            args.Add(model);
-
-        return (assemblyProvider.Activate(type, args.ToArray()) as UserControl)!;
+        return runtime.CreateWidgetControl(type, widgetLayoutProvider, model);
     }
 
     private EditWidget CreateEditWidgetWindow(IWidgetLayoutProvider widgetLayoutProvider, Type type)
     {
-        var control = (UserControl) assemblyProvider.Activate(type, widgetLayoutProvider);
-
-        return new EditWidget(widgetLayoutProvider, control);
+        return runtime.CreateEditWidgetWindow(widgetLayoutProvider, type);
     }
 
-    private bool NeedsWidgetLayoutProvider(Type type)
-    {
-        return type
-            .GetConstructors()
-            .Any(constructor => constructor
-                .GetParameters()
-                .Any(param => param.ParameterType == typeof(IWidgetLayoutProvider)));
-    }
+    private bool NeedsWidgetLayoutProvider(Type type) => WidgetRuntimeFactory.NeedsWidgetLayoutProvider(type);
 
-    private static WidgetInfoAttribute GetWidgetInfo(Assembly assembly, string typeName)
-    {
-        var widgetInfo = assembly
-            .GetCustomAttributes<WidgetInfoAttribute>()
-            .SingleOrDefault(attribute => attribute.ViewType.Name == typeName);
-
-        if (widgetInfo == null)
-            throw new ArgumentException($"No suitable WidgetInfoAttribute found for {typeName}");
-
-        return widgetInfo;
-    }
+    private static WidgetInfoAttribute GetWidgetInfo(Assembly assembly, string typeName) =>
+        WidgetRuntimeFactory.GetWidgetInfo(assembly, typeName);
 }

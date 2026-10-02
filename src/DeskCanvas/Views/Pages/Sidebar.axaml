@@ -1,0 +1,123 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:locales="clr-namespace:DeskCanvas.Locales"
+             x:Class="DeskCanvas.Views.Pages.Sidebar"
+             x:CompileBindings="False">
+    <StackPanel Orientation="Vertical" Spacing="14">
+
+        <!-- 快捷键 -->
+        <StackPanel Spacing="6">
+            <TextBlock FontSize="14" FontWeight="SemiBold" Text="{x:Static locales:Locale.Sidebar_HotKey}" />
+            <Grid ColumnDefinitions="*,Auto">
+                <TextBox Name="HotKeyBox" Grid.Column="0" IsReadOnly="True" Margin="0,0,10,0"
+                         FontFamily="Consolas,Menlo,monospace" />
+                <Button Name="RecordButton" Grid.Column="1" Content="{x:Static locales:Locale.Sidebar_HotKey_Record}"
+                        MinWidth="120" HorizontalContentAlignment="Center" />
+            </Grid>
+            <TextBlock Name="HotKeyHint" FontSize="11" Opacity="0.6" TextWrapping="Wrap" />
+        </StackPanel>
+
+        <!-- 宽度与网格 -->
+        <StackPanel Spacing="6">
+            <TextBlock FontSize="14" FontWeight="SemiBold" Text="{x:Static locales:Locale.Sidebar_Width}" />
+            <Grid ColumnDefinitions="210,140" RowDefinitions="Auto,Auto,Auto">
+                <TextBlock Grid.Row="0" Grid.Column="0" Text="{x:Static locales:Locale.Sidebar_DefaultWidth}" VerticalAlignment="Center" />
+                <NumericUpDown Name="DefaultWidthBox" Grid.Row="0" Grid.Column="1" Minimum="280" Maximum="640"
+                               Increment="10" FormatString="F0" HorizontalAlignment="Left" />
+                <TextBlock Grid.Row="1" Grid.Column="0" Text="{x:Static locales:Locale.Sidebar_CurrentWidth}" VerticalAlignment="Center" Margin="0,8,0,0" />
+                <NumericUpDown Name="CurrentWidthBox" Grid.Row="1" Grid.Column="1" Minimum="280" Maximum="640" Margin="0,8,0,0"
+                               Increment="10" FormatString="F0" HorizontalAlignment="Left" />
+                <TextBlock Grid.Row="2" Grid.Column="0" Text="列数（当前屏）" VerticalAlignment="Center" Margin="0,8,0,0" />
+                <NumericUpDown Name="ColumnsBox" Grid.Row="2" Grid.Column="1" Minimum="1" Maximum="8" Margin="0,8,0,0"
+                               Increment="1" FormatString="F0" HorizontalAlignment="Left" />
+            </Grid>
+            <TextBlock Name="GridSummary" FontSize="11" Opacity="0.6" TextWrapping="Wrap" />
+            <TextBlock FontSize="11" Opacity="0.6" TextWrapping="Wrap"
+                       Text="{x:Static locales:Locale.Sidebar_Width_Hint}" />
+        </StackPanel>
+
+        <!-- 组件外观：内边距与圆角 -->
+        <StackPanel Spacing="6">
+            <TextBlock FontSize="14" FontWeight="SemiBold" Text="组件外观" />
+            <Grid ColumnDefinitions="210,140,Auto" RowDefinitions="Auto,Auto">
+                <TextBlock Grid.Row="0" Grid.Column="0" Text="组件内边距（每侧，DIP）" VerticalAlignment="Center" />
+                <NumericUpDown Name="WidgetMarginBox" Grid.Row="0" Grid.Column="1" Minimum="0" Maximum="24"
+                               Increment="1" FormatString="F0" HorizontalAlignment="Left" />
+                <Button Name="WidgetMarginResetButton" Grid.Row="0" Grid.Column="2" Content="恢复默认"
+                        Margin="10,0,0,0" MinWidth="90" HorizontalContentAlignment="Center" />
+
+                <TextBlock Grid.Row="1" Grid.Column="0" Text="组件圆角（DIP）" VerticalAlignment="Center" Margin="0,8,0,0" />
+                <NumericUpDown Name="WidgetRadiusBox" Grid.Row="1" Grid.Column="1" Minimum="0" Maximum="48"
+                               Increment="1" FormatString="F0" Margin="0,8,0,0" HorizontalAlignment="Left" />
+                <Button Name="WidgetRadiusResetButton" Grid.Row="1" Grid.Column="2" Content="跟随桌面"
+                        Margin="10,8,0,0" MinWidth="90" HorizontalContentAlignment="Center" />
+            </Grid>
+            <TextBlock Name="WidgetMetricsSummary" FontSize="11" Opacity="0.6" TextWrapping="Wrap" />
+            <TextBlock FontSize="11" Opacity="0.6" TextWrapping="Wrap"
+                       Text="内边距即组件对所在网格单元每侧留出的空隙（与桌面网格的「组件内边距」同一含义），相邻组件之间因此是该值的两倍；圆角为基准值，小尺寸组件仍会按自适应规则收窄。" />
+        </StackPanel>
+
+        <!-- 扩散阴影 -->
+        <StackPanel Spacing="6">
+            <TextBlock FontSize="14" FontWeight="SemiBold" Text="扩散阴影" />
+            <CheckBox Name="ShadowEnabledCheck" Content="启用扩散阴影（macOS 通知中心式，由右向左先不变再减弱）" />
+            <Grid ColumnDefinitions="210,160,*,Auto" RowDefinitions="Auto,Auto,Auto,Auto,Auto">
+                <TextBlock Grid.Row="0" Grid.Column="0" Text="浓度（0 - 1）" VerticalAlignment="Center" />
+                <Slider Name="ShadowOpacitySlider" Grid.Row="0" Grid.Column="1" Minimum="0" Maximum="1"
+                        TickFrequency="0.05" IsSnapToTickEnabled="True" HorizontalAlignment="Left" Width="150" />
+                <TextBlock Name="ShadowOpacityText" Grid.Row="0" Grid.Column="2" VerticalAlignment="Center" Opacity="0.7" />
+
+                <TextBlock Grid.Row="1" Grid.Column="0" Text="超出最左侧组件（DIP）" VerticalAlignment="Center" Margin="0,8,0,0" />
+                <NumericUpDown Name="ShadowExtendBox" Grid.Row="1" Grid.Column="1" Minimum="0" Maximum="160" Margin="0,8,0,0"
+                               Increment="2" FormatString="F0" HorizontalAlignment="Left" />
+
+                <TextBlock Grid.Row="2" Grid.Column="0" Text="衰减长度（DIP）" VerticalAlignment="Center" Margin="0,8,0,0" />
+                <NumericUpDown Name="ShadowFeatherBox" Grid.Row="2" Grid.Column="1" Minimum="1" Maximum="400" Margin="0,8,0,0"
+                               Increment="4" FormatString="F0" HorizontalAlignment="Left" />
+
+                <TextBlock Grid.Row="3" Grid.Column="0" Text="减弱起点偏移（DIP）" VerticalAlignment="Center" Margin="0,8,0,0" />
+                <NumericUpDown Name="ShadowFadeStartBox" Grid.Row="3" Grid.Column="1" Minimum="-400" Maximum="400" Margin="0,8,0,0"
+                               Increment="4" FormatString="F0" HorizontalAlignment="Left" />
+
+                <TextBlock Grid.Row="4" Grid.Column="0" Text="颜色（HEX）" VerticalAlignment="Center" Margin="0,8,0,0" />
+                <TextBox Name="ShadowColorBox" Grid.Row="4" Grid.Column="1" Margin="0,8,0,0" Width="130"
+                         HorizontalAlignment="Left" FontFamily="Consolas,Menlo,monospace" />
+            </Grid>
+            <TextBlock Name="ShadowSummary" FontSize="11" Opacity="0.6" TextWrapping="Wrap" />
+            <TextBlock Name="ShadowMaterialNote" FontSize="11" Opacity="0.6" TextWrapping="Wrap"
+                       Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}" />
+            <TextBlock FontSize="11" Opacity="0.6" TextWrapping="Wrap"
+                       Text="阴影由侧栏右缘向左铺开：组件区域保持不变，到最左侧组件处开始减弱，并在其左侧再延伸「超出」设置的距离后淡出。窗口会相应加宽这段距离，组件本身的宽度与网格不变。" />
+        </StackPanel>
+
+        <!-- 全屏与进程阻止 -->
+        <StackPanel Spacing="6">
+            <TextBlock FontSize="14" FontWeight="SemiBold" Text="{x:Static locales:Locale.Sidebar_Display}" />
+            <CheckBox Name="BlockFullscreenCheck" Content="{x:Static locales:Locale.Sidebar_BlockFullscreen}" />
+            <TextBlock Text="{x:Static locales:Locale.Sidebar_BlockedProcesses}" Margin="0,6,0,0" TextWrapping="Wrap" />
+            <Grid ColumnDefinitions="*,Auto">
+                <ListBox Name="BlockedList" Grid.Column="0" Height="110" />
+                <StackPanel Grid.Column="1" Spacing="8" Margin="10,0,0,0" VerticalAlignment="Top">
+                    <ComboBox Name="RunningProcesses" Width="190"
+                              PlaceholderText="{x:Static locales:Locale.Sidebar_RunningProcesses}" />
+                    <Button Name="AddProcessButton" Content="{x:Static locales:Locale.Sidebar_AddProcess}"
+                            HorizontalContentAlignment="Center" />
+                    <Button Name="RemoveProcessButton" Content="{x:Static locales:Locale.Sidebar_RemoveProcess}"
+                            HorizontalContentAlignment="Center" />
+                </StackPanel>
+            </Grid>
+        </StackPanel>
+
+        <!-- 操作 -->
+        <StackPanel Spacing="6">
+            <TextBlock FontSize="14" FontWeight="SemiBold" Text="{x:Static locales:Locale.Sidebar_Actions}" />
+            <StackPanel Orientation="Horizontal" Spacing="10">
+                <Button Name="ShowButton" Content="{x:Static locales:Locale.Sidebar_Show}" />
+                <Button Name="ClearButton" Content="{x:Static locales:Locale.Sidebar_Clear}" />
+                <Button Name="GalleryButton" Content="{x:Static locales:Locale.Sidebar_OpenGallery}" />
+            </StackPanel>
+            <TextBlock Name="StatusText" FontSize="11" Opacity="0.7" TextWrapping="Wrap" />
+        </StackPanel>
+
+    </StackPanel>
+</UserControl>

@@ -61,6 +61,9 @@ public abstract class SecondaryPanelWindow : Window
     private bool wasActivated;
     private DateTime activatedAtUtc;
 
+    /// <summary>True when this panel was opened from a card inside the sidebar (see <see cref="ShowAsSecondaryPanel"/>).</summary>
+    private bool hostedBySidebar;
+
     // ---- Glass transition during the open/close zoom ----
     // The card's glass must follow the zoom: the liquid-glass surface re-parameterises its
     // shader for every interpolated scale (SetAnimationFrameScale), driven by the scale
@@ -152,9 +155,31 @@ public abstract class SecondaryPanelWindow : Window
         KeyDown += OnPanelKeyDown;
     }
 
-    /// <summary>Show + pin above the widget band + activate — the standard way every panel appears.</summary>
+    /// <summary>
+    /// Show + place + activate — the standard way every panel appears.
+    /// <para>
+    /// Two owner kinds have to be told apart, because the sidebar is not a desktop widget:
+    /// </para>
+    /// <list type="bullet">
+    /// <item><b>A desktop widget</b> owns its panel, which is then pulled into the widget band
+    /// (above the widgets, below ordinary windows) by <see cref="WidgetZOrder.PinPanelAboveWidgets"/>.</item>
+    /// <item><b>The sidebar</b> keeps the panel and <b>skips the band placement entirely</b>: the
+    /// sidebar lives in the topmost band, and a band-placed panel would be parked below every
+    /// ordinary window — and therefore below the sidebar too, which is what made the panel look like
+    /// it had been pushed to the bottom. The panel is instead shown as the sidebar's owned window
+    /// (so it is torn down with the sidebar and inherits its taskbar/Alt-Tab-free existence) and
+    /// pinned topmost, putting it above the sidebar's cards; the sidebar is asked to hold itself
+    /// open for as long as the panel lives, so ownership cannot take the panel down mid-use.</item>
+    /// </list>
+    /// </summary>
     protected void ShowAsSecondaryPanel(Window? owner)
     {
+        if (owner is SidebarWindow sidebar)
+        {
+            ShowBesideSidebar(sidebar);
+            return;
+        }
+
         if (owner != null)
             Show(owner);
         else
@@ -162,6 +187,37 @@ public abstract class SecondaryPanelWindow : Window
 
         // Secondary panel: above the widget band, below ordinary application windows.
         WidgetZOrder.PinPanelAboveWidgets(this);
+
+        Activate();
+    }
+
+    /// <summary>
+    /// The sidebar's own flavour of <see cref="ShowAsSecondaryPanel(Window?)"/> — owned by the
+    /// sidebar, <b>topmost like the sidebar</b>, and holding the sidebar open while it lives.
+    /// <para>
+    /// Ownership alone is not enough to keep the panel visible: it makes the panel stay above its
+    /// owner, but not in the owner's band, so a non-topmost panel sat under every ordinary window
+    /// and therefore under the topmost sidebar too — the panel looked like it had been pushed to the
+    /// bottom. It is made topmost as well, which lifts it back above the cards.
+    /// </para>
+    /// </summary>
+    private void ShowBesideSidebar(SidebarWindow sidebar)
+    {
+        sidebar.BeginHostedPanel();
+        hostedBySidebar = true;
+
+        void OnHostedPanelClosed(object? sender, EventArgs e)
+        {
+            Closed -= OnHostedPanelClosed;
+            sidebar.EndHostedPanel();
+        }
+
+        Closed += OnHostedPanelClosed;
+
+        Show(sidebar);
+
+        Topmost = true;
+        SidebarZOrder.PinAboveTopmost(this);
 
         Activate();
     }
@@ -188,6 +244,12 @@ public abstract class SecondaryPanelWindow : Window
     {
         panelLoaded = true;
         LoadedAtUtc = DateTime.UtcNow;
+
+        // The native window exists only now: re-assert the topmost placement in case the handle was
+        // not available when Show() ran (Avalonia may create it lazily), which would have left the
+        // panel in the plain band, i.e. under the sidebar.
+        if (hostedBySidebar) SidebarZOrder.PinAboveTopmost(this);
+
         PositionPanel();
         OnPanelLoaded();
         PlayOpenAnimation();

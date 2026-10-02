@@ -906,4 +906,100 @@
     <data name="Update_WhatsNew" xml:space="preserve">
         <value>What's New</value>
     </data>
+    <data name="Settings_Sidebar" xml:space="preserve">
+        <value>Sidebar</value>
+    </data>
+    <data name="Tray_SidebarMenu" xml:space="preserve">
+        <value>Sidebar</value>
+    </data>
+    <data name="Tray_ShowSidebar" xml:space="preserve">
+        <value>Show Sidebar</value>
+    </data>
+    <data name="Tray_HideSidebar" xml:space="preserve">
+        <value>Hide Sidebar</value>
+    </data>
+    <data name="Tray_ClearSidebar" xml:space="preserve">
+        <value>Clear Sidebar on This Screen</value>
+    </data>
+    <data name="Tray_SidebarSettings" xml:space="preserve">
+        <value>Sidebar Settings…</value>
+    </data>
+    <data name="Sidebar_RemoveFromBar" xml:space="preserve">
+        <value>Remove from Sidebar</value>
+    </data>
+    <data name="Sidebar_AddToBar" xml:space="preserve">
+        <value>Add to Sidebar</value>
+    </data>
+    <data name="Sidebar_AddedToBar" xml:space="preserve">
+        <value>Added to the sidebar</value>
+    </data>
+    <data name="Sidebar_HotKey" xml:space="preserve">
+        <value>Hotkey</value>
+    </data>
+    <data name="Sidebar_HotKey_Record" xml:space="preserve">
+        <value>Record Hotkey</value>
+    </data>
+    <data name="Sidebar_HotKey_Recording" xml:space="preserve">
+        <value>Press a key combination… (Esc to cancel)</value>
+    </data>
+    <data name="Sidebar_HotKey_Hint" xml:space="preserve">
+        <value>Default Ctrl+Alt+Space. At least one modifier is required; F12 is not allowed.</value>
+    </data>
+    <data name="Sidebar_HotKey_Conflict" xml:space="preserve">
+        <value>That hotkey is taken; the previous one was kept.</value>
+    </data>
+    <data name="Sidebar_HotKey_Registered" xml:space="preserve">
+        <value>Status: registered.</value>
+    </data>
+    <data name="Sidebar_HotKey_Unregistered" xml:space="preserve">
+        <value>Status: not registered (it may be taken).</value>
+    </data>
+    <data name="Sidebar_Width" xml:space="preserve">
+        <value>Width</value>
+    </data>
+    <data name="Sidebar_DefaultWidth" xml:space="preserve">
+        <value>Default Width (DIP)</value>
+    </data>
+    <data name="Sidebar_CurrentWidth" xml:space="preserve">
+        <value>Width on This Screen (DIP)</value>
+    </data>
+    <data name="Sidebar_Width_Hint" xml:space="preserve">
+        <value>The width is saved per screen (280–640 DIP). You can also drag the sidebar's left edge.</value>
+    </data>
+    <data name="Sidebar_Display" xml:space="preserve">
+        <value>Display and blocking</value>
+    </data>
+    <data name="Sidebar_BlockFullscreen" xml:space="preserve">
+        <value>Disable the sidebar while fullscreen (ordinary maximized windows are unaffected)</value>
+    </data>
+    <data name="Sidebar_BlockedProcesses" xml:space="preserve">
+        <value>Blocked processes: the sidebar is pulled back while these are in the foreground</value>
+    </data>
+    <data name="Sidebar_RunningProcesses" xml:space="preserve">
+        <value>Running programs</value>
+    </data>
+    <data name="Sidebar_AddProcess" xml:space="preserve">
+        <value>Add Selected</value>
+    </data>
+    <data name="Sidebar_RemoveProcess" xml:space="preserve">
+        <value>Remove Selected</value>
+    </data>
+    <data name="Sidebar_Actions" xml:space="preserve">
+        <value>Actions</value>
+    </data>
+    <data name="Sidebar_Show" xml:space="preserve">
+        <value>Show Sidebar (screen under the mouse)</value>
+    </data>
+    <data name="Sidebar_Clear" xml:space="preserve">
+        <value>Clear Sidebar on This Screen</value>
+    </data>
+    <data name="Sidebar_OpenGallery" xml:space="preserve">
+        <value>Open Gallery</value>
+    </data>
+    <data name="Sidebar_Empty" xml:space="preserve">
+        <value>The sidebar is empty</value>
+    </data>
+    <data name="Sidebar_Empty_Hint" xml:space="preserve">
+        <value>Right-click a widget in the gallery and choose “Add to Sidebar”.</value>
+    </data>
 </root>

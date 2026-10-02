@@ -28,16 +28,18 @@ public sealed class TrayIconService : IDisposable
     private readonly IAppSettingsProvider appSettingsProvider;
     private readonly Func<SettingsWindow> settingsWindow;
     private readonly WidgetFactory widgetFactory;
+    private readonly SidebarService? sidebarService;
 
     private TrayIcon? trayIcon;
     private NativeMenuItem? widgetsItem;
 
     public TrayIconService(IAppSettingsProvider appSettingsProvider, Func<SettingsWindow> settingsWindow,
-        WidgetFactory widgetFactory)
+        WidgetFactory widgetFactory, SidebarService? sidebarService = null)
     {
         this.appSettingsProvider = appSettingsProvider;
         this.settingsWindow = settingsWindow;
         this.widgetFactory = widgetFactory;
+        this.sidebarService = sidebarService;
     }
 
     /// <summary>The icon is on screen (the setting says so and it could actually be created).</summary>
@@ -137,16 +139,51 @@ public sealed class TrayIconService : IDisposable
         menu.Add(openItem);
         menu.Add(widgetsItem);
         menu.Add(new NativeMenuItemSeparator());
+        menu.Add(BuildSidebarMenu());
         menu.Add(hideIconItem);
         menu.Add(new NativeMenuItemSeparator());
         menu.Add(exitItem);
         return menu;
     }
 
+    /// <summary>The 侧栏 sub-menu: show / hide / settings / clear the current screen's sidebar.</summary>
+    private NativeMenuItem BuildSidebarMenu()
+    {
+        var submenu = new NativeMenu();
+
+        var show = new NativeMenuItem(Locale.Tray_ShowSidebar);
+        show.Click += (_, _) => sidebarService?.ShowForCursorScreen();
+        submenu.Add(show);
+
+        var hide = new NativeMenuItem(Locale.Tray_HideSidebar);
+        hide.Click += (_, _) => sidebarService?.Hide("tray");
+        submenu.Add(hide);
+
+        var clear = new NativeMenuItem(Locale.Tray_ClearSidebar);
+        clear.Click += (_, _) => sidebarService?.ClearForCursorScreen();
+        submenu.Add(clear);
+
+        submenu.Add(new NativeMenuItemSeparator());
+
+        var settings = new NativeMenuItem(Locale.Tray_SidebarSettings);
+        settings.Click += (_, _) => OpenSidebarSettings();
+        submenu.Add(settings);
+
+        return new NativeMenuItem(Locale.Tray_SidebarMenu) { Menu = submenu };
+    }
+
     private void OpenSettings()
     {
         var window = settingsWindow();
         window.ShowAndActivate();
+    }
+
+    /// <summary>Open the settings window directly on the 侧栏 page.</summary>
+    private void OpenSidebarSettings()
+    {
+        var window = settingsWindow();
+        window.ShowAndActivate();
+        window.SelectPage(typeof(DeskCanvas.Views.Pages.Sidebar));
     }
 
     private void ToggleWidgets()

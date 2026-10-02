@@ -98,6 +98,7 @@ public class SettingsViewModel : ReactiveObject
             // --- Section 1: 系统设置 ---
             new(null, null, "系统设置"),
             new(typeof(General), GetIcon(nameof(General)), Locale.Settings_General),
+            new(typeof(Sidebar), SafeParseIcon("M21 3H3c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM11 19H3V5h8v14zm10 0h-8V5h8v14z"), Locale.Settings_Sidebar),
             new(typeof(Appearance), GetIcon(nameof(Appearance)), Locale.Settings_Appearance),
             new(typeof(MultiScreen), GetIcon(nameof(MultiScreen)), Locale.Settings_MultiScreen),
             new(typeof(Advanced), GetIcon(nameof(Advanced)), Locale.Settings_Advanced),
@@ -168,6 +169,7 @@ public class SettingsViewModel : ReactiveObject
                 page = pageType switch
                 {
                     var type when type == typeof(General) => new General(appSettingsProvider, updateService),
+                    var type when type == typeof(Sidebar) => new Sidebar(),
                     var type when type == typeof(Profiles) => new Profiles(profileService),
                     var type when type == typeof(Advanced) => new Advanced(appSettingsProvider, layoutProvider, displayMonitor, profileService),
                     var type when type == typeof(MultiScreen) => new MultiScreen(appSettingsProvider, layoutProvider, displayMonitor),

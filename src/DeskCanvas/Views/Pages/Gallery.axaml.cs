@@ -162,6 +162,33 @@ public partial class Gallery : UserControl, INotifyPropertyChanged
     }
 
     /// <summary>
+    /// 「添加到侧栏」: create an independent sidebar instance (fresh instance id) on the screen the
+    /// settings window is on, sized to the widget's default footprint and clamped to the sidebar.
+    /// </summary>
+    private void SidebarButton_OnClick(object? sender, RoutedEventArgs e)
+    {
+        var preview = (sender as Control)?.DataContext as WidgetPreviewViewModel;
+        if (preview == null) return;
+
+        var sidebar = App.Services?.GetService(typeof(SidebarService)) as SidebarService;
+        if (sidebar == null) return;
+
+        var window = VisualRoot as Window;
+        var attached = window != null ? displayMonitor.Find(window) : null;
+        if (attached == null)
+        {
+            sidebar.ShowForCursorScreen();
+            return;
+        }
+
+        // The sidebar is a grid: the widget's declared default span is what decides its size, not
+        // a pixel size computed for the desktop grid (that size, divided by the widget margin,
+        // is what used to come back as an 11×6 aggregate or a 6×6 square).
+        var layout = new WidgetLayout(preview.Type, preview.Subtype, 0, 0, 0, 0, null);
+        sidebar.AddWidget(attached.Screen, layout, preview.DefaultColumns, preview.DefaultRows);
+    }
+
+    /// <summary>
     /// Compute the initial placement (position relative to the owning screen's
     /// working area + size) for a new widget on the target screen.
     /// <para>

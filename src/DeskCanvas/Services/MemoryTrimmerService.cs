@@ -21,11 +21,15 @@ namespace DeskCanvas.Services;
 /// </summary>
 public class MemoryTrimmerService : IDisposable
 {
-    /// <summary>Do nothing while the process is below this — trimming a small heap only costs CPU.</summary>
-    private const long ThresholdBytes = 150L * 1024 * 1024;
+    /// <summary>
+    /// Do nothing while the process is below this. Glass keeps a working set of buffers it genuinely
+    /// reuses (a capture, a blurred backdrop, per-card materials), so the bar sits below what a
+    /// healthy live-glass session holds — the sweep is for what the session <i>stopped</i> using.
+    /// </summary>
+    private const long ThresholdBytes = 80L * 1024 * 1024;
 
     /// <summary>Sweep interval. Long enough to be invisible, short enough to bound the creep.</summary>
-    private static readonly TimeSpan Interval = TimeSpan.FromMinutes(5);
+    private static readonly TimeSpan Interval = TimeSpan.FromSeconds(90);
 
     private DispatcherTimer? timer;
 

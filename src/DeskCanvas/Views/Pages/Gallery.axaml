@@ -2,6 +2,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:pages="clr-namespace:DeskCanvas.Views.Pages"
              xmlns:viewModels="clr-namespace:DeskCanvas.ViewModels"
+             xmlns:locales="clr-namespace:DeskCanvas.Locales"
              x:Class="DeskCanvas.Views.Pages.Gallery"
              x:DataType="pages:Gallery">
     <UserControl.Styles>
@@ -55,6 +56,11 @@
                         <Button Classes="macos-gallery-card"
                                 ToolTip.Tip="点击添加到桌面"
                                 Click="Button_OnClick">
+                            <Button.ContextMenu>
+                                <ContextMenu>
+                                    <MenuItem Header="{x:Static locales:Locale.Sidebar_AddToBar}" Click="SidebarButton_OnClick" />
+                                </ContextMenu>
+                            </Button.ContextMenu>
                             <StackPanel Orientation="Vertical">
                                 <!-- 真实比例小组件预览框 (消除硬编码间距，贴合桌面外观) -->
                                 <Border Classes="preview-box"

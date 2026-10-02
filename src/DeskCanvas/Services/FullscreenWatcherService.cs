@@ -456,6 +456,7 @@ public class FullscreenWatcherService : IDisposable
         {
             HasWindow = true,
             ProcessId = pid,
+            ProcessName = ProcessNameOf(pid),
             ClassName = GetClassNameString(hwnd),
             IsOwnProcess = pid == Environment.ProcessId,
             IsShellWindow = IsShellWindow(hwnd),
@@ -465,11 +466,96 @@ public class FullscreenWatcherService : IDisposable
         };
     }
 
+    /// <summary>Friendly name (no extension) of the current foreground process, or <c>null</c>.</summary>
+    public static string? ForegroundProcessName()
+    {
+        var hwnd = GetForegroundWindow();
+        if (hwnd == IntPtr.Zero) return null;
+        GetWindowThreadProcessId(hwnd, out var pid);
+        return ProcessNameOf(pid);
+    }
+
+    private static string? ProcessNameOf(int pid)
+    {
+        if (pid <= 0) return null;
+        try
+        {
+            using var process = Process.GetProcessById(pid);
+            return process.ProcessName;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Whether the foreground window is a <b>true</b> fullscreen app — exclusive fullscreen, or a
+    /// borderless window covering 98 % of its monitor — as opposed to an ordinary maximized window.
+    /// This is the signal the sidebar's overlay policy uses.
+    /// <para>
+    /// The desktop shell must <b>not</b> count. <c>Progman</c> / <c>WorkerW</c> (the desktop and any
+    /// wallpaper host) span their monitor by definition, and layered click-through overlays
+    /// (docks, game/GPU overlays, wallpaper engines) do too. Treating them as fullscreen pulled the
+    /// sidebar back a second after it opened whenever the desktop had focus — i.e. exactly when the
+    /// user summons it. Own windows are excluded as well (the sidebar itself becomes the foreground
+    /// window when it is shown).
+    /// </para>
+    /// </summary>
+    public static bool IsForegroundTrueFullscreen()
+    {
+        if (!OperatingSystem.IsWindows()) return false;
+
+        var hwnd = GetForegroundWindow();
+        return IsTrueFullscreenWindow(hwnd);
+    }
+
+    /// <summary>The true-fullscreen rule for one top-level window (see <see cref="IsForegroundTrueFullscreen"/>).</summary>
+    private static bool IsTrueFullscreenWindow(IntPtr hwnd)
+    {
+        if (hwnd == IntPtr.Zero) return false;
+        if (IsCloaked(hwnd)) return false;
+        if (!TryGetExtendedFrameBounds(hwnd, out var bounds)) return false;
+
+        var monitor = MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST);
+        if (monitor == IntPtr.Zero) return false;
+        var info = new MONITORINFO { cbSize = Marshal.SizeOf<MONITORINFO>() };
+        if (!GetMonitorInfo(monitor, ref info)) return false;
+
+        GetWindowThreadProcessId(hwnd, out var pid);
+
+        return IsTrueFullscreen(
+            isShellWindow: IsShellClassName(GetClassNameString(hwnd)),
+            isDesktopOverlay: IsDesktopOverlay(hwnd),
+            isOwnProcess: pid == Environment.ProcessId,
+            isVisible: IsWindowVisible(hwnd),
+            isMinimized: IsIconic(hwnd),
+            isMaximized: IsZoomed(hwnd),
+            coversMonitor: Covers(ToRect(bounds), ToRect(info.rcMonitor)));
+    }
+
+    /// <summary>
+    /// The pure part of <see cref="IsForegroundTrueFullscreen"/>: none of the excluded window kinds
+    /// may be called fullscreen. Kept free of Win32 so the rule — including the shell-window case
+    /// that used to pull the sidebar back the moment it opened — is covered by
+    /// <c>tests/FullscreenChecks</c>.
+    /// </summary>
+    public static bool IsTrueFullscreen(bool isShellWindow, bool isDesktopOverlay, bool isOwnProcess,
+        bool isVisible, bool isMinimized, bool isMaximized, bool coversMonitor) =>
+        isVisible
+        && !isMinimized
+        && !isShellWindow
+        && !isDesktopOverlay
+        && !isOwnProcess
+        && !isMaximized
+        && coversMonitor;
+
     /// <summary>Raw foreground-window signals, for diagnostics.</summary>
     public readonly record struct ForegroundObservation
     {
         public bool HasWindow { get; init; }
         public int ProcessId { get; init; }
+        public string? ProcessName { get; init; }
         public string ClassName { get; init; }
         public bool IsOwnProcess { get; init; }
         public bool IsShellWindow { get; init; }

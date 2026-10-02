@@ -169,6 +169,71 @@ public class InteropService
     }
 
     /// <summary>
+    /// Clip a native window to the <b>union</b> of several rounded rectangles.
+    /// <para>
+    /// The sidebar is one window holding a grid of separate cards, so unlike the desktop widget it
+    /// has no single card rectangle to clip to. The OS-level acrylic backdrop covers the whole HWND,
+    /// so without this the gaps between the cards — and the strip beside them — would frost over as
+    /// well. OR-ing one region per card makes the DWM blur follow the cards exactly, exactly like
+    /// <see cref="SetWidgetRegion"/> does for a single widget.
+    /// </para>
+    /// <para>
+    /// A GDI region is 1-bit, so the anti-aliased curve of a card corner is truncated here. That
+    /// trade-off is inherent to the acrylic path (see <c>Widget.ApplyWidgetRegion</c>), which is why
+    /// it is applied <b>only</b> for <see cref="DeskCanvas.Core.Models.Settings.SurfaceStyle.Acrylic"/>
+    /// — the rendered glass materials keep their per-pixel alpha.
+    /// </para>
+    /// </summary>
+    /// <param name="window">The target window.</param>
+    /// <param name="rects">One region per card: physical pixels relative to the window, plus radius.</param>
+    public static void SetWindowRegionFromRoundedRects(
+        Window window, IReadOnlyList<(int X, int Y, int Width, int Height, int Radius)> rects)
+    {
+        var handle = window.TryGetPlatformHandle()?.Handle ?? IntPtr.Zero;
+        if (handle == IntPtr.Zero) return;
+
+        if (rects.Count == 0)
+        {
+            // An empty sidebar has no card to show: clipping everything away keeps the acrylic
+            // backdrop from covering the empty strip.
+            SetWindowRegion(handle, 0, 0, 1, 1, 0);
+            return;
+        }
+
+        var combined = CreateRectRgn(0, 0, 0, 0);
+        if (combined == IntPtr.Zero) return;
+
+        var built = false;
+        try
+        {
+            foreach (var (x, y, width, height, radius) in rects)
+            {
+                var w = Math.Max(1, width);
+                var h = Math.Max(1, height);
+                var r = Math.Clamp(radius, 0, Math.Min(w, h) / 2);
+                // Win32 GDI treats right/bottom as exclusive (see SetWindowRegion).
+                var piece = r > 0
+                    ? CreateRoundRectRgn(x, y, x + w + 1, y + h + 1, r * 2, r * 2)
+                    : CreateRectRgn(x, y, x + w + 1, y + h + 1);
+                if (piece == IntPtr.Zero) continue;
+
+                CombineRgn(combined, combined, piece, RGN_OR);
+                DeleteObject(piece);
+            }
+            built = true;
+        }
+        finally
+        {
+            // Nothing was handed over yet, so the accumulation region is still ours to free.
+            if (!built) DeleteObject(combined);
+        }
+
+        // SetWindowRgn takes ownership of the region on success; on failure it stays ours.
+        if (SetWindowRgn(handle, combined, true) == 0)
+            DeleteObject(combined);
+    }
+
+    /// <summary>
     /// Remove a previously applied window region (full-window rectangle again).
     /// </summary>
     public static void ClearWidgetRegion(Window window)
@@ -180,6 +245,12 @@ public class InteropService
 
     [DllImport("gdi32.dll")]
     private static extern IntPtr ExtCreateRegion(IntPtr lpXform, uint nCount, byte[] lpRgnData);
+
+    /// <summary><c>RGN_OR</c> — combine two regions into their union.</summary>
+    private const int RGN_OR = 2;
+
+    [DllImport("gdi32.dll")]
+    private static extern int CombineRgn(IntPtr hrgnDst, IntPtr hrgnSrc1, IntPtr hrgnSrc2, int fnCombineMode);
 
     [DllImport("gdi32.dll")]
     private static extern IntPtr CreateRoundRectRgn(int x1, int y1, int x2, int y2, int cx, int cy);
@@ -323,4 +394,147 @@ public class InteropService
         }
         catch { }
     }
+
+    // ---------- Show-desktop (Win+D) observation ----------
+    //
+    // The desktop furniture has to be restored after Win+D. Intercepting SC_MINIMIZEALL used to be
+    // done by replacing a widget window's GWLP_WNDPROC — which freezes an Avalonia (managed) window:
+    // the slot then holds a CLR address, so forwarding through CallWindowProc drops every message
+    // and Windows paints the busy ring. tests/SubclassProbe guards against that regression; the
+    // replacement is this low-level keyboard hook, which never touches a window procedure.
+    //
+    // The hook is installed lazily on the first subscriber and is never allowed to swallow an event:
+    // a low-level hook that returns non-zero would break Win+D (and typing) for the whole machine.
+
+    private const int WH_KEYBOARD_LL = 13;
+    private const int WM_KEYDOWN = 0x0100;
+    private const int WM_KEYUP = 0x0101;
+    private const int WM_SYSKEYDOWN = 0x0104;
+    private const int WM_SYSKEYUP = 0x0105;
+    private const int VK_LWIN = 0x5B;
+    private const int VK_RWIN = 0x5C;
+    private const int VK_D = 0x44;
+
+    private static readonly object KeyboardHookGate = new();
+    private static IntPtr keyboardHookHandle = IntPtr.Zero;
+    private static LowLevelKeyboardProc? keyboardHookProc;
+    private static Action? showDesktopRequested;
+
+    /// <summary>
+    /// Register a callback raised when the user presses Win+D (the chord is only observed, never
+    /// swallowed). Safe to call repeatedly; the hook itself is installed once.
+    /// </summary>
+    public static void OnShowDesktopRequested(Action callback)
+    {
+        lock (KeyboardHookGate)
+        {
+            showDesktopRequested += callback;
+        }
+        EnsureKeyboardHook();
+    }
+
+    private static void EnsureKeyboardHook()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+
+        lock (KeyboardHookGate)
+        {
+            if (keyboardHookHandle != IntPtr.Zero) return;
+
+            keyboardHookProc = KeyboardHookCallback;
+            keyboardHookHandle = SetWindowsHookExW(WH_KEYBOARD_LL, keyboardHookProc, IntPtr.Zero, 0);
+
+            // A refused install (UAC, a locked-down session, another hook owner) must not take the
+            // app down: the feature is simply unavailable.
+            if (keyboardHookHandle == IntPtr.Zero)
+            {
+                keyboardHookProc = null;
+            }
+        }
+    }
+
+    /// <summary>Test hook: the installed hook handle (installs it first when possible).</summary>
+    public static IntPtr KeyboardHookInstalledForTest()
+    {
+        EnsureKeyboardHook();
+        lock (KeyboardHookGate) return keyboardHookHandle;
+    }
+
+    /// <summary>
+    /// Test hook: feed a synthetic key event through the chord logic and report whether it fired.
+    /// </summary>
+    /// <param name="message">One of WM_KEYDOWN/WM_KEYUP/WM_SYSKEYDOWN/WM_SYSKEYUP.</param>
+    /// <param name="virtualKey">Virtual key code of the event.</param>
+    /// <param name="winHeld">Whether the Win key is held.</param>
+    public static bool RunKeyboardHookForTest(int message, int virtualKey, bool winHeld) =>
+        HandleKeyboardEvent(message, virtualKey, winHeld);
+
+    private static IntPtr KeyboardHookCallback(int code, IntPtr wParam, IntPtr lParam)
+    {
+        if (code >= 0)
+        {
+            try
+            {
+                var info = Marshal.PtrToStructure<KBDLLHOOKSTRUCT>(lParam);
+                var winHeld = IsKeyDown(VK_LWIN) || IsKeyDown(VK_RWIN);
+                HandleKeyboardEvent((int)wParam, (int)info.vkCode, winHeld);
+            }
+            catch
+            {
+                // Observing is best-effort; the chord must never be disturbed by our failure.
+            }
+        }
+
+        // Never swallow: the OS must still perform the actual show-desktop.
+        return CallNextHookEx(keyboardHookHandle, code, wParam, lParam);
+    }
+
+    /// <summary>
+    /// The chord rule: Win+D fires the callbacks on the D key-up while Win is held. A bare D, or the
+    /// Win key alone, must never fire (a false positive would pop every window back up while typing).
+    /// </summary>
+    private static bool HandleKeyboardEvent(int message, int virtualKey, bool winHeld)
+    {
+        if (virtualKey is VK_LWIN or VK_RWIN) return false;
+        if (virtualKey != VK_D) return false;
+        if (message is not (WM_KEYUP or WM_SYSKEYUP)) return false;
+        if (!winHeld) return false;
+
+        Action? callbacks;
+        lock (KeyboardHookGate) callbacks = showDesktopRequested;
+
+        try
+        {
+            callbacks?.Invoke();
+        }
+        catch
+        {
+            // A failing subscriber must not break the hook.
+        }
+
+        return true;
+    }
+
+    private static bool IsKeyDown(int virtualKey) => (GetAsyncKeyState(virtualKey) & 0x8000) != 0;
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct KBDLLHOOKSTRUCT
+    {
+        public uint vkCode;
+        public uint scanCode;
+        public uint flags;
+        public uint time;
+        public IntPtr dwExtraInfo;
+    }
+
+    private delegate IntPtr LowLevelKeyboardProc(int code, IntPtr wParam, IntPtr lParam);
+
+    [DllImport("user32.dll", EntryPoint = "SetWindowsHookExW", SetLastError = true)]
+    private static extern IntPtr SetWindowsHookExW(int idHook, LowLevelKeyboardProc callback, IntPtr module, uint threadId);
+
+    [DllImport("user32.dll")]
+    private static extern IntPtr CallNextHookEx(IntPtr hook, int code, IntPtr wParam, IntPtr lParam);
+
+    [DllImport("user32.dll")]
+    private static extern short GetAsyncKeyState(int virtualKey);
 }

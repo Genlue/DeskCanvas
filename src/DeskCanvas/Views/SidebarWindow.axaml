@@ -1,0 +1,128 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:locales="clr-namespace:DeskCanvas.Locales"
+        xmlns:controls="clr-namespace:DeskCanvas.Views.Controls"
+        x:Class="DeskCanvas.Views.SidebarWindow"
+        Background="Transparent"
+        ShowInTaskbar="False"
+        SystemDecorations="None"
+        CanResize="False"
+        Topmost="True"
+        WindowStartupLocation="Manual"
+        SizeToContent="Manual"
+        Title="DeskCanvas Sidebar">
+    <Window.Styles>
+        <!-- 与桌面组件窗口同一套样式：内容控件的外边距、无边框/齐平豁免、
+             右键菜单圆角、悬停滚动条可见性。侧栏与桌面的组件观感因此保持一致。 -->
+        <Style Selector="ContextMenu.WidgetContextMenu">
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="Padding" Value="5" />
+            <Setter Property="ClipToBounds" Value="True" />
+        </Style>
+        <Style Selector="ContextMenu.WidgetContextMenu MenuItem">
+            <Setter Property="CornerRadius" Value="4" />
+            <Setter Property="Margin" Value="2,1" />
+        </Style>
+        <Style Selector="Border:not(:pointerover) ScrollViewer">
+            <Setter Property="VerticalScrollBarVisibility" Value="Hidden" />
+            <Setter Property="HorizontalScrollBarVisibility" Value="Hidden" />
+        </Style>
+        <Style Selector="Border:pointerover ScrollViewer">
+            <Setter Property="VerticalScrollBarVisibility" Value="Auto" />
+            <Setter Property="HorizontalScrollBarVisibility" Value="Hidden" />
+        </Style>
+        <Style Selector=":is(UserControl)">
+            <Setter Property="Margin" Value="12" />
+        </Style>
+        <Style Selector=":is(UserControl).Frameless">
+            <Setter Property="Margin" Value="0" />
+        </Style>
+        <Style Selector=":is(UserControl).Flush">
+            <Setter Property="Margin" Value="0" />
+        </Style>
+        <Style Selector=":is(UserControl).SidebarHost">
+            <Setter Property="Margin" Value="0" />
+        </Style>
+        <Style Selector="ToolTip">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Margin" Value="0" />
+            <Setter Property="Padding" Value="0" />
+        </Style>
+    </Window.Styles>
+
+    <!-- 透明侧栏：只有小组件卡片绘制玻璃，卡片之间是透明的，露出下方屏幕内容。
+         组件按网格排布：整宽 ÷ 列数 = 一个方格（360 DIP ÷ 4 列 = 每格 90），组件按跨度占格，
+         行优先、首次适配地往下填，因此窄组件会补上宽组件在同一行留下的空位。
+         纵向滚动条固定为 Hidden：滚动条一旦出现就会占掉十来像素视口宽度，格宽随之从 90 变成
+         87.5，整栏卡片会跟着抖一下；隐藏后滚轮照常滚动，格宽恒定。
+
+         窗口比「组件条」宽出 ShadowExtentDip（扩散阴影向左溢出的那一段）：阴影层铺满整个窗口，
+         由右向左先保持不变、到最左侧组件处开始减弱并一直淡到窗口左缘之外，卡片本身仍按配置的
+         宽度排布，靠 ContentRoot 的左边距右移。 -->
+    <Grid Name="Root" Background="Transparent" ClipToBounds="True">
+        <!-- 扩散阴影（macOS 通知中心那种）。放在最底层：卡片压在它上面。 -->
+        <controls:SidebarShadowLayer Name="ShadowLayer"
+                                     HorizontalAlignment="Stretch"
+                                     VerticalAlignment="Stretch" />
+
+        <!-- 组件条本体；左边距 = 阴影溢出距离，由 SidebarWindow.ApplyShadowGeometry 设置。 -->
+        <Grid Name="ContentRoot">
+            <ScrollViewer Name="Scroller"
+                          VerticalScrollBarVisibility="Hidden"
+                          HorizontalScrollBarVisibility="Disabled"
+                          Padding="0">
+                <controls:SidebarGridPanel Name="HostPanel" />
+            </ScrollViewer>
+
+            <!-- 空侧栏占位：没有组件时也要让用户看得见侧栏已经打开，并给出添加组件入口。 -->
+            <Border Name="EmptyState"
+                    IsVisible="False"
+                    Background="{DynamicResource WidgetBackground}"
+                    BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}"
+                    BorderThickness="1"
+                    CornerRadius="16"
+                    Padding="20"
+                    Margin="16"
+                    MaxWidth="320"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center">
+                <StackPanel Spacing="10">
+                    <TextBlock Text="{x:Static locales:Locale.Sidebar_Empty}"
+                               FontSize="14" FontWeight="SemiBold"
+                               HorizontalAlignment="Center" TextWrapping="Wrap" TextAlignment="Center" />
+                    <TextBlock Text="{x:Static locales:Locale.Sidebar_Empty_Hint}"
+                               FontSize="11" Opacity="0.7"
+                               HorizontalAlignment="Center" TextWrapping="Wrap" TextAlignment="Center" />
+                    <Button Name="EmptyOpenGallery"
+                            Content="{x:Static locales:Locale.Sidebar_OpenGallery}"
+                            HorizontalAlignment="Center" />
+                </StackPanel>
+            </Border>
+
+            <!-- 插入占位线：Ctrl 拖动组件时显示目标插入位置。 -->
+            <Border Name="InsertionLine"
+                    Height="3"
+                    CornerRadius="2"
+                    Background="{DynamicResource SystemAccentColor}"
+                    HorizontalAlignment="Stretch"
+                    VerticalAlignment="Top"
+                    Margin="12,0,12,0"
+                    IsVisible="False"
+                    IsHitTestVisible="False"
+                    ZIndex="200" />
+
+            <!-- 左边缘宽度拖拽手柄：拖动即实时改变侧栏宽度，松开后按显示器保存。
+                 手柄贴在「最左侧组件」自己的左缘（左距 = 半个网格间隙，由 ApplyShadowGeometry 设置），
+                 而不是组件条的最左边：毛玻璃下窗口区域只裁到组件矩形，落在组件外的位置点不到，而
+                 为它补一块区域又会在透明条上糊出一条竖向毛玻璃线。 -->
+            <Border Name="WidthHandle"
+                    Width="7"
+                    HorizontalAlignment="Left"
+                    VerticalAlignment="Stretch"
+                    Background="Transparent"
+                    Cursor="SizeWestEast"
+                    ZIndex="300" />
+        </Grid>
+    </Grid>
+</Window>

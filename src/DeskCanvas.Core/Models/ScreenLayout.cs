@@ -22,6 +22,9 @@ namespace DeskCanvas.Core.Models;
 /// when the screen is seen). Pins the entry to that physical monitor, so a remote tool's
 /// virtual screen — or a same-resolution stand-in — can never adopt it by name.
 /// <c>null</c> = not yet seen with a hardware id (matched by key only).</param>
+/// <param name="Sidebar">This screen's右侧小组件侧栏 configuration (width + widget list).
+/// <c>null</c> = an empty sidebar (the default for configurations written before sidebars existed).
+/// Kept independent from <see cref="Layout"/>: desktop widgets never migrate into the sidebar.</param>
 public record ScreenLayout(
     string Id,
     string? Key,
@@ -32,13 +35,21 @@ public record ScreenLayout(
     List<WidgetLayout> Layout,
     double? Margin = null,
     double? Radius = null,
-    string? HardwareId = null)
+    string? HardwareId = null,
+    SidebarLayout? Sidebar = null)
 {
     /// <summary>
     /// Display name for the UI: the user alias when set, otherwise the friendly name part of the <see cref="Key"/>.
     /// </summary>
     [JsonIgnore]
     public string DisplayName => Alias ?? Key?.Split('|')[0] ?? "Primary";
+
+    /// <summary>
+    /// This screen's sidebar configuration, materialized to an empty one when the stored
+    /// configuration predates sidebars (so callers never need a null check).
+    /// </summary>
+    [JsonIgnore]
+    public SidebarLayout EffectiveSidebar => Sidebar ?? new SidebarLayout();
 }
 
 /// <summary>

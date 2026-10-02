@@ -62,6 +62,39 @@ public sealed class LiquidGlassSurface : Control
         foreach (var surface in Active) surface.RequestSampledFrame();
     }
 
+    /// <summary>
+    /// Re-render every surface because <see cref="ScreenCaptureService"/> published a newer screen
+    /// frame.
+    /// <para>
+    /// Every glass surface samples that one pipeline now — desktop widget cards, the sidebar's
+    /// cards and the frameless clock's glyph glass alike — so this is no longer narrowed to the
+    /// sidebar. It stays distinct from <see cref="RefreshAllImmediate"/> in that it does not bump
+    /// the revision: a newer frame invalidates nobody's geometry (see
+    /// <see cref="RequestSampledFrame"/>). The cap on the cost is upstream instead: the capture
+    /// service publishes only when the screen actually changed.
+    /// </para>
+    /// </summary>
+    public static void RefreshScreenSurfaces()
+    {
+        foreach (var surface in Active) surface.RequestSampledFrame();
+    }
+
+    /// <summary>
+    /// The surfaces that currently want live frames, each with the window it lives on. Read by
+    /// <see cref="ScreenCaptureService"/> when it recomputes what to sample — UI thread only, which
+    /// is why the service reaches for this instead of reading windows itself.
+    /// </summary>
+    internal static IEnumerable<LiquidGlassSurface> FrameConsumers =>
+        Active.Where(surface => surface.DemandsFrames && surface.window != null
+                                // A gallery / settings preview shows a fixed placeholder scene and
+                                // never reads a real frame, so it must not drag the sampler (and a
+                                // full-screen grab per monitor) up with it.
+                                && !surface.Preview && !surface.SettingsSurface)
+              .ToList();
+
+    /// <summary>The window this surface is on (<c>null</c> before it is attached to one).</summary>
+    internal Window? OwnerWindow => window;
+
     private static void RefreshAll(bool immediate)
     {
         foreach (var surface in Active) surface.RequestRender(immediate);
@@ -196,10 +229,11 @@ public sealed class LiquidGlassSurface : Control
         base.OnAttachedToVisualTree(e);
         attached = true;
         Active.Add(this);
-        // The live sampler only ticks while glass is on screen.
-        LiquidGlassWallpaper.RefreshSamplerState();
         window = TopLevel.GetTopLevel(this) as Window;
         if (window != null) window.PositionChanged += OnPositionChanged;
+        // RequestRender re-evaluates the capture demand, which is why the window is resolved first:
+        // the sampler only ticks while glass is on screen, and what it samples is decided per
+        // window (see ScreenCaptureService).
         RequestRender();
     }
 
@@ -215,7 +249,9 @@ public sealed class LiquidGlassSurface : Control
         ClearAnimationAuras();
         animationScale = 1.0;
         ReleasePrepared();
-        LiquidGlassWallpaper.RefreshSamplerState();
+        // Deregistered after the window field is cleared, so the service stops counting this
+        // consumer (and the last one leaving shuts the capture loop down).
+        ScreenCaptureService.RefreshDemand();
         base.OnDetachedFromVisualTree(e);
     }
 
@@ -349,8 +385,9 @@ public sealed class LiquidGlassSurface : Control
         revision++;
         if (!attached) return;
         debounce.Stop();
-        // Visibility and material both decide whether the live sampler should be running.
-        LiquidGlassWallpaper.RefreshSamplerState();
+        // Visibility and material both decide whether the live sampler should be running, and where
+        // each surface sits decides what it has to patch out of its own frame.
+        ScreenCaptureService.RefreshDemand();
         if (!IsVisible || Material?.UsesRenderedGlass != true)
         {
             ReleasePrepared();
@@ -381,7 +418,13 @@ public sealed class LiquidGlassSurface : Control
         WallpaperSnapshot? wallpaper = null;
         try
         {
-            var frame = BuildFrame();
+            // Every card samples the live screen through the one shared pipeline (see
+            // ScreenCaptureService); the wallpaper file is only the fallback when no frame is
+            // published for this card's monitor yet. The snapshot is taken *before* the frame is
+            // built because it also decides the coordinate space the frame is expressed in (see
+            // BuildFrame).
+            wallpaper = ScreenCaptureService.TryGetSnapshot(window);
+            var frame = BuildFrame(wallpaper);
             SKBitmap? nextCpu = null;
             GlassSource? nextSource = null;
             var nextAura = default(AuraTexture);
@@ -397,7 +440,9 @@ public sealed class LiquidGlassSurface : Control
                 // Split the two stages that actually cost: grabbing the desktop, and building the
                 // shared blurred backdrop from it. Both are per capture, not per pixel of the card.
                 var captureStarted = Environment.TickCount64;
-                var snapshot = LiquidGlassWallpaper.Get();
+                // This monitor's screen frame when one is published (the glass windows themselves
+                // are kept out of it — see ScreenCaptureService); the wallpaper file otherwise.
+                var snapshot = wallpaper ?? LiquidGlassWallpaper.Get();
                 var captureMs = (int)(Environment.TickCount64 - captureStarted);
                 // The preview only overrides the wallpaper's placement. The copy takes its own
                 // reference, so exactly one reference leaves this lambda on every path.
@@ -520,7 +565,24 @@ public sealed class LiquidGlassSurface : Control
         }
     }
 
-    private LiquidGlassRenderer.Frame BuildFrame()
+    /// <summary>
+    /// The geometry/optics description of the card for the renderers.
+    /// <para>
+    /// When <paramref name="liveCapture"/> is a sidebar frame the whole mapping is re-expressed in
+    /// <b>that frame's own screen</b> instead of the virtual desktop: the capture covers exactly one
+    /// monitor (see <see cref="ScreenCaptureService"/>), so the origin has to be that monitor's
+    /// corner — leaving it at the virtual-desktop origin would sample a region that the image does
+    /// not contain, which is what a sidebar on a second monitor (or any desktop wider than the
+    /// 2048 px capture bound) would show as a black card.
+    /// </para>
+    /// <para>
+    /// <see cref="LiquidGlassRenderer.Frame.PixelScale"/> is derived from the captured bitmap rather
+    /// than assumed to be the card's render quality: the capture is downscaled to a bounded edge, and
+    /// the image is drawn into desktop space with that factor, so the card must undo exactly the
+    /// downscale the capturer applied.
+    /// </para>
+    /// </summary>
+    private LiquidGlassRenderer.Frame BuildFrame(WallpaperSnapshot? liveCapture)
     {
         var scaling = window?.RenderScaling ?? 1;
         // Bound CPU/memory use for very large widgets. Text is rendered separately at native DPI.
@@ -536,6 +598,15 @@ public sealed class LiquidGlassSurface : Control
         var desktopWidth = (screens?.Max(s => s.Bounds.Right) ?? 1920) - left;
         var desktopHeight = (screens?.Max(s => s.Bounds.Bottom) ?? 1080) - top;
         var position = window != null ? this.PointToScreen(default) : default;
+        // The sidebar slides its content with a render transform; undo it, or the glass measures its
+        // position a whole window-width to the right while the panel is moving (see SlideOffsetDip).
+        if (window is SidebarWindow sliding)
+        {
+            var slideOffset = sliding.SlideOffsetDip;
+            if (Math.Abs(slideOffset) > 0.01 && window.RenderScaling > 0)
+                position = new PixelPoint(
+                    position.X - (int)Math.Round(slideOffset * window.RenderScaling), position.Y);
+        }
         var widget = window as Widget;
         var (cols, rows) = widget?.CurrentSpan ?? (0, 0);
         var material = Material ?? new Theme(null, null, 0.18, true, false, "Inter", SurfaceStyle.LiquidGlass);
@@ -546,6 +617,25 @@ public sealed class LiquidGlassSurface : Control
             (float)((screen?.Bounds.Width ?? 1920) * quality), (float)((screen?.Bounds.Height ?? 1080) * quality),
             material, ActualThemeVariant == ThemeVariant.Dark, SettingsSurface, (float)quality,
             Columns: cols, Rows: rows);
+
+        if (liveCapture?.CachedBitmap is { Width: > 0 } captured)
+        {
+            var bounds = screen?.Bounds ?? new PixelRect(left, top, desktopWidth, desktopHeight);
+            var capturedWidth = bounds.Width / (double)captured.Width;
+            frame = frame with
+            {
+                DesktopX = (float)((position.X - bounds.X) * quality),
+                DesktopY = (float)((position.Y - bounds.Y) * quality),
+                DesktopWidth = (float)(bounds.Width * quality),
+                DesktopHeight = (float)(bounds.Height * quality),
+                ScreenX = 0,
+                ScreenY = 0,
+                ScreenWidth = (float)(bounds.Width * quality),
+                ScreenHeight = (float)(bounds.Height * quality),
+                PixelScale = (float)(quality * capturedWidth)
+            };
+        }
+
         if (!Preview) return frame;
         // The preview card is tiny (45×45 in the theme button): calm both materials down so the
         // miniature shows the recipe rather than a bloated lens / flooded diffusion.

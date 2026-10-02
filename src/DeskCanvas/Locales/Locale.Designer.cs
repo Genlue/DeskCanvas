@@ -1983,5 +1983,69 @@ namespace DeskCanvas.Locales {
                 return ResourceManager.GetString("Settings_Advanced_TrayIcon_Subtitle", resourceCulture);
             }
         }
+
+        public static string Settings_Sidebar => ResourceManager.GetString("Settings_Sidebar", resourceCulture);
+
+        public static string Tray_SidebarMenu => ResourceManager.GetString("Tray_SidebarMenu", resourceCulture);
+
+        public static string Tray_ShowSidebar => ResourceManager.GetString("Tray_ShowSidebar", resourceCulture);
+
+        public static string Tray_HideSidebar => ResourceManager.GetString("Tray_HideSidebar", resourceCulture);
+
+        public static string Tray_ClearSidebar => ResourceManager.GetString("Tray_ClearSidebar", resourceCulture);
+
+        public static string Tray_SidebarSettings => ResourceManager.GetString("Tray_SidebarSettings", resourceCulture);
+
+        public static string Sidebar_RemoveFromBar => ResourceManager.GetString("Sidebar_RemoveFromBar", resourceCulture);
+
+        public static string Sidebar_AddToBar => ResourceManager.GetString("Sidebar_AddToBar", resourceCulture);
+
+        public static string Sidebar_AddedToBar => ResourceManager.GetString("Sidebar_AddedToBar", resourceCulture);
+
+        public static string Sidebar_HotKey => ResourceManager.GetString("Sidebar_HotKey", resourceCulture);
+
+        public static string Sidebar_HotKey_Record => ResourceManager.GetString("Sidebar_HotKey_Record", resourceCulture);
+
+        public static string Sidebar_HotKey_Recording => ResourceManager.GetString("Sidebar_HotKey_Recording", resourceCulture);
+
+        public static string Sidebar_HotKey_Hint => ResourceManager.GetString("Sidebar_HotKey_Hint", resourceCulture);
+
+        public static string Sidebar_HotKey_Conflict => ResourceManager.GetString("Sidebar_HotKey_Conflict", resourceCulture);
+
+        public static string Sidebar_HotKey_Registered => ResourceManager.GetString("Sidebar_HotKey_Registered", resourceCulture);
+
+        public static string Sidebar_HotKey_Unregistered => ResourceManager.GetString("Sidebar_HotKey_Unregistered", resourceCulture);
+
+        public static string Sidebar_Width => ResourceManager.GetString("Sidebar_Width", resourceCulture);
+
+        public static string Sidebar_DefaultWidth => ResourceManager.GetString("Sidebar_DefaultWidth", resourceCulture);
+
+        public static string Sidebar_CurrentWidth => ResourceManager.GetString("Sidebar_CurrentWidth", resourceCulture);
+
+        public static string Sidebar_Width_Hint => ResourceManager.GetString("Sidebar_Width_Hint", resourceCulture);
+
+        public static string Sidebar_Display => ResourceManager.GetString("Sidebar_Display", resourceCulture);
+
+        public static string Sidebar_BlockFullscreen => ResourceManager.GetString("Sidebar_BlockFullscreen", resourceCulture);
+
+        public static string Sidebar_BlockedProcesses => ResourceManager.GetString("Sidebar_BlockedProcesses", resourceCulture);
+
+        public static string Sidebar_RunningProcesses => ResourceManager.GetString("Sidebar_RunningProcesses", resourceCulture);
+
+        public static string Sidebar_AddProcess => ResourceManager.GetString("Sidebar_AddProcess", resourceCulture);
+
+        public static string Sidebar_RemoveProcess => ResourceManager.GetString("Sidebar_RemoveProcess", resourceCulture);
+
+        public static string Sidebar_Actions => ResourceManager.GetString("Sidebar_Actions", resourceCulture);
+
+        public static string Sidebar_Show => ResourceManager.GetString("Sidebar_Show", resourceCulture);
+
+        public static string Sidebar_Clear => ResourceManager.GetString("Sidebar_Clear", resourceCulture);
+
+        public static string Sidebar_OpenGallery => ResourceManager.GetString("Sidebar_OpenGallery", resourceCulture);
+
+        public static string Sidebar_Empty => ResourceManager.GetString("Sidebar_Empty", resourceCulture);
+
+        public static string Sidebar_Empty_Hint => ResourceManager.GetString("Sidebar_Empty_Hint", resourceCulture);
     }
 }

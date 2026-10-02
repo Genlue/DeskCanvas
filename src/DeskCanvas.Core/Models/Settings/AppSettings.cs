@@ -23,6 +23,8 @@ namespace DeskCanvas.Core.Models.Settings;
 /// <param name="UpdateInterval">How often to check for updates.</param>
 /// <param name="LastUpdateCheckTime">UTC timestamp of the last update check; <c>null</c> when never checked.</param>
 /// <param name="SurfaceThemes">Per-surface theme overrides keyed by <see cref="SurfaceStyle"/> name; <c>null</c> falls back to the built-in presets.</param>
+/// <param name="Sidebar">右侧小组件侧栏 global settings (hotkey, default width, fullscreen/process blocking);
+/// <c>null</c> uses <see cref="SidebarSettings"/>'s defaults, so configurations written before sidebars existed keep working.</param>
 public record AppSettings(
     Theme Theme,
     Theme[] Templates,
@@ -40,7 +42,8 @@ public record AppSettings(
     bool ShowTrayIcon = true,
     UpdateCheckInterval UpdateInterval = UpdateCheckInterval.Daily,
     DateTime? LastUpdateCheckTime = null,
-    Dictionary<string, Theme>? SurfaceThemes = null)
+    Dictionary<string, Theme>? SurfaceThemes = null,
+    SidebarSettings? Sidebar = null)
 {
     /// <summary>
     /// Gets the saved theme configuration for the specified surface, falling back to default presets.
@@ -148,4 +151,13 @@ public record AppSettings(
     /// when <see cref="TitleBarSize"/> is not set.
     /// </summary>
     public double EffectiveTitleBarSize => TitleBarSize ?? DefaultTitleBarSize;
+
+    /// <summary>Default global hotkey for toggling the sidebar.</summary>
+    public const string DefaultSidebarHotKey = "Ctrl+Alt+Space";
+
+    /// <summary>
+    /// The effective sidebar settings; a configuration written before sidebars existed
+    /// (<see cref="Sidebar"/> = <c>null</c>) yields the defaults.
+    /// </summary>
+    public SidebarSettings EffectiveSidebar => Sidebar ?? new SidebarSettings();
 }

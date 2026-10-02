@@ -21,7 +21,7 @@ using DeskCanvas.Services;
 
 namespace DeskCanvas.Views;
 
-public partial class Widget : Window, INotifyPropertyChanged
+public partial class Widget : Window, INotifyPropertyChanged, IWidgetCardHost
 {
     private readonly IWidgetLayoutProvider widgetLayoutProvider;
     private readonly IAppSettingsProvider appSettingsProvider;
@@ -34,6 +34,9 @@ public partial class Widget : Window, INotifyPropertyChanged
     private readonly ProfileService profileService;
     private (int Columns, int Rows)? manualSpan;
     private readonly bool isFrameless;
+
+    /// <inheritdoc />
+    public bool IsSidebarHost => false;
 
     /// <summary>
     /// Set once this window is being torn down (recreate / close all). While set, the
@@ -75,7 +78,7 @@ public partial class Widget : Window, INotifyPropertyChanged
     {
         if (suspended) return;
         suspended = true;
-        (ContentPresenter.Content as IWidgetSuspendable)?.Suspend();
+        (Card.ContentPresenterControl.Content as IWidgetSuspendable)?.Suspend();
     }
 
     /// <summary>Rebuild whatever <see cref="SuspendContent"/> released.</summary>
@@ -83,7 +86,7 @@ public partial class Widget : Window, INotifyPropertyChanged
     {
         if (!suspended) return;
         suspended = false;
-        (ContentPresenter.Content as IWidgetSuspendable)?.Resume();
+        (Card.ContentPresenterControl.Content as IWidgetSuspendable)?.Resume();
     }
 
     /// <summary>
@@ -121,7 +124,7 @@ public partial class Widget : Window, INotifyPropertyChanged
             control.Classes.Add("Frameless");
         if ((control is IFixedSizeWidget && control.GetType().Name == "AggregateView") || control.GetType().Name == "Note")
             control.Classes.Add("Flush");
-        ContentPresenter.Content = control;
+        Card.ContentPresenterControl.Content = control;
         AttachStackWidget(control);
         
         // The native transparency level is a LOCAL value, not a style: a runtime
@@ -289,8 +292,6 @@ public partial class Widget : Window, INotifyPropertyChanged
     /// </summary>
     private double ResolveEffectiveRadius(double baseRadius)
     {
-        if (baseRadius <= 0) return 0;
-
         int cols = 2, rows = 2;
         if (pendingSpan.HasValue)
         {
@@ -313,24 +314,7 @@ public partial class Widget : Window, INotifyPropertyChanged
 
         var width = ClientSize.Width > 0 ? ClientSize.Width : Width;
         var height = ClientSize.Height > 0 ? ClientSize.Height : Height;
-        var margin = WidgetMargin.Left;
-        var cardW = Math.Max(1, width - 2 * margin);
-        var cardH = Math.Max(1, height - 2 * margin);
-        var minSide = Math.Min(cardW, cardH);
-
-        // 1x1 small widget (single file, icon tile, or <= 90px square)
-        if ((cols <= 1 && rows <= 1) || minSide <= 90)
-        {
-            return Math.Max(4, Math.Round(baseRadius * 0.55));
-        }
-
-        // 1xN or Nx1 strip widget (e.g. 2x1, 4x1, 1x2, 1x4, or short edge <= 125px)
-        if (cols <= 1 || rows <= 1 || minSide <= 125)
-        {
-            return Math.Max(6, Math.Round(baseRadius * 0.72));
-        }
-
-        return baseRadius;
+        return WidgetSurfaceMetrics.ResolveEffectiveRadius(baseRadius, cols, rows, width, height, WidgetMargin.Left);
     }
 
     public double EffectiveBaseRadius =>
@@ -423,7 +407,7 @@ public partial class Widget : Window, INotifyPropertyChanged
     {
         get
         {
-            var contentName = ContentPresenter?.Content?.GetType().Name;
+            var contentName = Card.ContentPresenterControl.Content?.GetType().Name;
             var layout = widgetLayoutProvider?.Get();
             return contentName is "Note" or "MapView"
                    || layout?.SubType is "Note" or "MapView"
@@ -473,7 +457,7 @@ public partial class Widget : Window, INotifyPropertyChanged
     }
 
     public DeskCanvas.Core.Interfaces.IStackWidget? StackWidget =>
-        activeStackWidget ?? (ContentPresenter?.Content as DeskCanvas.Core.Interfaces.IStackWidget);
+        activeStackWidget ?? (Card.ContentPresenterControl.Content as DeskCanvas.Core.Interfaces.IStackWidget);
 
     public bool HasStackIndicators => StackWidget != null && (StackWidget.IndicatorItems?.Count ?? 0) > 1;
 
@@ -652,7 +636,7 @@ public partial class Widget : Window, INotifyPropertyChanged
             var variant = ActualThemeVariant;
             if (theme.IsColorful)
             {
-                var contentName = ContentPresenter?.Content?.GetType().Name;
+                var contentName = Card.ContentPresenterControl.Content?.GetType().Name;
                 if (contentName == "Forecast")
                 {
                     if (this.TryFindResource("WeatherCardBackground", variant, out var wcb) && wcb is IBrush wb)
@@ -758,11 +742,11 @@ public partial class Widget : Window, INotifyPropertyChanged
     public bool WidgetExtendClientArea => appSettingsProvider.Get().Theme.UseNativeFrame;
     public void EditWidget() => editWidgetWindow?.Invoke().Show();
 
-    private IFixedSizeWidget? FixedSizeWidget => ContentPresenter.Content as IFixedSizeWidget;
+    private IFixedSizeWidget? FixedSizeWidget => Card.ContentPresenterControl.Content as IFixedSizeWidget;
     public bool IsFixedWidget => FixedSizeWidget != null;
     public bool IsFixed2x1Widget => FixedSizeWidget != null && FixedSizeWidget.AllowedBaseSpans.Contains((4, 2));
     public bool IsFixedSquareWidget => FixedSizeWidget != null && FixedSizeWidget.AllowedBaseSpans.Contains((1, 1));
-    public bool IsMapWidget => ContentPresenter.Content?.GetType().Name == "MapView";
+    public bool IsMapWidget => Card.ContentPresenterControl.Content?.GetType().Name == "MapView";
 
     public void SetFixedSpanPreset(string spanTag)
     {
@@ -854,12 +838,12 @@ public partial class Widget : Window, INotifyPropertyChanged
 
         if (Math.Abs(contentScale - 1.0) < 0.001)
         {
-            ContentPresenter.RenderTransform = null;
+            Card.ContentPresenterControl.RenderTransform = null;
             return;
         }
 
-        ContentPresenter.RenderTransform = new ScaleTransform(contentScale, contentScale);
-        ContentPresenter.RenderTransformOrigin = new RelativePoint(0.5, 0.5, RelativeUnit.Relative);
+        Card.ContentPresenterControl.RenderTransform = new ScaleTransform(contentScale, contentScale);
+        Card.ContentPresenterControl.RenderTransformOrigin = new RelativePoint(0.5, 0.5, RelativeUnit.Relative);
     }
 
     /// <summary>
@@ -960,17 +944,17 @@ public partial class Widget : Window, INotifyPropertyChanged
 
         if (isFrameless)
         {
-            Border.Width = width;
-            Border.Height = height;
-            Border.Margin = new Thickness(0);
-            Border.BorderThickness = new Thickness(0);
-            Border.CornerRadius = new CornerRadius(0);
-            Border.BorderBrush = null;
-            Border.Background = Brushes.Transparent;
+            Card.CardBorderControl.Width = width;
+            Card.CardBorderControl.Height = height;
+            Card.CardBorderControl.Margin = new Thickness(0);
+            Card.CardBorderControl.BorderThickness = new Thickness(0);
+            Card.CardBorderControl.CornerRadius = new CornerRadius(0);
+            Card.CardBorderControl.BorderBrush = null;
+            Card.CardBorderControl.Background = Brushes.Transparent;
 
-            ContentPresenter.Width = width;
-            ContentPresenter.Height = height;
-            ContentPresenter.Clip = null;
+            Card.ContentPresenterControl.Width = width;
+            Card.ContentPresenterControl.Height = height;
+            Card.ContentPresenterControl.Clip = null;
 
             UpdateAdaptiveRadiusResources();
             return;
@@ -980,14 +964,14 @@ public partial class Widget : Window, INotifyPropertyChanged
         var cardW = Math.Max(1, width - 2 * margin);
         var cardH = Math.Max(1, height - 2 * margin);
 
-        Border.Width = cardW;
-        Border.Height = cardH;
+        Card.CardBorderControl.Width = cardW;
+        Card.CardBorderControl.Height = cardH;
 
         if (IsStackWidget)
         {
-            ContentPresenter.Width = cardW;
-            ContentPresenter.Height = cardH;
-            ContentPresenter.Clip = null;
+            Card.ContentPresenterControl.Width = cardW;
+            Card.ContentPresenterControl.Height = cardH;
+            Card.ContentPresenterControl.Clip = null;
             UpdateAdaptiveRadiusResources();
             return;
         }
@@ -996,13 +980,13 @@ public partial class Widget : Window, INotifyPropertyChanged
         var innerW = Math.Max(1, cardW - outline.Left - outline.Right);
         var innerH = Math.Max(1, cardH - outline.Top - outline.Bottom);
 
-        ContentPresenter.Width = innerW;
-        ContentPresenter.Height = innerH;
+        Card.ContentPresenterControl.Width = innerW;
+        Card.ContentPresenterControl.Height = innerH;
 
         UpdateAdaptiveRadiusResources();
         var r = Radius.TopLeft;
         var innerR = Math.Max(0, r - outline.Left);
-        ContentPresenter.Clip = new RectangleGeometry(new Rect(0, 0, innerW, innerH), innerR, innerR);
+        Card.ContentPresenterControl.Clip = new RectangleGeometry(new Rect(0, 0, innerW, innerH), innerR, innerR);
 
         // Outlined glass: the corner-fade notches follow the card aspect ratio.
         Notify(nameof(WidgetOutlineThickness));
@@ -1281,12 +1265,12 @@ public partial class Widget : Window, INotifyPropertyChanged
             // place so the editing session survives their own saves and the
             // per-widget settings dialog. Stateless views over their model are
             // recreated, which is also how they pick up external changes.
-            if (ContentPresenter.Content is IWidgetSelfRefreshing selfRefreshing)
+            if (Card.ContentPresenterControl.Content is IWidgetSelfRefreshing selfRefreshing)
                 selfRefreshing.Refresh(newLayout);
             else
             {
                 var newCtrl = userControl();
-                ContentPresenter.Content = newCtrl;
+                Card.ContentPresenterControl.Content = newCtrl;
                 AttachStackWidget(newCtrl);
             }
         }
@@ -1554,7 +1538,7 @@ public partial class Widget : Window, INotifyPropertyChanged
         Close();
     }
 
-    private void OnResizeHandlePressed(object? sender, PointerPressedEventArgs e)
+    public void OnResizeHandlePressed(object? sender, PointerPressedEventArgs e)
     {
         // Manual grid: widget size is grid-driven, free resizing is disabled.
         if (appSettingsProvider.Get().Layout.GridMode == GridMode.Manual) return;

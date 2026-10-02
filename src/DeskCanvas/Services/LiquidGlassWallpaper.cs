@@ -180,22 +180,18 @@ public static class LiquidGlassWallpaper
 
     private static void UpdateTimerState()
     {
-        if (liveSamplingTimer == null) return;
-        // DispatcherTimer must be started and stopped from the UI thread.
-        if (!Dispatcher.UIThread.CheckAccess())
-        {
-            Dispatcher.UIThread.Post(UpdateTimerState);
-            return;
-        }
-        var shouldRun = liveSamplingEnabled && !suspended && LiquidGlassSurface.HasActiveSurfaces;
-        if (shouldRun)
-        {
-            if (!liveSamplingTimer.IsEnabled) liveSamplingTimer.Start();
-        }
-        else
-        {
-            liveSamplingTimer.Stop();
-        }
+        // Live sampling moved to <see cref="ScreenCaptureService"/>: that one grabs the composited
+        // screen (which, unlike the wallpaper host this class captures, contains the application
+        // windows actually behind the glass), once per monitor, and shares the frame with every
+        // consumer — desktop widgets and the sidebar alike. This class now owns only the
+        // *fallback*: a lazily cached capture of the wallpaper host, or the wallpaper file when
+        // even that is unavailable.
+        //
+        // Its own sampler must therefore never tick. Leaving both running is precisely the double
+        // cost the merge removed: two full-size captures per interval, two blurred backdrops, two
+        // published frames for the same pixels. The timer object still exists (ConfigureLiveSampling
+        // creates it and the settings page reads the interval back), but it is never started.
+        liveSamplingTimer?.Stop();
     }
 
     /// <summary>
@@ -387,6 +383,38 @@ public static class LiquidGlassWallpaper
     }
 
     /// <summary>
+    /// A capture taken <b>now</b>, bypassing the cache.
+    /// <para>
+    /// The screen pipeline owns live sampling, so nothing refreshes this cache on a timer any more —
+    /// and the widget footprints it patches are exactly what those widgets' glass samples, which
+    /// means a cached frame would freeze the glass over an animated wallpaper. Only
+    /// <see cref="ScreenCaptureService"/> calls this, at its own sampling cadence.
+    /// </para>
+    /// <para>
+    /// The outgoing frame is parked in <c>stale</c> rather than dropped, on purpose: when the
+    /// wallpaper has not actually moved, <see cref="CaptureOnce"/>'s identity check hands that same
+    /// frame back instead of allocating a fresh full-desktop bitmap every round. And deliberately no
+    /// <see cref="NotifyInvalidated"/> on the way in — the glass surfaces do not read this frame (they
+    /// read the screen frame), so there is nothing to invalidate, and a notify per sampling round
+    /// would make the frameless clock re-render its glyphs for nothing.
+    /// </para>
+    /// </summary>
+    internal static WallpaperSnapshot? Recapture()
+    {
+        WallpaperSnapshot? previousStale;
+        lock (Gate)
+        {
+            previousStale = stale;
+            stale = cached;
+            cached = null;
+            cachedKey = null;
+        }
+
+        previousStale?.Dispose();
+        return Get();
+    }
+
+    /// <summary>
     /// Drop the cached desktop capture and its decoded bitmap.
     /// <para>
     /// Called while every attached screen is covered by a fullscreen application: the capture is
@@ -416,6 +444,14 @@ public static class LiquidGlassWallpaper
         old?.Dispose();
         oldStale?.Dispose();
     }
+
+    /// <summary>
+    /// A newer live frame was published by <see cref="ScreenCaptureService"/>. Raises the same
+    /// notification <see cref="Invalidate"/> does — the frameless clock's glyph glass listens for it
+    /// to re-render against the newer frame — but drops nothing from this cache: the screen pipeline
+    /// owns the live pixels now, and what is cached here is only the fallback.
+    /// </summary>
+    internal static void NotifyLiveFramePublished() => NotifyInvalidated();
 
     private static void NotifyInvalidated()
     {

@@ -49,7 +49,7 @@ namespace Clock.Views;
 /// global liquid glass settings.
 /// </para>
 /// </summary>
-public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSelfRefreshing, IWidgetSuspendable
+public partial class FramelessDigital : UserControl, IFramelessWidget, IFramelessGlassMask, IWidgetSelfRefreshing, IWidgetSuspendable
 {
     private FramelessClockModel model;
     private readonly IWidgetLayoutProvider? widgetLayoutProvider;
@@ -70,6 +70,18 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
     // Per-second Acrylic region recompute buffers (see UpdateWindowRegion).
     private RenderTargetBitmap? regionBitmap;
     private byte[]? regionBuffer;
+
+    // Sidebar glass mask (see IFramelessGlassMask): the glyph spans a sidebar host unions into the
+    // sidebar window's region, so the 毛玻璃 stays inside the numerals instead of flooding the whole
+    // grid cell the widget occupies. Kept separate from the region buffers above because the two are
+    // different things — the desktop path owns its window's region and rewrites it once per digit,
+    // while a sidebar host pulls this mask on demand — and because the sizes differ (a sidebar cell
+    // is far smaller than a stretched desktop clock).
+    private RenderTargetBitmap? maskBitmap;
+    private byte[]? maskBuffer;
+    private string? maskCacheKey;
+    private List<(int Left, int Top, int Right, int Bottom)> maskSpans = [];
+    private string? lastAnnouncedMask;
 
     private readonly HashSet<string> inFlightRenders = new();
     private CancellationTokenSource? preRenderCts;
@@ -177,6 +189,9 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
 
         if (window != null)
         {
+            // Deregistered before the field is cleared — the service identifies the consumer by the
+            // window itself.
+            UpdateCaptureDemand(wanted: false);
             if (IsDesktopWidget)
             {
                 window.PositionChanged -= OnWindowPositionChanged;
@@ -374,6 +389,11 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
 
         lastRegionKey = null;
         ClearLiquidGlassCache();
+
+        // The sampling demand follows the material: 纯色 needs no live frame at all, while 毛玻璃
+        // (the glyph-span region) and 液态玻璃 (the raytraced glyphs) both do. A frameless widget
+        // shows no card, so it has no LiquidGlassSurface to register with and registers directly.
+        UpdateCaptureDemand();
 
         // Transparency first, glyph region second — the order is load-bearing when leaving 毛玻璃.
         // The acrylic backdrop is confined by the glyph region, so clearing the region while the
@@ -584,6 +604,17 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
         var screen = window?.Screens.ScreenFromWindow(window);
         var screenPos = window != null ? this.PointToScreen(default) : default;
 
+        // The sidebar slides its content with a render transform, which PointToScreen folds in: the
+        // glyphs would be measured a whole window-width to the right while the panel moves — and, on
+        // a static screen, would stay there (nothing republishes to correct them). See
+        // SidebarWindow.SlideOffsetDip.
+        if (window is DeskCanvas.Views.SidebarWindow sliding)
+        {
+            var slideOffset = sliding.SlideOffsetDip;
+            if (Math.Abs(slideOffset) > 0.01)
+                screenPos = new PixelPoint(screenPos.X - (int)Math.Round(slideOffset * scaling), screenPos.Y);
+        }
+
         var screens = window?.Screens.All;
         var left = screens?.Min(s => s.Bounds.X) ?? 0;
         var top = screens?.Min(s => s.Bounds.Y) ?? 0;
@@ -602,15 +633,38 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
             effectiveTheme, isDark,
             Columns: cols, Rows: rows);
 
+        // The one live-sampling pipeline: this monitor's composited screen, or the wallpaper when no
+        // frame has been published for it yet (see ScreenCaptureService). Taken *before* the frame is
+        // built because it also decides the coordinate space the frame is expressed in — the same
+        // thing the card glass does — and its reference is handed to the worker below.
+        var live = ScreenCaptureService.TryGetSnapshot(window);
+        if (live?.CachedBitmap is { Width: > 0 } captured)
+        {
+            var bounds = screen?.Bounds ?? new PixelRect(left, top, desktopWidth, desktopHeight);
+            frame = frame with
+            {
+                DesktopX = screenPos.X - bounds.X,
+                DesktopY = screenPos.Y - bounds.Y,
+                DesktopWidth = bounds.Width,
+                DesktopHeight = bounds.Height,
+                ScreenX = 0,
+                ScreenY = 0,
+                ScreenWidth = bounds.Width,
+                ScreenHeight = bounds.Height,
+                // Undo the downscale the capturer applied, so a card pixel samples the texel it should.
+                PixelScale = (float)(bounds.Width / (double)captured.Width)
+            };
+        }
+
         inFlightRenders.Add(key);
         preRenderCts ??= new CancellationTokenSource();
         var token = preRenderCts.Token;
 
         _ = Task.Run(() =>
         {
-            if (token.IsCancellationRequested) return;
+            if (token.IsCancellationRequested) { live?.Dispose(); return; }
             // The snapshot carries a reference the caller owns; hold it for the whole render.
-            using var wallpaper = LiquidGlassWallpaper.Get();
+            using var wallpaper = live ?? LiquidGlassWallpaper.Get();
             if (token.IsCancellationRequested) return;
             // No widget-level lens override: the adaptive lens derived from the global optics is
             // the only path the clock renders with (null == adaptive in ResolveLens).
@@ -742,10 +796,19 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
                 }
             }
 
+            // A sidebar host cannot shape this widget's window region — the sidebar's window is
+            // shared by every card in the strip, so no single widget may own it. The host instead
+            // unions the glyph spans published here into its own region (see IFramelessGlassMask),
+            // which is what keeps the frost on the numerals instead of on the whole grid cell.
+            AnnounceGlassMask();
+
             using (context.PushGeometryClip(stretchedGeometry))
             {
-                // Acrylic surface wash: in preview, provide higher opacity so it looks frosted in the gallery card
-                var alpha = IsDesktopWidget ? (isDark ? 70 : 48) : (isDark ? 160 : 180);
+                // Acrylic surface wash: only a preview gets the stronger wash (it has to read at
+                // 45×45 against a placeholder scene). A real surface uses the desktop alpha — that
+                // is what makes the sidebar's clock read as glass rather than as a plain
+                // translucent plate.
+                var alpha = IsPreviewSurface ? (isDark ? 160 : 180) : (isDark ? 70 : 48);
                 var tintWash = isDark
                     ? Color.FromArgb((byte)alpha, 60, 60, 60)
                     : Color.FromArgb((byte)alpha, 240, 240, 240);
@@ -820,6 +883,109 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
                 var brushColor = Color.FromArgb((byte)(opacity * 255), baseSolid.R, baseSolid.G, baseSolid.B);
                 context.DrawRectangle(new SolidColorBrush(brushColor), null, new Rect(0, 0, targetW, targetH));
             }
+        }
+    }
+
+    // ---------- Glass mask for a sidebar host (IFramelessGlassMask) ----------
+
+    /// <summary>
+    /// True when this control is a preview (the gallery's 45×45 miniature) rather than a real
+    /// surface. A preview renders against a fixed placeholder scene, so its wash is strengthened to
+    /// make the recipe readable at that size; a real surface — a desktop widget or a sidebar card —
+    /// must use the desktop alpha, which is what makes the sidebar's clock read as glass instead of
+    /// a plain translucent plate.
+    /// </summary>
+    private bool IsPreviewSurface => window is not DeskCanvas.Views.Widget and not DeskCanvas.Views.SidebarWindow;
+
+    /// <summary>
+    /// Tell the one sampling pipeline that this window needs a live frame. Only 液态玻璃 reads one:
+    /// it raytraces the glyphs against the captured screen. 毛玻璃 must <b>not</b> register — its
+    /// frost is the OS backdrop, not a capture — and a registration there would run the whole
+    /// sampling loop for a material that never looks at a frame. The window is passed through either
+    /// way: a removal is identified by the window, so nulling it here would leave the registration
+    /// behind.
+    /// </summary>
+    private void UpdateCaptureDemand(bool wanted = true) =>
+        ScreenCaptureService.SetDirectConsumer(window, wanted && material.IsRenderedGlass);
+
+    /// <inheritdoc />
+    public event Action? GlassMaskChanged;
+
+    /// <inheritdoc />
+    public string GlassMaskKey =>
+        $"{FormatTime(GetCurrentTime())}|{Bounds.Width:0.##}x{Bounds.Height:0.##}"
+        + $"|{model.FontFamily}|{model.FontWeight}|{model.StretchFill}|{ActualThemeVariant}";
+
+    /// <inheritdoc />
+    public IReadOnlyList<(int Left, int Top, int Right, int Bottom)> GetGlassSpans(double scaling)
+    {
+        var pixelW = Math.Max(1, (int)Math.Ceiling(Bounds.Width * scaling));
+        var pixelH = Math.Max(1, (int)Math.Ceiling(Bounds.Height * scaling));
+        var key = $"{GlassMaskKey}|{pixelW}x{pixelH}";
+        if (key == maskCacheKey) return maskSpans;
+
+        maskSpans = BuildGlassSpans(pixelW, pixelH, scaling);
+        maskCacheKey = key;
+        return maskSpans;
+    }
+
+    /// <summary>
+    /// Tell a sidebar host that the shape moved on (a new digit, a resize, a font change). Cheap: the
+    /// signature is compared against the last one announced, and a host that does not care never
+    /// subscribes.
+    /// </summary>
+    private void AnnounceGlassMask()
+    {
+        var key = GlassMaskKey;
+        if (key == lastAnnouncedMask) return;
+        lastAnnouncedMask = key;
+        try { GlassMaskChanged?.Invoke(); }
+        catch (Exception ex) { Debug.WriteLine($"Failed to announce the glass mask: {ex.Message}"); }
+    }
+
+    /// <summary>
+    /// Rasterise the current glyphs and read the covered spans back out. The same scanline-span
+    /// extraction the desktop region uses — a GDI region is built from spans, and a sidebar host
+    /// unions the very same spans into its own region.
+    /// </summary>
+    private List<(int Left, int Top, int Right, int Bottom)> BuildGlassSpans(int pixelW, int pixelH, double scaling)
+    {
+        var stretchedGeometry = FramelessGlyphGeometry.BuildStretch(
+            FormatTime(GetCurrentTime()), Bounds.Width, Bounds.Height,
+            model.FontFamily, model.FontWeight, model.StretchFill, appSettingsProvider?.Get().Theme);
+        if (stretchedGeometry == null) return [];
+
+        var size = new PixelSize(pixelW, pixelH);
+        var rtb = maskBitmap;
+        if (rtb == null || rtb.PixelSize != size)
+        {
+            rtb?.Dispose();
+            rtb = maskBitmap = new RenderTargetBitmap(size, new Vector(96 * scaling, 96 * scaling));
+        }
+
+        using (var ctx = rtb.CreateDrawingContext())
+        {
+            ctx.DrawGeometry(Brushes.Black, null, stretchedGeometry);
+        }
+
+        var needed = pixelW * pixelH * 4;
+        var buffer = maskBuffer;
+        if (buffer == null || buffer.Length < needed) buffer = maskBuffer = new byte[needed];
+
+        var handle = GCHandle.Alloc(buffer, GCHandleType.Pinned);
+        try
+        {
+            rtb.CopyPixels(new PixelRect(0, 0, pixelW, pixelH), handle.AddrOfPinnedObject(), needed, pixelW * 4);
+            return ExtractSpans(buffer, pixelW, pixelH);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Failed to build the glass mask spans: {ex.Message}");
+            return [];
+        }
+        finally
+        {
+            handle.Free();
         }
     }
 

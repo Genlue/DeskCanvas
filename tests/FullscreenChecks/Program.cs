@@ -132,6 +132,10 @@ class Program
         Check("a watcher without an anchor reports 'not covered'", !watcher.IsFullscreen);
 
         Console.WriteLine();
+        Console.WriteLine("--- sidebar overlay: true-fullscreen rule ---");
+        SidebarOverlayRule();
+
+        Console.WriteLine();
         Console.WriteLine(failures == 0 ? "ALL CHECKS PASSED" : $"{failures} CHECK(S) FAILED");
         return failures == 0 ? 0 : 1;
     }
@@ -161,6 +165,31 @@ class Program
     {
         var result = FullscreenWatcherService.AllScreensCovered(screens, windows);
         Check(what, result == covered);
+    }
+
+    /// <summary>
+    /// The rule the sidebar uses to decide whether to stay: a screen-covering window is only
+    /// "fullscreen" when it is a real borderless/exclusive app. The desktop shell (Progman/WorkerW)
+    /// spans the monitor too, and counting it pulled the sidebar back a second after it opened.
+    /// </summary>
+    private static void SidebarOverlayRule()
+    {
+        Check("a borderless window covering the monitor counts",
+            FullscreenWatcherService.IsTrueFullscreen(false, false, false, true, false, false, true));
+        Check("a maximized window never counts",
+            !FullscreenWatcherService.IsTrueFullscreen(false, false, false, true, false, true, true));
+        Check("the desktop shell never counts (Progman/WorkerW)",
+            !FullscreenWatcherService.IsTrueFullscreen(true, false, false, true, false, false, true));
+        Check("a layered desktop overlay never counts",
+            !FullscreenWatcherService.IsTrueFullscreen(false, true, false, true, false, false, true));
+        Check("our own sidebar window never counts",
+            !FullscreenWatcherService.IsTrueFullscreen(false, false, true, true, false, false, true));
+        Check("a window not covering the monitor does not count",
+            !FullscreenWatcherService.IsTrueFullscreen(false, false, false, true, false, false, false));
+        Check("a minimized window does not count",
+            !FullscreenWatcherService.IsTrueFullscreen(false, false, false, true, true, false, true));
+        Check("an invisible window does not count",
+            !FullscreenWatcherService.IsTrueFullscreen(false, false, false, false, false, false, true));
     }
 
     private static void Check(string what, bool ok)

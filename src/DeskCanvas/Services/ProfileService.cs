@@ -24,6 +24,7 @@ public class ProfileService
     private readonly ILocaleService localeService;
     private readonly WidgetFactory widgetFactory;
     private readonly DisplayMonitorService displayMonitor;
+    private readonly ISidebarService? sidebarService;
 
     /// <summary>Raised when the active profile changes.</summary>
     public event EventHandler? ActiveProfileChanged;
@@ -37,7 +38,8 @@ public class ProfileService
         IThemeService themeService,
         ILocaleService localeService,
         WidgetFactory widgetFactory,
-        DisplayMonitorService displayMonitor)
+        DisplayMonitorService displayMonitor,
+        ISidebarService? sidebarService = null)
     {
         this.appSettingsProvider = appSettingsProvider;
         this.layoutProvider = layoutProvider;
@@ -45,6 +47,7 @@ public class ProfileService
         this.localeService = localeService;
         this.widgetFactory = widgetFactory;
         this.displayMonitor = displayMonitor;
+        this.sidebarService = sidebarService;
 
         EnsureSeeded();
     }
@@ -182,6 +185,10 @@ public class ProfileService
             // 1. Save current profile snapshot so changes made during this session aren't lost
             var currentName = GetActiveProfile();
             SaveCurrentProfile(currentName);
+
+            // 1b. Close and unbind every sidebar widget first, so a sidebar provider of the
+            //     outgoing profile can never write into the incoming layout.
+            OnUi(() => sidebarService?.CloseAll());
 
             // 2. Tear the outgoing widgets down BEFORE the stored layout is replaced.
             //    A live widget keeps its layout subscriptions until it is really gone;

@@ -1005,4 +1005,100 @@
     <data name="Update_WhatsNew" xml:space="preserve">
         <value>更新日志</value>
     </data>
+    <data name="Settings_Sidebar" xml:space="preserve">
+        <value>侧栏</value>
+    </data>
+    <data name="Tray_SidebarMenu" xml:space="preserve">
+        <value>侧栏</value>
+    </data>
+    <data name="Tray_ShowSidebar" xml:space="preserve">
+        <value>显示侧栏</value>
+    </data>
+    <data name="Tray_HideSidebar" xml:space="preserve">
+        <value>隐藏侧栏</value>
+    </data>
+    <data name="Tray_ClearSidebar" xml:space="preserve">
+        <value>清空当前显示器侧栏</value>
+    </data>
+    <data name="Tray_SidebarSettings" xml:space="preserve">
+        <value>打开侧栏设置…</value>
+    </data>
+    <data name="Sidebar_RemoveFromBar" xml:space="preserve">
+        <value>从侧栏移除</value>
+    </data>
+    <data name="Sidebar_AddToBar" xml:space="preserve">
+        <value>添加到侧栏</value>
+    </data>
+    <data name="Sidebar_AddedToBar" xml:space="preserve">
+        <value>已添加到侧栏</value>
+    </data>
+    <data name="Sidebar_HotKey" xml:space="preserve">
+        <value>快捷键</value>
+    </data>
+    <data name="Sidebar_HotKey_Record" xml:space="preserve">
+        <value>录制快捷键</value>
+    </data>
+    <data name="Sidebar_HotKey_Recording" xml:space="preserve">
+        <value>请按下组合键…（Esc 取消）</value>
+    </data>
+    <data name="Sidebar_HotKey_Hint" xml:space="preserve">
+        <value>默认 Ctrl+Alt+Space。需要至少一个修饰键，不能使用 F12。</value>
+    </data>
+    <data name="Sidebar_HotKey_Conflict" xml:space="preserve">
+        <value>该快捷键已被其他程序占用，已保留原快捷键。</value>
+    </data>
+    <data name="Sidebar_HotKey_Registered" xml:space="preserve">
+        <value>当前状态：已注册。</value>
+    </data>
+    <data name="Sidebar_HotKey_Unregistered" xml:space="preserve">
+        <value>当前状态：未注册（可能被占用）。</value>
+    </data>
+    <data name="Sidebar_Width" xml:space="preserve">
+        <value>宽度</value>
+    </data>
+    <data name="Sidebar_DefaultWidth" xml:space="preserve">
+        <value>默认宽度 (DIP)</value>
+    </data>
+    <data name="Sidebar_CurrentWidth" xml:space="preserve">
+        <value>当前显示器宽度 (DIP)</value>
+    </data>
+    <data name="Sidebar_Width_Hint" xml:space="preserve">
+        <value>宽度按显示器独立保存（280–640 DIP），侧栏左边缘也可直接拖拽调整。</value>
+    </data>
+    <data name="Sidebar_Display" xml:space="preserve">
+        <value>显示与阻止</value>
+    </data>
+    <data name="Sidebar_BlockFullscreen" xml:space="preserve">
+        <value>全屏时禁用侧栏（普通最大化窗口不受影响）</value>
+    </data>
+    <data name="Sidebar_BlockedProcesses" xml:space="preserve">
+        <value>被阻止的进程：这些程序在前台时自动收回侧栏</value>
+    </data>
+    <data name="Sidebar_RunningProcesses" xml:space="preserve">
+        <value>运行中的程序</value>
+    </data>
+    <data name="Sidebar_AddProcess" xml:space="preserve">
+        <value>添加所选程序</value>
+    </data>
+    <data name="Sidebar_RemoveProcess" xml:space="preserve">
+        <value>移除所选</value>
+    </data>
+    <data name="Sidebar_Actions" xml:space="preserve">
+        <value>操作</value>
+    </data>
+    <data name="Sidebar_Show" xml:space="preserve">
+        <value>显示侧栏（鼠标所在显示器）</value>
+    </data>
+    <data name="Sidebar_Clear" xml:space="preserve">
+        <value>清空当前显示器侧栏</value>
+    </data>
+    <data name="Sidebar_OpenGallery" xml:space="preserve">
+        <value>打开组件库</value>
+    </data>
+    <data name="Sidebar_Empty" xml:space="preserve">
+        <value>侧栏为空</value>
+    </data>
+    <data name="Sidebar_Empty_Hint" xml:space="preserve">
+        <value>在组件库中右键组件，选择「添加到侧栏」。</value>
+    </data>
 </root>

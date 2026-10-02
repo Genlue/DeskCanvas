@@ -1,0 +1,132 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:views="clr-namespace:DeskCanvas.Views"
+             xmlns:controls="clr-namespace:DeskCanvas.Views.Controls"
+             xmlns:interfaces="clr-namespace:DeskCanvas.Core.Interfaces;assembly=DeskCanvas.Core"
+             x:Class="DeskCanvas.Views.WidgetCard"
+             x:CompileBindings="False"
+             Background="Transparent"
+             HorizontalAlignment="Stretch"
+             VerticalAlignment="Stretch"
+             Margin="0">
+    <!-- 共享组件卡片层。桌面 Widget 窗口与侧栏 SidebarWidgetHost 都嵌入这一个控件，
+         因此玻璃材质、卡片背景、自适应圆角、内容缩放、Stack 分页点与缩放手柄在两侧
+         走的是同一套视觉与交互。所有绑定都相对于 DataContext（宿主对象）解析，
+         宿主的上下文要么是 Widget，要么是 SidebarWidgetHost。 -->
+    <Grid>
+        <!-- Rendered glass surface (液态玻璃 / 柔光玻璃: refraction, glow, vibrancy, wallpaper sampling) -->
+        <controls:LiquidGlassSurface Name="CardGlass"
+                                     Material="{Binding GlassMaterial}"
+                                     CornerRadius="{Binding Radius}"
+                                     Margin="{Binding WidgetMargin}"
+                                     IsVisible="{Binding ShowsGlassMaterial}" />
+        <!-- Card (frosted glass, OS-level acrylic): fills the grid cell minus the
+             configured margin, with the configured corner radius. The blur comes
+             from the OS backdrop (AcrylicBlur hint set by Styles/Transparent.axaml),
+             which samples the live desktop every frame — dynamic wallpapers stay
+             live. The native window region is clipped to the same rectangle (see
+             ApplyWidgetRegion) so the OS blur follows the card and the transparent
+             margin stays click-through.
+             The outline option adds a highlight ring that fades from the top-left /
+             bottom-right corners (see WidgetOutlineBrush). -->
+        <Border Name="CardBorder"
+                CornerRadius="{Binding Radius}"
+                Background="{Binding WidgetCardBackground}"
+                BorderThickness="{Binding WidgetOutlineThickness}"
+                BorderBrush="{Binding WidgetOutlineBrush}"
+                Margin="{Binding WidgetMargin}">
+            <!-- Content: sized by the card only; the content scale (Scale()) is a
+                 render transform on this presenter, so it never resizes the card. -->
+            <ContentPresenter Name="CardPresenter"
+                              HorizontalAlignment="Center"
+                              VerticalAlignment="Center">
+                <ContentPresenter.ContentTemplate>
+                    <DataTemplate>
+                        <ContentControl Content="{Binding}"
+                                        HorizontalAlignment="Stretch"
+                                        VerticalAlignment="Stretch"
+                                        HorizontalContentAlignment="Stretch"
+                                        VerticalContentAlignment="Stretch"/>
+                    </DataTemplate>
+                </ContentPresenter.ContentTemplate>
+            </ContentPresenter>
+        </Border>
+
+        <!-- Right-side vertical pagination indicator dots for Stack widget. Outside the card
+             (in the rightmost margin of the grid cell) on every surface, so the dots sit in the
+             same place whatever the theme is. On 毛玻璃 the card is clipped by the native window
+             region, and no backing for an out-of-card strip works there — a translucent one reads
+             as frosted glass, an opaque one as a foreign slab — so the dots move inside the card
+             instead; see StackIndicatorsMargin and ApplyWidgetRegion. -->
+        <Border Name="StackIndicatorsHost"
+                HorizontalAlignment="Right"
+                VerticalAlignment="Center"
+                Margin="{Binding StackIndicatorsMargin}"
+                IsVisible="{Binding HasStackIndicators}"
+                PointerWheelChanged="OnStackIndicatorsWheelChanged"
+                ZIndex="85">
+            <ItemsControl ItemsSource="{Binding StackIndicators}">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <StackPanel Orientation="Vertical" Spacing="2" />
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="interfaces:StackWidgetIndicatorItem">
+                        <Button Width="12" Height="12"
+                                CornerRadius="6"
+                                Padding="0"
+                                Margin="0,1"
+                                Background="Transparent"
+                                BorderThickness="0"
+                                Cursor="Hand"
+                                Click="OnStackIndicatorClicked"
+                                Tag="{Binding Index}"
+                                ToolTip.Tip="{Binding Title}">
+                            <Button.Styles>
+                                <Style Selector="Button:pointerover">
+                                    <Setter Property="RenderTransform" Value="scale(1.25)" />
+                                </Style>
+                            </Button.Styles>
+                            <Panel Width="12" Height="12">
+                                <!-- Subtle dark shadow outline for contrast on bright/dark backgrounds -->
+                                <Ellipse Width="6" Height="6"
+                                         Stroke="#40000000"
+                                         StrokeThickness="0.8"
+                                         HorizontalAlignment="Center"
+                                         VerticalAlignment="Center" />
+                                <!-- Pure white dot with active/inactive opacity -->
+                                <Ellipse Width="6" Height="6"
+                                         Fill="White"
+                                         Opacity="{Binding Opacity}"
+                                         HorizontalAlignment="Center"
+                                         VerticalAlignment="Center" />
+                            </Panel>
+                        </Button>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </Border>
+
+        <!-- Bottom-right corner resize handle (visible in Free mode when not locked) -->
+        <Border Name="CardResizeHandle"
+                HorizontalAlignment="Right"
+                VerticalAlignment="Bottom"
+                Width="20" Height="20"
+                Background="Transparent"
+                Cursor="BottomRightCorner"
+                IsVisible="{Binding ShowResizeHandle}"
+                PointerPressed="OnResizeHandlePressed"
+                ZIndex="100"
+                Margin="0,0,2,2">
+            <Path Data="M14 6L6 14M14 10L10 14M14 14L14 14"
+                  Stroke="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                  StrokeThickness="1.5"
+                  StrokeLineCap="Round"
+                  Opacity="0.45"
+                  HorizontalAlignment="Right"
+                  VerticalAlignment="Bottom"
+                  Margin="0,0,4,4"/>
+        </Border>
+    </Grid>
+</UserControl>
