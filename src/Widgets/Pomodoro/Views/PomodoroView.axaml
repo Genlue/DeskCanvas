@@ -110,7 +110,7 @@
         </Style>
         <Style Selector="Button.phase-tab.active">
             <Setter Property="Background" Value="{DynamicResource SystemControlHighlightAccentBrush}" />
-            <Setter Property="Foreground" Value="White" />
+            <Setter Property="Foreground" Value="{DynamicResource AccentContrastForegroundBrush}" />
             <Setter Property="FontWeight" Value="SemiBold" />
         </Style>
     </UserControl.Styles>

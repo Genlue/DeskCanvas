@@ -11,6 +11,12 @@
         <ResourceDictionary>
             <ResourceDictionary.ThemeDictionaries>
                 <ResourceDictionary x:Key="Default">
+                    <!-- Foreground that stays readable ON an accent-colored surface
+                         (badges, active pills, toasts). The colored accent is a mid tone,
+                         so white works in both variants; 黑白 monochrome overrides this
+                         (see MonochromeBlackWhite.axaml) because its accent is the
+                         inverted background and flips polarity per variant. -->
+                    <SolidColorBrush x:Key="AccentContrastForegroundBrush" Color="White" />
                     <SolidColorBrush x:Key="SystemControlForegroundAccentBrush" Color="{DynamicResource SystemAccentColorDark1}" />
                     <!-- Semantic Fallback Brushes -->
                     <SolidColorBrush x:Key="CalendarHeaderBrush" Color="{DynamicResource SystemAccentColorDark1}" />
@@ -51,6 +57,7 @@
                     <SolidColorBrush x:Key="ClockStrokesBrush" Color="{DynamicResource SystemBaseHighColor}" />
                 </ResourceDictionary>
                 <ResourceDictionary x:Key="Dark">
+                    <SolidColorBrush x:Key="AccentContrastForegroundBrush" Color="White" />
                     <SolidColorBrush x:Key="SystemControlForegroundAccentBrush" Color="{DynamicResource SystemAccentColorLight2}" />
                     <!-- Semantic Fallback Brushes -->
                     <SolidColorBrush x:Key="CalendarHeaderBrush" Color="{DynamicResource SystemAccentColorLight2}" />

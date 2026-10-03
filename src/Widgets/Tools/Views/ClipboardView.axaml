@@ -181,7 +181,7 @@
                 Background="{DynamicResource SystemControlHighlightAccentBrush}" CornerRadius="{DynamicResource WidgetInnerCornerRadius}" Padding="14,4" Margin="0,4,0,0"
                 IsVisible="False" ZIndex="10">
             <TextBlock x:Name="ToastText" Text="{x:Static locales:Locale.Tools_Clipboard_Copied}" FontSize="12" FontWeight="SemiBold"
-                       Foreground="White" />
+                       Foreground="{DynamicResource AccentContrastForegroundBrush}" />
         </Border>
 
         <!-- Empty State -->

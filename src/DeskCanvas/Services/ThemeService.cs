@@ -116,12 +116,33 @@ public class ThemeService : IThemeService
         // 纯色 surface: the card color (per dark/light variant) and the coating
         // opacity — Solid.axaml's WidgetBackground brush picks these up.
         // In Colorful mode, fixed authentic Apple card backgrounds are strictly enforced.
-        Application.Current.Resources["SolidBackgroundDark"] = theme.IsColorful
+        var solidBackgroundDark = theme.IsColorful
             ? Color.Parse("#1C1C1E")
             : ParseColor(theme.EffectiveSolidBackgroundDark, Theme.DefaultSolidBackgroundDark);
-        Application.Current.Resources["SolidBackgroundLight"] = theme.IsColorful
+        var solidBackgroundLight = theme.IsColorful
             ? Color.Parse("#FFFFFF")
             : ParseColor(theme.EffectiveSolidBackgroundLight, Theme.DefaultSolidBackgroundLight);
+        Application.Current.Resources["SolidBackgroundDark"] = solidBackgroundDark;
+        Application.Current.Resources["SolidBackgroundLight"] = solidBackgroundLight;
+
+        // 黑白 monochrome: the accent IS the inverted background — light mode takes the
+        // dark-mode card color, dark mode the light-mode card color. The ramp mapping in
+        // ApplyAccent already matches: `dark:` feeds SystemAccentColorDark1 which the LIGHT
+        // accent dictionaries read, `light:` feeds SystemAccentColorLight2 for the DARK ones.
+        // Runs after the user-accent ApplyAccent above so the monochrome ramp wins (黑白
+        // ignores a hand-picked accent), and also when no accent was ever picked.
+        var monochromeBlackWhite = !theme.IsColorful && theme.Monochrome && theme.EffectiveMonochromeVariant == MonochromeStyle.BlackWhite;
+        if (monochromeBlackWhite)
+        {
+            // Follow-system (darkMode == null) resolves against the live app variant; the
+            // per-variant brushes stay correct through the theme dictionaries either way —
+            // only the single SystemAccentColor key (imperative readers) needs a pick.
+            var isDarkVariant = darkMode ?? Application.Current.ActualThemeVariant == ThemeVariant.Dark;
+            ApplyAccent(
+                isDarkVariant ? solidBackgroundLight : solidBackgroundDark,
+                dark: solidBackgroundDark,
+                light: solidBackgroundLight);
+        }
         
         // Surface material drives both the background style and the transparency
         // hint: Acrylic/OutlinedAcrylic → OS-level live blur, Solid → per-pixel
@@ -134,9 +155,8 @@ public class ThemeService : IThemeService
         // (both text AND accent colors), 强调色 = accent-based (the historic
         // Monochrome.axaml dictionaries — accent stays accent, text becomes accent).
         // In Colorful mode, monochrome is strictly disabled.
-        var monochrome = !theme.IsColorful && theme.Monochrome && theme.EffectiveMonochromeVariant == MonochromeStyle.BlackWhite;
-        SwitchStyle(monochromeBlackWhiteStyle, monochrome);
-        SwitchStyle(monochromeStyle, !theme.IsColorful && theme.Monochrome && !monochrome);
+        SwitchStyle(monochromeBlackWhiteStyle, monochromeBlackWhite);
+        SwitchStyle(monochromeStyle, !theme.IsColorful && theme.Monochrome && !monochromeBlackWhite);
 
         // Surface material background styles
         SwitchStyle(transparentStyle, theme.UsesNativeBlur && !theme.IsColorful);

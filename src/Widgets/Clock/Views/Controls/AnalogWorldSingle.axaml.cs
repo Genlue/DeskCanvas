@@ -37,8 +37,11 @@ public partial class AnalogWorldSingle : UserControl
     {
         if (Ticks.Children.Count > 0) return;
 
+        // Variant-explicit lookup: the variant-less overload resolves the LIGHT theme
+        // dictionary even while the dial renders dark (ticks would come out black on
+        // a black dial in 单色-黑白 mode).
         var brush = Application.Current != null
-            && Application.Current.TryFindResource("SystemControlForegroundBaseHighBrush", out var resource)
+            && ((IResourceHost)Application.Current).TryGetResource("SystemControlForegroundBaseHighBrush", Application.Current.ActualThemeVariant, out var resource)
             && resource is IBrush b
             ? b
             : Brushes.Gray;

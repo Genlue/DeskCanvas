@@ -84,6 +84,9 @@ public partial class WidgetStackView : UserControl, IWidgetSelfRefreshing, IStac
 
     public bool IsTransitionActive => activeTransitionTimer != null;
 
+    /// <summary>常态隐藏小圆点: the host reveals the dots only while switching or hovering.</summary>
+    public bool AutoHideIndicators => model.AutoHideDots;
+
     public WidgetStackView()
         : this(new WidgetStackModel(), null!, null!)
     {
@@ -565,7 +568,9 @@ public partial class WidgetStackView : UserControl, IWidgetSelfRefreshing, IStac
 
         if (theme.IsColorful)
         {
-            if (this.TryFindResource("WidgetCardBorderBrush", out var res) && res is IBrush b)
+            // Variant-explicit: the variant-less overload would return the LIGHT border
+            // brush (#15000000) even for dark cards.
+            if (this.TryFindResource("WidgetCardBorderBrush", ActualThemeVariant, out var res) && res is IBrush b)
                 return b;
             var isDark = ActualThemeVariant == ThemeVariant.Dark || (theme.DarkMode ?? false);
             return isDark ? new SolidColorBrush(Color.Parse("#25FFFFFF")) : new SolidColorBrush(Color.Parse("#15000000"));
@@ -783,6 +788,10 @@ public partial class WidgetStackView : UserControl, IWidgetSelfRefreshing, IStac
                         toCard.ZIndex = 1;
 
                         EnforceOnlyActiveVisible(toIndex);
+                        // Transition is over: IsTransitionActive just turned false, so the
+                        // host must re-evaluate the auto-hidden dots (they may need to
+                        // disappear again when the pointer is no longer over the widget).
+                        UpdateDots();
                     }
                 }
                 catch (Exception ex)
@@ -791,6 +800,7 @@ public partial class WidgetStackView : UserControl, IWidgetSelfRefreshing, IStac
                     timer.Stop();
                     if (activeTransitionTimer == timer) activeTransitionTimer = null;
                     EnforceOnlyActiveVisible(toIndex);
+                    UpdateDots();
                 }
             };
 

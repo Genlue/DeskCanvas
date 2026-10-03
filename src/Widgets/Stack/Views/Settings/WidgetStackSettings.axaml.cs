@@ -156,6 +156,7 @@ public partial class WidgetStackSettings : UserControl
     {
         AllowWheelSwitch.IsChecked = model.AllowWheelSwitch;
         WheelOnlyOnDotsSwitch.IsChecked = model.WheelSwitchOnlyOnDots;
+        AutoHideDotsSwitch.IsChecked = model.AutoHideDots;
         RefreshList();
     }
 
@@ -203,7 +204,8 @@ public partial class WidgetStackSettings : UserControl
         model = model with
         {
             AllowWheelSwitch = AllowWheelSwitch.IsChecked == true,
-            WheelSwitchOnlyOnDots = WheelOnlyOnDotsSwitch.IsChecked == true
+            WheelSwitchOnlyOnDots = WheelOnlyOnDotsSwitch.IsChecked == true,
+            AutoHideDots = AutoHideDotsSwitch.IsChecked == true
         };
         SaveModel();
     }

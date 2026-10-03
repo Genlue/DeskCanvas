@@ -35,7 +35,7 @@ namespace StackWidgets.Locales {
         }
         
         public static string Stack_Widget_Title => ResourceManager.GetString("Stack_Widget_Title", resourceCulture) ?? "组件重叠";
-        public static string Stack_Widget_Subtitle => ResourceManager.GetString("Stack_Widget_Subtitle", resourceCulture) ?? "在同一卡片内重叠放置多个相同比例的小组件，通过右侧小圆点或滚轮切换";
+        public static string Stack_Widget_Subtitle => ResourceManager.GetString("Stack_Widget_Subtitle", resourceCulture) ?? "在同一卡片内重叠放置多个相同比例的小组件，通过右侧小圆点或滚轮切换，也可按住鼠标中键滚动切换";
         public static string Setting_Manage_Stack => ResourceManager.GetString("Setting_Manage_Stack", resourceCulture) ?? "管理重叠小组件";
         public static string Setting_Add_Widget => ResourceManager.GetString("Setting_Add_Widget", resourceCulture) ?? "添加组件";
         public static string Setting_Remove_Widget => ResourceManager.GetString("Setting_Remove_Widget", resourceCulture) ?? "移除";
@@ -43,5 +43,6 @@ namespace StackWidgets.Locales {
         public static string Setting_Move_Down => ResourceManager.GetString("Setting_Move_Down", resourceCulture) ?? "下移";
         public static string Setting_Allow_Wheel => ResourceManager.GetString("Setting_Allow_Wheel", resourceCulture) ?? "鼠标滚轮切页";
         public static string Setting_Wheel_Only_On_Dots => ResourceManager.GetString("Setting_Wheel_Only_On_Dots", resourceCulture) ?? "仅圆点处可用滚轮切页";
+        public static string Setting_Auto_Hide_Dots => ResourceManager.GetString("Setting_Auto_Hide_Dots", resourceCulture) ?? "常态隐藏切换圆点（切换或悬停时显示）";
     }
 }

@@ -28,12 +28,13 @@ public record WidgetStackModel(
     List<StackedWidgetEntry>? Entries = null,
     int SelectedIndex = 0,
     bool AllowWheelSwitch = true,
-    bool WheelSwitchOnlyOnDots = true
+    bool WheelSwitchOnlyOnDots = true,
+    bool AutoHideDots = false
 )
 {
     public List<StackedWidgetEntry> Entries { get; init; } = Entries ?? [];
 
-    public WidgetStackModel() : this([], 0, true, true) {}
+    public WidgetStackModel() : this([], 0, true, true, false) {}
 
     public static List<StackedWidgetEntry> GetDefaultEntries() => [];
 }

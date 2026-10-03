@@ -7,36 +7,42 @@
         <ResourceDictionary>
             <ResourceDictionary.ThemeDictionaries>
                 <!-- 黑白 monochrome: dark mode → white, light mode → black.
-                     Both the text color (BaseHigh) and the accent color
-                     (AccentBrush — titles/accents) are unified to black/white,
-                     so a widget has exactly one color on screen. -->
+                     The TEXT family (BaseHigh and the derived notes/clock/weather text
+                     brushes) stays pure black/white. The ACCENT family follows
+                     ThemeService.ApplyAccent's monochrome ramp instead: the accent IS the
+                     inverted background color — light mode renders the dark-mode card
+                     color (SystemAccentColorDark1), dark mode the light-mode card color
+                     (SystemAccentColorLight2) — so accent elements keep their contrast
+                     against the card while staying inside the black/white palette. -->
                 <ResourceDictionary x:Key="Default">
                     <SolidColorBrush x:Key="SystemControlForegroundBaseHighBrush" Color="Black" />
-                    <SolidColorBrush x:Key="SystemControlForegroundAccentBrush" Color="Black" />
-                    <SolidColorBrush x:Key="CalendarHeaderBrush" Color="Black" />
-                    <SolidColorBrush x:Key="CalendarTodayBrush" Color="Black" />
-                    <SolidColorBrush x:Key="ClockSecondHandBrush" Color="Black" />
-                    <SolidColorBrush x:Key="ClockCenterPinBrush" Color="Black" />
-                    <SolidColorBrush x:Key="RemindersBadgeBrush" Color="Black" />
-                    <SolidColorBrush x:Key="RemindersCheckBrush" Color="Black" />
-                    <SolidColorBrush x:Key="NotesAccentBrush" Color="Black" />
+                    <!-- On the accent (dark-mode background color in this variant), white stays readable. -->
+                    <SolidColorBrush x:Key="AccentContrastForegroundBrush" Color="White" />
+                    <SolidColorBrush x:Key="SystemControlForegroundAccentBrush" Color="{DynamicResource SystemAccentColorDark1}" />
+                    <SolidColorBrush x:Key="CalendarHeaderBrush" Color="{DynamicResource SystemAccentColorDark1}" />
+                    <SolidColorBrush x:Key="CalendarTodayBrush" Color="{DynamicResource SystemAccentColorDark1}" />
+                    <SolidColorBrush x:Key="ClockSecondHandBrush" Color="{DynamicResource SystemAccentColorDark1}" />
+                    <SolidColorBrush x:Key="ClockCenterPinBrush" Color="{DynamicResource SystemAccentColorDark1}" />
+                    <SolidColorBrush x:Key="RemindersBadgeBrush" Color="{DynamicResource SystemAccentColorDark1}" />
+                    <SolidColorBrush x:Key="RemindersCheckBrush" Color="{DynamicResource SystemAccentColorDark1}" />
+                    <SolidColorBrush x:Key="NotesAccentBrush" Color="{DynamicResource SystemAccentColorDark1}" />
                     <SolidColorBrush x:Key="NotesPaperBackground" Color="Transparent" />
-                    <SolidColorBrush x:Key="MusicAccentBrush" Color="Black" />
-                    <SolidColorBrush x:Key="MonitorCpuBrush" Color="Black" />
-                    <SolidColorBrush x:Key="MonitorRamBrush" Color="Black" />
-                    <SolidColorBrush x:Key="MonitorDiskBrush" Color="Black" />
-                    <SolidColorBrush x:Key="MonitorNetBrush" Color="Black" />
-                    <SolidColorBrush x:Key="MonitorBatteryBrush" Color="Black" />
-                    <SolidColorBrush x:Key="FolderAccentBrush" Color="Black" />
-                    <SolidColorBrush x:Key="TranslateAccentBrush" Color="Black" />
+                    <SolidColorBrush x:Key="MusicAccentBrush" Color="{DynamicResource SystemAccentColorDark1}" />
+                    <SolidColorBrush x:Key="MonitorCpuBrush" Color="{DynamicResource SystemAccentColorDark1}" />
+                    <SolidColorBrush x:Key="MonitorRamBrush" Color="{DynamicResource SystemAccentColorDark1}" />
+                    <SolidColorBrush x:Key="MonitorDiskBrush" Color="{DynamicResource SystemAccentColorDark1}" />
+                    <SolidColorBrush x:Key="MonitorNetBrush" Color="{DynamicResource SystemAccentColorDark1}" />
+                    <SolidColorBrush x:Key="MonitorBatteryBrush" Color="{DynamicResource SystemAccentColorDark1}" />
+                    <SolidColorBrush x:Key="FolderAccentBrush" Color="{DynamicResource SystemAccentColorDark1}" />
+                    <SolidColorBrush x:Key="TranslateAccentBrush" Color="{DynamicResource SystemAccentColorDark1}" />
                     <SolidColorBrush x:Key="TranslateCardBackground" Color="Transparent" />
-                    <SolidColorBrush x:Key="ProgressMoveBrush" Color="Black" />
-                    <SolidColorBrush x:Key="ProgressExerciseBrush" Color="Black" />
-                    <SolidColorBrush x:Key="ProgressStandBrush" Color="Black" />
-                    <SolidColorBrush x:Key="SearchMagnifierBrush" Color="Black" />
-                    <SolidColorBrush x:Key="WeatherIconBrush" Color="Black" />
-                    <SolidColorBrush x:Key="WeatherGaugeBrush" Color="Black" />
-                    <SolidColorBrush x:Key="WeatherTempBarBrush" Color="Black" />
+                    <SolidColorBrush x:Key="ProgressMoveBrush" Color="{DynamicResource SystemAccentColorDark1}" />
+                    <SolidColorBrush x:Key="ProgressExerciseBrush" Color="{DynamicResource SystemAccentColorDark1}" />
+                    <SolidColorBrush x:Key="ProgressStandBrush" Color="{DynamicResource SystemAccentColorDark1}" />
+                    <SolidColorBrush x:Key="SearchMagnifierBrush" Color="{DynamicResource SystemAccentColorDark1}" />
+                    <SolidColorBrush x:Key="WeatherIconBrush" Color="{DynamicResource SystemAccentColorDark1}" />
+                    <SolidColorBrush x:Key="WeatherGaugeBrush" Color="{DynamicResource SystemAccentColorDark1}" />
+                    <SolidColorBrush x:Key="WeatherTempBarBrush" Color="{DynamicResource SystemAccentColorDark1}" />
                     <SolidColorBrush x:Key="WeatherCardBackground" Color="Transparent" />
                     <SolidColorBrush x:Key="NotesTextBrush" Color="Black" />
                     <SolidColorBrush x:Key="NotesTitleForegroundBrush" Color="Black" />
@@ -52,31 +58,33 @@
                 </ResourceDictionary>
                 <ResourceDictionary x:Key="Dark">
                     <SolidColorBrush x:Key="SystemControlForegroundBaseHighBrush" Color="White" />
-                    <SolidColorBrush x:Key="SystemControlForegroundAccentBrush" Color="White" />
-                    <SolidColorBrush x:Key="CalendarHeaderBrush" Color="White" />
-                    <SolidColorBrush x:Key="CalendarTodayBrush" Color="White" />
-                    <SolidColorBrush x:Key="ClockSecondHandBrush" Color="White" />
-                    <SolidColorBrush x:Key="ClockCenterPinBrush" Color="White" />
-                    <SolidColorBrush x:Key="RemindersBadgeBrush" Color="White" />
-                    <SolidColorBrush x:Key="RemindersCheckBrush" Color="White" />
-                    <SolidColorBrush x:Key="NotesAccentBrush" Color="White" />
+                    <!-- On the accent (light-mode background color in this variant), black is required. -->
+                    <SolidColorBrush x:Key="AccentContrastForegroundBrush" Color="Black" />
+                    <SolidColorBrush x:Key="SystemControlForegroundAccentBrush" Color="{DynamicResource SystemAccentColorLight2}" />
+                    <SolidColorBrush x:Key="CalendarHeaderBrush" Color="{DynamicResource SystemAccentColorLight2}" />
+                    <SolidColorBrush x:Key="CalendarTodayBrush" Color="{DynamicResource SystemAccentColorLight2}" />
+                    <SolidColorBrush x:Key="ClockSecondHandBrush" Color="{DynamicResource SystemAccentColorLight2}" />
+                    <SolidColorBrush x:Key="ClockCenterPinBrush" Color="{DynamicResource SystemAccentColorLight2}" />
+                    <SolidColorBrush x:Key="RemindersBadgeBrush" Color="{DynamicResource SystemAccentColorLight2}" />
+                    <SolidColorBrush x:Key="RemindersCheckBrush" Color="{DynamicResource SystemAccentColorLight2}" />
+                    <SolidColorBrush x:Key="NotesAccentBrush" Color="{DynamicResource SystemAccentColorLight2}" />
                     <SolidColorBrush x:Key="NotesPaperBackground" Color="Transparent" />
-                    <SolidColorBrush x:Key="MusicAccentBrush" Color="White" />
-                    <SolidColorBrush x:Key="MonitorCpuBrush" Color="White" />
-                    <SolidColorBrush x:Key="MonitorRamBrush" Color="White" />
-                    <SolidColorBrush x:Key="MonitorDiskBrush" Color="White" />
-                    <SolidColorBrush x:Key="MonitorNetBrush" Color="White" />
-                    <SolidColorBrush x:Key="MonitorBatteryBrush" Color="White" />
-                    <SolidColorBrush x:Key="FolderAccentBrush" Color="White" />
-                    <SolidColorBrush x:Key="TranslateAccentBrush" Color="White" />
+                    <SolidColorBrush x:Key="MusicAccentBrush" Color="{DynamicResource SystemAccentColorLight2}" />
+                    <SolidColorBrush x:Key="MonitorCpuBrush" Color="{DynamicResource SystemAccentColorLight2}" />
+                    <SolidColorBrush x:Key="MonitorRamBrush" Color="{DynamicResource SystemAccentColorLight2}" />
+                    <SolidColorBrush x:Key="MonitorDiskBrush" Color="{DynamicResource SystemAccentColorLight2}" />
+                    <SolidColorBrush x:Key="MonitorNetBrush" Color="{DynamicResource SystemAccentColorLight2}" />
+                    <SolidColorBrush x:Key="MonitorBatteryBrush" Color="{DynamicResource SystemAccentColorLight2}" />
+                    <SolidColorBrush x:Key="FolderAccentBrush" Color="{DynamicResource SystemAccentColorLight2}" />
+                    <SolidColorBrush x:Key="TranslateAccentBrush" Color="{DynamicResource SystemAccentColorLight2}" />
                     <SolidColorBrush x:Key="TranslateCardBackground" Color="Transparent" />
-                    <SolidColorBrush x:Key="ProgressMoveBrush" Color="White" />
-                    <SolidColorBrush x:Key="ProgressExerciseBrush" Color="White" />
-                    <SolidColorBrush x:Key="ProgressStandBrush" Color="White" />
-                    <SolidColorBrush x:Key="SearchMagnifierBrush" Color="White" />
-                    <SolidColorBrush x:Key="WeatherIconBrush" Color="White" />
-                    <SolidColorBrush x:Key="WeatherGaugeBrush" Color="White" />
-                    <SolidColorBrush x:Key="WeatherTempBarBrush" Color="White" />
+                    <SolidColorBrush x:Key="ProgressMoveBrush" Color="{DynamicResource SystemAccentColorLight2}" />
+                    <SolidColorBrush x:Key="ProgressExerciseBrush" Color="{DynamicResource SystemAccentColorLight2}" />
+                    <SolidColorBrush x:Key="ProgressStandBrush" Color="{DynamicResource SystemAccentColorLight2}" />
+                    <SolidColorBrush x:Key="SearchMagnifierBrush" Color="{DynamicResource SystemAccentColorLight2}" />
+                    <SolidColorBrush x:Key="WeatherIconBrush" Color="{DynamicResource SystemAccentColorLight2}" />
+                    <SolidColorBrush x:Key="WeatherGaugeBrush" Color="{DynamicResource SystemAccentColorLight2}" />
+                    <SolidColorBrush x:Key="WeatherTempBarBrush" Color="{DynamicResource SystemAccentColorLight2}" />
                     <SolidColorBrush x:Key="WeatherCardBackground" Color="Transparent" />
                     <SolidColorBrush x:Key="NotesTextBrush" Color="White" />
                     <SolidColorBrush x:Key="NotesTitleForegroundBrush" Color="White" />

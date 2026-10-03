@@ -19,7 +19,7 @@
         <value>组件重叠</value>
     </data>
     <data name="Stack_Widget_Subtitle" xml:space="preserve">
-        <value>在同一卡片内重叠放置多个相同比例的小组件，通过右侧小圆点或滚轮切换</value>
+        <value>在同一卡片内重叠放置多个相同比例的小组件，通过右侧小圆点或滚轮切换，也可按住鼠标中键滚动切换</value>
     </data>
     <data name="Setting_Manage_Stack" xml:space="preserve">
         <value>管理重叠小组件</value>
@@ -41,5 +41,8 @@
     </data>
     <data name="Setting_Wheel_Only_On_Dots" xml:space="preserve">
         <value>仅圆点处可用滚轮切页</value>
+    </data>
+    <data name="Setting_Auto_Hide_Dots" xml:space="preserve">
+        <value>常态隐藏切换圆点（切换或悬停时显示）</value>
     </data>
 </root>

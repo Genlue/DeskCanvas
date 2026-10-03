@@ -19,7 +19,7 @@
         <value>Widget Stack</value>
     </data>
     <data name="Stack_Widget_Subtitle" xml:space="preserve">
-        <value>Stack multiple widgets of the same ratio in one card and switch with dots or scroll wheel</value>
+        <value>Stack multiple widgets of the same ratio in one card and switch with dots or scroll wheel — or hold the middle button and scroll</value>
     </data>
     <data name="Setting_Manage_Stack" xml:space="preserve">
         <value>Manage Stacked Widgets</value>
@@ -41,5 +41,8 @@
     </data>
     <data name="Setting_Wheel_Only_On_Dots" xml:space="preserve">
         <value>Wheel Switching Only At The Dots</value>
+    </data>
+    <data name="Setting_Auto_Hide_Dots" xml:space="preserve">
+        <value>Hide Dots While Idle (Shown When Switching Or Hovering)</value>
     </data>
 </root>

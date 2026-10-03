@@ -1,0 +1,151 @@
+﻿<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:locales="clr-namespace:Tools.Locales"
+        xmlns:controls="clr-namespace:DeskCanvas.Views.Controls;assembly=DeskCanvas"
+        x:Class="Tools.Views.TranslatorPopupWindow"
+        Title="Translator"
+        SystemDecorations="None"
+        Background="Transparent"
+        TransparencyLevelHint="Transparent"
+        ShowInTaskbar="False"
+        CanResize="False"
+        Width="480"
+        Height="580">
+
+    <Window.Styles>
+        <Style Selector="Button.icon-btn">
+            <Setter Property="Width" Value="26" />
+            <Setter Property="Height" Value="26" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="CornerRadius" Value="13" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="Cursor" Value="Hand" />
+        </Style>
+        <Style Selector="Button.icon-btn:pointerover">
+            <Setter Property="Background" Value="#22808080" />
+        </Style>
+        <Style Selector="ComboBox.panel-combo">
+            <Setter Property="Height" Value="28" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="CornerRadius" Value="9" />
+            <Setter Property="Padding" Value="8,3" />
+        </Style>
+        <Style Selector="TextBox.trans-box">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="4" />
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+            <Setter Property="AcceptsReturn" Value="True" />
+            <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}" />
+        </Style>
+        <Style Selector="TextBox.trans-box:focus /template/ Border#PART_BorderElement">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+        </Style>
+        <Style Selector="TextBox.trans-box:pointerover /template/ Border#PART_BorderElement">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+        </Style>
+        <Style Selector="Border.card-box">
+            <Setter Property="Background" Value="#12808080" />
+            <Setter Property="BorderBrush" Value="#15ffffff" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="12" />
+        </Style>
+    </Window.Styles>
+
+    <Panel Background="Transparent" PointerPressed="OnRootPointerPressed">
+        <!-- Main Card Border with Zoom Transform -->
+        <Border x:Name="CardBorder"
+                Margin="0"
+                CornerRadius="18"
+                BorderThickness="1"
+                RenderTransformOrigin="0.5,0.5"
+                ClipToBounds="True">
+            <Border.RenderTransform>
+                <ScaleTransform ScaleX="0.95" ScaleY="0.95" />
+            </Border.RenderTransform>
+
+            <Panel>
+                <!-- LiquidGlass surface: the same material path the widget card uses —
+                     live wallpaper sampling when enabled, the frozen shared frame when not. -->
+                <controls:LiquidGlassSurface x:Name="LiquidGlassSurfaceControl" CornerRadius="18" Margin="0" IsVisible="False" />
+
+                <!-- Content Grid -->
+                <Grid RowDefinitions="Auto,*,Auto,Auto,*" Margin="16,14,16,12">
+                    <!-- Top Header (Row 0) -->
+                    <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="0,0,0,10">
+                        <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                            <PathIcon Data="M12.87 15.07l-2.54-2.51.03-.03c1.74-1.94 2.98-4.17 3.71-6.53H17V4h-7V2H8v2H1v1.99h11.17C11.5 7.92 10.44 9.75 9 11.35 8.07 10.32 7.3 9.19 6.69 8h-2c.73 1.63 1.73 3.17 2.98 4.56l-5.09 5.02L4 19l5-5 3.11 3.11.76-2.04zM18.5 10h-2L12 22h2l1.12-3h4.75L21 22h2l-4.5-12zm-2.62 7l1.62-4.33L19.12 17h-3.24z"
+                                      Width="15" Height="15" Foreground="{DynamicResource TranslateAccentBrush}" />
+                            <TextBlock Text="{x:Static locales:Locale.Tools_Translator_Title}" FontSize="15" FontWeight="Bold" />
+                        </StackPanel>
+
+                        <Button Grid.Column="1" x:Name="CloseButton" Classes="icon-btn" Content="✕"
+                                Click="OnCloseClicked" VerticalAlignment="Center" />
+                    </Grid>
+
+                    <!-- Input (Row 1) -->
+                    <Border Grid.Row="1" Classes="card-box" Padding="10,7" Margin="0,0,0,8">
+                        <Grid RowDefinitions="*,Auto">
+                            <TextBox x:Name="InputBox" Classes="trans-box"
+                                     Watermark="{x:Static locales:Locale.Tools_Translator_InputHint}"
+                                     TextChanged="OnInputTextChanged" />
+
+                            <Grid Grid.Row="1" ColumnDefinitions="*,Auto,Auto" Margin="4,2,2,0">
+                                <TextBlock x:Name="CharCountText" Text="0 字符" FontSize="10" Opacity="0.4" VerticalAlignment="Center"
+                                           Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}" />
+                                <Button Grid.Column="1" Classes="icon-btn" Margin="0,0,2,0" Click="OnClearInputClicked" ToolTip.Tip="{x:Static locales:Locale.Tools_Translator_Clear}">
+                                    <PathIcon Data="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"
+                                              Width="10" Height="10" Opacity="0.5" />
+                                </Button>
+                                <Button Grid.Column="2" Classes="icon-btn" Click="OnCopyInputClicked" ToolTip.Tip="复制原文">
+                                    <PathIcon Data="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"
+                                              Width="11" Height="11" Opacity="0.6" />
+                                </Button>
+                            </Grid>
+                        </Grid>
+                    </Border>
+
+                    <!-- Language / Engine Bar (Row 2) -->
+                    <Grid Grid.Row="2" ColumnDefinitions="Auto,Auto,Auto,*,Auto" Margin="0,0,0,8" VerticalAlignment="Center">
+                        <ComboBox x:Name="SourceCombo" Grid.Column="0" MinWidth="96" Classes="panel-combo"
+                                  SelectionChanged="OnSourceChanged" />
+                        <Button Grid.Column="1" Classes="icon-btn" Margin="4,0" Click="OnSwapClicked" ToolTip.Tip="{x:Static locales:Locale.Tools_Translator_Swap}">
+                            <PathIcon Data="M6.99 11L3 15l3.99 4v-3H14v-2H6.99v-3zM21 9l-3.99-4v3H10v2h7.01v3L21 9z"
+                                      Width="13" Height="13" Foreground="{DynamicResource TranslateAccentBrush}" />
+                        </Button>
+                        <ComboBox x:Name="TargetCombo" Grid.Column="2" MinWidth="96" Classes="panel-combo"
+                                  SelectionChanged="OnTargetChanged" />
+                        <ComboBox x:Name="EngineCombo" Grid.Column="4" MinWidth="130" Classes="panel-combo"
+                                  SelectionChanged="OnEngineChanged" />
+                    </Grid>
+
+                    <!-- Action Bar (Row 3) -->
+                    <Grid Grid.Row="3" ColumnDefinitions="Auto,Auto,*,Auto" Margin="0,0,0,8">
+                        <Button x:Name="TranslateButton" Grid.Column="0" Height="30" Padding="16,4" CornerRadius="9"
+                                Background="{DynamicResource TranslateAccentBrush}" Foreground="{DynamicResource AccentContrastForegroundBrush}"
+                                FontSize="12" FontWeight="SemiBold" Cursor="Hand"
+                                Click="OnTranslateClicked" Content="{x:Static locales:Locale.Tools_Translator_Translate}" />
+                        <Button x:Name="CopyButton" Grid.Column="1" Height="30" Margin="8,0,0,0" Padding="14,4" CornerRadius="9"
+                                Background="#20808080" BorderThickness="0" FontSize="12" Cursor="Hand"
+                                Click="OnCopyOutputClicked" Content="{x:Static locales:Locale.Tools_Translator_Copy}" />
+                        <TextBlock x:Name="StatusText" Grid.Column="3" FontSize="10" Opacity="0.5" VerticalAlignment="Center"
+                                   HorizontalAlignment="Right" Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}" />
+                    </Grid>
+
+                    <!-- Output (Row 4) -->
+                    <Border Grid.Row="4" Classes="card-box" Padding="10,7">
+                        <TextBox x:Name="OutputBox" Classes="trans-box" IsReadOnly="True"
+                                 Watermark="{x:Static locales:Locale.Tools_Translator_OutputHint}" />
+                    </Border>
+                </Grid>
+            </Panel>
+        </Border>
+    </Panel>
+</Window>

@@ -6,7 +6,7 @@ using Calendar.Views.Settings;
 using DeskCanvas.Core.Models.Attributes;
 
 [assembly: AssemblyCompany("creewick")]
-[assembly: AssemblyVersion("1.0.7")]
+[assembly: AssemblyVersion("1.0.8")]
 
 [assembly: WidgetInfo(typeof(Date), null, null, "Calendar_Date_Title", "Calendar_Date_Subtitle")]
 [assembly: WidgetInfo(typeof(Month), typeof(MonthCalendarModel), typeof(MonthCalendarSettings), "Calendar_Month_Title", "Calendar_Month_Subtitle")]

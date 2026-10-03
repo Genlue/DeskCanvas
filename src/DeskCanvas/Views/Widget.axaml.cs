@@ -157,6 +157,14 @@ public partial class Widget : Window, INotifyPropertyChanged
         // position on the next activation. AfterMove is idempotent, so a second call from
         // the deterministic post-drag commit below costs nothing.
         AddHandler(PointerReleasedEvent, OnPointerReleased, RoutingStrategies.Bubble, handledEventsToo: true);
+        // 重叠组件的"中键+滚轮"切页手势 (see OnStackChordWheelChanged): tunnel handlers see
+        // every press/release/wheel before the inner controls do, and handledEventsToo keeps
+        // the chord alive over TextBoxes and drag-aware children that routinely mark the
+        // press handled. The reveal state of the auto-hidden dots rides on the same enter/
+        // exit edges.
+        AddHandler(PointerPressedEvent, OnStackChordPointerPressed, RoutingStrategies.Tunnel, handledEventsToo: true);
+        AddHandler(PointerReleasedEvent, OnStackChordPointerReleased, RoutingStrategies.Tunnel, handledEventsToo: true);
+        AddHandler(PointerWheelChangedEvent, OnStackChordWheelChanged, RoutingStrategies.Tunnel, handledEventsToo: true);
         widgetLayoutProvider.DataChanged += OnWidgetLayoutUpdated;
         appSettingsProvider.DataChanged += OnAppSettingsUpdated;
         layoutProvider.DataChanged += OnLayoutDataUpdated;
@@ -454,6 +462,7 @@ public partial class Widget : Window, INotifyPropertyChanged
         Notify(nameof(ShowStackEditButton));
         Notify(nameof(CanEditStackedWidgetChild));
         Notify(nameof(EditStackChildTitle));
+        UpdateStackIndicatorsReveal();
     }
 
     private void OnStackIndicatorsChanged(object? sender, EventArgs e)
@@ -464,6 +473,7 @@ public partial class Widget : Window, INotifyPropertyChanged
             Notify(nameof(StackIndicators));
             Notify(nameof(CanEditStackedWidgetChild));
             Notify(nameof(EditStackChildTitle));
+            UpdateStackIndicatorsReveal();
             ApplyWidgetRegion();
         }
         catch (Exception ex)
@@ -528,6 +538,128 @@ public partial class Widget : Window, INotifyPropertyChanged
         }
     }
 
+    // ---- 重叠组件的切页手势（中键 + 滚轮）与圆点常态隐藏 ----
+
+    /// <summary>True while the middle button is held over this widget (the switch chord's held state).</summary>
+    private bool stackMiddleButtonChord;
+
+    /// <summary>Delayed hide for the auto-hidden stack dots (see <see cref="UpdateStackIndicatorsReveal"/>).</summary>
+    private DispatcherTimer? stackDotsHideTimer;
+
+    private void OnStackChordPointerPressed(object? sender, PointerPressedEventArgs e)
+    {
+        if (StackWidget == null) return;
+
+        var point = e.GetCurrentPoint(this);
+        if (point.Properties.IsMiddleButtonPressed)
+            stackMiddleButtonChord = true;
+        else if (point.Properties.IsLeftButtonPressed || point.Properties.IsRightButtonPressed)
+            stackMiddleButtonChord = false;
+    }
+
+    private void OnStackChordPointerReleased(object? sender, PointerReleasedEventArgs e)
+    {
+        if (e.InitialPressMouseButton == MouseButton.Middle)
+            stackMiddleButtonChord = false;
+    }
+
+    /// <summary>
+    /// 中键+滚轮切换重叠组件: hold the middle button anywhere over the widget and roll the
+    /// wheel to page through the stack — no aiming for the dots strip required. Runs on the
+    /// tunnel route ahead of every inner control, and marks the wheel handled so neither the
+    /// stacked children's ScrollViewers nor the dots strip react to the same tick (no double
+    /// switch). The dots strip's own wheel handler stays in charge when the middle button is
+    /// up, exactly as before.
+    /// </summary>
+    private void OnStackChordWheelChanged(object? sender, PointerWheelEventArgs e)
+    {
+        if (!stackMiddleButtonChord) return;
+        if (StackWidget is not { } stack || StackIndicators is not { Count: > 1 } list) return;
+
+        try
+        {
+            if (stack.IsTransitionActive)
+            {
+                e.Handled = true;
+                return;
+            }
+
+            var currentIndex = list.FirstOrDefault(i => i.IsActive)?.Index ?? 0;
+            var nextIndex = e.Delta.Y > 0
+                ? (currentIndex - 1 + list.Count) % list.Count
+                : (currentIndex + 1) % list.Count;
+            stack.SwitchToIndex(nextIndex);
+            e.Handled = true;
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[Widget] OnStackChordWheelChanged error: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// 常态隐藏小圆点 (StackWidget.AutoHideIndicators): the dots only show while a switch
+    /// transition runs or the pointer is over the widget, then hide again after a short
+    /// linger. Opacity keeps the strip hit-testable, so the wheel-at-the-origin gesture and
+    /// clicking a dot keep working; the pointer-over reveal guarantees the dots are visible
+    /// whenever they could be interacted with.
+    /// </summary>
+    private void UpdateStackIndicatorsReveal()
+    {
+        var host = StackIndicatorsHost;
+        if (host == null) return;
+
+        if (StackWidget is not { } stack || !stack.AutoHideIndicators || !HasStackIndicators)
+        {
+            stackDotsHideTimer?.Stop();
+            host.Opacity = 1;
+            return;
+        }
+
+        if (stack.IsTransitionActive || IsPointerOver)
+        {
+            stackDotsHideTimer?.Stop();
+            host.Opacity = 1;
+            return;
+        }
+
+        // Idle: linger briefly before hiding, so a just-finished interaction doesn't flicker.
+        if (host.Opacity > 0 && stackDotsHideTimer is not { IsEnabled: true })
+        {
+            stackDotsHideTimer ??= new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(600) };
+            stackDotsHideTimer.Tick -= OnStackDotsHideTimerTick;
+            stackDotsHideTimer.Tick += OnStackDotsHideTimerTick;
+            stackDotsHideTimer.Start();
+        }
+    }
+
+    private void OnStackDotsHideTimerTick(object? sender, EventArgs e)
+    {
+        stackDotsHideTimer?.Stop();
+        if (StackIndicatorsHost == null) return;
+
+        StackIndicatorsHost.Opacity =
+            StackWidget is { } stack && stack.AutoHideIndicators && HasStackIndicators
+            && (stack.IsTransitionActive || IsPointerOver)
+                ? 1
+                : 0;
+    }
+
+    protected override void OnPointerEntered(PointerEventArgs e)
+    {
+        base.OnPointerEntered(e);
+        UpdateStackIndicatorsReveal();
+    }
+
+    protected override void OnPointerExited(PointerEventArgs e)
+    {
+        base.OnPointerExited(e);
+        // The chord is a press-and-scroll gesture inside the widget: leaving the window
+        // ends it (a release outside would otherwise leave the flag stuck on).
+        stackMiddleButtonChord = false;
+        UpdateStackIndicatorsReveal();
+    }
+
     /// <summary>
     /// True when the card should render the outline highlight ring: glass surface
     /// with the outline width &gt; 0, no native frame.
@@ -571,7 +703,7 @@ public partial class Widget : Window, INotifyPropertyChanged
                 return null;
             if (appSettingsProvider.Get().Theme.OutlineWidth > 0)
                 return BuildOutlineBrush();
-            if (appSettingsProvider.Get().Theme.IsColorful && this.TryFindResource("WidgetCardBorderBrush", out var res) && res is IBrush b)
+            if (appSettingsProvider.Get().Theme.IsColorful && this.TryFindResource("WidgetCardBorderBrush", ActualThemeVariant, out var res) && res is IBrush b)
                 return b;
             return null;
         }
@@ -1245,6 +1377,10 @@ public partial class Widget : Window, INotifyPropertyChanged
         PointerPressed -= OnPointerPressed;
         RemoveHandler(PointerPressedEvent, OnPreviewPointerPressed);
         RemoveHandler(PointerReleasedEvent, OnPointerReleased);
+        RemoveHandler(PointerPressedEvent, OnStackChordPointerPressed);
+        RemoveHandler(PointerReleasedEvent, OnStackChordPointerReleased);
+        RemoveHandler(PointerWheelChangedEvent, OnStackChordWheelChanged);
+        stackDotsHideTimer?.Stop();
         Resized -= OnResized;
         Activated -= OnActivated;
         Opened -= OnOpened;
@@ -1337,6 +1473,10 @@ public partial class Widget : Window, INotifyPropertyChanged
     public void OnPointerPressed(object? sender, PointerPressedEventArgs e)
     {
         if (appSettingsProvider.Get().Layout.LockPosition) return;
+
+        // 重叠组件上中键是"按住+滚轮切换"手势的按住键：绝不能让它进入窗口移动的模态
+        // 循环，否则后续滚轮事件会被移动循环吞掉，切页手势失效。（非重叠组件保持原行为。）
+        if (StackWidget != null && e.GetCurrentPoint(this).Properties.IsMiddleButtonPressed) return;
 
         // In manual grid mode, ignore drag if the click landed in the outer grid margin
         if (appSettingsProvider.Get().Layout.GridMode == GridMode.Manual)
@@ -1559,6 +1699,10 @@ public partial class Widget : Window, INotifyPropertyChanged
         // Manual grid: widget size is grid-driven, free resizing is disabled.
         if (appSettingsProvider.Get().Layout.GridMode == GridMode.Manual) return;
         if (appSettingsProvider.Get().Layout.LockSize) return;
+        // Left button only: a middle press here must not enter the modal resize loop
+        // (it would swallow the wheel and kill the stack switch chord), and a right
+        // press must keep bubbling to the context menu.
+        if (!e.GetCurrentPoint(this).Properties.IsLeftButtonPressed) return;
 
         CanResize = true;
         BeginResizeDrag(WindowEdge.SouthEast, e);

@@ -35,6 +35,11 @@
                 <ToggleSwitch Name="WheelOnlyOnDotsSwitch" IsCheckedChanged="OnToggleChanged" />
             </controls:Setting>
 
+            <!-- Hide the pagination dots while idle; they only show while switching or hovering -->
+            <controls:Setting Title="{x:Static locales:Locale.Setting_Auto_Hide_Dots}">
+                <ToggleSwitch Name="AutoHideDotsSwitch" IsCheckedChanged="OnToggleChanged" />
+            </controls:Setting>
+
             <!-- Add new widget to stack -->
             <controls:Setting Title="{x:Static locales:Locale.Setting_Add_Widget}">
                 <Grid ColumnDefinitions="*,Auto" Width="260">

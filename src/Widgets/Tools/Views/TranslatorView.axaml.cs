@@ -23,10 +23,18 @@ namespace Tools.Views;
 
 public partial class TranslatorView : UserControl, IWidgetSelfRefreshing
 {
-    private record LangOption(string Name, string ShortName, string Code);
-    private record EngineOption(string FullName, string ShortName, string Code);
+    /// <summary>Panel combos render items through ToString (compiled bindings can't see the record's properties).</summary>
+    internal record LangOption(string Name, string ShortName, string Code)
+    {
+        public override string ToString() => Name;
+    }
 
-    private static readonly List<LangOption> Languages =
+    internal record EngineOption(string FullName, string ShortName, string Code)
+    {
+        public override string ToString() => FullName;
+    }
+
+    internal static readonly List<LangOption> Languages =
     [
         new("自动检测", "自动", "auto"),
         new("简体中文", "中文", "zh"),
@@ -39,7 +47,7 @@ public partial class TranslatorView : UserControl, IWidgetSelfRefreshing
         new("俄语", "俄语", "ru")
     ];
 
-    private static readonly List<EngineOption> Engines =
+    internal static readonly List<EngineOption> Engines =
     [
         new("有道 (国内直连)", "有道", "Youdao"),
         new("MyMemory (免Key)", "MyMem", "MyMemory"),
@@ -681,6 +689,78 @@ public partial class TranslatorView : UserControl, IWidgetSelfRefreshing
         ToastBanner.IsVisible = true;
         toastTimer.Stop();
         toastTimer.Start();
+    }
+
+    // ---- 二级面板（大窗翻译）：与 ClipboardPopupWindow 相同的宿主复用路径 ----
+
+    /// <summary>Live state handed to the secondary panel when it opens.</summary>
+    internal TranslatorModel PanelModel => model;
+
+    internal (string Source, string Target, string Engine) PanelPreferences =>
+        (currentSourceLang, currentTargetLang, currentEngine);
+
+    internal string PanelInput => InputTextBox.Text ?? string.Empty;
+
+    internal string PanelOutput => OutputTextBox.Text ?? string.Empty;
+
+    /// <summary>
+    /// Pull the panel's final input/output back into the widget. Setting the input text
+    /// re-arms the auto-translate debounce, so it is stopped right after — the panel
+    /// already produced the result shown here.
+    /// </summary>
+    internal void ApplyPanelResult(string input, string output)
+    {
+        InputTextBox.Text = input;
+        OutputTextBox.Text = output;
+        debounceTimer.Stop();
+    }
+
+    internal void ApplyPanelPreferences(string source, string target, string engine)
+    {
+        currentSourceLang = source;
+        currentTargetLang = target;
+        currentEngine = engine;
+        UpdatePillLabels();
+        RebuildMenus();
+    }
+
+    /// <summary>
+    /// The host widget's visual corner radius, so the panel's corners and its glass match
+    /// the widget card exactly. Null keeps the panel's own default radius.
+    /// </summary>
+    private double? SpawnCornerRadius
+    {
+        get
+        {
+            var r = (VisualRoot as DeskCanvas.Views.Widget)?.Radius.TopLeft ?? 0;
+            return r > 0 ? r : null;
+        }
+    }
+
+    public void OnOpenPanelClicked(object? sender, RoutedEventArgs e)
+    {
+        // A pending auto-translate would fire under the open panel; the panel owns the
+        // editing session now.
+        debounceTimer.Stop();
+        var (screenCenter, _) = GetScreenCenterAndTopLevel();
+        var owner = VisualRoot as Window;
+        TranslatorPopupWindow.ShowPopup(screenCenter, owner, SpawnCornerRadius, this);
+    }
+
+    private (Point? ScreenCenter, TopLevel? TopLevel) GetScreenCenterAndTopLevel()
+    {
+        if (VisualRoot is Visual rootVisual && VisualRoot is TopLevel topLevel)
+        {
+            var bounds = Bounds;
+            var centerLocal = new Point(bounds.Width / 2, bounds.Height / 2);
+            var rootPoint = this.TranslatePoint(centerLocal, rootVisual);
+            if (rootPoint.HasValue)
+            {
+                var screenPoint = topLevel.PointToScreen(rootPoint.Value);
+                return (new Point(screenPoint.X, screenPoint.Y), topLevel);
+            }
+        }
+        return (null, null);
     }
 
     private ScrollViewer? inputScroller;

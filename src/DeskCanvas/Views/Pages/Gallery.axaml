@@ -43,7 +43,7 @@
             <Setter Property="Background" Value="{DynamicResource SystemAccentColor}" />
         </Style>
         <Style Selector="Button.macos-gallery-card:pointerover Path.add-icon">
-            <Setter Property="Fill" Value="White" />
+            <Setter Property="Fill" Value="{DynamicResource AccentContrastForegroundBrush}" />
         </Style>
     </UserControl.Styles>
 

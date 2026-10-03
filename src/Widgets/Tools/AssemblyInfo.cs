@@ -6,7 +6,7 @@ using Tools.Views.Settings;
 using DeskCanvas.Core.Models.Attributes;
 
 [assembly: AssemblyCompany("creewick")]
-[assembly: AssemblyVersion("1.0.1")]
+[assembly: AssemblyVersion("1.0.2")]
 
 [assembly: WidgetInfo(typeof(ClipboardView), typeof(ClipboardModel), typeof(ClipboardSettings), "Tools_Clipboard_Title", "Tools_Clipboard_Subtitle", defaultColumns: 2, defaultRows: 2)]
 [assembly: WidgetInfo(typeof(TranslatorView), typeof(TranslatorModel), typeof(TranslatorSettings), "Tools_Translator_Title", "Tools_Translator_Subtitle", defaultColumns: 4, defaultRows: 2)]

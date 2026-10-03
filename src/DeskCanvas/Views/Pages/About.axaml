@@ -20,11 +20,18 @@
         </controls:Setting>
         <TextBlock FontSize="14" FontWeight="SemiBold" Margin="0 20 0 10" 
                    Text="快捷操作与技巧"/>
-        <controls:Setting Icon="{DynamicResource Move}" 
+        <controls:Setting Icon="{DynamicResource Move}"
                           Title="快捷移动小组件"
                           Subtitle="按住 Ctrl 键并使用鼠标左键拖动，可在任何组件（包括地图、便签、文件夹等可交互组件）上直接移动窗口">
             <Border Background="{DynamicResource SystemAccentColor}" CornerRadius="4" Padding="8,4" VerticalAlignment="Center">
-                <TextBlock Text="Ctrl + 鼠标左键拖动" Foreground="White" FontSize="11" FontWeight="SemiBold" />
+                <TextBlock Text="Ctrl + 鼠标左键拖动" Foreground="{DynamicResource AccentContrastForegroundBrush}" FontSize="11" FontWeight="SemiBold" />
+            </Border>
+        </controls:Setting>
+        <controls:Setting Icon="{DynamicResource Layers}"
+                          Title="切换重叠组件"
+                          Subtitle="在重叠组件上按住鼠标中键并滚动滚轮，即可在多个子组件间循环切换，无需对准右侧小圆点">
+            <Border Background="{DynamicResource SystemAccentColor}" CornerRadius="4" Padding="8,4" VerticalAlignment="Center">
+                <TextBlock Text="鼠标中键 + 滚轮" Foreground="{DynamicResource AccentContrastForegroundBrush}" FontSize="11" FontWeight="SemiBold" />
             </Border>
         </controls:Setting>
         <TextBlock FontSize="14" FontWeight="SemiBold" Margin="0 20 0 10" 

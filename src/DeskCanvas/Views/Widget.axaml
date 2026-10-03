@@ -164,6 +164,7 @@
                 VerticalAlignment="Center"
                 Margin="{Binding StackIndicatorsMargin, RelativeSource={RelativeSource AncestorType=views:Widget}}"
                 IsVisible="{Binding HasStackIndicators, RelativeSource={RelativeSource AncestorType=views:Widget}}"
+                Opacity="0"
                 PointerWheelChanged="OnStackIndicatorsWheelChanged"
                 ZIndex="85">
             <ItemsControl ItemsSource="{Binding StackIndicators, RelativeSource={RelativeSource AncestorType=views:Widget}}">

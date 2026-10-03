@@ -187,7 +187,11 @@ public class AggregateViewModel : ReactiveObject, IDisposable
     {
         if (Application.Current != null)
         {
-            if (Application.Current.TryFindResource("CalendarTodayBrush", out var calBrush) && calBrush is IBrush cb)
+            // Variant-explicit lookup: the variant-less overload resolves the LIGHT theme
+            // dictionary even while the app renders dark — in 单色-黑白 that turned the
+            // today dot into the dark-mode background color (same trap as
+            // MarkdownRenderer.ResolveThemed documents).
+            if (((IResourceHost)Application.Current).TryGetResource("CalendarTodayBrush", Application.Current.ActualThemeVariant, out var calBrush) && calBrush is IBrush cb)
                 return cb;
             if (Application.Current.TryFindResource("SystemAccentColor", out var value) && value is Color accent)
                 return new SolidColorBrush(accent);

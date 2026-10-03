@@ -178,7 +178,7 @@
                 Background="{DynamicResource SystemControlHighlightAccentBrush}" CornerRadius="{DynamicResource WidgetInnerCornerRadius}" Padding="14,4" Margin="0,4,0,0"
                 IsVisible="False" ZIndex="10">
             <TextBlock x:Name="ToastText" Text="{x:Static locales:Locale.Tools_Clipboard_Copied}" FontSize="12" FontWeight="SemiBold"
-                       Foreground="White" />
+                       Foreground="{DynamicResource AccentContrastForegroundBrush}" />
         </Border>
 
         <!-- Input Box Border -->
@@ -204,7 +204,7 @@
         </Border>
 
         <!-- Middle / Top Control Bar -->
-        <Grid x:Name="ControlBarGrid" Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" ColumnDefinitions="Auto,Auto,Auto,*,Auto,Auto" Margin="0,3,0,3" VerticalAlignment="Center">
+        <Grid x:Name="ControlBarGrid" Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" ColumnDefinitions="Auto,Auto,Auto,*,Auto,Auto,Auto" Margin="0,3,0,3" VerticalAlignment="Center">
             <!-- Source Language Menu Button -->
             <Button x:Name="SourceLangBtn" Grid.Column="0" Classes="menu-btn" Click="OnMenuBtnClicked">
                 <StackPanel Orientation="Horizontal" Spacing="2">
@@ -255,6 +255,12 @@
                     <TextBlock x:Name="LoadingText" Text="…" FontSize="9" Foreground="{DynamicResource TranslateAccentBrush}"
                                VerticalAlignment="Center" IsVisible="False" />
                 </StackPanel>
+            </Button>
+
+            <!-- Expand: open the secondary panel (large editing/reading window) -->
+            <Button Grid.Column="6" Classes="icon-btn" Margin="3,0,0,0" Click="OnOpenPanelClicked" ToolTip.Tip="展开大窗翻译">
+                <PathIcon Data="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"
+                          Width="11" Height="11" Foreground="{DynamicResource TranslateAccentBrush}" />
             </Button>
         </Grid>
 

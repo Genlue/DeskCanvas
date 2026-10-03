@@ -44,10 +44,10 @@
                             <Border Width="36" Height="36" CornerRadius="18"
                                     Margin="0,0,14,0"
                                     VerticalAlignment="Center"
-                                    Background="{DynamicResource SystemAccentColorLight2}"
+                                    Background="{DynamicResource SystemControlForegroundAccentBrush}"
                                     IsVisible="{Binding IsActive}">
                                 <PathIcon Width="16" Height="16"
-                                          Foreground="White"
+                                          Foreground="{DynamicResource AccentContrastForegroundBrush}"
                                           Data="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
                             </Border>
                             <Border Width="36" Height="36" CornerRadius="18"
@@ -71,7 +71,7 @@
                                             IsVisible="{Binding IsActive}"
                                             VerticalAlignment="Center">
                                         <TextBlock Text="{x:Static locales:Locale.Profiles_CurrentActive}"
-                                                   FontSize="11" Foreground="White" FontWeight="SemiBold" />
+                                                   FontSize="11" Foreground="{DynamicResource AccentContrastForegroundBrush}" FontWeight="SemiBold" />
                                     </Border>
                                 </StackPanel>
                                 <TextBlock FontSize="12" Opacity="0.6"
