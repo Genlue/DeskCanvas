@@ -6,7 +6,7 @@ using Clock.Views.Settings;
 using DeskCanvas.Core.Models.Attributes;
 
 [assembly: AssemblyCompany("creewick")]
-[assembly: AssemblyVersion("1.2.9")]
+[assembly: AssemblyVersion("1.2.10")]
 
 [assembly: WidgetInfo(typeof(AnalogI), typeof(ClockModel), typeof(AnalogClockSettings), "Clock_AnalogI_Title", "Clock_Analog_Subtitle")]
 [assembly: WidgetInfo(typeof(AnalogII), typeof(ClockModel), typeof(AnalogClockSettings), "Clock_AnalogII_Title", "Clock_Analog_Subtitle")]

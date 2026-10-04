@@ -17,7 +17,10 @@
             <Setter Property="Opacity" Value="0.92" />
         </Style>
         <Style Selector="TextBlock.dayNum.today">
-            <Setter Property="Foreground" Value="White" />
+            <!-- The today number sits on the accent-filled circle; the contrast brush flips
+                 with the monochrome variants (black on the white 黑白 accent, white on the
+                 dark-ish 背景色 accent) instead of hard-coding white. -->
+            <Setter Property="Foreground" Value="{DynamicResource AccentContrastForegroundBrush}" />
             <Setter Property="FontWeight" Value="Bold" />
             <Setter Property="Opacity" Value="1.0" />
         </Style>

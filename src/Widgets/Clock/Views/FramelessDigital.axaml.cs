@@ -1016,11 +1016,13 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
     /// </summary>
     private static Color? ResolveAccentColor(Theme? theme)
     {
-        // 黑白 monochrome: the accent IS the inverted background color, written into the
-        // SystemAccentColor resource by ThemeService — the hand-picked accent hex must not
-        // bypass the monochrome ramp here, so it is only honored outside that mode.
-        if (theme is not { Monochrome: true, EffectiveMonochromeVariant: MonochromeStyle.BlackWhite }
-            && ParseHex(theme?.AccentColor) is { } picked)
+        // 黑白/背景色 monochrome: the accent resource is ThemeService's monochrome ramp
+        // (pure white/black in 黑白, the inverted background in 背景色) — the hand-picked
+        // accent hex must not bypass it, so it is only honored in the 强调色 variant and
+        // outside monochrome.
+        var achromaticMonochrome = theme is { Monochrome: true }
+            && theme.EffectiveMonochromeVariant != MonochromeStyle.Accent;
+        if (!achromaticMonochrome && ParseHex(theme?.AccentColor) is { } picked)
             return picked;
 
         if (Application.Current is { } app &&

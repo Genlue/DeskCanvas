@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <SupportedOSPlatform>windows</SupportedOSPlatform>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia" />
+    <PackageReference Include="Avalonia.Desktop" />
+    <PackageReference Include="Avalonia.Headless" />
+    <PackageReference Include="Avalonia.Themes.Fluent" />
+    <PackageReference Include="Avalonia.Fonts.Inter" />
+    <ProjectReference Include="..\..\src\DeskCanvas.Core\DeskCanvas.Core.csproj" />
+    <ProjectReference Include="..\..\src\DeskCanvas\DeskCanvas.csproj" />
+    <ProjectReference Include="..\..\src\Widgets\Tools\Tools.csproj" />
+  </ItemGroup>
+
+</Project>

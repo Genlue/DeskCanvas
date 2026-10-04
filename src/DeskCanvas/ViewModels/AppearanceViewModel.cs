@@ -554,11 +554,12 @@ public class AppearanceViewModel : ReactiveObject
     }
 
     /// <summary>
-    /// The monochrome color source options (黑白 / 强调色).
+    /// The monochrome color source options (黑白 / 背景色 / 强调色).
     /// </summary>
     public MonochromeVariantViewModel[] MonochromeVariants { get; } =
     [
         new(Locale.Settings_Appearance_Monochrome_Variant_BlackWhite, MonochromeStyle.BlackWhite),
+        new(Locale.Settings_Appearance_Monochrome_Variant_Background, MonochromeStyle.BackgroundColor),
         new(Locale.Settings_Appearance_Monochrome_Variant_Accent, MonochromeStyle.Accent)
     ];
 
@@ -684,19 +685,6 @@ public class AppearanceViewModel : ReactiveObject
             var newSettings = settings with { Theme = theme };
             appSettingsProvider.Save(newSettings);
         }
-    }
-
-    public bool UseNativeFrame
-    {
-        get => appSettingsProvider.Get().Theme.UseNativeFrame;
-        set
-        {
-            var settings = appSettingsProvider.Get();
-            if (settings.Theme.UseNativeFrame == value) return;
-            var theme = settings.Theme with { UseNativeFrame = value };
-            var newSettings = settings with { Theme = theme };
-            appSettingsProvider.Save(newSettings);
-        }        
     }
 
     /// <summary>

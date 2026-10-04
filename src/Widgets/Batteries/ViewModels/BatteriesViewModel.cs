@@ -123,20 +123,27 @@ public class BatteryDeviceItem : INotifyPropertyChanged
             var theme = appSettingsProvider?.Get()?.Theme;
             if (theme != null && !theme.IsColorful && theme.Monochrome)
             {
+                var isDark = Application.Current?.ActualThemeVariant == ThemeVariant.Dark;
+                // 黑白: the ring/badge fill is the accent itself — pure black (light) / white (dark).
                 if (theme.EffectiveMonochromeVariant == MonochromeStyle.BlackWhite)
-                {
-                    var isDark = Application.Current?.ActualThemeVariant == ThemeVariant.Dark;
                     return isDark ? Brushes.White : Brushes.Black;
-                }
-                else // Accent
+                // 背景色: the accent locks to the inverted background; the hand-picked accent
+                // must not leak, so resolve the themed brush the dictionaries use.
+                if (theme.EffectiveMonochromeVariant == MonochromeStyle.BackgroundColor)
                 {
-                    if (!string.IsNullOrWhiteSpace(theme.AccentColor) && Color.TryParse(theme.AccentColor, out var parsedAccent))
-                        return new SolidColorBrush(parsedAccent);
-                    if (Application.Current != null && Application.Current.TryGetResource("SystemControlForegroundAccentBrush", Application.Current.ActualThemeVariant, out var res) && res is IBrush ab)
-                        return ab;
-                    var isDark = Application.Current?.ActualThemeVariant == ThemeVariant.Dark;
-                    return isDark ? new SolidColorBrush(Color.Parse("#70A5FF")) : new SolidColorBrush(Color.Parse("#0078D4"));
+                    if (Application.Current != null && Application.Current.TryGetResource("SystemControlForegroundAccentBrush", Application.Current.ActualThemeVariant, out var themed) && themed is IBrush themedBrush)
+                        return themedBrush;
+                    var hex = isDark ? theme.EffectiveSolidBackgroundLight : theme.EffectiveSolidBackgroundDark;
+                    return new SolidColorBrush(Color.TryParse(hex, out var background)
+                        ? background
+                        : (isDark ? Colors.White : Colors.Black));
                 }
+                // 强调色: the hand-picked accent is honored.
+                if (!string.IsNullOrWhiteSpace(theme.AccentColor) && Color.TryParse(theme.AccentColor, out var parsedAccent))
+                    return new SolidColorBrush(parsedAccent);
+                if (Application.Current != null && Application.Current.TryGetResource("SystemControlForegroundAccentBrush", Application.Current.ActualThemeVariant, out var res) && res is IBrush ab)
+                    return ab;
+                return isDark ? new SolidColorBrush(Color.Parse("#70A5FF")) : new SolidColorBrush(Color.Parse("#0078D4"));
             }
             if (IsCharging) return new SolidColorBrush(Color.Parse("#34C759"));
             if (Percentage > 20) return new SolidColorBrush(Color.Parse("#34C759"));
@@ -150,10 +157,18 @@ public class BatteryDeviceItem : INotifyPropertyChanged
         get
         {
             var theme = appSettingsProvider?.Get()?.Theme;
-            if (theme != null && !theme.IsColorful && theme.Monochrome && theme.EffectiveMonochromeVariant == MonochromeStyle.BlackWhite)
+            if (theme != null && !theme.IsColorful && theme.Monochrome)
             {
                 var isDark = Application.Current?.ActualThemeVariant == ThemeVariant.Dark;
-                return isDark ? Brushes.Black : Brushes.White;
+                return theme.EffectiveMonochromeVariant switch
+                {
+                    // 黑白: the badge fill is the black (light) / white (dark) accent — invert it.
+                    MonochromeStyle.BlackWhite => isDark ? Brushes.Black : Brushes.White,
+                    // 背景色: the badge fill is the dark (light mode) / light (dark mode)
+                    // background color — the same polarity AccentContrastForegroundBrush uses.
+                    MonochromeStyle.BackgroundColor => isDark ? Brushes.Black : Brushes.White,
+                    _ => Brushes.White,
+                };
             }
             return Brushes.White;
         }

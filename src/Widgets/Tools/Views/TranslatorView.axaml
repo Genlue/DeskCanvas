@@ -189,7 +189,7 @@
                          KeyUp="OnInputKeyUp" TextChanged="OnInputTextChanged" />
 
                 <Grid Grid.Row="1" ColumnDefinitions="*,Auto,Auto" Margin="4,2,2,0">
-                    <TextBlock x:Name="CharCountText" Text="0 字符" FontSize="10" Opacity="0.4" VerticalAlignment="Center"
+                    <TextBlock x:Name="CharCountText" Text="0 字符" FontSize="10" Opacity="0.4" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"
                                Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}" />
                     <Button Grid.Column="1" Classes="icon-btn" Margin="0,0,2,0" Click="OnClearInputClicked" ToolTip.Tip="{x:Static locales:Locale.Tools_Translator_Clear}">
                         <PathIcon Data="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"
@@ -217,7 +217,7 @@
             </Button>
 
             <!-- Swap Button ⇄ -->
-            <Button Grid.Column="1" Classes="icon-btn" Margin="1,0" Click="OnSwapClicked" ToolTip.Tip="{x:Static locales:Locale.Tools_Translator_Swap}">
+            <Button x:Name="SwapBtn" Grid.Column="1" Classes="icon-btn" Margin="1,0" Click="OnSwapClicked" ToolTip.Tip="{x:Static locales:Locale.Tools_Translator_Swap}">
                 <PathIcon Data="M6.99 11L3 15l3.99 4v-3H14v-2H6.99v-3zM21 9l-3.99-4v3H10v2h7.01v3L21 9z"
                           Width="10" Height="10" Foreground="{DynamicResource TranslateAccentBrush}" />
             </Button>
@@ -258,7 +258,7 @@
             </Button>
 
             <!-- Expand: open the secondary panel (large editing/reading window) -->
-            <Button Grid.Column="6" Classes="icon-btn" Margin="3,0,0,0" Click="OnOpenPanelClicked" ToolTip.Tip="展开大窗翻译">
+            <Button x:Name="ExpandBtn" Grid.Column="6" Classes="icon-btn" Margin="3,0,0,0" Click="OnOpenPanelClicked" ToolTip.Tip="展开大窗翻译">
                 <PathIcon Data="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"
                           Width="11" Height="11" Foreground="{DynamicResource TranslateAccentBrush}" />
             </Button>
@@ -272,7 +272,7 @@
                          Watermark="{x:Static locales:Locale.Tools_Translator_OutputHint}" />
 
                 <Grid Grid.Row="1" ColumnDefinitions="*,Auto" Margin="4,2,2,0">
-                    <TextBlock x:Name="StatusText" Text="" FontSize="10" Opacity="0.5" VerticalAlignment="Center"
+                    <TextBlock x:Name="StatusText" Text="" FontSize="10" Opacity="0.5" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"
                                Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}" />
                     <Button Grid.Column="1" Classes="icon-btn" Click="OnCopyOutputClicked" ToolTip.Tip="{x:Static locales:Locale.Tools_Translator_Copy}">
                         <PathIcon Data="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"

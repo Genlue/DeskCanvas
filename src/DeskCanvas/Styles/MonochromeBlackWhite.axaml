@@ -8,15 +8,16 @@
             <ResourceDictionary.ThemeDictionaries>
                 <!-- 黑白 monochrome: dark mode → white, light mode → black.
                      The TEXT family (BaseHigh and the derived notes/clock/weather text
-                     brushes) stays pure black/white. The ACCENT family follows
-                     ThemeService.ApplyAccent's monochrome ramp instead: the accent IS the
-                     inverted background color — light mode renders the dark-mode card
-                     color (SystemAccentColorDark1), dark mode the light-mode card color
-                     (SystemAccentColorLight2) — so accent elements keep their contrast
-                     against the card while staying inside the black/white palette. -->
+                     brushes) stays pure black/white. The ACCENT family resolves through
+                     ThemeService.ApplyAccent's 黑白 ramp instead: the accent is strictly
+                     achromatic — BLACK in light mode, WHITE in dark mode (the ramp's
+                     `dark:`/`light:` slots feed these dictionaries crosswise) — so
+                     accent-following elements never pick up the background colors.
+                     AccentContrast flips accordingly: white content on the black accent
+                     (light), black on white (dark). -->
                 <ResourceDictionary x:Key="Default">
                     <SolidColorBrush x:Key="SystemControlForegroundBaseHighBrush" Color="Black" />
-                    <!-- On the accent (dark-mode background color in this variant), white stays readable. -->
+                    <!-- The accent itself is black in this variant, so white stays readable on it. -->
                     <SolidColorBrush x:Key="AccentContrastForegroundBrush" Color="White" />
                     <SolidColorBrush x:Key="SystemControlForegroundAccentBrush" Color="{DynamicResource SystemAccentColorDark1}" />
                     <SolidColorBrush x:Key="CalendarHeaderBrush" Color="{DynamicResource SystemAccentColorDark1}" />
@@ -58,7 +59,7 @@
                 </ResourceDictionary>
                 <ResourceDictionary x:Key="Dark">
                     <SolidColorBrush x:Key="SystemControlForegroundBaseHighBrush" Color="White" />
-                    <!-- On the accent (light-mode background color in this variant), black is required. -->
+                    <!-- The accent itself is white in this variant, so black is required. -->
                     <SolidColorBrush x:Key="AccentContrastForegroundBrush" Color="Black" />
                     <SolidColorBrush x:Key="SystemControlForegroundAccentBrush" Color="{DynamicResource SystemAccentColorLight2}" />
                     <SolidColorBrush x:Key="CalendarHeaderBrush" Color="{DynamicResource SystemAccentColorLight2}" />

@@ -74,10 +74,10 @@
     </Window.ContextMenu> 
     
     <Window.Styles>
-        <!-- 右键菜单固定 8px 圆角（与全局 ContextMenu 一致），不再跟随组件卡片圆角；
-             菜单项圆角按「菜单半径 − 内边距」内嵌：8 − 5 → 4。 -->
+        <!-- 右键菜单固定 4px 圆角，不再跟随组件卡片圆角；外壳与悬停高亮（菜单项
+             CornerRadius 4）同一圆度，也与 Fluent 子菜单浮层（OverlayCornerRadius）一致。 -->
         <Style Selector="ContextMenu.WidgetContextMenu">
-            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="CornerRadius" Value="4" />
             <Setter Property="Padding" Value="5" />
             <Setter Property="ClipToBounds" Value="True" />
         </Style>

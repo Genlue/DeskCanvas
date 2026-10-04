@@ -291,6 +291,9 @@
   <data name="Settings_Appearance_Monochrome_Variant_Accent" xml:space="preserve">
     <value>强调色</value>
   </data>
+  <data name="Settings_Appearance_Monochrome_Variant_Background" xml:space="preserve">
+    <value>背景色</value>
+  </data>
   <data name="Settings_Appearance_Surface_Frosted" xml:space="preserve">
     <value>毛玻璃</value>
   </data>

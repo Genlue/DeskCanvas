@@ -671,7 +671,16 @@ namespace DeskCanvas.Locales {
                 return ResourceManager.GetString("Settings_Appearance_Monochrome_Variant_Accent", resourceCulture);
             }
         }
-        
+
+        /// <summary>
+        ///   Looks up a localized string similar to Background color.
+        /// </summary>
+        public static string Settings_Appearance_Monochrome_Variant_Background {
+            get {
+                return ResourceManager.GetString("Settings_Appearance_Monochrome_Variant_Background", resourceCulture);
+            }
+        }
+
         /// <summary>
         ///   Looks up a localized string similar to Black &amp; white.
         /// </summary>

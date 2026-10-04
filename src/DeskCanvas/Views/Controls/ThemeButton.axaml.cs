@@ -139,13 +139,12 @@ public partial class ThemeButton : UserControl, INotifyPropertyChanged
     {
         get
         {
-            var theme = appSettingsProvider.Get().Theme;
             var dark = IsDark();
             if (IsColorful)
                 return new SolidColorBrush(dark ? Color.Parse("#FF453A") : Color.Parse("#FF3B30"));
-            // 黑白 monochrome: white in dark mode, black in light mode.
-            if (theme.Monochrome && theme.EffectiveMonochromeVariant == MonochromeStyle.BlackWhite)
-                return new SolidColorBrush(dark ? Colors.White : Colors.Black);
+            // Every other mode reads the accent ramp ThemeService writes: 强调色 keeps the
+            // picked accent, 背景色 resolves to the inverted background, 黑白 to pure
+            // black (light) / white (dark).
             return new SolidColorBrush((Color)Application.Current!.FindResource(dark ? "SystemAccentColorLight2" : "SystemAccentColorDark1")!);
         }
     }

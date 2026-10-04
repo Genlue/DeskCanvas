@@ -1,25 +1,24 @@
 <Styles xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
-    <!-- 强调色 accent foreground: widget titles and accent icons. Always loaded
-         (ThemeService.SwitchStyle keeps it on). The monochrome styles are added
-         after it, so they can unify this accent with the text color:
-         - 强调色 monochrome (Styles/Monochrome.axaml): text already becomes the
-           accent → identical look, nothing to override here;
-         - 黑白 monochrome (Styles/MonochromeBlackWhite.axaml): overrides this
-           accent with black (light) / white (dark) so BOTH colors are unified. -->
+    <Style Selector=".Widget TextBox">
+        <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}" />
+    </Style>
     <Styles.Resources>
         <ResourceDictionary>
             <ResourceDictionary.ThemeDictionaries>
+                <!-- 背景色 monochrome: ALL text AND accent colors lock to the inverted
+                     background — light mode renders the dark-mode background color
+                     (SystemAccentColorDark1), dark mode the light-mode one
+                     (SystemAccentColorLight2), the ramp ThemeService.ApplyAccent writes in
+                     this variant. The text family and the accent family therefore share one
+                     color per variant; AccentContrast flips polarity: white content on the
+                     dark-ish accent (light), black on the light-ish accent (dark).
+                     Decorative tints (card border, clock dial, strokes) stay achromatic. -->
                 <ResourceDictionary x:Key="Default">
-                    <!-- Foreground that stays readable ON an accent-colored surface
-                         (badges, active pills, toasts). The colored accent is a mid tone,
-                         so white works in both variants; 黑白 monochrome overrides this
-                         (see MonochromeBlackWhite.axaml) because its accent polarity
-                         flips per variant, and 背景色 because its accent is the inverted
-                         background color. -->
+                    <SolidColorBrush x:Key="SystemControlForegroundBaseHighBrush" Color="{DynamicResource SystemAccentColorDark1}" />
+                    <!-- On the accent (the dark-mode background color in this variant), white stays readable. -->
                     <SolidColorBrush x:Key="AccentContrastForegroundBrush" Color="White" />
                     <SolidColorBrush x:Key="SystemControlForegroundAccentBrush" Color="{DynamicResource SystemAccentColorDark1}" />
-                    <!-- Semantic Fallback Brushes -->
                     <SolidColorBrush x:Key="CalendarHeaderBrush" Color="{DynamicResource SystemAccentColorDark1}" />
                     <SolidColorBrush x:Key="CalendarTodayBrush" Color="{DynamicResource SystemAccentColorDark1}" />
                     <SolidColorBrush x:Key="ClockSecondHandBrush" Color="{DynamicResource SystemAccentColorDark1}" />
@@ -45,22 +44,23 @@
                     <SolidColorBrush x:Key="WeatherGaugeBrush" Color="{DynamicResource SystemAccentColorDark1}" />
                     <SolidColorBrush x:Key="WeatherTempBarBrush" Color="{DynamicResource SystemAccentColorDark1}" />
                     <SolidColorBrush x:Key="WeatherCardBackground" Color="Transparent" />
-                    <SolidColorBrush x:Key="NotesTextBrush" Color="{DynamicResource SystemBaseHighColor}" />
-                    <SolidColorBrush x:Key="NotesTitleForegroundBrush" Color="{DynamicResource SystemBaseHighColor}" />
-                    <SolidColorBrush x:Key="NotesDividerBrush" Color="{DynamicResource SystemBaseHighColor}" />
-                    <SolidColorBrush x:Key="NotesUpdatedBrush" Color="{DynamicResource SystemBaseMediumColor}" />
-                    <SolidColorBrush x:Key="ClockHandBrush" Color="{DynamicResource SystemBaseHighColor}" />
-                    <SolidColorBrush x:Key="WeatherForegroundBrush" Color="{DynamicResource SystemBaseHighColor}" />
+                    <SolidColorBrush x:Key="NotesTextBrush" Color="{DynamicResource SystemAccentColorDark1}" />
+                    <SolidColorBrush x:Key="NotesTitleForegroundBrush" Color="{DynamicResource SystemAccentColorDark1}" />
+                    <SolidColorBrush x:Key="NotesDividerBrush" Color="{DynamicResource SystemAccentColorDark1}" />
+                    <SolidColorBrush x:Key="NotesUpdatedBrush" Color="{DynamicResource SystemAccentColorDark1}" />
+                    <SolidColorBrush x:Key="ClockHandBrush" Color="{DynamicResource SystemAccentColorDark1}" />
+                    <SolidColorBrush x:Key="WeatherForegroundBrush" Color="{DynamicResource SystemAccentColorDark1}" />
                     <SolidColorBrush x:Key="ProgressCardBackground" Color="Transparent" />
                     <SolidColorBrush x:Key="SearchPillBackground" Color="Transparent" />
                     <SolidColorBrush x:Key="WidgetCardBorderBrush" Color="#15000000" />
-                    <SolidColorBrush x:Key="ClockDialBackgroundBrush" Color="{DynamicResource SystemBaseHighColor}" Opacity="0.2" />
-                    <SolidColorBrush x:Key="ClockStrokesBrush" Color="{DynamicResource SystemBaseHighColor}" />
+                    <SolidColorBrush x:Key="ClockDialBackgroundBrush" Color="Black" Opacity="0.2" />
+                    <SolidColorBrush x:Key="ClockStrokesBrush" Color="Black" />
                 </ResourceDictionary>
                 <ResourceDictionary x:Key="Dark">
-                    <SolidColorBrush x:Key="AccentContrastForegroundBrush" Color="White" />
+                    <SolidColorBrush x:Key="SystemControlForegroundBaseHighBrush" Color="{DynamicResource SystemAccentColorLight2}" />
+                    <!-- On the accent (the light-mode background color in this variant), black is required. -->
+                    <SolidColorBrush x:Key="AccentContrastForegroundBrush" Color="Black" />
                     <SolidColorBrush x:Key="SystemControlForegroundAccentBrush" Color="{DynamicResource SystemAccentColorLight2}" />
-                    <!-- Semantic Fallback Brushes -->
                     <SolidColorBrush x:Key="CalendarHeaderBrush" Color="{DynamicResource SystemAccentColorLight2}" />
                     <SolidColorBrush x:Key="CalendarTodayBrush" Color="{DynamicResource SystemAccentColorLight2}" />
                     <SolidColorBrush x:Key="ClockSecondHandBrush" Color="{DynamicResource SystemAccentColorLight2}" />
@@ -86,17 +86,17 @@
                     <SolidColorBrush x:Key="WeatherGaugeBrush" Color="{DynamicResource SystemAccentColorLight2}" />
                     <SolidColorBrush x:Key="WeatherTempBarBrush" Color="{DynamicResource SystemAccentColorLight2}" />
                     <SolidColorBrush x:Key="WeatherCardBackground" Color="Transparent" />
-                    <SolidColorBrush x:Key="NotesTextBrush" Color="{DynamicResource SystemBaseHighColor}" />
-                    <SolidColorBrush x:Key="NotesTitleForegroundBrush" Color="{DynamicResource SystemBaseHighColor}" />
-                    <SolidColorBrush x:Key="NotesDividerBrush" Color="{DynamicResource SystemBaseHighColor}" />
-                    <SolidColorBrush x:Key="NotesUpdatedBrush" Color="{DynamicResource SystemBaseMediumColor}" />
-                    <SolidColorBrush x:Key="ClockHandBrush" Color="{DynamicResource SystemBaseHighColor}" />
-                    <SolidColorBrush x:Key="WeatherForegroundBrush" Color="{DynamicResource SystemBaseHighColor}" />
+                    <SolidColorBrush x:Key="NotesTextBrush" Color="{DynamicResource SystemAccentColorLight2}" />
+                    <SolidColorBrush x:Key="NotesTitleForegroundBrush" Color="{DynamicResource SystemAccentColorLight2}" />
+                    <SolidColorBrush x:Key="NotesDividerBrush" Color="{DynamicResource SystemAccentColorLight2}" />
+                    <SolidColorBrush x:Key="NotesUpdatedBrush" Color="{DynamicResource SystemAccentColorLight2}" />
+                    <SolidColorBrush x:Key="ClockHandBrush" Color="{DynamicResource SystemAccentColorLight2}" />
+                    <SolidColorBrush x:Key="WeatherForegroundBrush" Color="{DynamicResource SystemAccentColorLight2}" />
                     <SolidColorBrush x:Key="ProgressCardBackground" Color="Transparent" />
                     <SolidColorBrush x:Key="SearchPillBackground" Color="Transparent" />
                     <SolidColorBrush x:Key="WidgetCardBorderBrush" Color="#25FFFFFF" />
-                    <SolidColorBrush x:Key="ClockDialBackgroundBrush" Color="{DynamicResource SystemBaseHighColor}" Opacity="0.2" />
-                    <SolidColorBrush x:Key="ClockStrokesBrush" Color="{DynamicResource SystemBaseHighColor}" />
+                    <SolidColorBrush x:Key="ClockDialBackgroundBrush" Color="White" Opacity="0.2" />
+                    <SolidColorBrush x:Key="ClockStrokesBrush" Color="White" />
                 </ResourceDictionary>
             </ResourceDictionary.ThemeDictionaries>
         </ResourceDictionary>

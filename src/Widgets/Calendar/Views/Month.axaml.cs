@@ -184,7 +184,13 @@ public partial class Month : UserControl
     /// <summary>The theme accent / calendar today brush, or null while the resource is not resolvable yet.</summary>
     private IBrush? ResolveAccentBrush()
     {
-        if (this.TryFindResource("CalendarTodayBrush", out var calBrush) && calBrush is IBrush cb)
+        // Variant-explicit lookup: the variant-less overload resolves the LIGHT theme
+        // dictionary even while the widget renders dark — in 单色 modes that turned the
+        // today dot into the dark-mode background color (the same trap
+        // AggregateViewModel.ResolveAccentBrush and MarkdownRenderer.ResolveThemed
+        // document). SystemAccentColor is a plain application resource without theme
+        // dictionaries, so the plain overload stays safe for it.
+        if (this.TryFindResource("CalendarTodayBrush", this.ActualThemeVariant, out var calBrush) && calBrush is IBrush cb)
             return cb;
         if (this.TryFindResource("SystemAccentColor", out var value) && value is Color accent)
             return new SolidColorBrush(accent);

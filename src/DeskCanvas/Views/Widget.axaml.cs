@@ -186,6 +186,7 @@ public partial class Widget : Window, INotifyPropertyChanged
             });
         }
         ActualThemeVariantChanged += OnActualThemeVariantChanged;
+        ContentPresenter.LayoutUpdated += OnContentLayoutUpdated;
         Unloaded += OnUnloaded;
     }
 
@@ -1141,6 +1142,85 @@ public partial class Widget : Window, INotifyPropertyChanged
         Notify(nameof(WidgetOutlineBrush));
     }
 
+    // ---- 内容驱动最小窗口尺寸 ----
+    // 自由模式下窗口可以被拖到/填到任意像素（48px 起），而组件内容里总有放不下的
+    // 固定宽行（控件栏 pill、按钮组、表头…）：Grid 星号列缩到 0 后固定列溢出，被
+    // ContentPresenter.Clip 裁掉（截断）或与同级元素叠在一起（重叠）。这里的闭环是：
+    // 内容每次布局完成后读它的 DesiredSize——Avalonia 测量语义下，被压缩的布局会把
+    // 放不下的自然尺寸报进 DesiredSize（> 可用尺寸即为溢出信号）——据此抬高窗口的
+    // Min 尺寸，让缩放手柄 / 自定义尺寸 / 拖拽都不可能低于"内容能存活"的下限；已经
+    // 小于下限的窗口（旧布局、locale 换更长的文案）则长到下限。内容自身在各尺寸档
+    // 位的自适应收缩（隐藏次要控件等）会让 DesiredSize 跟着变小，所以这个下限是
+    // "视图已尽力收缩后仍需要的"尺寸，而不是视图不作为的借口。
+
+    /// <summary>上一次应用到窗口的 Min 尺寸（去重用：布局高频触发，值没变就不动窗口）。</summary>
+    private double appliedMinWidth;
+    private double appliedMinHeight;
+    private bool minSizeUpdateQueued;
+
+    private void OnContentLayoutUpdated(object? sender, EventArgs e) => QueueContentMinSizeUpdate();
+
+    private void QueueContentMinSizeUpdate()
+    {
+        if (minSizeUpdateQueued) return;
+        minSizeUpdateQueued = true;
+        // Background 优先级：排在当前这轮布局之后，读到的 DesiredSize 才包含
+        // 视图刚做过的可见性/档位调整；同时把一轮布局里的多次触发合并成一次。
+        Dispatcher.UIThread.Post(() =>
+        {
+            minSizeUpdateQueued = false;
+            UpdateContentMinSize();
+        }, DispatcherPriority.Background);
+    }
+
+    private void UpdateContentMinSize()
+    {
+        // 无边框组件自管窗口区域与字形裁剪，尺寸即设计，不干预。
+        if (isFrameless) return;
+        // 手动网格：尺寸由网格驱动，视图靠 SizeTiers 分档自行退化。
+        // 锁定尺寸：Min=Max=当前值是用户的显式选择，覆盖它反而破坏锁定。
+        var layoutSettings = appSettingsProvider.Get().Layout;
+        if (layoutSettings.GridMode == GridMode.Manual || layoutSettings.LockSize) return;
+        // 预设档位过渡动画进行中：Width/Height 携带中间值，此时抬高 Min 会
+        // 把动画钳死在目标尺寸上，300ms 过渡直接跳变。
+        if (pendingSpan != null) return;
+        // DesiredSize 只在真实测量后有意义（挂载初期为 0），等下一轮布局。
+        if (ContentPresenter.Child is not Layoutable child || !child.IsMeasureValid) return;
+
+        var desired = child.DesiredSize;
+        var (minW, minH) = ComputeContentMinWindowSize(desired, WidgetMargin, WidgetOutlineThickness);
+        if (Math.Abs(minW - appliedMinWidth) < 0.5 && Math.Abs(minH - appliedMinHeight) < 0.5) return;
+        appliedMinWidth = minW;
+        appliedMinHeight = minH;
+
+        MinWidth = minW;
+        MinHeight = minH;
+
+        // 实际尺寸低于新下限（旧版本存的布局、locale 切到更长文案后）：长到能放下
+        // 为止。只增不减——空间变大时视图会展示更多内容，Min 跟着涨是正常方向；
+        // 绝不自动缩窗，避免和用户手里正在进行的拖拽打架。
+        if (Width < minW || Height < minH)
+        {
+            Width = Math.Max(Width, minW);
+            Height = Math.Max(Height, minH);
+            AfterResize();
+        }
+    }
+
+    /// <summary>
+    /// Smallest window that fits the content's measured minimum: the content
+    /// DesiredSize already includes the view's own margin, so the window just adds
+    /// the card margin and the outline ring. Kept side-effect-free so
+    /// <c>WidgetAdaptiveChecks</c> can pin the math via reflection.
+    /// </summary>
+    internal static (double Width, double Height) ComputeContentMinWindowSize(
+        Size contentDesired, Thickness windowMargin, Thickness outline, double floor = 48)
+    {
+        var w = Math.Ceiling(contentDesired.Width + windowMargin.Left + windowMargin.Right + outline.Left + outline.Right);
+        var h = Math.Ceiling(contentDesired.Height + windowMargin.Top + windowMargin.Bottom + outline.Top + outline.Bottom);
+        return (Math.Max(floor, w), Math.Max(floor, h));
+    }
+
     private (int m, int cw, int ch, int cr)? lastAppliedRegion;
 
     /// <summary>
@@ -1314,10 +1394,12 @@ public partial class Widget : Window, INotifyPropertyChanged
             return;
         }
 
+        // 自由模式的下限不能低于内容测出来的存活下限（见 UpdateContentMinSize）：
+        // 解锁/初始路径重置 Min 时若直接回到 48，内容会被重新允许拖进截断区。
         var minSize = 48.0;
-        
-        MinWidth = lockSize ? Width : minSize;
-        MinHeight = lockSize ? Height : minSize;
+
+        MinWidth = lockSize ? Width : Math.Max(minSize, appliedMinWidth);
+        MinHeight = lockSize ? Height : Math.Max(minSize, appliedMinHeight);
         MaxWidth = lockSize ? Width : double.PositiveInfinity;
         MaxHeight = lockSize ? Height : double.PositiveInfinity;
     }
@@ -1393,6 +1475,7 @@ public partial class Widget : Window, INotifyPropertyChanged
         profileService.ActiveProfileChanged -= OnProfilesChanged;
         profileService.ProfilesListChanged -= OnProfilesChanged;
         ActualThemeVariantChanged -= OnActualThemeVariantChanged;
+        ContentPresenter.LayoutUpdated -= OnContentLayoutUpdated;
         AttachStackWidget(null);
     }
 

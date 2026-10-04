@@ -388,8 +388,8 @@
                 </ComboBox.ItemTemplate>
             </ComboBox>
         </controls:Setting>
-        <controls:Setting IsVisible="{Binding ShowTitleBarSize}" Icon="{DynamicResource WidgetSize}" 
-                          Title="{x:Static locales:Locale.Settings_Advanced_TitleBarSize_Title}" 
+        <controls:Setting IsVisible="{Binding ShowTitleBarSize}" Icon="{DynamicResource WidgetSize}"
+                          Title="{x:Static locales:Locale.Settings_Advanced_TitleBarSize_Title}"
                           Subtitle="{x:Static locales:Locale.Settings_Advanced_TitleBarSize_Subtitle}">
             <ComboBox MinWidth="130" ItemsSource="{Binding TitleBarSizes}"
                       SelectedItem="{Binding TitleBarSize}">
@@ -399,11 +399,6 @@
                     </DataTemplate>
                 </ComboBox.ItemTemplate>
             </ComboBox>
-        </controls:Setting>
-        <controls:Setting Icon="{DynamicResource WidgetRadius}" 
-                          Title="{x:Static locales:Locale.Settings_Advanced_UseNativeFrame_Title}" 
-                          Subtitle="{x:Static locales:Locale.Settings_Advanced_UseNativeFrame_Subtitle}">
-            <ToggleSwitch IsChecked="{Binding UseNativeFrame}" />
         </controls:Setting>
     </StackPanel>
 </UserControl>

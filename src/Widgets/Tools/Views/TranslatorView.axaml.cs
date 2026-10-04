@@ -9,6 +9,7 @@ using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
@@ -97,6 +98,7 @@ public partial class TranslatorView : UserControl, IWidgetSelfRefreshing
         Loaded += OnLoaded;
         Unloaded += OnUnloaded;
         SizeChanged += OnSizeChanged;
+        LayoutUpdated += OnViewLayoutUpdated;
 
         InputTextBox.AddHandler(PointerWheelChangedEvent, OnTextBoxPointerWheel, RoutingStrategies.Bubble, true);
         OutputTextBox.AddHandler(PointerWheelChangedEvent, OnTextBoxPointerWheel, RoutingStrategies.Bubble, true);
@@ -116,6 +118,8 @@ public partial class TranslatorView : UserControl, IWidgetSelfRefreshing
         // re-added view stops reacting to resize and to the mouse wheel.
         SizeChanged -= OnSizeChanged;
         SizeChanged += OnSizeChanged;
+        LayoutUpdated -= OnViewLayoutUpdated;
+        LayoutUpdated += OnViewLayoutUpdated;
         InputTextBox.RemoveHandler(PointerWheelChangedEvent, OnTextBoxPointerWheel);
         InputTextBox.AddHandler(PointerWheelChangedEvent, OnTextBoxPointerWheel, RoutingStrategies.Bubble, true);
         OutputTextBox.RemoveHandler(PointerWheelChangedEvent, OnTextBoxPointerWheel);
@@ -131,8 +135,29 @@ public partial class TranslatorView : UserControl, IWidgetSelfRefreshing
         UpdateAdaptiveCornerRadii();
         if (size.Width > 0)
         {
-            AdaptControlBar(size.Width);
+            AdaptControlBar();
         }
+    }
+
+    /// <summary>
+    /// Every relayout can change what fits (tier switches flip pill labels between
+    /// full and short names, locale changes reflow the text, …) — re-evaluate the
+    /// control bar on each pass, coalesced to one run per layout batch.
+    /// </summary>
+    private void OnViewLayoutUpdated(object? sender, EventArgs e) => QueueBarAdaptation();
+
+    private void QueueBarAdaptation()
+    {
+        if (barAdaptQueued) return;
+        barAdaptQueued = true;
+        // Background priority: runs after the current layout batch settles, so the
+        // measurement below sees post-tier-switch visuals; bursts of layout events
+        // (drag-resize fires this dozens of times) collapse into one adaptation.
+        Dispatcher.UIThread.Post(() =>
+        {
+            barAdaptQueued = false;
+            AdaptControlBar();
+        }, DispatcherPriority.Background);
     }
 
     private void OnUnloaded(object? sender, RoutedEventArgs e)
@@ -147,6 +172,7 @@ public partial class TranslatorView : UserControl, IWidgetSelfRefreshing
         cts = null;
 
         SizeChanged -= OnSizeChanged;
+        LayoutUpdated -= OnViewLayoutUpdated;
         InputTextBox.RemoveHandler(PointerWheelChangedEvent, OnTextBoxPointerWheel);
         OutputTextBox.RemoveHandler(PointerWheelChangedEvent, OnTextBoxPointerWheel);
     }
@@ -159,20 +185,104 @@ public partial class TranslatorView : UserControl, IWidgetSelfRefreshing
         var tier = ResolveTier(size);
         ApplyTier(tier);
         UpdateAdaptiveCornerRadii();
-        AdaptControlBar(size.Width);
+        AdaptControlBar();
     }
 
-    private void AdaptControlBar(double width)
+    /// <summary>Guards against re-entrant adaptation passes (layout events firing during one).</summary>
+    private bool barAdaptQueued;
+
+    /// <summary>
+    /// 各按钮"可见时"的自然宽度缓存。IsVisible=false 的控件不参与测量、DesiredSize
+    /// 会被清零——若直接读它算"恢复某档会多宽"，刚藏起来的按钮总显得不占地方，
+    /// 每一轮都得出"level 0 也放得下"再把它亮出来，布局在 0/1 档间无限打转。
+    /// </summary>
+    private readonly Dictionary<Layoutable, double> barNaturalWidths = new();
+
+    /// <summary>
+    /// 控件栏测量驱动的渐进降级（替代旧的单一像素阈值）：按各降级档位计算控件栏的
+    /// 自然宽度，选出能放下的最小档位一次性应用。必须整档一次算好——先恢复再隐藏
+    /// 的试错会让每次翻动都失效布局，LayoutUpdated 再触发适配，无限打转。
+    /// 像素阈值法对 locale 文案长度、字体缩放全盲；测量法对一切都成立。
+    /// </summary>
+    private void AdaptControlBar()
     {
+        var available = ContentGrid.Bounds.Width;
+        if (available <= 0) available = Math.Max(0, Bounds.Width - 24);
+        if (available <= 0) return;
+
         bool isSmall = currentTier == WidgetTier.Small || currentTier == WidgetTier.Cell;
+        CaptureBarNaturalWidths();
+
+        var best = 4;
+        for (int level = 0; level <= 4; level++)
+        {
+            if (MeasureControlBarNaturalWidth(level, isSmall) <= available + 0.5)
+            {
+                best = level;
+                break;
+            }
+        }
+        ApplyControlBarLevel(best, isSmall);
+    }
+
+    private void CaptureBarNaturalWidths()
+    {
+        foreach (var child in ControlBarGrid.Children)
+        {
+            if (child is Layoutable { IsVisible: true } element && element.DesiredSize.Width > 0)
+                barNaturalWidths[element] = element.DesiredSize.Width + element.Margin.Left + element.Margin.Right;
+        }
+    }
+
+    /// <summary>
+    /// 降级序列：0 全量 → 1 藏引擎（引擎选择在二级面板里也有）→ 2 藏交换 →
+    /// 3 藏立即翻译 → 4 藏展开。小档下"立即翻译"由 tier 样式隐藏，代码不写它的
+    /// 本地值——本地值会永久压过样式，档位切换后就再也回不来了。
+    /// </summary>
+    private void ApplyControlBarLevel(int level, bool isSmall)
+    {
         if (isSmall)
         {
-            EngineBtn.IsVisible = width >= 135;
+            // 交还样式控制（tier-small 样式会把它藏掉）；本地值残留会让它在小档复活。
+            if (TranslateBtn.IsVisible) TranslateBtn.ClearValue(IsVisibleProperty);
         }
         else
         {
-            EngineBtn.IsVisible = true;
+            SetBarVisibility(TranslateBtn, level < 3);
         }
+
+        SetBarVisibility(EngineBtn, level < 1);
+        SetBarVisibility(SwapBtn, level < 2);
+        SetBarVisibility(ExpandBtn, level < 4);
+    }
+
+    /// <summary>该档位下控件栏的自然宽度：可见成员的缓存宽度求和（缺失时退回 DesiredSize）。</summary>
+    private double MeasureControlBarNaturalWidth(int level, bool isSmall)
+    {
+        double natural = 0;
+        foreach (var child in ControlBarGrid.Children)
+        {
+            if (child is not Layoutable element) continue;
+            if (!IsVisibleAtLevel(element, level, isSmall)) continue;
+            natural += barNaturalWidths.TryGetValue(element, out var width)
+                ? width
+                : element.DesiredSize.Width + element.Margin.Left + element.Margin.Right;
+        }
+        return natural;
+    }
+
+    private bool IsVisibleAtLevel(Layoutable element, int level, bool isSmall)
+    {
+        if (ReferenceEquals(element, EngineBtn)) return level < 1;
+        if (ReferenceEquals(element, SwapBtn)) return level < 2;
+        if (ReferenceEquals(element, TranslateBtn)) return !isSmall && level < 3;
+        if (ReferenceEquals(element, ExpandBtn)) return level < 4;
+        return true;
+    }
+
+    private static void SetBarVisibility(Control control, bool visible)
+    {
+        if (control.IsVisible != visible) control.IsVisible = visible;
     }
 
     private WidgetTier ResolveTier(Size size)
@@ -402,6 +512,12 @@ public partial class TranslatorView : UserControl, IWidgetSelfRefreshing
         SourceLangText.Text = isSmall ? src.ShortName : src.Name;
         TargetLangText.Text = isSmall ? tgt.ShortName : tgt.Name;
         EngineText.Text = isSmall ? GetCompactEngineName(eng.Code) : (isMedium ? eng.ShortName : eng.FullName);
+
+        // 标签换了自然宽度就变了，清掉让下一轮适配重新采集（可见时立即采集，
+        // 隐藏时等恢复后再采——期间旧缓存只影响一轮的档位估计）。
+        barNaturalWidths.Remove(SourceLangBtn);
+        barNaturalWidths.Remove(TargetLangBtn);
+        barNaturalWidths.Remove(EngineBtn);
     }
 
     private static string GetCompactEngineName(string engineCode) => engineCode switch

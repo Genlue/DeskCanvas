@@ -192,6 +192,9 @@
     <data name="Settings_Appearance_Monochrome_Variant_Accent" xml:space="preserve">
         <value>Accent color</value>
     </data>
+    <data name="Settings_Appearance_Monochrome_Variant_Background" xml:space="preserve">
+        <value>Background color</value>
+    </data>
     <data name="Settings_Appearance_Surface_Frosted" xml:space="preserve">
         <value>Frosted glass</value>
     </data>

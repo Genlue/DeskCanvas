@@ -14,7 +14,7 @@
         x:DataType="viewModels:SettingsViewModel">
 
     <Window.Styles>
-        <!-- The surface tint is style-driven (not a local attribute) so code can swap it for the
+        <!-- The sidebar tint is style-driven (not a local attribute) so code can swap it for the
              fully opaque fallback by toggling the "opaque" class when the acrylic backdrop drops
              (see Settings.ApplySurfaceFallback). -->
         <Style Selector="Border#WindowSurface">
@@ -22,6 +22,17 @@
         </Style>
         <Style Selector="Border#WindowSurface.opaque">
             <Setter Property="Background" Value="{DynamicResource SettingsBackground}" />
+        </Style>
+        <!-- macOS 27-style content sheet: the right-hand area is an opaque solid surface
+             (white / near-black), sitting on the same acrylic window as the glass sidebar.
+             The hairline left border is the sidebar seam; top-left AND bottom-left corners
+             are rounded so the divider caps identically at both ends, and the window's own
+             rounded clip (WindowSurface) rounds its outer right corners. -->
+        <Style Selector="Border#ContentSurface">
+            <Setter Property="Background" Value="{DynamicResource SettingsContentBackground}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource SettingsContentDivider}" />
+            <Setter Property="BorderThickness" Value="1 0 0 0" />
+            <Setter Property="CornerRadius" Value="8 0 0 8" />
         </Style>
         <Style Selector="ListBoxItem">
             <Setter Property="CornerRadius" Value="8" />
@@ -42,6 +53,49 @@
             <Setter Property="IsHitTestVisible" Value="{Binding IsItem}" />
             <Setter Property="Focusable" Value="{Binding IsItem}" />
         </Style>
+        <!-- 浮动操作按钮（刷新 / 关闭）：圆形玻璃卡片直接挂在按钮模板的 ContentPresenter 上
+             （它原生支持 Background/BorderBrush/BoxShadow），按钮本身必须 ClipToBounds=False——
+             Avalonia 11.1 起输入控件默认裁切到自身边界，会把投影切成方形。悬停/按下
+             换的是 presenter 资源。 -->
+        <Style Selector="Button.WindowActionButton">
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="Background" Value="{DynamicResource SettingsFloatingCardBackground}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource SettingsFloatingCardBorder}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="18" />
+            <Setter Property="Width" Value="36" />
+            <Setter Property="Height" Value="36" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="ClipToBounds" Value="False" />
+            <Setter Property="Transitions">
+                <Transitions>
+                    <BrushTransition Property="Background" Duration="0:0:0.15" />
+                </Transitions>
+            </Setter>
+        </Style>
+        <Style Selector="Button.WindowActionButton /template/ ContentPresenter">
+            <Setter Property="BoxShadow" Value="0 2 8 0 #33000000" />
+            <Setter Property="Transitions">
+                <Transitions>
+                    <BrushTransition Property="Background" Duration="0:0:0.15" />
+                    <BoxShadowsTransition Property="BoxShadow" Duration="0:0:0.15" />
+                </Transitions>
+            </Setter>
+        </Style>
+        <Style Selector="Button.WindowActionButton:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource SettingsFloatingCardHoverBackground}" />
+            <Setter Property="BoxShadow" Value="0 3 10 0 #40000000" />
+        </Style>
+        <Style Selector="Button.WindowActionButton:pressed /template/ ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource SettingsFloatingCardPressedBackground}" />
+        </Style>
+        <Style Selector="Button.WindowActionButton PathIcon">
+            <Setter Property="HorizontalAlignment" Value="Center" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Width" Value="16" />
+            <Setter Property="Height" Value="16" />
+        </Style>
     </Window.Styles>
     
     <!-- The window's own glass surface. It is clipped to exactly the radius Avalonia's
@@ -53,15 +107,16 @@
             CornerRadius="{DynamicResource SettingsWindowCornerRadius}"
             ClipToBounds="True">
         <Grid RowDefinitions="Auto,*">
-        <controls:LiquidGlassSurface x:Name="GlassSurface" Grid.RowSpan="2" SettingsSurface="False" />
-        <!-- macOS traffic lights title bar (native system buttons are hidden
-             via code when this mode is active) -->
-        <controls:TrafficLightTitleBar x:Name="TrafficBar" Grid.Row="0" IsVisible="False" />
-        <TextBlock Name="AppTitle" IsHitTestVisible="False" Margin="16 16 0  16" FontWeight="Bold">DeskCanvas</TextBlock>
-        <SplitView Name="SplitView" Grid.Row="1" IsPaneOpen="True" DisplayMode="CompactInline" PaneBackground="Transparent" OpenPaneLength="240" CompactPaneLength="60">
+        <controls:LiquidGlassSurface x:Name="GlassSurface" Grid.Row="0" Grid.RowSpan="2" SettingsSurface="False" />
+        <!-- macOS layout: the sidebar (glass) and the content sheet (opaque) both span the
+             full window height — the pane owns the top strip where the traffic lights / app
+             title float, so the opaque sheet reaches the very top on the right. The title bar
+             and app title are declared after the SplitView so they draw above it. -->
+        <SplitView Name="SplitView" Grid.Row="0" Grid.RowSpan="2" IsPaneOpen="True" DisplayMode="CompactInline" PaneBackground="Transparent" OpenPaneLength="200" CompactPaneLength="60">
             <SplitView.Pane>
                 <ScrollViewer>
-                    <StackPanel Margin="0 0 12 0">
+                    <!-- Top padding reserves the floating title strip (AppTitle / traffic lights). -->
+                    <StackPanel Margin="0 48 12 0">
                         <ListBox Name="ListBox" Background="Transparent" SelectionMode="Single" ItemsSource="{Binding AllItems}" SelectionChanged="OnMenuItemChanged">
                             <ListBox.ItemTemplate>
                                 <DataTemplate DataType="viewModels:PageViewModel">
@@ -94,29 +149,42 @@
                 </ScrollViewer>
             </SplitView.Pane>
             <SplitView.Content>
-                <Grid RowDefinitions="Auto, *" ColumnDefinitions="*, Auto" MaxWidth="800">
-                    <TextBlock Grid.Row="0" Grid.Column="0" FontSize="28" FontWeight="SemiBold" Text="{Binding CurrentPageTitle}" Margin="0 0 0 32" />
-                    <StackPanel Grid.Row="0" Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Top" Spacing="4" Margin="16 0">
-                        <Button Click="Restart" Background="{DynamicResource SystemControlBackgroundAltHighBrush}">
-                            <PathIcon Data="{DynamicResource Refresh}" />
-                        </Button>
-                        <Button Click="Exit" Background="{DynamicResource SystemControlBackgroundAltHighBrush}">
-                            <PathIcon Data="{DynamicResource Power}" />
-                        </Button>
-                    </StackPanel>
-                    <ScrollViewer Grid.Row="1" Grid.ColumnSpan="2">
-                        <TransitioningContentControl Margin="0 0 16 16" Content="{Binding CurrentPage}">
-                            <TransitioningContentControl.PageTransition>
-                                <CompositePageTransition>
-                                    <CrossFade Duration="0:00:00.000" />
-                                    <PageSlide Orientation="Vertical" SlideInEasing="CubicEaseOut" Duration="0:00:00.300" />
-                                </CompositePageTransition>
-                            </TransitioningContentControl.PageTransition>
-                        </TransitioningContentControl>
-                    </ScrollViewer>
-                </Grid>
+                <Panel>
+                    <!-- Opaque sheet: full-bleed background layer, page content is centered over it. -->
+                    <Border x:Name="ContentSurface" />
+                    <Grid RowDefinitions="Auto,*" ColumnDefinitions="*,Auto" MaxWidth="800">
+                        <TextBlock Grid.Row="0" Grid.Column="0" FontSize="28" FontWeight="SemiBold"
+                                   Text="{Binding CurrentPageTitle}" Margin="24 18 0 28" VerticalAlignment="Top" />
+                        <!-- Top margin 40 keeps the buttons clear of the 36px traffic-light
+                             drag strip (and the native caption zone in Native title-bar
+                             mode) — inside it a press starts a window drag instead of a
+                             click, which is why only the button's bottom slice worked. -->
+                        <StackPanel Grid.Row="0" Grid.Column="1" Orientation="Horizontal" Spacing="10"
+                                    VerticalAlignment="Top" Margin="16 40 12 0">
+                            <Button Classes="WindowActionButton" Click="Restart">
+                                <PathIcon Data="{DynamicResource Refresh}" />
+                            </Button>
+                            <Button Classes="WindowActionButton" Click="Exit">
+                                <PathIcon Data="{DynamicResource Power}" />
+                            </Button>
+                        </StackPanel>
+                        <ScrollViewer Grid.Row="1" Grid.ColumnSpan="2">
+                            <TransitioningContentControl Margin="24 0 16 16" Content="{Binding CurrentPage}">
+                                <TransitioningContentControl.PageTransition>
+                                    <CompositePageTransition>
+                                        <CrossFade Duration="0:00:00.000" />
+                                        <PageSlide Orientation="Vertical" SlideInEasing="CubicEaseOut" Duration="0:00:00.300" />
+                                    </CompositePageTransition>
+                                </TransitioningContentControl.PageTransition>
+                            </TransitioningContentControl>
+                        </ScrollViewer>
+                    </Grid>
+                </Panel>
             </SplitView.Content>
         </SplitView>
+        <controls:TrafficLightTitleBar x:Name="TrafficBar" Grid.Row="0" Grid.RowSpan="2" VerticalAlignment="Top" IsVisible="False" />
+        <TextBlock Name="AppTitle" Grid.Row="0" Grid.RowSpan="2" VerticalAlignment="Top" IsHitTestVisible="False"
+                   Margin="16 16 0 16" FontWeight="Bold" IsVisible="{Binding #SplitView.IsPaneOpen}">DeskCanvas</TextBlock>
         </Grid>
     </Border>
 </Window>

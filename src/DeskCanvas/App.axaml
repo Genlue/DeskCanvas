@@ -43,11 +43,12 @@
             <Setter Property="BorderThickness" Value="1" />
             <Setter Property="CornerRadius" Value="8" />
         </Style>
-        <!-- Widget right-click menu: fixed 8px radius — a menu is a menu, it should not
-             inherit the widget card's radius (which can be 36+). Items nest inside it:
-             menu 8 − padding 5 → item 4. -->
+        <!-- Widget right-click menu: fixed 4px radius — a menu is a menu, it should not
+             inherit the widget card's radius (which can be 36+). The shell shares the same
+             rounding degree as the hover highlight (item CornerRadius 4), matching the
+             Fluent submenu flyouts (OverlayCornerRadius). -->
         <Style Selector="ContextMenu.WidgetContextMenu">
-            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="CornerRadius" Value="4" />
             <Setter Property="Padding" Value="5" />
             <Setter Property="ClipToBounds" Value="True" />
         </Style>
@@ -89,6 +90,14 @@
                 <ResourceDictionary x:Key="Default">
                     <SolidColorBrush x:Key="SettingsWindowBackground" Color="#F5F5F7" Opacity="0.80" />
                     <SolidColorBrush x:Key="SettingsBackground" Color="#F5F5F7" Opacity="1.0" />
+                    <!-- macOS 27 风格设置窗口：侧栏保持玻璃，右侧内容区为不透明纯色 -->
+                    <SolidColorBrush x:Key="SettingsContentBackground" Color="#FFFFFF" Opacity="1.0" />
+                    <SolidColorBrush x:Key="SettingsContentDivider" Color="#000000" Opacity="0.09" />
+                    <!-- 内容区上的悬浮操作按钮卡片（刷新 / 关闭） -->
+                    <SolidColorBrush x:Key="SettingsFloatingCardBackground" Color="#FFFFFF" Opacity="1.0" />
+                    <SolidColorBrush x:Key="SettingsFloatingCardBorder" Color="#000000" Opacity="0.10" />
+                    <SolidColorBrush x:Key="SettingsFloatingCardHoverBackground" Color="#F6F6F8" Opacity="1.0" />
+                    <SolidColorBrush x:Key="SettingsFloatingCardPressedBackground" Color="#EDEDF0" Opacity="1.0" />
                     <SolidColorBrush x:Key="MenuSurfaceBackground" Color="#FFFFFF" Opacity="0.88" />
                     <SolidColorBrush x:Key="MenuSurfaceBorder" Color="#E5E5EA" Opacity="0.8" />
                     <SolidColorBrush x:Key="TrayMenuSurfaceBackground" Color="#FFFFFF" Opacity="1.0" />
@@ -97,6 +106,13 @@
                 <ResourceDictionary x:Key="Dark">
                     <SolidColorBrush x:Key="SettingsWindowBackground" Color="#1C1C1E" Opacity="0.80" />
                     <SolidColorBrush x:Key="SettingsBackground" Color="#1C1C1E" Opacity="1.0" />
+                    <!-- 暗色内容区：非纯黑的抬升灰（Apple #1C1C1E），与侧栏玻璃同底色 -->
+                    <SolidColorBrush x:Key="SettingsContentBackground" Color="#1C1C1E" Opacity="1.0" />
+                    <SolidColorBrush x:Key="SettingsContentDivider" Color="#FFFFFF" Opacity="0.09" />
+                    <SolidColorBrush x:Key="SettingsFloatingCardBackground" Color="#2C2C2E" Opacity="1.0" />
+                    <SolidColorBrush x:Key="SettingsFloatingCardBorder" Color="#FFFFFF" Opacity="0.10" />
+                    <SolidColorBrush x:Key="SettingsFloatingCardHoverBackground" Color="#323234" Opacity="1.0" />
+                    <SolidColorBrush x:Key="SettingsFloatingCardPressedBackground" Color="#3A3A3C" Opacity="1.0" />
                     <SolidColorBrush x:Key="MenuSurfaceBackground" Color="#1C1C1E" Opacity="0.88" />
                     <SolidColorBrush x:Key="MenuSurfaceBorder" Color="#38383A" Opacity="0.8" />
                     <SolidColorBrush x:Key="TrayMenuSurfaceBackground" Color="#1C1C1E" Opacity="1.0" />

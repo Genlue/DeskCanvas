@@ -55,6 +55,11 @@ public class ThemeService : IThemeService
         Source = new Uri("avares://DeskCanvas/Styles/MonochromeBlackWhite.axaml")
     };
 
+    private readonly StyleInclude monochromeBackgroundStyle = new(new Uri("avares://DeskCanvas/"))
+    {
+        Source = new Uri("avares://DeskCanvas/Styles/MonochromeBackground.axaml")
+    };
+
     /// <summary>
     /// 强调色 accent foreground (widget titles / accent icons), always loaded.
     /// The monochrome styles are appended AFTER it, so they can unify this
@@ -125,25 +130,34 @@ public class ThemeService : IThemeService
         Application.Current.Resources["SolidBackgroundDark"] = solidBackgroundDark;
         Application.Current.Resources["SolidBackgroundLight"] = solidBackgroundLight;
 
-        // 黑白 monochrome: the accent IS the inverted background — light mode takes the
-        // dark-mode card color, dark mode the light-mode card color. The ramp mapping in
-        // ApplyAccent already matches: `dark:` feeds SystemAccentColorDark1 which the LIGHT
-        // accent dictionaries read, `light:` feeds SystemAccentColorLight2 for the DARK ones.
-        // Runs after the user-accent ApplyAccent above so the monochrome ramp wins (黑白
-        // ignores a hand-picked accent), and also when no accent was ever picked.
-        var monochromeBlackWhite = !theme.IsColorful && theme.Monochrome && theme.EffectiveMonochromeVariant == MonochromeStyle.BlackWhite;
-        if (monochromeBlackWhite)
+        // 单色 color sources. Both always rewrite the accent ramp — overriding any hand-picked
+        // accent and also covering the never-picked case — so imperative readers of
+        // SystemAccentColor stay in contract, and both run AFTER the user-accent ApplyAccent
+        // above for exactly that reason:
+        // - 黑白: the accent is strictly achromatic — BLACK in light mode, WHITE in dark mode —
+        //   so accent-following text (aggregate city name, battery rings) never picks up the
+        //   background colors. The ramp mapping is inverted accordingly: `dark:` feeds
+        //   SystemAccentColorDark1 which the LIGHT accent dictionaries read, `light:` feeds
+        //   SystemAccentColorLight2 for the DARK ones.
+        // - 背景色: text AND accent lock to the inverted background — light mode renders the
+        //   dark-mode background color, dark mode the light-mode one (the historic 黑白 ramp).
+        var monochromeVariant = theme.IsColorful || !theme.Monochrome
+            ? (MonochromeStyle?)null
+            : theme.EffectiveMonochromeVariant;
+        var isDarkVariant = darkMode ?? Application.Current.ActualThemeVariant == ThemeVariant.Dark;
+        switch (monochromeVariant)
         {
-            // Follow-system (darkMode == null) resolves against the live app variant; the
-            // per-variant brushes stay correct through the theme dictionaries either way —
-            // only the single SystemAccentColor key (imperative readers) needs a pick.
-            var isDarkVariant = darkMode ?? Application.Current.ActualThemeVariant == ThemeVariant.Dark;
-            ApplyAccent(
-                isDarkVariant ? solidBackgroundLight : solidBackgroundDark,
-                dark: solidBackgroundDark,
-                light: solidBackgroundLight);
+            case MonochromeStyle.BlackWhite:
+                ApplyAccent(isDarkVariant ? Colors.White : Colors.Black, dark: Colors.Black, light: Colors.White);
+                break;
+            case MonochromeStyle.BackgroundColor:
+                ApplyAccent(
+                    isDarkVariant ? solidBackgroundLight : solidBackgroundDark,
+                    dark: solidBackgroundDark,
+                    light: solidBackgroundLight);
+                break;
         }
-        
+
         // Surface material drives both the background style and the transparency
         // hint: Acrylic/OutlinedAcrylic → OS-level live blur, Solid → per-pixel
         // transparency so the opacity slider actually blends with the desktop.
@@ -151,12 +165,15 @@ public class ThemeService : IThemeService
         // Always on base accent fallback (generic icons / title fallback)
         SwitchStyle(accentStyle, true);
 
-        // Monochrome color source: 黑白 = black in light / white in dark mode
-        // (both text AND accent colors), 强调色 = accent-based (the historic
-        // Monochrome.axaml dictionaries — accent stays accent, text becomes accent).
+        // Monochrome style dictionaries (appended after accentStyle so they win):
+        // 黑白 keeps the text family pure black/white and resolves the accent family through
+        // the achromatic ramp written above; 背景色 additionally locks the text family to the
+        // ramp (everything renders in the inverted background color); 强调色 keeps the accent
+        // as-is and only re-tints text (the historic Monochrome.axaml dictionaries).
         // In Colorful mode, monochrome is strictly disabled.
-        SwitchStyle(monochromeBlackWhiteStyle, monochromeBlackWhite);
-        SwitchStyle(monochromeStyle, !theme.IsColorful && theme.Monochrome && !monochromeBlackWhite);
+        SwitchStyle(monochromeBlackWhiteStyle, monochromeVariant == MonochromeStyle.BlackWhite);
+        SwitchStyle(monochromeBackgroundStyle, monochromeVariant == MonochromeStyle.BackgroundColor);
+        SwitchStyle(monochromeStyle, monochromeVariant == MonochromeStyle.Accent);
 
         // Surface material background styles
         SwitchStyle(transparentStyle, theme.UsesNativeBlur && !theme.IsColorful);
