@@ -1,7 +1,4 @@
-using System;
-using Avalonia;
 using Avalonia.Controls;
-using DeskCanvas.Core.Interfaces;
 
 namespace DeskCanvas.ViewModels;
 
@@ -21,13 +18,6 @@ public record WidgetPreviewViewModel(
     public double PreviewWidth => IsDoubleWidth ? 340 : 160;
 
     public double PreviewHeight => (DefaultColumns >= 4 && DefaultRows >= 4) ? 340 : 160;
-
-    public bool IsFlushOrFrameless =>
-        Control.Classes.Contains("Flush") ||
-        Control.Classes.Contains("Frameless") ||
-        Control is IFramelessWidget;
-
-    public Thickness ContentMargin => IsFlushOrFrameless ? new Thickness(0) : new Thickness(12);
 
     public string SizeBadge => (DefaultColumns, DefaultRows) switch
     {

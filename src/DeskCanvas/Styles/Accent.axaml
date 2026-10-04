@@ -42,6 +42,23 @@
                     <SolidColorBrush x:Key="RadioButtonCheckGlyphFill" Color="{DynamicResource AccentContrastColor}" />
                     <SolidColorBrush x:Key="RadioButtonCheckGlyphFillPointerOver" Color="{DynamicResource AccentContrastColor}" />
                     <SolidColorBrush x:Key="RadioButtonCheckGlyphFillPressed" Color="{DynamicResource AccentContrastColor}" />
+                    <!-- 选中底色（开关 ON 轨道 / 复选勾底 / 单选圆）family。静止态 Fluent 用的是
+                         SystemControlHighlightAccentBrush = SystemAccentColor，即本变体正确的强调色；
+                         但 hover/pressed 被硬接在 SystemAccentColorLight1 / Dark1 上——本应用的渐变是
+                         交叉写入的（Dark* 供亮色字典读、Light* 供暗色字典读），于是"亮一点的强调色"在单色
+                         档下恰恰是对侧极性的纯色：hover 一下底色就跳成与圆点/勾/点同色，整个控件消失
+                         （亮色黑白：黑轨道 hover 变白，白圆点也是白）。这里把 hover/pressed 也钉回
+                         SystemAccentColor，只用透明度做深浅反馈——任何强调色、任何极性都不会撞色。 -->
+                    <SolidColorBrush x:Key="ToggleSwitchFillOnPointerOver" Color="{DynamicResource SystemAccentColor}" Opacity="0.85" />
+                    <SolidColorBrush x:Key="ToggleSwitchFillOnPressed" Color="{DynamicResource SystemAccentColor}" Opacity="0.7" />
+                    <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillCheckedPointerOver" Color="{DynamicResource SystemAccentColor}" Opacity="0.85" />
+                    <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillCheckedPressed" Color="{DynamicResource SystemAccentColor}" Opacity="0.7" />
+                    <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillIndeterminatePointerOver" Color="{DynamicResource SystemAccentColor}" Opacity="0.85" />
+                    <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillIndeterminatePressed" Color="{DynamicResource SystemAccentColor}" Opacity="0.7" />
+                    <SolidColorBrush x:Key="RadioButtonOuterEllipseCheckedFillPointerOver" Color="{DynamicResource SystemAccentColor}" Opacity="0.85" />
+                    <SolidColorBrush x:Key="RadioButtonOuterEllipseCheckedFillPressed" Color="{DynamicResource SystemAccentColor}" Opacity="0.7" />
+                    <SolidColorBrush x:Key="RadioButtonOuterEllipseCheckedStrokePointerOver" Color="{DynamicResource SystemAccentColor}" Opacity="0.85" />
+                    <SolidColorBrush x:Key="RadioButtonOuterEllipseCheckedStrokePressed" Color="{DynamicResource SystemAccentColor}" Opacity="0.7" />
                     <SolidColorBrush x:Key="SystemControlForegroundAccentBrush" Color="{DynamicResource SystemAccentColorDark1}" />
                     <!-- Semantic Fallback Brushes -->
                     <SolidColorBrush x:Key="CalendarHeaderBrush" Color="{DynamicResource SystemAccentColorDark1}" />
@@ -96,6 +113,19 @@
                     <SolidColorBrush x:Key="RadioButtonCheckGlyphFill" Color="{DynamicResource AccentContrastColor}" />
                     <SolidColorBrush x:Key="RadioButtonCheckGlyphFillPointerOver" Color="{DynamicResource AccentContrastColor}" />
                     <SolidColorBrush x:Key="RadioButtonCheckGlyphFillPressed" Color="{DynamicResource AccentContrastColor}" />
+                    <!-- 与 Default 字典同一修复（Fluent 的 hover/pressed 选中底色接了会翻转极性的
+                         Light1/Dark1，单色下与圆点/勾/点撞成同色）。SystemAccentColor 本身已是按当前
+                         变体解析的强调色，透明度负责 hover/pressed 的深浅反馈。 -->
+                    <SolidColorBrush x:Key="ToggleSwitchFillOnPointerOver" Color="{DynamicResource SystemAccentColor}" Opacity="0.85" />
+                    <SolidColorBrush x:Key="ToggleSwitchFillOnPressed" Color="{DynamicResource SystemAccentColor}" Opacity="0.7" />
+                    <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillCheckedPointerOver" Color="{DynamicResource SystemAccentColor}" Opacity="0.85" />
+                    <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillCheckedPressed" Color="{DynamicResource SystemAccentColor}" Opacity="0.7" />
+                    <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillIndeterminatePointerOver" Color="{DynamicResource SystemAccentColor}" Opacity="0.85" />
+                    <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillIndeterminatePressed" Color="{DynamicResource SystemAccentColor}" Opacity="0.7" />
+                    <SolidColorBrush x:Key="RadioButtonOuterEllipseCheckedFillPointerOver" Color="{DynamicResource SystemAccentColor}" Opacity="0.85" />
+                    <SolidColorBrush x:Key="RadioButtonOuterEllipseCheckedFillPressed" Color="{DynamicResource SystemAccentColor}" Opacity="0.7" />
+                    <SolidColorBrush x:Key="RadioButtonOuterEllipseCheckedStrokePointerOver" Color="{DynamicResource SystemAccentColor}" Opacity="0.85" />
+                    <SolidColorBrush x:Key="RadioButtonOuterEllipseCheckedStrokePressed" Color="{DynamicResource SystemAccentColor}" Opacity="0.7" />
                     <SolidColorBrush x:Key="SystemControlForegroundAccentBrush" Color="{DynamicResource SystemAccentColorLight2}" />
                     <!-- Semantic Fallback Brushes -->
                     <SolidColorBrush x:Key="CalendarHeaderBrush" Color="{DynamicResource SystemAccentColorLight2}" />

@@ -109,12 +109,20 @@ public class WidgetFactory(IAssemblyProvider assemblyProvider, ILayoutProvider l
         return Add(primary, widgetLayout);
     }
 
+    /// <summary>
+    /// Create a widget control for the 组件库 preview. This is the preview's only host path, so
+    /// the host contract (<see cref="WidgetContentHost"/>) has to be applied right here: the
+    /// desktop host applies it in the <see cref="Widget"/> constructor, and skipping it for the
+    /// preview leaves a widget without the class markers the content-inset styles key off.
+    /// </summary>
     public UserControl CreateControl(Type type)
     {
         var previewScreenId = layoutProvider.Get().Screens.FirstOrDefault()?.Id ?? ScreensLayout.LegacyPrimaryId;
         var defaultLayout = new WidgetLayout(type.Assembly.GetName().Name ?? "", type.Name, 0, 0, 200, 200, null);
         var widgetLayoutProvider = new WidgetLayoutProvider(layoutProvider, previewScreenId, defaultLayout);
-        return CreateWidgetControl(type, widgetLayoutProvider, null);
+        var control = CreateWidgetControl(type, widgetLayoutProvider, null);
+        WidgetContentHost.Prepare(control);
+        return control;
     }
 
     private Widget CreateInternal(ScreenLayout screen, WidgetLayout widgetLayout)

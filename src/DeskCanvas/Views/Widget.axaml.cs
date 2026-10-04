@@ -36,11 +36,12 @@ public partial class Widget : Window, INotifyPropertyChanged
     private readonly bool isFrameless;
 
     /// <summary>
-    /// 组件右键菜单的固定外壳圆角：与菜单项高亮（CornerRadius 4）同圆度，也和 Fluent
-    /// 子菜单浮层（OverlayCornerRadius）一致。唯一的圆角真相源是 XAML 样式；本常量只供
-    /// Clip / 原生窗口区域裁剪对齐用，绝不写回 CornerRadius（历史教训见构造函数注释）。
+    /// 组件右键菜单的固定外壳圆角：与菜单项高亮同圆度。唯一的圆角真相源是 XAML 样式
+    /// （App.axaml 的 WidgetContextMenu，组件窗口再在 Widget.axaml 里同值重声明一份）。
+    /// 本常量只供 Clip / 原生窗口区域裁剪对齐用，绝不写回 CornerRadius（历史教训见构造
+    /// 函数注释）。它必须和那两处 XAML 同步——只改样式不改这里，菜单会被裁成旧圆角。
     /// </summary>
-    private const double ContextMenuCornerRadius = 4;
+    private const double ContextMenuCornerRadius = 12;
 
     /// <summary>
     /// Set once this window is being torn down (recreate / close all). While set, the
@@ -124,10 +125,11 @@ public partial class Widget : Window, INotifyPropertyChanged
 
         var control = userControl();
         isFrameless = control is IFramelessWidget;
-        if (isFrameless)
-            control.Classes.Add("Frameless");
-        if ((control is IFixedSizeWidget && control.GetType().Name == "AggregateView") || control.GetType().Name == "Note")
-            control.Classes.Add("Flush");
+        // Host-owned class markers only (Frameless / Flush). The content inset itself is NOT
+        // set here — it comes from the .widget-content-host styles in App.axaml, which the
+        // card Border below carries, and which the 组件库 preview carries as well so both
+        // hosts inset a widget identically (see WidgetContentHost).
+        WidgetContentHost.Prepare(control);
         ContentPresenter.Content = control;
         AttachStackWidget(control);
         
@@ -179,10 +181,10 @@ public partial class Widget : Window, INotifyPropertyChanged
         profileService.ProfilesListChanged += OnProfilesChanged;
         if (ContextMenu != null)
         {
-            // 菜单外壳圆角只由 XAML 样式决定（WidgetContextMenu = 4px，与菜单项高亮同
+            // 菜单外壳圆角只由 XAML 样式决定（WidgetContextMenu = 12px，与菜单项高亮同
             // 圆度）。这里曾按组件卡片半径（可达 36+）命令式覆写——样式改了也白改，
             // 每次打开菜单都被写回大圆角，就是"圆角怎么改都不变小"的元凶。代码只保留
-            // 裁剪职责：Clip 与原生窗口区域仍需要跟着菜单的圆角走（4px）。
+            // 裁剪职责：Clip 与原生窗口区域仍需要跟着菜单的圆角走（ContextMenuCornerRadius）。
             ContextMenu.Opened += OnContextMenuOpened;
             ContextMenu.GetObservable(Visual.BoundsProperty).Subscribe(bounds =>
             {
@@ -406,9 +408,9 @@ public partial class Widget : Window, INotifyPropertyChanged
             Application.Current.Resources["WidgetPillCornerRadius"] = pillRadius;
         }
 
-        // 菜单圆角不在此处跟随卡片半径（历史教训：四处命令式覆写让 XAML 的 4px 永远
+        // 菜单圆角不在此处跟随卡片半径（历史教训：四处命令式覆写让 XAML 的圆角永远
         // 不生效）。菜单的 CornerRadius 只由 WidgetContextMenu 样式决定；打开时的
-        // Clip / 原生区域裁剪在 OnContextMenuOpened 里按 4px 对齐。
+        // Clip / 原生区域裁剪在 OnContextMenuOpened 里按 ContextMenuCornerRadius 对齐。
 
         Notify(nameof(Radius));
         Notify(nameof(InnerRadius));
@@ -1421,9 +1423,9 @@ public partial class Widget : Window, INotifyPropertyChanged
         Notify(nameof(EditStackChildTitle));
         if (sender is ContextMenu cm)
         {
-            // 圆角完全交给 XAML 样式（4px，见 WidgetContextMenu）——此前这里按组件卡片
+            // 圆角完全交给 XAML 样式（见 WidgetContextMenu）——此前这里按组件卡片
             // 半径覆写 CornerRadius，正是样式修改永远不生效的根因。代码只负责两件样式
-            // 做不到的事：毛玻璃 Popup 的原生窗口区域按同一 4px 圆角裁剪，以及 Clip
+            // 做不到的事：毛玻璃 Popup 的原生窗口区域按同一 ContextMenuCornerRadius 圆角裁剪，以及 Clip
             // 兜底（亚克力模糊背景下菜单内容的圆角裁切）。
             if (cm.Bounds.Width > 0 && cm.Bounds.Height > 0)
             {

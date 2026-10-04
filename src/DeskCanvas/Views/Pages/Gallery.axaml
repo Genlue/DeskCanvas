@@ -56,14 +56,15 @@
                                 ToolTip.Tip="点击添加到桌面"
                                 Click="Button_OnClick">
                             <StackPanel Orientation="Vertical">
-                                <!-- 真实比例小组件预览框 (消除硬编码间距，贴合桌面外观) -->
-                                <Border Classes="preview-box"
+                                <!-- 真实比例小组件预览框。内边距不再由这里硬编码：preview-box 与桌面
+                                     卡片 Border 同样带 .widget-content-host，内容的内边距由 App.axaml
+                                     的同一条规则算出，组件自己写的 Margin 优先——预览与桌面因此一致。 -->
+                                <Border Classes="preview-box widget-content-host"
                                         Width="{Binding PreviewWidth}"
                                         Height="{Binding PreviewHeight}"
                                         HorizontalAlignment="Center">
                                     <ContentPresenter IsHitTestVisible="False"
                                                       Content="{Binding Control}"
-                                                      Margin="{Binding ContentMargin}"
                                                       HorizontalAlignment="Stretch"
                                                       VerticalAlignment="Stretch" />
                                 </Border>

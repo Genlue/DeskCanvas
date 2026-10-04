@@ -26,6 +26,22 @@
             <Setter Property="FontFamily" Value="{DynamicResource FontFamily}" />
         </Style>
 
+        <!-- 组件内容的内边距（宿主合同）。规则挂在宿主容器上，而不是组件自己身上：
+             组件在 XAML 里写死的本地 Margin 优先级更高——多数组件写的是 Margin="0"，
+             因为它们的画面要满铺到卡片边缘（笔记的标题条、音乐、文件夹、天气、搜索…）；
+             没写的那些（时钟数字、月历、番茄钟、剪贴板、翻译…）才由这条规则兜底给 12px。
+             两个宿主——桌面组件窗口的卡片 Border 和组件库的预览框——都带 .widget-content-host，
+             所以「桌面实物」和「组件库预览」必然算出同一个内边距。 -->
+        <Style Selector=".widget-content-host :is(UserControl)">
+            <Setter Property="Margin" Value="12" />
+        </Style>
+        <Style Selector=".widget-content-host :is(UserControl).Frameless">
+            <Setter Property="Margin" Value="0" />
+        </Style>
+        <Style Selector=".widget-content-host :is(UserControl).Flush">
+            <Setter Property="Margin" Value="0" />
+        </Style>
+
         <!-- 滚动条滑块圆端（全局素材）: 配合资源里 0.25 的收起缩放（2px→4px），
              端头全圆呈长条药丸状；悬停展开态（16px）同样是圆端。
              Fluent 模板自身以 TemplateBinding 传递 CornerRadius，样式优先级高于模板值。 -->
@@ -35,9 +51,14 @@
 
         <!-- 单色模式下 Fluent 选中态控件（开关圆点/复选勾/单选点）的白上白修复不在
              这里做：App 级部件样式压不过 Fluent 模板的 Fill 特性值（实证）。修复在
-             Styles/Accent.axaml——它直接覆写 ToggleSwitchKnobFillOn 等资源键
-             （Accent.axaml 覆写 Fluent 键的模式已有生产验证），圆点/勾绑定
-             AccentContrastColor，随单色档按极性翻转。 -->
+             Styles/Accent.axaml——它直接覆写 Fluent 的资源键（Accent.axaml 覆写 Fluent
+             键的模式已有生产验证）。两条线都要管：① 前景 glyph（ToggleSwitchKnobFillOn /
+             CheckBoxCheckGlyphForegroundChecked / RadioButtonCheckGlyphFill）绑定
+             AccentContrastColor，随单色档按极性翻转；② 选中底色（ToggleSwitchFillOn /
+             CheckBoxCheckBackgroundFillChecked / RadioButtonOuterEllipseCheckedFill）的
+             hover/pressed，Fluent 把它们硬接在会翻转极性的 SystemAccentColorLight1/Dark1
+             上，需钉回 SystemAccentColor。任一遗漏都会让「底色 + glyph」撞成同色而整个控件
+             消失。 -->
 
         <!-- Context menus share the app look: Mica-like surface (the same system
              chrome tint the Settings window uses), the app font, rounded corners
@@ -49,17 +70,19 @@
             <Setter Property="BorderThickness" Value="1" />
             <Setter Property="CornerRadius" Value="8" />
         </Style>
-        <!-- Widget right-click menu: fixed 4px radius — a menu is a menu, it should not
+        <!-- Widget right-click menu: fixed 12px radius — a menu is a menu, it should not
              inherit the widget card's radius (which can be 36+). The shell shares the same
-             rounding degree as the hover highlight (item CornerRadius 4), matching the
-             Fluent submenu flyouts (OverlayCornerRadius). -->
+             rounding degree as the hover highlight (item CornerRadius), so the highlighted
+             row reads as one shape with the shell instead of a squarer box floating inside
+             it. Widget windows re-declare both at the window scope (Views/Widget.axaml,
+             which wins there) — keep the two in sync. -->
         <Style Selector="ContextMenu.WidgetContextMenu">
-            <Setter Property="CornerRadius" Value="4" />
+            <Setter Property="CornerRadius" Value="12" />
             <Setter Property="Padding" Value="5" />
             <Setter Property="ClipToBounds" Value="True" />
         </Style>
         <Style Selector="ContextMenu.WidgetContextMenu MenuItem">
-            <Setter Property="CornerRadius" Value="4" />
+            <Setter Property="CornerRadius" Value="12" />
             <Setter Property="Margin" Value="2,1" />
         </Style>
         <Style Selector="MenuFlyoutPresenter">

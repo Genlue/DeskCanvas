@@ -120,16 +120,8 @@ public class ThemeService : IThemeService
             LiquidGlassWallpaper.ConfigureLiveSampling(glass.LiveSampling, glass.LiveSamplingInterval);
         }
 
-        if (theme.IsColorful)
-        {
-            // Apple systemBlue: #007AFF on light, #0A84FF on dark (the ramp the
-            // Colorful palettes were designed against).
-            ApplyAccent(Color.Parse("#007AFF"), light: Color.Parse("#0A84FF"));
-        }
-        else if (theme.AccentColor != null && Color.TryParse(theme.AccentColor, out var color))
-        {
-            ApplyAccent(color);
-        }
+        // Accent source resolution happens further down, in ONE switch, right after the
+        // monochrome variant is known — see the ramp contract there for why.
 
         // 纯色 surface: the card color (per dark/light variant) and the coating
         // opacity — Solid.axaml's WidgetBackground brush picks these up.
@@ -143,10 +135,19 @@ public class ThemeService : IThemeService
         Application.Current.Resources["SolidBackgroundDark"] = solidBackgroundDark;
         Application.Current.Resources["SolidBackgroundLight"] = solidBackgroundLight;
 
-        // 单色 color sources. Both always rewrite the accent ramp — overriding any hand-picked
-        // accent and also covering the never-picked case — so imperative readers of
-        // SystemAccentColor stay in contract, and both run AFTER the user-accent ApplyAccent
-        // above for exactly that reason:
+        // Accent ramp — exactly ONE source wins per Apply, and every branch either rewrites the
+        // whole ramp or hands it back to Fluent. Preference order: 彩色 > 单色档 > 手选强调色 >
+        // 系统强调色.
+        //
+        // The "every branch" part is the fix, not decoration: the ramp lives in
+        // Application.Resources, so it OUTLIVES a single Apply. The old code only wrote it for
+        // 彩色 / 手选 / 单色 and did NOTHING otherwise, so leaving 单色 behind left the previous
+        // Apply's achromatic values in place — SystemAccentColor stayed pure white (or black) and
+        // every accent-driven surface kept rendering as it did in 单色. The visible fallout: with
+        // 黑白 turned off, an ON ToggleSwitch drew a white track (`SystemControlHighlightAccentBrush`
+        // = SystemAccentColor) under a white knob, and hovering it read the equally stale
+        // SystemAccentColorLight1 — the control simply vanished.
+        //
         // - 黑白: the accent is strictly achromatic — BLACK in light mode, WHITE in dark mode —
         //   so accent-following text (aggregate city name, battery rings) never picks up the
         //   background colors. The ramp mapping is inverted accordingly: `dark:` feeds
@@ -154,6 +155,7 @@ public class ThemeService : IThemeService
         //   SystemAccentColorLight2 for the DARK ones.
         // - 背景色: text AND accent lock to the inverted background — light mode renders the
         //   dark-mode background color, dark mode the light-mode one (the historic 黑白 ramp).
+        // - 强调色 keeps whatever accent the user (or the system) provides.
         var monochromeVariant = theme.IsColorful || !theme.Monochrome
             ? (MonochromeStyle?)null
             : theme.EffectiveMonochromeVariant;
@@ -168,6 +170,27 @@ public class ThemeService : IThemeService
                     isDarkVariant ? solidBackgroundLight : solidBackgroundDark,
                     dark: solidBackgroundDark,
                     light: solidBackgroundLight);
+                break;
+            default:
+                if (theme.IsColorful)
+                {
+                    // Apple systemBlue: #007AFF on light, #0A84FF on dark (the ramp the
+                    // Colorful palettes were designed against).
+                    ApplyAccent(Color.Parse("#007AFF"), light: Color.Parse("#0A84FF"));
+                }
+                else if (theme.AccentColor != null && Color.TryParse(theme.AccentColor, out var accentColor))
+                {
+                    ApplyAccent(accentColor);
+                }
+                else
+                {
+                    // No accent picked means "use the system accent", which is exactly the
+                    // resource the Fluent theme already publishes: drop our overrides so its
+                    // value shines through again. Merely skipping the write is NOT equivalent —
+                    // it would leave the previous Apply's ramp (e.g. 黑白's pure white) behind.
+                    ClearAccentOverrides();
+                }
+
                 break;
         }
 
@@ -233,6 +256,25 @@ public class ThemeService : IThemeService
 
         foreach (var key in LightAccentKeys)
             Application.Current.Resources[key] = lightShade;
+    }
+
+    /// <summary>
+    /// Every key <see cref="ApplyAccent"/> owns. Dropping them lets the Fluent theme's own
+    /// (platform) accent resolve again.
+    /// </summary>
+    private static readonly string[] AccentOverrideKeys =
+        ["SystemAccentColor", .. DarkAccentKeys, .. LightAccentKeys];
+
+    /// <summary>
+    /// Hand the accent ramp back to the Fluent theme. Used when the resolved accent IS the
+    /// system accent, where writing nothing is not good enough: a previous 单色/手选 Apply would
+    /// otherwise stay in <c>Application.Resources</c> and keep painting the accent-driven surfaces
+    /// (e.g. the ToggleSwitch ON track) in its own color.
+    /// </summary>
+    private static void ClearAccentOverrides()
+    {
+        foreach (var key in AccentOverrideKeys)
+            Application.Current!.Resources.Remove(key);
     }
 
     private static Color ParseColor(string hex, string fallbackHex) =>

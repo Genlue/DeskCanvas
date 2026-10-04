@@ -51,14 +51,20 @@ internal class Program
     /// </summary>
     private static readonly Window ProbeWindow = new();
 
-    private static Color BrushOf(string key, ThemeVariant variant)
+    private static SolidColorBrush BrushResource(string key, ThemeVariant variant)
     {
         var probe = new Control();
         ProbeWindow.Content = probe;
         if (!probe.TryFindResource(key, variant, out var value) || value is not SolidColorBrush brush)
             throw new InvalidOperationException($"{key} ({variant}) did not resolve to a brush");
-        return brush.Color;
+        return brush;
     }
+
+    private static Color BrushOf(string key, ThemeVariant variant) =>
+        BrushResource(key, variant).Color;
+
+    private static double OpacityOf(string key, ThemeVariant variant) =>
+        BrushResource(key, variant).Opacity;
 
     public static int Main(string[] args)
     {
@@ -236,6 +242,60 @@ internal class Program
                && blackDot is SolidColorBrush bdb && bdb.Color == Colors.White,
             "Attached-in-dark-window lookup of CalendarTodayBrush == white in 黑白");
 
+        // --- 单色关闭必须把强调色渐变交还出去（不得残留黑白档的纯白/纯黑） ---
+        // 回归场景：暗色 + 黑白 → 关掉黑白 → "全局元素阴影"开关(ON)的圆点由黑变白却看不见。
+        // 根因不在圆点，而在轨道取色源 SystemAccentColor 还停在黑白写下的纯白：渐变键活在
+        // Application.Resources 里、跨 Apply 存活，所以"什么都不写"等于保留上一次的值。
+        Console.WriteLine("\n--- 单色关闭：强调色渐变必须归还（不得残留） ---");
+        themeService.Apply(Monochrome(MonochromeStyle.BlackWhite, true, darkBg, lightBg));
+        Assert(Resource("SystemAccentColor") == Colors.White,
+            "前置：黑白已把 SystemAccentColor 覆写成纯白");
+
+        themeService.Apply(new Theme(
+            DarkMode: true,
+            AccentColor: null,
+            OpacityLevel: 1.0,
+            Monochrome: false,
+            UseNativeFrame: false,
+            FontFamily: "Inter",
+            Surface: SurfaceStyle.Solid));
+
+        Assert(!Application.Current!.Resources.ContainsKey("SystemAccentColor"),
+            "关闭单色后 SystemAccentColor 的覆写已移除（归还 Fluent/系统强调色）");
+        Assert(!Application.Current.Resources.ContainsKey("SystemAccentColorLight1")
+               && !Application.Current.Resources.ContainsKey("SystemAccentColorDark1"),
+            "关闭单色后整个 Light/Dark 渐变覆写同步移除（不残留半套）");
+
+        var restoredTrack = BrushOf("SystemControlHighlightAccentBrush", ThemeVariant.Dark);
+        var restoredKnob = BrushOf("AccentContrastForegroundBrush", ThemeVariant.Dark);
+        Assert(restoredTrack != Colors.White,
+            $"关闭单色后 ON 轨道取色源不再是残留的纯白（got {restoredTrack}）");
+        Assert(restoredTrack != restoredKnob,
+            $"关闭单色后 ON 轨道 ({restoredTrack}) != 圆点对比色 ({restoredKnob}) — 开关可见");
+
+        // 切回亮色同理（用户场景 3：关掉黑白后切亮色，开关全白看不见）。
+        var restoredTrackLight = BrushOf("SystemControlHighlightAccentBrush", ThemeVariant.Light);
+        var restoredKnobLight = BrushOf("AccentContrastForegroundBrush", ThemeVariant.Light);
+        Assert(restoredTrackLight != restoredKnobLight,
+            $"（亮色）关闭单色后 ON 轨道 ({restoredTrackLight}) != 圆点对比色 ({restoredKnobLight}) — 开关可见");
+        Assert(BrushOf("ToggleSwitchFillOnPointerOver", ThemeVariant.Light) != restoredKnobLight,
+            "（亮色）关闭单色后 hover 的 ON 轨道 != 圆点对比色 — hover 不再变白");
+
+        Console.WriteLine("\n--- 单色关闭：手选强调色必须回来（而不是留在黑白） ---");
+        themeService.Apply(Monochrome(MonochromeStyle.BlackWhite, true, darkBg, lightBg));
+        themeService.Apply(new Theme(
+            DarkMode: true,
+            AccentColor: "#FF0000",
+            OpacityLevel: 1.0,
+            Monochrome: false,
+            UseNativeFrame: false,
+            FontFamily: "Inter",
+            Surface: SurfaceStyle.Solid));
+        Assert(Resource("SystemAccentColor") == Colors.Red,
+            "关闭单色且手选强调色 → SystemAccentColor == 手选红（黑白残留被覆盖）");
+        Assert(BrushOf("SystemControlHighlightAccentBrush", ThemeVariant.Dark) == Colors.Red,
+            "关闭单色后 ON 轨道取色源 == 手选红");
+
         // --- Fluent 选中态控件的可读性契约（开关圆点白上白的修复） ---
         // ON 轨道取色源 SystemControlHighlightAccentBrush = SystemAccentColor 基键；
         // 圆点经 App.axaml 部件样式改绑 AccentContrastForegroundBrush。四种单色态下
@@ -254,6 +314,28 @@ internal class Program
             var track = BrushOf("SystemControlHighlightAccentBrush", variant);
             var glyph = BrushOf("AccentContrastForegroundBrush", variant);
             Assert(track != glyph, $"{variantName}: ON track ({track}) != knob/glyph ({glyph}) — readable");
+
+            // hover/pressed 必须停在同一极性上。Fluent 把这两个键硬接在
+            // SystemAccentColorLight1 / Dark1 上，而本应用的渐变是交叉写入的：单色档下
+            // "亮一点的强调色"就是反极性的纯色，hover 一下轨道与圆点撞成一片（亮色黑白：
+            // 黑轨道 hover 变白 + 白圆点 = 开关消失）。
+            var hover = BrushOf("ToggleSwitchFillOnPointerOver", variant);
+            var pressed = BrushOf("ToggleSwitchFillOnPressed", variant);
+            Assert(hover != glyph,
+                $"{variantName}: hovered ON track ({hover}) != knob/glyph ({glyph}) — readable");
+            Assert(pressed != glyph,
+                $"{variantName}: pressed ON track ({pressed}) != knob/glyph ({glyph}) — readable");
+            Assert(OpacityOf("ToggleSwitchFillOnPointerOver", variant) < 1.0,
+                $"{variantName}: hovered ON track keeps a feedback opacity");
+            Assert(OpacityOf("ToggleSwitchFillOnPressed", variant)
+                   < OpacityOf("ToggleSwitchFillOnPointerOver", variant),
+                $"{variantName}: pressed ON track is deeper than hovered");
+
+            // 复选/单选的选中底色同族（同一批键、同一根因），一并对齐。
+            Assert(BrushOf("CheckBoxCheckBackgroundFillCheckedPointerOver", variant) != glyph,
+                $"{variantName}: hovered checked CheckBox background != glyph — readable");
+            Assert(BrushOf("RadioButtonOuterEllipseCheckedFillPointerOver", variant) != glyph,
+                $"{variantName}: hovered checked RadioButton fill != glyph — readable");
 
             // 模板级断言（暗色两档即可，模板化路径相同）：真实 ToggleSwitch 挂进窗口、
             // 应用模板后读圆点的 Fill，证明 App.axaml 的部件样式真的压过了 Fluent

@@ -74,15 +74,16 @@
     </Window.ContextMenu> 
     
     <Window.Styles>
-        <!-- 右键菜单固定 4px 圆角，不再跟随组件卡片圆角；外壳与悬停高亮（菜单项
-             CornerRadius 4）同一圆度，也与 Fluent 子菜单浮层（OverlayCornerRadius）一致。 -->
+        <!-- 右键菜单固定 12px 圆角，不再跟随组件卡片圆角（卡片可达 36+）；外壳与悬停高亮
+             （菜单项 CornerRadius）保持同一圆度——两者的圆度不一致时，5px 内边距下悬停高亮
+             的方角会贴着外壳的弧线，看着是两个互不相干的形状（实机截图比对过）。 -->
         <Style Selector="ContextMenu.WidgetContextMenu">
-            <Setter Property="CornerRadius" Value="4" />
+            <Setter Property="CornerRadius" Value="12" />
             <Setter Property="Padding" Value="5" />
             <Setter Property="ClipToBounds" Value="True" />
         </Style>
         <Style Selector="ContextMenu.WidgetContextMenu MenuItem">
-            <Setter Property="CornerRadius" Value="4" />
+            <Setter Property="CornerRadius" Value="12" />
             <Setter Property="Margin" Value="2,1" />
         </Style>
         <Style Selector="Border:not(:pointerover) ScrollViewer">
@@ -98,15 +99,9 @@
                  横向滚动条在卡片里结构性不可能出现。 -->
             <Setter Property="HorizontalScrollBarVisibility" Value="Hidden" />
         </Style>
-        <Style Selector=":is(UserControl)">
-            <Setter Property="Margin" Value="12" />
-        </Style>
-        <Style Selector=":is(UserControl).Frameless">
-            <Setter Property="Margin" Value="0" />
-        </Style>
-        <Style Selector=":is(UserControl).Flush">
-            <Setter Property="Margin" Value="0" />
-        </Style>
+        <!-- 组件内容的内边距不在这里定义：它由 App.axaml 的 .widget-content-host 规则给出，
+             下面卡片的 Border 带这个类。搬到全局是为了让组件库预览用同一条规则——此前预览
+             自己硬编码 12px，30 个组件里 14 个（自带 Margin="0" 的那些）被多缩进了一圈。 -->
         <Style Selector="ToolTip">
             <Setter Property="Background" Value="Transparent" />
             <Setter Property="BorderThickness" Value="0" />
@@ -131,6 +126,7 @@
              The outline option adds a highlight ring that fades from the top-left /
              bottom-right corners (see WidgetOutlineBrush). -->
         <Border Name="Border"
+                Classes="widget-content-host"
                 CornerRadius="{Binding Radius, RelativeSource={RelativeSource AncestorType=views:Widget}}"
                 Background="{Binding WidgetCardBackground, RelativeSource={RelativeSource AncestorType=views:Widget}}"
                 BorderThickness="{Binding WidgetOutlineThickness, RelativeSource={RelativeSource AncestorType=views:Widget}}"
