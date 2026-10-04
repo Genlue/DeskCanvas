@@ -33,6 +33,12 @@
             <Setter Property="CornerRadius" Value="999" />
         </Style>
 
+        <!-- 单色模式下 Fluent 选中态控件（开关圆点/复选勾/单选点）的白上白修复不在
+             这里做：App 级部件样式压不过 Fluent 模板的 Fill 特性值（实证）。修复在
+             Styles/Accent.axaml——它直接覆写 ToggleSwitchKnobFillOn 等资源键
+             （Accent.axaml 覆写 Fluent 键的模式已有生产验证），圆点/勾绑定
+             AccentContrastColor，随单色档按极性翻转。 -->
+
         <!-- Context menus share the app look: Mica-like surface (the same system
              chrome tint the Settings window uses), the app font, rounded corners
              and accent-tinted hover/pressed items. -->

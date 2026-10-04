@@ -36,6 +36,13 @@ public partial class Widget : Window, INotifyPropertyChanged
     private readonly bool isFrameless;
 
     /// <summary>
+    /// 组件右键菜单的固定外壳圆角：与菜单项高亮（CornerRadius 4）同圆度，也和 Fluent
+    /// 子菜单浮层（OverlayCornerRadius）一致。唯一的圆角真相源是 XAML 样式；本常量只供
+    /// Clip / 原生窗口区域裁剪对齐用，绝不写回 CornerRadius（历史教训见构造函数注释）。
+    /// </summary>
+    private const double ContextMenuCornerRadius = 4;
+
+    /// <summary>
     /// Set once this window is being torn down (recreate / close all). While set, the
     /// window must not write to the stored layout any more: by then the layout may
     /// already belong to a different configuration (profile switch), and a write would
@@ -172,16 +179,18 @@ public partial class Widget : Window, INotifyPropertyChanged
         profileService.ProfilesListChanged += OnProfilesChanged;
         if (ContextMenu != null)
         {
-            var r = appSettingsProvider.Get().Theme.UseNativeFrame ? 0 : appSettingsProvider.Get().Dimensions.Radius;
-            ContextMenu.CornerRadius = new CornerRadius(r);
+            // 菜单外壳圆角只由 XAML 样式决定（WidgetContextMenu = 4px，与菜单项高亮同
+            // 圆度）。这里曾按组件卡片半径（可达 36+）命令式覆写——样式改了也白改，
+            // 每次打开菜单都被写回大圆角，就是"圆角怎么改都不变小"的元凶。代码只保留
+            // 裁剪职责：Clip 与原生窗口区域仍需要跟着菜单的圆角走（4px）。
             ContextMenu.Opened += OnContextMenuOpened;
             ContextMenu.GetObservable(Visual.BoundsProperty).Subscribe(bounds =>
             {
                 if (bounds.Width > 0 && bounds.Height > 0)
                 {
-                    var curR = this.appSettingsProvider.Get().Theme.UseNativeFrame ? 0 : this.appSettingsProvider.Get().Dimensions.Radius;
-                    ContextMenu.CornerRadius = new CornerRadius(curR);
-                    ContextMenu.Clip = new RectangleGeometry(new Rect(0, 0, bounds.Width, bounds.Height), curR, curR);
+                    ContextMenu.Clip = new RectangleGeometry(
+                        new Rect(0, 0, bounds.Width, bounds.Height),
+                        ContextMenuCornerRadius, ContextMenuCornerRadius);
                 }
             });
         }
@@ -397,15 +406,9 @@ public partial class Widget : Window, INotifyPropertyChanged
             Application.Current.Resources["WidgetPillCornerRadius"] = pillRadius;
         }
 
-        if (ContextMenu != null)
-        {
-            var r = appSettingsProvider.Get().Theme.UseNativeFrame ? 0 : appSettingsProvider.Get().Dimensions.Radius;
-            ContextMenu.CornerRadius = new CornerRadius(r);
-            if (ContextMenu.Bounds.Width > 0 && ContextMenu.Bounds.Height > 0)
-            {
-                ContextMenu.Clip = new RectangleGeometry(new Rect(0, 0, ContextMenu.Bounds.Width, ContextMenu.Bounds.Height), r, r);
-            }
-        }
+        // 菜单圆角不在此处跟随卡片半径（历史教训：四处命令式覆写让 XAML 的 4px 永远
+        // 不生效）。菜单的 CornerRadius 只由 WidgetContextMenu 样式决定；打开时的
+        // Clip / 原生区域裁剪在 OnContextMenuOpened 里按 4px 对齐。
 
         Notify(nameof(Radius));
         Notify(nameof(InnerRadius));
@@ -1418,20 +1421,24 @@ public partial class Widget : Window, INotifyPropertyChanged
         Notify(nameof(EditStackChildTitle));
         if (sender is ContextMenu cm)
         {
-            var r = appSettingsProvider.Get().Theme.UseNativeFrame ? 0 : appSettingsProvider.Get().Dimensions.Radius;
-            var cardRadius = new CornerRadius(r);
-            cm.CornerRadius = cardRadius;
+            // 圆角完全交给 XAML 样式（4px，见 WidgetContextMenu）——此前这里按组件卡片
+            // 半径覆写 CornerRadius，正是样式修改永远不生效的根因。代码只负责两件样式
+            // 做不到的事：毛玻璃 Popup 的原生窗口区域按同一 4px 圆角裁剪，以及 Clip
+            // 兜底（亚克力模糊背景下菜单内容的圆角裁切）。
             if (cm.Bounds.Width > 0 && cm.Bounds.Height > 0)
             {
-                cm.Clip = new RectangleGeometry(new Rect(0, 0, cm.Bounds.Width, cm.Bounds.Height), r, r);
+                cm.Clip = new RectangleGeometry(
+                    new Rect(0, 0, cm.Bounds.Width, cm.Bounds.Height),
+                    ContextMenuCornerRadius, ContextMenuCornerRadius);
             }
 
             Dispatcher.UIThread.Post(() =>
             {
-                cm.CornerRadius = cardRadius;
                 if (cm.Bounds.Width > 0 && cm.Bounds.Height > 0)
                 {
-                    cm.Clip = new RectangleGeometry(new Rect(0, 0, cm.Bounds.Width, cm.Bounds.Height), r, r);
+                    cm.Clip = new RectangleGeometry(
+                        new Rect(0, 0, cm.Bounds.Width, cm.Bounds.Height),
+                        ContextMenuCornerRadius, ContextMenuCornerRadius);
                 }
 
                 if (cm.GetVisualRoot() is WindowBase wb)
@@ -1440,14 +1447,11 @@ public partial class Widget : Window, INotifyPropertyChanged
                     if (handle.HasValue && handle.Value != IntPtr.Zero)
                     {
                         InteropService.DisableWindowBorder(handle.Value);
-                        if (r > 0)
-                        {
-                            var scaling = wb.DesktopScaling;
-                            var w = (int)Math.Round(wb.ClientSize.Width * scaling);
-                            var h = (int)Math.Round(wb.ClientSize.Height * scaling);
-                            var radiusPx = (int)Math.Round(r * scaling);
-                            InteropService.SetWindowRegion(handle.Value, 0, 0, w, h, radiusPx);
-                        }
+                        var scaling = wb.DesktopScaling;
+                        var w = (int)Math.Round(wb.ClientSize.Width * scaling);
+                        var h = (int)Math.Round(wb.ClientSize.Height * scaling);
+                        var radiusPx = (int)Math.Round(ContextMenuCornerRadius * scaling);
+                        InteropService.SetWindowRegion(handle.Value, 0, 0, w, h, radiusPx);
                     }
                 }
             }, DispatcherPriority.Render);

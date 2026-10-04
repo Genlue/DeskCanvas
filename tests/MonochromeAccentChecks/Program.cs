@@ -3,6 +3,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Media;
 using Avalonia.Styling;
+using Avalonia.VisualTree;
 using DeskCanvas.Core.Interfaces;
 using DeskCanvas.Core.Models.Settings;
 using DeskCanvas.Services;
@@ -234,6 +235,48 @@ internal class Program
                && blackProbe.TryFindResource("CalendarTodayBrush", blackProbe.ActualThemeVariant, out var blackDot)
                && blackDot is SolidColorBrush bdb && bdb.Color == Colors.White,
             "Attached-in-dark-window lookup of CalendarTodayBrush == white in 黑白");
+
+        // --- Fluent 选中态控件的可读性契约（开关圆点白上白的修复） ---
+        // ON 轨道取色源 SystemControlHighlightAccentBrush = SystemAccentColor 基键；
+        // 圆点经 App.axaml 部件样式改绑 AccentContrastForegroundBrush。四种单色态下
+        // 两者必须是不同颜色——同色即"轨道圆点白成一片"回归。
+        Console.WriteLine("\n--- Fluent selection-control glyph contrast (ToggleSwitch/CheckBox/RadioButton) ---");
+        foreach (var (variantName, monoVariant, dark) in new[]
+        {
+            ("黑白 dark", MonochromeStyle.BlackWhite, true),
+            ("黑白 light", MonochromeStyle.BlackWhite, false),
+            ("背景色 dark", MonochromeStyle.BackgroundColor, true),
+            ("背景色 light", MonochromeStyle.BackgroundColor, false),
+        })
+        {
+            themeService.Apply(Monochrome(monoVariant, dark, darkBg, lightBg));
+            var variant = dark ? ThemeVariant.Dark : ThemeVariant.Light;
+            var track = BrushOf("SystemControlHighlightAccentBrush", variant);
+            var glyph = BrushOf("AccentContrastForegroundBrush", variant);
+            Assert(track != glyph, $"{variantName}: ON track ({track}) != knob/glyph ({glyph}) — readable");
+
+            // 模板级断言（暗色两档即可，模板化路径相同）：真实 ToggleSwitch 挂进窗口、
+            // 应用模板后读圆点的 Fill，证明 App.axaml 的部件样式真的压过了 Fluent
+            // 模板的 ToggleSwitchKnobFillOn 资源，而不是只改了某个中间资源键。
+            if (dark)
+            {
+                hostWindow.Content = new ToggleSwitch { IsChecked = true };
+                hostWindow.Show();
+                var toggle = (ToggleSwitch)hostWindow.Content!;
+                var knob = toggle.GetVisualDescendants()
+                    .OfType<Avalonia.Controls.Shapes.Ellipse>()
+                    .FirstOrDefault(e => e.Name == "SwitchKnobOn");
+                Assert(knob != null, $"{variantName}: ToggleSwitch SwitchKnobOn part found");
+                if (knob != null)
+                {
+                    var knobColor = knob.Fill is SolidColorBrush kb ? kb.Color : default(Color?);
+                    Assert(knobColor == glyph,
+                        $"{variantName}: templated SwitchKnobOn fill == {glyph} (got {knobColor})");
+                }
+                hostWindow.Hide();
+                hostWindow.Content = null;
+            }
+        }
 
         if (failed == 0)
         {

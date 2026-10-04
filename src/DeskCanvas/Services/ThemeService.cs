@@ -15,13 +15,26 @@ public class ThemeService : IThemeService
     public ThemeService(IAppSettingsProvider appSettingsProvider, WallpaperThemeService wallpaperThemeService)
     {
         this.wallpaperThemeService = wallpaperThemeService;
-        appSettingsProvider.DataChanging += (_, _, newSettings) => 
+        appSettingsProvider.DataChanging += (_, _, newSettings) =>
             Apply(newSettings.Theme);
         // Wallpaper changed while in auto mode: re-resolve the variant.
         this.wallpaperThemeService.DarkFlagChanged += _ =>
         {
             var settings = appSettingsProvider.Get();
             if (settings.Theme.AutoTheme) Apply(settings.Theme);
+        };
+        // 跟随系统亮暗（DarkMode == null）时，系统切换深浅色既不走 DataChanging 也没有
+        // 壁纸事件，但 ApplyAccent 写入的 SystemAccentColor 及整个 ramp 是按"当时的
+        // ActualThemeVariant"算极性的——不重写，SystemControlHighlightAccentBrush（Fluent
+        // 开关/复选/单选的选中底色取色源）等命令式键就停在旧变体的颜色上，切换后全部
+        // 错乱。变体真正翻转时重跑一遍 Apply（幂等），ramp 按新变体重写。
+        Application.Current!.ActualThemeVariantChanged += (_, _) =>
+        {
+            var settings = appSettingsProvider.Get();
+            // 显式亮/暗模式的 RequestedThemeVariant 恒定，不会触发本事件；AutoTheme 的
+            // 变体翻转由上面的壁纸监听处理（避免双重 Apply）。这里只接管跟随系统。
+            if (settings.Theme.AutoTheme || settings.Theme.DarkMode != null) return;
+            Apply(settings.Theme);
         };
     }
     

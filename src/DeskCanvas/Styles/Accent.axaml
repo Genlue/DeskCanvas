@@ -18,6 +18,30 @@
                          flips per variant, and 背景色 because its accent is the inverted
                          background color. -->
                     <SolidColorBrush x:Key="AccentContrastForegroundBrush" Color="White" />
+                    <!-- Color-level twin of the contrast brush: Fluent's selection-control
+                         glyph keys (below) are brushes whose polarity must follow the
+                         monochrome modes — binding their Color to this key keeps one
+                         polarity source. -->
+                    <Color x:Key="AccentContrastColor">White</Color>
+                    <!-- Fluent 选中态控件（开关圆点/复选勾/单选点）默认取 ChromeWhite——彩色
+                         accent 上永远可读，但单色下 accent 就是黑/白（黑白）或反色背景（背景
+                         色），白 glyph 直接白上白（截图：开关开启轨道圆点全白、悬停更白）。
+                         这些键在应用资源里后注册即覆盖 Fluent 的定义（与上方
+                         SystemControlForegroundAccentBrush 的覆写同一机制），Color 绑定对比色
+                         键，彩色模式=ChromeWhite 同值，各单色档随极性翻转。Disabled 态保持
+                         Fluent 的灰色（有整体透明度，不参与对比）。 -->
+                    <SolidColorBrush x:Key="ToggleSwitchKnobFillOn" Color="{DynamicResource AccentContrastColor}" />
+                    <SolidColorBrush x:Key="ToggleSwitchKnobFillOnPointerOver" Color="{DynamicResource AccentContrastColor}" />
+                    <SolidColorBrush x:Key="ToggleSwitchKnobFillOnPressed" Color="{DynamicResource AccentContrastColor}" />
+                    <SolidColorBrush x:Key="CheckBoxCheckGlyphForegroundChecked" Color="{DynamicResource AccentContrastColor}" />
+                    <SolidColorBrush x:Key="CheckBoxCheckGlyphForegroundCheckedPointerOver" Color="{DynamicResource AccentContrastColor}" />
+                    <SolidColorBrush x:Key="CheckBoxCheckGlyphForegroundCheckedPressed" Color="{DynamicResource AccentContrastColor}" />
+                    <SolidColorBrush x:Key="CheckBoxCheckGlyphForegroundIndeterminate" Color="{DynamicResource AccentContrastColor}" />
+                    <SolidColorBrush x:Key="CheckBoxCheckGlyphForegroundIndeterminatePointerOver" Color="{DynamicResource AccentContrastColor}" />
+                    <SolidColorBrush x:Key="CheckBoxCheckGlyphForegroundIndeterminatePressed" Color="{DynamicResource AccentContrastColor}" />
+                    <SolidColorBrush x:Key="RadioButtonCheckGlyphFill" Color="{DynamicResource AccentContrastColor}" />
+                    <SolidColorBrush x:Key="RadioButtonCheckGlyphFillPointerOver" Color="{DynamicResource AccentContrastColor}" />
+                    <SolidColorBrush x:Key="RadioButtonCheckGlyphFillPressed" Color="{DynamicResource AccentContrastColor}" />
                     <SolidColorBrush x:Key="SystemControlForegroundAccentBrush" Color="{DynamicResource SystemAccentColorDark1}" />
                     <!-- Semantic Fallback Brushes -->
                     <SolidColorBrush x:Key="CalendarHeaderBrush" Color="{DynamicResource SystemAccentColorDark1}" />
@@ -59,6 +83,19 @@
                 </ResourceDictionary>
                 <ResourceDictionary x:Key="Dark">
                     <SolidColorBrush x:Key="AccentContrastForegroundBrush" Color="White" />
+                    <Color x:Key="AccentContrastColor">White</Color>
+                    <SolidColorBrush x:Key="ToggleSwitchKnobFillOn" Color="{DynamicResource AccentContrastColor}" />
+                    <SolidColorBrush x:Key="ToggleSwitchKnobFillOnPointerOver" Color="{DynamicResource AccentContrastColor}" />
+                    <SolidColorBrush x:Key="ToggleSwitchKnobFillOnPressed" Color="{DynamicResource AccentContrastColor}" />
+                    <SolidColorBrush x:Key="CheckBoxCheckGlyphForegroundChecked" Color="{DynamicResource AccentContrastColor}" />
+                    <SolidColorBrush x:Key="CheckBoxCheckGlyphForegroundCheckedPointerOver" Color="{DynamicResource AccentContrastColor}" />
+                    <SolidColorBrush x:Key="CheckBoxCheckGlyphForegroundCheckedPressed" Color="{DynamicResource AccentContrastColor}" />
+                    <SolidColorBrush x:Key="CheckBoxCheckGlyphForegroundIndeterminate" Color="{DynamicResource AccentContrastColor}" />
+                    <SolidColorBrush x:Key="CheckBoxCheckGlyphForegroundIndeterminatePointerOver" Color="{DynamicResource AccentContrastColor}" />
+                    <SolidColorBrush x:Key="CheckBoxCheckGlyphForegroundIndeterminatePressed" Color="{DynamicResource AccentContrastColor}" />
+                    <SolidColorBrush x:Key="RadioButtonCheckGlyphFill" Color="{DynamicResource AccentContrastColor}" />
+                    <SolidColorBrush x:Key="RadioButtonCheckGlyphFillPointerOver" Color="{DynamicResource AccentContrastColor}" />
+                    <SolidColorBrush x:Key="RadioButtonCheckGlyphFillPressed" Color="{DynamicResource AccentContrastColor}" />
                     <SolidColorBrush x:Key="SystemControlForegroundAccentBrush" Color="{DynamicResource SystemAccentColorLight2}" />
                     <!-- Semantic Fallback Brushes -->
                     <SolidColorBrush x:Key="CalendarHeaderBrush" Color="{DynamicResource SystemAccentColorLight2}" />

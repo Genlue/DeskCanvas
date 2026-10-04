@@ -19,6 +19,9 @@
                     <SolidColorBrush x:Key="SystemControlForegroundBaseHighBrush" Color="Black" />
                     <!-- The accent itself is black in this variant, so white stays readable on it. -->
                     <SolidColorBrush x:Key="AccentContrastForegroundBrush" Color="White" />
+                    <!-- Color-level twin of the contrast brush (consumed by Accent.axaml's
+                         selection-control glyph keys, e.g. ToggleSwitchKnobFillOn). -->
+                    <Color x:Key="AccentContrastColor">White</Color>
                     <SolidColorBrush x:Key="SystemControlForegroundAccentBrush" Color="{DynamicResource SystemAccentColorDark1}" />
                     <SolidColorBrush x:Key="CalendarHeaderBrush" Color="{DynamicResource SystemAccentColorDark1}" />
                     <SolidColorBrush x:Key="CalendarTodayBrush" Color="{DynamicResource SystemAccentColorDark1}" />
@@ -61,6 +64,7 @@
                     <SolidColorBrush x:Key="SystemControlForegroundBaseHighBrush" Color="White" />
                     <!-- The accent itself is white in this variant, so black is required. -->
                     <SolidColorBrush x:Key="AccentContrastForegroundBrush" Color="Black" />
+                    <Color x:Key="AccentContrastColor">Black</Color>
                     <SolidColorBrush x:Key="SystemControlForegroundAccentBrush" Color="{DynamicResource SystemAccentColorLight2}" />
                     <SolidColorBrush x:Key="CalendarHeaderBrush" Color="{DynamicResource SystemAccentColorLight2}" />
                     <SolidColorBrush x:Key="CalendarTodayBrush" Color="{DynamicResource SystemAccentColorLight2}" />
