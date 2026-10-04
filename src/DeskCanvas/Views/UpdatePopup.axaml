@@ -3,7 +3,9 @@
         xmlns:locales="clr-namespace:DeskCanvas.Locales"
         xmlns:views="clr-namespace:DeskCanvas.Views"
         x:Class="DeskCanvas.Views.UpdatePopup"
-        Background="{DynamicResource SettingsBackground}"
+        Background="Transparent"
+        TransparencyLevelHint="AcrylicBlur, None"
+        TransparencyBackgroundFallback="{DynamicResource SettingsBackground}"
         ExtendClientAreaToDecorationsHint="True"
         ExtendClientAreaChromeHints="NoChrome"
         ExtendClientAreaTitleBarHeightHint="40"
@@ -34,22 +36,27 @@
             </Style>
         </Styles>
     </Window.Styles>
-    <StackPanel Margin="0 0 0 4">
+    <Border Background="{DynamicResource MenuSurfaceBackground}"
+            BorderBrush="{DynamicResource MenuSurfaceBorder}"
+            BorderThickness="{DynamicResource HostSurfaceBorderThickness}"
+            CornerRadius="{DynamicResource HostSurfaceCornerRadius}"
+            Margin="8">
+      <StackPanel Margin="0 0 0 4">
         <!-- Header -->
         <StackPanel Margin="28 22 28 8">
             <PathIcon Data="{DynamicResource Download}" Width="28" Height="28" 
                       Foreground="{DynamicResource SystemAccentColor}" Margin="0 0 0 10" />
-            <TextBlock FontSize="18" FontWeight="SemiBold" Text="{x:Static locales:Locale.Update_SoftwareUpdate}" />
+            <TextBlock FontSize="{DynamicResource FontSizeTitle}" FontWeight="SemiBold" Text="{x:Static locales:Locale.Update_SoftwareUpdate}" />
             <TextBlock FontSize="13" Opacity="0.8" Margin="0 6 0 0" TextWrapping="Wrap" Text="{Binding UpdateText}" />
         </StackPanel>
 
         <!-- Changelog -->
-        <Border CornerRadius="8" Background="{DynamicResource MenuSurfaceBackground}"
-                BorderBrush="{DynamicResource MenuSurfaceBorder}" BorderThickness="1"
+        <Border CornerRadius="{DynamicResource HostSurfaceCornerRadius}" Background="{DynamicResource MenuSurfaceBackground}"
+                BorderBrush="{DynamicResource MenuSurfaceBorder}" BorderThickness="{DynamicResource HostSurfaceBorderThickness}"
                 Margin="24 6 24 10" Padding="12" MaxHeight="130"
                 IsVisible="{Binding HasChangelog}">
             <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
-                <TextBlock Text="{Binding Changelog}" TextWrapping="Wrap" FontSize="12" 
+                <TextBlock Text="{Binding Changelog}" TextWrapping="Wrap" FontSize="{DynamicResource FontSizeCaption}"
                            Opacity="0.85" TextAlignment="Left" />
             </ScrollViewer>
         </Border>
@@ -59,7 +66,7 @@
             <ProgressBar Value="{Binding DownloadPercentage}" Minimum="0" Maximum="100"
                          Height="6" CornerRadius="3"
                          IsIndeterminate="{Binding IsProgressIndeterminate}" />
-            <TextBlock Margin="0 8 0 0" FontSize="12" Opacity="0.8" Text="{Binding StatusText}" />
+            <TextBlock Margin="0 8 0 0" FontSize="{DynamicResource FontSizeCaption}" Opacity="0.8" Text="{Binding StatusText}" />
         </StackPanel>
 
         <!-- Normal State Buttons -->
@@ -93,5 +100,6 @@
             <Separator />
             <Button Classes="Action" Content="关闭" Click="Later" />
         </StackPanel>
-    </StackPanel>
+      </StackPanel>
+    </Border>
 </Window>

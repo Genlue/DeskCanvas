@@ -16,11 +16,11 @@
             <Setter Property="BorderThickness" Value="0" />
         </Style>
         <Style Selector="NumericUpDown">
-            <Setter Property="MinWidth" Value="115" />
+            <Setter Property="MinWidth" Value="{DynamicResource ControlNumericMinWidth}" />
             <Setter Property="VerticalAlignment" Value="Center" />
             <Setter Property="VerticalContentAlignment" Value="Center" />
             <Setter Property="HorizontalContentAlignment" Value="Center" />
-            <Setter Property="Padding" Value="8,5,8,5" />
+            <Setter Property="Padding" Value="{DynamicResource ControlNumericPadding}" />
         </Style>
         <Style Selector="Window">
             <Setter Property="FontFamily" Value="{DynamicResource FontFamily}" />
@@ -33,7 +33,7 @@
              两个宿主——桌面组件窗口的卡片 Border 和组件库的预览框——都带 .widget-content-host，
              所以「桌面实物」和「组件库预览」必然算出同一个内边距。 -->
         <Style Selector=".widget-content-host :is(UserControl)">
-            <Setter Property="Margin" Value="12" />
+            <Setter Property="Margin" Value="{DynamicResource WidgetContentHostMargin}" />
         </Style>
         <Style Selector=".widget-content-host :is(UserControl).Frameless">
             <Setter Property="Margin" Value="0" />
@@ -46,7 +46,7 @@
              端头全圆呈长条药丸状；悬停展开态（16px）同样是圆端。
              Fluent 模板自身以 TemplateBinding 传递 CornerRadius，样式优先级高于模板值。 -->
         <Style Selector="ScrollBar /template/ Thumb">
-            <Setter Property="CornerRadius" Value="999" />
+            <Setter Property="CornerRadius" Value="{DynamicResource ScrollBarThumbCornerRadius}" />
         </Style>
 
         <!-- 单色模式下 Fluent 选中态控件（开关圆点/复选勾/单选点）的白上白修复不在
@@ -67,8 +67,8 @@
             <Setter Property="FontFamily" Value="{DynamicResource FontFamily}" />
             <Setter Property="Background" Value="{DynamicResource MenuSurfaceBackground}" />
             <Setter Property="BorderBrush" Value="{DynamicResource MenuSurfaceBorder}" />
-            <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="BorderThickness" Value="{DynamicResource HostSurfaceBorderThickness}" />
+            <Setter Property="CornerRadius" Value="{DynamicResource HostSurfaceCornerRadius}" />
         </Style>
         <!-- Widget right-click menu: fixed 12px radius — a menu is a menu, it should not
              inherit the widget card's radius (which can be 36+). The shell shares the same
@@ -77,20 +77,20 @@
              it. Widget windows re-declare both at the window scope (Views/Widget.axaml,
              which wins there) — keep the two in sync. -->
         <Style Selector="ContextMenu.WidgetContextMenu">
-            <Setter Property="CornerRadius" Value="12" />
-            <Setter Property="Padding" Value="5" />
+            <Setter Property="CornerRadius" Value="{DynamicResource HostSurfaceCornerRadius}" />
+            <Setter Property="Padding" Value="{DynamicResource WidgetContextMenuPadding}" />
             <Setter Property="ClipToBounds" Value="True" />
         </Style>
         <Style Selector="ContextMenu.WidgetContextMenu MenuItem">
-            <Setter Property="CornerRadius" Value="12" />
-            <Setter Property="Margin" Value="2,1" />
+            <Setter Property="CornerRadius" Value="{DynamicResource HostSurfaceCornerRadius}" />
+            <Setter Property="Margin" Value="{DynamicResource WidgetContextMenuItemMargin}" />
         </Style>
         <Style Selector="MenuFlyoutPresenter">
             <Setter Property="FontFamily" Value="{DynamicResource FontFamily}" />
             <Setter Property="Background" Value="{DynamicResource MenuSurfaceBackground}" />
             <Setter Property="BorderBrush" Value="{DynamicResource MenuSurfaceBorder}" />
-            <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="BorderThickness" Value="{DynamicResource HostSurfaceBorderThickness}" />
+            <Setter Property="CornerRadius" Value="{DynamicResource HostSurfaceCornerRadius}" />
         </Style>
         <Style Selector="MenuItem">
             <Setter Property="FontFamily" Value="{DynamicResource FontFamily}" />
@@ -115,6 +115,9 @@
     
     <Application.Resources>
         <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceInclude Source="avares://DeskCanvas/Styles/DesignTokens.axaml" />
+            </ResourceDictionary.MergedDictionaries>
             <ResourceDictionary.ThemeDictionaries>
                 <ResourceDictionary x:Key="Default">
                     <SolidColorBrush x:Key="SettingsWindowBackground" Color="#F5F5F7" Opacity="0.80" />

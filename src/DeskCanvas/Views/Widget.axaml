@@ -78,13 +78,13 @@
              （菜单项 CornerRadius）保持同一圆度——两者的圆度不一致时，5px 内边距下悬停高亮
              的方角会贴着外壳的弧线，看着是两个互不相干的形状（实机截图比对过）。 -->
         <Style Selector="ContextMenu.WidgetContextMenu">
-            <Setter Property="CornerRadius" Value="12" />
-            <Setter Property="Padding" Value="5" />
+            <Setter Property="CornerRadius" Value="{DynamicResource HostSurfaceCornerRadius}" />
+            <Setter Property="Padding" Value="{DynamicResource WidgetContextMenuPadding}" />
             <Setter Property="ClipToBounds" Value="True" />
         </Style>
         <Style Selector="ContextMenu.WidgetContextMenu MenuItem">
-            <Setter Property="CornerRadius" Value="12" />
-            <Setter Property="Margin" Value="2,1" />
+            <Setter Property="CornerRadius" Value="{DynamicResource HostSurfaceCornerRadius}" />
+            <Setter Property="Margin" Value="{DynamicResource WidgetContextMenuItemMargin}" />
         </Style>
         <Style Selector="Border:not(:pointerover) ScrollViewer">
             <Setter Property="VerticalScrollBarVisibility" Value="Hidden" />

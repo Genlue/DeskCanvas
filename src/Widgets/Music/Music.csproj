@@ -3,13 +3,8 @@
     <PropertyGroup>
         <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
         <SupportedOSPlatformVersion>10.0.17763.0</SupportedOSPlatformVersion>
-        <ImplicitUsings>enable</ImplicitUsings>
-        <Nullable>enable</Nullable>
         <OutputPath>..\..\DeskCanvas\bin\$(Configuration)\net8.0\Widgets</OutputPath>
         <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
-        <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
-        <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
-        <EnableDynamicLoading>true</EnableDynamicLoading>
         <NoWarn>$(NoWarn);CA1416</NoWarn>
         <RootNamespace>Music</RootNamespace>
         <AssemblyName>Music</AssemblyName>

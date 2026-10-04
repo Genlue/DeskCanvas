@@ -8,6 +8,7 @@ using Avalonia.Platform.Storage;
 using Folders.Locales;
 using Folders.Models;
 using Folders.Services;
+using DeskCanvas.Core;
 using DeskCanvas.Core.Interfaces;
 using DeskCanvas.Core.Models;
 
@@ -289,7 +290,7 @@ public partial class BigFolderSettings : UserControl
 
         var folder = await storageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions
         {
-            Title = "DeskCanvas",
+            Title = Const.AppName,
             AllowMultiple = true
         });
 
@@ -306,7 +307,7 @@ public partial class BigFolderSettings : UserControl
 
         var files = await storageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
         {
-            Title = "DeskCanvas",
+            Title = Const.AppName,
             AllowMultiple = true
         });
 

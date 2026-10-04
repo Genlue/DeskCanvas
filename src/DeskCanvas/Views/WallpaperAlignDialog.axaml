@@ -2,17 +2,20 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:locales="clr-namespace:DeskCanvas.Locales"
         x:Class="DeskCanvas.Views.WallpaperAlignDialog"
-        Background="{DynamicResource SettingsBackground}"
+        Background="Transparent"
+        TransparencyLevelHint="AcrylicBlur, None"
+        TransparencyBackgroundFallback="{DynamicResource SettingsBackground}"
         ExtendClientAreaToDecorationsHint="True"
         ExtendClientAreaChromeHints="NoChrome"
         ExtendClientAreaTitleBarHeightHint="40"
         WindowStartupLocation="CenterOwner"
         Topmost="True"
         Width="340" Height="250" CanResize="False">
-    <StackPanel Margin="16" Spacing="10" PointerPressed="Drag">
-        <TextBlock Text="{x:Static locales:Locale.Settings_Appearance_Glass_Align_Title}" FontSize="14" FontWeight="Bold"
+    <Border Background="{DynamicResource MenuSurfaceBackground}" BorderBrush="{DynamicResource MenuSurfaceBorder}" BorderThickness="{DynamicResource HostSurfaceBorderThickness}" CornerRadius="{DynamicResource HostSurfaceCornerRadius}" Margin="8">
+      <StackPanel Margin="16" Spacing="10" PointerPressed="Drag">
+        <TextBlock Text="{x:Static locales:Locale.Settings_Appearance_Glass_Align_Title}" FontSize="{DynamicResource FontSizeBody}" FontWeight="Bold"
                    IsHitTestVisible="False" HorizontalAlignment="Center" Margin="0 4 0 0"/>
-        <TextBlock Text="{x:Static locales:Locale.Settings_Appearance_Glass_Align_Hint}" FontSize="12" Opacity="0.75"
+        <TextBlock Text="{x:Static locales:Locale.Settings_Appearance_Glass_Align_Hint}" FontSize="{DynamicResource FontSizeCaption}" Opacity="0.75"
                    TextWrapping="Wrap" IsHitTestVisible="False" HorizontalAlignment="Center" TextAlignment="Center"/>
         <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto" Margin="0 4">
             <TextBlock Text="{x:Static locales:Locale.Settings_Appearance_Glass_Align_Horizontal}"
@@ -28,5 +31,6 @@
             <Button Content="{x:Static locales:Locale.Settings_Appearance_Glass_Align_Reset}" Click="ResetOffsets" />
             <Button Content="{x:Static locales:Locale.Settings_Appearance_Glass_Align_Close}" Click="CloseDialog" />
         </StackPanel>
-    </StackPanel>
+      </StackPanel>
+    </Border>
 </Window>

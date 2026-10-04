@@ -128,10 +128,10 @@ public class ThemeService : IThemeService
         // In Colorful mode, fixed authentic Apple card backgrounds are strictly enforced.
         var solidBackgroundDark = theme.IsColorful
             ? Color.Parse("#1C1C1E")
-            : ParseColor(theme.EffectiveSolidBackgroundDark, Theme.DefaultSolidBackgroundDark);
+            : ThemeResourceHelper.ParseColor(theme.EffectiveSolidBackgroundDark, Theme.DefaultSolidBackgroundDark);
         var solidBackgroundLight = theme.IsColorful
             ? Color.Parse("#FFFFFF")
-            : ParseColor(theme.EffectiveSolidBackgroundLight, Theme.DefaultSolidBackgroundLight);
+            : ThemeResourceHelper.ParseColor(theme.EffectiveSolidBackgroundLight, Theme.DefaultSolidBackgroundLight);
         Application.Current.Resources["SolidBackgroundDark"] = solidBackgroundDark;
         Application.Current.Resources["SolidBackgroundLight"] = solidBackgroundLight;
 
@@ -163,10 +163,10 @@ public class ThemeService : IThemeService
         switch (monochromeVariant)
         {
             case MonochromeStyle.BlackWhite:
-                ApplyAccent(isDarkVariant ? Colors.White : Colors.Black, dark: Colors.Black, light: Colors.White);
+                ThemeResourceHelper.ApplyAccent(isDarkVariant ? Colors.White : Colors.Black, dark: Colors.Black, light: Colors.White);
                 break;
             case MonochromeStyle.BackgroundColor:
-                ApplyAccent(
+                ThemeResourceHelper.ApplyAccent(
                     isDarkVariant ? solidBackgroundLight : solidBackgroundDark,
                     dark: solidBackgroundDark,
                     light: solidBackgroundLight);
@@ -176,11 +176,11 @@ public class ThemeService : IThemeService
                 {
                     // Apple systemBlue: #007AFF on light, #0A84FF on dark (the ramp the
                     // Colorful palettes were designed against).
-                    ApplyAccent(Color.Parse("#007AFF"), light: Color.Parse("#0A84FF"));
+                    ThemeResourceHelper.ApplyAccent(Color.Parse("#007AFF"), light: Color.Parse("#0A84FF"));
                 }
                 else if (theme.AccentColor != null && Color.TryParse(theme.AccentColor, out var accentColor))
                 {
-                    ApplyAccent(accentColor);
+                    ThemeResourceHelper.ApplyAccent(accentColor);
                 }
                 else
                 {
@@ -188,7 +188,7 @@ public class ThemeService : IThemeService
                     // resource the Fluent theme already publishes: drop our overrides so its
                     // value shines through again. Merely skipping the write is NOT equivalent —
                     // it would leave the previous Apply's ramp (e.g. 黑白's pure white) behind.
-                    ClearAccentOverrides();
+                    ThemeResourceHelper.ClearAccentOverrides();
                 }
 
                 break;
@@ -199,7 +199,7 @@ public class ThemeService : IThemeService
         // transparency so the opacity slider actually blends with the desktop.
         // Colorful (macOS) uses live OS acrylic blur with rich system semantic colors.
         // Always on base accent fallback (generic icons / title fallback)
-        SwitchStyle(accentStyle, true);
+        ThemeResourceHelper.SwitchStyle(accentStyle, true);
 
         // Monochrome style dictionaries (appended after accentStyle so they win):
         // 黑白 keeps the text family pure black/white and resolves the accent family through
@@ -207,84 +207,18 @@ public class ThemeService : IThemeService
         // ramp (everything renders in the inverted background color); 强调色 keeps the accent
         // as-is and only re-tints text (the historic Monochrome.axaml dictionaries).
         // In Colorful mode, monochrome is strictly disabled.
-        SwitchStyle(monochromeBlackWhiteStyle, monochromeVariant == MonochromeStyle.BlackWhite);
-        SwitchStyle(monochromeBackgroundStyle, monochromeVariant == MonochromeStyle.BackgroundColor);
-        SwitchStyle(monochromeStyle, monochromeVariant == MonochromeStyle.Accent);
+        ThemeResourceHelper.SwitchStyle(monochromeBlackWhiteStyle, monochromeVariant == MonochromeStyle.BlackWhite);
+        ThemeResourceHelper.SwitchStyle(monochromeBackgroundStyle, monochromeVariant == MonochromeStyle.BackgroundColor);
+        ThemeResourceHelper.SwitchStyle(monochromeStyle, monochromeVariant == MonochromeStyle.Accent);
 
         // Surface material background styles
-        SwitchStyle(transparentStyle, theme.UsesNativeBlur && !theme.IsColorful);
-        SwitchStyle(solidStyle, !theme.IsGlass && !theme.IsColorful);
-        SwitchStyle(liquidGlassStyle, theme.UsesRenderedGlass);
+        ThemeResourceHelper.SwitchStyle(transparentStyle, theme.UsesNativeBlur && !theme.IsColorful);
+        ThemeResourceHelper.SwitchStyle(solidStyle, !theme.IsGlass && !theme.IsColorful);
+        ThemeResourceHelper.SwitchStyle(liquidGlassStyle, theme.UsesRenderedGlass);
 
         // Colorful (macOS) uses live OS acrylic blur with rich Apple HIG system semantic colors.
         // Loaded after accentStyle so its vibrant palette (Red calendar, Orange clock second hand,
         // Blue/Purple/Orange monitor rings, etc.) takes precedence over single-color accent fallbacks.
-        SwitchStyle(colorfulStyle, theme.IsColorful);
-    }
-
-    /// <summary>
-    /// The accent ramp the theme dictionaries read, minus the base <c>SystemAccentColor</c>.
-    /// Avalonia's Fluent theme pre-defines every one of these as a fixed shade of its own blue,
-    /// so <b>any key left unwritten keeps that blue</b> — which is exactly how a hand-picked
-    /// accent used to survive only in the light variant: <c>Styles/Accent.axaml</c> reads
-    /// <c>SystemAccentColorLight2</c> from its Dark dictionary and nothing ever wrote it, so dark
-    /// mode stayed Fluent blue no matter what the user picked (same for <c>Monochrome.axaml</c>,
-    /// <c>ThemeButton</c> and the 配置方案 badge).
-    /// </summary>
-    private static readonly string[] DarkAccentKeys =
-        ["SystemAccentColorDark1", "SystemAccentColorDark2", "SystemAccentColorDark3"];
-
-    /// <inheritdoc cref="DarkAccentKeys"/>
-    private static readonly string[] LightAccentKeys =
-        ["SystemAccentColorLight1", "SystemAccentColorLight2", "SystemAccentColorLight3"];
-
-    /// <summary>
-    /// Overwrite the whole accent ramp so the resolved accent is authoritative in both theme
-    /// variants. <paramref name="light"/>/<paramref name="dark"/> default to the accent itself:
-    /// the app has no shade hierarchy of its own, and a colour the user picked should render as
-    /// that colour — not as Fluent's tint of it.
-    /// </summary>
-    private static void ApplyAccent(Color accent, Color? light = null, Color? dark = null)
-    {
-        var lightShade = light ?? accent;
-        var darkShade = dark ?? accent;
-
-        Application.Current!.Resources["SystemAccentColor"] = accent;
-
-        foreach (var key in DarkAccentKeys)
-            Application.Current.Resources[key] = darkShade;
-
-        foreach (var key in LightAccentKeys)
-            Application.Current.Resources[key] = lightShade;
-    }
-
-    /// <summary>
-    /// Every key <see cref="ApplyAccent"/> owns. Dropping them lets the Fluent theme's own
-    /// (platform) accent resolve again.
-    /// </summary>
-    private static readonly string[] AccentOverrideKeys =
-        ["SystemAccentColor", .. DarkAccentKeys, .. LightAccentKeys];
-
-    /// <summary>
-    /// Hand the accent ramp back to the Fluent theme. Used when the resolved accent IS the
-    /// system accent, where writing nothing is not good enough: a previous 单色/手选 Apply would
-    /// otherwise stay in <c>Application.Resources</c> and keep painting the accent-driven surfaces
-    /// (e.g. the ToggleSwitch ON track) in its own color.
-    /// </summary>
-    private static void ClearAccentOverrides()
-    {
-        foreach (var key in AccentOverrideKeys)
-            Application.Current!.Resources.Remove(key);
-    }
-
-    private static Color ParseColor(string hex, string fallbackHex) =>
-        Color.TryParse(hex, out var color) ? color : Color.Parse(fallbackHex);
-
-    private static void SwitchStyle(StyleInclude style, bool enable)
-    {
-        if (enable && !Application.Current!.Styles.Contains(style))
-            Application.Current.Styles.Add(style);
-        if (!enable && Application.Current!.Styles.Contains(style))
-            Application.Current.Styles.Remove(style);
+        ThemeResourceHelper.SwitchStyle(colorfulStyle, theme.IsColorful);
     }
 }

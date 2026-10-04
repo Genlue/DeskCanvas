@@ -3,7 +3,9 @@
         xmlns:views="clr-namespace:DeskCanvas.Views"
         xmlns:locales="clr-namespace:DeskCanvas.Locales"
         x:Class="DeskCanvas.Views.EditWidget"
-        Background="{DynamicResource SettingsBackground}"
+        Background="Transparent"
+        TransparencyLevelHint="AcrylicBlur, None"
+        TransparencyBackgroundFallback="{DynamicResource SettingsBackground}"
         ExtendClientAreaToDecorationsHint="True"
         ExtendClientAreaChromeHints="NoChrome"
         ExtendClientAreaTitleBarHeightHint="60"
@@ -11,12 +13,22 @@
         WindowStartupLocation="CenterScreen"
         Width="480" Height="520" MinWidth="440" MinHeight="460" CanResize="True"
         x:DataType="views:EditWidget">
-    <Grid ColumnDefinitions="Auto,*,Auto" RowDefinitions="Auto, Auto,*"
-          Margin="16">
-        <PathIcon Grid.Row="0" Grid.Column="0" Grid.RowSpan="2" IsHitTestVisible="False" Margin="0,0,12,0" Data="{DynamicResource Appearance}" Height="32" />
-        <TextBlock Grid.Row="0" Grid.Column="1" IsHitTestVisible="False" Text="{Binding WidgetType}" FontSize="14" FontWeight="Bold" />
-        <TextBlock Grid.Row="1" Grid.Column="1" IsHitTestVisible="False" Text="{Binding WidgetSubType}" FontSize="12" FontWeight="SemiBold" Opacity="0.5" />
-        <Button Grid.Row="0" Grid.Column="2" Grid.RowSpan="2" Content="{x:Static locales:Locale.Widget_Save}" Click="Close" />
-        <ContentPresenter Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="3" IsHitTestVisible="True" Margin="0,12,0,0" Content="{Binding Control}" />
-    </Grid>
+    <Border Background="{DynamicResource MenuSurfaceBackground}"
+            BorderBrush="{DynamicResource MenuSurfaceBorder}"
+            BorderThickness="{DynamicResource HostSurfaceBorderThickness}"
+            CornerRadius="{DynamicResource HostSurfaceCornerRadius}"
+            Margin="0"
+            ClipToBounds="True">
+      <Grid RowDefinitions="Auto,*" Margin="16">
+        <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto" PointerPressed="OnHeaderPressed">
+          <PathIcon Grid.Column="0" IsHitTestVisible="False" Margin="0,0,12,0" Data="{DynamicResource Appearance}" Height="32" />
+          <StackPanel Grid.Column="1" IsHitTestVisible="False">
+            <TextBlock Text="{Binding WidgetType}" FontSize="{DynamicResource FontSizeBody}" FontWeight="Bold" />
+            <TextBlock Text="{Binding WidgetSubType}" FontSize="{DynamicResource FontSizeCaption}" FontWeight="SemiBold" Opacity="0.5" />
+          </StackPanel>
+          <Button Grid.Column="2" Content="{x:Static locales:Locale.Widget_Save}" Click="Close" />
+        </Grid>
+        <ContentPresenter Grid.Row="1" IsHitTestVisible="True" Margin="0,12,0,0" Content="{Binding Control}" />
+      </Grid>
+    </Border>
 </Window>

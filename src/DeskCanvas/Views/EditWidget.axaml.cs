@@ -1,6 +1,7 @@
 using System;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Input;
 using Avalonia.Interactivity;
 using DeskCanvas.Core.Interfaces;
 
@@ -28,4 +29,13 @@ public partial class EditWidget : Window
     }
 
     private void Close(object? sender, RoutedEventArgs e) => Close();
+
+    private void OnHeaderPressed(object? sender, PointerPressedEventArgs e)
+    {
+        if (e.Handled || !e.GetCurrentPoint(this).Properties.IsLeftButtonPressed)
+            return;
+
+        BeginMoveDrag(e);
+        e.Handled = true;
+    }
 }

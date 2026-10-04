@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Text;
 using System.Threading;
+using DeskCanvas.Core;
 
 namespace DeskCanvas.Services;
 
@@ -48,7 +49,7 @@ internal static class GlassDiagnostics
         try
         {
             var dir = System.IO.Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "DeskCanvas");
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), Const.AppName);
             Directory.CreateDirectory(dir);
             var file = System.IO.Path.Combine(dir, "glass-debug.log");
             File.WriteAllText(file, $"--- DeskCanvas glass trace, {DateTime.Now:O} ---{Environment.NewLine}");

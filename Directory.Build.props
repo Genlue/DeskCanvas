@@ -1,0 +1,27 @@
+<Project>
+  <!-- Shared .NET defaults for DeskCanvas projects. Project files may override these values when needed. -->
+  <PropertyGroup>
+    <ImplicitUsings Condition="'$(ImplicitUsings)' == ''">enable</ImplicitUsings>
+    <Nullable Condition="'$(Nullable)' == ''">enable</Nullable>
+    <AvaloniaUseCompiledBindingsByDefault Condition="'$(AvaloniaUseCompiledBindingsByDefault)' == ''">true</AvaloniaUseCompiledBindingsByDefault>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <_DeskCanvasSourceRoot>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)src'))</_DeskCanvasSourceRoot>
+    <_DeskCanvasProjectParent>$([System.IO.Path]::GetDirectoryName('$(MSBuildProjectDirectory)'))</_DeskCanvasProjectParent>
+    <_DeskCanvasWidgetRoot>$([System.IO.Path]::GetFullPath('$(_DeskCanvasSourceRoot)/Widgets'))</_DeskCanvasWidgetRoot>
+    <_DeskCanvasHostRoot>$([System.IO.Path]::GetFullPath('$(_DeskCanvasSourceRoot)/DeskCanvas'))</_DeskCanvasHostRoot>
+    <_DeskCanvasCoreRoot>$([System.IO.Path]::GetFullPath('$(_DeskCanvasSourceRoot)/DeskCanvas.Core'))</_DeskCanvasCoreRoot>
+    <_DeskCanvasIsWidget Condition="'$(_DeskCanvasProjectParent)' == '$(_DeskCanvasWidgetRoot)'">true</_DeskCanvasIsWidget>
+  </PropertyGroup>
+
+  <!-- Source projects intentionally suppress SDK-generated assembly attributes; test probes keep SDK defaults. -->
+  <PropertyGroup Condition="'$(MSBuildProjectDirectory)' == '$(_DeskCanvasHostRoot)' Or '$(MSBuildProjectDirectory)' == '$(_DeskCanvasCoreRoot)' Or '$(_DeskCanvasIsWidget)' == 'true'">
+    <GenerateAssemblyInfo Condition="'$(GenerateAssemblyInfo)' == ''">false</GenerateAssemblyInfo>
+  </PropertyGroup>
+
+  <!-- Widgets in the standard src/Widgets layout are loaded at runtime. -->
+  <PropertyGroup Condition="'$(_DeskCanvasIsWidget)' == 'true'">
+    <EnableDynamicLoading Condition="'$(EnableDynamicLoading)' == ''">true</EnableDynamicLoading>
+  </PropertyGroup>
+</Project>

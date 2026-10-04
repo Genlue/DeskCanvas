@@ -9,6 +9,7 @@ using Avalonia.Interactivity;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Platform.Storage;
+using DeskCanvas.Core;
 using DeskCanvas.Core.Interfaces;
 using DeskCanvas.Core.Models;
 using DeskCanvas.Core.Models.Settings;
@@ -625,7 +626,7 @@ public partial class MultiScreen : UserControl
             var safeName = string.Join("-", (config.DisplayName ?? "screen").Split(Path.GetInvalidFileNameChars()));
             var file = await storage.SaveFilePickerAsync(new FilePickerSaveOptions
             {
-                Title = "DeskCanvas",
+                Title = Const.AppName,
                 SuggestedFileName = $"DeskCanvas-screen-{safeName}.json",
                 DefaultExtension = "json",
                 FileTypeChoices = [new FilePickerFileType("JSON") { Patterns = ["*.json"] }]
@@ -653,7 +654,7 @@ public partial class MultiScreen : UserControl
         {
             var files = await storage.OpenFilePickerAsync(new FilePickerOpenOptions
             {
-                Title = "DeskCanvas",
+                Title = Const.AppName,
                 AllowMultiple = false,
                 FileTypeFilter = [new FilePickerFileType("JSON") { Patterns = ["*.json"] }]
             });

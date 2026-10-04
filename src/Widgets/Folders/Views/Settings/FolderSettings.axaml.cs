@@ -8,6 +8,7 @@ using Avalonia.Platform.Storage;
 using Folders.Locales;
 using Folders.Models;
 using Folders.Services;
+using DeskCanvas.Core;
 using DeskCanvas.Core.Interfaces;
 using DeskCanvas.Core.Models;
 
@@ -286,7 +287,7 @@ public partial class FolderSettings : UserControl
 
         var folder = await storageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions
         {
-            Title = "DeskCanvas",
+            Title = Const.AppName,
             AllowMultiple = true
         });
 
@@ -300,13 +301,13 @@ public partial class FolderSettings : UserControl
     {
         var topLevel = TopLevel.GetTopLevel(this);
         var hwnd = topLevel?.TryGetPlatformHandle()?.Handle ?? IntPtr.Zero;
-        var files = ShellFilePicker.PickFilesNoDereference(hwnd, "DeskCanvas", allowMultiple: true);
+        var files = ShellFilePicker.PickFilesNoDereference(hwnd, Const.AppName, allowMultiple: true);
 
         if (files.Count == 0 && topLevel?.StorageProvider != null)
         {
             var storageFiles = await topLevel.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
             {
-                Title = "DeskCanvas",
+                Title = Const.AppName,
                 AllowMultiple = true
             });
             files = storageFiles.Select(f => f.Path.LocalPath).ToList();
@@ -325,7 +326,7 @@ public partial class FolderSettings : UserControl
 
         var folder = await storageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions
         {
-            Title = "DeskCanvas",
+            Title = Const.AppName,
             AllowMultiple = false
         });
 

@@ -6,6 +6,7 @@ using System.Linq;
 using System.Text.Json;
 using Avalonia.Media.Imaging;
 using Avalonia.Threading;
+using DeskCanvas.Core;
 using SkiaSharp;
 using Tools.Models;
 
@@ -36,7 +37,7 @@ public class ClipboardMonitorService
     {
         storageDir = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "DeskCanvas");
+            Const.AppName);
         cacheDir = Path.Combine(storageDir, "ClipboardCache");
         historyFilePath = Path.Combine(storageDir, "clipboard_history.json");
 

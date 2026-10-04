@@ -3,6 +3,7 @@ using System.Linq;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
+using DeskCanvas.Core;
 using DeskCanvas.Core.Interfaces;
 using DeskCanvas.Locales;
 using DeskCanvas.Services;
@@ -75,7 +76,7 @@ public partial class Advanced : UserControl
         {
             var file = await storage.SaveFilePickerAsync(new FilePickerSaveOptions
             {
-                Title = "DeskCanvas",
+                Title = Const.AppName,
                 SuggestedFileName = "DeskCanvas-backup.json",
                 DefaultExtension = "json",
                 FileTypeChoices = [new FilePickerFileType("JSON") { Patterns = ["*.json"] }]
@@ -108,7 +109,7 @@ public partial class Advanced : UserControl
         {
             var files = await storage.OpenFilePickerAsync(new FilePickerOpenOptions
             {
-                Title = "DeskCanvas",
+                Title = Const.AppName,
                 AllowMultiple = false,
                 FileTypeFilter = [new FilePickerFileType("JSON") { Patterns = ["*.json"] }]
             });

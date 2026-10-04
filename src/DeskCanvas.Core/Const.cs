@@ -42,11 +42,11 @@ public static class Const
     /// </summary>
     public static readonly string ProfilesFolder = Path.Combine(DataFolder, ProfilesFolderName);
 
-    private static string WidgetsFolderName => "Widgets";
-    private static string AppSettingsFileName => "appSettings.json";
-    private static string LayoutFileName => "layout.json";
-    private static string RemindersFileName => "reminders.json";
-    private static string ProfilesFolderName => "Profiles";
+    private const string WidgetsFolderName = "Widgets";
+    private const string AppSettingsFileName = "appSettings.json";
+    private const string LayoutFileName = "layout.json";
+    private const string RemindersFileName = "reminders.json";
+    private const string ProfilesFolderName = "Profiles";
 
     private static string GetDataFolder()
     {

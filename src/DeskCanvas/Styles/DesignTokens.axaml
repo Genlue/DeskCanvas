@@ -1,0 +1,27 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!-- Host-level layout and control tokens. Keep these values stable when
+         changing the visual theme so settings, menus and widget hosts remain
+         aligned without duplicating literals across styles. -->
+    <x:Double x:Key="ControlNumericMinWidth">115</x:Double>
+    <Thickness x:Key="ControlNumericPadding">8,5,8,5</Thickness>
+
+    <!-- Typography scale used by host controls and settings surfaces. These
+         are intentionally small, stable steps so individual views can opt in
+         without inventing another font-size literal. -->
+    <x:Double x:Key="FontSizeCaption">12</x:Double>
+    <x:Double x:Key="FontSizeBody">14</x:Double>
+    <x:Double x:Key="FontSizeTitle">18</x:Double>
+
+    <Thickness x:Key="WidgetContentHostMargin">12</Thickness>
+    <!-- Shared host surface contract. Component-specific cards keep their own
+         radii; menus, flyouts and popup shells use this single radius. -->
+    <CornerRadius x:Key="HostSurfaceCornerRadius">12</CornerRadius>
+    <!-- Compatibility aliases retained for existing widget styles. -->
+    <CornerRadius x:Key="MenuCornerRadius">12</CornerRadius>
+    <CornerRadius x:Key="WidgetContextMenuCornerRadius">12</CornerRadius>
+    <Thickness x:Key="HostSurfaceBorderThickness">1</Thickness>
+    <Thickness x:Key="WidgetContextMenuPadding">5</Thickness>
+    <Thickness x:Key="WidgetContextMenuItemMargin">2,1</Thickness>
+    <CornerRadius x:Key="ScrollBarThumbCornerRadius">999</CornerRadius>
+</ResourceDictionary>

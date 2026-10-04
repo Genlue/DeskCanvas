@@ -57,15 +57,15 @@ public record LiquidGlassSettings(
     double Highlight = 50,
     double Dispersion = 100,
     double LightAngle = 225,
-    double EdgeTint = 25,
+    double EdgeTint = LiquidGlassSettings.DefaultEdgeTint,
     double WallpaperOffsetX = 0,
     double WallpaperOffsetY = 0,
     double Glow = 0,
     double Spectrum = 0,
-    double DyeSpread = 0,
+    double DyeSpread = LiquidGlassSettings.DefaultDyeSpread,
     bool LiveSampling = false,
-    int LiveSamplingInterval = 5,     // = DefaultLiveSamplingInterval; a primary-constructor default cannot name it
-    double BackdropClarity = 25)      // = DefaultBackdropClarity
+    int LiveSamplingInterval = LiquidGlassSettings.DefaultLiveSamplingInterval,
+    double BackdropClarity = LiquidGlassSettings.DefaultBackdropClarity)
     : IRenderedGlassSettings          // the sampling-pipeline subset shared with LiquidGlassV2Settings
 {
     /// <summary>

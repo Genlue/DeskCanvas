@@ -11,7 +11,8 @@
 <h3 align="center">
   <b><a href="https://github.com/Genlue/DeskCanvas/releases">下载最新版本</a></b> ・
   <a href="https://github.com/Genlue/DeskCanvas/issues">问题反馈</a> ・
-  <a href="docs/项目解构报告.md">项目解构报告</a>
+  <a href="docs/项目解构报告.md">项目解构报告</a> ・
+  <a href="docs/项目结构与扩展指南.md">结构与扩展指南</a>
 </h3>
 
 <div align="center">

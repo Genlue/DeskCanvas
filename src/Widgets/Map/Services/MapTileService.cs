@@ -7,6 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Avalonia.Media.Imaging;
 using Avalonia.Threading;
+using DeskCanvas.Core;
 using Map.Models;
 
 namespace Map.Services;
@@ -51,7 +52,7 @@ public class MapTileService : IDisposable
     public MapTileService()
     {
         var localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-        cacheBaseDir = Path.Combine(localAppData, "DeskCanvas", "Cache", "Map");
+        cacheBaseDir = Path.Combine(localAppData, Const.AppName, "Cache", "Map");
         try
         {
             if (!Directory.Exists(cacheBaseDir))

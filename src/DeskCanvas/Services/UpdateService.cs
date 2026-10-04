@@ -12,6 +12,7 @@ using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Threading;
+using DeskCanvas.Core;
 using DeskCanvas.Core.Interfaces;
 using DeskCanvas.Core.Models.Settings;
 using DeskCanvas.Core.Services;
@@ -309,7 +310,7 @@ public class UpdateService
         if (string.IsNullOrWhiteSpace(info.DownloadUrl))
             throw new InvalidOperationException("No download URL found for this release.");
 
-        var updateDir = Path.Combine(Path.GetTempPath(), "DeskCanvas", "Updates");
+        var updateDir = Path.Combine(Path.GetTempPath(), Const.AppName, "Updates");
         Directory.CreateDirectory(updateDir);
 
         var fileName = !string.IsNullOrWhiteSpace(info.AssetFileName)

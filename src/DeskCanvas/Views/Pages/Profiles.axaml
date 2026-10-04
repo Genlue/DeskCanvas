@@ -9,15 +9,15 @@
 
     <StackPanel Orientation="Vertical" Spacing="16">
         <!-- Top Toolbar -->
-        <Border CornerRadius="8" Padding="16,14"
-                BorderThickness="1"
+        <Border CornerRadius="{DynamicResource HostSurfaceCornerRadius}" Padding="16,14"
+                BorderThickness="{DynamicResource HostSurfaceBorderThickness}"
                 BorderBrush="{DynamicResource ToolTipBorderBrush}"
                 Background="{DynamicResource SystemControlBackgroundAltHighBrush}">
             <Grid ColumnDefinitions="*,Auto">
                 <StackPanel VerticalAlignment="Center" Spacing="4">
                     <TextBlock FontSize="15" FontWeight="SemiBold"
                                Text="{x:Static locales:Locale.Profiles_Section_List}" />
-                    <TextBlock FontSize="12" Opacity="0.7" TextWrapping="Wrap"
+                    <TextBlock FontSize="{DynamicResource FontSizeCaption}" Opacity="0.7" TextWrapping="Wrap"
                                Text="{x:Static locales:Locale.Profiles_Section_Subtitle}" />
                 </StackPanel>
 
@@ -35,8 +35,8 @@
         <ItemsControl ItemsSource="{Binding Profiles}">
             <ItemsControl.ItemTemplate>
                 <DataTemplate DataType="viewModels:ProfileItemViewModel">
-                    <Border CornerRadius="8" Margin="0,0,0,8" Padding="16,14"
-                            BorderThickness="1"
+                    <Border CornerRadius="{DynamicResource HostSurfaceCornerRadius}" Margin="0,0,0,8" Padding="16,14"
+                            BorderThickness="{DynamicResource HostSurfaceBorderThickness}"
                             BorderBrush="{DynamicResource ToolTipBorderBrush}"
                             Background="{DynamicResource SystemControlBackgroundAltHighBrush}">
                         <Grid ColumnDefinitions="Auto,*,Auto">
@@ -74,7 +74,7 @@
                                                    FontSize="11" Foreground="{DynamicResource AccentContrastForegroundBrush}" FontWeight="SemiBold" />
                                     </Border>
                                 </StackPanel>
-                                <TextBlock FontSize="12" Opacity="0.6"
+                                <TextBlock FontSize="{DynamicResource FontSizeCaption}" Opacity="0.6"
                                            Text="{Binding LastModified, StringFormat='修改时间：{0}'}"
                                            IsVisible="{Binding LastModified, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
                             </StackPanel>

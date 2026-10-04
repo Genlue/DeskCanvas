@@ -2,13 +2,8 @@
 
     <PropertyGroup>
         <TargetFramework>net8.0</TargetFramework>
-        <ImplicitUsings>enable</ImplicitUsings>
-        <Nullable>enable</Nullable>
         <OutputPath>..\..\DeskCanvas\bin\$(Configuration)\$(TargetFramework)\Widgets</OutputPath>
         <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
-        <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
-        <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
-        <EnableDynamicLoading>true</EnableDynamicLoading>
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
         <SupportedOSPlatform>windows</SupportedOSPlatform>
         <RootNamespace>Folders</RootNamespace>

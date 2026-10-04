@@ -36,12 +36,22 @@ public partial class Widget : Window, INotifyPropertyChanged
     private readonly bool isFrameless;
 
     /// <summary>
-    /// 组件右键菜单的固定外壳圆角：与菜单项高亮同圆度。唯一的圆角真相源是 XAML 样式
-    /// （App.axaml 的 WidgetContextMenu，组件窗口再在 Widget.axaml 里同值重声明一份）。
-    /// 本常量只供 Clip / 原生窗口区域裁剪对齐用，绝不写回 CornerRadius（历史教训见构造
-    /// 函数注释）。它必须和那两处 XAML 同步——只改样式不改这里，菜单会被裁成旧圆角。
+    /// Reads the shared menu surface radius for Clip / native window region alignment. The XAML
+    /// styles own CornerRadius; this value only keeps the acrylic popup's native clipping in sync
+    /// when the design token changes. The fallback preserves the existing 12px appearance while
+    /// resources are unavailable during early window construction.
     /// </summary>
-    private const double ContextMenuCornerRadius = 12;
+    private static double ContextMenuCornerRadius
+    {
+        get
+        {
+            if (Application.Current?.TryFindResource("HostSurfaceCornerRadius", out var value) == true
+                && value is CornerRadius radius)
+                return radius.TopLeft;
+
+            return 12;
+        }
+    }
 
     /// <summary>
     /// Set once this window is being torn down (recreate / close all). While set, the

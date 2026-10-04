@@ -2,14 +2,17 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:locales="clr-namespace:DeskCanvas.Locales"
         x:Class="DeskCanvas.Views.CustomSizeDialog"
-        Background="{DynamicResource SettingsBackground}"
+        Background="Transparent"
+        TransparencyLevelHint="AcrylicBlur, None"
+        TransparencyBackgroundFallback="{DynamicResource SettingsBackground}"
         ExtendClientAreaToDecorationsHint="True"
         ExtendClientAreaChromeHints="NoChrome"
         ExtendClientAreaTitleBarHeightHint="40"
         WindowStartupLocation="CenterOwner"
         Width="320" Height="190" CanResize="False">
-    <StackPanel Margin="16" Spacing="12" PointerPressed="Drag">
-        <TextBlock Text="自定义尺寸 (像素)" FontSize="14" FontWeight="Bold"
+    <Border Background="{DynamicResource MenuSurfaceBackground}" BorderBrush="{DynamicResource MenuSurfaceBorder}" BorderThickness="{DynamicResource HostSurfaceBorderThickness}" CornerRadius="{DynamicResource HostSurfaceCornerRadius}" Margin="8">
+      <StackPanel Margin="16" Spacing="12" PointerPressed="Drag">
+        <TextBlock Text="自定义尺寸 (像素)" FontSize="{DynamicResource FontSizeBody}" FontWeight="Bold"
                    IsHitTestVisible="False" HorizontalAlignment="Center" Margin="0 4 0 0"/>
         <Grid ColumnDefinitions="Auto,*,Auto,*" RowDefinitions="Auto" Margin="0,4" HorizontalAlignment="Center">
             <TextBlock Text="宽度" VerticalAlignment="Center" Margin="0,0,8,0" />
@@ -21,5 +24,6 @@
             <Button Content="默认 (160×160)" Click="Reset" />
             <Button Content="{x:Static locales:Locale.Widget_Save}" Click="Apply" />
         </StackPanel>
-    </StackPanel>
+      </StackPanel>
+    </Border>
 </Window>
