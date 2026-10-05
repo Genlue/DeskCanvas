@@ -351,10 +351,46 @@ public class WidgetFactory(IAssemblyProvider assemblyProvider, ILayoutProvider l
         if (NeedsWidgetLayoutProvider(type) && widgetLayoutProvider != null)
             args.Add(widgetLayoutProvider);
 
-        if (model != null)
+        // A widget whose layout entry has no stored Settings yet (freshly added) — and every
+        // 组件库 preview — arrives with model == null. Widgets whose constructors take the model
+        // FIRST (FramelessDigital, MapView, ProgressView, …) then fall back to a shorter
+        // constructor that leaves the IAppSettingsProvider parameter unfilled: the widget runs
+        // without a settings provider, never hears DataChanged and is locked to its null-theme
+        // fallback (the frameless clock rendered 毛玻璃 no matter what the global theme was).
+        // Building the model's default instance here makes the full constructor reachable, and
+        // ActivatorUtilities fills the remaining parameter from DI — the preview and the freshly
+        // added widget are wired exactly like a widget restored from a stored layout.
+        if (model == null && TryCreateDefaultModel(type) is { } defaultModel)
+            args.Add(defaultModel);
+        else if (model != null)
             args.Add(model);
 
         return (assemblyProvider.Activate(type, args.ToArray()) as UserControl)!;
+    }
+
+    /// <summary>
+    /// The default instance of the widget model declared by <paramref name="viewType"/>'s
+    /// <see cref="WidgetInfoAttribute.ModelType"/>, or null when the widget declares no model or
+    /// the model cannot be default-constructed. Exposed as a pure function so
+    /// <c>tests/ClockThemeChecks</c> can pin the fresh-add / preview activation contract.
+    /// </summary>
+    public static object? TryCreateDefaultModel(Type viewType)
+    {
+        try
+        {
+            var modelType = viewType.Assembly
+                .GetCustomAttributes<WidgetInfoAttribute>()
+                .SingleOrDefault(attribute => attribute.ViewType == viewType)
+                ?.ModelType;
+
+            return modelType == null ? null : Activator.CreateInstance(modelType);
+        }
+        catch
+        {
+            // A model without a usable default constructor keeps the old behaviour
+            // (no model argument) instead of breaking widget creation outright.
+            return null;
+        }
     }
 
     private EditWidget CreateEditWidgetWindow(IWidgetLayoutProvider widgetLayoutProvider, Type type)

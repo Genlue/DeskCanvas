@@ -32,7 +32,10 @@ namespace ClockThemeChecks;
 /// which goes through <c>ActivatorUtilities.CreateInstance</c>. That type has five public
 /// constructors, two of which accept those two arguments, so which one wins decides whether
 /// the widget ever receives <see cref="IAppSettingsProvider"/> — and therefore whether it can
-/// resolve the global material at all.
+/// resolve the global material at all. Part 1b pins the two shapes that arrive WITHOUT a stored
+/// model — a freshly added widget (layout.json entry with <c>Settings: null</c>) and the
+/// 组件库 preview — where the factory has to build the default model itself or the widget
+/// falls back to a constructor without the settings provider (the "locked on 毛玻璃" regression).
 ///
 /// Part 2 (rendering): renders the control under global 液态玻璃 and global 毛玻璃 themes and saves
 /// PNGs, so the two materials can be compared pixel by pixel (and inspected by eye).
@@ -74,6 +77,30 @@ class Program
         Check("the clock receives IAppSettingsProvider", injected != null);
         Check("a global LiquidGlass theme resolves LiquidGlass",
             ResolveTheme(clock) == (false, true, false));
+
+        // ---- Part 1b: fresh-add / 组件库 preview activation ----
+        // A freshly added widget has no stored Settings (layout.json entry: null) and the
+        // gallery preview passes no model at all. CreateWidgetControl used to drop the model
+        // argument in both cases, and because the clock's constructors take the model FIRST,
+        // activation fell back to (IWidgetLayoutProvider) — the widget ran without a settings
+        // provider and was locked on the acrylic fallback (毛玻璃) no matter what the global
+        // theme was. The factory now builds the model's default instance, which makes the full
+        // constructor reachable and lets DI fill the provider.
+        Console.WriteLine();
+        Console.WriteLine("--- fresh-add / preview activation (no stored Settings) ---");
+
+        var defaultModel = WidgetFactory.TryCreateDefaultModel(typeof(FramelessDigital));
+        Check("the factory builds a default FramelessClockModel for a Settings-less layout",
+            defaultModel is FramelessClockModel);
+
+        var freshAdd = (FramelessDigital)ActivatorUtilities.CreateInstance(
+            provider, typeof(FramelessDigital), layout, defaultModel!);
+        var freshInjected = ReadField(freshAdd, "appSettingsProvider");
+        Console.WriteLine("ctor args = [IWidgetLayoutProvider, default FramelessClockModel]");
+        Console.WriteLine($"  injected IAppSettingsProvider = {(freshInjected == null ? "NULL" : freshInjected.GetType().Name)}");
+        Check("a freshly added clock receives IAppSettingsProvider", freshInjected != null);
+        Check("a freshly added clock follows the stored global theme (not locked on 毛玻璃)",
+            ResolveTheme(freshAdd) == (false, true, false));
 
         // ---- Part 2: rendering follows the global material ----
         Console.WriteLine();
