@@ -13,6 +13,5 @@
     <Compile Include="../../src/DeskCanvas/Services/LiquidGlassGpuEffect.cs" Link="LiquidGlassGpuEffect.cs" />
     <Compile Include="../../src/DeskCanvas/Services/LiquidGlassV2Effect.cs" Link="LiquidGlassV2Effect.cs" />
     <Compile Include="../../src/DeskCanvas/Services/LiquidGlassV2Renderer.cs" Link="LiquidGlassV2Renderer.cs" />
-    <Compile Include="../../src/Widgets/Clock/Services/GlyphLiquidGlassRenderer.cs" Link="GlyphLiquidGlassRenderer.cs" />
   </ItemGroup>
 </Project>

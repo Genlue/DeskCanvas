@@ -172,7 +172,7 @@
     <value>无边框时钟</value>
   </data>
   <data name="Clock_FramelessDigital_Subtitle" xml:space="preserve">
-    <value>纯净数字自适应网格拉伸，主题效果直达数字轮廓</value>
+    <value>纯净数字自适应网格拉伸，毛玻璃效果直达数字轮廓</value>
   </data>
   <data name="Clock_FontFamily" xml:space="preserve">
     <value>字体</value>

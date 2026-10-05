@@ -73,7 +73,7 @@
         <value>Frameless Clock</value>
     </data>
     <data name="Clock_FramelessDigital_Subtitle" xml:space="preserve">
-        <value>Pure digits adaptively stretched to grid with theme-styled numerals</value>
+        <value>Pure digits adaptively stretched to grid with frosted glass numerals</value>
     </data>
     <data name="Clock_FontFamily" xml:space="preserve">
         <value>Font Family</value>

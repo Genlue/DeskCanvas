@@ -53,15 +53,6 @@
                 <ToggleSwitch IsChecked="{Binding StretchFill}"/>
             </controls:Setting>
 
-            <controls:Setting IsVisible="{Binding ShowLiquidGlassOpacity}"
-                              Title="液态玻璃透明度"
-                              Subtitle="仅液态玻璃；100% 为当前效果，数值越高数字越实">
-                <Grid ColumnDefinitions="*,Auto" Width="180">
-                    <Slider Minimum="0" Maximum="200" Value="{Binding LiquidGlassOpacityPercent}" VerticalAlignment="Center"/>
-                    <TextBlock Grid.Column="1" Text="{Binding LiquidGlassOpacityPercent, StringFormat='{}{0}%'}" Width="48" TextAlignment="Right" VerticalAlignment="Center" Margin="8 0 0 0"/>
-                </Grid>
-            </controls:Setting>
-
             <!-- 覆盖颜色遮罩 -->
             <controls:Setting Title="{x:Static locales:Locale.Clock_EnableOverlay}"
                               Subtitle="{x:Static locales:Locale.Clock_EnableOverlay_Subtitle}">

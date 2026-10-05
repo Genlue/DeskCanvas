@@ -2,12 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
-using System.IO;
-using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text.Json;
-using System.Threading;
-using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Media;
@@ -25,71 +21,48 @@ namespace Clock.Views;
 
 /// <summary>
 /// The 无边框时钟: a clock whose numerals ARE the widget — no card, no plate; the glyphs render
-/// straight onto the desktop in the global material.
+/// straight onto the desktop, <b>locked to the 毛玻璃 material</b>.
 /// <para>
-/// Architecture contract — the part that must survive every future edit. This widget's history is
-/// a chain of "stopped following the global theme" regressions, each one an event handler that
-/// re-implemented a hand-picked subset of the rematerialize steps and missed one:
+/// The clock used to follow the global app theme through four materials (毛玻璃 / 液态玻璃 /
+/// 新液态玻璃 / 纯色), which made it the one widget whose look silently changed with 外观
+/// settings and the historic source of "stopped following the global theme" regressions. It is
+/// now locked to 毛玻璃: the glyphs are always a wash over the OS's native acrylic backdrop,
+/// confined to the glyph outline by the window region, whatever the global surface is — the
+/// rendered-glass pipeline (theme resolver, glyph glass renderer, pre-render frame cache and the
+/// wallpaper sampling) is gone entirely. The global theme is still read, but only for the
+/// appearance inputs the 毛玻璃 look itself uses: the light/dark wash, the accent behind
+/// 跟随强调色 and the global font family.
+/// </para>
+/// <para>
+/// Architecture contract — the part that must survive every future edit:
 /// <list type="number">
-/// <item><see cref="material"/> is the ONE snapshot of the resolved global material. It is written
-/// in exactly one place — <see cref="ApplyCurrentMaterial"/> — and only read everywhere else. A
-/// single frame therefore can never mix two materials, and a widget stuck on an old material
-/// means "the event never fired", a single debuggable failure, not "two methods disagreed".</item>
-/// <item>There are exactly TWO invalidation entries, and a new event picks one of them instead of
-/// re-implementing steps inline:
-/// <see cref="ApplyCurrentMaterial"/> for anything that can change the material (theme change,
-/// light/dark variant change, model refresh, suspend/resume, load) — the full rebuild; and
-/// <see cref="RefreshBackdrop"/> for content-only changes (wallpaper advanced, size, position) —
-/// which never touches transparency, window region ownership or the resolved material.</item>
+/// <item>There is ONE invalidation entry, <see cref="InvalidateGlyphs"/>: it resets the window
+/// region key and repaints. Every look-affecting event (load, light/dark variant change, model
+/// refresh, size change, a global settings change) funnels through it. No event re-implements
+/// steps inline — re-implemented hand-picked subsets of steps are exactly how the old
+/// theme-following regressions kept happening.</item>
+/// <item>The OS acrylic backdrop is asserted once per load (<see cref="VerifyAcrylicBackdrop"/>,
+/// bounded self-healing) and never reconfigured afterwards — with the lock there is no second
+/// material to switch to, so a frame can never straddle two materials.</item>
 /// </list>
 /// </para>
-/// <para>
-/// The clock has <b>no per-widget material override</b>: its surface always follows the global
-/// app theme (see <see cref="FramelessThemeResolver"/>) and its glass optics always follow the
-/// global liquid glass settings.
-/// </para>
 /// </summary>
-public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSelfRefreshing, IWidgetSuspendable
+public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSelfRefreshing
 {
     private FramelessClockModel model;
     private readonly IWidgetLayoutProvider? widgetLayoutProvider;
     private readonly IAppSettingsProvider? appSettingsProvider;
 
-    /// <summary>The resolved global material, snapshotted by <see cref="ApplyCurrentMaterial"/>.</summary>
-    private FramelessMaterial material;
-
     private UpdateTimer? currentTimer;
     private Window? window;
     private bool IsDesktopWidget => window is DeskCanvas.Views.Widget;
 
-    // The frame currently composited on screen, plus the pre-rendered frames around it.
-    // The field name is part of the widget's checked contract (tests/ClockThemeChecks reads it).
-    private Bitmap? liquidGlassBitmap;
-    private readonly FramelessGlassFrameCache frameCache = new();
-
-    // Per-second Acrylic region recompute buffers (see UpdateWindowRegion).
+    // Per-tick window region recompute buffers (see UpdateWindowRegion).
     private RenderTargetBitmap? regionBitmap;
     private byte[]? regionBuffer;
 
-    private readonly HashSet<string> inFlightRenders = new();
-    private CancellationTokenSource? preRenderCts;
-
-    // A newer wallpaper frame arrived while a glyph render was in flight; one follow-up render is
-    // queued once the in-flight one finishes (see OnWallpaperInvalidated).
-    private bool wallpaperStale;
-
-    /// <summary>
-    /// Memory budget for the pre-rendered frame cache (see <c>EvictExpiredCacheEntries</c>).
-    /// 48 MB comfortably holds the current frame plus the whole seconds lookahead at any normal
-    /// widget size while bounding a full-screen one.
-    /// </summary>
-    private const long CacheBudgetBytes = 48L * 1024 * 1024;
-
     private string? lastRegionKey;
     private bool hasRegionSet;
-
-    /// <summary>True while every screen is covered by a fullscreen application (host suspended).</summary>
-    private bool suspended;
 
     public FramelessDigital() : this(new FramelessClockModel(), null, null) { }
 
@@ -107,10 +80,6 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
         this.widgetLayoutProvider = widgetLayoutProvider;
         this.appSettingsProvider = appSettingsProvider;
 
-        // Initial snapshot: previews and the checks resolve a material before the window ever
-        // loads, and it must already be the global theme's — not a blank default.
-        material = FramelessThemeResolver.Resolve(appSettingsProvider?.Get().Theme);
-
         InitializeComponent();
         Classes.Add("Frameless");
         Margin = new Thickness(0);
@@ -118,7 +87,7 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
 
         Loaded += OnLoaded;
         Unloaded += OnUnloaded;
-        SizeChanged += (_, _) => OnSizeChanged();
+        SizeChanged += (_, _) => InvalidateGlyphs();
 
         if (appSettingsProvider != null)
         {
@@ -131,15 +100,12 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
     protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
     {
         base.OnAttachedToVisualTree(e);
-        LiquidGlassWallpaper.WallpaperInvalidated -= OnWallpaperInvalidated;
-        LiquidGlassWallpaper.WallpaperInvalidated += OnWallpaperInvalidated;
         ActualThemeVariantChanged -= OnActualThemeVariantChanged;
         ActualThemeVariantChanged += OnActualThemeVariantChanged;
     }
 
     protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
     {
-        LiquidGlassWallpaper.WallpaperInvalidated -= OnWallpaperInvalidated;
         ActualThemeVariantChanged -= OnActualThemeVariantChanged;
         base.OnDetachedFromVisualTree(e);
     }
@@ -147,16 +113,6 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
     private void OnLoaded(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
         window = TopLevel.GetTopLevel(this) as Window;
-        if (window != null && IsDesktopWidget)
-        {
-            window.PositionChanged -= OnWindowPositionChanged;
-            window.PositionChanged += OnWindowPositionChanged;
-        }
-
-        LiquidGlassWallpaper.WallpaperInvalidated -= OnWallpaperInvalidated;
-        LiquidGlassWallpaper.WallpaperInvalidated += OnWallpaperInvalidated;
-        ActualThemeVariantChanged -= OnActualThemeVariantChanged;
-        ActualThemeVariantChanged += OnActualThemeVariantChanged;
 
         if (appSettingsProvider != null)
         {
@@ -167,27 +123,31 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
         lastRegionKey = null;
         hasRegionSet = false;
         SetupTimer();
-        ApplyCurrentMaterial();
+
+        if (window != null && IsDesktopWidget)
+        {
+            // The one place the OS backdrop is configured: the lock means it is never switched
+            // again, only re-asserted if the platform dropped it.
+            ApplyWindowTransparency(window);
+            VerifyAcrylicBackdrop(attemptsLeft: 3);
+        }
+
+        InvalidateGlyphs();
     }
 
     private void OnUnloaded(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
-        LiquidGlassWallpaper.WallpaperInvalidated -= OnWallpaperInvalidated;
         ActualThemeVariantChanged -= OnActualThemeVariantChanged;
 
         if (window != null)
         {
-            if (IsDesktopWidget)
+            if (IsDesktopWidget && hasRegionSet)
             {
-                window.PositionChanged -= OnWindowPositionChanged;
-                if (hasRegionSet)
-                {
-                    InteropService.ClearWidgetRegion(window);
-                    hasRegionSet = false;
-                }
+                InteropService.ClearWidgetRegion(window);
             }
             window = null;
         }
+        hasRegionSet = false;
 
         if (appSettingsProvider != null)
         {
@@ -197,105 +157,26 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
         currentTimer?.Unsubscribe(OnTimerTick);
         currentTimer = null;
 
-        ClearLiquidGlassCache();
-        SetDisplayedFrame(null);
-
         regionBitmap?.Dispose();
         regionBitmap = null;
         regionBuffer = null;
     }
 
-    private void OnWallpaperInvalidated()
-    {
-        if (!Dispatcher.UIThread.CheckAccess())
-        {
-            Dispatcher.UIThread.Post(OnWallpaperInvalidated);
-            return;
-        }
-
-        lastRegionKey = null;
-        UpdateTransparencyLevel();
-
-        // Live sampling raises this once per sampling round — far faster than one glyph render
-        // (tens of ms). Clearing the cache and cancelling the in-flight render every round made
-        // the first frame after attach lose that race for seconds (the flat glyph wash) and kept
-        // the pre-rendered lookahead permanently burned. Let the running render finish and queue
-        // exactly one follow-up with the newer wallpaper instead.
-        if (inFlightRenders.Count > 0)
-        {
-            wallpaperStale = true;
-            InvalidateVisual();
-            return;
-        }
-
-        RefreshBackdrop(clearCache: false, resetRegionKey: false);
-    }
-
     private void OnActualThemeVariantChanged(object? sender, EventArgs e)
     {
-        // The variant changes how every glyph is rendered (dark/light material), so all cached
-        // frames are wrong — a full rebuild, not the wallpaper-stale deferral above.
+        // The variant changes the wash and the specular rim, so the cached region key is stale.
         if (!Dispatcher.UIThread.CheckAccess())
         {
             Dispatcher.UIThread.Post(() => OnActualThemeVariantChanged(sender, e));
             return;
         }
 
-        ApplyCurrentMaterial();
-    }
-
-    private void OnSizeChanged()
-    {
-        // Every cached frame was rendered for the old pixel size; the window region is shaped for
-        // the old glyph box too. A full backdrop refresh, but the material is untouched.
-        RefreshBackdrop(clearCache: true);
-    }
-
-    private void OnWindowPositionChanged(object? sender, PixelPointEventArgs e)
-    {
-        if (!IsDesktopWidget || !material.IsRenderedGlass) return;
-
-        // The glass backdrop samples the wallpaper by desktop position: when the window moves, the
-        // sample offsets move with it, so the cached frames — and any render in flight against the
-        // old offsets — are all stale. The glyph shapes do not depend on position: no region reset,
-        // and no InvalidateVisual — the new frame posts its own when it lands.
-        RefreshBackdrop(clearCache: true, invalidate: false, resetRegionKey: false);
-    }
-
-    /// <summary>
-    /// Release the pre-rendered liquid glass frames while every attached screen is covered by a
-    /// fullscreen or maximized application (see <see cref="IWidgetSuspendable"/>). The cache is
-    /// the heaviest thing this widget owns, and none of it is visible behind a fullscreen app, so
-    /// it is rebuilt on demand on resume.
-    /// <para>
-    /// The frame that is currently on screen is <b>kept</b>: the widget is no longer hidden while
-    /// suspended, so dropping it would flash a bare fallback for the length of a full optical
-    /// re-render the moment the user returns to the desktop.
-    /// </para>
-    /// </summary>
-    public void Suspend()
-    {
-        suspended = true;
-        ClearLiquidGlassCache();
-
-        // A widget that has not produced a frame yet (its first render was cancelled by the clear
-        // above, or had not started) would otherwise sit on the flat fallback wash for as long as
-        // the desktop stays covered — which reads as "the clock never became liquid glass". While
-        // suspended the cache is allowed to hold exactly this one frame.
-        if (liquidGlassBitmap == null) RequestBackdropRender();
-    }
-
-    /// <summary>Rebuild the material after <see cref="Suspend"/>.</summary>
-    public void Resume()
-    {
-        suspended = false;
-        SetupTimer();
-        ApplyCurrentMaterial();
+        InvalidateGlyphs();
     }
 
     private void OnAppSettingsChanged(object sender, AppSettings? oldData, AppSettings newData)
     {
-        ApplyCurrentMaterial();
+        InvalidateGlyphs();
     }
 
     public void Refresh(WidgetLayout layout)
@@ -312,9 +193,7 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
                 if (updated != null)
                 {
                     model = updated;
-                    frameCache.Clear();
-                    inFlightRenders.Clear();
-                    ApplyCurrentMaterial();
+                    InvalidateGlyphs();
                 }
             }
             catch (Exception ex)
@@ -336,373 +215,57 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
     }
 
     /// <summary>
-    /// The material the widget currently renders with — the snapshot taken by the last
-    /// <see cref="ApplyCurrentMaterial"/>, not a fresh resolution. Every read site (the render
-    /// branches, the window transparency, the verification loop) sees the same answer, so one
-    /// frame can never straddle a theme change.
+    /// The ONE invalidation entry: everything that can change the rendered look (load,
+    /// light/dark variant change, model refresh, size change, a global settings change) funnels
+    /// through here. It only resets the region key and repaints — the glyph geometry, the wash
+    /// and the specular rim are all recomputed in the next <see cref="Render"/> pass.
     /// </summary>
-    private FramelessMaterial CurrentMaterial => material;
-
-    /// <summary>
-    /// The material as the (acrylic, rendered-glass, solid) triple the render branches switch on.
-    /// Kept as its own member: <c>tests/ClockThemeChecks</c> drives it by reflection to pin the
-    /// theme-following contract.
-    /// </summary>
-    private (bool IsAcrylic, bool IsLiquidGlass, bool IsSolid) ResolveEffectiveTheme()
-        => (material.IsAcrylic, material.IsRenderedGlass, material.IsSolid);
-
-    /// <summary>
-    /// The ONE path that (re)materializes the clock, and the ONLY writer of
-    /// <see cref="material"/>. Every material-affecting event — window load, a global theme
-    /// change, a light/dark variant change, a model refresh, suspend/resume — funnels through
-    /// here, so the side effects (material snapshot, glyph cache, window transparency, glyph
-    /// window region, backdrop re-render) can never drift out of sync with the resolved material.
-    /// This used to be re-implemented per handler with hand-picked subsets of the steps, which is
-    /// exactly how "the frameless clock stopped following the global theme" kept regressing: one
-    /// missed step in one handler left the widget stuck on the previous material.
-    /// <para>
-    /// The pre-rendered frames are always rebuilt: beyond the material, global theme edits
-    /// (accent, optics, 染色强度, font) all reach the glyph renderer too, and diffing every
-    /// one of them is exactly the fragility this method exists to remove. Rebuilding is
-    /// cheap and only happens on a user-initiated settings change. The window-region
-    /// teardown and transparency hint are idempotent and run unconditionally as well.
-    /// </para>
-    /// </summary>
-    private void ApplyCurrentMaterial()
+    private void InvalidateGlyphs()
     {
-        // Snapshot first: everything below (branches, region keys, verification) reads this one
-        // answer, so a theme change mid-pipeline can never produce a half-old half-new widget.
-        material = FramelessThemeResolver.Resolve(appSettingsProvider?.Get().Theme);
-
         lastRegionKey = null;
-        ClearLiquidGlassCache();
-
-        // Transparency first, glyph region second — the order is load-bearing when leaving 毛玻璃.
-        // The acrylic backdrop is confined by the glyph region, so clearing the region while the
-        // backdrop is still live is precisely the "the whole grid cell is covered with frosted
-        // glass" state. Killing the backdrop first means the region clear can never expose it.
-        UpdateTransparencyLevel(force: true);
-        ClearGlyphRegionIfNotAcrylic();
-
-        RequestBackdropRender();
         InvalidateVisual();
-
-        // The platform does not always honour a level switch in the same turn (and the backdrop
-        // can outlive the material that asked for it), so verify what actually happened instead
-        // of trusting the assignment.
-        VerifyMaterialWindowState();
     }
 
     /// <summary>
-    /// The content-only refresh path: the wallpaper advanced, the widget was resized or moved.
-    /// The resolved material is untouched — no transparency changes, no region ownership
-    /// changes — only the rendered backdrop is brought up to date. Material-affecting events must
-    /// go to <see cref="ApplyCurrentMaterial"/> instead.
+    /// Check that the window really ended up on the acrylic backdrop the lock requires, and
+    /// re-assert it if not: the platform does not always honour the hint in the same turn, and a
+    /// plain Transparent window would put the wash on the wallpaper with no blur behind it.
+    /// Bounded to a few passes, so a platform that genuinely refuses the level cannot turn this
+    /// into an endless loop.
     /// </summary>
-    /// <param name="clearCache">Drop the pre-rendered frames (size/position-dependent content).</param>
-    /// <param name="invalidate">Repaint now; false when the new frame posts its own invalidation.</param>
-    /// <param name="resetRegionKey">Force the glyph window region to be recomputed on the next
-    /// acrylic render; false when the glyph shapes cannot have changed (a pure window move).</param>
-    private void RefreshBackdrop(bool clearCache, bool invalidate = true, bool resetRegionKey = true)
-    {
-        if (resetRegionKey) lastRegionKey = null;
-        if (clearCache) ClearLiquidGlassCache();
-        RequestBackdropRender();
-        if (invalidate) InvalidateVisual();
-    }
-
-    /// <summary>Drop the window's glyph region once the material is no longer 毛玻璃 (see the ordering note in <see cref="ApplyCurrentMaterial"/>).</summary>
-    private void ClearGlyphRegionIfNotAcrylic()
-    {
-        if (window == null || !IsDesktopWidget) return;
-        if (material.IsAcrylic || !hasRegionSet) return;
-        InteropService.ClearWidgetRegion(window);
-        hasRegionSet = false;
-    }
-
-    /// <summary>
-    /// Check that the window really ended up in the state the resolved material needs, and heal
-    /// it if not: a non-毛玻璃 material must not keep the OS acrylic backdrop (with the glyph
-    /// region gone that backdrop covers the whole cell), and 毛玻璃 must have a region and a live
-    /// backdrop. Bounded to a few passes, so a platform that genuinely refuses a level cannot
-    /// turn this into an endless backdrop rebuild.
-    /// </summary>
-    private void VerifyMaterialWindowState(int attemptsLeft = 3)
+    private void VerifyAcrylicBackdrop(int attemptsLeft)
     {
         Dispatcher.UIThread.Post(() =>
         {
             if (window == null || !IsDesktopWidget) return;
+            if (window.ActualTransparencyLevel == WindowTransparencyLevel.AcrylicBlur) return;
 
-            var wantAcrylic = material.IsAcrylic;
-            var level = window.ActualTransparencyLevel;
-            var levelOk = wantAcrylic
-                ? level == WindowTransparencyLevel.AcrylicBlur
-                : level != WindowTransparencyLevel.AcrylicBlur;
-
-            if (levelOk)
-            {
-                ClearGlyphRegionIfNotAcrylic();
-                return;
-            }
-
-            Debug.WriteLine($"[FramelessClock] material {(wantAcrylic ? "毛玻璃" : "非毛玻璃")} but the window's backdrop is {level} — re-asserting");
-            ApplyWindowTransparency(window, wantAcrylic);
-            ClearGlyphRegionIfNotAcrylic();
+            Debug.WriteLine($"[FramelessClock] expected the acrylic backdrop but the window is at {window.ActualTransparencyLevel} — re-asserting");
+            ApplyWindowTransparency(window);
 
             if (attemptsLeft > 1)
-                DispatcherTimer.RunOnce(() => VerifyMaterialWindowState(attemptsLeft - 1), TimeSpan.FromMilliseconds(120));
+                DispatcherTimer.RunOnce(() => VerifyAcrylicBackdrop(attemptsLeft - 1), TimeSpan.FromMilliseconds(120));
         }, DispatcherPriority.Background);
     }
 
-    // Cached hint arrays: UpdateTransparencyLevel runs on every wallpaper invalidation (every
-    // live-sampling round), and re-assigning the hint makes the Win32 impl re-apply the window
-    // transparency each time — a per-round window-attribute poke that used to come with a fresh
-    // array literal whose reference never compared equal to the previous one.
+    // Cached hint array: re-assigning the hint makes the Win32 impl re-apply the window
+    // transparency each time.
     private static readonly WindowTransparencyLevel[] AcrylicHint = [WindowTransparencyLevel.AcrylicBlur];
-    private static readonly WindowTransparencyLevel[] TransparentHint = [WindowTransparencyLevel.Transparent];
 
-    private void UpdateTransparencyLevel(bool force = false)
+    /// <summary>
+    /// Assert the OS acrylic backdrop. A static member on purpose:
+    /// <c>tests/ClockThemeChecks</c> drives it to pin the native backdrop contract.
+    /// </summary>
+    private static void ApplyWindowTransparency(Window target)
     {
-        if (window == null || !IsDesktopWidget) return;
-        var hint = material.IsAcrylic ? AcrylicHint : TransparentHint;
-        if (!force && hint.SequenceEqual(window.TransparencyLevelHint)) return;
-
-        ApplyWindowTransparency(window, material.IsAcrylic);
-    }
-
-    private static void ApplyWindowTransparency(Window target, bool acrylic)
-    {
-        // On Win32 with no redirection bitmap, None is unsupported: it reports the default
-        // Transparent level without clearing the composition brush. A subsequent Transparent
-        // hint then short-circuits, leaving acrylic behind when the glyph region is removed.
-        target.TransparencyLevelHint = acrylic ? AcrylicHint : TransparentHint;
+        target.TransparencyLevelHint = AcrylicHint;
     }
 
     private void OnTimerTick()
     {
-        if (material.IsRenderedGlass)
-        {
-            var now = GetCurrentTime();
-            var timeStr = CacheKey(now);
-
-            // 1. Automatic Cleanup: Evict expired cache entries before current time
-            EvictExpiredCacheEntries(now);
-
-            // 2. Check if current frame was already pre-cached in background
-            if (frameCache.TryGet(timeStr, out var cached))
-            {
-                SetDisplayedFrame(cached);
-            }
-            else
-            {
-                // Cache miss (e.g. immediately after resize or clock jump): render now
-                SchedulePreRender(now, isImmediate: true);
-            }
-
-            // 3. Pre-cache next minute / upcoming seconds in background
-            ScheduleUpcomingPreRenders(now);
-        }
-
+        // The region key carries the time text, so a tick that changes the digits also moves the
+        // window region inside the Render pass; the tick itself only has to repaint.
         InvalidateVisual();
-    }
-
-    private void RequestBackdropRender()
-    {
-        if (!material.IsRenderedGlass)
-        {
-            SetDisplayedFrame(null);
-            return;
-        }
-
-        var now = GetCurrentTime();
-        SchedulePreRender(now, isImmediate: true);
-        ScheduleUpcomingPreRenders(now);
-    }
-
-    private void ScheduleUpcomingPreRenders(DateTime now)
-    {
-        if (!IsDesktopWidget) return;
-
-        // Lookahead is the only thing the suspend actually gives up: while the desktop is covered
-        // the widget keeps the single frame it is showing, so there is nothing to pre-render for.
-        if (suspended) return;
-
-        if (model.ShowSeconds)
-        {
-            // Rolling lookahead buffer for upcoming seconds in the next minute
-            for (int s = 1; s <= 5; s++)
-            {
-                var upcoming = now.AddSeconds(s);
-                var key = CacheKey(upcoming);
-                if (!frameCache.Contains(key) && !inFlightRenders.Contains(key))
-                {
-                    SchedulePreRender(upcoming, isImmediate: false);
-                }
-            }
-        }
-        else
-        {
-            // Pre-cache the next minute frame
-            var nextMinute = now.AddMinutes(1);
-            var key = CacheKey(nextMinute);
-            if (!frameCache.Contains(key) && !inFlightRenders.Contains(key))
-            {
-                SchedulePreRender(nextMinute, isImmediate: false);
-            }
-        }
-    }
-
-    private void SchedulePreRender(DateTime targetTime, bool isImmediate)
-    {
-        if (Bounds.Width < 1 || Bounds.Height < 1) return;
-        if (!material.IsRenderedGlass) return;
-
-        var key = CacheKey(targetTime);
-        if (frameCache.Contains(key) || inFlightRenders.Contains(key)) return;
-
-        var scaling = window?.RenderScaling ?? 1.0;
-        var width = Math.Max(1, (int)Math.Ceiling(Bounds.Width * scaling));
-        var height = Math.Max(1, (int)Math.Ceiling(Bounds.Height * scaling));
-
-        var theme = appSettingsProvider?.Get().Theme;
-        // Cache keys carry the glass-opacity suffix; only the bare time text may feed the glyph
-        // layout, otherwise the suffix renders as extra characters on the desktop.
-        var stretchedGeometry = FramelessGlyphGeometry.BuildStretch(
-            FormatTime(targetTime), Bounds.Width, Bounds.Height, model.FontFamily, model.FontWeight, model.StretchFill, theme);
-        if (stretchedGeometry == null) return;
-
-        byte[] glyphMask = FramelessGlyphGeometry.ExtractMask(stretchedGeometry, Bounds.Width, Bounds.Height, scaling, width, height);
-
-        // The material is whatever the global theme says — the clock carries no per-widget theme
-        // override, and no widget-level optics override either: the edge tint and the lens width
-        // both come from the global liquid glass settings. 液态玻璃 therefore renders the current
-        // merged optics (with the global 柔光晕 / 光谱弥散 knobs selecting the soft recipe).
-        var effectiveTheme = theme ?? FallbackTheme;
-
-        if (model.EnableOverlay)
-        {
-            var overlay = ResolveOverlayColor(model, effectiveTheme);
-            var overlayHex = $"#{overlay.R:X2}{overlay.G:X2}{overlay.B:X2}";
-            effectiveTheme = effectiveTheme with { AccentColor = overlayHex };
-        }
-        var isDark = ActualThemeVariant == ThemeVariant.Dark;
-        var screen = window?.Screens.ScreenFromWindow(window);
-        var screenPos = window != null ? this.PointToScreen(default) : default;
-
-        var screens = window?.Screens.All;
-        var left = screens?.Min(s => s.Bounds.X) ?? 0;
-        var top = screens?.Min(s => s.Bounds.Y) ?? 0;
-        var desktopWidth = (screens?.Max(s => s.Bounds.Right) ?? 1920) - left;
-        var desktopHeight = (screens?.Max(s => s.Bounds.Bottom) ?? 1080) - top;
-
-        var widget = window as DeskCanvas.Views.Widget;
-        var (cols, rows) = widget?.CurrentSpan ?? (0, 0);
-
-        var frame = new LiquidGlassRenderer.Frame(
-            width, height, (float)scaling, 0f,
-            screenPos.X - left, screenPos.Y - top,
-            desktopWidth, desktopHeight,
-            (screen?.Bounds.X ?? 0) - left, (screen?.Bounds.Y ?? 0) - top,
-            screen?.Bounds.Width ?? 1920, screen?.Bounds.Height ?? 1080,
-            effectiveTheme, isDark,
-            Columns: cols, Rows: rows, GlyphOpacity: (float)Math.Clamp(model.LiquidGlassOpacity / 100.0, 0, 2));
-
-        inFlightRenders.Add(key);
-        preRenderCts ??= new CancellationTokenSource();
-        var token = preRenderCts.Token;
-
-        _ = Task.Run(() =>
-        {
-            if (token.IsCancellationRequested) return;
-            // The snapshot carries a reference the caller owns; hold it for the whole render.
-            using var wallpaper = LiquidGlassWallpaper.Get();
-            if (token.IsCancellationRequested) return;
-            // No widget-level lens override: the adaptive lens derived from the global optics is
-            // the only path the clock renders with (null == adaptive in ResolveLens).
-            var pngBytes = GlyphLiquidGlassRenderer.Render(frame, wallpaper, glyphMask);
-            if (token.IsCancellationRequested || pngBytes == null || pngBytes.Length == 0) return;
-
-            Dispatcher.UIThread.Post(() =>
-            {
-                inFlightRenders.Remove(key);
-                if (token.IsCancellationRequested) return;
-
-                try
-                {
-                    using var ms = new MemoryStream(pngBytes);
-                    var bmp = new Bitmap(ms);
-
-                    frameCache.Store(key, targetTime, bmp);
-
-                    var currentNow = GetCurrentTime();
-                    if (key == CacheKey(currentNow))
-                    {
-                        SetDisplayedFrame(bmp);
-                        InvalidateVisual();
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Debug.WriteLine($"Failed to cache pre-rendered liquid glass frame: {ex.Message}");
-                }
-
-                // The render that was in flight when the wallpaper advanced has finished; catch
-                // up with one render against the newer frame (OnWallpaperInvalidated deferred).
-                if (inFlightRenders.Count == 0 && wallpaperStale)
-                {
-                    wallpaperStale = false;
-                    RequestBackdropRender();
-                }
-            });
-        }, token).ContinueWith(t =>
-        {
-            if (t.IsFaulted)
-            {
-                Dispatcher.UIThread.Post(() => inFlightRenders.Remove(key));
-            }
-        });
-    }
-
-    /// <summary>Renderer-side fallback when no settings carry a theme (previews): keeps the
-    /// pipeline fed with valid optics instead of null-checking every field downstream.</summary>
-    private static readonly Theme FallbackTheme = new(null, null, 0.8, false, false, "Segoe UI");
-
-    private void EvictExpiredCacheEntries(DateTime now)
-    {
-        // Capacity safeguard. Every entry is a full-window bitmap, so the cap is a memory budget
-        // rather than a frame count: 6 frames cover the current minute plus the rolling lookahead,
-        // and the hard ceiling keeps a full-screen frameless clock from parking hundreds of
-        // megabytes of pre-rendered frames (the old flat cap of 70 allowed ~580 MB at 1080p).
-        var scaling = window?.RenderScaling ?? 1.0;
-        var frameBytes = Math.Max(1L, (long)(Math.Ceiling(Bounds.Width * scaling) * Math.Ceiling(Bounds.Height * scaling) * 4));
-        var maxFrames = (int)Math.Clamp(CacheBudgetBytes / frameBytes, 6, 12);
-
-        frameCache.EvictExpired(now, model.ShowSeconds ? TimeSpan.FromSeconds(2) : TimeSpan.FromMinutes(2), maxFrames);
-    }
-
-    private void ClearLiquidGlassCache()
-    {
-        preRenderCts?.Cancel();
-        preRenderCts?.Dispose();
-        preRenderCts = new CancellationTokenSource();
-        inFlightRenders.Clear();
-
-        frameCache.Clear();
-    }
-
-    /// <summary>
-    /// Swap the frame composited on screen. The old bitmap is disposed only if the cache no
-    /// longer holds it — it may be stored under another key (the lookahead) and must survive.
-    /// </summary>
-    private void SetDisplayedFrame(Bitmap? value)
-    {
-        if (ReferenceEquals(liquidGlassBitmap, value)) return;
-        if (liquidGlassBitmap != null && !frameCache.Holds(liquidGlassBitmap))
-        {
-            liquidGlassBitmap.Dispose();
-        }
-        liquidGlassBitmap = value;
-        frameCache.SetDisplayed(value);
     }
 
     private string FormatTime(DateTime dt)
@@ -711,8 +274,6 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
         var ss = model.ShowSeconds ? ":ss" : "";
         return dt.ToString($"{hh}:mm{ss}", CultureInfo.InvariantCulture);
     }
-
-    private string CacheKey(DateTime dt) => FormatTime(dt) + $"|glassOpacity:{model.LiquidGlassOpacity:0.##}";
 
     public override void Render(DrawingContext context)
     {
@@ -731,103 +292,36 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
         if (stretchedGeometry == null) return;
 
         var isDark = ActualThemeVariant == ThemeVariant.Dark;
-        var isAcrylic = material.IsAcrylic;
-        var isLiquidGlass = material.IsRenderedGlass;
 
-        // Theme 1: OS-level Acrylic (Real-time hardware DWM blur behind the glyphs)
-        if (isAcrylic)
+        if (IsDesktopWidget)
         {
-            if (IsDesktopWidget)
+            // Time text, size, font and variant are part of the key so a variant switch can
+            // never leave a glyph region shaped for the previous wash on the window.
+            var regionKey = $"{timeStr}_{targetW}_{targetH}_{model.FontFamily}_{model.FontWeight}_{model.StretchFill}_{isDark}";
+            if (regionKey != lastRegionKey || !hasRegionSet)
             {
-                // Material + variant are part of the key so a theme switch can never leave a
-                // glyph region shaped for the previous material on the window.
-                var regionKey = $"{timeStr}_{targetW}_{targetH}_{model.FontFamily}_{model.FontWeight}_{model.StretchFill}_{isDark}_{isAcrylic}_{isLiquidGlass}";
-                if (regionKey != lastRegionKey || !hasRegionSet)
-                {
-                    lastRegionKey = regionKey;
-                    UpdateWindowRegion(stretchedGeometry, targetW, targetH);
-                }
+                lastRegionKey = regionKey;
+                UpdateWindowRegion(stretchedGeometry, targetW, targetH);
             }
-
-            using (context.PushGeometryClip(stretchedGeometry))
-            {
-                // Acrylic surface wash: in preview, provide higher opacity so it looks frosted in the gallery card
-                var alpha = IsDesktopWidget ? (isDark ? 70 : 48) : (isDark ? 160 : 180);
-                var tintWash = isDark
-                    ? Color.FromArgb((byte)alpha, 60, 60, 60)
-                    : Color.FromArgb((byte)alpha, 240, 240, 240);
-                context.DrawRectangle(new SolidColorBrush(tintWash), null, new Rect(0, 0, targetW, targetH));
-
-                if (model.EnableOverlay)
-                {
-                    var overlayColor = ResolveOverlayColor(model, theme);
-                    context.DrawRectangle(new SolidColorBrush(overlayColor), null, new Rect(0, 0, targetW, targetH));
-                }
-            }
-
-            DrawSpecularRim(context, stretchedGeometry, targetW, targetH, isDark, model, theme);
-            return;
         }
 
-        // Liquid glass and solid render through clean 32-bit alpha — no native region, ever.
-        ClearGlyphRegionIfNotAcrylic();
-
-        // Theme 2: Optical Liquid Glass (Per-pixel raymarched refraction inside numerals)
-        if (isLiquidGlass)
-        {
-            if (frameCache.TryGet(timeStr, out var cached))
-            {
-                SetDisplayedFrame(cached);
-            }
-
-            if (liquidGlassBitmap != null)
-            {
-                context.DrawImage(liquidGlassBitmap, new Rect(0, 0, targetW, targetH));
-            }
-            else
-            {
-                // High-clarity fallback while liquid glass is raymarching
-                using (context.PushGeometryClip(stretchedGeometry))
-                {
-                    var fallbackHex = isDark ? "#282828" : "#F0F0F0";
-                    var c = Color.TryParse(fallbackHex, out var parsed) ? parsed : Colors.Gray;
-                    context.DrawRectangle(new SolidColorBrush(Color.FromArgb(120, c.R, c.G, c.B)), null, new Rect(0, 0, targetW, targetH));
-                }
-                SchedulePreRender(now, isImmediate: true);
-                DrawSpecularRim(context, stretchedGeometry, targetW, targetH, isDark, model, theme);
-            }
-
-            if (model.EnableOverlay)
-            {
-                using (context.PushGeometryClip(stretchedGeometry))
-                {
-                    var overlayColor = ResolveOverlayColor(model, theme);
-                    context.DrawRectangle(new SolidColorBrush(overlayColor), null, new Rect(0, 0, targetW, targetH));
-                }
-            }
-
-            return;
-        }
-
-        // Theme 3: Solid (Pure vector solid color fill with transparency and overlay support)
         using (context.PushGeometryClip(stretchedGeometry))
         {
+            // Acrylic surface wash: in preview, provide higher opacity so it looks frosted in the gallery card
+            var alpha = IsDesktopWidget ? (isDark ? 70 : 48) : (isDark ? 160 : 180);
+            var tintWash = isDark
+                ? Color.FromArgb((byte)alpha, 60, 60, 60)
+                : Color.FromArgb((byte)alpha, 240, 240, 240);
+            context.DrawRectangle(new SolidColorBrush(tintWash), null, new Rect(0, 0, targetW, targetH));
+
             if (model.EnableOverlay)
             {
                 var overlayColor = ResolveOverlayColor(model, theme);
                 context.DrawRectangle(new SolidColorBrush(overlayColor), null, new Rect(0, 0, targetW, targetH));
             }
-            else
-            {
-                var solidHex = isDark
-                    ? (theme?.EffectiveSolidBackgroundDark ?? "#2E2E2E")
-                    : (theme?.EffectiveSolidBackgroundLight ?? "#FFFFFF");
-                var baseSolid = Color.TryParse(solidHex, out var parsed) ? parsed : (isDark ? Colors.Black : Colors.White);
-                var opacity = theme != null ? (float)Math.Clamp(theme.OpacityLevel, 0.05, 1.0) : 0.9f;
-                var brushColor = Color.FromArgb((byte)(opacity * 255), baseSolid.R, baseSolid.G, baseSolid.B);
-                context.DrawRectangle(new SolidColorBrush(brushColor), null, new Rect(0, 0, targetW, targetH));
-            }
         }
+
+        DrawSpecularRim(context, stretchedGeometry, targetW, targetH, isDark, model, theme);
     }
 
     private void UpdateWindowRegion(Geometry geometry, double width, double height)
@@ -913,11 +407,11 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
 
     private static void DrawSpecularRim(DrawingContext context, Geometry geometry, double targetW, double targetH, bool isDark, FramelessClockModel model, Theme? theme)
     {
-        // The rim dye strength follows the global 边缘染色强度 (LiquidGlassSettings.EdgeTint): the
-        // clock has no widget-level 染色强度 override any more, so the global optics are the only
-        // source for how strongly the accent / overlay colour bleeds into the specular rim.
-        var edgeTint = (float)Math.Clamp(
-            (theme?.EffectiveLiquidGlass.EdgeTint ?? LiquidGlassSettings.DefaultEdgeTint) / 100.0, 0.0, 1.0);
+        // The rim dye strength is the historic shipping default. The rim used to follow the
+        // global 边缘染色强度 (LiquidGlassSettings.EdgeTint) — a 液态玻璃 optic — but with the
+        // clock locked to 毛玻璃 that cross-material coupling is gone: the look no longer
+        // changes when the global surface (or its optics) is not 毛玻璃's.
+        const float edgeTint = (float)(LiquidGlassSettings.DefaultEdgeTint / 100.0);
 
         Color dye = isDark ? Color.FromRgb(200, 220, 245) : Color.FromRgb(240, 240, 245);
         bool hasDye = false;

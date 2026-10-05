@@ -1,22 +1,19 @@
 using Avalonia.Controls;
 using Clock.ViewModels;
 using DeskCanvas.Core.Interfaces;
-using DeskCanvas.Services;
 
 namespace Clock.Views.Settings;
 
 public partial class FramelessClockSettings : UserControl
 {
     /// <summary>
-    /// No default value on <paramref name="appSettingsProvider"/> on purpose: with one,
-    /// ActivatorUtilities used the default (null) instead of resolving the registered service,
-    /// so the edit window's view model always ran provider-less and its theme-dependent rows
-    /// (<see cref="FramelessClockSettingsViewModel.ShowLiquidGlassOpacity"/>) never followed the
-    /// global theme.
+    /// The clock is locked to the 毛玻璃 material, so the settings carry no theme- or
+    /// optics-dependent rows and the view model never reads global settings — the edit window
+    /// only needs the widget's own layout.
     /// </summary>
-    public FramelessClockSettings(IWidgetLayoutProvider widgetLayoutProvider, IAppSettingsProvider? appSettingsProvider)
+    public FramelessClockSettings(IWidgetLayoutProvider widgetLayoutProvider)
     {
-        DataContext = new FramelessClockSettingsViewModel(widgetLayoutProvider, appSettingsProvider);
+        DataContext = new FramelessClockSettingsViewModel(widgetLayoutProvider);
         InitializeComponent();
     }
 }

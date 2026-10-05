@@ -3,11 +3,12 @@ namespace Clock.Models;
 /// <summary>
 /// Configuration model for the frameless digital clock widget.
 /// <para>
-/// The clock has <b>no per-widget material override</b>: its surface always follows the global
-/// app theme, and its glass optics always follow the global liquid glass settings. The historical
-/// <c>ThemeMode</c> (old separate 液态玻璃 / 柔光玻璃), <c>DyeIntensity</c> (边缘染色强度) and
-/// <c>RefractionWidth</c> (边缘折射宽度) properties were all removed; stale values in
-/// <c>layout.json</c> are ignored by deserialization.
+/// The clock is <b>locked to the 毛玻璃 material</b>: its numerals always render over the OS's
+/// native acrylic backdrop regardless of the global surface theme, so it carries no material or
+/// glass-optics settings at all. The historical <c>ThemeMode</c> (old separate 液态玻璃 /
+/// 柔光玻璃), <c>DyeIntensity</c> (边缘染色强度), <c>RefractionWidth</c> (边缘折射宽度) and
+/// <c>LiquidGlassOpacity</c> (液态玻璃透明度) properties were all removed along with the
+/// rendered-glass pipeline; stale values in <c>layout.json</c> are ignored by deserialization.
 /// </para>
 /// <para>
 /// <c>FontWeight</c> is a 100-900 <b>position</b> on the widget's own weight axis (the 字体粗细
@@ -27,8 +28,7 @@ public record FramelessClockModel(
     bool EnableOverlay = false,
     bool FollowAccentColor = true,
     string OverlayColor = "#400078D4",
-    double OverlayOpacity = 0.35,
-    double LiquidGlassOpacity = 100)
+    double OverlayOpacity = 0.35)
 {
     public FramelessClockModel() : this(true) { }
 }

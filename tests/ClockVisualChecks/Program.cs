@@ -42,9 +42,9 @@ class Program
         TestGeometryStretchMath();
 
         // Visual test cases covering curated artistic fonts and sizes.
-        // There is no per-widget theme case any more: the frameless clock always follows the
-        // global theme (see tests/ClockThemeChecks for the material resolution checks), and these
-        // snapshots render without a settings provider, i.e. on the acrylic fallback.
+        // The clock is locked to the 毛玻璃 material: these snapshots render without a settings
+        // provider, which is the same acrylic wash the desktop shows whatever the global surface
+        // is (see tests/ClockThemeChecks for the lock checks).
         var testCases = new (string CaseName, double Width, double Height, FramelessClockModel Model)[]
         {
             ("4x2-harmonyos-condensed", 312, 152, new FramelessClockModel(Use24Hours: true, FontFamily: "HarmonyOS Sans Condensed", FontWeight: 800, StretchFill: true)),
@@ -68,7 +68,7 @@ class Program
 
         TestWeightAxis(outDir);
 
-        TestPreCachingAndAutoCleanup();
+        TestLockedMaterialRender();
 
         Console.WriteLine($"\nAll Frameless Clock checks completed successfully! Output folder: {outDir}");
     }
@@ -231,13 +231,13 @@ class Program
         return (double)inkPixels / (pixelW * pixelH);
     }
 
-    private static void TestPreCachingAndAutoCleanup()
+    private static void TestLockedMaterialRender()
     {
-        Console.WriteLine("\n--- Testing Liquid Glass Pre-Caching & Automatic Cleanup Logic ---");
+        Console.WriteLine("\n--- Rendering under a global 液态玻璃 provider (the lock must hold) ---");
         var model = new FramelessClockModel(Use24Hours: true, ShowSeconds: false, FontFamily: "HarmonyOS Sans Condensed", FontWeight: 800, StretchFill: true);
 
-        // The clock takes its material from the global theme, so the liquid glass pipeline is only
-        // reached by injecting a provider whose theme is 液态玻璃.
+        // The clock is locked to 毛玻璃: a provider whose global theme is 液态玻璃 must not
+        // change what the clock draws — the acrylic wash renders exactly the same.
         var clock = new FramelessDigital(model, null, new LiquidGlassSettingsProvider())
         {
             Width = 312,
@@ -252,7 +252,7 @@ class Program
         using var rtb = new RenderTargetBitmap(new PixelSize(624, 304), new Vector(192, 192));
         rtb.Render(clock);
 
-        Console.WriteLine("  PASS: Liquid Glass material resolved from the global theme, pre-caching scheduled, and frame rendered.");
+        Console.WriteLine("  PASS: the lock held — the acrylic render path completed unchanged.");
     }
 
     /// <summary>Minimal settings provider whose global theme is 液态玻璃.</summary>

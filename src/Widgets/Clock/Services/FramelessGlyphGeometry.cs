@@ -9,12 +9,12 @@ using DeskCanvas.Core.Models.Settings;
 namespace Clock.Services;
 
 /// <summary>
-/// The glyph outline factory of the frameless clock: the geometry for one time string, the
-/// glyph mask rasterised from it, and the font resolution both are built on.
+/// The glyph outline factory of the frameless clock: the geometry for one time string and the
+/// font resolution it is built on.
 /// <para>
-/// One entry point matters: the geometry-clip, the native window region, the glyph mask and the
-/// specular rim all have to work off exactly the same outline, so the stretch lives here instead
-/// of being re-derived per consumer.
+/// One entry point matters: the geometry-clip, the native window region and the specular rim all
+/// have to work off exactly the same outline, so the stretch lives here instead of being
+/// re-derived per consumer.
 /// </para>
 /// </summary>
 internal static class FramelessGlyphGeometry
@@ -90,37 +90,6 @@ internal static class FramelessGlyphGeometry
         var stretched = outline.Clone();
         stretched.Transform = new MatrixTransform(matrix);
         return stretched;
-    }
-
-    /// <summary>
-    /// Rasterise a geometry into an 8-bit alpha mask (the glyph mask the optical renderer runs on).
-    /// </summary>
-    public static byte[] ExtractMask(Geometry? geometry, double width, double height, double scaling, int pixelW, int pixelH)
-    {
-        var mask = new byte[pixelW * pixelH];
-        if (geometry == null || pixelW <= 0 || pixelH <= 0) return mask;
-
-        using var rtb = new RenderTargetBitmap(new PixelSize(pixelW, pixelH), new Vector(96 * scaling, 96 * scaling));
-        using (var ctx = rtb.CreateDrawingContext())
-        {
-            ctx.DrawGeometry(Brushes.Black, null, geometry);
-        }
-
-        var buffer = new byte[pixelW * pixelH * 4];
-        var handle = System.Runtime.InteropServices.GCHandle.Alloc(buffer, System.Runtime.InteropServices.GCHandleType.Pinned);
-        try
-        {
-            rtb.CopyPixels(new PixelRect(0, 0, pixelW, pixelH), handle.AddrOfPinnedObject(), buffer.Length, pixelW * 4);
-            for (int i = 0; i < mask.Length; i++)
-            {
-                mask[i] = buffer[i * 4 + 3];
-            }
-        }
-        finally
-        {
-            handle.Free();
-        }
-        return mask;
     }
 
     /// <summary>

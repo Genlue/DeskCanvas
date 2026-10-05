@@ -227,10 +227,12 @@ if (File.Exists(clockDll))
             Check(weightProp != null && (int)weightProp.GetValue(modelInst)! == 700, "FramelessClockModel has FontWeight with default 700");
             var stretchProp = modelType.GetProperty("StretchFill");
             Check(stretchProp != null && (bool)stretchProp.GetValue(modelInst)! == true, "FramelessClockModel has StretchFill with default true");
-            // The clock carries no glass-parameter overrides: the lens width and the edge dye now
-            // come from the global liquid glass settings, so neither property may come back.
+            // The clock is locked to the 毛玻璃 material and carries no glass-parameter overrides:
+            // the material itself, the lens width, the edge dye and the coating opacity are not
+            // widget settings, so none of these properties may come back.
             Check(modelType.GetProperty("DyeIntensity") == null, "FramelessClockModel no longer declares DyeIntensity");
             Check(modelType.GetProperty("RefractionWidth") == null, "FramelessClockModel no longer declares RefractionWidth");
+            Check(modelType.GetProperty("LiquidGlassOpacity") == null, "FramelessClockModel no longer declares LiquidGlassOpacity");
         }
 
         var asmProvider = new DeskCanvas.Core.Services.AssemblyProvider(new EmptyServiceProvider());
@@ -409,63 +411,6 @@ Check(cardStrip.Width == 320 && cardStrip.Height == 80, "1-grid strip liquid gla
     Console.WriteLine($"Dark starry glass max interior chroma: {maxInteriorChroma:F2} at ({badIntX},{badIntY}) {badIntColor}; rim chroma: {maxRimChroma:F2} at ({badRimX},{badRimY}) {badRimColor}");
     Check(maxInteriorChroma < 4f, "dark speckled wallpaper produces pristine achromatic interior (no rainbow soap bubbles)");
 }
-
-// Test GlyphLiquidGlassRenderer: numeral contour optical liquid glass
-{
-    int gw = 240, gh = 160;
-    var testMask = new byte[gw * gh];
-    for (int y = 20; y < gh - 20; y++)
-    {
-        for (int x = 30; x < 70; x++) testMask[y * gw + x] = 255;
-        for (int x = 110; x < 150; x++) testMask[y * gw + x] = 255;
-        for (int x = 170; x < 210; x++) testMask[y * gw + x] = 255;
-    }
-
-    var clockFrame = new LiquidGlassRenderer.Frame(gw, gh, 1.0f, 0f, 100, 100, 1920, 1080, 0, 0, 1920, 1080, theme, false);
-
-    // Test 1: basic rendering executes and produces valid PNG
-    var pngBytes = Clock.Services.GlyphLiquidGlassRenderer.Render(clockFrame, wallpaper, testMask);
-    Check(pngBytes != null && pngBytes.Length > 0, "GlyphLiquidGlassRenderer produces PNG bytes for numeral mask");
-
-    using var renderedBmp = SKBitmap.Decode(pngBytes);
-    Check(renderedBmp != null && renderedBmp.Width == gw && renderedBmp.Height == gh,
-        "GlyphLiquidGlassRenderer decoded bitmap matches target glyph dimensions");
-
-    // Test 2: Mask transparency preserved outside numerals, solid inside
-    Check(renderedBmp.GetPixel(10, 10).Alpha == 0, "GlyphLiquidGlassRenderer preserves 0 alpha outside characters");
-    Check(renderedBmp.GetPixel(50, 50).Alpha == 255, "GlyphLiquidGlassRenderer has opaque alpha inside character body");
-
-    // Test 3: Edge Dyeing validation - compare EdgeTint 0 vs EdgeTint 80 on colored wallpaper
-    var frameNoTint = clockFrame with { Theme = theme with { LiquidGlass = new(12, 28, 24, 65, 18, 225, EdgeTint: 0), OpacityLevel = 0.18 } };
-    var frameWithTint = clockFrame with { Theme = theme with { LiquidGlass = new(12, 28, 24, 65, 18, 225, EdgeTint: 80), OpacityLevel = 0.18 } };
-    using var bmpNoTint = SKBitmap.Decode(Clock.Services.GlyphLiquidGlassRenderer.Render(frameNoTint, wallpaper, testMask));
-    using var bmpWithTint = SKBitmap.Decode(Clock.Services.GlyphLiquidGlassRenderer.Render(frameWithTint, wallpaper, testMask));
-
-    // Measure difference along the stroke meniscus edge (e.g. x = 31..36)
-    double edgeDelta = 0;
-    int edgeSamples = 0;
-    for (int y = 40; y < 120; y++)
-    {
-        for (int x = 31; x <= 36; x++)
-        {
-            var p0 = bmpNoTint.GetPixel(x, y);
-            var p1 = bmpWithTint.GetPixel(x, y);
-            edgeDelta += Math.Abs(p0.Red - p1.Red) + Math.Abs(p0.Green - p1.Green) + Math.Abs(p0.Blue - p1.Blue);
-            edgeSamples++;
-        }
-    }
-    var meanEdgeDye = edgeSamples > 0 ? (edgeDelta / edgeSamples) : 0;
-    Console.WriteLine($"Numeral glyph meniscus dye mean delta: {meanEdgeDye:F2}");
-    Check(meanEdgeDye > 1.0, "Edge dyeing algorithm visibly stains the numeral stroke meniscus");
-
-    // Test 4: Explicit RefractionWidth = 0 produces clean undistorted rendering with preserved dye
-    var zeroRefractionBytes = Clock.Services.GlyphLiquidGlassRenderer.Render(frameWithTint, wallpaper, testMask, refractionWidth: 0);
-    Check(zeroRefractionBytes != null && zeroRefractionBytes.Length > 0, "GlyphLiquidGlassRenderer renders successfully with RefractionWidth = 0");
-    using var zeroRefractBmp = SKBitmap.Decode(zeroRefractionBytes);
-    Check(zeroRefractBmp.GetPixel(10, 10).Alpha == 0 && zeroRefractBmp.GetPixel(50, 50).Alpha == 255,
-        "RefractionWidth = 0 preserves character alpha mask");
-}
-
 
 // Export a deterministic optical preview from the production renderer.
 using var sheet = SKSurface.Create(new SKImageInfo(1200, 800));

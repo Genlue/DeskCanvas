@@ -10,7 +10,6 @@
         ExtendClientAreaChromeHints="NoChrome"
         ExtendClientAreaTitleBarHeightHint="40"
         WindowStartupLocation="CenterScreen"
-        Topmost="True"
         Width="400" SizeToContent="Height" CanResize="False"
         Title="Update" x:DataType="views:UpdatePopup">
     <Window.Styles>
@@ -40,7 +39,8 @@
             BorderBrush="{DynamicResource MenuSurfaceBorder}"
             BorderThickness="{DynamicResource HostSurfaceBorderThickness}"
             CornerRadius="{DynamicResource HostSurfaceCornerRadius}"
-            Margin="8">
+            Margin="0"
+            ClipToBounds="True">
       <StackPanel Margin="0 0 0 4">
         <!-- Header -->
         <StackPanel Margin="28 22 28 8">
