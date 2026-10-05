@@ -1,12 +1,16 @@
 using System;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
+using Avalonia.Controls.Presenters;
 using Avalonia.Media;
 using Avalonia.Styling;
 using Avalonia.VisualTree;
 using DeskCanvas.Core.Interfaces;
 using DeskCanvas.Core.Models.Settings;
+using DeskCanvas.Core.Services;
 using DeskCanvas.Services;
+using DeskCanvas.ViewModels;
 
 namespace MonochromeAccentChecks;
 
@@ -68,14 +72,20 @@ internal class Program
 
     public static int Main(string[] args)
     {
-        AppBuilder.Configure<DeskCanvas.App>()
+        // Portable probe data stays beside this test executable, away from user profiles.
+        System.IO.Directory.CreateDirectory(System.IO.Path.Combine(AppContext.BaseDirectory, "Widgets"));
+        AppBuilder.Configure<ProbeApp>()
             .UsePlatformDetect()
             .SetupWithoutStarting();
 
         Console.WriteLine("=== Monochrome Accent Checks ===");
 
-        var themeService = (IThemeService)(DeskCanvas.App.Services?.GetService(typeof(IThemeService))
-            ?? throw new InvalidOperationException("IThemeService is not registered"));
+        var settings = new StubSettings(new AppSettings(
+            new Theme(false, "#007AFF", 1, false, false, "Inter", SurfaceStyle.Solid),
+            [], new Layout(GridMode.Manual, true, false, true, false),
+            new Dimensions(80, 12, 16), new Region("zh-Hans"), false, null));
+        var themeService = new ThemeService(settings, new WallpaperThemeService());
+        Assert(DeskCanvas.App.Services is null, "Probe skips host startup and user settings services");
 
         // Non-default background colors make any variant mix-up obvious (#112233 vs #FEDCBA).
         const string darkBg = "#112233";
@@ -360,6 +370,84 @@ internal class Program
             }
         }
 
+        Console.WriteLine("\n--- Real Profiles accent-button templates ---");
+        var profileService = new ProfileService(settings, new LayoutProvider(), themeService,
+            new LocaleService(settings), null!, null!);
+        var profilesPage = new DeskCanvas.Views.Pages.Profiles(profileService);
+        var profilesViewModel = (ProfilesViewModel)profilesPage.DataContext!;
+        profilesViewModel.Profiles.Clear();
+        profilesViewModel.Profiles.Add(new ProfileItemViewModel("Button contrast probe", false, 2));
+        hostWindow.Width = 1200;
+        hostWindow.Height = 400;
+        hostWindow.Position = new PixelPoint(-30000, 100);
+        hostWindow.Content = profilesPage;
+
+        foreach (var (variantName, monoVariant, dark) in new[]
+        {
+            ("BlackWhite dark", (MonochromeStyle?)MonochromeStyle.BlackWhite, true),
+            ("BlackWhite light", (MonochromeStyle?)MonochromeStyle.BlackWhite, false),
+            ("BackgroundColor dark", (MonochromeStyle?)MonochromeStyle.BackgroundColor, true),
+            ("BackgroundColor light", (MonochromeStyle?)MonochromeStyle.BackgroundColor, false),
+            ("Restored accent dark", (MonochromeStyle?)null, true),
+            ("Restored accent light", (MonochromeStyle?)null, false),
+        })
+        {
+            themeService.Apply(monoVariant is { } monochrome
+                ? Monochrome(monochrome, dark, darkBg, lightBg)
+                : settings.Get().Theme with { DarkMode = dark, Monochrome = false, AccentColor = "#007AFF" });
+            hostWindow.RequestedThemeVariant = dark ? ThemeVariant.Dark : ThemeVariant.Light;
+            hostWindow.Show();
+            Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+            var buttons = profilesPage.GetVisualDescendants().OfType<Button>()
+                .Where(button => button.Classes.Contains("accent") && button.IsVisible).ToArray();
+            Assert(buttons.Length == 2, $"{variantName}: New and Switch accent buttons are templated");
+            foreach (var button in buttons)
+            {
+                var presenter = button.GetVisualDescendants().OfType<ContentPresenter>()
+                    .Single(part => part.Name == "PART_ContentPresenter");
+                foreach (var (state, opacity) in new[]
+                {
+                    ("normal", 1.0),
+                    ("hover", 0.85),
+                    ("pressed", 0.7),
+                    ("disabled", 1.0),
+                })
+                {
+                    var pseudoClasses = (IPseudoClasses)button.Classes;
+                    pseudoClasses.Set(":pointerover", state is "hover" or "pressed");
+                    pseudoClasses.Set(":pressed", state == "pressed");
+                    button.IsEnabled = state != "disabled";
+                    Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+                    var foreground = presenter.Foreground as SolidColorBrush;
+                    var background = presenter.Background as SolidColorBrush;
+                    Assert(foreground != null && background != null,
+                        $"{variantName}/{button.Content}/{state}: presenter brushes resolved");
+                    if (foreground == null || background == null) continue;
+                    Assert(foreground.Color != background.Color || foreground.Opacity != background.Opacity,
+                        $"{variantName}/{button.Content}/{state}: actual foreground/background remain distinct");
+                    if (state == "disabled")
+                    {
+                        button.TryFindResource("AccentButtonForegroundDisabled", button.ActualThemeVariant, out var disabledForeground);
+                        button.TryFindResource("AccentButtonBackgroundDisabled", button.ActualThemeVariant, out var disabledBackground);
+                        Assert(foreground.Equals(disabledForeground) && background.Equals(disabledBackground),
+                            $"{variantName}/{button.Content}: disabled retains Fluent muted brushes");
+                    }
+                    else
+                    {
+                        var expectedForeground = BrushOf("AccentContrastForegroundBrush", button.ActualThemeVariant);
+                        Assert(foreground.Color == expectedForeground && background.Color == Resource("SystemAccentColor")
+                               && Math.Abs(background.Opacity - opacity) < 0.001,
+                            $"{variantName}/{button.Content}/{state}: template uses theme contrast and state feedback");
+                    }
+                }
+                button.IsEnabled = true;
+                ((IPseudoClasses)button.Classes).Set(":pointerover", false);
+                ((IPseudoClasses)button.Classes).Set(":pressed", false);
+            }
+            hostWindow.Hide();
+        }
+        hostWindow.Content = null;
+
         if (failed == 0)
         {
             Console.WriteLine("\nALL CHECKS PASSED!");
@@ -370,5 +458,18 @@ internal class Program
         }
 
         return failed;
+    }
+
+    private sealed class StubSettings(AppSettings value) : IAppSettingsProvider
+    {
+        public event DataChangedEvent<AppSettings>? DataChanging { add { } remove { } }
+        public event DataChangedEvent<AppSettings>? DataChanged { add { } remove { } }
+        public AppSettings Get() => value;
+        public void Save(AppSettings data) => value = data;
+    }
+
+    private sealed class ProbeApp : DeskCanvas.App
+    {
+        public override void OnFrameworkInitializationCompleted() { }
     }
 }

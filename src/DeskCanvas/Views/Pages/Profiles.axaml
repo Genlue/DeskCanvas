@@ -7,6 +7,16 @@
              x:Class="DeskCanvas.Views.Pages.Profiles"
              x:DataType="viewModels:ProfilesViewModel">
 
+    <UserControl.Resources>
+        <!-- Fluent's accent buttons assume a colored accent with white text. -->
+        <SolidColorBrush x:Key="AccentButtonForeground" Color="{DynamicResource AccentContrastColor}" />
+        <SolidColorBrush x:Key="AccentButtonForegroundPointerOver" Color="{DynamicResource AccentContrastColor}" />
+        <SolidColorBrush x:Key="AccentButtonForegroundPressed" Color="{DynamicResource AccentContrastColor}" />
+        <SolidColorBrush x:Key="AccentButtonBackground" Color="{DynamicResource SystemAccentColor}" />
+        <SolidColorBrush x:Key="AccentButtonBackgroundPointerOver" Color="{DynamicResource SystemAccentColor}" Opacity="0.85" />
+        <SolidColorBrush x:Key="AccentButtonBackgroundPressed" Color="{DynamicResource SystemAccentColor}" Opacity="0.7" />
+    </UserControl.Resources>
+
     <StackPanel Orientation="Vertical" Spacing="16">
         <!-- Top Toolbar -->
         <Border CornerRadius="{DynamicResource HostSurfaceCornerRadius}" Padding="16,14"

@@ -312,6 +312,8 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
                 if (updated != null)
                 {
                     model = updated;
+                    frameCache.Clear();
+                    inFlightRenders.Clear();
                     ApplyCurrentMaterial();
                 }
             }
@@ -444,8 +446,7 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
             }
 
             Debug.WriteLine($"[FramelessClock] material {(wantAcrylic ? "毛玻璃" : "非毛玻璃")} but the window's backdrop is {level} — re-asserting");
-            window.TransparencyLevelHint = [WindowTransparencyLevel.None];
-            window.TransparencyLevelHint = wantAcrylic ? [WindowTransparencyLevel.AcrylicBlur] : [WindowTransparencyLevel.Transparent];
+            ApplyWindowTransparency(window, wantAcrylic);
             ClearGlyphRegionIfNotAcrylic();
 
             if (attemptsLeft > 1)
@@ -466,13 +467,15 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
         var hint = material.IsAcrylic ? AcrylicHint : TransparentHint;
         if (!force && hint.SequenceEqual(window.TransparencyLevelHint)) return;
 
-        // Toggle through None instead of assigning the target directly: the Win32 impl
-        // short-circuits an assignment whose content it already holds, and a backdrop that
-        // outlives its material has no other way back. None → target is a real level change the
-        // platform always re-applies — the same idiom as the settings window's
-        // ForceTransparencyReapply.
-        window.TransparencyLevelHint = [WindowTransparencyLevel.None];
-        window.TransparencyLevelHint = hint;
+        ApplyWindowTransparency(window, material.IsAcrylic);
+    }
+
+    private static void ApplyWindowTransparency(Window target, bool acrylic)
+    {
+        // On Win32 with no redirection bitmap, None is unsupported: it reports the default
+        // Transparent level without clearing the composition brush. A subsequent Transparent
+        // hint then short-circuits, leaving acrylic behind when the glyph region is removed.
+        target.TransparencyLevelHint = acrylic ? AcrylicHint : TransparentHint;
     }
 
     private void OnTimerTick()
@@ -480,7 +483,7 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
         if (material.IsRenderedGlass)
         {
             var now = GetCurrentTime();
-            var timeStr = FormatTime(now);
+            var timeStr = CacheKey(now);
 
             // 1. Automatic Cleanup: Evict expired cache entries before current time
             EvictExpiredCacheEntries(now);
@@ -530,7 +533,7 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
             for (int s = 1; s <= 5; s++)
             {
                 var upcoming = now.AddSeconds(s);
-                var key = FormatTime(upcoming);
+                var key = CacheKey(upcoming);
                 if (!frameCache.Contains(key) && !inFlightRenders.Contains(key))
                 {
                     SchedulePreRender(upcoming, isImmediate: false);
@@ -541,7 +544,7 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
         {
             // Pre-cache the next minute frame
             var nextMinute = now.AddMinutes(1);
-            var key = FormatTime(nextMinute);
+            var key = CacheKey(nextMinute);
             if (!frameCache.Contains(key) && !inFlightRenders.Contains(key))
             {
                 SchedulePreRender(nextMinute, isImmediate: false);
@@ -554,7 +557,7 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
         if (Bounds.Width < 1 || Bounds.Height < 1) return;
         if (!material.IsRenderedGlass) return;
 
-        var key = FormatTime(targetTime);
+        var key = CacheKey(targetTime);
         if (frameCache.Contains(key) || inFlightRenders.Contains(key)) return;
 
         var scaling = window?.RenderScaling ?? 1.0;
@@ -562,8 +565,10 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
         var height = Math.Max(1, (int)Math.Ceiling(Bounds.Height * scaling));
 
         var theme = appSettingsProvider?.Get().Theme;
+        // Cache keys carry the glass-opacity suffix; only the bare time text may feed the glyph
+        // layout, otherwise the suffix renders as extra characters on the desktop.
         var stretchedGeometry = FramelessGlyphGeometry.BuildStretch(
-            key, Bounds.Width, Bounds.Height, model.FontFamily, model.FontWeight, model.StretchFill, theme);
+            FormatTime(targetTime), Bounds.Width, Bounds.Height, model.FontFamily, model.FontWeight, model.StretchFill, theme);
         if (stretchedGeometry == null) return;
 
         byte[] glyphMask = FramelessGlyphGeometry.ExtractMask(stretchedGeometry, Bounds.Width, Bounds.Height, scaling, width, height);
@@ -600,7 +605,7 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
             (screen?.Bounds.X ?? 0) - left, (screen?.Bounds.Y ?? 0) - top,
             screen?.Bounds.Width ?? 1920, screen?.Bounds.Height ?? 1080,
             effectiveTheme, isDark,
-            Columns: cols, Rows: rows);
+            Columns: cols, Rows: rows, GlyphOpacity: (float)Math.Clamp(model.LiquidGlassOpacity / 100.0, 0, 2));
 
         inFlightRenders.Add(key);
         preRenderCts ??= new CancellationTokenSource();
@@ -630,7 +635,7 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
                     frameCache.Store(key, targetTime, bmp);
 
                     var currentNow = GetCurrentTime();
-                    if (key == FormatTime(currentNow))
+                    if (key == CacheKey(currentNow))
                     {
                         SetDisplayedFrame(bmp);
                         InvalidateVisual();
@@ -706,6 +711,8 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
         var ss = model.ShowSeconds ? ":ss" : "";
         return dt.ToString($"{hh}:mm{ss}", CultureInfo.InvariantCulture);
     }
+
+    private string CacheKey(DateTime dt) => FormatTime(dt) + $"|glassOpacity:{model.LiquidGlassOpacity:0.##}";
 
     public override void Render(DrawingContext context)
     {

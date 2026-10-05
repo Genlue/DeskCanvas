@@ -8,6 +8,8 @@ using Clock.Models;
 using ReactiveUI;
 using DeskCanvas.Core.Interfaces;
 using DeskCanvas.Services;
+using DeskCanvas.Core.Models;
+using DeskCanvas.Core.Models.Settings;
 
 namespace Clock.ViewModels;
 
@@ -16,14 +18,17 @@ public record ClockFontOption(string? FontFamily, string DisplayName, string Des
 public class FramelessClockSettingsViewModel : ReactiveObject
 {
     private readonly IWidgetLayoutProvider widgetLayoutProvider;
+    private readonly IAppSettingsProvider? appSettingsProvider;
     private FramelessClockModel model;
 
     public IReadOnlyList<ClockFontOption> FontOptions { get; }
     public IReadOnlyList<string> FontFamilies => FontOptions.Select(o => o.DisplayName).ToList();
 
-    public FramelessClockSettingsViewModel(IWidgetLayoutProvider widgetLayoutProvider)
+    public FramelessClockSettingsViewModel(IWidgetLayoutProvider widgetLayoutProvider, IAppSettingsProvider? appSettingsProvider = null)
     {
         this.widgetLayoutProvider = widgetLayoutProvider;
+        this.appSettingsProvider = appSettingsProvider;
+        if (appSettingsProvider != null) appSettingsProvider.DataChanged += OnAppSettingsChanged;
         model = widgetLayoutProvider.Get().GetModel<FramelessClockModel>() ?? new FramelessClockModel();
 
         var list = new List<ClockFontOption>
@@ -67,6 +72,11 @@ public class FramelessClockSettingsViewModel : ReactiveObject
 
         FontOptions = list;
     }
+
+    public bool ShowLiquidGlassOpacity => appSettingsProvider?.Get().Theme.IsLiquidGlassV2 ?? true;
+
+    private void OnAppSettingsChanged(object sender, AppSettings? oldData, AppSettings newData)
+        => this.RaisePropertyChanged(nameof(ShowLiquidGlassOpacity));
 
     public bool ShowSeconds
     {
@@ -219,6 +229,19 @@ public class FramelessClockSettingsViewModel : ReactiveObject
             var clamped = Math.Clamp(value / 100.0, 0.0, 1.0);
             UpdateModel(model with { OverlayOpacity = clamped });
             this.RaisePropertyChanged(nameof(OverlayOpacityPercent));
+        }
+    }
+
+    /// <summary>V2 glyph coating strength; 100% preserves the current appearance.</summary>
+    public double LiquidGlassOpacityPercent
+    {
+        get => Math.Clamp(model.LiquidGlassOpacity, 0, 200);
+        set
+        {
+            var v = Math.Clamp(value, 0, 200);
+            if (Math.Abs(v - model.LiquidGlassOpacity) < 0.01) return;
+            UpdateModel(model with { LiquidGlassOpacity = v });
+            this.RaisePropertyChanged(nameof(LiquidGlassOpacityPercent));
         }
     }
 

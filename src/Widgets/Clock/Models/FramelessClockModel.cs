@@ -27,7 +27,8 @@ public record FramelessClockModel(
     bool EnableOverlay = false,
     bool FollowAccentColor = true,
     string OverlayColor = "#400078D4",
-    double OverlayOpacity = 0.35)
+    double OverlayOpacity = 0.35,
+    double LiquidGlassOpacity = 100)
 {
     public FramelessClockModel() : this(true) { }
 }

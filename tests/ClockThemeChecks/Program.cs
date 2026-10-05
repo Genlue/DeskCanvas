@@ -1,6 +1,7 @@
 using System.Reflection;
 using System.Text.Json;
 using Avalonia;
+using Avalonia.Controls;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using Avalonia.Themes.Fluent;
@@ -242,6 +243,20 @@ class Program
         Check("the same instance follows the switch to liquid glass", ResolveTheme(switched) == (false, true, false));
         Check("and it renders a liquid glass frame afterwards", WaitForFrame(switched));
 
+        for (var round = 1; round <= 2; round++)
+        {
+            switchSettings.Save(BuildSettings(SurfaceStyle.Acrylic));
+            Check($"round {round}: the same instance returns to acrylic",
+                ResolveTheme(switched) == (true, false, false));
+            Check($"round {round}: acrylic releases the previous liquid glass frame",
+                ReadField(switched, "liquidGlassBitmap") == null);
+            switchSettings.Save(BuildSettings(SurfaceStyle.LiquidGlass));
+            Check($"round {round}: the same instance returns to liquid glass",
+                ResolveTheme(switched) == (false, true, false) && WaitForFrame(switched));
+        }
+
+        CheckNativeMaterialRoundTrip();
+
         // ---- Part 7: material resolution is global-only ----
         // The clock used to carry its own 视觉主题 override (ThemeMode, which also offered the old
         // separate 液态玻璃 and 柔光玻璃). It was removed when those two were merged into one
@@ -404,8 +419,159 @@ class Program
             faint == Color.FromArgb((byte)(0.40 * 255), 0xFF, 0x3B, 0x30));
 
         Console.WriteLine();
+        CheckWidgetGlyphsMatchTimeText();
+        CheckV2GlyphMaterial();
         Console.WriteLine(failures == 0 ? "ALL CHECKS PASSED" : $"{failures} CHECK(S) FAILED");
         return failures == 0 ? 0 : 1;
+    }
+
+    private static void CheckV2GlyphMaterial()
+    {
+        Console.WriteLine("--- V2 numeral optics and coverage ---");
+        var theme = BuildSettings(SurfaceStyle.LiquidGlassV2).Theme with
+        {
+            OpacityLevel = 1,
+            LiquidGlassV2 = new(Blur: 0, Refraction: 0, Highlight: 0, Vibrancy: 0, Dispersion: 0)
+        };
+        using var backdrop = new SKBitmap(96, 64);
+        for (var y = 0; y < 64; y++)
+        for (var x = 0; x < 96; x++)
+            backdrop.SetPixel(x, y, new SKColor((byte)(40 + x * 2), (byte)(50 + x), (byte)(60 + x)));
+        using var wallpaper = WallpaperSnapshot.FromBitmap(null, SKColors.Black, backdrop.Copy(), live: true);
+        var frame = new LiquidGlassRenderer.Frame(96, 64, 1, 0, 0, 0, 96, 64, 0, 0, 96, 64, theme, true);
+        var mask = new byte[96 * 64];
+        for (var y = 8; y < 56; y++)
+        for (var x = 8; x < 88; x++) mask[y * 96 + x] = 255;
+        var png = GlyphLiquidGlassRenderer.Render(frame, wallpaper, mask);
+        using var output = SKBitmap.Decode(png);
+        Check("frameless clock opacity defaults to 100%", new FramelessClockModel().LiquidGlassOpacity == 100);
+        var opacity0 = GlyphLiquidGlassRenderer.Render(frame with { GlyphOpacity = 0 }, wallpaper, mask);
+        var opacity100 = GlyphLiquidGlassRenderer.Render(frame with { GlyphOpacity = 1 }, wallpaper, mask);
+        var opacity200 = GlyphLiquidGlassRenderer.Render(frame with { GlyphOpacity = 2 }, wallpaper, mask);
+        Check("V2 component opacity 0/100/200 produces distinct glyph output",
+            !opacity0.SequenceEqual(opacity100) && !opacity100.SequenceEqual(opacity200));
+        // Distinct bytes are not enough: a flat multiple of the tiny V2 baseline shifts the
+        // coating by a few percent and the slider reads as dead. 200% must be visibly more
+        // coated than 100% (roughly a quarter of the numerals' full range, not ~2%).
+        Check("V2 opacity 200% coats visibly more than 100%",
+            MeanAbsoluteDifference(DecodePixels(opacity100), DecodePixels(opacity200)) > 8);
+        var legacyFrame = frame with { Theme = theme with { Surface = SurfaceStyle.LiquidGlass }, GlyphOpacity = 0 };
+        var legacyDefault = GlyphLiquidGlassRenderer.Render(legacyFrame with { GlyphOpacity = 1 }, wallpaper, mask);
+        Check("legacy glass ignores the component opacity", legacyDefault.SequenceEqual(GlyphLiquidGlassRenderer.Render(legacyFrame, wallpaper, mask)));
+        Check("maximum V2 opacity keeps wallpaper contrast in the numeral centre",
+            output.GetPixel(70, 32).Red - output.GetPixel(30, 32).Red > 55);
+        var contaminated = frame with { Theme = theme with { LiquidGlass = new(Blur: 100, Refraction: 100, EdgeWidth: 80, Highlight: 100, Dispersion: 100, EdgeTint: 100, Glow: 100, Spectrum: 100), AccentColor = "#FFFF00" } };
+        Check("V2 ignores all retained legacy and soft optics", png.SequenceEqual(GlyphLiquidGlassRenderer.Render(contaminated, wallpaper, mask)));
+        var refracted = GlyphLiquidGlassRenderer.Render(frame with { Theme = theme with { LiquidGlassV2 = theme.EffectiveLiquidGlassV2 with { Refraction = 80 } } }, wallpaper, mask);
+        Check("V2 refraction zero removes displacement; its own slider responds", !png.SequenceEqual(refracted));
+        foreach (var control in new[] { "Blur", "Vibrancy", "Dispersion" })
+        {
+            var settings = theme.EffectiveLiquidGlassV2 with { Refraction = 80 };
+            var low = frame with { Theme = theme with { LiquidGlassV2 = settings } };
+            var highSettings = control switch
+            {
+                "Blur" => settings with { Blur = 100 },
+                "Vibrancy" => settings with { Vibrancy = 100 },
+                _ => settings with { Dispersion = 100 }
+            };
+            var high = frame with { Theme = theme with { LiquidGlassV2 = highSettings } };
+            Check($"V2 glyph responds to its own {control} control",
+                !GlyphLiquidGlassRenderer.Render(low, wallpaper, mask).SequenceEqual(GlyphLiquidGlassRenderer.Render(high, wallpaper, mask)));
+        }
+        var highlighted = GlyphLiquidGlassRenderer.Render(frame with { Theme = theme with { LiquidGlassV2 = theme.EffectiveLiquidGlassV2 with { Highlight = 100 } } }, wallpaper, mask);
+        using var lit = SKBitmap.Decode(highlighted);
+        Check("V2 highlight reaches inward and fades toward the centre",
+            lit.GetPixel(12, 32).Red - output.GetPixel(12, 32).Red > 2
+            && lit.GetPixel(48, 32).Red - output.GetPixel(48, 32).Red < 2);
+        using var neutral = new WallpaperSnapshot(null, new SKColor(60, 90, 120));
+        var alphaFrame = frame with { Width = 16, Height = 16, Theme = theme with { OpacityLevel = 0 } };
+        foreach (byte coverage in new byte[] { 64, 128, 192, 255 })
+        {
+            using var alphaOutput = SKBitmap.Decode(GlyphLiquidGlassRenderer.Render(alphaFrame, neutral, Enumerable.Repeat(coverage, 256).ToArray()));
+            var pixel = alphaOutput.GetPixel(8, 8);
+            Check($"V2 {coverage}/255 coverage preserves straight RGB without a bright fringe",
+                pixel.Alpha == coverage && Math.Abs(pixel.Red - 64) < 5 && Math.Abs(pixel.Green - 93) < 5 && Math.Abs(pixel.Blue - 122) < 5);
+        }
+        foreach (byte coverage in new byte[] { 1, 8, 16 })
+        {
+            using var alphaOutput = SKBitmap.Decode(GlyphLiquidGlassRenderer.Render(alphaFrame, neutral, Enumerable.Repeat(coverage, 256).ToArray()));
+            Check($"V2 retains low antialias coverage {coverage}/255", alphaOutput.GetPixel(8, 8).Alpha == coverage);
+            using var composite = new SKBitmap(16, 16);
+            using (var canvas = new SKCanvas(composite))
+            {
+                canvas.Clear(SKColors.Black);
+                canvas.DrawBitmap(alphaOutput, 0, 0);
+            }
+            Check($"V2 low coverage {coverage}/255 cannot brighten the contour",
+                composite.GetPixel(8, 8).Red <= coverage * 0.3f + 1);
+        }
+        Check("V2 leaves pixels outside the exact numeral mask transparent", output.GetPixel(0, 0).Alpha == 0);
+    }
+
+    /// <summary>
+    /// The pre-render pipeline must lay glyphs out from the bare time text: the frame cache key
+    /// additionally carries the glass-opacity suffix, and feeding it to the geometry renders the
+    /// suffix as extra characters on the desktop. The check rebuilds the time-text mask with the
+    /// widget's own geometry pipeline and requires the produced frame to be empty outside it.
+    /// </summary>
+    private static void CheckWidgetGlyphsMatchTimeText()
+    {
+        Console.WriteLine();
+        Console.WriteLine("--- widget glyphs follow the time text, not the cache key ---");
+        var settings = new StubSettings(BuildSettings(SurfaceStyle.LiquidGlassV2));
+        const double width = 368, height = 184;
+        var model = new FramelessClockModel(Use24Hours: true, FontFamily: "Impact", FontWeight: 800, StretchFill: true);
+        var view = new FramelessDigital(model, new StubLayout(), settings) { Width = width, Height = height };
+        view.Measure(new Size(width, height));
+        view.Arrange(new Rect(0, 0, width, height));
+        view.UpdateLayout();
+
+        var deadline = DateTime.UtcNow.AddSeconds(20);
+        while (DateTime.UtcNow < deadline && ReadField(view, "liquidGlassBitmap") == null)
+        {
+            Dispatcher.UIThread.RunJobs();
+            Thread.Sleep(50);
+        }
+        Dispatcher.UIThread.RunJobs();
+
+        var frames = ReadField(ReadField(view, "frameCache"), "frames") as System.Collections.IDictionary;
+        Check("the widget pre-rendered keyed frames", frames != null && frames.Count > 0);
+        if (frames == null || frames.Count == 0) return;
+
+        var key = (string)frames.Keys.Cast<object>().First()!;
+        var separator = key.IndexOf('|');
+        Check("the frame cache key carries the glass-opacity suffix",
+            separator > 0 && key.Contains("glassOpacity:"));
+        if (separator <= 0) return;
+        var timeText = key[..separator];
+
+        // No window in this harness, so the widget rendered at scaling 1 — the exact mask it was
+        // supposed to fill can be rebuilt with the same geometry calls and compared pixel-wise.
+        var geometryType = typeof(FramelessDigital).Assembly.GetType("Clock.Services.FramelessGlyphGeometry")!;
+        var geometry = geometryType.InvokeMember("BuildStretch", BindingFlags.Public | BindingFlags.Static | BindingFlags.InvokeMethod,
+            null, null, [timeText, width, height, model.FontFamily, model.FontWeight, model.StretchFill, settings.Get().Theme]);
+        Check("the bare time text lays out a glyph geometry", geometry != null);
+        if (geometry == null) return;
+        var mask = (byte[]?)geometryType.InvokeMember("ExtractMask", BindingFlags.Public | BindingFlags.Static | BindingFlags.InvokeMethod,
+            null, null, [geometry, width, height, 1.0, (int)width, (int)height]);
+        Check("the time text mask matches the frame size", mask != null && mask.Length == (int)(width * height));
+        if (mask == null) return;
+
+        var path = Path.Combine(outputDir, "widget-time-text.png");
+        ((Bitmap)ReadField(view, "liquidGlassBitmap")!).Save(path);
+        using var rendered = SKBitmap.Decode(path);
+        Check("the widget's liquid glass frame decodes at the mask size",
+            rendered != null && rendered.Width == (int)width && rendered.Height == (int)height);
+        if (rendered == null) return;
+
+        var strayInk = 0;
+        for (var y = 0; y < rendered.Height; y++)
+        for (var x = 0; x < rendered.Width; x++)
+        {
+            if (mask[y * rendered.Width + x] == 0 && rendered.GetPixel(x, y).Alpha != 0) strayInk++;
+        }
+        Check($"no glyph ink outside the time text ({strayInk} stray pixels) — the cache key suffix must never render",
+            strayInk == 0);
     }
 
     private static string Describe((bool IsAcrylic, bool IsLiquidGlass, bool IsSolid) theme) =>
@@ -415,6 +581,44 @@ class Program
             (_, true, _) => "liquid glass",
             _ => "solid"
         };
+
+    private static void CheckNativeMaterialRoundTrip()
+    {
+        Console.WriteLine();
+        Console.WriteLine("--- native host transparency round trip ---");
+        var host = new Window { Width = 368, Height = 184, ShowInTaskbar = false };
+        var apply = typeof(FramelessDigital).GetMethod("ApplyWindowTransparency",
+            BindingFlags.NonPublic | BindingFlags.Static)!;
+        var platform = host.PlatformImpl!;
+        var surface = platform.GetType().GetProperty("CompositionEffectsSurface",
+            BindingFlags.NonPublic | BindingFlags.Instance)?.GetValue(platform);
+        var effect = surface?.GetType().GetField("_blurEffect",
+            BindingFlags.NonPublic | BindingFlags.Instance);
+
+        if (surface == null || effect == null)
+        {
+            Console.WriteLine("  SKIP: WinUI composition blur probe is unavailable on this platform.");
+            host.Close();
+            return;
+        }
+
+        void Apply(SurfaceStyle style) => apply.Invoke(null,
+            [host, FramelessThemeResolver.Resolve(BuildSettings(style).Theme).IsAcrylic]);
+
+        Apply(SurfaceStyle.LiquidGlass);
+        for (var round = 1; round <= 2; round++)
+        {
+            Apply(SurfaceStyle.Acrylic);
+            Check($"native round {round}: acrylic activates the composition brush",
+                host.ActualTransparencyLevel == WindowTransparencyLevel.AcrylicBlur
+                && effect.GetValue(surface)?.ToString() == "Acrylic");
+            Apply(SurfaceStyle.LiquidGlass);
+            Check($"native round {round}: liquid glass clears the composition brush",
+                host.ActualTransparencyLevel == WindowTransparencyLevel.Transparent
+                && effect.GetValue(surface)?.ToString() == "None");
+        }
+        host.Close();
+    }
 
     /// <summary>Pump the dispatcher until the widget produced a liquid glass frame.</summary>
     private static bool WaitForFrame(FramelessDigital view)

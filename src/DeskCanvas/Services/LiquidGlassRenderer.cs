@@ -65,7 +65,7 @@ public static class LiquidGlassRenderer
         float DesktopX, float DesktopY, float DesktopWidth, float DesktopHeight,
         float ScreenX, float ScreenY, float ScreenWidth, float ScreenHeight,
         Theme Theme, bool Dark, bool SettingsSurface = false, float PixelScale = 1,
-        int Columns = 0, int Rows = 0);
+        int Columns = 0, int Rows = 0, float GlyphOpacity = 1f);
 
     /// <summary>Rim displacement in DIPs at refraction = 100%. Prominent optical lens magnification.</summary>
     internal const float LensDips = 32f;

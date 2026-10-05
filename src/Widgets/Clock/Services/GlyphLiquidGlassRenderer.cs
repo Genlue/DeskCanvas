@@ -23,9 +23,20 @@ public static class GlyphLiquidGlassRenderer
     /// <summary>7-tap separable smoothing kernel (radius 3) for the normal field.</summary>
     private static readonly float[] Weights = [1f, 3f, 6f, 8f, 6f, 3f, 1f];
 
+    private static LiquidGlassSettings ResolveGlyphOptics(Theme theme)
+    {
+        if (!theme.IsLiquidGlassV2) return theme.EffectiveLiquidGlass;
+        var current = theme.EffectiveLiquidGlassV2;
+        // Project only this material's controls into the stroke-sized lens model.
+        // Retained settings for the older soft material cannot affect V2 numerals.
+        return new LiquidGlassSettings(Blur: current.Blur, Refraction: current.Refraction,
+            Highlight: current.Highlight, Dispersion: current.Dispersion,
+            EdgeWidth: 10, EdgeTint: LiquidGlassSettings.DefaultEdgeTint, LightAngle: 225);
+    }
+
     public static byte[] Render(LiquidGlassRenderer.Frame frame, WallpaperSnapshot wallpaper, byte[] glyphMask, double? refractionWidth = null)
     {
-        var optics = frame.Theme.EffectiveLiquidGlass;
+        var optics = ResolveGlyphOptics(frame.Theme);
         var scale = frame.Scale;
         var width = frame.Width;
         var height = frame.Height;
@@ -92,7 +103,8 @@ public static class GlyphLiquidGlassRenderer
         // instead of the crisp hairline, a single wide sheen instead of the water-bead glint,
         // and the edge dye reads a *bloomed* colour field so a coloured patch spreads along the
         // strokes like a light source instead of stopping where the patch ends.
-        var soft = frame.Theme.IsSoftGlow;
+        var modern = frame.Theme.IsLiquidGlassV2;
+        var soft = !modern && frame.Theme.IsSoftGlow;
         var glowStrength = soft ? (float)Math.Clamp(optics.Glow, 0, 100) / 100f : 0f;
         var spectrumStrength = soft ? (float)Math.Clamp(optics.Spectrum, 0, 100) / 100f : 0f;
 
@@ -100,6 +112,7 @@ public static class GlyphLiquidGlassRenderer
         var lens = ResolveLens(optics, scale, strokeRadius, glyphEdgeScale, glyphShiftScale, refractionWidth, soft);
         var lensWidth = lens.LensWidth;
         var lensShift = lens.LensShift;
+        if (modern && optics.Refraction <= 0) lensShift = 0f;
         var dispStrength = lens.Dispersion;
 
         // Numeral strokes are thin: a blur wider than the lens ring erases the very detail
@@ -111,7 +124,9 @@ public static class GlyphLiquidGlassRenderer
             sigma = Math.Min(sigma, Math.Max(0.75f * scale, lensWidth * 0.55f));
         }
 
-        var dyeWidth = Math.Max(Math.Clamp(strokeRadius * 0.32f, 2.5f * scale, 12f * scale), lensWidth);
+        var dyeWidth = !modern
+            ? Math.Max(Math.Clamp(strokeRadius * 0.32f, 2.5f * scale, 12f * scale), lensWidth)
+            : Math.Max(strokeRadius * 0.72f, 1.5f * scale);
         var rimLineWidth = Math.Clamp(Math.Max(lensWidth, strokeRadius * 0.15f) * 0.22f * glyphRimScale, 0.70f * scale, 2.4f * scale);
 
         var pad = (int)Math.Ceiling(Math.Max(sigma * 3f, Math.Max(lensWidth + 8f, lensShift * 1.3f + 16f)));
@@ -164,9 +179,20 @@ public static class GlyphLiquidGlassRenderer
         var colorHex = frame.Dark ? frame.Theme.EffectiveSolidBackgroundDark : frame.Theme.EffectiveSolidBackgroundLight;
         if (!SKColor.TryParse(colorHex, out var coating)) coating = frame.Dark ? new SKColor(46, 46, 46) : SKColors.White;
         var opacity = double.IsFinite(frame.Theme.OpacityLevel) ? Math.Clamp(frame.Theme.OpacityLevel, 0, 1) : 0.18;
-        var tint = (float)opacity;
+        // A numeral is a narrow optical surface: the card's opaque coating would
+        // replace nearly all of its wallpaper with flat grey at common settings. The component
+        // opacity therefore scales the coating piecewise — 0% coats nothing, 100% keeps the V2
+        // baseline, 200% reaches the full card coating. A flat multiple of the baseline stays
+        // inside a few percent of mix and reads as a dead slider.
+        var coatingStrength = modern
+            ? (frame.GlyphOpacity <= 1f
+                ? 0.22f * frame.GlyphOpacity
+                : 0.22f + 0.78f * (frame.GlyphOpacity - 1f))
+            : 1f;
+        var tint = (float)opacity * Math.Clamp(coatingStrength, 0f, 1f);
         var edgeTint = (float)(optics.EdgeTint / 100.0);
-        var highlightFactor = (float)(optics.Highlight / HighlightReference);
+        var highlightFactor = (float)(optics.Highlight / (modern ? LiquidGlassV2Settings.HighlightReference : HighlightReference));
+        var saturation = modern ? 1f + 0.12f * (float)(frame.Theme.EffectiveLiquidGlassV2.Vibrancy / 100f) : Saturation;
 
         var angle = optics.LightAngle * Math.PI / 180.0;
         var lx = (float)Math.Cos(angle);
@@ -183,6 +209,23 @@ public static class GlyphLiquidGlassRenderer
         // 柔光玻璃: the dye reads a bloomed colour field (see LiquidGlassRenderer.AuraField), so a
         // coloured patch spreads along the strokes instead of dyeing the pixels right above it.
         var aura = soft ? LiquidGlassRenderer.AuraField.Build(sourcePixels, sourceW, sourceH, pad, width, height) : null;
+        // Environment colour follows the unbent backdrop. Low-pass it separately
+        // from the lens so fine leaves cannot turn the rim into coloured dashes.
+        SKColor[]? environment = null;
+        var environmentStep = Math.Max(1f, 4f * scale);
+        var environmentWidth = Math.Max(1, (int)Math.Ceiling(sourceW / environmentStep));
+        var environmentHeight = Math.Max(1, (int)Math.Ceiling(sourceH / environmentStep));
+        if (modern && edgeTint > 0.001f)
+        {
+            using var environmentSurface = SKSurface.Create(new SKImageInfo(environmentWidth, environmentHeight));
+            var environmentSigma = Math.Max(3f * scale, strokeRadius * 0.65f) / environmentStep;
+            using var environmentFilter = SKImageFilter.CreateBlur(environmentSigma, environmentSigma, SKShaderTileMode.Clamp);
+            using var environmentPaint = new SKPaint { ImageFilter = environmentFilter, FilterQuality = SKFilterQuality.High };
+            environmentSurface.Canvas.DrawBitmap(source, new SKRect(0, 0, environmentWidth, environmentHeight), environmentPaint);
+            using var environmentImage = environmentSurface.Snapshot();
+            using var environmentBitmap = SKBitmap.FromImage(environmentImage);
+            environment = environmentBitmap.Pixels;
+        }
 
         var pixels = scratch.Pixels;
         var parallel = new ParallelOptions { MaxDegreeOfParallelism = Math.Clamp(Environment.ProcessorCount / 2, 2, 8) };
@@ -197,7 +240,7 @@ public static class GlyphLiquidGlassRenderer
             {
                 var idx = rowOffset + x;
                 var maskVal = glyphMask[idx];
-                if (maskVal < 10)
+                if (modern ? maskVal == 0 : maskVal < 10)
                 {
                     pixels[idx] = SKColors.Empty;
                     continue;
@@ -258,9 +301,10 @@ public static class GlyphLiquidGlassRenderer
                 var luma = 0.2126f * channelRed + 0.7152f * channelGreen + 0.0722f * channelBlue;
                 var adapt = FrostMix(luma);
                 if (soft) adapt = MathF.Min(adapt * 1.15f, 0.11f);
-                var r = Channel(channelRed, coating.Red, luma, adapt, localTint);
-                var g = Channel(channelGreen, coating.Green, luma, adapt, localTint);
-                var b = Channel(channelBlue, coating.Blue, luma, adapt, localTint);
+                else if (modern) adapt *= 0.28f;
+                var r = Channel(channelRed, coating.Red, luma, adapt, localTint, saturation);
+                var g = Channel(channelGreen, coating.Green, luma, adapt, localTint, saturation);
+                var b = Channel(channelBlue, coating.Blue, luma, adapt, localTint, saturation);
 
                 // --- Intelligent Edge Dyeing Algorithm for Numeral Meniscus ---
                 var u1 = dyeWidth > 0.001f ? Math.Clamp(depth / dyeWidth, 0f, 1f) : 1f;
@@ -272,8 +316,12 @@ public static class GlyphLiquidGlassRenderer
 
                 if (edgeTint > 0.001f && bezelAura > 0.001f)
                 {
-                    // 柔光玻璃 dyes from the bloomed field, everything else from the pixel itself.
-                    var dyeSource = aura?.Sample(sx - pad, sy - pad) ?? middle;
+                    // The legacy soft recipe uses its bloom; V2 uses the smooth
+                    // environment field at the unbent position of the contour.
+                    var dyeSource = !modern ? aura?.Sample(sx - pad, sy - pad) ?? middle
+                        : SamplePixel(environment!, environmentWidth, environmentHeight,
+                            (x + pad + 0.5f) * environmentWidth / sourceW - 0.5f,
+                            (y + pad + 0.5f) * environmentHeight / sourceH - 0.5f);
 
                     // Absolute chroma & physical luminance gating
                     var maxC = Math.Max(dyeSource.Red, Math.Max(dyeSource.Green, dyeSource.Blue));
@@ -287,15 +335,15 @@ public static class GlyphLiquidGlassRenderer
                     if (colorWeight > 0.001f)
                     {
                         dyeSource.ToHsl(out var h, out var s, out var l);
-                        var glowS = Math.Clamp(s * 2.5f + 30f * colorWeight, 30f, 100f);
-                        var glowL = Math.Clamp(l * 0.20f + 48f, 44f, 62f);
+                        var glowS = !modern ? Math.Clamp(s * 2.5f + 30f * colorWeight, 30f, 100f) : Math.Min(s * 0.70f, 52f);
+                        var glowL = !modern ? Math.Clamp(l * 0.20f + 48f, 44f, 62f) : Math.Clamp(l * 0.70f + 16f, 24f, 72f);
                         var pureGlow = SKColor.FromHsl(h, glowS, glowL);
                         dyeR = pureGlow.Red;
                         dyeG = pureGlow.Green;
                         dyeB = pureGlow.Blue;
                         dyeWeight = colorWeight;
                     }
-                    else if (!string.IsNullOrEmpty(frame.Theme.AccentColor) && SKColor.TryParse(frame.Theme.AccentColor, out var accent))
+                    else if (!modern && !string.IsNullOrEmpty(frame.Theme.AccentColor) && SKColor.TryParse(frame.Theme.AccentColor, out var accent))
                     {
                         dyeR = accent.Red;
                         dyeG = accent.Green;
@@ -305,15 +353,15 @@ public static class GlyphLiquidGlassRenderer
 
                     if (dyeWeight > 0.001f)
                     {
-                        // 1. Vibrant chromatic glaze on the outer meniscus edge
-                        var glazeStrength = Math.Clamp(edgeTint * 1.5f, 0f, 1f);
+                        // One low-strength V2 glaze fades continuously into the stroke.
+                        var glazeStrength = !modern ? Math.Clamp(edgeTint * 1.5f, 0f, 1f) : edgeTint * 0.28f;
                         var glazeMix = glazeStrength * bezelAura * 0.85f * dyeWeight;
                         r += (dyeR - r) * glazeMix;
                         g += (dyeG - g) * glazeMix;
                         b += (dyeB - b) * glazeMix;
 
-                        // 2. Specular highlight is strongly tinted with the saturated dye color
-                        var hlTint = Math.Clamp(MathF.Pow(edgeTint, 0.55f) * 1.35f * dyeWeight, 0f, 1f);
+                        // V2 reflections stay mostly neutral; legacy retains its coloured light.
+                        var hlTint = !modern ? Math.Clamp(MathF.Pow(edgeTint, 0.55f) * 1.35f * dyeWeight, 0f, 1f) : edgeTint * 0.16f * dyeWeight;
                         hlR = (1f - hlTint) * 255f + hlTint * dyeR;
                         hlG = (1f - hlTint) * 255f + hlTint * dyeG;
                         hlB = (1f - hlTint) * 255f + hlTint * dyeB;
@@ -332,10 +380,10 @@ public static class GlyphLiquidGlassRenderer
                 // Directional specular glint: only the light-facing edge catches direct specular shine!
                 var rimLight = soft
                     ? rimEdge * (0.20f + 0.55f * MathF.Pow(directional, 0.70f)) * 0.80f
-                    : rimEdge * (0.12f + 0.88f * MathF.Pow(directional, 1.2f));
+                    : rimEdge * (modern ? (0.12f + 0.32f * MathF.Pow(directional, 1.2f)) : (0.12f + 0.88f * MathF.Pow(directional, 1.2f)));
 
-                // Direct rim dye: guarantees the outer stroke perimeter is visibly dyed, not white!
-                if (dyeWeight > 0.001f && edgeTint > 0.001f)
+                // Preserve the legacy recipe's additional direct rim dye.
+                if (!modern && dyeWeight > 0.001f && edgeTint > 0.001f)
                 {
                     var rimDyeFactor = rimEdge * Math.Clamp(edgeTint * 1.4f, 0f, 1f) * dyeWeight * 0.75f;
                     r += (dyeR - r) * rimDyeFactor;
@@ -345,7 +393,7 @@ public static class GlyphLiquidGlassRenderer
 
                 var meniscusLight = 0f;
                 var spreadWidth = lensWidth * 1.6f;
-                if (depth < spreadWidth && lensWidth > 0.001f)
+                if (!modern && depth < spreadWidth && lensWidth > 0.001f)
                 {
                     var t = Math.Clamp(depth / lensWidth, 0f, 1f);
                     var tilt = (depth < lensWidth) ? MathF.Pow(1f - t, 2.0f) : 0f;
@@ -366,6 +414,21 @@ public static class GlyphLiquidGlassRenderer
 
                     meniscusLight = bevelLight + innerSheen;
                 }
+                if (modern)
+                {
+                    var sheen = 1f - SmoothStep(0f, Math.Max(strokeRadius * 0.90f, 1.5f * scale), depth);
+                    meniscusLight = sheen * (0.38f + 0.30f * MathF.Pow(directional, 0.80f));
+                    // A bright environment needs absorption as well as reflection.
+                    // Fade that neutral inner shade through the same curved band.
+                    var absorption = SmoothStep(135f, 225f, luma) * sheen * highlightFactor * 0.38f;
+                    r *= 1f - absorption;
+                    g *= 1f - absorption;
+                    b *= 1f - absorption;
+                    var reflectionTarget = 255f - SmoothStep(135f, 225f, luma) * 175f;
+                    hlR = reflectionTarget + (hlR - 255f) * 0.4f;
+                    hlG = reflectionTarget + (hlG - 255f) * 0.4f;
+                    hlB = reflectionTarget + (hlB - 255f) * 0.4f;
+                }
 
                 // 柔光玻璃: the diffuse halo along the strokes — the numerals read as softly lit
                 // rather than outlined, and it survives EdgeWidth = 0 (no lens at all).
@@ -382,9 +445,9 @@ public static class GlyphLiquidGlassRenderer
                     softHalo = glowStrength * halo * wrap * 0.55f;
                 }
 
-                var totalLight = highlightFactor * (rimLight * (soft ? 1.25f : 1.10f) + meniscusLight * 0.65f + ambientLuster);
-                // Cap total light mix at 0.78 so specular glint never totally blinds out the saturated dye color underneath
-                var lightMix = Math.Clamp(totalLight, 0f, 0.78f);
+                var totalLight = highlightFactor * (rimLight * (soft ? 1.25f : 1.10f) + meniscusLight * 0.65f + (modern ? 0f : ambientLuster));
+                // Limit V2's reflection peak so fine strokes retain their backdrop.
+                var lightMix = Math.Clamp(totalLight, 0f, modern ? 0.32f : 0.78f);
 
                 r += (hlR - r) * lightMix;
                 g += (hlG - g) * lightMix;
@@ -410,7 +473,10 @@ public static class GlyphLiquidGlassRenderer
         var handle = System.Runtime.InteropServices.GCHandle.Alloc(pixels, System.Runtime.InteropServices.GCHandleType.Pinned);
         try
         {
-            resultBitmap.InstallPixels(new SKImageInfo(width, height, SKColorType.Bgra8888, SKAlphaType.Premul),
+            // SKColor stores straight RGB; Skia must premultiply the mask coverage
+            // when drawing V2, otherwise antialiased contours become bright fringes.
+            // Keep the legacy representation unchanged for the soft material.
+            resultBitmap.InstallPixels(new SKImageInfo(width, height, SKColorType.Bgra8888, modern ? SKAlphaType.Unpremul : SKAlphaType.Premul),
                 handle.AddrOfPinnedObject());
             resultSurface.Canvas.DrawBitmap(resultBitmap, 0, 0);
             using var imageSnapshot = resultSurface.Snapshot();
@@ -840,9 +906,9 @@ public static class GlyphLiquidGlassRenderer
         return lensShift * Math.Max(0f, shape);
     }
 
-    private static float Channel(float val, byte coat, float luma, float adapt, float localTint)
+    private static float Channel(float val, byte coat, float luma, float adapt, float localTint, float saturation)
     {
-        var c = luma + (val - luma) * Saturation;
+        var c = luma + (val - luma) * saturation;
         c += (255f - c) * adapt;
         return c * (1f - localTint) + coat * localTint;
     }

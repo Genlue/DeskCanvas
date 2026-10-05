@@ -114,9 +114,10 @@
              and app title are declared after the SplitView so they draw above it. -->
         <SplitView Name="SplitView" Grid.Row="0" Grid.RowSpan="2" IsPaneOpen="True" DisplayMode="CompactInline" PaneBackground="Transparent" OpenPaneLength="200" CompactPaneLength="60">
             <SplitView.Pane>
-                <ScrollViewer>
-                    <!-- Top padding reserves the floating title strip (AppTitle / traffic lights). -->
-                    <StackPanel Margin="0 48 12 0">
+                <!-- Keep the title strip outside the scrolling viewport so navigation cannot
+                     scroll underneath AppTitle / traffic lights in a short window. -->
+                <ScrollViewer Margin="0 48 0 0" ClipToBounds="True">
+                    <StackPanel Margin="0 0 12 0">
                         <ListBox Name="ListBox" Background="Transparent" SelectionMode="Single" ItemsSource="{Binding AllItems}" SelectionChanged="OnMenuItemChanged">
                             <ListBox.ItemTemplate>
                                 <DataTemplate DataType="viewModels:PageViewModel">
