@@ -5,7 +5,10 @@ using System.Linq;
 using System.Reflection;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Input;
 using Avalonia.Interactivity;
+using Avalonia.Layout;
+using Avalonia.Media;
 using DeskCanvas.Core.Interfaces;
 using DeskCanvas.Core.Models;
 using DeskCanvas.Core.Models.Attributes;
@@ -110,10 +113,11 @@ public partial class Gallery : UserControl, INotifyPropertyChanged
                         widgetFactory.CreateControl(widgetInfo.ViewType),
                         info.AssemblyName,
                         widgetInfo.ViewType.Name,
+                        widgetInfo.ViewType,
                         locale?.GetString(widgetInfo.Title ?? string.Empty) ?? widgetInfo.Title,
-                        locale?.GetString(widgetInfo.Subtitle ?? string.Empty) ?? widgetInfo.Subtitle,
                         widgetInfo.DefaultColumns,
-                        widgetInfo.DefaultRows
+                        widgetInfo.DefaultRows,
+                        widgetInfo.PresetSpans
                     ));
 
                 result.AddRange(items);
@@ -129,10 +133,104 @@ public partial class Gallery : UserControl, INotifyPropertyChanged
 
     private void Button_OnClick(object? sender, RoutedEventArgs e)
     {
-        var button = sender as Button;
-        var preview = button!.DataContext as WidgetPreviewViewModel;
-        if (preview == null) return;
+        if ((sender as Button)!.DataContext is not WidgetPreviewViewModel preview) return;
+        PlaceWidget(preview, preview.DefaultColumns, preview.DefaultRows, sender as Control);
+    }
 
+    /// <summary>
+    /// Right-click on a multi-preset card opens the size panel: a context menu (same
+    /// styling and behavior as every other menu in the app) whose entries each carry a
+    /// live mini preview at that span's aspect ratio plus the size badge. Choosing an
+    /// entry places the widget on the desktop at that size directly. Single-span
+    /// widgets declare no presets (<see cref="WidgetInfoAttribute.PresetSpans"/>) and
+    /// intentionally get no panel.
+    /// </summary>
+    private void Card_OnPointerReleased(object? sender, PointerReleasedEventArgs e)
+    {
+        if (e.InitialPressMouseButton != MouseButton.Right) return;
+        if ((sender as Button)!.DataContext is not WidgetPreviewViewModel preview) return;
+        if (!preview.HasSizePresets) return;
+
+        var menuItems = new List<MenuItem>();
+        var thumbnails = new List<UserControl>();
+        foreach (var (columns, rows) in preview.PresetSpans)
+        {
+            var control = widgetFactory.CreateControl(preview.ViewType);
+            thumbnails.Add(control);
+            menuItems.Add(BuildSizeMenuItem(preview, columns, rows, control));
+        }
+
+        var menu = new ContextMenu { ItemsSource = menuItems, Placement = PlacementMode.Pointer };
+        menu.Closed += (_, _) =>
+        {
+            // Closing the menu detaches the thumbnails (their Unloaded cleanup runs);
+            // dispose explicitly, same contract as ReleasePreviews for the page cards.
+            foreach (var control in thumbnails)
+            {
+                try
+                {
+                    (control as IDisposable)?.Dispose();
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"[Gallery] Failed to release size thumbnail: {ex.Message}");
+                }
+            }
+        };
+        menu.Open((Control)sender!);
+        e.Handled = true;
+    }
+
+    /// <summary>One entry of the size panel: a live mini preview at the span's aspect
+    /// ratio — 100 DIP per grid cell, the same pixel tier heuristic views fall back to
+    /// outside the desktop — plus the same size badge the gallery card shows. The
+    /// thumbnail scale targets ~64 DIP per grid cell so the preview is actually
+    /// legible, capped by a 256×128 outer box (4×1 stays 256 wide, 4×4 shrinks to
+    /// 128×128).</summary>
+    private MenuItem BuildSizeMenuItem(WidgetPreviewViewModel preview, int columns, int rows, UserControl control)
+    {
+        const double maxThumbWidth = 256;
+        const double maxThumbHeight = 128;
+        const double cell = 64;
+        var scale = Math.Min(Math.Min(maxThumbWidth / columns, maxThumbHeight / rows), cell);
+        var thumbWidth = columns * scale;
+        var thumbHeight = rows * scale;
+
+        // The live control is sized to columns*100 DIP (the same pixel tier heuristic
+        // views fall back to outside the desktop) and the Viewbox scales it into the
+        // thumbnail, so the preview shows exactly what the desktop card will look like.
+        control.Width = columns * 100;
+        control.Height = rows * 100;
+
+        var thumbnail = new Border
+        {
+            Width = thumbWidth,
+            Height = thumbHeight,
+            CornerRadius = new CornerRadius(4),
+            Background = new SolidColorBrush(Color.Parse("#16808080")),
+            BorderBrush = new SolidColorBrush(Color.Parse("#25808080")),
+            BorderThickness = new Thickness(1),
+            ClipToBounds = true,
+            IsHitTestVisible = false,
+            Child = new Viewbox { Stretch = Stretch.Uniform, Child = control }
+        };
+
+        var header = new StackPanel { Orientation = Orientation.Horizontal };
+        header.Children.Add(thumbnail);
+        header.Children.Add(new TextBlock
+        {
+            Text = WidgetPreviewViewModel.BadgeFor(columns, rows),
+            VerticalAlignment = VerticalAlignment.Center,
+            Margin = new Thickness(10, 0, 0, 0),
+        });
+
+        var item = new MenuItem { Header = header };
+        item.Click += (_, _) => PlaceWidget(preview, columns, rows, item);
+        return item;
+    }
+
+    private void PlaceWidget(WidgetPreviewViewModel preview, int columns, int rows, Control? anchor)
+    {
         var settingsWindow = VisualRoot as Window;
         var attached = settingsWindow != null ? displayMonitor.Find(settingsWindow) : null;
         if (attached == null)
@@ -140,8 +238,8 @@ public partial class Gallery : UserControl, INotifyPropertyChanged
             // Monitor not ready (edge case): legacy primary placement.
             var legacy = layoutProvider.Get().FindById(ScreensLayout.LegacyPrimaryId)
                          ?? new ScreenLayout(ScreensLayout.LegacyPrimaryId, null, null, null, null, null, []);
-            var (defaultW, defaultH) = DefaultSize(settingsWindow, preview.DefaultColumns, preview.DefaultRows);
-            var pointer = button.PointToScreen(new Point(0, 0));
+            var (defaultW, defaultH) = DefaultSize(settingsWindow, columns, rows);
+            var pointer = anchor != null ? anchor.PointToScreen(new Point(0, 0)) : new PixelPoint(0, 0);
             var legacyLayout = new WidgetLayout(preview.Type, preview.Subtype, pointer.X, pointer.Y,
                 defaultW, defaultH, null);
             widgetFactory.Add(legacy, legacyLayout).Show();
@@ -156,7 +254,7 @@ public partial class Gallery : UserControl, INotifyPropertyChanged
         // right now; EnsureConfig still covers brand-new screens with no entry yet.
         var screenConfig = displayMonitor.CurrentConfig(settingsWindow!)
                            ?? displayMonitor.EnsureConfig(attached);
-        var (x, y, w, h) = ComputePlacement(screenConfig, attached, preview.DefaultColumns, preview.DefaultRows);
+        var (x, y, w, h) = ComputePlacement(screenConfig, attached, columns, rows);
         var widgetLayout = new WidgetLayout(preview.Type, preview.Subtype, x, y, w, h, null);
         widgetFactory.Add(screenConfig, widgetLayout).Show();
     }

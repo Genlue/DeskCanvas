@@ -31,13 +31,13 @@
         <value>Time zone</value>
     </data>
     <data name="Clock_AnalogI_Title" xml:space="preserve">
-        <value>Analog I</value>
+        <value>Dial 1</value>
     </data>
     <data name="Clock_AnalogII_Title" xml:space="preserve">
         <value>Analog II</value>
     </data>
     <data name="Clock_AnalogIII_Title" xml:space="preserve">
-        <value>Analog III</value>
+        <value>Dial 2</value>
     </data>
     <data name="Clock_Digital_Title" xml:space="preserve">
         <value>Digital</value>

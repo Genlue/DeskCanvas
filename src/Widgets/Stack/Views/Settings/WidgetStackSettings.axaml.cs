@@ -30,7 +30,6 @@ public partial class WidgetStackSettings : UserControl
     private static readonly List<AvailableWidgetOption> AvailableOptions =
     [
         new("Clock", "AnalogI", "时钟 (经典表盘 I)"),
-        new("Clock", "AnalogII", "时钟 (经典表盘 II)"),
         new("Clock", "Digital", "时钟 (数字时钟)"),
         new("Notes", "Note", "便签"),
         new("Reminders", "List", "待办清单"),

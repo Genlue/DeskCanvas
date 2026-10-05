@@ -130,13 +130,13 @@
     <value>时区</value>
   </data>
   <data name="Clock_AnalogI_Title" xml:space="preserve">
-    <value>样式 1</value>
+    <value>表盘-1</value>
   </data>
   <data name="Clock_AnalogII_Title" xml:space="preserve">
     <value>样式 2</value>
   </data>
   <data name="Clock_AnalogIII_Title" xml:space="preserve">
-    <value>样式 3</value>
+    <value>表盘-2</value>
   </data>
   <data name="Clock_Digital_Title" xml:space="preserve">
     <value>数字时钟</value>

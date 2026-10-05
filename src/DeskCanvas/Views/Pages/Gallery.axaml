@@ -53,8 +53,9 @@
                 <DataTemplate DataType="viewModels:WidgetPreviewViewModel">
                     <StackPanel Width="{Binding CardWidth}" Margin="10,0,10,26">
                         <Button Classes="macos-gallery-card"
-                                ToolTip.Tip="点击添加到桌面"
-                                Click="Button_OnClick">
+                                ToolTip.Tip="{Binding ToolTipText}"
+                                Click="Button_OnClick"
+                                PointerReleased="Card_OnPointerReleased">
                             <StackPanel Orientation="Vertical">
                                 <!-- 真实比例小组件预览框。内边距不再由这里硬编码：preview-box 与桌面
                                      卡片 Border 同样带 .widget-content-host，内容的内边距由 App.axaml
@@ -76,20 +77,13 @@
                                                    FontWeight="SemiBold"
                                                    FontSize="13"
                                                    TextTrimming="CharacterEllipsis" />
-                                        <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,2,0,0">
-                                            <Border Background="#14808080" CornerRadius="4" Padding="5,1">
-                                                <TextBlock Text="{Binding SizeBadge}"
-                                                           FontSize="10"
-                                                           FontWeight="Medium"
-                                                           Opacity="0.75" />
-                                            </Border>
-                                            <TextBlock Text="{Binding Subtitle}"
-                                                       FontSize="11"
-                                                       Opacity="0.55"
-                                                       TextTrimming="CharacterEllipsis"
-                                                       VerticalAlignment="Center"
-                                                       MaxWidth="200" />
-                                        </StackPanel>
+                                        <Border Background="#14808080" CornerRadius="4" Padding="5,1"
+                                                HorizontalAlignment="Left" Margin="0,2,0,0">
+                                            <TextBlock Text="{Binding SizeBadge}"
+                                                       FontSize="10"
+                                                       FontWeight="Medium"
+                                                       Opacity="0.75" />
+                                        </Border>
                                     </StackPanel>
 
                                     <Border Grid.Column="1"
