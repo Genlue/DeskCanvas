@@ -61,6 +61,7 @@ class Program
         TestNegativeCoordinatesPlacement();
         TestButtonHandlerWiring();
         TestScreenTargetResolution();
+        TestSequentialScreenEdits();
 
         Console.WriteLine();
         if (failures == 0)
@@ -111,6 +112,34 @@ class Program
 
         Assert(s1Grid.Columns == 8 && s1Grid.Rows == 6, "Screen 1 resolves to global 8x6");
         Assert(s2Grid.Columns == 8 && s2Grid.Rows == 6, "Screen 2 resolves to global 8x6");
+    }
+
+    private static void TestSequentialScreenEdits()
+    {
+        Console.WriteLine("--- Sequential screen edits preserve current layout and other fields ---");
+        var snapshot = new ScreenLayout("screen", "Monitor|1920x1080", null, null, null, null, []);
+        var other = new ScreenLayout("other", "Other|1920x1080", null, null, null, null, []);
+        var provider = new FakeLayoutProvider(new ScreensLayout([snapshot, other]));
+        ScreenConfigEditor.Save(provider, snapshot.Id, s => s with { Margin = 19 });
+        ScreenConfigEditor.Save(provider, snapshot.Id, s => s with { Radius = 27 });
+        ScreenConfigEditor.Save(provider, snapshot.Id, s => s with { ContentScale = 1.4 });
+        var grid = new GridSettings(12, 8, 10, 20, 4);
+        ScreenConfigEditor.Save(provider, snapshot.Id, s => s with { Grid = grid, Alias = "Edited" });
+        // A widget or grid editor can write while the page keeps the original card closure.
+        var current = provider.Get().FindById(snapshot.Id)!;
+        var movedWidget = new WidgetLayout("Weather", "Forecast", 5, 7, 96, 96, default);
+        provider.Save(provider.Get().WithScreen(current with { Layout = [movedWidget] }));
+        ScreenConfigEditor.Save(provider, snapshot.Id, s => s with { Margin = null });
+        current = provider.Get().FindById(snapshot.Id)!;
+        Assert(current.Margin == null && current.Radius == 27 && current.ContentScale == 1.4,
+            "Reset margin retains the independently edited radius and scale");
+        Assert(current.Grid == grid && current.Alias == "Edited", "Style edits retain grid and alias");
+        Assert(current.Layout.Count == 1 && current.Layout[0] == movedWidget,
+            "Card edits retain a layout saved after the card was built");
+        Assert(provider.Get().FindById(other.Id) == other, "Other screen remains unchanged");
+        provider.Save(new ScreensLayout([other]));
+        ScreenConfigEditor.Save(provider, snapshot.Id, s => s with { Radius = 9 });
+        Assert(provider.Get().FindById(snapshot.Id) == null, "Stale card cannot resurrect a deleted screen");
     }
 
     private static void TestPerScreenGridIsolation()

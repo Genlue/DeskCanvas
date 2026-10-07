@@ -36,6 +36,31 @@ public class DisplayMonitorService(ILayoutProvider layoutProvider)
     private Window? anchor;
     private DispatcherTimer? poller;
     private string lastSignature = "";
+    private string committedTopology = "";
+    private string pendingTopology = "";
+    private DateTime pendingSince;
+    private bool refreshing;
+    private DateTime notificationSettleUntil;
+
+    /// <summary>True while Windows and Avalonia are settling a display change.</summary>
+    public bool IsTopologyChanging { get; private set; }
+
+    /// <summary>Raised before publishing a changed topology so windows can suspend position saves.</summary>
+    public event EventHandler? ScreensChanging;
+
+    /// <summary>Suspend immediately on a native notification, before Avalonia refreshes its cached screens.</summary>
+    public void NotifyDisplaySettingsChanged()
+    {
+        notificationSettleUntil = DateTime.UtcNow.AddMilliseconds(750);
+        pendingTopology = "";
+        if (!IsTopologyChanging)
+        {
+            IsTopologyChanging = true;
+            if (poller != null) poller.Interval = TimeSpan.FromMilliseconds(250);
+            ScreensChanging?.Invoke(this, EventArgs.Empty);
+        }
+        Dispatcher.UIThread.Post(Refresh, DispatcherPriority.Background);
+    }
 
     /// <summary>Attached screens (geometry + identity + matched configuration), refreshed by <see cref="Refresh"/>. Ordered by screen index.</summary>
     public IReadOnlyList<AttachedScreen> Attached { get; private set; } = [];
@@ -79,44 +104,106 @@ public class DisplayMonitorService(ILayoutProvider layoutProvider)
     /// <summary>Recalculate the attached screen list and raise <see cref="ScreensChanged"/> on any change.</summary>
     public void Refresh()
     {
+        if (anchor == null || refreshing) return;
+        refreshing = true;
+        try { RefreshCore(); }
+        finally { refreshing = false; }
+    }
+
+    private void RefreshCore()
+    {
         if (anchor == null) return;
 
         var screens = anchor.Screens.All;
-        if (screens.Count == 0) return;
+        if (screens.Count == 0)
+        {
+            if (!IsTopologyChanging)
+            {
+                IsTopologyChanging = true;
+                if (poller != null) poller.Interval = TimeSpan.FromMilliseconds(250);
+                ScreensChanging?.Invoke(this, EventArgs.Empty);
+            }
+            pendingTopology = "";
+            return;
+        }
+
+        var devices = EnumerateDevices();
+        var used = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var candidates = screens.Select(screen =>
+        {
+            var device = MatchDevice(screen, devices, used,
+                Attached.FirstOrDefault(a => a.Screen.Bounds == screen.Bounds)?.Identity.DeviceName);
+            return new AttachedScreen(screen, new ScreenIdentity(
+                device?.Name ?? string.Empty,
+                device?.FriendlyName ?? ScreenIdentity.FallbackName,
+                screen.Bounds.Width, screen.Bounds.Height, screen.IsPrimary, screen.Scaling,
+                device?.HardwareId ?? string.Empty, device?.MonitorId ?? string.Empty), null);
+        }).ToList();
+        var topology = string.Join("|", candidates.Select(a =>
+            FormattableString.Invariant($"{a.Identity.DeviceName}:{a.Identity.MonitorId}:{a.Identity.Key}@{a.Screen.Bounds}:{a.Screen.WorkingArea}:{a.Screen.Scaling:R}:{a.Screen.IsPrimary}")).OrderBy(s => s, StringComparer.Ordinal));
+
+        // During transitions both APIs report independently cached desktops.
+        // Stable disagreement is still disagreement; never commit a guessed or
+        // anonymous replacement for a named Win32 monitor, even on first attach.
+        if (!DisplayTopology.HasSameGeometry(
+                screens.Select(screen => (screen.Bounds.X, screen.Bounds.Y, screen.Bounds.Width, screen.Bounds.Height)),
+                devices.Select(device => (device.X, device.Y, device.Width, device.Height)))
+            || candidates.Any(a => string.IsNullOrEmpty(a.Identity.DeviceName)))
+        {
+            if (!IsTopologyChanging)
+            {
+                IsTopologyChanging = true;
+                if (poller != null) poller.Interval = TimeSpan.FromMilliseconds(250);
+                ScreensChanging?.Invoke(this, EventArgs.Empty);
+            }
+            pendingTopology = "";
+            return;
+        }
+
+        if (committedTopology.Length > 0 && topology != committedTopology)
+        {
+            if (!IsTopologyChanging)
+            {
+                IsTopologyChanging = true;
+                if (poller != null) poller.Interval = TimeSpan.FromMilliseconds(250);
+                ScreensChanging?.Invoke(this, EventArgs.Empty);
+            }
+            if (pendingTopology != topology)
+            {
+                pendingTopology = topology;
+                pendingSince = DateTime.UtcNow;
+                return;
+            }
+            if (DateTime.UtcNow - pendingSince < TimeSpan.FromMilliseconds(750)) return;
+        }
+
+        var wasChanging = IsTopologyChanging;
+        if (wasChanging && DateTime.UtcNow < notificationSettleUntil) return;
+        committedTopology = topology;
+        pendingTopology = "";
 
         // Clean redundant empty duplicates first (twin-key drift from stale
         // EnsureConfig); matching then works against a tidy config set.
-        var storedLayout = layoutProvider.Get().Deduplicate();
-        if (!ReferenceEquals(storedLayout, layoutProvider.Get()))
-            layoutProvider.Save(storedLayout);
+        var originalLayout = layoutProvider.Get();
+        var storedLayout = originalLayout.Deduplicate();
 
         // Consuming match: each stored entry matches at most ONE screen, so twin
         // screens with identical keys can never both own the same widgets.
         var consumedConfigIds = new HashSet<string>(StringComparer.Ordinal);
 
-        var devices = EnumerateDevices();
-        var used = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var attached = new List<AttachedScreen>();
 
-        // Handing a nameless leftover device to a screen just to "pair everything up" is how
-        // a real monitor's identity got replaced by an anonymous one (the remote-screen bug):
-        // only pair 1:1 desktops that way, otherwise leave the screen anonymous — it then
-        // simply owns no configuration until a real name/hardware id shows up.
-        var allowFallbackPairing = devices.Count == screens.Count;
-
-        foreach (var screen in screens)
+        // Geometry must agree across Win32 and Avalonia before assigning a
+        // device identity. Unresolved screens cannot borrow another monitor's layout.
+        foreach (var candidate in candidates.OrderBy(a => a.Identity.DeviceName, StringComparer.OrdinalIgnoreCase))
         {
-            var device = MatchDevice(screen, devices, used, allowFallbackPairing);
-            var identity = new ScreenIdentity(
-                device?.Name ?? string.Empty,
-                device?.FriendlyName ?? "Screen",
-                screen.Bounds.Width,
-                screen.Bounds.Height,
-                screen.IsPrimary,
-                screen.Scaling,
-                device?.HardwareId ?? string.Empty);
+            var screen = candidate.Screen;
+            var identity = candidate.Identity;
 
-            var config = ScreenMatcher.Match(storedLayout.Screens, identity, consumedConfigIds);
+            var config = ScreenMatcher.Match(storedLayout.Screens, identity, consumedConfigIds,
+                candidates.Count(a => string.Equals(a.Identity.HardwareId, identity.HardwareId,
+                    StringComparison.OrdinalIgnoreCase)) == 1,
+                allowLegacyTwinUpgrade: !string.IsNullOrEmpty(identity.MonitorId));
             var changed = false;
             if (config != null && config.Key != null && config.Key != identity.Key && config.Key.EndsWith($"|{identity.Width}x{identity.Height}"))
             {
@@ -133,10 +220,14 @@ public class DisplayMonitorService(ILayoutProvider layoutProvider)
                 config = config with { HardwareId = identity.HardwareId };
                 changed = true;
             }
+            if (config != null && !string.IsNullOrEmpty(identity.MonitorId) && config.MonitorId != identity.MonitorId)
+            {
+                config = config with { MonitorId = identity.MonitorId };
+                changed = true;
+            }
             if (changed)
             {
                 storedLayout = storedLayout.WithScreen(config!);
-                layoutProvider.Save(storedLayout);
             }
             attached.Add(new AttachedScreen(screen, identity, config));
         }
@@ -145,22 +236,20 @@ public class DisplayMonitorService(ILayoutProvider layoutProvider)
         // the geometry signature did not change — e.g. right after EnsureConfig
         // created a new entry); ScreensChanged fires only on actual changes.
         Attached = attached;
+        // Publish the complete identity/configuration snapshot before notifying
+        // layout consumers, and persist all backfills in a single transaction.
+        if (!ReferenceEquals(storedLayout, originalLayout))
+            layoutProvider.Save(storedLayout);
 
-        var signature = string.Join("|", attached.Select(a =>
-            $"{a.Identity.Key}@{a.Screen.Bounds.X},{a.Screen.Bounds.Y}:{a.Screen.Scaling:F2}:{a.Config?.Id ?? "-"}"));
-        if (signature == lastSignature) return;
+        var signature = topology + string.Join("|", attached.Select(a => a.Config?.Id ?? "-"));
+        IsTopologyChanging = false;
+        if (poller != null) poller.Interval = TimeSpan.FromSeconds(1.5);
+        if (signature == lastSignature && !wasChanging) return;
 
         lastSignature = signature;
 
-        // Leftovers of legacy/anonymous matching (GPU-adapter keys, remote-tool virtual screens
-        // that briefly adopted widgets during a session) can never match again now that entries
-        // pin to their monitor's hardware id — drop the ones whose widgets already live on an
-        // attached screen, so they neither resurface as phantoms nor clog the screen settings.
-        var pruned = storedLayout.PruneStaleLegacyEntries(
-            attached.Where(a => a.Config != null).Select(a => a.Config!).ToList());
-        if (!ReferenceEquals(pruned, storedLayout))
-            layoutProvider.Save(pruned);
-
+        // A disconnected configuration belongs to the user even if it contains
+        // copies of another screen's widgets. Topology observation never deletes it.
         ScreensChanged?.Invoke(this, EventArgs.Empty);
     }
 
@@ -173,8 +262,11 @@ public class DisplayMonitorService(ILayoutProvider layoutProvider)
         Attached.FirstOrDefault(a => a.Screen.Bounds == screen.Bounds);
 
     /// <summary>The attached screen whose stored configuration has the given id.</summary>
-    public AttachedScreen? FindByConfigId(string configId) =>
-        Attached.FirstOrDefault(a => a.Config?.Id == configId);
+    public AttachedScreen? FindByConfigId(string configId)
+    {
+        var attached = Attached.FirstOrDefault(a => a.Config?.Id == configId);
+        return attached == null ? null : attached with { Config = layoutProvider.Get().FindById(configId) ?? attached.Config };
+    }
 
     /// <summary>
     /// The stored configuration of the screen the window currently sits on, re-read by
@@ -197,7 +289,8 @@ public class DisplayMonitorService(ILayoutProvider layoutProvider)
     /// </summary>
     public ScreenLayout EnsureConfig(AttachedScreen attached)
     {
-        if (attached.Config != null) return attached.Config;
+        if (attached.Config != null)
+            return layoutProvider.Get().FindById(attached.Config.Id) ?? attached.Config;
 
         var entry = new ScreenLayout(
             Guid.NewGuid().ToString("N"),
@@ -207,7 +300,8 @@ public class DisplayMonitorService(ILayoutProvider layoutProvider)
             null,
             null,
             [],
-            HardwareId: string.IsNullOrEmpty(attached.Identity.HardwareId) ? null : attached.Identity.HardwareId);
+            HardwareId: string.IsNullOrEmpty(attached.Identity.HardwareId) ? null : attached.Identity.HardwareId,
+            MonitorId: string.IsNullOrEmpty(attached.Identity.MonitorId) ? null : attached.Identity.MonitorId);
         var screens = layoutProvider.Get().UpsertScreen(entry);
         layoutProvider.Save(screens);
 
@@ -224,12 +318,12 @@ public class DisplayMonitorService(ILayoutProvider layoutProvider)
             Attached = list;
         }
 
-        // First-time screens get their own entry NOW → also split legacy widgets
-        // whose positions fall on them (idempotent; keeps the migration complete
-        // even when a screen appears for the very first time).
-        MigrateLegacyWidgets();
+        // Refresh publishes ScreensChanged; WidgetFactory owns migration and
+        // closes live legacy windows before changing their coordinate format.
 
-        return entry;
+        // Reconciliation can migrate legacy widgets into this new bucket; callers
+        // must receive that current entry rather than the empty creation snapshot.
+        return layoutProvider.Get().FindById(entry.Id) ?? entry;
     }
 
     /// <summary>
@@ -253,9 +347,10 @@ public class DisplayMonitorService(ILayoutProvider layoutProvider)
         var primary = stored.FindById(ScreensLayout.LegacyPrimaryId);
         // Only unmigrated legacy v1 buckets (Key == null) need migration. Real v2 screens must never be touched.
         if (primary == null || primary.Key != null) return;
+        var primaryScreen = Attached.FirstOrDefault(a => a.Config?.Id == primary.Id);
+        if (primaryScreen == null || IsTopologyChanging) return;
 
-        var moved = false;
-        foreach (var widget in primary.Layout.ToList())
+        var migrated = stored.MigrateLegacyWidgets(widget =>
         {
             var centerX = widget.X + widget.Width / 2.0;
             var centerY = widget.Y + widget.Height / 2.0;
@@ -265,25 +360,31 @@ public class DisplayMonitorService(ILayoutProvider layoutProvider)
                 && a.Config.Id != primary.Id
                 && a.Screen.WorkingArea.Contains(new PixelPoint((int) centerX, (int) centerY)));
 
-            if (owner == null) continue; // genuinely on the primary (or unmatched yet) → stays
+            return owner == null ? null : (owner.Config!.Id, owner.Screen.WorkingArea.X, owner.Screen.WorkingArea.Y);
+        });
 
-            var area = owner.Screen.WorkingArea;
-            var entry = widget with { X = widget.X - area.X, Y = widget.Y - area.Y };
-
-            stored = stored.WithScreen(primary with
+        // Convert only once the remaining bucket is wholly on its real screen.
+        // Unknown/offline widget positions stay absolute until their monitor returns.
+        var remaining = migrated.FindById(primary.Id)!;
+        if (remaining.Layout.All(widget => primaryScreen.Screen.WorkingArea.Contains(
+                new PixelPoint(widget.X + widget.Width / 2, widget.Y + widget.Height / 2))))
+        {
+            var area = primaryScreen.Screen.WorkingArea;
+            migrated = migrated.WithScreen(remaining with
             {
-                Layout = primary.Layout.Where(w => w != widget).ToList()
+                Key = primaryScreen.Identity.Key,
+                Layout = remaining.Layout.Select(widget => widget with
+                {
+                    X = widget.X - area.X,
+                    Y = widget.Y - area.Y
+                }).ToList()
             });
-            // owner.Config is non-null: the query above only matches entries with a config.
-            stored = stored.WithScreen(owner.Config! with
-            {
-                Layout = [.. owner.Config!.Layout, entry]
-            });
-            moved = true;
         }
 
-        if (!moved) return;
-        layoutProvider.Save(stored);
+        if (ReferenceEquals(migrated, stored)) return;
+        Attached = Attached.Select(a => a.Config == null ? a
+            : a with { Config = migrated.FindById(a.Config.Id) ?? a.Config }).ToList();
+        layoutProvider.Save(migrated);
         Refresh();
     }
 
@@ -337,7 +438,7 @@ public class DisplayMonitorService(ILayoutProvider layoutProvider)
     [DllImport("user32.dll", CharSet = CharSet.Unicode)]
     private static extern bool EnumDisplaySettings(string? lpszDeviceName, uint iModeNum, ref DEVMODE lpDevMode);
 
-    private sealed record Win32Device(string Name, string FriendlyName, string HardwareId, int X, int Y, int Width, int Height);
+    private sealed record Win32Device(string Name, string FriendlyName, string HardwareId, string MonitorId, int X, int Y, int Width, int Height);
 
     private static Dictionary<string, string>? cachedWmiNames;
     private static DateTime lastWmiQuery = DateTime.MinValue;
@@ -398,11 +499,12 @@ public class DisplayMonitorService(ILayoutProvider layoutProvider)
             if ((device.StateFlags & DISPLAY_DEVICE_ATTACHED_TO_DESKTOP) == 0) continue;
 
             var mode = new DEVMODE { dmSize = (short) Marshal.SizeOf<DEVMODE>() };
-            EnumDisplaySettings(device.DeviceName, ENUM_CURRENT_SETTINGS, ref mode);
+            if (!EnumDisplaySettings(device.DeviceName, ENUM_CURRENT_SETTINGS, ref mode)) continue;
 
             // Probe monitor attached to this display adapter
             string friendlyName = string.Empty;
             string hardwareId = string.Empty;
+            string monitorId = string.Empty;
 
             for (uint monIndex = 0; ; monIndex++)
             {
@@ -415,10 +517,12 @@ public class DisplayMonitorService(ILayoutProvider layoutProvider)
 
                 if (!string.IsNullOrEmpty(devId))
                 {
+                    monitorId = devId.Trim().ToUpperInvariant();
                     var parts = devId.Split(new[] { '\\', '#' }, StringSplitOptions.RemoveEmptyEntries);
-                    if (parts.Length > 1 && parts[0].Equals("DISPLAY", StringComparison.OrdinalIgnoreCase))
+                    var displayPart = Array.FindIndex(parts, part => part.Equals("DISPLAY", StringComparison.OrdinalIgnoreCase));
+                    if (displayPart >= 0 && displayPart + 1 < parts.Length)
                     {
-                        hardwareId = parts[1];
+                        hardwareId = parts[displayPart + 1];
                     }
                 }
 
@@ -457,6 +561,7 @@ public class DisplayMonitorService(ILayoutProvider layoutProvider)
                 device.DeviceName,
                 friendlyName,
                 hardwareId,
+                monitorId,
                 mode.dmPositionX,
                 mode.dmPositionY,
                 mode.dmPelsWidth,
@@ -466,35 +571,28 @@ public class DisplayMonitorService(ILayoutProvider layoutProvider)
         return result;
     }
 
-    private static Win32Device? MatchDevice(Screen screen, List<Win32Device> devices, HashSet<string> used, bool allowFallbackPairing)
+    private static Win32Device? MatchDevice(Screen screen, List<Win32Device> devices, HashSet<string> used, string? previousDevice)
     {
         // 1. Exact coordinate and resolution match (dmPositionX/Y == screen.Bounds.X/Y && Width/Height)
-        var exactPos = devices.FirstOrDefault(d => !used.Contains(d.Name)
+        var matches = devices.Where(d => !used.Contains(d.Name)
             && d.X == screen.Bounds.X
             && d.Y == screen.Bounds.Y
             && d.Width == screen.Bounds.Width
-            && d.Height == screen.Bounds.Height);
+            && d.Height == screen.Bounds.Height).ToList();
+        // Clone mode exposes several outputs at the same desktop geometry.
+        // Keep the previous owner if present; otherwise choose a deterministic
+        // output for this single logical desktop instead of treating it as unstable.
+        var chosenName = DisplayTopology.SelectDevice(matches.Select(d => d.Name), previousDevice);
+        var exactPos = matches.FirstOrDefault(d => d.Name == chosenName);
         if (exactPos != null)
         {
             used.Add(exactPos.Name);
             return exactPos;
         }
 
-        // 2. Exact resolution match
-        var exactRes = devices.FirstOrDefault(d => !used.Contains(d.Name) && d.Width == screen.Bounds.Width && d.Height == screen.Bounds.Height);
-        if (exactRes != null)
-        {
-            used.Add(exactRes.Name);
-            return exactRes;
-        }
-
-        // 3. Fallback to the first unused device — only when the whole desktop pairs 1:1;
-        // otherwise this silently renames a screen after a device that merely happens to be
-        // unclaimed (the identity a stored entry would then be keyed on is a lie).
-        if (!allowFallbackPairing) return null;
-
-        var fallback = devices.FirstOrDefault(d => !used.Contains(d.Name));
-        if (fallback != null) used.Add(fallback.Name);
-        return fallback;
+        // The two APIs can momentarily disagree during hot-plug. Guessing by
+        // resolution or enumeration order would give a surviving screen the
+        // removed monitor's identity and widgets. Wait for a coherent snapshot.
+        return null;
     }
 }

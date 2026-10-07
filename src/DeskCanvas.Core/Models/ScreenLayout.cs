@@ -22,6 +22,7 @@ namespace DeskCanvas.Core.Models;
 /// when the screen is seen). Pins the entry to that physical monitor, so a remote tool's
 /// virtual screen — or a same-resolution stand-in — can never adopt it by name.
 /// <c>null</c> = not yet seen with a hardware id (matched by key only).</param>
+/// <param name="MonitorId">Windows monitor instance/interface id used to distinguish same-model monitors.</param>
 public record ScreenLayout(
     string Id,
     string? Key,
@@ -32,7 +33,8 @@ public record ScreenLayout(
     List<WidgetLayout> Layout,
     double? Margin = null,
     double? Radius = null,
-    string? HardwareId = null)
+    string? HardwareId = null,
+    string? MonitorId = null)
 {
     /// <summary>
     /// Display name for the UI: the user alias when set, otherwise the friendly name part of the <see cref="Key"/>.
@@ -94,13 +96,40 @@ public record ScreensLayout(List<ScreenLayout> Screens, int Version = 2)
     public ScreensLayout UpsertScreen(ScreenLayout screen) =>
         Screens.Any(item => item.Id == screen.Id) ? WithScreen(screen) : AddScreen(screen);
 
+    /// <summary>Split an unmigrated absolute-coordinate legacy bucket into screen-relative layouts.</summary>
+    public ScreensLayout MigrateLegacyWidgets(Func<WidgetLayout, (string ScreenId, int OriginX, int OriginY)?> resolveOwner)
+    {
+        var primary = FindById(LegacyPrimaryId);
+        if (primary == null || primary.Key != null) return this;
+        var updated = this;
+        foreach (var widget in primary.Layout)
+        {
+            var owner = resolveOwner(widget);
+            if (owner == null || owner.Value.ScreenId == primary.Id) continue;
+            var target = updated.FindById(owner.Value.ScreenId);
+            if (target == null) continue;
+            var source = updated.FindById(primary.Id)!;
+            var index = WidgetLayout.IndexOfIdentity(source.Layout, widget);
+            if (index < 0) continue;
+            updated = updated.WithScreen(source with
+            {
+                Layout = source.Layout.Where((_, i) => i != index).ToList()
+            }).WithScreen(target with
+            {
+                Layout = [..target.Layout, widget with
+                {
+                    X = widget.X - owner.Value.OriginX,
+                    Y = widget.Y - owner.Value.OriginY
+                }]
+            });
+        }
+        return updated;
+    }
+
     /// <summary>
-    /// Remove redundant duplicate entries: two entries sharing the same identity
-    /// <see cref="ScreenLayout.Key"/> are normally twin screens (each keeps its own
-    /// layout), but a duplicated empty entry can appear when a screen is matched /
-    /// created twice (stale in-memory list). Entries with identical keys are kept
-    /// only when BOTH carry widgets; an empty duplicate is dropped in favor of the
-    /// entry that owns the widgets (or is aliased) — never merges two layouts.
+    /// Remove duplicate ids while preserving distinct screen configurations.
+    /// Equal friendly-name keys can belong to two monitors, including an empty
+    /// monitor with its own grid, margin or radius.
     /// </summary>
     public ScreensLayout Deduplicate()
     {
@@ -115,7 +144,9 @@ public record ScreensLayout(List<ScreenLayout> Screens, int Version = 2)
                 continue;
             }
 
-            var existing = kept.FirstOrDefault(item => item.Key == screen.Key);
+            // A friendly name/resolution describes a model, not an individual
+            // monitor. Preserve both twins and their independent appearance.
+            var existing = kept.FirstOrDefault(item => item.Id == screen.Id);
             if (existing == null)
             {
                 kept.Add(screen);

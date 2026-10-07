@@ -60,6 +60,14 @@ public partial class Widget : Window, INotifyPropertyChanged
     /// re-add this widget to it as a duplicate.
     /// </summary>
     private bool tornDown;
+    private bool restoringDisplayMetrics;
+    private bool moveCommitPending;
+
+    /// <summary>Persistent ownership, independent of Windows temporarily moving this window.</summary>
+    public string ScreenId => widgetLayoutProvider.ScreenId;
+    public ScreenLayout? ScreenConfig => layoutProvider.Get().FindById(ScreenId);
+    public Avalonia.Platform.Screen? OwningScreen => displayMonitor.FindByConfigId(ScreenId)?.Screen;
+    private double ScreenScaling => OwningScreen?.Scaling ?? 1.0;
 
     /// <summary>True while the host suspended the widgets (fullscreen application active).</summary>
     private bool suspended;
@@ -79,6 +87,7 @@ public partial class Widget : Window, INotifyPropertyChanged
     {
         tornDown = true;
         widgetLayoutProvider.DataChanged -= OnWidgetLayoutUpdated;
+        appSettingsProvider.DataChanged -= OnAppSettingsUpdated;
         layoutProvider.DataChanged -= OnLayoutDataUpdated;
         profileService.ActiveProfileChanged -= OnProfilesChanged;
         profileService.ProfilesListChanged -= OnProfilesChanged;
@@ -111,7 +120,7 @@ public partial class Widget : Window, INotifyPropertyChanged
     /// </summary>
     private void SaveLayout(WidgetLayout layout)
     {
-        if (tornDown) return;
+        if (tornDown || restoringDisplayMetrics || displayMonitor.IsTopologyChanging) return;
         widgetLayoutProvider.Save(layout);
     }
 
@@ -228,6 +237,7 @@ public partial class Widget : Window, INotifyPropertyChanged
 
     private void OnResized(object? sender, WindowResizedEventArgs e)
     {
+        if (tornDown || displayMonitor.IsTopologyChanging) return;
         UpdateContentSize();
         ApplyWidgetRegion();
         if (appSettingsProvider.Get().Theme.UseNativeFrame)
@@ -236,15 +246,8 @@ public partial class Widget : Window, INotifyPropertyChanged
 
     private void OnActivated(object? sender, EventArgs e)
     {
-        ApplyPosition();
-
-        // Manual grid: snap to the nearest cell on every activation (also covers
-        // widget positions stored before the grid mode was switched on).
-        if (appSettingsProvider.Get().Layout.GridMode == GridMode.Manual)
-            gridService.SnapPosition(this);
-
-        Scale();
-        ApplyWidgetRegion();
+        if (tornDown || displayMonitor.IsTopologyChanging || OwningScreen == null) return;
+        RefreshDisplayMetrics();
         InteropService.RemoveWindowFromAltTab(this);
     }
 
@@ -256,9 +259,10 @@ public partial class Widget : Window, INotifyPropertyChanged
     /// </summary>
     private void ApplyPosition()
     {
+        if (displayMonitor.IsTopologyChanging || OwningScreen == null) return;
         var settings = widgetLayoutProvider.Get();
 
-        if (widgetLayoutProvider.ScreenId == ScreensLayout.LegacyPrimaryId)
+        if (ScreenConfig?.Key == null)
         {
             Position = new PixelPoint(settings.X, settings.Y);
             return;
@@ -280,7 +284,7 @@ public partial class Widget : Window, INotifyPropertyChanged
     {
         if (displayMonitor.Attached.Count == 0) return;
 
-        var scaling = Screens.ScreenFromWindow(this)?.Scaling ?? 1.0;
+        var scaling = ScreenScaling;
         var topLeft = Position;
         var bottomRight = new PixelPoint(
             Position.X + (int)(Width * scaling),
@@ -291,6 +295,66 @@ public partial class Widget : Window, INotifyPropertyChanged
         if (visible) return;
 
         ApplyPosition();
+    }
+
+    /// <summary>Restore owning display geometry and styling without changing saved layout.</summary>
+    public void RefreshDisplayMetrics()
+    {
+        if (tornDown || displayMonitor.IsTopologyChanging || OwningScreen == null) return;
+        restoringDisplayMetrics = true;
+        try
+        {
+            ApplyPosition();
+            var settings = widgetLayoutProvider.Get();
+            SetMinMaxSize(false);
+            if (appSettingsProvider.Get().Layout.GridMode == GridMode.Manual)
+            {
+                manualSpan ??= GetSpan();
+                gridService.SetSize(this, manualSpan.Value.Columns, manualSpan.Value.Rows);
+                gridService.SnapPosition(this);
+                ClampRestoredPosition();
+            }
+            else
+            {
+                Width = settings.Width;
+                Height = settings.Height;
+                ClampRestoredPosition();
+            }
+            SetMinMaxSize(appSettingsProvider.Get().Layout.LockSize || appSettingsProvider.Get().Layout.GridMode == GridMode.Manual);
+            RefreshScreenStyle();
+        }
+        finally
+        {
+            restoringDisplayMetrics = false;
+        }
+    }
+
+    private void RefreshScreenStyle()
+    {
+        Notify(nameof(EffectiveMargin));
+        Notify(nameof(EffectiveBaseRadius));
+        Notify(nameof(WidgetMargin));
+        Notify(nameof(StackIndicatorsMargin));
+        Notify(nameof(ScaleMenuTitle));
+        Notify(nameof(SizeMenuTitle));
+        Notify(nameof(SizeColumnsValue));
+        Notify(nameof(SizeRowsValue));
+        Scale();
+        UpdateAdaptiveRadiusResources();
+        ApplyWidgetRegion();
+    }
+
+    private void ClampRestoredPosition()
+    {
+        if (OwningScreen is not { } screen) return;
+        var area = screen.WorkingArea;
+        var width = (int) Math.Ceiling(Width * screen.Scaling);
+        var height = (int) Math.Ceiling(Height * screen.Scaling);
+        // Clamp presentation only: keep the saved relative position for when a
+        // reduced desktop returns to its previous resolution or working area.
+        Position = new PixelPoint(
+            Math.Clamp(Position.X, area.X, area.X + Math.Max(0, area.Width - width)),
+            Math.Clamp(Position.Y, area.Y, area.Y + Math.Max(0, area.Height - height)));
     }
 
     public bool ShowEditButton => editWidgetWindow != null;
@@ -364,12 +428,12 @@ public partial class Widget : Window, INotifyPropertyChanged
     }
 
     public double EffectiveBaseRadius =>
-        displayMonitor.CurrentConfig(this)?.Radius
+        ScreenConfig?.Radius
         ?? appSettingsProvider.Get().Dimensions.Radius;
 
     public CornerRadius Radius => (isFrameless || appSettingsProvider.Get().Theme.UseNativeFrame)
         ? new(0)
-        : new(ResolveEffectiveRadius(EffectiveBaseRadius) / (Screens.ScreenFromWindow(this)?.Scaling ?? 1.0));
+        : new(ResolveEffectiveRadius(EffectiveBaseRadius) / ScreenScaling);
 
     /// <summary>
     /// Concentric inner corner radius for cards/boxes placed inside the widget (e.g. Translator textboxes, Clipboard item cards).
@@ -410,13 +474,6 @@ public partial class Widget : Window, INotifyPropertyChanged
         Resources["WidgetCardCornerRadius"] = cardRadius;
         Resources["WidgetInnerCornerRadius"] = innerRadius;
         Resources["WidgetPillCornerRadius"] = pillRadius;
-
-        if (Application.Current != null)
-        {
-            Application.Current.Resources["WidgetCardCornerRadius"] = cardRadius;
-            Application.Current.Resources["WidgetInnerCornerRadius"] = innerRadius;
-            Application.Current.Resources["WidgetPillCornerRadius"] = pillRadius;
-        }
 
         // 菜单圆角不在此处跟随卡片半径（历史教训：四处命令式覆写让 XAML 的圆角永远
         // 不生效）。菜单的 CornerRadius 只由 WidgetContextMenu 样式决定；打开时的
@@ -762,7 +819,7 @@ public partial class Widget : Window, INotifyPropertyChanged
     /// Margin between the widget content and the grid lines (manual grid mode).
     /// </summary>
     public double EffectiveMargin =>
-        displayMonitor.CurrentConfig(this)?.Margin
+        ScreenConfig?.Margin
         ?? appSettingsProvider.Get().Dimensions.Margin;
 
     public Thickness WidgetMargin => isFrameless ? new Thickness(0) :
@@ -988,7 +1045,10 @@ public partial class Widget : Window, INotifyPropertyChanged
         }
     }
 
-    private void OnPointerReleased(object? sender, PointerReleasedEventArgs e) => AfterMove();
+    private void OnPointerReleased(object? sender, PointerReleasedEventArgs e)
+    {
+        if (moveCommitPending) AfterMove();
+    }
 
     private void Scale()
     {
@@ -1016,7 +1076,7 @@ public partial class Widget : Window, INotifyPropertyChanged
     /// </summary>
     private double EffectiveContentScale =>
         widgetLayoutProvider.Get().ContentScale
-        ?? displayMonitor.CurrentConfig(this)?.ContentScale
+        ?? ScreenConfig?.ContentScale
         ?? 1.0;
 
     /// <summary>Context-menu scale entry, showing the current effective ratio.</summary>
@@ -1278,7 +1338,7 @@ public partial class Widget : Window, INotifyPropertyChanged
             return;
         }
 
-        var scaling = Screens.ScreenFromWindow(this)?.Scaling ?? 1.0;
+        var scaling = ScreenScaling;
         var margin = (int) Math.Round(WidgetMargin.Left * scaling);
         var width = (int) Math.Round(ClientSize.Width * scaling);
         var height = (int) Math.Round(ClientSize.Height * scaling);
@@ -1307,6 +1367,7 @@ public partial class Widget : Window, INotifyPropertyChanged
 
     private void OnAppSettingsUpdated(object sender, AppSettings? oldData, AppSettings newData)
     {
+        if (tornDown) return;
         // The tray icon can also be switched from the tray menu itself.
         Notify(nameof(TrayIconVisible));
 
@@ -1609,19 +1670,31 @@ public partial class Widget : Window, INotifyPropertyChanged
     /// </summary>
     private void BeginMoveDragWithCommit(PointerPressedEventArgs e)
     {
+        moveCommitPending = true;
         BeginMoveDrag(e);
-        Dispatcher.UIThread.Post(AfterMove, DispatcherPriority.Background);
+        Dispatcher.UIThread.Post(() =>
+        {
+            if (moveCommitPending) AfterMove();
+        }, DispatcherPriority.Background);
     }
 
     private void AfterMove()
     {
+        displayMonitor.Refresh();
+        if (tornDown || restoringDisplayMetrics || displayMonitor.IsTopologyChanging || OwningScreen == null)
+        {
+            moveCommitPending = false;
+            return;
+        }
+        var userMove = moveCommitPending;
+        moveCommitPending = false;
         // If a Stack edit window is open, check if this desktop widget was dropped into it
-        if (StackDropCoordinator.IsActive && !IsStackWidget)
+        if (userMove && StackDropCoordinator.IsActive && !IsStackWidget)
         {
             POINT pt = default;
             var cursorValid = OperatingSystem.IsWindows() && GetCursorPos(out pt);
             var cursorPos = cursorValid ? new PixelPoint(pt.X, pt.Y) : (PixelPoint?)null;
-            var scaling = Screens.ScreenFromWindow(this)?.Scaling ?? 1.0;
+            var scaling = ScreenScaling;
             var centerPos = new PixelPoint(Position.X + (int)(ClientSize.Width * scaling / 2),
                                            Position.Y + (int)(ClientSize.Height * scaling / 2));
 
@@ -1639,29 +1712,33 @@ public partial class Widget : Window, INotifyPropertyChanged
 
         var appSettings = appSettingsProvider.Get();
         
-        // Manual grid: snapping is always enforced.
-        if (appSettings.Layout.GridMode == GridMode.Manual || appSettings.Layout.SnapPosition) 
-            gridService.SnapPosition(this);
-        
         // Cross-screen move: capture the span against the ORIGINAL screen before
         // ownership transfers (after the transfer the stored size would be read
         // against the new cell and become ambiguous, e.g. 2×2 → 1×1).
         var owning = displayMonitor.FindByConfigId(widgetLayoutProvider.ScreenId);
         var current = displayMonitor.Find(this);
-        var movedToAnotherScreen = current != null && owning != null && owning.Screen.Bounds != current.Screen.Bounds;
+        var movedToAnotherScreen = userMove && current != null && owning != null && owning.Screen.Bounds != current.Screen.Bounds;
         // owning is not null whenever movedToAnotherScreen is true (see the condition above).
         var span = movedToAnotherScreen ? (manualSpan ?? ResolveSpanFor(owning!)) : (Columns: 1, Rows: 1);
         
-        TransferOwnership();
+        if (movedToAnotherScreen) TransferOwnership();
         
         if (movedToAnotherScreen && appSettings.Layout.GridMode == GridMode.Manual)
         {
+            manualSpan = span;
             SetMinMaxSize(false);
             gridService.SetSize(this, span.Columns, span.Rows);
             SetMinMaxSize(true);
         }
+
+        if (appSettings.Layout.GridMode == GridMode.Manual || appSettings.Layout.SnapPosition)
+            gridService.SnapPosition(this);
+        if (movedToAnotherScreen) RefreshScreenStyle();
         
-        SaveLayout(StorePosition(widgetLayoutProvider.Get()));
+        var positioned = StorePosition(widgetLayoutProvider.Get());
+        if (movedToAnotherScreen)
+            positioned = positioned with { Width = (int) Width, Height = (int) Height };
+        SaveLayout(positioned);
     }
 
     /// <summary>
@@ -1678,8 +1755,9 @@ public partial class Widget : Window, INotifyPropertyChanged
         var owning = displayMonitor.FindByConfigId(widgetLayoutProvider.ScreenId);
         if (owning != null && owning.Screen.Bounds == current.Screen.Bounds) return;
 
-        var config = current.Config ?? displayMonitor.EnsureConfig(current);
+        var matched = current.Config ?? displayMonitor.EnsureConfig(current);
         var screens = layoutProvider.Get();
+        var config = screens.FindById(matched.Id) ?? matched;
         var oldConfig = screens.FindById(widgetLayoutProvider.ScreenId);
         var widget = widgetLayoutProvider.Get();
 
@@ -1699,8 +1777,16 @@ public partial class Widget : Window, INotifyPropertyChanged
             Layout = [.. RemoveByIdentity(config.Layout, widget), widget]
         });
 
-        layoutProvider.Save(screens);
-        widgetLayoutProvider.ScreenId = config.Id;
+        restoringDisplayMetrics = true;
+        try
+        {
+            widgetLayoutProvider.ScreenId = config.Id;
+            layoutProvider.Save(screens);
+        }
+        finally
+        {
+            restoringDisplayMetrics = false;
+        }
     }
 
     /// <summary>Remove this widget's entry (by reference, then by identity) from a list.</summary>
@@ -1718,7 +1804,7 @@ public partial class Widget : Window, INotifyPropertyChanged
     /// </summary>
     private WidgetLayout StorePosition(WidgetLayout settings)
     {
-        if (widgetLayoutProvider.ScreenId == ScreensLayout.LegacyPrimaryId)
+        if (ScreenConfig?.Key == null)
             return settings with { X = Position.X, Y = Position.Y };
 
         var workingArea = displayMonitor.FindByConfigId(widgetLayoutProvider.ScreenId)?.Screen.WorkingArea;
@@ -1754,6 +1840,8 @@ public partial class Widget : Window, INotifyPropertyChanged
 
     private void AfterResize()
     {
+        displayMonitor.Refresh();
+        if (tornDown || restoringDisplayMetrics || displayMonitor.IsTopologyChanging || OwningScreen == null) return;
         var appSettings = appSettingsProvider.Get();
         
         if (appSettings.Layout.GridMode == GridMode.Manual)
@@ -1827,7 +1915,7 @@ public partial class Widget : Window, INotifyPropertyChanged
         }
 
         var (cellPx, _, _) = GetGridMetrics();
-        var scaling = Screens.ScreenFromWindow(this)?.Scaling ?? 1.0;
+        var scaling = ScreenScaling;
         var layout = widgetLayoutProvider.Get();
         // Window sizes are DIPs while the grid metrics are physical — convert.
         return (ResolveSpan(layout.Width, cellPx, scaling), ResolveSpan(layout.Height, cellPx, scaling));
@@ -1840,7 +1928,7 @@ public partial class Widget : Window, INotifyPropertyChanged
     /// </summary>
     private (int Columns, int Rows) ResolveSpanFor(AttachedScreen attached)
     {
-        var grid = attached.Config?.Grid ?? appSettingsProvider.Get().Grid ?? DeskCanvas.Core.Models.Settings.Grid.Default;
+        var grid = (attached.Config is { } config ? layoutProvider.Get().FindById(config.Id) : null)?.Grid ?? appSettingsProvider.Get().Grid ?? DeskCanvas.Core.Models.Settings.Grid.Default;
         var area = attached.Screen.WorkingArea;
         var (cellPx, _, _) = GridMetrics.Resolve(grid, area.X, area.Y, area.Width, area.Height);
         var layout = widgetLayoutProvider.Get();
@@ -1853,7 +1941,7 @@ public partial class Widget : Window, INotifyPropertyChanged
     /// </summary>
     private (int Columns, int Rows) ResolveSpanAgainstGrid(DeskCanvas.Core.Models.Settings.Grid grid)
     {
-        var screen = Screens.ScreenFromWindow(this) ?? Screens.Primary ?? Screens.All.FirstOrDefault();
+        var screen = OwningScreen;
         var area = screen?.WorkingArea;
         var scaling = screen?.Scaling ?? 1.0;
         var (cellPx, _, _) = GridMetrics.Resolve(grid, area?.X ?? 0, area?.Y ?? 0, area?.Width ?? 1920, area?.Height ?? 1080);
@@ -1896,13 +1984,11 @@ public partial class Widget : Window, INotifyPropertyChanged
     /// </summary>
     private (int cell, int x, int y) GetGridMetrics()
     {
-        var screen = Screens.ScreenFromWindow(this)
-                     ?? Screens.Primary
-                     ?? Screens.All.FirstOrDefault();
+        var screen = OwningScreen;
         var area = screen?.WorkingArea;
         // Per-screen manual grid (the screen the widget currently sits on),
         // falling back to the global grid, then the default.
-        var grid = displayMonitor.CurrentConfig(this)?.Grid
+        var grid = ScreenConfig?.Grid
                    ?? appSettingsProvider.Get().Grid
                    ?? DeskCanvas.Core.Models.Settings.Grid.Default;
         return GridMetrics.Resolve(
@@ -1920,6 +2006,7 @@ public partial class Widget : Window, INotifyPropertyChanged
     /// </summary>
     private void OnLayoutDataUpdated(object? sender, ScreensLayout? oldScreens, ScreensLayout newScreens)
     {
+        if (tornDown || restoringDisplayMetrics || displayMonitor.IsTopologyChanging || OwningScreen == null) return;
         var config = newScreens.FindById(widgetLayoutProvider.ScreenId);
         var oldConfig = oldScreens?.FindById(widgetLayoutProvider.ScreenId);
         if (config == null) return; // this widget is no longer in the layout
@@ -1930,7 +2017,6 @@ public partial class Widget : Window, INotifyPropertyChanged
 
         if (oldConfig?.Margin != config.Margin || oldConfig?.Radius != config.Radius)
         {
-            AfterResize();
             Notify(nameof(WidgetMargin));
             Notify(nameof(StackIndicatorsMargin));
             Notify(nameof(Radius));
@@ -1958,8 +2044,6 @@ public partial class Widget : Window, INotifyPropertyChanged
             SaveLayout(StorePosition(widgetLayoutProvider.Get()));
         }
 
-        Scale();
-        Notify(nameof(ScaleMenuTitle));
-        ApplyWidgetRegion();
+        RefreshScreenStyle();
     }
 }

@@ -43,7 +43,7 @@ public class GridService(IAppSettingsProvider appSettingsProvider, DisplayMonito
     {
         if (appSettingsProvider.Get().Layout.GridMode == GridMode.Manual)
         {
-            var scaling = window.Screens.ScreenFromWindow(window)?.Scaling ?? 1.0;
+            var scaling = GetScaling(window);
             var (cell, gridX, gridY) = GetGridMetrics(window);
             var x = gridX + SnapToCell(window.Position.X - gridX, cell);
             var y = gridY + SnapToCell(window.Position.Y - gridY, cell);
@@ -64,7 +64,7 @@ public class GridService(IAppSettingsProvider appSettingsProvider, DisplayMonito
     /// DIPs while grid metrics are physical pixels).
     /// </summary>
     private static double GetScaling(Widget window)
-        => window.Screens.ScreenFromWindow(window)?.Scaling ?? 1.0;
+        => window.OwningScreen?.Scaling ?? 1.0;
 
     /// <summary>
     /// The manual grid of the screen the widget currently sits on: the per-screen
@@ -73,7 +73,7 @@ public class GridService(IAppSettingsProvider appSettingsProvider, DisplayMonito
     /// </summary>
     private static Grid GetGrid(Widget window, IAppSettingsProvider appSettingsProvider, DisplayMonitorService displayMonitor)
     {
-        var perScreen = displayMonitor.CurrentConfig(window)?.Grid;
+        var perScreen = window.ScreenConfig?.Grid;
         if (perScreen != null) return perScreen;
         return appSettingsProvider.Get().Grid ?? Grid.Default;
     }
@@ -106,9 +106,7 @@ public class GridService(IAppSettingsProvider appSettingsProvider, DisplayMonito
     private (int cell, int gridX, int gridY) GetGridMetrics(Widget window)
     {
         var grid = GetGrid(window, appSettingsProvider, displayMonitor);
-        var screen = window.Screens.ScreenFromWindow(window)
-                     ?? window.Screens.Primary
-                     ?? window.Screens.All.FirstOrDefault();
+        var screen = window.OwningScreen;
         var area = screen?.WorkingArea;
         var (cell, gridX, gridY) = GridMetrics.Resolve(
             grid,

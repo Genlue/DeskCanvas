@@ -231,6 +231,8 @@ public partial class Gallery : UserControl, INotifyPropertyChanged
 
     private void PlaceWidget(WidgetPreviewViewModel preview, int columns, int rows, Control? anchor)
     {
+        displayMonitor.Refresh();
+        if (displayMonitor.IsTopologyChanging) return;
         var settingsWindow = VisualRoot as Window;
         var attached = settingsWindow != null ? displayMonitor.Find(settingsWindow) : null;
         if (attached == null)
@@ -240,6 +242,12 @@ public partial class Gallery : UserControl, INotifyPropertyChanged
                          ?? new ScreenLayout(ScreensLayout.LegacyPrimaryId, null, null, null, null, null, []);
             var (defaultW, defaultH) = DefaultSize(settingsWindow, columns, rows);
             var pointer = anchor != null ? anchor.PointToScreen(new Point(0, 0)) : new PixelPoint(0, 0);
+            if (legacy.Key != null)
+            {
+                var area = displayMonitor.FindByConfigId(legacy.Id)?.Screen.WorkingArea;
+                if (area == null) return;
+                pointer = new PixelPoint(pointer.X - area.Value.X, pointer.Y - area.Value.Y);
+            }
             var legacyLayout = new WidgetLayout(preview.Type, preview.Subtype, pointer.X, pointer.Y,
                 defaultW, defaultH, null);
             widgetFactory.Add(legacy, legacyLayout).Show();
@@ -254,7 +262,21 @@ public partial class Gallery : UserControl, INotifyPropertyChanged
         // right now; EnsureConfig still covers brand-new screens with no entry yet.
         var screenConfig = displayMonitor.CurrentConfig(settingsWindow!)
                            ?? displayMonitor.EnsureConfig(attached);
-        var (x, y, w, h) = ComputePlacement(screenConfig, attached, columns, rows);
+        var placementConfig = screenConfig;
+        if (screenConfig.Key == null)
+        {
+            var area = attached.Screen.WorkingArea;
+            placementConfig = screenConfig with
+            {
+                Layout = screenConfig.Layout.Select(item => item with { X = item.X - area.X, Y = item.Y - area.Y }).ToList()
+            };
+        }
+        var (x, y, w, h) = ComputePlacement(placementConfig, attached, columns, rows);
+        if (screenConfig.Key == null)
+        {
+            x += attached.Screen.WorkingArea.X;
+            y += attached.Screen.WorkingArea.Y;
+        }
         var widgetLayout = new WidgetLayout(preview.Type, preview.Subtype, x, y, w, h, null);
         widgetFactory.Add(screenConfig, widgetLayout).Show();
     }

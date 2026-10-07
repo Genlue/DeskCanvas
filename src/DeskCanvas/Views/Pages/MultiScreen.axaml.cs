@@ -55,11 +55,16 @@ public partial class MultiScreen : UserControl
         this.layoutProvider = layoutProvider;
         this.displayMonitor = displayMonitor;
         InitializeComponent();
-        Loaded += (_, _) => Reload();
+        Loaded += OnLoaded;
+        Unloaded += OnUnloaded;
+    }
+
+    private void OnLoaded(object? sender, RoutedEventArgs e)
+    {
         displayMonitor.ScreensChanged += OnScreensChanged;
         layoutProvider.DataChanged += OnLayoutChanged;
         appSettingsProvider.DataChanged += OnAppSettingsChanged;
-        Unloaded += OnUnloaded;
+        Reload();
     }
 
     private void OnScreensChanged(object? sender, EventArgs e)
@@ -85,7 +90,6 @@ public partial class MultiScreen : UserControl
         displayMonitor.ScreensChanged -= OnScreensChanged;
         layoutProvider.DataChanged -= OnLayoutChanged;
         appSettingsProvider.DataChanged -= OnAppSettingsChanged;
-        Unloaded -= OnUnloaded;
     }
 
     private void Reload()
@@ -394,6 +398,7 @@ public partial class MultiScreen : UserControl
             MinWidth = 110, Margin = new Thickness(0, 0, 10, 4)
         };
         var savedScale = config?.ContentScale;
+        var syncingDimensions = false;
         dimsRow.Children.Add(new StackPanel
         {
             Spacing = 2,
@@ -420,6 +425,7 @@ public partial class MultiScreen : UserControl
 
         marginBox.ValueChanged += (_, _) => WithoutReload(() =>
         {
+            if (syncingDimensions) return;
             var val = (double) Math.Clamp(marginBox.Value ?? (decimal) globalMargin, 0m, 48m);
             if (savedMargin == val) return;
             savedMargin = val;
@@ -432,6 +438,7 @@ public partial class MultiScreen : UserControl
 
         radiusBox.ValueChanged += (_, _) => WithoutReload(() =>
         {
+            if (syncingDimensions) return;
             var val = (double) Math.Clamp(radiusBox.Value ?? (decimal) globalRadius, 0m, 48m);
             if (savedRadius == val) return;
             savedRadius = val;
@@ -456,6 +463,9 @@ public partial class MultiScreen : UserControl
             if (currentConfig == null) return;
             savedMargin = null;
             SaveConfig(currentConfig, entry => entry with { Margin = null });
+            syncingDimensions = true;
+            try { marginBox.Value = (decimal) globalMargin; }
+            finally { syncingDimensions = false; }
             marginLabel.Text = $"组件内边距 Margin (默认 {globalMargin:0}px)";
             marginLabel.Opacity = 0.7;
             resetMarginBtn.IsVisible = false;
@@ -466,6 +476,9 @@ public partial class MultiScreen : UserControl
             if (currentConfig == null) return;
             savedRadius = null;
             SaveConfig(currentConfig, entry => entry with { Radius = null });
+            syncingDimensions = true;
+            try { radiusBox.Value = (decimal) globalRadius; }
+            finally { syncingDimensions = false; }
             radiusLabel.Text = $"组件圆角 Radius (默认 {globalRadius:0}px)";
             radiusLabel.Opacity = 0.7;
             resetRadiusBtn.IsVisible = false;
@@ -586,8 +599,7 @@ public partial class MultiScreen : UserControl
 
     private void SaveConfig(ScreenLayout entry, Func<ScreenLayout, ScreenLayout> update)
     {
-        var screens = layoutProvider.Get();
-        layoutProvider.Save(screens.UpsertScreen(update(entry)));
+        ScreenConfigEditor.Save(layoutProvider, entry.Id, update);
         displayMonitor.Refresh();
     }
 
@@ -617,6 +629,7 @@ public partial class MultiScreen : UserControl
 
     private async Task ExportScreen(ScreenLayout config)
     {
+        config = layoutProvider.Get().FindById(config.Id) ?? config;
         var owner = TopLevel.GetTopLevel(this) as Window;
         var storage = owner?.StorageProvider;
         if (owner == null || storage == null) return;
@@ -703,6 +716,11 @@ public partial class MultiScreen : UserControl
         // same rule the startup migration uses.
         if (imported.Key == null)
         {
+            // Ensure new screen entries before accumulating widgets: EnsureConfig can
+            // migrate legacy entries and persist storage during its own refresh.
+            foreach (var owner in displayMonitor.Attached.ToList())
+                displayMonitor.EnsureConfig(owner);
+            screens = layoutProvider.Get();
             foreach (var item in imported.Layout)
             {
                 var center = new PixelPoint(
@@ -712,8 +730,9 @@ public partial class MultiScreen : UserControl
                     a.Screen.WorkingArea.Contains(center));
                 if (owner == null) continue; // outside every screen → cannot place
 
-                var config = owner.Config ?? displayMonitor.EnsureConfig(owner);
-                var entry = owner.Config?.Id == ScreensLayout.LegacyPrimaryId
+                var matched = owner.Config ?? displayMonitor.EnsureConfig(owner);
+                var config = screens.FindById(matched.Id) ?? matched;
+                var entry = config.Key == null
                     ? item // legacy primary entry keeps absolute coordinates
                     : item with
                     {
@@ -730,7 +749,9 @@ public partial class MultiScreen : UserControl
 
         // Per-screen backup: scale positions from the source resolution onto the
         // target screen's working area and rebind the entry to this screen.
-        var target = attached.Config ?? displayMonitor.EnsureConfig(attached);
+        var targetMatch = attached.Config ?? displayMonitor.EnsureConfig(attached);
+        screens = layoutProvider.Get();
+        var target = screens.FindById(targetMatch.Id) ?? targetMatch;
         var attachedArea = attached.Screen.WorkingArea;
 
         var importedSize = imported.Key?.Split('|')[1] ?? "";

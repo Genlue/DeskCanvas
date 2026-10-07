@@ -107,11 +107,26 @@ public class App : Application
         // created for screens that are actually attached.
         var anchor = new WidgetAnchorWindow();
         anchor.ShowAnchored();
-        displayMonitor.Attach(anchor);
+
+        // Wire the display pipeline BEFORE the first Refresh runs inside Attach: the
+        // initial refresh publishes ScreensChanged, and a subscriber that is added
+        // afterwards would never see it (the startup reconciliation then only ran
+        // because the App-level Create() call below happened to cover it).
+        anchor.DisplaySettingsChanged += (_, _) => displayMonitor.NotifyDisplaySettingsChanged();
+        anchor.DisplayDevicesChanged += (_, _) => displayMonitor.Refresh();
 
         // Hot-plug: hide widgets of unplugged screens, recreate widgets when a
         // screen comes back (their per-screen configuration is still on disk).
+        displayMonitor.ScreensChanging += (_, _) => widgetFactory.SuspendForDisplayChange();
         displayMonitor.ScreensChanged += (_, _) => widgetFactory.OnScreensChanged();
+
+        displayMonitor.Attach(anchor);
+
+        // The anchor is desktop furniture like the widgets: registered in the bottom
+        // band so the band predicate never sees a visible non-member window below a
+        // widget (Windows relocating the offscreen anchor during a topology change
+        // would otherwise re-introduce exactly that violation).
+        WidgetZOrder.PinWidgetToBottom(anchor);
 
         // Fullscreen (games, video, presentations): the widgets are invisible anyway, so
         // hide them, pause every shared widget timer and release the material caches —
@@ -130,14 +145,13 @@ public class App : Application
         };
         fullscreenWatcher.Attach(anchor);
 
-        var widgetsCount = widgetFactory
-            .Create()
-            .Select(widget =>
-            {
-                widget.Show();
-                return widget;
-            })
-            .Count();
+        // The startup reconciliation (ScreensChanged → OnScreensChanged, now wired before
+        // Attach) usually created and showed the widgets already; Create() then only covers
+        // the paths where no reconciliation ran. Either way, whether any widget window is
+        // alive decides the settings-window auto-show below — not whether Create() itself
+        // happened to build one.
+        foreach (var widget in widgetFactory.Create())
+            widget.Show();
 
         // Resolved on demand: a widget-only start must not pay for building the settings window,
         // while both the primary launch and a hand-over from a second launch address the same
@@ -166,7 +180,7 @@ public class App : Application
         var tray = new TrayIconService(appSettingsProvider, SharedSettingsWindow, widgetFactory);
         tray.Start();
 
-        if ((ApplicationLifetime is IClassicDesktopStyleApplicationLifetime { Args.Length: > 0 } desktop && desktop.Args[0] == "--settings") || widgetsCount == 0)
+        if ((ApplicationLifetime is IClassicDesktopStyleApplicationLifetime { Args.Length: > 0 } desktop && desktop.Args[0] == "--settings") || !widgetFactory.HasWidgets)
             SharedSettingsWindow().ShowAndActivate();
         
         services.GetRequiredService<UpdateService>().CheckForUpdates();

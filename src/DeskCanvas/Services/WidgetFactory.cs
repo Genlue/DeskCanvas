@@ -34,6 +34,62 @@ public class WidgetFactory(IAssemblyProvider assemblyProvider, ILayoutProvider l
     /// <summary>True while the tray menu hides every widget (see <see cref="SetWidgetsHidden"/>).</summary>
     public bool WidgetsHidden { get; private set; }
 
+    private bool displayChangePending;
+    private bool reconcilingScreens;
+
+    private IEnumerable<WidgetLayout> VisibleLayouts(ScreenLayout config)
+    {
+        if (config.Key != null) return config.Layout;
+        var owner = displayMonitor.FindByConfigId(config.Id)?.Screen;
+        if (owner == null) return [];
+        // Unconverted v1 entries still carry absolute desktop coordinates. An offline
+        // widget must remain in storage until its monitor returns, rather than creating
+        // a native window Windows would clamp onto the surviving display.
+        return config.Layout.Where(widget => owner.WorkingArea.Contains(new Avalonia.PixelPoint(
+            widget.X + widget.Width / 2, widget.Y + widget.Height / 2)));
+    }
+
+    private void MigrateBeforeCreating()
+    {
+        // Migration changes both ownership and absolute-vs-relative coordinates. A live
+        // provider caches its old WidgetLayout, so retire that bucket before converting it.
+        var legacy = layoutProvider.Get().FindById(ScreensLayout.LegacyPrimaryId);
+        if (legacy?.Key == null && legacy != null)
+        {
+            CloseScreen(legacy.Id);
+            foreach (var attached in displayMonitor.Attached.Where(screen => screen.Config == null).ToList())
+                if (legacy.Layout.Any(widget => attached.Screen.WorkingArea.Contains(new Avalonia.PixelPoint(
+                        widget.X + widget.Width / 2, widget.Y + widget.Height / 2))))
+                    displayMonitor.EnsureConfig(attached);
+        }
+        displayMonitor.MigrateLegacyWidgets();
+    }
+
+    private void ReindexLiveWidgets()
+    {
+        var widgets = activeWidgets.Values.SelectMany(list => list).Distinct().ToList();
+        activeWidgets.Clear();
+        foreach (var widget in widgets)
+        {
+            if (!activeWidgets.TryGetValue(widget.ScreenId, out var list))
+                activeWidgets[widget.ScreenId] = list = [];
+            list.Add(widget);
+        }
+    }
+
+    /// <summary>Keep native windows out of Windows' monitor-removal relocation pass.</summary>
+    public void SuspendForDisplayChange()
+    {
+        if (displayChangePending) return;
+        displayChangePending = true;
+        SecondaryPanelWindow.CloseForDisplayChange();
+        foreach (var widget in activeWidgets.Values.SelectMany(list => list.ToList()))
+        {
+            try { widget.Hide(); }
+            catch { /* An independently closed window must not interrupt reconciliation. */ }
+        }
+    }
+
     /// <summary>
     /// Hide or bring back every widget window (the tray's 隐藏组件 toggle). Unlike
     /// <see cref="SuspendAll"/> this keeps the content and the timers alive — it is a visibility
@@ -51,7 +107,7 @@ public class WidgetFactory(IAssemblyProvider assemblyProvider, ILayoutProvider l
                 try
                 {
                     if (hidden) widget.Hide();
-                    else widget.Show();
+                    else if (!displayChangePending && !displayMonitor.IsTopologyChanging) widget.Show();
                 }
                 catch
                 {
@@ -70,17 +126,27 @@ public class WidgetFactory(IAssemblyProvider assemblyProvider, ILayoutProvider l
     /// </summary>
     public IEnumerable<Window> Create()
     {
-        // Split legacy primary widgets onto their real screens before creation
-        // (idempotent; the imported/migrated v2 file then renders widgets on the
-        // correct per-screen entries with correct per-screen grids).
-        displayMonitor.MigrateLegacyWidgets();
+        if (displayMonitor.IsTopologyChanging || reconcilingScreens) return [];
+        reconcilingScreens = true;
+        try
+        {
+            // Split legacy primary widgets onto their real screens before creation
+            // (idempotent; the imported/migrated v2 file then renders widgets on the
+            // correct per-screen entries with correct per-screen grids).
+            MigrateBeforeCreating();
 
-        return displayMonitor.Attached
-            .Where(screen => screen.Config != null)
-            .SelectMany(screen => activeWidgets.ContainsKey(screen.Config!.Id)
-                ? [] // already created (e.g. by a hot-plug pass during startup) — never twice
-                : screen.Config!.Layout.Select(layout => CreateInternal(screen.Config!, layout)))
-            .ToList();
+            ReindexLiveWidgets();
+            var stored = layoutProvider.Get();
+
+            return displayMonitor.Attached
+                .Where(screen => screen.Config != null)
+                .Select(screen => stored.FindById(screen.Config!.Id) ?? screen.Config!)
+                .SelectMany(screen => activeWidgets.ContainsKey(screen.Id)
+                    ? [] // already created (e.g. by a hot-plug pass during startup) — never twice
+                    : VisibleLayouts(screen).Select(layout => CreateInternal(screen, layout)))
+                .ToList();
+        }
+        finally { reconcilingScreens = false; }
     }
 
     /// <summary>
@@ -90,8 +156,10 @@ public class WidgetFactory(IAssemblyProvider assemblyProvider, ILayoutProvider l
     /// <param name="widgetLayout">The widget layout to add.</param>
     public Window Add(ScreenLayout screen, WidgetLayout widgetLayout)
     {
-        var withWidget = screen with { Layout = [.. screen.Layout, widgetLayout] };
-        layoutProvider.Save(layoutProvider.Get().UpsertScreen(withWidget));
+        var stored = layoutProvider.Get();
+        var current = stored.FindById(screen.Id) ?? screen;
+        var withWidget = current with { Layout = [.. current.Layout, widgetLayout] };
+        layoutProvider.Save(stored.UpsertScreen(withWidget));
         return CreateInternal(withWidget, widgetLayout);
     }
 
@@ -144,13 +212,18 @@ public class WidgetFactory(IAssemblyProvider assemblyProvider, ILayoutProvider l
         if (!activeWidgets.TryGetValue(screen.Id, out var list))
             activeWidgets[screen.Id] = list = [];
         list.Add(widget);
-        widget.Closed += (_, _) => list.Remove(widget);
+        widget.Closed += (_, _) =>
+        {
+            // A user drag may have changed ownership since this window was created.
+            foreach (var currentList in activeWidgets.Values)
+                currentList.Remove(widget);
+        };
 
         // A widget added while the tray toggle hides the desktop (Gallery "add", profile switch)
         // must not pop up on its own.
         widget.Opened += (_, _) =>
         {
-            if (WidgetsHidden) widget.Hide();
+            if (WidgetsHidden || displayChangePending || displayMonitor.IsTopologyChanging) widget.Hide();
         };
         return widget;
     }
@@ -161,9 +234,14 @@ public class WidgetFactory(IAssemblyProvider assemblyProvider, ILayoutProvider l
     /// </summary>
     public void CloseScreen(string screenId)
     {
+        ReindexLiveWidgets();
         if (!activeWidgets.TryGetValue(screenId, out var list)) return;
         foreach (var widget in list.ToList())
+        {
+            widget.PrepareForTeardown();
+            widget.Hide();
             widget.Close();
+        }
         activeWidgets.Remove(screenId);
     }
 
@@ -309,39 +387,60 @@ public class WidgetFactory(IAssemblyProvider assemblyProvider, ILayoutProvider l
     /// </summary>
     public void OnScreensChanged()
     {
-        // A screen just arrived: legacy primary widgets whose absolute position
-        // now falls on it are moved into its per-screen entry first (idempotent).
-        displayMonitor.MigrateLegacyWidgets();
-
-        var attached = displayMonitor.Attached;
-
-        foreach (var screenId in activeWidgets.Keys.ToList())
-            if (attached.All(screen => screen.Config?.Id != screenId))
-                CloseScreen(screenId);
-
-        foreach (var screen in attached)
+        if (displayMonitor.IsTopologyChanging || reconcilingScreens) return;
+        reconcilingScreens = true;
+        try
         {
-            if (screen.Config == null || activeWidgets.ContainsKey(screen.Config.Id)) continue;
+            // A screen just arrived: legacy primary widgets whose absolute position
+            // now falls on it are moved into its per-screen entry first (idempotent).
+            MigrateBeforeCreating();
 
-            foreach (var layout in screen.Config.Layout)
-                CreateInternal(screen.Config, layout).Show();
-        }
+            ReindexLiveWidgets();
 
-        // Windows stay wherever they were when a display disappeared (a remote-control
-        // tool's virtual screen, an unplugged monitor) — possibly on dead desktop space
-        // no attached screen covers. Everything that is still on a real screen keeps its
-        // exact position; only stranded windows snap back to their stored slot.
-        foreach (var widget in activeWidgets.Values.SelectMany(list => list.ToList()))
-        {
-            try
+            var attached = displayMonitor.Attached;
+
+            foreach (var screenId in activeWidgets.Keys.ToList())
+                if (attached.All(screen => screen.Config?.Id != screenId))
+                    CloseScreen(screenId);
+
+            foreach (var screen in attached)
             {
-                widget.EnsureOnScreen();
+                if (screen.Config == null || activeWidgets.ContainsKey(screen.Config.Id)) continue;
+
+                var config = layoutProvider.Get().FindById(screen.Config.Id) ?? screen.Config;
+                foreach (var layout in VisibleLayouts(config))
+                {
+                    var widget = CreateInternal(config, layout);
+                    // Opening creates the native handle; the Opened guard keeps it hidden until
+                    // every surviving window has restored its own monitor's geometry and style.
+                    widget.Show();
+                    if (suspended) widget.SuspendContent();
+                }
             }
-            catch
+
+            // Windows may have already moved a window onto another attached display. Always
+            // restore from its configuration owner, including DPI, card insets and native clipping.
+            foreach (var widget in activeWidgets.Values.SelectMany(list => list.ToList()))
             {
-                // Never let one misbehaving widget abort the whole pass.
+                try
+                {
+                    widget.RefreshDisplayMetrics();
+                }
+                catch
+                {
+                    // Never let one misbehaving widget abort the whole pass.
+                }
             }
+
+            displayChangePending = false;
+            if (!WidgetsHidden)
+                foreach (var widget in activeWidgets.Values.SelectMany(list => list.ToList()))
+                {
+                    try { widget.Show(); }
+                    catch { /* Keep the remaining screens usable if one widget has closed. */ }
+                }
         }
+        finally { reconcilingScreens = false; }
     }
 
     private UserControl CreateWidgetControl(Type type, WidgetLayoutProvider? widgetLayoutProvider, object? model)

@@ -1,5 +1,7 @@
+using System;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Threading;
 using DeskCanvas.Services;
 
 namespace DeskCanvas.Views;
@@ -13,6 +15,9 @@ namespace DeskCanvas.Views;
 /// </summary>
 public sealed class WidgetAnchorWindow : Window
 {
+    public event EventHandler? DisplaySettingsChanged;
+    public event EventHandler? DisplayDevicesChanged;
+
     public WidgetAnchorWindow()
     {
         Width = 1;
@@ -21,6 +26,23 @@ public sealed class WidgetAnchorWindow : Window
         SystemDecorations = SystemDecorations.None;
         TransparencyLevelHint = [WindowTransparencyLevel.Transparent];
         Opacity = 0;
+
+        if (OperatingSystem.IsWindows())
+            Win32Properties.AddWndProcHookCallback(this, OnWindowMessage);
+    }
+
+    private IntPtr OnWindowMessage(IntPtr hwnd, uint message, IntPtr wParam, IntPtr lParam, ref bool handled)
+    {
+        // Display resolution/attachment, taskbar work area, and device changes can arrive
+        // before the polling interval. Freeze placement persistence synchronously, while
+        // the monitor service queues the read until Avalonia has invalidated its cache.
+        if (message is 0x007E or 0x02E0 || message == 0x001A && wParam.ToInt64() == 0x002F)
+            DisplaySettingsChanged?.Invoke(this, EventArgs.Empty);
+        else if (message == 0x0219 && wParam.ToInt64() == 0x0007)
+            // Generic device-tree changes include USB devices. Only a changed display
+            // signature warrants hiding the desktop; the service decides after this read.
+            Dispatcher.UIThread.Post(() => DisplayDevicesChanged?.Invoke(this, EventArgs.Empty));
+        return IntPtr.Zero;
     }
 
     /// <summary>Create the native window at an off-screen position (invisible) and keep it alive.</summary>

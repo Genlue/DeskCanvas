@@ -256,6 +256,18 @@ public static class WidgetZOrder
         (unchecked((uint)GetWindowLong(hwnd, GWL_EXSTYLE)) & WS_EX_TOPMOST) != 0;
 
     /// <summary>
+    /// The desktop surface itself: Progman hosts the wallpaper/icons, WorkerW appears next to
+    /// it (wallpaper hosts, live-wallpaper engines). They always sit below the widget band —
+    /// they are the desktop, not misplaced windows — so the band predicate skips them.
+    /// </summary>
+    private static bool IsDesktopShell(IntPtr hwnd)
+    {
+        var name = new System.Text.StringBuilder(32);
+        _ = GetClassName(hwnd, name, 32);
+        return name.ToString() is "Progman" or "WorkerW";
+    }
+
+    /// <summary>
     /// Install the z-order enforcement hook on the window and apply the initial
     /// band placement. The hook is a local function (not a lambda): C# 12 still
     /// rejects ref modifiers on lambda parameters, which the Avalonia hook
@@ -302,7 +314,14 @@ public static class WidgetZOrder
                 if (!IsWindowVisible(below)) continue;
                 bool isBandMember;
                 lock (gate) isBandMember = widgetHandles.Contains(below);
-                if (!isBandMember) return false;
+                // The desktop itself (Progman / the wallpaper WorkerW) legitimately sits below
+                // the whole band — it is the desktop the band is "above only" of, not a
+                // misplaced window. Counting it as a violation made the predicate unsatisfiable
+                // for the bottom-most widget: every placement then fired a correction that
+                // could never settle, and a display-change placement storm turned that into
+                // an endless correction cycle that spun the UI thread (the topology-change
+                // hang). Exempting the desktop makes the predicate converge at the bottom.
+                if (!isBandMember && !IsDesktopShell(below)) return false;
             }
             return true;
         }
@@ -363,6 +382,9 @@ public static class WidgetZOrder
 
     [DllImport("user32.dll")]
     private static extern bool IsWindowVisible(IntPtr hWnd);
+
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+    private static extern int GetClassName(IntPtr hWnd, System.Text.StringBuilder name, int maxCount);
 
     [DllImport("user32.dll")]
     private static extern int GetWindowLong(IntPtr hWnd, int nIndex);

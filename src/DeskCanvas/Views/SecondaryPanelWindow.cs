@@ -38,6 +38,20 @@ public abstract class SecondaryPanelWindow : Window
     private static readonly Dictionary<Type, SecondaryPanelWindow> ActivePanels = new();
     private static readonly Dictionary<Type, DateTime> LastCloseTimes = new();
 
+    /// <summary>A panel belongs to its opening display; dismiss it before Windows relocates it.</summary>
+    public static void CloseForDisplayChange()
+    {
+        foreach (var panel in ActivePanels.Values.ToList())
+        {
+            try
+            {
+                panel.Hide();
+                ((Window)panel).Close();
+            }
+            catch { /* Panels may already be closing because they lost focus. */ }
+        }
+    }
+
     // Material Design 3 motion tokens (https://m3.material.io/styles/motion/easing-and-duration/tokens-specs):
     // emphasized decelerate going in, emphasized accelerate going out.
     private static readonly SplineEasing OpenEasing = new(new KeySpline(0.05, 0.7, 0.1, 1.0));

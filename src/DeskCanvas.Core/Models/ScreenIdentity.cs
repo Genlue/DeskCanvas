@@ -13,6 +13,7 @@ namespace DeskCanvas.Core.Models;
 /// <param name="Scaling">DPI scale of the screen.</param>
 /// <param name="HardwareId">EDID hardware id of the monitor (e.g. <c>"DELA0D2"</c>), stable
 /// across ports, adapters and driver reinstalls; empty when the monitor exposes none.</param>
+/// <param name="MonitorId">Windows monitor instance/interface id, distinguishing monitors of the same model.</param>
 public record ScreenIdentity(
     string DeviceName,
     string FriendlyName,
@@ -20,7 +21,8 @@ public record ScreenIdentity(
     int Height,
     bool IsPrimary,
     double Scaling,
-    string HardwareId = "")
+    string HardwareId = "",
+    string MonitorId = "")
 {
     /// <summary>Friendly name reported when no real monitor identity could be resolved
     /// (remote-tools virtual screens, identity-less indirect display drivers).</summary>
@@ -32,7 +34,7 @@ public record ScreenIdentity(
     /// tool's virtual screen today, a driver quirk tomorrow) then produce the same
     /// <see cref="Key"/>, so such a screen must never claim a stored configuration by key.
     /// </summary>
-    public bool IsAnonymous => HardwareId.Length == 0 && FriendlyName == FallbackName;
+    public bool IsAnonymous => HardwareId.Length == 0 && MonitorId.Length == 0 && FriendlyName == FallbackName;
 
     /// <summary>
     /// Auto-match key: <c>"FriendlyName|WidthxHeight"</c> — the same shape as
@@ -71,7 +73,8 @@ public static class ScreenMatcher
     /// configuration — and its widgets — to whichever virtual screen shows up next.
     /// </para>
     /// </summary>
-    public static ScreenLayout? Match(IReadOnlyList<ScreenLayout> entries, ScreenIdentity screen, ISet<string>? consumedIds)
+    public static ScreenLayout? Match(IReadOnlyList<ScreenLayout> entries, ScreenIdentity screen, ISet<string>? consumedIds,
+        bool allowHardwareFallback = true, bool allowLegacyTwinUpgrade = false)
     {
         ScreenLayout? Find(Func<ScreenLayout, bool> predicate) =>
             entries.FirstOrDefault(entry => predicate(entry) && (consumedIds == null || !consumedIds.Contains(entry.Id)));
@@ -86,9 +89,28 @@ public static class ScreenMatcher
             }
         }
 
+        if (!string.IsNullOrEmpty(screen.MonitorId))
+        {
+            var byMonitor = Find(entry => string.Equals(entry.MonitorId, screen.MonitorId, StringComparison.OrdinalIgnoreCase));
+            if (byMonitor != null)
+            {
+                consumedIds?.Add(byMonitor.Id);
+                return byMonitor;
+            }
+        }
+
         if (!string.IsNullOrEmpty(screen.HardwareId))
         {
-            var byHardware = Find(entry => entry.HardwareId == screen.HardwareId);
+            // A unique model can safely survive an interface/port change. For
+            // twins only an exact instance match is safe, including offline twins.
+            var hardwareEntries = entries.Where(entry => string.Equals(entry.HardwareId, screen.HardwareId,
+                StringComparison.OrdinalIgnoreCase)).ToList();
+            var byHardware = allowHardwareFallback && hardwareEntries.Count == 1
+                ? Find(entry => entry.Id == hardwareEntries[0].Id)
+                : null;
+            if (byHardware == null && allowLegacyTwinUpgrade)
+                byHardware = Find(entry => string.IsNullOrEmpty(entry.MonitorId)
+                    && string.Equals(entry.HardwareId, screen.HardwareId, StringComparison.OrdinalIgnoreCase));
             if (byHardware != null)
             {
                 consumedIds?.Add(byHardware.Id);
@@ -98,7 +120,9 @@ public static class ScreenMatcher
 
         if (!screen.IsAnonymous)
         {
-            var byKey = Find(entry => entry.Key == screen.Key && entry.Key != null);
+            bool Unpinned(ScreenLayout entry) => string.IsNullOrEmpty(entry.HardwareId)
+                && string.IsNullOrEmpty(entry.MonitorId);
+            var byKey = Find(entry => Unpinned(entry) && entry.Key == screen.Key && entry.Key != null);
             if (byKey != null)
             {
                 consumedIds?.Add(byKey.Id);
@@ -106,7 +130,7 @@ public static class ScreenMatcher
             }
 
             // Fallback for upgrade from older builds where Key contained GPU adapter name instead of monitor friendly name
-            var byResolution = Find(entry => entry.Key != null && entry.Key.EndsWith($"|{screen.Width}x{screen.Height}")
+            var byResolution = Find(entry => Unpinned(entry) && entry.Key != null && entry.Key.EndsWith($"|{screen.Width}x{screen.Height}")
                 && (entry.Key.Contains("GeForce", StringComparison.OrdinalIgnoreCase)
                     || entry.Key.Contains("Radeon", StringComparison.OrdinalIgnoreCase)
                     || entry.Key.Contains("Intel", StringComparison.OrdinalIgnoreCase)
@@ -124,7 +148,8 @@ public static class ScreenMatcher
         // screen primary, and the legacy entry then would play its widgets there.
         if (screen.IsPrimary && !screen.IsAnonymous)
         {
-            var legacy = Find(entry => entry.Key == null && entry.Id == ScreensLayout.LegacyPrimaryId);
+            var legacy = Find(entry => entry.Key == null && entry.Id == ScreensLayout.LegacyPrimaryId
+                && string.IsNullOrEmpty(entry.HardwareId) && string.IsNullOrEmpty(entry.MonitorId));
             if (legacy != null)
             {
                 consumedIds?.Add(legacy.Id);
