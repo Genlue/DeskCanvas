@@ -63,6 +63,9 @@ public partial class Widget : Window, INotifyPropertyChanged
     private bool restoringDisplayMetrics;
     private bool moveCommitPending;
 
+    /// <summary>True between WM_ENTERSIZEMOVE and WM_EXITSIZEMOVE (a native move loop is running).</summary>
+    private bool moveLoopActive;
+
     /// <summary>Persistent ownership, independent of Windows temporarily moving this window.</summary>
     public string ScreenId => widgetLayoutProvider.ScreenId;
     public ScreenLayout? ScreenConfig => layoutProvider.Get().FindById(ScreenId);
@@ -193,6 +196,14 @@ public partial class Widget : Window, INotifyPropertyChanged
         AddHandler(PointerPressedEvent, OnStackChordPointerPressed, RoutingStrategies.Tunnel, handledEventsToo: true);
         AddHandler(PointerReleasedEvent, OnStackChordPointerReleased, RoutingStrategies.Tunnel, handledEventsToo: true);
         AddHandler(PointerWheelChangedEvent, OnStackChordWheelChanged, RoutingStrategies.Tunnel, handledEventsToo: true);
+        // Native move-loop bracket (WM_ENTERSIZEMOVE / WM_EXITSIZEMOVE, see OnWidgetWndProc):
+        // the deterministic end-of-drag commit rides WM_EXITSIZEMOVE, the message the native
+        // loop itself sends when it ends — with the window already resting at the final drop
+        // position and before the synthesized mouse-up. Windows-only: the hook is a native
+        // wndproc callback; other platforms (and the headless host) have no native move loop
+        // and rely on the Background-priority fallback in BeginMoveDragWithCommit.
+        if (OperatingSystem.IsWindows())
+            Win32Properties.AddWndProcHookCallback(this, OnWidgetWndProc);
         widgetLayoutProvider.DataChanged += OnWidgetLayoutUpdated;
         appSettingsProvider.DataChanged += OnAppSettingsUpdated;
         layoutProvider.DataChanged += OnLayoutDataUpdated;
@@ -1662,20 +1673,60 @@ public partial class Widget : Window, INotifyPropertyChanged
     /// <c>WindowImpl.BeginMoveDrag</c>), which swallows the physical mouse-up — the
     /// <see cref="OnPointerReleased"/> that is supposed to run <see cref="AfterMove"/> is
     /// synthesized afterwards at client point (0,0) and only fires if nothing in the tree
-    /// handles it and the legacy mouse pipeline delivers it. When it does not, the dragged
-    /// position was never saved and the widget visibly jumped back to its stored position
-    /// on the next activation (dragged "from a distance"). Queuing the commit behind the
-    /// move callback makes the save independent of the release event for every widget.
+    /// handles it and the legacy mouse pipeline delivers it. The commit therefore rides
+    /// <see cref="WmExitSizeMove"/> (see <see cref="OnWidgetWndProc"/>): the message the
+    /// native loop itself sends when it ends, with the window already resting at the final
+    /// drop position. The Background-priority job below is only a fallback for drags that
+    /// never enter the loop at all — while the loop IS active it must stay inert
+    /// (<see cref="CommitPendingMoveAfterLoop"/>): Background work runs whenever Win32
+    /// input goes quiet, i.e. exactly when the user pauses mid-drag to aim at a grid cell;
+    /// committing there consumed the pending flag and the release silently skipped the
+    /// grid snap, leaving the widget where it was dropped until the next click
+    /// re-committed it.
     /// </para>
     /// </summary>
     private void BeginMoveDragWithCommit(PointerPressedEventArgs e)
     {
         moveCommitPending = true;
         BeginMoveDrag(e);
-        Dispatcher.UIThread.Post(() =>
+        Dispatcher.UIThread.Post(CommitPendingMoveAfterLoop, DispatcherPriority.Background);
+    }
+
+    private const uint WmEnterSizeMove = 0x0231;
+    private const uint WmExitSizeMove = 0x0232;
+
+    /// <summary>
+    /// Native window hook: WM_ENTERSIZEMOVE / WM_EXITSIZEMOVE bracket the native move
+    /// loop, and the exit message is the one deterministic end-of-drag signal — sent by
+    /// the loop itself, with the window already at the final drop position, before the
+    /// synthesized mouse-up. Never marks the message handled: Avalonia's own processing
+    /// of the bracket must stay unaffected.
+    /// </summary>
+    private IntPtr OnWidgetWndProc(IntPtr hwnd, uint msg, IntPtr wParam, IntPtr lParam, ref bool handled)
+    {
+        if (msg == WmEnterSizeMove)
         {
+            moveLoopActive = true;
+        }
+        else if (msg == WmExitSizeMove)
+        {
+            moveLoopActive = false;
             if (moveCommitPending) AfterMove();
-        }, DispatcherPriority.Background);
+        }
+        return IntPtr.Zero;
+    }
+
+    /// <summary>
+    /// Fallback commit for drags that never enter the native move loop (BeginMoveDrag
+    /// failing, or a host without WM_ENTERSIZEMOVE/WM_EXITSIZEMOVE). While the loop is
+    /// active this stays inert: Background-priority dispatcher work runs whenever Win32
+    /// input goes quiet — exactly when the user pauses mid-drag to aim at a grid cell —
+    /// and consuming the flag there left the release without a commit.
+    /// </summary>
+    internal void CommitPendingMoveAfterLoop()
+    {
+        if (!moveCommitPending || moveLoopActive) return;
+        AfterMove();
     }
 
     private void AfterMove()
