@@ -1,5 +1,7 @@
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Globalization;
+using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Json;
@@ -18,12 +20,40 @@ using Folders.Locales;
 using Folders.Models;
 using Folders.Services;
 using DeskCanvas.Core.Interfaces;
+using DeskCanvas.Core.Models;
 namespace Folders.Views;
 
-public partial class Folder : UserControl
+public partial class Folder : UserControl, IWidgetSelfRefreshing, INotifyPropertyChanged
 {
     private FolderModel model;
     private readonly IWidgetLayoutProvider widgetLayoutProvider;
+
+    public new event PropertyChangedEventHandler? PropertyChanged;
+    private void Notify(string name) => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
+
+    private void NotifyAll()
+    {
+        Notify(nameof(Columns));
+        Notify(nameof(RowSpacing));
+        Notify(nameof(ShowScrollbar));
+        Notify(nameof(ShowTitle));
+        Notify(nameof(Title));
+        Notify(nameof(IconSize));
+        Notify(nameof(FontSize));
+        Notify(nameof(TitleOffsetX));
+        Notify(nameof(BoldTitle));
+        Notify(nameof(BoldNames));
+        Notify(nameof(IsListMode));
+        Notify(nameof(IsFixedRows));
+        Notify(nameof(IsWatchFolderMode));
+        Notify(nameof(WatchFolderPath));
+        Notify(nameof(GridVerticalAlignment));
+    }
+
+    private static readonly JsonSerializerOptions JsonOptions = new()
+    {
+        PropertyNameCaseInsensitive = true
+    };
 
     public Folder(IWidgetLayoutProvider widgetLayoutProvider)
         : this(new FolderModel([]), widgetLayoutProvider) { }
@@ -40,6 +70,40 @@ public partial class Folder : UserControl
         AddHandler(DragDrop.DragLeaveEvent, OnDragLeave);
         AddHandler(DragDrop.DropEvent, OnDrop);
         Refresh();
+        StartWatcher();
+    }
+
+    public Folder(IWidgetLayoutProvider widgetLayoutProvider, FolderModel model)
+        : this(model, widgetLayoutProvider) { }
+
+    public void Refresh(WidgetLayout layout)
+    {
+        if (layout.Settings is not { } settings || settings.ValueKind != JsonValueKind.Object)
+            return;
+
+        try
+        {
+            var updated = settings.Deserialize<FolderModel>(JsonOptions);
+            if (updated != null)
+            {
+                var watchFolderChanged = !string.Equals(model.WatchFolder, updated.WatchFolder, StringComparison.OrdinalIgnoreCase);
+                model = updated;
+                NotifyAll();
+                Refresh();
+                if (watchFolderChanged || (watcher == null && IsWatchFolderMode))
+                {
+                    StartWatcher();
+                }
+                else if (!IsWatchFolderMode)
+                {
+                    StopWatcher();
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"[Folder] Refresh(WidgetLayout) failed: {ex.Message}");
+        }
     }
 
     public int Columns => model.Columns;
@@ -54,7 +118,7 @@ public partial class Folder : UserControl
     public bool BoldNames => model.BoldNames;
     public bool IsListMode => model.LayoutMode == "List";
     public bool IsFixedRows => model.RowLayout == "Fixed";
-    public bool IsWatchFolderMode => !string.IsNullOrWhiteSpace(model.WatchFolder) && Directory.Exists(model.WatchFolder);
+    public bool IsWatchFolderMode => !string.IsNullOrWhiteSpace(model.WatchFolder) && Directory.Exists(model.WatchFolder.Trim());
     public string? WatchFolderPath => model.WatchFolder;
 
     /// <summary>
@@ -80,12 +144,16 @@ public partial class Folder : UserControl
         IsFixedRows ? Avalonia.Layout.VerticalAlignment.Top : Avalonia.Layout.VerticalAlignment.Stretch;
 
     private FileSystemWatcher? watcher;
-    private DateTime lastWatcherEvent;
+    private System.Threading.Timer? debounceTimer;
+    private readonly object watcherLock = new();
 
     private void OnLoaded(object? sender, RoutedEventArgs e)
     {
         Refresh();
-        StartWatcher();
+        if (watcher == null && IsWatchFolderMode)
+        {
+            StartWatcher();
+        }
         if (VisualRoot is TopLevel topLevel)
         {
             DragDrop.SetAllowDrop(topLevel, true);
@@ -113,38 +181,109 @@ public partial class Folder : UserControl
     private void StartWatcher()
     {
         StopWatcher();
-        if (string.IsNullOrWhiteSpace(model.WatchFolder) || !Directory.Exists(model.WatchFolder)) return;
+        if (string.IsNullOrWhiteSpace(model.WatchFolder)) return;
 
-        watcher = new FileSystemWatcher(model.WatchFolder)
+        string targetDir;
+        try
         {
-            IncludeSubdirectories = false,
-            NotifyFilter = NotifyFilters.FileName | NotifyFilters.DirectoryName | NotifyFilters.LastWrite
-        };
-        watcher.Created += OnWatcherEvent;
-        watcher.Deleted += OnWatcherEvent;
-        watcher.Renamed += OnWatcherEvent;
-        watcher.Changed += OnWatcherEvent;
-        watcher.EnableRaisingEvents = true;
+            targetDir = Path.GetFullPath(model.WatchFolder.Trim());
+            if (!Directory.Exists(targetDir)) return;
+        }
+        catch
+        {
+            return;
+        }
+
+        try
+        {
+            watcher = new FileSystemWatcher(targetDir)
+            {
+                IncludeSubdirectories = false,
+                InternalBufferSize = 65536,
+                NotifyFilter = NotifyFilters.FileName
+                             | NotifyFilters.DirectoryName
+                             | NotifyFilters.LastWrite
+                             | NotifyFilters.Size
+                             | NotifyFilters.Attributes
+                             | NotifyFilters.CreationTime
+            };
+            watcher.Created += OnWatcherEvent;
+            watcher.Deleted += OnWatcherEvent;
+            watcher.Renamed += OnWatcherEvent;
+            watcher.Changed += OnWatcherEvent;
+            watcher.Error += OnWatcherError;
+            watcher.EnableRaisingEvents = true;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"[Folder] StartWatcher failed for {targetDir}: {ex.Message}");
+            watcher = null;
+        }
     }
 
     private void StopWatcher()
     {
-        if (watcher == null) return;
-        watcher.EnableRaisingEvents = false;
-        watcher.Created -= OnWatcherEvent;
-        watcher.Deleted -= OnWatcherEvent;
-        watcher.Renamed -= OnWatcherEvent;
-        watcher.Changed -= OnWatcherEvent;
-        watcher.Dispose();
-        watcher = null;
+        lock (watcherLock)
+        {
+            if (debounceTimer != null)
+            {
+                try { debounceTimer.Dispose(); } catch { }
+                debounceTimer = null;
+            }
+
+            if (watcher != null)
+            {
+                try
+                {
+                    watcher.EnableRaisingEvents = false;
+                    watcher.Created -= OnWatcherEvent;
+                    watcher.Deleted -= OnWatcherEvent;
+                    watcher.Renamed -= OnWatcherEvent;
+                    watcher.Changed -= OnWatcherEvent;
+                    watcher.Error -= OnWatcherError;
+                    watcher.Dispose();
+                }
+                catch { }
+                watcher = null;
+            }
+        }
+    }
+
+    private void OnWatcherError(object sender, ErrorEventArgs e)
+    {
+        Debug.WriteLine($"[Folder] FileSystemWatcher error: {e.GetException()?.Message}");
+        Dispatcher.UIThread.Post(() =>
+        {
+            if (watcher == null) return;
+            Refresh();
+            StartWatcher();
+        });
     }
 
     private void OnWatcherEvent(object sender, FileSystemEventArgs e)
     {
-        // Debounce bursts of events (e.g. copying a folder fires many changes).
-        if ((DateTime.Now - lastWatcherEvent).TotalMilliseconds < 300) return;
-        lastWatcherEvent = DateTime.Now;
-        Dispatcher.UIThread.Post(Refresh);
+        // Trailing debounce: when events arrive in bursts (create, modify, rename),
+        // restart the timer so we only re-read disk and update the UI once the
+        // filesystem operations have settled.
+        lock (watcherLock)
+        {
+            if (watcher == null) return;
+            debounceTimer ??= new System.Threading.Timer(OnDebounceTimerElapsed, null, Timeout.Infinite, Timeout.Infinite);
+            try
+            {
+                debounceTimer.Change(200, Timeout.Infinite);
+            }
+            catch (ObjectDisposedException) { }
+        }
+    }
+
+    private void OnDebounceTimerElapsed(object? state)
+    {
+        Dispatcher.UIThread.Post(() =>
+        {
+            if (watcher == null) return;
+            Refresh();
+        });
     }
 
     private void OnOleDrop(List<string> paths)
@@ -279,8 +418,18 @@ public partial class Folder : UserControl
 
     private void UpdateModel(FolderModel newModel)
     {
+        var watchFolderChanged = !string.Equals(model.WatchFolder, newModel.WatchFolder, StringComparison.OrdinalIgnoreCase);
         model = newModel;
+        NotifyAll();
         Refresh();
+        if (watchFolderChanged || (watcher == null && IsWatchFolderMode))
+        {
+            StartWatcher();
+        }
+        else if (!IsWatchFolderMode)
+        {
+            StopWatcher();
+        }
         var newSettings = JsonSerializer.SerializeToElement(newModel);
         var newLayout = widgetLayoutProvider.Get() with { Settings = newSettings };
 
@@ -354,8 +503,10 @@ public partial class Folder : UserControl
             : model.GetDisplayName(path);
         var nameText = WrapName(name, model.MaxNameLines, model.MaxNameChars, model.CamelCaseWrap);
         var lineCount = Math.Max(1, nameText.Count(c => c == '\n') + 1);
+        Bitmap? icon = null;
+        try { icon = FolderIconService.GetIcon(path); } catch { }
         return new FolderItem(
-            path, name, FolderIconService.GetIcon(path), model.ShowNames, model.IconSize,
+            path, name, icon, model.ShowNames, model.IconSize,
             model.FontSize, model.BoldNames, nameText, model.MaxNameLines, lineCount);
     }
 
@@ -434,21 +585,33 @@ public partial class Folder : UserControl
     /// </summary>
     private IEnumerable<string> GetItemPaths()
     {
-        if (!string.IsNullOrWhiteSpace(model.WatchFolder) && Directory.Exists(model.WatchFolder))
+        if (!string.IsNullOrWhiteSpace(model.WatchFolder) && Directory.Exists(model.WatchFolder.Trim()))
         {
-            IEnumerable<string> entries = Directory.EnumerateFileSystemEntries(model.WatchFolder);
+            List<string> entries;
+            try
+            {
+                entries = Directory.EnumerateFileSystemEntries(model.WatchFolder.Trim()).ToList();
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[Folder] EnumerateFileSystemEntries failed for {model.WatchFolder}: {ex.Message}");
+                return [];
+            }
+
+            IEnumerable<string> filtered = entries;
             if (!model.ShowHiddenFiles)
-                entries = entries.Where(path => !IsHiddenOrSystem(path));
+                filtered = filtered.Where(path => !IsHiddenOrSystem(path));
             if (model.HideSubfolders)
-                entries = entries.Where(path => !Directory.Exists(path));
+                filtered = filtered.Where(path => !Directory.Exists(path));
 
             var dirKey = model.DirectoriesFirst ? 0 : 1;
             var fileKey = model.DirectoriesFirst ? 1 : 0;
 
-            return entries
+            return filtered
                 .GroupBy(path => Directory.Exists(path) ? dirKey : fileKey)
                 .OrderBy(group => group.Key)
-                .SelectMany(SortGroup);
+                .SelectMany(SortGroup)
+                .ToList();
         }
 
         return model.Items
@@ -462,15 +625,27 @@ public partial class Folder : UserControl
         return model.WatchSortBy switch
         {
             "Created" => descending
-                ? group.OrderByDescending(File.GetCreationTimeUtc).ThenByDescending(Path.GetFileName, StringComparer.OrdinalIgnoreCase)
-                : group.OrderBy(File.GetCreationTimeUtc).ThenBy(Path.GetFileName, StringComparer.OrdinalIgnoreCase),
+                ? group.OrderByDescending(SafeGetCreationTime).ThenByDescending(Path.GetFileName, StringComparer.OrdinalIgnoreCase)
+                : group.OrderBy(SafeGetCreationTime).ThenBy(Path.GetFileName, StringComparer.OrdinalIgnoreCase),
             "Modified" => descending
-                ? group.OrderByDescending(File.GetLastWriteTimeUtc).ThenByDescending(Path.GetFileName, StringComparer.OrdinalIgnoreCase)
-                : group.OrderBy(File.GetLastWriteTimeUtc).ThenBy(Path.GetFileName, StringComparer.OrdinalIgnoreCase),
+                ? group.OrderByDescending(SafeGetLastWriteTime).ThenByDescending(Path.GetFileName, StringComparer.OrdinalIgnoreCase)
+                : group.OrderBy(SafeGetLastWriteTime).ThenBy(Path.GetFileName, StringComparer.OrdinalIgnoreCase),
             _ => descending
                 ? group.OrderByDescending(Path.GetFileName, StringComparer.OrdinalIgnoreCase)
                 : group.OrderBy(Path.GetFileName, StringComparer.OrdinalIgnoreCase)
         };
+    }
+
+    private static DateTime SafeGetCreationTime(string path)
+    {
+        try { return Directory.Exists(path) ? Directory.GetCreationTimeUtc(path) : File.GetCreationTimeUtc(path); }
+        catch { return DateTime.MinValue; }
+    }
+
+    private static DateTime SafeGetLastWriteTime(string path)
+    {
+        try { return Directory.Exists(path) ? Directory.GetLastWriteTimeUtc(path) : File.GetLastWriteTimeUtc(path); }
+        catch { return DateTime.MinValue; }
     }
 
     private static bool IsHiddenOrSystem(string path)

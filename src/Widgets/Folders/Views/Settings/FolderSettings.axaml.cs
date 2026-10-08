@@ -331,12 +331,17 @@ public partial class FolderSettings : UserControl
         });
 
         if (folder.Count == 0) return;
-        Save(model with { WatchFolder = folder[0].Path.LocalPath });
+        var path = folder[0].Path.LocalPath;
+        if (!string.IsNullOrWhiteSpace(path) && path.Length > 3)
+            path = path.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+        Save(model with { WatchFolder = path });
+        UpdateWatchFolderState();
     }
 
     private void OnClearWatchFolder(object? sender, RoutedEventArgs e)
     {
         Save(model with { WatchFolder = null });
+        UpdateWatchFolderState();
     }
 
     private void OnToggleNames(object? sender, RoutedEventArgs e)
