@@ -200,36 +200,55 @@ public class DisplayMonitorService(ILayoutProvider layoutProvider)
             var screen = candidate.Screen;
             var identity = candidate.Identity;
 
+            // Strict matching: do not allow unverified model fallbacks to cross-assign layouts
             var config = ScreenMatcher.Match(storedLayout.Screens, identity, consumedConfigIds,
-                candidates.Count(a => string.Equals(a.Identity.HardwareId, identity.HardwareId,
-                    StringComparison.OrdinalIgnoreCase)) == 1,
-                allowLegacyTwinUpgrade: !string.IsNullOrEmpty(identity.MonitorId));
+                allowHardwareFallback: false,
+                allowLegacyTwinUpgrade: false);
+
             var changed = false;
-            if (config != null && config.Key != null && config.Key != identity.Key && config.Key.EndsWith($"|{identity.Width}x{identity.Height}"))
+            if (config != null)
             {
-                // A hardware-id match may also fix a stale key: the entry followed this monitor
-                // across a rename (driver update, EDID change), so its key now names it again.
-                config = config with { Key = identity.Key };
-                changed = true;
+                // Safe migration of legacy v2 configs without ScreenBinding:
+                if (config.Binding == null && !string.IsNullOrEmpty(identity.HardwareId))
+                {
+                    if (string.IsNullOrEmpty(config.HardwareId) || string.Equals(config.HardwareId, identity.HardwareId, StringComparison.OrdinalIgnoreCase))
+                    {
+                        config = config with
+                        {
+                            HardwareId = identity.HardwareId,
+                            MonitorId = string.IsNullOrEmpty(config.MonitorId) ? identity.MonitorId : config.MonitorId,
+                            Binding = new ScreenBinding(
+                                identity.PnpInstanceId,
+                                DeviceInterfacePath: identity.PhysicalIdentity?.DeviceInterfacePath,
+                                HardwareId: identity.HardwareId,
+                                SerialNumber: identity.PhysicalIdentity?.SerialNumber,
+                                Source: BindingSource.Migrated,
+                                Status: BindingStatus.Bound)
+                        };
+                        changed = true;
+                    }
+                }
+                else if (config.Binding != null && config.Binding.MatchesInstance(identity.PnpInstanceId))
+                {
+                    // Verified binding already matches: do not touch binding or hardware id
+                    if (config.Key != null && config.Key != identity.Key && config.Key.EndsWith($"|{identity.Width}x{identity.Height}"))
+                    {
+                        config = config with { Key = identity.Key };
+                        changed = true;
+                    }
+                }
+
+                if (changed)
+                {
+                    storedLayout = storedLayout.WithScreen(config!);
+                }
             }
-            if (config != null && !string.IsNullOrEmpty(identity.HardwareId) && config.HardwareId != identity.HardwareId)
-            {
-                // Pin the entry to this monitor's EDID hardware id: from now on the entry can
-                // only be matched by the physical monitor it was created for, no matter which
-                // name a virtual screen or a driver quirk reports.
-                config = config with { HardwareId = identity.HardwareId };
-                changed = true;
-            }
-            if (config != null && !string.IsNullOrEmpty(identity.MonitorId) && config.MonitorId != identity.MonitorId)
-            {
-                config = config with { MonitorId = identity.MonitorId };
-                changed = true;
-            }
-            if (changed)
-            {
-                storedLayout = storedLayout.WithScreen(config!);
-            }
-            attached.Add(new AttachedScreen(screen, identity, config));
+
+            var status = config != null
+                ? BindingStatus.Bound
+                : (identity.IsAnonymous ? BindingStatus.Unresolved : BindingStatus.Unconfigured);
+
+            attached.Add(new AttachedScreen(screen, identity with { BindingStatus = status }, config));
         }
 
         // Attached is ALWAYS refreshed (queries see the latest configs even when
@@ -292,16 +311,32 @@ public class DisplayMonitorService(ILayoutProvider layoutProvider)
         if (attached.Config != null)
             return layoutProvider.Get().FindById(attached.Config.Id) ?? attached.Config;
 
+        var identity = attached.Identity;
+        var pnpId = identity.PnpInstanceId;
+        var hardwareId = string.IsNullOrEmpty(identity.HardwareId) ? null : identity.HardwareId;
+        var monitorId = string.IsNullOrEmpty(identity.MonitorId) ? null : identity.MonitorId;
+
+        var binding = !string.IsNullOrEmpty(pnpId)
+            ? new ScreenBinding(
+                pnpId,
+                DeviceInterfacePath: identity.PhysicalIdentity?.DeviceInterfacePath ?? monitorId,
+                HardwareId: hardwareId,
+                SerialNumber: identity.PhysicalIdentity?.SerialNumber,
+                Source: BindingSource.AutoDetected,
+                Status: BindingStatus.Bound)
+            : null;
+
         var entry = new ScreenLayout(
             Guid.NewGuid().ToString("N"),
-            attached.Identity.Key,
+            identity.Key,
             null,
             null,
             null,
             null,
             [],
-            HardwareId: string.IsNullOrEmpty(attached.Identity.HardwareId) ? null : attached.Identity.HardwareId,
-            MonitorId: string.IsNullOrEmpty(attached.Identity.MonitorId) ? null : attached.Identity.MonitorId);
+            HardwareId: hardwareId,
+            MonitorId: monitorId,
+            Binding: binding);
         var screens = layoutProvider.Get().UpsertScreen(entry);
         layoutProvider.Save(screens);
 
@@ -388,11 +423,153 @@ public class DisplayMonitorService(ILayoutProvider layoutProvider)
         Refresh();
     }
 
-    // ---------- Win32 enumeration ----------
+    // ---------- Win32 enumeration (CCD + GDI fallback) ----------
 
     private const int CCHDEVICENAME = 32;
     private const uint DISPLAY_DEVICE_ATTACHED_TO_DESKTOP = 0x1;
     private const uint ENUM_CURRENT_SETTINGS = 0xFFFFFFFF;
+    private const uint QDC_ONLY_ACTIVE_PATHS = 0x00000002;
+    private const int ERROR_SUCCESS = 0;
+    private const int ERROR_INSUFFICIENT_BUFFER = 122;
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct LUID
+    {
+        public uint LowPart;
+        public int HighPart;
+
+        public override string ToString() => $"0x{HighPart:X8}:{LowPart:X8}";
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct DISPLAYCONFIG_RATIONAL
+    {
+        public uint Numerator;
+        public uint Denominator;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct DISPLAYCONFIG_PATH_SOURCE_INFO
+    {
+        public LUID adapterId;
+        public uint id;
+        public uint modeInfoIdx;
+        public uint statusFlags;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct DISPLAYCONFIG_PATH_TARGET_INFO
+    {
+        public LUID adapterId;
+        public uint id;
+        public uint modeInfoIdx;
+        public uint outputTechnology;
+        public uint rotation;
+        public uint scaling;
+        public DISPLAYCONFIG_RATIONAL refreshRate;
+        public uint scanLineOrdering;
+        public uint targetAvailable;
+        public uint statusFlags;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct DISPLAYCONFIG_PATH_INFO
+    {
+        public DISPLAYCONFIG_PATH_SOURCE_INFO sourceInfo;
+        public DISPLAYCONFIG_PATH_TARGET_INFO targetInfo;
+        public uint flags;
+    }
+
+    [StructLayout(LayoutKind.Explicit, Size = 64)]
+    private struct DISPLAYCONFIG_MODE_INFO
+    {
+        [FieldOffset(0)] public uint infoType;
+        [FieldOffset(4)] public uint id;
+        [FieldOffset(8)] public LUID adapterId;
+        [FieldOffset(16)] public uint sourceWidth;
+        [FieldOffset(20)] public uint sourceHeight;
+        [FieldOffset(24)] public uint sourcePixelFormat;
+        [FieldOffset(28)] public int sourcePositionX;
+        [FieldOffset(32)] public int sourcePositionY;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct DISPLAYCONFIG_DEVICE_INFO_HEADER
+    {
+        public uint type;
+        public uint size;
+        public LUID adapterId;
+        public uint id;
+    }
+
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    private struct DISPLAYCONFIG_SOURCE_DEVICE_NAME
+    {
+        public DISPLAYCONFIG_DEVICE_INFO_HEADER header;
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = CCHDEVICENAME)]
+        public string viewGdiDeviceName;
+    }
+
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    private struct DISPLAYCONFIG_TARGET_DEVICE_NAME
+    {
+        public DISPLAYCONFIG_DEVICE_INFO_HEADER header;
+        public uint flags;
+        public uint outputTechnology;
+        public ushort edidManufactureId;
+        public ushort edidProductCodeId;
+        public uint connectorInstance;
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 64)]
+        public string monitorFriendlyDeviceName;
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 128)]
+        public string monitorDevicePath;
+    }
+
+    [DllImport("user32.dll")]
+    private static extern int GetDisplayConfigBufferSizes(
+        uint flags,
+        out uint numPathArrayElements,
+        out uint numModeInfoArrayElements);
+
+    [DllImport("user32.dll")]
+    private static extern int QueryDisplayConfig(
+        uint flags,
+        ref uint numPathArrayElements,
+        [In, Out] DISPLAYCONFIG_PATH_INFO[] pathInfoArray,
+        ref uint numModeInfoArrayElements,
+        [In, Out] DISPLAYCONFIG_MODE_INFO[] modeInfoArray,
+        IntPtr currentTopologyId);
+
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+    private static extern int DisplayConfigGetDeviceInfo(ref DISPLAYCONFIG_SOURCE_DEVICE_NAME requestPacket);
+
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+    private static extern int DisplayConfigGetDeviceInfo(ref DISPLAYCONFIG_TARGET_DEVICE_NAME requestPacket);
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct RECT
+    {
+        public int left, top, right, bottom;
+    }
+
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    private struct MONITORINFOEX
+    {
+        public uint cbSize;
+        public RECT rcMonitor;
+        public RECT rcWork;
+        public uint dwFlags;
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = CCHDEVICENAME)]
+        public string szDevice;
+    }
+
+    private delegate bool MonitorEnumProc(IntPtr hMonitor, IntPtr hdcMonitor, ref RECT lprcMonitor, IntPtr dwData);
+
+    [DllImport("user32.dll")]
+    private static extern bool EnumDisplayMonitors(IntPtr hdc, IntPtr lprcClip, MonitorEnumProc lpfnEnum, IntPtr dwData);
+
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+    private static extern bool GetMonitorInfo(IntPtr hMonitor, ref MONITORINFOEX lpmi);
 
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
     private struct DISPLAY_DEVICE
@@ -438,43 +615,59 @@ public class DisplayMonitorService(ILayoutProvider layoutProvider)
     [DllImport("user32.dll", CharSet = CharSet.Unicode)]
     private static extern bool EnumDisplaySettings(string? lpszDeviceName, uint iModeNum, ref DEVMODE lpDevMode);
 
-    private sealed record Win32Device(string Name, string FriendlyName, string HardwareId, string MonitorId, int X, int Y, int Width, int Height);
+    private sealed record Win32Device(
+        string Name,
+        string FriendlyName,
+        string HardwareId,
+        string MonitorId,
+        int X,
+        int Y,
+        int Width,
+        int Height,
+        PhysicalMonitorIdentity? PhysicalIdentity = null);
 
-    private static Dictionary<string, string>? cachedWmiNames;
-    private static DateTime lastWmiQuery = DateTime.MinValue;
+    private sealed record WmiDetails(string FriendlyName, string ProductCode, string? SerialNumber);
+
+    private static Dictionary<string, WmiDetails>? cachedWmiDetails;
+    private static DateTime lastWmiDetailQuery = DateTime.MinValue;
 
 #pragma warning disable CA1416
-    private static Dictionary<string, string> GetWmiMonitorNames()
+    private static Dictionary<string, WmiDetails> GetWmiMonitorDetails()
     {
-        if (cachedWmiNames != null && (DateTime.UtcNow - lastWmiQuery).TotalSeconds < 30)
-            return cachedWmiNames;
+        if (cachedWmiDetails != null && (DateTime.UtcNow - lastWmiDetailQuery).TotalSeconds < 30)
+            return cachedWmiDetails;
 
-        var dict = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        var dict = new Dictionary<string, WmiDetails>(StringComparer.OrdinalIgnoreCase);
         try
         {
-            using var searcher = new System.Management.ManagementObjectSearcher(@"root\wmi", "SELECT InstanceName, UserFriendlyName, ProductCodeID FROM WmiMonitorID");
+            using var searcher = new System.Management.ManagementObjectSearcher(@"root\wmi", "SELECT * FROM WmiMonitorID");
             foreach (var obj in searcher.Get())
             {
-                var instanceName = obj["InstanceName"]?.ToString() ?? "";
+                var instance = obj["InstanceName"]?.ToString() ?? "";
                 var nameCodes = obj["UserFriendlyName"] as ushort[];
                 var productCodes = obj["ProductCodeID"] as ushort[];
+                var serialCodes = obj["SerialNumberID"] as ushort[];
 
-                string friendly = "";
-                if (nameCodes != null)
-                {
-                    friendly = new string(nameCodes.Where(c => c != 0).Select(c => (char)c).ToArray()).Trim();
-                }
-                if (string.IsNullOrEmpty(friendly) && productCodes != null)
-                {
-                    friendly = new string(productCodes.Where(c => c != 0).Select(c => (char)c).ToArray()).Trim();
-                }
+                string friendly = nameCodes != null ? new string(nameCodes.Where(c => c != 0).Select(c => (char)c).ToArray()).Trim() : "";
+                string product = productCodes != null ? new string(productCodes.Where(c => c != 0).Select(c => (char)c).ToArray()).Trim() : "";
+                string rawSerial = serialCodes != null ? new string(serialCodes.Where(c => c != 0).Select(c => (char)c).ToArray()).Trim() : "";
+                string? serial = PhysicalMonitorIdentity.IsValidSerialNumber(rawSerial) ? rawSerial : null;
 
-                if (!string.IsNullOrEmpty(friendly))
-                {
-                    var parts = instanceName.Split('\\');
-                    if (parts.Length > 1) dict[parts[1]] = friendly;
-                    dict[instanceName] = friendly;
-                }
+                var details = new WmiDetails(friendly, product, serial);
+
+                // Map by normalized PnP ID (strip trailing _0, _1 if present)
+                var pnpId = PhysicalMonitorIdentity.NormalizeDeviceInstanceId(instance);
+                var lastUnderscore = pnpId.LastIndexOf('_');
+                if (lastUnderscore > 0)
+                    pnpId = pnpId.Substring(0, lastUnderscore);
+
+                if (!string.IsNullOrEmpty(pnpId))
+                    dict[pnpId] = details;
+
+                // Also map by HardwareId (ProductCode)
+                var parts = instance.Split('\\');
+                if (parts.Length > 1)
+                    dict[parts[1]] = details;
             }
         }
         catch
@@ -482,34 +675,212 @@ public class DisplayMonitorService(ILayoutProvider layoutProvider)
             // Ignore WMI query failures
         }
 
-        lastWmiQuery = DateTime.UtcNow;
-        return cachedWmiNames = dict;
+        lastWmiDetailQuery = DateTime.UtcNow;
+        return cachedWmiDetails = dict;
     }
 #pragma warning restore CA1416
 
+    private static string DecodeEdidManufacturer(ushort id)
+    {
+        var swapped = (ushort)(((id & 0xFF) << 8) | ((id >> 8) & 0xFF));
+        var c1 = (char)('@' + ((swapped >> 10) & 0x1F));
+        var c2 = (char)('@' + ((swapped >> 5) & 0x1F));
+        var c3 = (char)('@' + (swapped & 0x1F));
+        return $"{c1}{c2}{c3}";
+    }
+
+    private static string ExtractPnpInstanceId(string deviceInterfacePath)
+    {
+        if (string.IsNullOrEmpty(deviceInterfacePath)) return string.Empty;
+        var s = deviceInterfacePath;
+        if (s.StartsWith(@"\\?\", StringComparison.OrdinalIgnoreCase))
+            s = s.Substring(4);
+
+        var lastHash = s.LastIndexOf('#');
+        if (lastHash > 0 && s.IndexOf('{', lastHash) > 0)
+        {
+            s = s.Substring(0, lastHash);
+        }
+
+        return s.Replace('#', '\\');
+    }
+
     private static List<Win32Device> EnumerateDevices()
     {
+        var ccd = EnumerateCcdDevices();
+        if (ccd != null && ccd.Count > 0)
+            return ccd;
+
+        return EnumerateGdiDevices();
+    }
+
+    private static List<Win32Device>? EnumerateCcdDevices()
+    {
+        // 1. Get GDI desktop monitors via EnumDisplayMonitors
+        var gdiMonitors = new List<MONITORINFOEX>();
+        EnumDisplayMonitors(IntPtr.Zero, IntPtr.Zero, (IntPtr hMon, IntPtr hdc, ref RECT rc, IntPtr data) =>
+        {
+            var mi = new MONITORINFOEX { cbSize = (uint)Marshal.SizeOf<MONITORINFOEX>() };
+            if (GetMonitorInfo(hMon, ref mi))
+                gdiMonitors.Add(mi);
+            return true;
+        }, IntPtr.Zero);
+
+        if (gdiMonitors.Count == 0) return null;
+
+        // 2. Query CCD active paths
+        uint pathCount = 0, modeCount = 0;
+        int status = GetDisplayConfigBufferSizes(QDC_ONLY_ACTIVE_PATHS, out pathCount, out modeCount);
+        if (status != ERROR_SUCCESS || pathCount == 0) return null;
+
+        DISPLAYCONFIG_PATH_INFO[] paths = [];
+        DISPLAYCONFIG_MODE_INFO[] modes = [];
+        for (int retry = 0; retry < 3; retry++)
+        {
+            paths = new DISPLAYCONFIG_PATH_INFO[pathCount];
+            modes = new DISPLAYCONFIG_MODE_INFO[modeCount];
+            status = QueryDisplayConfig(QDC_ONLY_ACTIVE_PATHS, ref pathCount, paths, ref modeCount, modes, IntPtr.Zero);
+            if (status == ERROR_SUCCESS) break;
+            if (status == ERROR_INSUFFICIENT_BUFFER)
+            {
+                GetDisplayConfigBufferSizes(QDC_ONLY_ACTIVE_PATHS, out pathCount, out modeCount);
+                continue;
+            }
+            return null;
+        }
+
+        var wmiDetails = GetWmiMonitorDetails();
+        var pathsByGdiName = new Dictionary<string, List<(DISPLAYCONFIG_PATH_INFO Path, PhysicalMonitorIdentity Identity)>>(StringComparer.OrdinalIgnoreCase);
+
+        for (int i = 0; i < pathCount; i++)
+        {
+            var path = paths[i];
+            if ((path.flags & 1) == 0 || path.targetInfo.targetAvailable == 0)
+                continue;
+
+            // Query Source GDI Device Name
+            var sourceName = new DISPLAYCONFIG_SOURCE_DEVICE_NAME
+            {
+                header = new DISPLAYCONFIG_DEVICE_INFO_HEADER
+                {
+                    type = 1,
+                    size = (uint)Marshal.SizeOf<DISPLAYCONFIG_SOURCE_DEVICE_NAME>(),
+                    adapterId = path.sourceInfo.adapterId,
+                    id = path.sourceInfo.id
+                }
+            };
+            if (DisplayConfigGetDeviceInfo(ref sourceName) != ERROR_SUCCESS) continue;
+            var gdiName = sourceName.viewGdiDeviceName;
+            if (string.IsNullOrEmpty(gdiName)) continue;
+
+            // Query Target Device Name
+            var targetName = new DISPLAYCONFIG_TARGET_DEVICE_NAME
+            {
+                header = new DISPLAYCONFIG_DEVICE_INFO_HEADER
+                {
+                    type = 2,
+                    size = (uint)Marshal.SizeOf<DISPLAYCONFIG_TARGET_DEVICE_NAME>(),
+                    adapterId = path.targetInfo.adapterId,
+                    id = path.targetInfo.id
+                }
+            };
+            if (DisplayConfigGetDeviceInfo(ref targetName) != ERROR_SUCCESS) continue;
+
+            var mfg = DecodeEdidManufacturer(targetName.edidManufactureId);
+            var prod = targetName.edidProductCodeId.ToString("X4");
+            var hardwareId = $"{mfg}{prod}";
+            var devPath = targetName.monitorDevicePath ?? string.Empty;
+            var pnpId = ExtractPnpInstanceId(devPath);
+            var isInternal = path.targetInfo.outputTechnology is 11 /* EMBEDDED_DP */ or 7 /* LVDS */ or 0xFFFFFFFF;
+
+            string friendly = targetName.monitorFriendlyDeviceName;
+            string? serial = null;
+
+            if (wmiDetails.TryGetValue(pnpId, out var details) || (!string.IsNullOrEmpty(hardwareId) && wmiDetails.TryGetValue(hardwareId, out details)))
+            {
+                if (string.IsNullOrEmpty(friendly) && !string.IsNullOrEmpty(details.FriendlyName))
+                    friendly = details.FriendlyName;
+                if (!string.IsNullOrEmpty(details.SerialNumber))
+                    serial = details.SerialNumber;
+            }
+
+            if (string.IsNullOrEmpty(friendly))
+                friendly = !string.IsNullOrEmpty(prod) ? prod : hardwareId;
+
+            var physical = new PhysicalMonitorIdentity(
+                pnpId,
+                devPath,
+                mfg,
+                prod,
+                hardwareId,
+                serial,
+                friendly,
+                isInternal,
+                path.targetInfo.outputTechnology,
+                targetName.connectorInstance);
+
+            if (!pathsByGdiName.TryGetValue(gdiName, out var list))
+            {
+                list = [];
+                pathsByGdiName[gdiName] = list;
+            }
+            list.Add((path, physical));
+        }
+
+        var results = new List<Win32Device>();
+        foreach (var mi in gdiMonitors)
+        {
+            var gdiName = mi.szDevice;
+            var width = mi.rcMonitor.right - mi.rcMonitor.left;
+            var height = mi.rcMonitor.bottom - mi.rcMonitor.top;
+
+            PhysicalMonitorIdentity? physical = null;
+            if (pathsByGdiName.TryGetValue(gdiName, out var pathList) && pathList.Count > 0)
+            {
+                physical = pathList[0].Identity;
+            }
+
+            var friendly = physical?.FriendlyName ?? "Screen";
+            var hardwareId = physical?.HardwareId ?? string.Empty;
+            var monitorId = physical?.DeviceInterfacePath ?? string.Empty;
+
+            results.Add(new Win32Device(
+                gdiName,
+                friendly,
+                hardwareId,
+                monitorId,
+                mi.rcMonitor.left,
+                mi.rcMonitor.top,
+                width,
+                height,
+                physical));
+        }
+
+        return results;
+    }
+
+    private static List<Win32Device> EnumerateGdiDevices()
+    {
         var result = new List<Win32Device>();
-        var wmiNames = GetWmiMonitorNames();
+        var wmiDetails = GetWmiMonitorDetails();
 
         for (uint index = 0; ; index++)
         {
-            var device = new DISPLAY_DEVICE { cb = (uint) Marshal.SizeOf<DISPLAY_DEVICE>() };
+            var device = new DISPLAY_DEVICE { cb = (uint)Marshal.SizeOf<DISPLAY_DEVICE>() };
             if (!EnumDisplayDevices(null, index, ref device, 0)) break;
             if ((device.StateFlags & DISPLAY_DEVICE_ATTACHED_TO_DESKTOP) == 0) continue;
 
-            var mode = new DEVMODE { dmSize = (short) Marshal.SizeOf<DEVMODE>() };
+            var mode = new DEVMODE { dmSize = (short)Marshal.SizeOf<DEVMODE>() };
             if (!EnumDisplaySettings(device.DeviceName, ENUM_CURRENT_SETTINGS, ref mode)) continue;
 
-            // Probe monitor attached to this display adapter
             string friendlyName = string.Empty;
             string hardwareId = string.Empty;
             string monitorId = string.Empty;
 
             for (uint monIndex = 0; ; monIndex++)
             {
-                var monitor = new DISPLAY_DEVICE { cb = (uint) Marshal.SizeOf<DISPLAY_DEVICE>() };
-                if (!EnumDisplayDevices(device.DeviceName, monIndex, ref monitor, 1 /* EDID_PHYSICAL_MONITOR */))
+                var monitor = new DISPLAY_DEVICE { cb = (uint)Marshal.SizeOf<DISPLAY_DEVICE>() };
+                if (!EnumDisplayDevices(device.DeviceName, monIndex, ref monitor, 1 /* EDD_GET_DEVICE_INTERFACE_NAME */))
                     break;
 
                 var rawName = monitor.DeviceString?.Trim() ?? string.Empty;
@@ -535,26 +906,18 @@ public class DisplayMonitorService(ILayoutProvider layoutProvider)
                 }
             }
 
-            // Check WMI friendly name by hardware ID
-            if (!string.IsNullOrEmpty(hardwareId) && wmiNames.TryGetValue(hardwareId, out var wmiFriendly) && !string.IsNullOrEmpty(wmiFriendly))
+            if (!string.IsNullOrEmpty(hardwareId) && wmiDetails.TryGetValue(hardwareId, out var details) && !string.IsNullOrEmpty(details.FriendlyName))
             {
-                friendlyName = wmiFriendly;
+                friendlyName = details.FriendlyName;
             }
 
             if (string.IsNullOrEmpty(friendlyName))
             {
-                if (!string.IsNullOrEmpty(hardwareId))
-                {
-                    friendlyName = hardwareId;
-                }
+                if (!string.IsNullOrEmpty(hardwareId)) friendlyName = hardwareId;
                 else if (!string.IsNullOrEmpty(device.DeviceString) && device.DeviceString.Contains("Virtual", StringComparison.OrdinalIgnoreCase))
-                {
                     friendlyName = device.DeviceString;
-                }
                 else
-                {
                     friendlyName = !string.IsNullOrWhiteSpace(device.DeviceString) ? device.DeviceString : "Screen";
-                }
             }
 
             result.Add(new Win32Device(
@@ -573,15 +936,12 @@ public class DisplayMonitorService(ILayoutProvider layoutProvider)
 
     private static Win32Device? MatchDevice(Screen screen, List<Win32Device> devices, HashSet<string> used, string? previousDevice)
     {
-        // 1. Exact coordinate and resolution match (dmPositionX/Y == screen.Bounds.X/Y && Width/Height)
         var matches = devices.Where(d => !used.Contains(d.Name)
             && d.X == screen.Bounds.X
             && d.Y == screen.Bounds.Y
             && d.Width == screen.Bounds.Width
             && d.Height == screen.Bounds.Height).ToList();
-        // Clone mode exposes several outputs at the same desktop geometry.
-        // Keep the previous owner if present; otherwise choose a deterministic
-        // output for this single logical desktop instead of treating it as unstable.
+
         var chosenName = DisplayTopology.SelectDevice(matches.Select(d => d.Name), previousDevice);
         var exactPos = matches.FirstOrDefault(d => d.Name == chosenName);
         if (exactPos != null)
@@ -590,9 +950,6 @@ public class DisplayMonitorService(ILayoutProvider layoutProvider)
             return exactPos;
         }
 
-        // The two APIs can momentarily disagree during hot-plug. Guessing by
-        // resolution or enumeration order would give a surviving screen the
-        // removed monitor's identity and widgets. Wait for a coherent snapshot.
         return null;
     }
 }

@@ -138,19 +138,36 @@ public partial class MultiScreen : UserControl
 
         // 1. Status + Primary badge + Display name + expand toggle
         var headerLeft = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
+        var isInternal = identity.PhysicalIdentity?.IsInternal == true;
+        var physicalDeviceName = identity.FriendlyName.Length > 0
+            ? identity.FriendlyName
+            : (!string.IsNullOrEmpty(identity.HardwareId) ? identity.HardwareId : "Screen");
+        if (isInternal && !physicalDeviceName.Contains("内置"))
+            physicalDeviceName += " (内置屏幕)";
+
+        var bindingBadge = identity.BindingStatus switch
+        {
+            BindingStatus.Bound => ("已绑定", Color.FromArgb(0x2A, 0x2F, 0xC8, 0x40), Brushes.LightGreen),
+            BindingStatus.Unconfigured => ("未配置", Color.FromArgb(0x35, 0x0D, 0xA0, 0xE5), Brushes.LightBlue),
+            BindingStatus.Conflict => ("绑定冲突", Color.FromArgb(0x40, 0xE5, 0x20, 0x20), Brushes.Salmon),
+            BindingStatus.Unresolved => ("未解析", Color.FromArgb(0x30, 0x80, 0x80, 0x80), Brushes.LightGray),
+            _ => ("已连接", Color.FromArgb(0x2A, 0x2F, 0xC8, 0x40), Brushes.White)
+        };
+
         headerLeft.Children.Add(new Border
         {
-            Background = new SolidColorBrush(Color.FromArgb(0x2A, 0x2F, 0xC8, 0x40)),
+            Background = new SolidColorBrush(bindingBadge.Item2),
             CornerRadius = new CornerRadius(6),
             Padding = new Thickness(8, 2),
             VerticalAlignment = VerticalAlignment.Center,
             Child = new TextBlock
             {
-                Text = Locale.Settings_MultiScreen_Connected,
+                Text = bindingBadge.Item1,
                 FontSize = 11,
-                Foreground = Brushes.White
+                Foreground = bindingBadge.Item3
             }
         });
+
         if (identity.IsPrimary)
         {
             headerLeft.Children.Add(new Border
@@ -167,9 +184,14 @@ public partial class MultiScreen : UserControl
                 }
             });
         }
+
+        var headerTitle = !string.IsNullOrEmpty(config?.Alias)
+            ? $"{physicalDeviceName} · [{config.Alias}]"
+            : physicalDeviceName;
+
         var nameText = new TextBlock
         {
-            Text = config?.DisplayName ?? (identity.FriendlyName.Length > 0 ? identity.FriendlyName : "Screen"),
+            Text = headerTitle,
             FontSize = 15,
             FontWeight = FontWeight.SemiBold,
             VerticalAlignment = VerticalAlignment.Center
@@ -191,9 +213,10 @@ public partial class MultiScreen : UserControl
 
         // 2. Hardware info & widget count (stays visible while the body is folded)
         var infoPanel = new StackPanel { Spacing = 2 };
+        var hwLabel = !string.IsNullOrEmpty(identity.HardwareId) ? $" · {identity.HardwareId}" : "";
         infoPanel.Children.Add(new TextBlock
         {
-            Text = $"{identity.FriendlyName} · {identity.Width}×{identity.Height} · {(int) Math.Round(identity.Scaling * 100)}% DPI",
+            Text = $"{identity.DeviceName}{hwLabel} · {identity.Width}×{identity.Height} · {(int) Math.Round(identity.Scaling * 100)}% DPI",
             FontSize = 12,
             Opacity = 0.65
         });
@@ -611,16 +634,38 @@ public partial class MultiScreen : UserControl
 
         var screens = layoutProvider.Get();
         var deviceName = attached.Identity.DeviceName;
+        var pnpId = attached.Identity.PnpInstanceId;
+        var hardwareId = attached.Identity.HardwareId;
+        var monitorId = attached.Identity.MonitorId;
 
-        // Unbind any other configuration pinned to this device.
+        // Unbind any other configuration previously pinned to this physical instance
         screens = screens with
         {
-            Screens = screens.Screens.Select(s => s.DeviceName == deviceName ? s with { DeviceName = null } : s).ToList()
+            Screens = screens.Screens.Select(s =>
+                (s.Binding?.MatchesInstance(pnpId) == true || (!string.IsNullOrEmpty(s.DeviceName) && s.DeviceName == deviceName))
+                    ? s with { DeviceName = null, Binding = s.Binding != null ? s.Binding with { Status = BindingStatus.Unconfigured } : null }
+                    : s).ToList()
         };
 
         var entry = screens.FindById(target.Id);
         if (entry != null)
-            screens = screens.WithScreen(entry with { DeviceName = deviceName });
+        {
+            var newBinding = new ScreenBinding(
+                pnpId,
+                DeviceInterfacePath: attached.Identity.PhysicalIdentity?.DeviceInterfacePath ?? monitorId,
+                HardwareId: hardwareId,
+                SerialNumber: attached.Identity.PhysicalIdentity?.SerialNumber,
+                Source: BindingSource.Manual,
+                Status: BindingStatus.Bound);
+
+            screens = screens.WithScreen(entry with
+            {
+                DeviceName = deviceName,
+                HardwareId = hardwareId,
+                MonitorId = monitorId,
+                Binding = newBinding
+            });
+        }
 
         layoutProvider.Save(screens);
         displayMonitor.Refresh();

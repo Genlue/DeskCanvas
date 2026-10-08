@@ -33,6 +33,7 @@ class Program
         OfflineScreenOwnership();
         LegacyMigrationAccumulates();
         ClonedDesktopTopology();
+        PhysicalBindingAndDisambiguation();
 
         Console.WriteLine();
         Console.WriteLine(failures == 0 ? "ALL CHECKS PASSED" : $"{failures} CHECK(S) FAILED");
@@ -220,6 +221,85 @@ class Program
             DisplayTopology.SelectDevice(["DISPLAY2", "DISPLAY1"], null) == "DISPLAY1");
         Check("missing output selects only an exact geometry candidate",
             DisplayTopology.SelectDevice([], "DISPLAY1") == null);
+    }
+
+    private static void PhysicalBindingAndDisambiguation()
+    {
+        // 1. External screen taking DISPLAY1 must NEVER steal internal screen's configuration
+        var internalConfig = new ScreenLayout("internal-id", "0C8E|2560x1600", "Laptop Screen", @"\\.\DISPLAY1", null, null, [],
+            HardwareId: "BOE0C8E", MonitorId: @"\\?\DISPLAY#BOE0C8E#5&1551B5BC&0&UID4355#{E6F07B5F-EE97-4A90-B076-33F57BF4EAA7}",
+            Binding: new ScreenBinding(@"DISPLAY\BOE0C8E\5&1551B5BC&0&UID4355", HardwareId: "BOE0C8E"));
+
+        var externalScreen = new ScreenIdentity(@"\\.\DISPLAY1", "G52 Max", 2560, 1440, true, 1.0,
+            HardwareId: "SAC2463",
+            MonitorId: @"\\?\DISPLAY#SAC2463#5&1551B5BC&0&UID4352#{E6F07B5F-EE97-4A90-B076-33F57BF4EAA7}",
+            PhysicalIdentity: new PhysicalMonitorIdentity(@"DISPLAY\SAC2463\5&1551B5BC&0&UID4352",
+                @"\\?\DISPLAY#SAC2463#5&1551B5BC&0&UID4352#{E6F07B5F-EE97-4A90-B076-33F57BF4EAA7}",
+                "SAC", "2463", "SAC2463", null, "G52 Max", false));
+
+        Check("external screen on DISPLAY1 rejects internal config despite matching DeviceName",
+            ScreenMatcher.Match([internalConfig], externalScreen) == null);
+
+        // 2. Exact PnP binding matches even when port/GDI shifts
+        var externalConfig = new ScreenLayout("external-id", "G52 Max|2560x1440", "Desk Monitor", @"\\.\DISPLAY2", null, null, [],
+            HardwareId: "SAC2463", MonitorId: @"\\?\DISPLAY#SAC2463#5&1551B5BC&0&UID4352#{E6F07B5F-EE97-4A90-B076-33F57BF4EAA7}",
+            Binding: new ScreenBinding(@"DISPLAY\SAC2463\5&1551B5BC&0&UID4352", HardwareId: "SAC2463"));
+
+        Check("exact PnP binding matches external monitor when it becomes DISPLAY1",
+            ScreenMatcher.Match([internalConfig, externalConfig], externalScreen)?.Id == "external-id");
+
+        // 3. Batch matching accurately separates Bound, Unconfigured and Unresolved
+        var anonScreen = new ScreenIdentity(@"\\.\DISPLAY3", ScreenIdentity.FallbackName, 1920, 1080, false, 1.0);
+        var unconfScreen = new ScreenIdentity(@"\\.\DISPLAY4", "New Screen", 1920, 1080, false, 1.0,
+            HardwareId: "NEW1234", MonitorId: @"DISPLAY\NEW1234\123");
+
+        var batch = ScreenMatcher.MatchBatch([internalConfig, externalConfig], [externalScreen, anonScreen, unconfScreen]);
+        Check("batch match: external screen is Bound",
+            batch.Matches.Any(m => m.Screen == externalScreen && m.Status == BindingStatus.Bound && m.Config?.Id == "external-id"));
+        Check("batch match: anonymous virtual screen is Unresolved",
+            batch.Matches.Any(m => m.Screen == anonScreen && m.Status == BindingStatus.Unresolved));
+        Check("batch match: new monitor is Unconfigured",
+            batch.Matches.Any(m => m.Screen == unconfScreen && m.Status == BindingStatus.Unconfigured));
+        Check("batch match: offline internal config remains unmatched",
+            batch.UnmatchedConfigs.Count == 1 && batch.UnmatchedConfigs[0].Id == "internal-id");
+
+        // 4. Layout v3 JSON round-trip preserves ScreenBinding and aliases
+        var storeV3 = new ScreensLayout([externalConfig with
+        {
+            Binding = externalConfig.Binding! with { InstanceAliases = [@"DISPLAY\SAC2463\OLD_PORT"] }
+        }], Version: 3);
+        var json = JsonSerializer.Serialize(storeV3);
+        var reloaded = JsonSerializer.Deserialize<ScreensLayout>(json)!;
+        Check("v3 persistence preserves ScreenBinding and instance aliases",
+            reloaded.Version == 3
+            && reloaded.Screens[0].Binding?.MatchesInstance(@"DISPLAY\SAC2463\OLD_PORT") == true);
+
+        // 5. User original scenario: Extend -> Single External (as primary) -> Extend
+        // External screen: SAC2463, Internal screen: BOE0C8E
+        var screenExt = externalScreen with { DeviceName = @"\\.\DISPLAY1", IsPrimary = true };
+        var screenInt = new ScreenIdentity(@"\\.\DISPLAY2", "0C8E", 2560, 1600, false, 1.0,
+            HardwareId: "BOE0C8E",
+            MonitorId: @"\\?\DISPLAY#BOE0C8E#5&1551B5BC&0&UID4355#{E6F07B5F-EE97-4A90-B076-33F57BF4EAA7}",
+            PhysicalIdentity: new PhysicalMonitorIdentity(@"DISPLAY\BOE0C8E\5&1551B5BC&0&UID4355",
+                @"\\?\DISPLAY#BOE0C8E#5&1551B5BC&0&UID4355#{E6F07B5F-EE97-4A90-B076-33F57BF4EAA7}",
+                "BOE", "0C8E", "BOE0C8E", null, "0C8E", true));
+
+        // Extended mode:
+        var matchExt = ScreenMatcher.Match([internalConfig, externalConfig], screenExt);
+        var matchInt = ScreenMatcher.Match([internalConfig, externalConfig], screenInt);
+        Check("extended mode: external matches external config", matchExt?.Id == "external-id");
+        Check("extended mode: internal matches internal config", matchInt?.Id == "internal-id");
+
+        // Switch to single external screen (internal is offline, external is primary DISPLAY1):
+        var singleExt = screenExt with { DeviceName = @"\\.\DISPLAY1", IsPrimary = true };
+        var matchSingle = ScreenMatcher.Match([internalConfig, externalConfig], singleExt);
+        Check("single external: external still uses external config, never steals internal", matchSingle?.Id == "external-id");
+
+        // Back to extended:
+        var matchBackExt = ScreenMatcher.Match([internalConfig, externalConfig], screenExt);
+        var matchBackInt = ScreenMatcher.Match([internalConfig, externalConfig], screenInt);
+        Check("back to extended: external keeps external config", matchBackExt?.Id == "external-id");
+        Check("back to extended: internal restores internal config", matchBackInt?.Id == "internal-id");
     }
 
     private static WidgetLayout Widget(string type, string subType, int x, int y) =>

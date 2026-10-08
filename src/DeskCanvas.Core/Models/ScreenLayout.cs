@@ -23,6 +23,7 @@ namespace DeskCanvas.Core.Models;
 /// virtual screen — or a same-resolution stand-in — can never adopt it by name.
 /// <c>null</c> = not yet seen with a hardware id (matched by key only).</param>
 /// <param name="MonitorId">Windows monitor instance/interface id used to distinguish same-model monitors.</param>
+/// <param name="Binding">Persistent physical monitor binding (layout format v3).</param>
 public record ScreenLayout(
     string Id,
     string? Key,
@@ -34,24 +35,24 @@ public record ScreenLayout(
     double? Margin = null,
     double? Radius = null,
     string? HardwareId = null,
-    string? MonitorId = null)
+    string? MonitorId = null,
+    ScreenBinding? Binding = null)
 {
     /// <summary>
     /// Display name for the UI: the user alias when set, otherwise the friendly name part of the <see cref="Key"/>.
     /// </summary>
     [JsonIgnore]
-    public string DisplayName => Alias ?? Key?.Split('|')[0] ?? "Primary";
+    public string DisplayName => Alias ?? Binding?.HardwareId ?? Key?.Split('|')[0] ?? "Primary";
 }
 
 /// <summary>
-/// Multi-screen layout file (format v2): a collection of per-screen configurations.
+/// Multi-screen layout file (format v3): a collection of per-screen configurations.
 /// <para>
-/// v1 files (a plain <see cref="WidgetLayout"/> array) are still readable — they are
-/// wrapped as a single "legacy primary" entry (<see cref="ScreenLayout.Key"/> = null,
-/// which matches whichever screen is primary at runtime). Saving always writes v2.
+/// v1 files (a plain <see cref="WidgetLayout"/> array) and v2 files are still readable.
+/// Saving always writes v3 with physical screen bindings.
 /// </para>
 /// </summary>
-public record ScreensLayout(List<ScreenLayout> Screens, int Version = 2)
+public record ScreensLayout(List<ScreenLayout> Screens, int Version = 3)
 {
     /// <summary>Id of the legacy v1 primary entry.</summary>
     public const string LegacyPrimaryId = "primary";

@@ -46,8 +46,7 @@ public class LayoutProvider() : JsonParser<ScreensLayout>(Const.LayoutFile), ILa
     {
         // Old files may lack the field; missing or empty still yields a usable file.
         Screens = value.Screens ?? [],
-        // The on-disk format is always v2 once a file is read (v1 arrays are
-        // already wrapped by FromLegacy above); keep the marker honest.
-        Version = 2
+        // The on-disk format is upgraded to v3 once read and normalized.
+        Version = Math.Max(value.Version, 3)
     };
 }
