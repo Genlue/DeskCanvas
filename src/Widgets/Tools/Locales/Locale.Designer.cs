@@ -85,5 +85,24 @@ namespace Tools.Locales {
         public static string Tools_Translator_CustomUrl => ResourceManager.GetString("Tools_Translator_CustomUrl", resourceCulture) ?? "Custom Endpoint URL";
         public static string Tools_Translator_AutoTranslate => ResourceManager.GetString("Tools_Translator_AutoTranslate", resourceCulture) ?? "Translate as you type";
         public static string Tools_Translator_AutoTranslate_Desc => ResourceManager.GetString("Tools_Translator_AutoTranslate_Desc", resourceCulture) ?? "Automatically trigger translation after typing pauses";
+
+        public static string Tools_Calculator_Title => ResourceManager.GetString("Tools_Calculator_Title", resourceCulture) ?? "Calculator";
+        public static string Tools_Calculator_Subtitle => ResourceManager.GetString("Tools_Calculator_Subtitle", resourceCulture) ?? "Quick expression evaluator, scientific & programmer calculator with unit converter";
+        public static string Tools_Calculator_InputHint => ResourceManager.GetString("Tools_Calculator_InputHint", resourceCulture) ?? "Type expression, e.g. (350+120)*0.85";
+        public static string Tools_Calculator_EmptyHistory => ResourceManager.GetString("Tools_Calculator_EmptyHistory", resourceCulture) ?? "No calculation history";
+        public static string Tools_Calculator_Copied => ResourceManager.GetString("Tools_Calculator_Copied", resourceCulture) ?? "Copied result to clipboard";
+        public static string Tools_Calculator_ClearHistory => ResourceManager.GetString("Tools_Calculator_ClearHistory", resourceCulture) ?? "Clear History";
+        public static string Tools_Calculator_DecimalPlaces => ResourceManager.GetString("Tools_Calculator_DecimalPlaces", resourceCulture) ?? "Decimal Places";
+        public static string Tools_Calculator_DecimalPlaces_Desc => ResourceManager.GetString("Tools_Calculator_DecimalPlaces_Desc", resourceCulture) ?? "Maximum decimal digits to display (auto-trims trailing zeros)";
+        public static string Tools_Calculator_ThousandsSep => ResourceManager.GetString("Tools_Calculator_ThousandsSep", resourceCulture) ?? "Thousands Separator";
+        public static string Tools_Calculator_ThousandsSep_Desc => ResourceManager.GetString("Tools_Calculator_ThousandsSep_Desc", resourceCulture) ?? "Format numbers with commas (e.g. 1,024.5)";
+        public static string Tools_Calculator_AngleMode => ResourceManager.GetString("Tools_Calculator_AngleMode", resourceCulture) ?? "Default Angle Unit";
+        public static string Tools_Calculator_AngleMode_Desc => ResourceManager.GetString("Tools_Calculator_AngleMode_Desc", resourceCulture) ?? "Default unit for trigonometric functions (DEG / RAD)";
+        public static string Tools_Calculator_DefaultTab => ResourceManager.GetString("Tools_Calculator_DefaultTab", resourceCulture) ?? "Default Secondary Panel Tab";
+        public static string Tools_Calculator_DefaultTab_Desc => ResourceManager.GetString("Tools_Calculator_DefaultTab_Desc", resourceCulture) ?? "Default mode when opening the expanded calculator window";
+        public static string Tools_Calculator_MaxHistory => ResourceManager.GetString("Tools_Calculator_MaxHistory", resourceCulture) ?? "Max History Items";
+        public static string Tools_Calculator_MaxHistory_Desc => ResourceManager.GetString("Tools_Calculator_MaxHistory_Desc", resourceCulture) ?? "Maximum number of recent calculations to keep (10 - 100)";
+        public static string Tools_Calculator_ClickToCopy => ResourceManager.GetString("Tools_Calculator_ClickToCopy", resourceCulture) ?? "Click History to Copy";
+        public static string Tools_Calculator_ClickToCopy_Desc => ResourceManager.GetString("Tools_Calculator_ClickToCopy_Desc", resourceCulture) ?? "Copy result directly when clicking a history item instead of filling expression";
     }
 }

@@ -5,7 +5,7 @@
 
 <div align="center">
   <h3>🎨 Windows 下一代 macOS 风格多功能桌面小组件套件</h3>
-  <p>基于 Avalonia 11 + .NET 8 打造 · 硬件级实时毛玻璃 · 3D 光学液态玻璃 · 手机锁屏艺术大字时钟 · 灵活桌面网格系统</p>
+  <p>基于 Avalonia 11 + .NET 8 打造 · 硬件级实时毛玻璃 · 3D 光学液态玻璃 · 手机锁屏艺术大字时钟 · 自定义吸附网格系统</p>
 </div>
 
 <h3 align="center">
@@ -41,17 +41,17 @@
 ### 2. 💎 四大深度适配视觉材质
 - 🪟 **毛玻璃（Acrylic）· OS 硬件实时模糊**：Win32 原生 `ExtCreateRegion`（`RGNDATA`）把数字字形扫描线直接绑成 HWND Region；DWM 硬件级逐帧采样桌面，对动态壁纸（Wallpaper Engine）、视频壁纸实现 60/144fps 零延迟实时跟手；
 - 💧 **液态玻璃（Liquid Glass）· 3D 光学物理折射**：欧几里得距离场（EDT）精密计算字符轮廓法线，真实凹凸透镜折射、色散光斑与镜面高光，GPU（Skia 运行时着色器）加速 + CPU 回退双路径；
-- 💎 **液态玻璃 2.0**：对 [Kyant0/AndroidLiquidGlass](https://github.com/Kyant0/AndroidLiquidGlass) 2.0 光学模型的忠实 GPU 移植——圆角矩形折射透镜 + 深度效果 + 斜向色散 + 发丝级描边高光；
+- 💎 **液态玻璃 2.0**：对 [Kyant0/AndroidLiquidGlass](https://github.com/Kyant0/AndroidLiquidGlass) 2.0 光学模型的忠实 GPU 移植——圆角矩形折射透镜 + 深度效果 + 斜向色散 + 发丝级描边高光；折射系数由 GPU 着色器与 CPU 渲染器共享的单一求解器给出，折射带以 `0.8 × 圆角` 封顶，大卡片四角保持干净；
 - 🎨 **纯色（Solid）**：纯粹矢量抗锯齿填充，透明度滑块与强调色定制，零模糊、极度省电。
 
 ### 3. 🪟 二级面板 · Material 3 动效
-天气、清单、大文件夹、剪贴板、笔记共用统一的二级面板：从触发组件**锚点缩放展开**（圆角全程跟随组件），玻璃与一级组件完全同源；开合过渡严格遵循 [Material Design 3 motion tokens](https://m3.material.io/styles/motion/easing-and-duration/tokens-specs)（进场 `emphasized decelerate`、退场 `emphasized accelerate`）。
+天气、清单、大文件夹、剪贴板、笔记共用统一的二级面板：从触发组件**锚点缩放展开**（圆角全程跟随组件），玻璃与一级组件完全同源；开合过渡严格遵循 [Material Design 3 motion tokens](https://m3.material.io/styles/motion/easing-and-duration/tokens-specs)（进场 `emphasized decelerate`、退场 `emphasized accelerate`）。点击面板外部任意位置即可关闭。
 
 ### 4. 📐 灵活桌面网格系统
-手动网格（m×n 方格按百分比存储，跨分辨率/跨 DPI 自适应）、虚拟网格与自由放置三种模式；组件吸附单元格，边距与圆角自定义，永久钉在桌面置底层。
+自定义方格网格（m×n 方格按百分比存储，跨分辨率/跨 DPI 自适应）；组件恒吸附单元格，边距与圆角自定义，永久钉在桌面置底层。
 
 ### 5. 🧩 丰富的小组件生态（17 款内置）
-⏰ 时钟（模拟×3 / 数字 / 世界时钟 / 无边框）· 📅 日历 · 🌤️ 天气（7 日预报、日出日落、紫外线、空气质量、代理）· 📊 系统监控 · 📝 笔记（Markdown 排版、二级面板）· ✅ 清单（交互式待办 + 二级面板）· 📁 文件夹（桌面快速启动器 + 实时文件监听）· 🎵 音乐控制 · 🔍 搜索 · 📈 进度 · 🖼️ 相册 · 🔋 电池 · 🗺️ 地图 · 🍅 番茄钟 · 📚 堆叠 · 🧰 工具 · 📌 固定（多组件聚合卡）
+⏰ 时钟（模拟×3 / 数字 / 世界时钟 / 无边框）· 📅 日历 · 🌤️ 天气（7 日预报、四日方格卡、日出日落、紫外线、空气质量、代理）· 📊 系统监控 · 📝 笔记（Markdown 排版、二级面板）· ✅ 清单（交互式待办 + 二级面板）· 📁 文件夹（桌面快速启动器 + 实时文件监听）· 🎵 音乐控制 · 🔍 搜索 · 📈 进度 · 🖼️ 相册 · 🔋 电池 · 🗺️ 地图 · 🍅 番茄钟 · 📚 堆叠 · 🧰 工具（剪贴板、翻译、计算器）· 📌 固定（多组件聚合卡）
 
 ### 6. 🚀 单文件分发
 构建产出自带组件包（内容哈希校验、首次启动解包）的单文件 `DeskCanvas.exe`；组件解包到 `%LocalAppData%\DeskCanvas`，可直接替换 DLL 热更新。每个版本同步提供 WiX v5 打包的 MSI 安装器。
@@ -83,7 +83,7 @@ powershell -ExecutionPolicy Bypass -File .\build.ps1 -Msi
 # 产物位置：
 # dist/win-x64/DeskCanvas.exe
 # dist/DeskCanvas-win-x64-portable.zip
-# dist/installer/DeskCanvas-2.7.0-win-x64.msi
+# dist/installer/DeskCanvas-<version>-win-x64.msi
 ```
 
 ---

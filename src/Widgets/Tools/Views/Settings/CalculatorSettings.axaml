@@ -1,0 +1,112 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:locales="clr-namespace:Tools.Locales"
+             x:Class="Tools.Views.Settings.CalculatorSettings">
+    <UserControl.Styles>
+        <Style Selector="TextBlock.setting-label">
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}" />
+        </Style>
+        <Style Selector="TextBlock.setting-desc">
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="Opacity" Value="0.6" />
+            <Setter Property="Margin" Value="0,2,0,0" />
+            <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}" />
+        </Style>
+        <Style Selector="TextBlock.group-header">
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Margin" Value="0,12,0,4" />
+            <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundAccentBrush}" />
+        </Style>
+        <Style Selector="ComboBox.setting-combo">
+            <Setter Property="Width" Value="160" />
+            <Setter Property="HorizontalAlignment" Value="Right" />
+            <Setter Property="FontSize" Value="12" />
+        </Style>
+        <Style Selector="Button.action-btn">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="BorderBrush" Value="{DynamicResource ToolTipBorderBrush}" />
+            <Setter Property="CornerRadius" Value="4" />
+            <Setter Property="Padding" Value="10,4" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}" />
+        </Style>
+        <Style Selector="Button.action-btn:pointerover">
+            <Setter Property="Background" Value="{DynamicResource SystemControlHighlightListLowBrush}" />
+        </Style>
+    </UserControl.Styles>
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Orientation="Vertical" Spacing="10" Margin="0,2,16,8">
+            <TextBlock Classes="group-header" Text="显示与精度设置" />
+
+            <!-- Decimal Places -->
+            <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto">
+                <TextBlock Classes="setting-label" Text="{x:Static locales:Locale.Tools_Calculator_DecimalPlaces}" />
+                <TextBlock Grid.Row="1" Classes="setting-desc" Text="{x:Static locales:Locale.Tools_Calculator_DecimalPlaces_Desc}" />
+                <ComboBox x:Name="DecimalPlacesCombo" Grid.Column="1" Grid.RowSpan="2" Classes="setting-combo"
+                          SelectionChanged="OnDecimalPlacesChanged" />
+            </Grid>
+
+            <!-- Thousands Separator -->
+            <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto">
+                <TextBlock Classes="setting-label" Text="{x:Static locales:Locale.Tools_Calculator_ThousandsSep}" />
+                <TextBlock Grid.Row="1" Classes="setting-desc" Text="{x:Static locales:Locale.Tools_Calculator_ThousandsSep_Desc}" />
+                <ToggleSwitch x:Name="ThousandsSepToggle" Grid.Column="1" Grid.RowSpan="2" OnContent="" OffContent=""
+                              IsCheckedChanged="OnToggleChanged" />
+            </Grid>
+
+            <TextBlock Classes="group-header" Text="计算模式与二级面板" />
+
+            <!-- Default Angle Mode -->
+            <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto">
+                <TextBlock Classes="setting-label" Text="{x:Static locales:Locale.Tools_Calculator_AngleMode}" />
+                <TextBlock Grid.Row="1" Classes="setting-desc" Text="{x:Static locales:Locale.Tools_Calculator_AngleMode_Desc}" />
+                <ComboBox x:Name="AngleModeCombo" Grid.Column="1" Grid.RowSpan="2" Classes="setting-combo"
+                          SelectionChanged="OnAngleModeChanged" />
+            </Grid>
+
+            <!-- Default Panel Tab -->
+            <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto">
+                <TextBlock Classes="setting-label" Text="{x:Static locales:Locale.Tools_Calculator_DefaultTab}" />
+                <TextBlock Grid.Row="1" Classes="setting-desc" Text="{x:Static locales:Locale.Tools_Calculator_DefaultTab_Desc}" />
+                <ComboBox x:Name="DefaultTabCombo" Grid.Column="1" Grid.RowSpan="2" Classes="setting-combo"
+                          SelectionChanged="OnDefaultTabChanged" />
+            </Grid>
+
+            <TextBlock Classes="group-header" Text="历史记录与交互" />
+
+            <!-- Max History Items -->
+            <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto">
+                <TextBlock Classes="setting-label" Text="{x:Static locales:Locale.Tools_Calculator_MaxHistory}" />
+                <TextBlock Grid.Row="1" Classes="setting-desc" Text="{x:Static locales:Locale.Tools_Calculator_MaxHistory_Desc}" />
+                <StackPanel Grid.Column="1" Grid.RowSpan="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                    <Slider x:Name="MaxHistorySlider" Minimum="10" Maximum="100" Width="130"
+                            TickFrequency="5" IsSnapToTickEnabled="True" ValueChanged="OnMaxHistoryChanged" />
+                    <TextBlock x:Name="MaxHistoryValueText" VerticalAlignment="Center" Width="32" TextAlignment="Right" FontSize="13" />
+                </StackPanel>
+            </Grid>
+
+            <!-- Click History to Copy -->
+            <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto">
+                <TextBlock Classes="setting-label" Text="{x:Static locales:Locale.Tools_Calculator_ClickToCopy}" />
+                <TextBlock Grid.Row="1" Classes="setting-desc" Text="{x:Static locales:Locale.Tools_Calculator_ClickToCopy_Desc}" />
+                <ToggleSwitch x:Name="ClickToCopyToggle" Grid.Column="1" Grid.RowSpan="2" OnContent="" OffContent=""
+                              IsCheckedChanged="OnToggleChanged" />
+            </Grid>
+
+            <!-- Clear History & Memory -->
+            <Grid ColumnDefinitions="*,Auto" Margin="0,4,0,0">
+                <StackPanel VerticalAlignment="Center">
+                    <TextBlock Classes="setting-label" Text="清空计算历史记录与内存槽" />
+                    <TextBlock Classes="setting-desc" Text="清除所有已保存的历史算式记录及 M 内存数值" />
+                </StackPanel>
+                <Button Grid.Column="1" Classes="action-btn" Content="立即清空" Click="OnClearAllClicked" />
+            </Grid>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

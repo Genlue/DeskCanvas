@@ -12,8 +12,10 @@ namespace DeskCanvas.Services;
 /// <para>
 /// A faithful port of Kyant0/AndroidLiquidGlass 2.0's optical model — the rounded-rect refraction
 /// lens with depth effect and diagonal chromatic aberration, vibrancy, the surface scrim and the
-/// hairline outline highlight. The coefficient block mirrors
-/// <see cref="LiquidGlassV2Effect.BuildParams"/> so the two paths stay in step.
+/// hairline outline highlight. The refraction coefficients are not mirrored by hand any more:
+/// this renderer and <see cref="LiquidGlassV2Effect.BuildParams"/> both call the shared
+/// <see cref="LiquidGlassV2Lens.Compute"/> solver, so the corner-aware band cap and the gradient
+/// radius cannot drift between the GPU and CPU paths.
 /// </para>
 /// </summary>
 public static class LiquidGlassV2Renderer
@@ -41,10 +43,13 @@ public static class LiquidGlassV2Renderer
         var sigma = (float)optics.Blur * scale / 8f;
         var radius = Math.Clamp(frame.Radius * scale, 0f, minSide / 2f);
 
-        // Lens: band = amount / 2, both measured against the short side (the library's ratio).
-        var amount = (float)(optics.Refraction / 100.0) * (float)LiquidGlassV2Settings.RefractionAmountMaxFrac * minSide;
-        var refrHeight = amount * (float)LiquidGlassV2Settings.BandToAmountRatio;
-        var depthEffect = 1f;
+        // Lens: band = amount / 2, both measured against the short side (the library's ratio),
+        // then capped against the corner radius. Solved by the same pure function the GPU shader's
+        // BuildParams calls — this is the whole point of that function.
+        var lens = LiquidGlassV2Lens.Compute(optics.Refraction, minSide, radius);
+        var amount = lens.Amount;
+        var refrHeight = lens.Band;
+        var depthEffect = lens.DepthEffect;
 
         var chroma = (float)(optics.Dispersion / 100.0);
         var saturation = 1f + (float)LiquidGlassV2Settings.VibrancySaturationBoost * (float)(optics.Vibrancy / 100.0);
@@ -66,7 +71,7 @@ public static class LiquidGlassV2Renderer
 
         var halfWidth = width / 2f;
         var halfHeight = height / 2f;
-        var gradRadius = Math.Min(radius * (float)LiquidGlassV2Settings.GradRadiusFactor, Math.Min(halfWidth, halfHeight));
+        var gradRadius = lens.GradRadius;
 
         var field = new LiquidGlassRenderer.BevelField(width, height, radius);
         var pad = (int)Math.Ceiling(Math.Max(sigma * 3f, 16f));
@@ -135,8 +140,18 @@ public static class LiquidGlassV2Renderer
                 var gx = grad.X + depthEffect * rx;
                 var gy = grad.Y + depthEffect * ry;
                 var gradLen = MathF.Sqrt(gx * gx + gy * gy);
-                gx /= gradLen;
-                gy /= gradLen;
+                // Guarded, exactly as in the shader: the two unit vectors can cancel on the centre
+                // line of a square card, and dividing by a zero length yields NaN, not zero.
+                if (gradLen > 1e-5f)
+                {
+                    gx /= gradLen;
+                    gy /= gradLen;
+                }
+                else
+                {
+                    gx = 0f;
+                    gy = 0f;
+                }
 
                 var sx = x + pad + 0.5f - gx * d;
                 var sy = y + pad + 0.5f - gy * d;
@@ -223,13 +238,24 @@ public static class LiquidGlassV2Renderer
     }
 
     /// <summary>
-    /// CPU twin of the shader's <c>gradSdRoundedRect</c> (<see cref="LiquidGlassV2Effect"/>):
-    /// the SDF gradient at an inflated radius, restructured to be continuous everywhere. The
-    /// library's field hard-switches the axis along the card diagonals and collapses to a 45°
-    /// spike exactly on the arc-centre lines, and wherever the band grew past ~1.2× the corner
-    /// radius both sliced hard seams into the rim at all four corners — here the corner sector
-    /// keeps the radial fan, the edge strips keep exact edge normals, and the deep interior
+    /// CPU twin of the shader's <c>gradSdRoundedRect</c> (<see cref="LiquidGlassV2Effect"/>),
+    /// branch for branch. The SDF gradient at an inflated radius: the corner sector keeps the
+    /// library's radial fan, the edge strips keep exact edge normals, and the deep interior
     /// reflects the radial across the diagonal so it continues the fan smoothly.
+    /// <para>
+    /// Two things the library's field got wrong and this one does not, both of them seam-shaped:
+    /// the corner test is <c>&gt;=</c>, because <c>normalize</c> of a non-negative pair already
+    /// lands on the neighbouring strip's normal at <c>q = (0, ε)</c> — testing <c>&gt;</c> let
+    /// those points fall through to the horizontal strip and answer (1, 0) where both one-sided
+    /// limits are (0, 1), a 90° spike sitting exactly on the arc-centre lines; and the signs come
+    /// from <c>&gt;= 0</c> rather than SkSL's <c>sign()</c>, which answers 0 on the axes.
+    /// </para>
+    /// <para>
+    /// The result is continuous except at the inflated arc centre, a single point per corner where
+    /// the fan's direction genuinely depends on the approach; it resolves to the 45° unit vector
+    /// through the same <c>max(…, 1e-5)</c> floor the deep branch uses. The corner-capped band
+    /// keeps displacement zero there, so it is never sampled with a non-zero weight.
+    /// </para>
     /// </summary>
     internal static (float X, float Y) GradSd(float cx, float cy, float halfWidth, float halfHeight, float gradRadius)
     {
@@ -237,10 +263,16 @@ public static class LiquidGlassV2Renderer
         var cornerY = Math.Abs(cy) - (halfHeight - gradRadius);
         var sx = cx >= 0 ? 1f : -1f;
         var sy = cy >= 0 ? 1f : -1f;
-        if (cornerX > 0f && cornerY > 0f)
+        if (cornerX >= 0f && cornerY >= 0f)
         {
-            var len = MathF.Sqrt(cornerX * cornerX + cornerY * cornerY);
-            return (sx * cornerX / len, sy * cornerY / len);
+            // Same floor as the shader and as the deep branch below: it costs ~1e-5 of a unit on
+            // the axes, and at the inflated arc centre — no unique limit there, so any finite
+            // deterministic direction will do — it yields the 45° unit vector. The shared band cap
+            // keeps the displacement zero there, so the choice is never actually sampled.
+            var mx = Math.Max(cornerX, 1e-5f);
+            var my = Math.Max(cornerY, 1e-5f);
+            var len = MathF.Sqrt(mx * mx + my * my);
+            return (sx * mx / len, sy * my / len);
         }
         if (cornerX >= 0f) return (sx, 0f);
         if (cornerY >= 0f) return (0f, sy);

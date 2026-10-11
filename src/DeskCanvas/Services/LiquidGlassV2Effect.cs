@@ -18,11 +18,17 @@ namespace DeskCanvas.Services;
 ///   <c>circleMap</c> quarter-circle (<c>1 - sqrt(1 - x²)</c>, peaking exactly at the outline),
 ///   points inward (the background reads as magnified behind a thick glass edge), and its
 ///   direction is the rounded-rect SDF gradient at an inflated radius, blended with the radial
-///   direction when the depth effect is on. One deliberate deviation: the gradient is
-///   restructured to be continuous everywhere — the library's field hard-switches the axis
-///   along the card diagonals and collapses to a 45° spike exactly on the arc-centre lines,
-///   and wherever the band grew past ~1.2× the corner radius both sliced hard seams into the
-///   rim at all four corners.</description></item>
+///   direction when the depth effect is on. Two deliberate deviations from the library, both
+///   decided by the shared <see cref="LiquidGlassV2Lens"/> solver so the CPU twin matches:
+///   (<b>a</b>) the band is capped at <c>0.8 × corner radius</c> rather than the library's
+///   <c>0.2 × short side</c> — past ~1.17× the radius the band's own tangential derivative
+///   changes sign, folding the rim at every corner, and past 1.5× it the inflated arc centre
+///   starts to carry displacement; (<b>b</b>) the direction field is restructured so its only
+///   point without a unique limit is that arc centre, which the capped band then always leaves
+///   at zero displacement. It is not continuous "everywhere" — it is continuous wherever it can
+///   actually be seen, and the library's hard axis switch along the diagonals and its 90° spike
+///   on the arc-centre lines, which sliced hard seams into the rim at all four corners, are
+///   gone.</description></item>
 ///   <item><description><b>Chromatic aberration</b> — the library's seven-tap spectral split,
 ///   scaled by the diagonal quadrant factor <c>(x·y)/(hx·hy)</c>: fringes appear on the
 ///   light-facing diagonal and reverse on the other.</description></item>
@@ -94,7 +100,7 @@ internal static class LiquidGlassV2Effect
         float Width, float Height, float Radius,
         float DestOriginX, float DestOriginY, float DestToRender,
         float SourceOriginX, float SourceOriginY, float SourceScale,
-        float RefrHeight, float RefrAmount, float DepthEffect,
+        float RefrHeight, float RefrAmount, float DepthEffect, float GradRadius,
         float Chroma, float Saturation, float Tint,
         SKColor Coating,
         float StrokeHalf, float StrokeFeather, float StrokeAlpha, float Falloff,
@@ -127,9 +133,9 @@ internal static class LiquidGlassV2Effect
         // Lens: the library ties the band to the displacement (height = amount / 2) and measures
         // both against the card's short side, so the material scales with the widget the way the
         // phone controls do. No adaptive shrinking — the small controls in the library carry the
-        // proportionally largest lenses, which is exactly their look.
-        var amount = (float)(optics.Refraction / 100.0) * (float)LiquidGlassV2Settings.RefractionAmountMaxFrac * minSide;
-        var refrHeight = amount * (float)LiquidGlassV2Settings.BandToAmountRatio;
+        // proportionally largest lenses, which is exactly their look. The shared solver then caps
+        // the band against the corner radius; the CPU path calls the very same function.
+        var lens = LiquidGlassV2Lens.Compute(optics.Refraction, minSide, radius);
 
         var colorHex = frame.Dark
             ? frame.Theme.EffectiveSolidBackgroundDark
@@ -154,9 +160,10 @@ internal static class LiquidGlassV2Effect
                 SourceOriginX: frame.DesktopX,
                 SourceOriginY: frame.DesktopY,
                 SourceScale: sourceScale,
-                RefrHeight: refrHeight,
-                RefrAmount: amount,
-                DepthEffect: 1f,
+                RefrHeight: lens.Band,
+                RefrAmount: lens.Amount,
+                DepthEffect: lens.DepthEffect,
+                GradRadius: lens.GradRadius,
                 Chroma: (float)(optics.Dispersion / 100.0),
                 Saturation: 1f + (float)LiquidGlassV2Settings.VibrancySaturationBoost * (float)(optics.Vibrancy / 100.0),
                 Tint: tint,
@@ -194,6 +201,7 @@ internal static class LiquidGlassV2Effect
                 ["refrHeight"] = p.RefrHeight,
                 ["refrAmount"] = p.RefrAmount,
                 ["depthEffect"] = p.DepthEffect,
+                ["gradRadius"] = p.GradRadius,
                 ["chroma"] = p.Chroma,
                 ["saturation"] = p.Saturation,
                 ["tint"] = p.Tint,
@@ -304,9 +312,10 @@ uniform float destToRender; // multiply shader coordinates by this to get render
 uniform float2 srcOrigin; // card origin, in render px (scaled once, with everything else, by srcScale)
 uniform float srcScale;   // render px -> backdrop px
 
-uniform float refrHeight;  // refraction band width, render px
+uniform float refrHeight;  // refraction band width, render px (corner-capped, see the host)
 uniform float refrAmount;  // peak displacement at the outline, render px (applied inward)
 uniform float depthEffect; // 1 = blend the rim gradient with the radial direction
+uniform float gradRadius;  // inflated corner radius of the direction field, render px
 
 uniform float chroma;      // chromatic aberration strength 0-1
 uniform float saturation;  // vibrancy multiplier
@@ -329,28 +338,46 @@ float sdRoundedRect(float2 coord, float2 halfSize, float radius) {
   return outside + inside;
 }
 
-/// Gradient of the SDF at an inflated radius, restructured to be continuous everywhere.
-/// The library's field radial-fans the corner sector, clamps negative components to an
-/// epsilon elsewhere and hard-switches the axis along the card diagonals; the clamp
-/// collapses both components to the diagonal exactly on the arc-centre lines, and the
-/// axis switch mirrors the refraction across the diagonals — wherever the refraction
-/// band reaches that deep (band wider than ~1.2x the corner radius, i.e. the factory
-/// optics on any small-radius card) both sliced hard seams into the rim at all four
-/// corners. Here the corner sector keeps the radial fan, the edge strips keep exact
-/// edge normals (matching the radial's limits at the sector boundary), and the deep
-/// interior reflects the radial across the diagonal so it continues the fan smoothly.
+/// Sign of a coordinate pair, matching the CPU twin's `>= 0 -> +1` rule exactly. SkSL's own
+/// sign() answers 0 on the axes, which is not a limit of this field — using it would put a
+/// second, subtler kind of jump along the card's centre lines.
+float2 sgnCoord(float2 v) {
+  return float2(v.x >= 0.0 ? 1.0 : -1.0, v.y >= 0.0 ? 1.0 : -1.0);
+}
+
+/// Gradient of the SDF at an inflated radius, restructured so the only point without a unique
+/// limit is the inflated arc centre itself — which the corner-capped band always leaves at zero
+/// displacement (band <= 0.8 x radius, the arc centre is 1.5 x radius deep).
+/// The library's field radial-fans the corner sector, clamps negative components to an epsilon
+/// elsewhere and hard-switches the axis along the card diagonals; the clamp collapses both
+/// components to the diagonal exactly on the arc-centre lines, and the axis switch mirrors the
+/// refraction across the diagonals — wherever the refraction band reached that deep both sliced
+/// hard seams into the rim at all four corners. Here the corner sector keeps the radial fan, the
+/// edge strips keep exact edge normals, and the deep interior reflects the radial across the
+/// diagonal so it continues the fan smoothly; the deep interior is a continuation, not a true SDF
+/// gradient, and is not claimed to be one.
 float2 gradSdRoundedRect(float2 coord, float2 halfSize, float radius) {
   float2 cornerCoord = abs(coord) - (halfSize - float2(radius));
-  if (cornerCoord.x > 0.0 && cornerCoord.y > 0.0) {
-    return sign(coord) * normalize(cornerCoord);
+  // Corner sector *and its own axis boundaries*: normalizing a non-negative pair is the radial
+  // fan, and on q.x = 0 or q.y = 0 it lands exactly on the neighbouring strip's normal. Testing
+  // `q.x > 0.0 && q.y > 0.0` here instead let q.x = 0, q.y > 0 fall through to the horizontal
+  // strip and answer (1, 0) where both one-sided limits are (0, 1) — a 90 degree spike sitting
+  // exactly on the arc-centre lines.
+  if (cornerCoord.x >= 0.0 && cornerCoord.y >= 0.0) {
+    // The floor is the same `max(..., 1e-5)` guard the deep branch below already uses: on the
+    // axes it is ~1e-5 of a unit and therefore invisible, and at the inflated arc centre — the one
+    // point where the fan's direction depends on the approach, so there is no ""correct"" value —
+    // it makes the division land on the 45 degree unit vector instead of a zero-length NaN. One
+    // expression, no nested branch, and nothing the device dialect has not already accepted here.
+    return sgnCoord(coord) * normalize(max(cornerCoord, float2(1e-5)));
   }
   if (cornerCoord.x >= 0.0) {
-    return sign(coord) * float2(1.0, 0.0);
+    return sgnCoord(coord) * float2(1.0, 0.0);
   }
   if (cornerCoord.y >= 0.0) {
-    return sign(coord) * float2(0.0, 1.0);
+    return sgnCoord(coord) * float2(0.0, 1.0);
   }
-  return sign(coord) * normalize(max(float2(-cornerCoord.y, -cornerCoord.x), float2(1e-5)));
+  return sgnCoord(coord) * normalize(max(float2(-cornerCoord.y, -cornerCoord.x), float2(1e-5)));
 }
 
 float smoothStep(float edge0, float edge1, float value) {
@@ -389,9 +416,17 @@ half4 main(float2 xy) {
   // Displacement direction: the SDF gradient at an inflated radius, blended with the
   // radial direction for glass thickness (depthEffect). The sample moves inward —
   // the library passes refractionAmount negative — so the rim magnifies the backdrop.
-  float gradRadius = min(radius * 1.5, min(halfSize.x, halfSize.y));
+  // gradRadius comes from the shared host-side solver (min(radius * 1.5, min half size)),
+  // never recomputed here, so the CPU twin cannot drift from this line.
   float2 radial = centeredCoord / max(length(centeredCoord), 1e-4);
-  float2 grad = normalize(gradSdRoundedRect(centeredCoord, halfSize, gradRadius) + depthEffect * radial);
+  float2 fieldDir = gradSdRoundedRect(centeredCoord, halfSize, gradRadius) + depthEffect * radial;
+  // Guarded: the two unit vectors can cancel exactly on the centre line of a square card, and
+  // normalize(0) is a NaN, not a zero. Scalar ternary plus a multiply rather than a vector-typed
+  // ternary — the device dialect is narrower, and a program it rejects renders nothing at all
+  // (the surface then falls back to the CPU material for good).
+  float fieldLen = length(fieldDir);
+  float invFieldLen = fieldLen > 1e-5 ? 1.0 / fieldLen : 0.0;
+  float2 grad = fieldDir * invFieldLen;
 
   float2 refracted = rxy - d * grad;
   float2 sampleBase = (refracted + srcOrigin) * srcScale;

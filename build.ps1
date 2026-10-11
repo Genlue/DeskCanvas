@@ -60,6 +60,32 @@ function Repair-DirectoryAcl([string]$Path) {
     }
 }
 
+# Remove the mandatory integrity label from a file or folder.
+# Windows creates a process at min(token integrity level, image file label), so a lingering M
+# label silently pins the exe BELOW an elevated shell (UAC-disabled sessions, elevated Explorer):
+# the app then runs at Medium while the shell runs at High, UIPI refuses every PrintWindow
+# against the wallpaper hosts with ERROR_ACCESS_DENIED, and the live sampler has nothing to
+# capture. A cleared label restores normal behaviour — the process follows whatever launched
+# it, like every other app. The anti-contamination purpose is unaffected: the repair pass above
+# still fixes a Low label (which would break the launch with 0xC0000142) before this runs.
+function Clear-IntegrityLabel([string]$Path) {
+    if (-not (Test-Path $Path)) { return $false }
+    try {
+        if (-not ("DcNative.Label" -as [type])) {
+            Add-Type -Namespace DcNative -Name Label -MemberDefinition @'
+[System.Runtime.InteropServices.DllImport("advapi32.dll", CharSet = System.Runtime.InteropServices.CharSet.Unicode, SetLastError = true)]
+public static extern uint SetNamedSecurityInfoW(string pObjectName, int objectType, uint securityInfo,
+    System.IntPtr owner, System.IntPtr group, System.IntPtr dacl, System.IntPtr sacl);
+'@
+        }
+        # objectType 1 = SE_FILE_OBJECT, 0x10 = LABEL_SECURITY_INFORMATION; a null label removes it.
+        $ret = [DcNative.Label]::SetNamedSecurityInfoW($Path, 1, 0x10, [IntPtr]::Zero, [IntPtr]::Zero, [IntPtr]::Zero, [IntPtr]::Zero)
+        return ($ret -eq 0)
+    } catch {
+        return $false
+    }
+}
+
 try {
     if (-not (Test-Path $project)) { throw "Project not found: $project" }
 
@@ -90,14 +116,24 @@ try {
     # --- Strict single exe: remove stray content copied next to the exe ---
     Get-ChildItem $dist -File | Where-Object {
         $_.Extension -in ".pdb", ".xml", ".err" -or $_.Name -in "appSettings.json", "layout.json", "icon.ico", "weather_crash_log.txt"
-    } | Remove-Item -Force -ErrorAction SilentlyContinue
+    } | ForEach-Object { Remove-Item -LiteralPath $_.FullName -Force -ErrorAction SilentlyContinue }
 
     $exe = Join-Path $dist "DeskCanvas.exe"
     if (-not (Test-Path $exe)) { throw "Single-file exe not found: $exe" }
 
-    # Explicitly stamp Medium Mandatory Integrity Level on the output binary so it can always launch cleanly.
+    # Clear the mandatory integrity label from the output (and from the dist folder so future
+    # publishes do not re-inherit a cap). The old behaviour stamped M here — which reads as
+    # harmless but caps the process at Medium: on a machine whose shell runs at High (UAC
+    # disabled, an elevated shell), the app can then never PrintWindow the wallpaper hosts —
+    # UIPI refuses with ERROR_ACCESS_DENIED — and live sampling dies on the static fallback.
+    # Unlabelled, the exe follows the launching session's integrity level, like every other app.
     & icacls $exe /reset /q 2>$null | Out-Null
-    & icacls $exe /setintegritylevel M /q 2>$null | Out-Null
+    $exeCleared = Clear-IntegrityLabel $exe
+    $dirCleared = Clear-IntegrityLabel $dist
+    if (-not ($exeCleared -and $dirCleared)) {
+        Write-Warning "Could not clear the integrity label; falling back to an explicit Medium stamp."
+        & icacls $exe /setintegritylevel M /q 2>$null | Out-Null
+    }
 
     Write-Host "==> Single file: $exe ($([math]::Round((Get-Item $exe).Length / 1MB, 1)) MB)" -ForegroundColor Green
 

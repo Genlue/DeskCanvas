@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
@@ -165,14 +165,6 @@ public partial class WeatherPopupWindow : SecondaryPanelWindow
         if (delta == 0) return;
         HourlyScroll.Offset = new Vector(Math.Clamp(HourlyScroll.Offset.X - delta * 50, 0, maxX), HourlyScroll.Offset.Y);
         e.Handled = true;
-    }
-
-    private void OnRootPointerPressed(object? sender, PointerPressedEventArgs e)
-    {
-        if (e.GetCurrentPoint(this).Properties.IsLeftButtonPressed)
-        {
-            BeginMoveDrag(e);
-        }
     }
 
     private void OnCloseClicked(object? sender, RoutedEventArgs e)

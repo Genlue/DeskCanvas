@@ -147,4 +147,58 @@
     <data name="Tools_Translator_AutoTranslate_Desc" xml:space="preserve">
         <value>输入停止 600ms 后自动请求翻译</value>
     </data>
+    <data name="Tools_Calculator_Title" xml:space="preserve">
+        <value>计算器</value>
+    </data>
+    <data name="Tools_Calculator_Subtitle" xml:space="preserve">
+        <value>支持算式速算、科学/程序员计算与常用单位换算</value>
+    </data>
+    <data name="Tools_Calculator_InputHint" xml:space="preserve">
+        <value>输入算式，如 (350+120)*0.85</value>
+    </data>
+    <data name="Tools_Calculator_EmptyHistory" xml:space="preserve">
+        <value>暂无计算记录</value>
+    </data>
+    <data name="Tools_Calculator_Copied" xml:space="preserve">
+        <value>已复制结果到剪贴板</value>
+    </data>
+    <data name="Tools_Calculator_ClearHistory" xml:space="preserve">
+        <value>清空历史</value>
+    </data>
+    <data name="Tools_Calculator_DecimalPlaces" xml:space="preserve">
+        <value>小数保留位数</value>
+    </data>
+    <data name="Tools_Calculator_DecimalPlaces_Desc" xml:space="preserve">
+        <value>计算结果最多保留的小数位数（自动省略末尾零）</value>
+    </data>
+    <data name="Tools_Calculator_ThousandsSep" xml:space="preserve">
+        <value>千分位分隔符</value>
+    </data>
+    <data name="Tools_Calculator_ThousandsSep_Desc" xml:space="preserve">
+        <value>使用千分位逗号格式化大数字（如 1,024.5）</value>
+    </data>
+    <data name="Tools_Calculator_AngleMode" xml:space="preserve">
+        <value>默认角度单位</value>
+    </data>
+    <data name="Tools_Calculator_AngleMode_Desc" xml:space="preserve">
+        <value>三角函数默认使用角度制（DEG）或弧度制（RAD）</value>
+    </data>
+    <data name="Tools_Calculator_DefaultTab" xml:space="preserve">
+        <value>二级面板默认页签</value>
+    </data>
+    <data name="Tools_Calculator_DefaultTab_Desc" xml:space="preserve">
+        <value>展开二级面板时默认进入的功能模式</value>
+    </data>
+    <data name="Tools_Calculator_MaxHistory" xml:space="preserve">
+        <value>保存历史记录条数</value>
+    </data>
+    <data name="Tools_Calculator_MaxHistory_Desc" xml:space="preserve">
+        <value>最多保留的历史算式记录条数（10 ~ 100 条）</value>
+    </data>
+    <data name="Tools_Calculator_ClickToCopy" xml:space="preserve">
+        <value>点击历史项直接复制</value>
+    </data>
+    <data name="Tools_Calculator_ClickToCopy_Desc" xml:space="preserve">
+        <value>单击历史项时直接复制结果（关闭则回填到当前输入框）</value>
+    </data>
 </root>

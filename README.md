@@ -5,7 +5,7 @@
 
 <div align="center">
   <h3>🎨 macOS-Style Desktop Widgets Suite for Windows</h3>
-  <p>Built with Avalonia 11 + .NET 8 · Hardware Acrylic Blur · 3D Liquid Glass Optics · Lockscreen Art-Font Clock · Flexible Desktop Grid Engine</p>
+  <p>Built with Avalonia 11 + .NET 8 · Hardware Acrylic Blur · 3D Liquid Glass Optics · Lockscreen Art-Font Clock · Custom Snap Grid Engine</p>
 </div>
 
 <h3 align="center">
@@ -40,17 +40,17 @@
 ### 2. 💎 Four Deeply Adapted Visual Materials
 - 🪟 **Acrylic Blur (OS-level live hardware blur)** — Win32 `ExtCreateRegion` (`RGNDATA`) binds glyph scanline spans directly to the HWND region; DWM samples the desktop underneath at 60/144 fps with zero latency, tracking live wallpapers (Wallpaper Engine) and background video seamlessly;
 - 💧 **Liquid Glass (3D optical refraction model)** — Euclidean Distance Transform computes surface normals across stroke contours for convex/concave lens displacement, chromatic dispersion and specular glints, with a GPU (Skia runtime shader) fast path and a CPU fallback;
-- 💎 **Liquid Glass 2.0** — a faithful GPU port of [Kyant0/AndroidLiquidGlass](https://github.com/Kyant0/AndroidLiquidGlass) 2.0's optical model: rounded-rect refraction lens with depth effect, diagonal chromatic aberration and hairline outline highlight;
+- 💎 **Liquid Glass 2.0** — a faithful GPU port of [Kyant0/AndroidLiquidGlass](https://github.com/Kyant0/AndroidLiquidGlass) 2.0's optical model: rounded-rect refraction lens with depth effect, diagonal chromatic aberration and hairline outline highlight; the refraction coefficients come from a single solver shared by the GPU shader and the CPU renderer, and the refraction band is capped at `0.8 × corner radius` so large cards keep clean corners;
 - 🎨 **Solid Fill** — pure anti-aliased vector fill with opacity slider and accent colors.
 
 ### 3. 🪟 Secondary Panels with Material 3 Motion
-Weather forecast, reminders, big folders, clipboard and notes open in shared secondary panels that **grow out of the triggering widget** (anchor-scaled, corner radius propagated) with glass rendered by the same surface as level-1 widgets. The open/close transitions follow the [Material Design 3 motion tokens](https://m3.material.io/styles/motion/easing-and-duration/tokens-specs) (`emphasized decelerate` in, `emphasized accelerate` out).
+Weather forecast, reminders, big folders, clipboard and notes open in shared secondary panels that **grow out of the triggering widget** (anchor-scaled, corner radius propagated) with glass rendered by the same surface as level-1 widgets. The open/close transitions follow the [Material Design 3 motion tokens](https://m3.material.io/styles/motion/easing-and-duration/tokens-specs) (`emphasized decelerate` in, `emphasized accelerate` out). A click anywhere outside the panel dismisses it.
 
 ### 4. 📐 Advanced Desktop Grid Management
-Manual grid (m×n square cells stored as percentages, responsive across resolutions and DPI), virtual grid and free placement; widgets snap to cells with customizable margins and corner radius, always pinned to the desktop bottom band.
+Custom square-cell grid (m×n cells stored as percentages, responsive across resolutions and DPI); widgets always snap to cells with customizable margins and corner radius, and stay pinned to the desktop bottom band.
 
 ### 5. 🧩 Widget Ecosystem (17 built-in widgets)
-⏰ Clock (analog ×3 / digital / world clock / frameless) · 📅 Calendar · 🌤️ Weather (7-day forecast, sun times, UV, AQI, proxy) · 📊 System Monitor · 📝 Notes (Markdown typography, secondary panel) · ✅ Reminders (interactive checklist with secondary panel) · 📁 Folders (desktop quick launcher with live file watching) · 🎵 Music controls · 🔍 Search · 📈 Progress · 🖼️ Picture · 🔋 Batteries · 🗺️ Map · 🍅 Pomodoro · 📚 Stack · 🧰 Tools · 📌 Fixed (multi-widget aggregate cards)
+⏰ Clock (analog ×3 / digital / world clock / frameless) · 📅 Calendar · 🌤️ Weather (7-day forecast, 4-day square card, sun times, UV, AQI, proxy) · 📊 System Monitor · 📝 Notes (Markdown typography, secondary panel) · ✅ Reminders (interactive checklist with secondary panel) · 📁 Folders (desktop quick launcher with live file watching) · 🎵 Music controls · 🔍 Search · 📈 Progress · 🖼️ Picture · 🔋 Batteries · 🗺️ Map · 🍅 Pomodoro · 📚 Stack · 🧰 Tools (clipboard, translator, calculator) · 📌 Fixed (multi-widget aggregate cards)
 
 ### 6. 🚀 Standalone Single-File Distribution
 Builds to a self-contained `DeskCanvas.exe` with a content-hash-verified embedded widget bundle; widgets are extracted to `%LocalAppData%\DeskCanvas` on first run and stay hot-updatable. An MSI installer (WiX v5) is also produced per release.
@@ -82,7 +82,7 @@ powershell -ExecutionPolicy Bypass -File .\build.ps1 -Msi
 # Output locations:
 # dist/win-x64/DeskCanvas.exe
 # dist/DeskCanvas-win-x64-portable.zip
-# dist/installer/DeskCanvas-2.7.0-win-x64.msi
+# dist/installer/DeskCanvas-<version>-win-x64.msi
 ```
 
 ---

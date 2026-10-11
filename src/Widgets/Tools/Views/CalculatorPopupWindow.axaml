@@ -1,0 +1,522 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:locales="clr-namespace:Tools.Locales"
+        xmlns:controls="clr-namespace:DeskCanvas.Views.Controls;assembly=DeskCanvas"
+        x:Class="Tools.Views.CalculatorPopupWindow"
+        Title="Calculator"
+        SystemDecorations="None"
+        Background="Transparent"
+        TransparencyLevelHint="Transparent"
+        ShowInTaskbar="False"
+        CanResize="False"
+        Width="560"
+        Height="560">
+
+    <Window.Styles>
+        <Style Selector="Button.icon-btn">
+            <Setter Property="Width" Value="26" />
+            <Setter Property="Height" Value="26" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="CornerRadius" Value="13" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}" />
+        </Style>
+        <Style Selector="Button.icon-btn:pointerover">
+            <Setter Property="Background" Value="#22808080" />
+        </Style>
+
+        <Style Selector="Button.tab-pill">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="10,4" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseMediumBrush}" />
+        </Style>
+        <Style Selector="Button.tab-pill:pointerover">
+            <Setter Property="Background" Value="#18808080" />
+            <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}" />
+        </Style>
+        <Style Selector="Button.tab-pill.active">
+            <Setter Property="Background" Value="{DynamicResource CalculatorAccentBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource AccentContrastForegroundBrush}" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+        </Style>
+
+        <Style Selector="Button.cat-pill">
+            <Setter Property="Background" Value="{DynamicResource CalculatorFuncButtonBackground}" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="8,4" />
+            <Setter Property="FontSize" Value="11.5" />
+            <Setter Property="CornerRadius" Value="7" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}" />
+        </Style>
+        <Style Selector="Button.cat-pill.active">
+            <Setter Property="Background" Value="{DynamicResource CalculatorAccentBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource AccentContrastForegroundBrush}" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+        </Style>
+
+        <Style Selector="Border.calc-card">
+            <Setter Property="Background" Value="{DynamicResource CalculatorCardBackground}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource WidgetCardBorderBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="12" />
+        </Style>
+
+        <Style Selector="TextBox.expr-box">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="2" />
+            <Setter Property="FontSize" Value="13.5" />
+            <Setter Property="TextAlignment" Value="Right" />
+            <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}" />
+        </Style>
+        <Style Selector="TextBox.expr-box:focus /template/ Border#PART_BorderElement">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+        </Style>
+        <Style Selector="TextBox.expr-box:pointerover /template/ Border#PART_BorderElement">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+        </Style>
+
+        <Style Selector="Button.calc-num">
+            <Setter Property="Background" Value="{DynamicResource CalculatorNumButtonBackground}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource WidgetCardBorderBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="9" />
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="FontWeight" Value="Medium" />
+            <Setter Property="HorizontalAlignment" Value="Stretch" />
+            <Setter Property="VerticalAlignment" Value="Stretch" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}" />
+        </Style>
+        <Style Selector="Button.calc-num:pointerover">
+            <Setter Property="Opacity" Value="0.82" />
+        </Style>
+        <Style Selector="Button.calc-num:disabled">
+            <Setter Property="Opacity" Value="0.3" />
+        </Style>
+
+        <Style Selector="Button.calc-func">
+            <Setter Property="Background" Value="{DynamicResource CalculatorFuncButtonBackground}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource WidgetCardBorderBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="9" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="FontWeight" Value="Medium" />
+            <Setter Property="HorizontalAlignment" Value="Stretch" />
+            <Setter Property="VerticalAlignment" Value="Stretch" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}" />
+        </Style>
+        <Style Selector="Button.calc-func:pointerover">
+            <Setter Property="Opacity" Value="0.82" />
+        </Style>
+
+        <Style Selector="Button.calc-op">
+            <Setter Property="Background" Value="{DynamicResource CalculatorOpButtonBackground}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource WidgetCardBorderBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="9" />
+            <Setter Property="FontSize" Value="15" />
+            <Setter Property="FontWeight" Value="Bold" />
+            <Setter Property="HorizontalAlignment" Value="Stretch" />
+            <Setter Property="VerticalAlignment" Value="Stretch" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Foreground" Value="{DynamicResource CalculatorAccentBrush}" />
+        </Style>
+        <Style Selector="Button.calc-op:pointerover">
+            <Setter Property="Opacity" Value="0.82" />
+        </Style>
+
+        <Style Selector="Button.calc-eq">
+            <Setter Property="Background" Value="{DynamicResource CalculatorAccentBrush}" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="CornerRadius" Value="9" />
+            <Setter Property="FontSize" Value="16" />
+            <Setter Property="FontWeight" Value="Bold" />
+            <Setter Property="HorizontalAlignment" Value="Stretch" />
+            <Setter Property="VerticalAlignment" Value="Stretch" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Foreground" Value="{DynamicResource AccentContrastForegroundBrush}" />
+        </Style>
+        <Style Selector="Button.calc-eq:pointerover">
+            <Setter Property="Opacity" Value="0.88" />
+        </Style>
+
+        <Style Selector="Border.history-item">
+            <Setter Property="Background" Value="{DynamicResource CalculatorNumButtonBackground}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource WidgetCardBorderBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="9" />
+            <Setter Property="Padding" Value="9,6" />
+            <Setter Property="Margin" Value="0,0,0,5" />
+            <Setter Property="Cursor" Value="Hand" />
+        </Style>
+        <Style Selector="Border.history-item:pointerover">
+            <Setter Property="Background" Value="{DynamicResource CalculatorFuncButtonBackground}" />
+        </Style>
+
+        <Style Selector="Border.base-row">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="CornerRadius" Value="7" />
+            <Setter Property="Padding" Value="7,4" />
+            <Setter Property="Cursor" Value="Hand" />
+        </Style>
+        <Style Selector="Border.base-row:pointerover">
+            <Setter Property="Background" Value="#16808080" />
+        </Style>
+        <Style Selector="Border.base-row.active">
+            <Setter Property="Background" Value="{DynamicResource CalculatorOpButtonBackground}" />
+        </Style>
+    </Window.Styles>
+
+    <Panel Background="Transparent" PointerPressed="OnRootPointerPressed">
+        <Border x:Name="CardBorder"
+                Margin="0"
+                CornerRadius="18"
+                BorderThickness="1"
+                RenderTransformOrigin="0.5,0.5"
+                ClipToBounds="True">
+            <Border.RenderTransform>
+                <ScaleTransform ScaleX="0.95" ScaleY="0.95" />
+            </Border.RenderTransform>
+
+            <Panel>
+                <controls:LiquidGlassSurface x:Name="LiquidGlassSurfaceControl" CornerRadius="18" Margin="0" IsVisible="False" />
+
+                <Grid RowDefinitions="Auto,*" Margin="16,14,16,14">
+                    <!-- Top Header Bar -->
+                    <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto,Auto" Margin="0,0,0,10" VerticalAlignment="Center">
+                        <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="7" VerticalAlignment="Center">
+                            <PathIcon Data="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-2 4H7V5h10v2zM9 17H7v-2h2v2zm0-4H7v-2h2v2zm4 4h-2v-2h2v2zm0-4h-2v-2h2v2zm4 4h-2v-6h2v6z"
+                                      Width="15" Height="15" Foreground="{DynamicResource CalculatorAccentBrush}" />
+                            <TextBlock Text="{x:Static locales:Locale.Tools_Calculator_Title}" FontSize="15" FontWeight="Bold"
+                                       Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}" />
+                        </StackPanel>
+
+                        <!-- Mode Segmented Tabs -->
+                        <Border Grid.Column="1" HorizontalAlignment="Center" Background="#14808080"
+                                BorderBrush="{DynamicResource WidgetCardBorderBrush}" BorderThickness="1"
+                                CornerRadius="10" Padding="2">
+                            <StackPanel Orientation="Horizontal" Spacing="2">
+                                <Button x:Name="TabScientificBtn" Classes="tab-pill active" Content="科学计算" Click="OnTabScientificClicked" />
+                                <Button x:Name="TabProgrammerBtn" Classes="tab-pill" Content="程序员" Click="OnTabProgrammerClicked" />
+                                <Button x:Name="TabConverterBtn" Classes="tab-pill" Content="单位换算" Click="OnTabConverterClicked" />
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Angle Mode Toggle (Scientific) -->
+                        <Button Grid.Column="2" x:Name="AngleModeBtn" Classes="cat-pill" Content="DEG"
+                                Margin="0,0,6,0" Click="OnAngleModeClicked" ToolTip.Tip="切换角度制 (DEG) / 弧度制 (RAD)" />
+
+                        <Button Grid.Column="3" x:Name="CloseButton" Classes="icon-btn" Content="✕"
+                                Click="OnCloseClicked" VerticalAlignment="Center" />
+                    </Grid>
+
+                    <!-- Main Body: Left Workspace (7*) + Right History/Memory Sidebar (5*) -->
+                    <Grid Grid.Row="1" ColumnDefinitions="7*,10,5*">
+
+                        <!-- ==================== 1. Scientific Calculator Workspace ==================== -->
+                        <Grid x:Name="ScientificPanel" Grid.Column="0" RowDefinitions="Auto,Auto,2*,4*">
+                            <!-- Display Card -->
+                            <Border Grid.Row="0" Classes="calc-card" Padding="12,8" Margin="0,0,0,7">
+                                <Grid RowDefinitions="Auto,Auto,Auto">
+                                    <Grid Grid.Row="0" ColumnDefinitions="*,Auto,Auto" Margin="0,0,0,2">
+                                        <TextBlock x:Name="SciAnsHintText" Text="Ans = 0" FontSize="11"
+                                                   Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                                                   VerticalAlignment="Center" />
+                                        <Button Grid.Column="1" Classes="icon-btn" Width="22" Height="22"
+                                                Click="OnClearSciClicked" ToolTip.Tip="清空算式">
+                                            <PathIcon Data="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"
+                                                      Width="10" Height="10" Opacity="0.65" />
+                                        </Button>
+                                        <Button Grid.Column="2" Classes="icon-btn" Width="22" Height="22"
+                                                Click="OnCopySciResultClicked" ToolTip.Tip="复制计算结果">
+                                            <PathIcon Data="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"
+                                                      Width="11" Height="11" Opacity="0.7" />
+                                        </Button>
+                                    </Grid>
+
+                                    <TextBox Grid.Row="1" x:Name="SciExpressionBox" Classes="expr-box"
+                                             Watermark="{x:Static locales:Locale.Tools_Calculator_InputHint}"
+                                             TextChanged="OnSciExpressionTextChanged"
+                                             KeyDown="OnSciExpressionKeyDown" />
+
+                                    <TextBlock Grid.Row="2" x:Name="SciResultText" Text="0"
+                                               FontSize="26" FontWeight="Bold" TextAlignment="Right"
+                                               TextTrimming="CharacterEllipsis" Cursor="Hand"
+                                               Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}"
+                                               PointerPressed="OnSciResultPointerPressed"
+                                               ToolTip.Tip="点击复制结果" />
+                                </Grid>
+                            </Border>
+
+                            <!-- Memory Toolbar -->
+                            <Grid Grid.Row="1" ColumnDefinitions="*,*,*,*,*" Margin="0,0,0,6">
+                                <Button Grid.Column="0" Classes="calc-func" Height="26" Margin="0,0,2,0" FontSize="11" Content="MC" Click="OnMemClearClicked" ToolTip.Tip="清空内存 (Memory Clear)" />
+                                <Button Grid.Column="1" Classes="calc-func" Height="26" Margin="2,0" FontSize="11" Content="MR" Click="OnMemRecallClicked" ToolTip.Tip="读取内存 (Memory Recall)" />
+                                <Button Grid.Column="2" Classes="calc-func" Height="26" Margin="2,0" FontSize="11" Content="M+" Click="OnMemAddClicked" ToolTip.Tip="内存累加 (Memory Add)" />
+                                <Button Grid.Column="3" Classes="calc-func" Height="26" Margin="2,0" FontSize="11" Content="M−" Click="OnMemSubClicked" ToolTip.Tip="内存累减 (Memory Subtract)" />
+                                <Button Grid.Column="4" Classes="calc-func" Height="26" Margin="2,0,0,0" FontSize="11" Content="MS" Click="OnMemStoreClicked" ToolTip.Tip="存入内存 (Memory Store)" />
+                            </Grid>
+
+                            <!-- Scientific Function Keypad (5x2) -->
+                            <Grid Grid.Row="2" ColumnDefinitions="*,*,*,*,*" RowDefinitions="*,*" Margin="0,0,0,4">
+                                <Button Grid.Row="0" Grid.Column="0" Classes="calc-func" Margin="0,0,2,2" Content="sin" Tag="sin(" Click="OnSciTokenClicked" />
+                                <Button Grid.Row="0" Grid.Column="1" Classes="calc-func" Margin="2,0,2,2" Content="cos" Tag="cos(" Click="OnSciTokenClicked" />
+                                <Button Grid.Row="0" Grid.Column="2" Classes="calc-func" Margin="2,0,2,2" Content="tan" Tag="tan(" Click="OnSciTokenClicked" />
+                                <Button Grid.Row="0" Grid.Column="3" Classes="calc-func" Margin="2,0,2,2" Content="ln" Tag="ln(" Click="OnSciTokenClicked" />
+                                <Button Grid.Row="0" Grid.Column="4" Classes="calc-func" Margin="2,0,0,2" Content="log" Tag="log(" Click="OnSciTokenClicked" />
+
+                                <Button Grid.Row="1" Grid.Column="0" Classes="calc-func" Margin="0,2,2,0" Content="(" Tag="(" Click="OnSciTokenClicked" />
+                                <Button Grid.Row="1" Grid.Column="1" Classes="calc-func" Margin="2,2,2,0" Content=")" Tag=")" Click="OnSciTokenClicked" />
+                                <Button Grid.Row="1" Grid.Column="2" Classes="calc-func" Margin="2,2,2,0" Content="xʸ" Tag="^" Click="OnSciTokenClicked" />
+                                <Button Grid.Row="1" Grid.Column="3" Classes="calc-func" Margin="2,2,2,0" Content="√x" Tag="√(" Click="OnSciTokenClicked" />
+                                <Button Grid.Row="1" Grid.Column="4" Classes="calc-func" Margin="2,2,0,0" Content="x!" Tag="!" Click="OnSciTokenClicked" />
+                            </Grid>
+
+                            <!-- Standard Number & Operator Keypad (5x4) -->
+                            <Grid Grid.Row="3" ColumnDefinitions="*,*,*,*,*" RowDefinitions="*,*,*,*">
+                                <Button Grid.Row="0" Grid.Column="0" Classes="calc-num" Margin="0,2,2,2" Content="7" Tag="7" Click="OnSciTokenClicked" />
+                                <Button Grid.Row="0" Grid.Column="1" Classes="calc-num" Margin="2,2,2,2" Content="8" Tag="8" Click="OnSciTokenClicked" />
+                                <Button Grid.Row="0" Grid.Column="2" Classes="calc-num" Margin="2,2,2,2" Content="9" Tag="9" Click="OnSciTokenClicked" />
+                                <Button Grid.Row="0" Grid.Column="3" Classes="calc-op" Margin="2,2,2,2" Content="÷" Tag="÷" Click="OnSciTokenClicked" />
+                                <Button Grid.Row="0" Grid.Column="4" Classes="calc-func" Margin="2,2,0,2" Content="⌫" Click="OnSciBackspaceClicked" />
+
+                                <Button Grid.Row="1" Grid.Column="0" Classes="calc-num" Margin="0,2,2,2" Content="4" Tag="4" Click="OnSciTokenClicked" />
+                                <Button Grid.Row="1" Grid.Column="1" Classes="calc-num" Margin="2,2,2,2" Content="5" Tag="5" Click="OnSciTokenClicked" />
+                                <Button Grid.Row="1" Grid.Column="2" Classes="calc-num" Margin="2,2,2,2" Content="6" Tag="6" Click="OnSciTokenClicked" />
+                                <Button Grid.Row="1" Grid.Column="3" Classes="calc-op" Margin="2,2,2,2" Content="×" Tag="×" Click="OnSciTokenClicked" />
+                                <Button Grid.Row="1" Grid.Column="4" Classes="calc-func" Margin="2,2,0,2" Content="C" Click="OnClearSciClicked" />
+
+                                <Button Grid.Row="2" Grid.Column="0" Classes="calc-num" Margin="0,2,2,2" Content="1" Tag="1" Click="OnSciTokenClicked" />
+                                <Button Grid.Row="2" Grid.Column="1" Classes="calc-num" Margin="2,2,2,2" Content="2" Tag="2" Click="OnSciTokenClicked" />
+                                <Button Grid.Row="2" Grid.Column="2" Classes="calc-num" Margin="2,2,2,2" Content="3" Tag="3" Click="OnSciTokenClicked" />
+                                <Button Grid.Row="2" Grid.Column="3" Classes="calc-op" Margin="2,2,2,2" Content="−" Tag="−" Click="OnSciTokenClicked" />
+                                <Button Grid.Row="2" Grid.Column="4" Classes="calc-func" Margin="2,2,0,2" Content="%" Tag="%" Click="OnSciTokenClicked" />
+
+                                <Button Grid.Row="3" Grid.Column="0" Classes="calc-func" Margin="0,2,2,0" Content="π" Tag="π" Click="OnSciTokenClicked" />
+                                <Button Grid.Row="3" Grid.Column="1" Classes="calc-num" Margin="2,2,2,0" Content="0" Tag="0" Click="OnSciTokenClicked" />
+                                <Button Grid.Row="3" Grid.Column="2" Classes="calc-num" Margin="2,2,2,0" Content="." Tag="." Click="OnSciTokenClicked" />
+                                <Button Grid.Row="3" Grid.Column="3" Classes="calc-op" Margin="2,2,2,0" Content="+" Tag="+" Click="OnSciTokenClicked" />
+                                <Button Grid.Row="3" Grid.Column="4" Classes="calc-eq" Margin="2,2,0,0" Content="=" Click="OnSciEvaluateClicked" />
+                            </Grid>
+                        </Grid>
+
+                        <!-- ==================== 2. Programmer Calculator Workspace ==================== -->
+                        <Grid x:Name="ProgrammerPanel" Grid.Column="0" RowDefinitions="Auto,*" IsVisible="False">
+                            <!-- Programmer Display & 4-Base Live Matrix -->
+                            <Border Grid.Row="0" Classes="calc-card" Padding="10,8" Margin="0,0,0,7">
+                                <StackPanel Spacing="3">
+                                    <Grid ColumnDefinitions="*,Auto">
+                                        <TextBox x:Name="ProgExpressionBox" Classes="expr-box"
+                                                 Watermark="输入整数或位运算算式..."
+                                                 TextChanged="OnProgExpressionTextChanged"
+                                                 KeyDown="OnProgExpressionKeyDown" />
+                                        <Button Grid.Column="1" Classes="icon-btn" Width="22" Height="22"
+                                                Click="OnProgClearClicked" ToolTip.Tip="清空">
+                                            <PathIcon Data="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"
+                                                      Width="10" Height="10" Opacity="0.65" />
+                                        </Button>
+                                    </Grid>
+
+                                    <!-- HEX / DEC / OCT / BIN clickable rows -->
+                                    <Border x:Name="BaseHexRow" Classes="base-row" PointerPressed="OnBaseHexPressed" ToolTip.Tip="切换为 16 进制输入 (点击右侧复制)">
+                                        <Grid ColumnDefinitions="38,*,Auto">
+                                            <TextBlock Text="HEX" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource CalculatorAccentBrush}" VerticalAlignment="Center" />
+                                            <TextBlock Grid.Column="1" x:Name="ProgHexText" Text="0" FontSize="12.5" FontWeight="SemiBold" TextAlignment="Right" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                                            <Button Grid.Column="2" Classes="icon-btn" Width="20" Height="20" Margin="4,0,0,0" Click="OnCopyHexClicked">
+                                                <PathIcon Data="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z" Width="10" Height="10" Opacity="0.6" />
+                                            </Button>
+                                        </Grid>
+                                    </Border>
+
+                                    <Border x:Name="BaseDecRow" Classes="base-row active" PointerPressed="OnBaseDecPressed" ToolTip.Tip="切换为 10 进制输入 (点击右侧复制)">
+                                        <Grid ColumnDefinitions="38,*,Auto">
+                                            <TextBlock Text="DEC" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource CalculatorAccentBrush}" VerticalAlignment="Center" />
+                                            <TextBlock Grid.Column="1" x:Name="ProgDecText" Text="0" FontSize="13.5" FontWeight="Bold" TextAlignment="Right" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                                            <Button Grid.Column="2" Classes="icon-btn" Width="20" Height="20" Margin="4,0,0,0" Click="OnCopyDecClicked">
+                                                <PathIcon Data="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z" Width="10" Height="10" Opacity="0.6" />
+                                            </Button>
+                                        </Grid>
+                                    </Border>
+
+                                    <Border x:Name="BaseOctRow" Classes="base-row" PointerPressed="OnBaseOctPressed" ToolTip.Tip="切换为 8 进制输入 (点击右侧复制)">
+                                        <Grid ColumnDefinitions="38,*,Auto">
+                                            <TextBlock Text="OCT" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource CalculatorAccentBrush}" VerticalAlignment="Center" />
+                                            <TextBlock Grid.Column="1" x:Name="ProgOctText" Text="0" FontSize="12" TextAlignment="Right" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                                            <Button Grid.Column="2" Classes="icon-btn" Width="20" Height="20" Margin="4,0,0,0" Click="OnCopyOctClicked">
+                                                <PathIcon Data="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z" Width="10" Height="10" Opacity="0.6" />
+                                            </Button>
+                                        </Grid>
+                                    </Border>
+
+                                    <Border x:Name="BaseBinRow" Classes="base-row" PointerPressed="OnBaseBinPressed" ToolTip.Tip="切换为 2 进制输入 (点击右侧复制)">
+                                        <Grid ColumnDefinitions="38,*,Auto">
+                                            <TextBlock Text="BIN" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource CalculatorAccentBrush}" VerticalAlignment="Center" />
+                                            <TextBlock Grid.Column="1" x:Name="ProgBinText" Text="0" FontSize="11.5" TextAlignment="Right" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                                            <Button Grid.Column="2" Classes="icon-btn" Width="20" Height="20" Margin="4,0,0,0" Click="OnCopyBinClicked">
+                                                <PathIcon Data="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z" Width="10" Height="10" Opacity="0.6" />
+                                            </Button>
+                                        </Grid>
+                                    </Border>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- Programmer Keypad (5x6) -->
+                            <Grid Grid.Row="1" x:Name="ProgKeypadGrid" ColumnDefinitions="*,*,*,*,*" RowDefinitions="*,*,*,*,*,*">
+                                <Button Grid.Row="0" Grid.Column="0" x:Name="HexBtnA" Classes="calc-num" Margin="0,0,2,2" Content="A" Tag="A" Click="OnProgTokenClicked" />
+                                <Button Grid.Row="0" Grid.Column="1" x:Name="HexBtnB" Classes="calc-num" Margin="2,0,2,2" Content="B" Tag="B" Click="OnProgTokenClicked" />
+                                <Button Grid.Row="0" Grid.Column="2" Classes="calc-func" Margin="2,0,2,2" Content="AND" Tag="&amp;" Click="OnProgTokenClicked" />
+                                <Button Grid.Row="0" Grid.Column="3" Classes="calc-func" Margin="2,0,2,2" Content="OR" Tag="|" Click="OnProgTokenClicked" />
+                                <Button Grid.Row="0" Grid.Column="4" Classes="calc-func" Margin="2,0,0,2" Content="NOT" Tag="~" Click="OnProgTokenClicked" />
+
+                                <Button Grid.Row="1" Grid.Column="0" x:Name="HexBtnC" Classes="calc-num" Margin="0,2,2,2" Content="C" Tag="C" Click="OnProgTokenClicked" />
+                                <Button Grid.Row="1" Grid.Column="1" x:Name="HexBtnD" Classes="calc-num" Margin="2,2,2,2" Content="D" Tag="D" Click="OnProgTokenClicked" />
+                                <Button Grid.Row="1" Grid.Column="2" Classes="calc-func" Margin="2,2,2,2" Content="XOR" Tag="^" Click="OnProgTokenClicked" />
+                                <Button Grid.Row="1" Grid.Column="3" Classes="calc-func" Margin="2,2,2,2" Content="&lt;&lt;" Tag="&lt;&lt;" Click="OnProgTokenClicked" />
+                                <Button Grid.Row="1" Grid.Column="4" Classes="calc-func" Margin="2,2,0,2" Content="&gt;&gt;" Tag="&gt;&gt;" Click="OnProgTokenClicked" />
+
+                                <Button Grid.Row="2" Grid.Column="0" x:Name="HexBtnE" Classes="calc-num" Margin="0,2,2,2" Content="E" Tag="E" Click="OnProgTokenClicked" />
+                                <Button Grid.Row="2" Grid.Column="1" x:Name="HexBtnF" Classes="calc-num" Margin="2,2,2,2" Content="F" Tag="F" Click="OnProgTokenClicked" />
+                                <Button Grid.Row="2" Grid.Column="2" x:Name="ProgBtn7" Classes="calc-num" Margin="2,2,2,2" Content="7" Tag="7" Click="OnProgTokenClicked" />
+                                <Button Grid.Row="2" Grid.Column="3" x:Name="ProgBtn8" Classes="calc-num" Margin="2,2,2,2" Content="8" Tag="8" Click="OnProgTokenClicked" />
+                                <Button Grid.Row="2" Grid.Column="4" x:Name="ProgBtn9" Classes="calc-num" Margin="2,2,0,2" Content="9" Tag="9" Click="OnProgTokenClicked" />
+
+                                <Button Grid.Row="3" Grid.Column="0" Classes="calc-func" Margin="0,2,2,2" Content="(" Tag="(" Click="OnProgTokenClicked" />
+                                <Button Grid.Row="3" Grid.Column="1" Classes="calc-func" Margin="2,2,2,2" Content=")" Tag=")" Click="OnProgTokenClicked" />
+                                <Button Grid.Row="3" Grid.Column="2" x:Name="ProgBtn4" Classes="calc-num" Margin="2,2,2,2" Content="4" Tag="4" Click="OnProgTokenClicked" />
+                                <Button Grid.Row="3" Grid.Column="3" x:Name="ProgBtn5" Classes="calc-num" Margin="2,2,2,2" Content="5" Tag="5" Click="OnProgTokenClicked" />
+                                <Button Grid.Row="3" Grid.Column="4" x:Name="ProgBtn6" Classes="calc-num" Margin="2,2,0,2" Content="6" Tag="6" Click="OnProgTokenClicked" />
+
+                                <Button Grid.Row="4" Grid.Column="0" Classes="calc-func" Margin="0,2,2,2" Content="CLR" Click="OnProgClearClicked" />
+                                <Button Grid.Row="4" Grid.Column="1" Classes="calc-func" Margin="2,2,2,2" Content="⌫" Click="OnProgBackspaceClicked" />
+                                <Button Grid.Row="4" Grid.Column="2" x:Name="ProgBtn1" Classes="calc-num" Margin="2,2,2,2" Content="1" Tag="1" Click="OnProgTokenClicked" />
+                                <Button Grid.Row="4" Grid.Column="3" x:Name="ProgBtn2" Classes="calc-num" Margin="2,2,2,2" Content="2" Tag="2" Click="OnProgTokenClicked" />
+                                <Button Grid.Row="4" Grid.Column="4" x:Name="ProgBtn3" Classes="calc-num" Margin="2,2,0,2" Content="3" Tag="3" Click="OnProgTokenClicked" />
+
+                                <Button Grid.Row="5" Grid.Column="0" Classes="calc-op" Margin="0,2,2,0" Content="+" Tag="+" Click="OnProgTokenClicked" />
+                                <Button Grid.Row="5" Grid.Column="1" Classes="calc-op" Margin="2,2,2,0" Content="−" Tag="-" Click="OnProgTokenClicked" />
+                                <Button Grid.Row="5" Grid.Column="2" Classes="calc-op" Margin="2,2,2,0" Content="×" Tag="*" Click="OnProgTokenClicked" />
+                                <Button Grid.Row="5" Grid.Column="3" x:Name="ProgBtn0" Classes="calc-num" Margin="2,2,2,0" Content="0" Tag="0" Click="OnProgTokenClicked" />
+                                <Button Grid.Row="5" Grid.Column="4" Classes="calc-eq" Margin="2,2,0,0" Content="=" Click="OnProgEvaluateClicked" />
+                            </Grid>
+                        </Grid>
+
+                        <!-- ==================== 3. Unit Converter Workspace ==================== -->
+                        <Grid x:Name="ConverterPanel" Grid.Column="0" RowDefinitions="Auto,Auto,Auto,Auto,*" IsVisible="False">
+                            <!-- Category Selector -->
+                            <WrapPanel Grid.Row="0" x:Name="ConverterCategoriesPanel" Orientation="Horizontal" Margin="0,0,0,8" />
+
+                            <!-- From Unit Card -->
+                            <Border Grid.Row="1" Classes="calc-card" Padding="10,8" Margin="0,0,0,6">
+                                <Grid RowDefinitions="Auto,Auto">
+                                    <Grid Grid.Row="0" ColumnDefinitions="Auto,*" Margin="0,0,0,4">
+                                        <TextBlock Text="从 (输入数值)" FontSize="11" Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}" VerticalAlignment="Center" />
+                                        <ComboBox Grid.Column="1" x:Name="ConvFromCombo" HorizontalAlignment="Right" MinWidth="150" Height="28" FontSize="12" CornerRadius="8"
+                                                  SelectionChanged="OnConverterUnitChanged" />
+                                    </Grid>
+                                    <TextBox Grid.Row="1" x:Name="ConvInputBox" Classes="expr-box" FontSize="20" FontWeight="Bold"
+                                             Text="1" TextChanged="OnConverterInputChanged" />
+                                </Grid>
+                            </Border>
+
+                            <!-- Swap & Quick Actions Row -->
+                            <Grid Grid.Row="2" ColumnDefinitions="Auto,*,Auto,Auto" Margin="0,0,0,6">
+                                <Button Grid.Column="0" Classes="cat-pill" Content="⇅ 互换单位" Click="OnConverterSwapClicked" />
+                                <Button Grid.Column="2" Classes="cat-pill" Content="×10" Margin="0,0,4,0" Click="OnConverterMul10Clicked" />
+                                <Button Grid.Column="3" Classes="cat-pill" Content="重置为 1" Click="OnConverterResetClicked" />
+                            </Grid>
+
+                            <!-- To Unit Card -->
+                            <Border Grid.Row="3" Classes="calc-card" Padding="10,8" Margin="0,0,0,8">
+                                <Grid RowDefinitions="Auto,Auto">
+                                    <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto" Margin="0,0,0,4">
+                                        <TextBlock Text="转换结果" FontSize="11" Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}" VerticalAlignment="Center" />
+                                        <ComboBox Grid.Column="1" x:Name="ConvToCombo" HorizontalAlignment="Right" MinWidth="150" Height="28" FontSize="12" CornerRadius="8"
+                                                  Margin="0,0,6,0" SelectionChanged="OnConverterUnitChanged" />
+                                        <Button Grid.Column="2" Classes="icon-btn" Width="24" Height="24" Click="OnCopyConverterResultClicked" ToolTip.Tip="复制转换结果">
+                                            <PathIcon Data="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"
+                                                      Width="11" Height="11" Opacity="0.7" />
+                                        </Button>
+                                    </Grid>
+                                    <TextBlock Grid.Row="1" x:Name="ConvResultText" Text="1,024" FontSize="22" FontWeight="Bold"
+                                               TextAlignment="Right" Foreground="{DynamicResource CalculatorAccentBrush}"
+                                               TextTrimming="CharacterEllipsis" Cursor="Hand"
+                                               PointerPressed="OnCopyConverterResultPointerPressed" />
+                                </Grid>
+                            </Border>
+
+                            <!-- All Units Live Overview Table -->
+                            <Border Grid.Row="4" Classes="calc-card" Padding="10,8">
+                                <Grid RowDefinitions="Auto,*">
+                                    <TextBlock Grid.Row="0" Text="同类别全单位速览（点击任意行即可复制）" FontSize="11"
+                                               Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}" Margin="0,0,0,6" />
+                                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                                        <StackPanel x:Name="ConvAllUnitsList" Spacing="4" />
+                                    </ScrollViewer>
+                                </Grid>
+                            </Border>
+                        </Grid>
+
+                        <!-- ==================== Right Sidebar: History Tape & Memory ==================== -->
+                        <Border Grid.Column="2" Classes="calc-card" Padding="10,8">
+                            <Grid RowDefinitions="Auto,*">
+                                <Grid Grid.Row="0" ColumnDefinitions="Auto,Auto,*,Auto" Margin="0,0,0,8" VerticalAlignment="Center">
+                                    <Button Grid.Column="0" x:Name="SidebarHistoryTabBtn" Classes="cat-pill active" Content="历史记录"
+                                            Margin="0,0,4,0" Click="OnSidebarHistoryTabClicked" />
+                                    <Button Grid.Column="1" x:Name="SidebarMemoryTabBtn" Classes="cat-pill" Content="内存 (M)"
+                                            Click="OnSidebarMemoryTabClicked" />
+                                    <Button Grid.Column="3" x:Name="ClearSidebarBtn" Classes="icon-btn" Width="24" Height="24"
+                                            Click="OnClearSidebarClicked" ToolTip.Tip="{x:Static locales:Locale.Tools_Calculator_ClearHistory}">
+                                        <PathIcon Data="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"
+                                                  Width="12" Height="12" Opacity="0.65" />
+                                    </Button>
+                                </Grid>
+
+                                <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                                    <Panel>
+                                        <StackPanel x:Name="SidebarItemsPanel" Spacing="0" />
+                                        <TextBlock x:Name="SidebarEmptyText"
+                                                   Text="{x:Static locales:Locale.Tools_Calculator_EmptyHistory}"
+                                                   FontSize="12" Opacity="0.45"
+                                                   HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                   TextAlignment="Center" Margin="0,40,0,0"
+                                                   Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}" />
+                                    </Panel>
+                                </ScrollViewer>
+                            </Grid>
+                        </Border>
+                    </Grid>
+                </Grid>
+
+                <!-- Floating Toast Notification -->
+                <Border x:Name="ToastBanner" IsVisible="False" HorizontalAlignment="Center" VerticalAlignment="Bottom"
+                        Margin="0,0,0,18" Padding="12,5" CornerRadius="14"
+                        Background="{DynamicResource CalculatorAccentBrush}">
+                    <TextBlock x:Name="ToastText" Text="已复制" FontSize="11.5" FontWeight="SemiBold"
+                               Foreground="{DynamicResource AccentContrastForegroundBrush}" />
+                </Border>
+            </Panel>
+        </Border>
+    </Panel>
+</Window>

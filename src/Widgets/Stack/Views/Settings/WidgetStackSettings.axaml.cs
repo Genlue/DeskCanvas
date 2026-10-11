@@ -36,6 +36,7 @@ public partial class WidgetStackSettings : UserControl
         new("Monitor", "SingleMetric", "系统监控 (轻量仪表)"),
         new("Monitor", "MultiDashboard", "系统监控 (全能看板)"),
         new("Weather", "Forecast", "天气预报"),
+        new("Weather", "FourDayForecast", "天气 (四日预报)"),
         new("Batteries", "BatteriesView", "电池电量"),
         new("Pomodoro", "PomodoroView", "番茄工作法"),
         new("Progress", "ProgressView", "进度刻度"),

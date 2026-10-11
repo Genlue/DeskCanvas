@@ -46,10 +46,19 @@
         </Style>
 
         <!-- 滚动条滑块圆端（全局素材）: 配合资源里 0.25 的收起缩放（2px→4px），
-             端头全圆呈长条药丸状；悬停展开态（16px）同样是圆端。
-             Fluent 模板自身以 TemplateBinding 传递 CornerRadius，样式优先级高于模板值。 -->
+             端头全圆呈长条药丸状。Fluent 模板自身以 TemplateBinding 传递 CornerRadius，
+             样式优先级高于模板值。 -->
         <Style Selector="ScrollBar /template/ Thumb">
             <Setter Property="CornerRadius" Value="{DynamicResource ScrollBarThumbCornerRadius}" />
+        </Style>
+
+        <!-- 滚动条主题（全局素材）: 换掉 Fluent 原生主题里「悬停展开」那一段，去掉鼠标
+             压上去时突然冒出的大黑框（见 Styles/ScrollBar.axaml 的说明）。改动只涉及展开态，
+             收起态的细条观感、隐藏/翻页机制全部沿用原生。
+             用 DynamicResource 而不是 StaticResource：本段的解析早于 Application.Resources，
+             静态引用会扑空。 -->
+        <Style Selector="ScrollBar">
+            <Setter Property="Theme" Value="{DynamicResource DeskCanvasScrollBar}" />
         </Style>
 
         <!-- 单色模式下 Fluent 选中态控件（开关圆点/复选勾/单选点）的白上白修复不在
@@ -120,6 +129,9 @@
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
                 <ResourceInclude Source="avares://DeskCanvas/Styles/DesignTokens.axaml" />
+                <!-- 滚动条主题：覆盖 Fluent 原生 ScrollBar 的悬停展开态（去掉大黑框）。
+                     放在这里（而非 Application.Styles）才能被上面的 Theme 引用到。 -->
+                <ResourceInclude Source="avares://DeskCanvas/Styles/ScrollBar.axaml" />
             </ResourceDictionary.MergedDictionaries>
             <ResourceDictionary.ThemeDictionaries>
                 <ResourceDictionary x:Key="Default">

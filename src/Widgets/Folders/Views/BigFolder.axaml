@@ -37,8 +37,7 @@
                                 DragDrop.AllowDrop="True"
                                 PointerPressed="OnItemPointerPressed"
                                 PointerEntered="OnItemPointerEntered"
-                                PointerExited="OnItemPointerExited"
-                                ToolTip.Tip="{Binding Name}">
+                                PointerExited="OnItemPointerExited">
                             <Border.RenderTransform>
                                 <ScaleTransform ScaleX="1" ScaleY="1" />
                             </Border.RenderTransform>

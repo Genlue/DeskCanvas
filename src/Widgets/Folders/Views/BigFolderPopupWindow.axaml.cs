@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using Avalonia;
 using Avalonia.Controls;
@@ -32,59 +32,6 @@ public partial class BigFolderPopupWindow : SecondaryPanelWindow
     [DllImport("gdi32.dll")]
     private static extern bool DeleteObject(IntPtr hObject);
 
-    private delegate IntPtr LowLevelMouseProc(int nCode, IntPtr wParam, IntPtr lParam);
-
-    [DllImport("user32.dll", SetLastError = true)]
-    private static extern IntPtr SetWindowsHookEx(int idHook, LowLevelMouseProc lpfn, IntPtr hMod, uint dwThreadId);
-
-    [DllImport("user32.dll", SetLastError = true)]
-    [return: MarshalAs(UnmanagedType.Bool)]
-    private static extern bool UnhookWindowsHookEx(IntPtr hhk);
-
-    [DllImport("user32.dll")]
-    private static extern IntPtr CallNextHookEx(IntPtr hhk, int nCode, IntPtr wParam, IntPtr lParam);
-
-    [DllImport("kernel32.dll", CharSet = CharSet.Auto, SetLastError = true)]
-    private static extern IntPtr GetModuleHandle(string? lpModuleName);
-
-    [DllImport("user32.dll")]
-    [return: MarshalAs(UnmanagedType.Bool)]
-    private static extern bool GetWindowRect(IntPtr hWnd, out RECT lpRect);
-
-    [StructLayout(LayoutKind.Sequential)]
-    private struct POINT
-    {
-        public int X;
-        public int Y;
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    private struct MSLLHOOKSTRUCT
-    {
-        public POINT pt;
-        public uint mouseData;
-        public uint flags;
-        public uint time;
-        public IntPtr dwExtraInfo;
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    private struct RECT
-    {
-        public int Left;
-        public int Top;
-        public int Right;
-        public int Bottom;
-    }
-
-    private const int WH_MOUSE_LL = 14;
-    private const int WM_LBUTTONDOWN = 0x0201;
-    private const int WM_RBUTTONDOWN = 0x0204;
-    private const int WM_MBUTTONDOWN = 0x0207;
-    private const int WM_NCLBUTTONDOWN = 0x00A1;
-    private const int WM_NCRBUTTONDOWN = 0x00A4;
-    private const int WM_NCMBUTTONDOWN = 0x00A7;
-
     public static readonly StyledProperty<int> PopupGridColumnsProperty =
         AvaloniaProperty.Register<BigFolderPopupWindow, int>(nameof(PopupGridColumns), 4);
 
@@ -101,10 +48,6 @@ public partial class BigFolderPopupWindow : SecondaryPanelWindow
     // follow a render transform, so the transition falls back to opacity only.
     private readonly bool transformAnimationEnabled;
     private bool suppressSettingsEvents = false;
-    private bool isClosing = false;
-
-    private LowLevelMouseProc? mouseHookProc;
-    private IntPtr hookHandle = IntPtr.Zero;
 
     protected override Visual? PanelCard => CardBorder;
     protected override Point? SpawnScreenCenter => spawnScreenCenter;
@@ -133,7 +76,6 @@ public partial class BigFolderPopupWindow : SecondaryPanelWindow
         ApplyTheme();
         PopulateItems();
 
-        Closing += OnWindowClosing;
         Closed += OnWindowClosed;
     }
 
@@ -346,81 +288,9 @@ public partial class BigFolderPopupWindow : SecondaryPanelWindow
         }
     }
 
-    private void OnWindowClosing(object? sender, WindowClosingEventArgs e)
-    {
-        isClosing = true;
-        UninstallMouseHook();
-    }
-
     private void OnWindowClosed(object? sender, EventArgs e)
     {
-        isClosing = true;
         LiquidGlassSurfaceControl.IsVisible = false;
-        UninstallMouseHook();
-    }
-
-    private void InstallMouseHook()
-    {
-        if (hookHandle != IntPtr.Zero) return;
-        try
-        {
-            mouseHookProc = HookCallback;
-            using var curProcess = Process.GetCurrentProcess();
-            using var curModule = curProcess.MainModule;
-            IntPtr hMod = curModule != null ? GetModuleHandle(curModule.ModuleName) : IntPtr.Zero;
-            hookHandle = SetWindowsHookEx(WH_MOUSE_LL, mouseHookProc, hMod, 0);
-        }
-        catch (Exception ex)
-        {
-            Debug.WriteLine($"Failed to install mouse hook: {ex.Message}");
-        }
-    }
-
-    private void UninstallMouseHook()
-    {
-        if (hookHandle != IntPtr.Zero)
-        {
-            try
-            {
-                UnhookWindowsHookEx(hookHandle);
-            }
-            catch { }
-            hookHandle = IntPtr.Zero;
-        }
-        mouseHookProc = null;
-    }
-
-    private IntPtr HookCallback(int nCode, IntPtr wParam, IntPtr lParam)
-    {
-        if (nCode >= 0 && !isClosing && (DateTime.UtcNow - LoadedAtUtc).TotalMilliseconds > 150)
-        {
-            int msg = wParam.ToInt32();
-            if (msg is WM_LBUTTONDOWN or WM_RBUTTONDOWN or WM_MBUTTONDOWN
-                    or WM_NCLBUTTONDOWN or WM_NCRBUTTONDOWN or WM_NCMBUTTONDOWN)
-            {
-                var hookStruct = Marshal.PtrToStructure<MSLLHOOKSTRUCT>(lParam);
-                var handle = TryGetPlatformHandle()?.Handle;
-                if (handle.HasValue && GetWindowRect(handle.Value, out var rect))
-                {
-                    bool isInside = hookStruct.pt.X >= rect.Left && hookStruct.pt.X <= rect.Right &&
-                                    hookStruct.pt.Y >= rect.Top && hookStruct.pt.Y <= rect.Bottom;
-                    if (!isInside)
-                    {
-                        isClosing = true;
-                        Dispatcher.UIThread.Post(() =>
-                        {
-                            try
-                            {
-                                Close();
-                            }
-                            catch { }
-                        });
-                    }
-                }
-            }
-        }
-
-        return CallNextHookEx(hookHandle, nCode, wParam, lParam);
     }
 
     public static void ShowPopup(
@@ -489,7 +359,6 @@ public partial class BigFolderPopupWindow : SecondaryPanelWindow
         {
             LiquidGlassSurfaceControl.RequestRender(immediate: true);
         }
-        InstallMouseHook();
     }
 
     private void OnCloseClicked(object? sender, RoutedEventArgs e)

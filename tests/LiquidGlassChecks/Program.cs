@@ -5,6 +5,16 @@ using SkiaSharp;
 using DeskCanvas.Core.Models.Settings;
 using DeskCanvas.Services;
 
+// Targeted entry: the 新液态玻璃 corner checks on their own. The full sheet walks every widget
+// assembly it can find and needs a matching DeskCanvas build; this one only needs the linked
+// render sources, so it can be run while other work in the tree is mid-flight. Handled before the
+// output directory is resolved — args[0] is this switch, not an output path.
+if (args.ElementAtOrDefault(0) == "v2-glass")
+{
+    Environment.Exit(LiquidGlassV2Check.Run());
+    return;
+}
+
 var output = Path.GetFullPath(args.FirstOrDefault() ?? "dist/glass-checks");
 Directory.CreateDirectory(output);
 

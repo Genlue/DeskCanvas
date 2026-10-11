@@ -481,7 +481,7 @@ public partial class WidgetStackView : UserControl, IWidgetSelfRefreshing, IStac
                 // Outer perimeter background is always authentic dark mode charcoal (#1C1C1E)
                 return new SolidColorBrush(Color.Parse("#1C1C1E"));
             }
-            if (viewTypeName == "Forecast")
+            if (viewTypeName is "Forecast" or "FourDayForecast")
             {
                 if (this.TryFindResource("WeatherCardBackground", variant, out var wcb) && wcb is IBrush wb)
                     return wb;

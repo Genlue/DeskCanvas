@@ -1,0 +1,94 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:viewModels="clr-namespace:Weather.ViewModels"
+             Foreground="{DynamicResource WeatherForegroundBrush}"
+             x:Class="Weather.Views.FourDayForecast"
+             x:DataType="viewModels:ForecastViewModel">
+    <UserControl.Styles>
+        <Style Selector="TextBlock">
+            <Setter Property="Foreground" Value="{DynamicResource WeatherForegroundBrush}" />
+        </Style>
+        <Style Selector="Button.detail-btn">
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="0" />
+        </Style>
+        <Style Selector="Button.detail-btn:pointerover">
+            <Setter Property="Background" Value="#22808080" />
+        </Style>
+        <Style Selector="Button.detail-btn:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="#22808080" />
+        </Style>
+    </UserControl.Styles>
+    <Viewbox Stretch="Uniform">
+        <Grid Width="156" Height="156" RowDefinitions="Auto,*">
+            <!-- Top Section: City + Current Temp (left), Current Icon Button + Today Max/Min (right) -->
+            <Grid Grid.Row="0" ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto">
+                <TextBlock Grid.Row="0" Grid.Column="0"
+                           FontSize="15" FontWeight="Bold"
+                           TextTrimming="CharacterEllipsis"
+                           Text="{Binding CityName}" />
+                <TextBlock Grid.Row="1" Grid.Column="0" Grid.RowSpan="2"
+                           FontSize="40" LetterSpacing="-2" LineHeight="44" Margin="-2,-1,0,0"
+                           VerticalAlignment="Center"
+                           Text="{Binding CurrentTemperature}" />
+                <Button Grid.Row="0" Grid.Column="1"
+                        Classes="detail-btn"
+                        Width="22" Height="22" CornerRadius="6"
+                        Margin="0,-2,-3,-2"
+                        HorizontalAlignment="Right" VerticalAlignment="Center"
+                        Click="OpenPopup"
+                        ToolTip.Tip="查看天气详情与7天预报">
+                    <PathIcon Width="16" Height="16"
+                              HorizontalAlignment="Center" VerticalAlignment="Center"
+                              Foreground="{DynamicResource WeatherIconBrush}"
+                              Data="{Binding CurrentIcon}" />
+                </Button>
+                <TextBlock Grid.Row="1" Grid.Column="1"
+                           FontSize="13.5" FontWeight="Bold"
+                           HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                           Margin="0,2,0,0"
+                           Text="{Binding CurrentMaxDegree}" />
+                <TextBlock Grid.Row="2" Grid.Column="1"
+                           FontSize="13.5" FontWeight="Bold" Opacity="0.5"
+                           HorizontalAlignment="Right" VerticalAlignment="Top"
+                           Margin="0,1,0,0"
+                           Text="{Binding CurrentMinDegree}" />
+            </Grid>
+
+            <!-- Bottom Section: Upcoming 4-Day Forecast Rows -->
+            <ItemsControl Grid.Row="1" Margin="0,6,0,0" ItemsSource="{Binding UpcomingFourDaysForecast}">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <UniformGrid Rows="4" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" />
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate DataType="viewModels:DailyForecastViewModel">
+                        <Grid ColumnDefinitions="42,24,*,Auto,28" VerticalAlignment="Center">
+                            <TextBlock Grid.Column="0"
+                                       Text="{Binding DayOfWeek}"
+                                       FontSize="13.5" FontWeight="Bold"
+                                       HorizontalAlignment="Left" VerticalAlignment="Center" />
+                            <PathIcon Grid.Column="1"
+                                      Width="16" Height="16"
+                                      HorizontalAlignment="Center" VerticalAlignment="Center"
+                                      Foreground="{DynamicResource WeatherIconBrush}"
+                                      Data="{Binding Icon}" />
+                            <TextBlock Grid.Column="3"
+                                       Text="{Binding MinNumber}"
+                                       FontSize="13.5" FontWeight="Bold" Opacity="0.5"
+                                       HorizontalAlignment="Right" VerticalAlignment="Center"
+                                       Margin="0,0,4,0" />
+                            <TextBlock Grid.Column="4"
+                                       Text="{Binding Max}"
+                                       FontSize="13.5" FontWeight="Bold"
+                                       HorizontalAlignment="Right" VerticalAlignment="Center" />
+                        </Grid>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </Grid>
+    </Viewbox>
+</UserControl>

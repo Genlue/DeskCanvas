@@ -853,7 +853,7 @@ public partial class Widget : Window, INotifyPropertyChanged
             if (theme.IsColorful)
             {
                 var contentName = ContentPresenter?.Content?.GetType().Name;
-                if (contentName == "Forecast")
+                if (contentName is "Forecast" or "FourDayForecast")
                 {
                     if (this.TryFindResource("WeatherCardBackground", variant, out var wcb) && wcb is IBrush wb)
                         return wb;
@@ -927,6 +927,7 @@ public partial class Widget : Window, INotifyPropertyChanged
     public bool IsFixedWidget => FixedSizeWidget != null;
     public bool IsFixed2x1Widget => FixedSizeWidget != null && FixedSizeWidget.AllowedBaseSpans.Contains((4, 2));
     public bool IsFixedSquareWidget => FixedSizeWidget != null && FixedSizeWidget.AllowedBaseSpans.Contains((1, 1));
+    public bool IsFixed2x2SquareWidget => FixedSizeWidget != null && FixedSizeWidget.AllowedBaseSpans.Contains((2, 2));
     public bool IsMapWidget => ContentPresenter.Content?.GetType().Name == "MapView";
 
     public void SetFixedSpanPreset(string spanTag)
@@ -954,7 +955,9 @@ public partial class Widget : Window, INotifyPropertyChanged
             if (next == columns) return;
             if (FixedSizeWidget is { } fixedWidget)
             {
-                var snapped = fixedWidget.AllowedBaseSpans.Contains((1, 1))
+                var isSquareLattice = fixedWidget.AllowedBaseSpans.Contains((1, 1))
+                                      || fixedWidget.AllowedBaseSpans.Contains((2, 2));
+                var snapped = isSquareLattice
                     ? fixedWidget.SnapSpan(next, next)
                     : fixedWidget.SnapSpan(next, rows);
                 if (snapped.Columns == columns && snapped.Rows == rows) return;
@@ -977,7 +980,9 @@ public partial class Widget : Window, INotifyPropertyChanged
             if (next == rows) return;
             if (FixedSizeWidget is { } fixedWidget)
             {
-                var snapped = fixedWidget.AllowedBaseSpans.Contains((1, 1))
+                var isSquareLattice = fixedWidget.AllowedBaseSpans.Contains((1, 1))
+                                      || fixedWidget.AllowedBaseSpans.Contains((2, 2));
+                var snapped = isSquareLattice
                     ? fixedWidget.SnapSpan(next, next)
                     : fixedWidget.SnapSpan(columns, next);
                 if (snapped.Columns == columns && snapped.Rows == rows) return;

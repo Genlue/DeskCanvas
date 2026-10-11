@@ -675,6 +675,23 @@ public static class LiquidGlassWallpaper
     }
 
     /// <summary>
+    /// Retire the temporal acceptance grid. Called when the capture source itself changes
+    /// (window host ⇄ screen BitBlt, see <see cref="DesktopCapturer"/>): the two sources look
+    /// very different for the same desktop — the screen contains every window, the host only
+    /// the wallpaper — and the wild-jump check would read the first frame from the new source
+    /// as an overlay transition and drop it. With nothing to compare against, it validates as
+    /// fresh and publishes.
+    /// </summary>
+    internal static void ResetAcceptanceOnSourceChange()
+    {
+        lock (SampleGate)
+        {
+            lastAcceptedSamples = null;
+            lastAcceptedHost = IntPtr.Zero;
+        }
+    }
+
+    /// <summary>
     /// True when <paramref name="samples"/> matches the identity grid of the frame that is already
     /// published — every cell within <see cref="IdentityTolerance"/> per channel. A match means
     /// the desktop has not visibly moved since the surfaces last rendered: the glass they show is
@@ -760,6 +777,12 @@ public static class LiquidGlassWallpaper
 /// one owning <c>SHELLDLL_DefView</c> — and the first candidate that yields a plausible
 /// wallpaper is remembered, so the source only has to be resolved once.
 /// </para>
+/// <para>
+/// When <i>no</i> host can be printed — UIPI refuses every cross-process <c>PrintWindow</c>
+/// because the shell or the wallpaper engine runs at a higher integrity level — captures come
+/// from a plain screen BitBlt instead (<see cref="TryScreenCapture"/>), with this process's own
+/// windows excluded from the frame so the glass cannot sample itself.
+/// </para>
 /// </summary>
 public static class DesktopCapturer
 {
@@ -768,7 +791,7 @@ public static class DesktopCapturer
     [DllImport("user32.dll")]
     private static extern int GetSystemMetrics(int index);
 
-    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+    [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
     private static extern bool PrintWindow(IntPtr hwnd, IntPtr hdc, uint flags);
 
     [DllImport("user32.dll")]
@@ -792,16 +815,16 @@ public static class DesktopCapturer
     [DllImport("user32.dll", CharSet = CharSet.Unicode)]
     private static extern IntPtr FindWindowEx(IntPtr parent, IntPtr after, string? className, string? windowName);
 
-    [DllImport("user32.dll")]
+    [DllImport("user32.dll", SetLastError = true)]
     private static extern IntPtr GetDC(IntPtr hwnd);
 
     [DllImport("user32.dll")]
     private static extern int ReleaseDC(IntPtr hwnd, IntPtr hdc);
 
-    [DllImport("gdi32.dll")]
+    [DllImport("gdi32.dll", SetLastError = true)]
     private static extern IntPtr CreateCompatibleDC(IntPtr hdc);
 
-    [DllImport("gdi32.dll")]
+    [DllImport("gdi32.dll", SetLastError = true)]
     private static extern IntPtr CreateCompatibleBitmap(IntPtr hdc, int width, int height);
 
     [DllImport("gdi32.dll")]
@@ -813,24 +836,130 @@ public static class DesktopCapturer
     [DllImport("gdi32.dll")]
     private static extern bool DeleteObject(IntPtr obj);
 
-    [DllImport("gdi32.dll")]
+    [DllImport("gdi32.dll", SetLastError = true)]
     private static extern int GetDIBits(IntPtr hdc, IntPtr hbmp, uint start, uint lines,
         IntPtr bits, ref BitmapInfo info, uint usage);
+
+    [DllImport("gdi32.dll", SetLastError = true)]
+    private static extern bool BitBlt(IntPtr destination, int x, int y, int width, int height,
+        IntPtr source, int sourceX, int sourceY, uint rop);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    private static extern bool SetWindowDisplayAffinity(IntPtr hwnd, uint affinity);
+
+    [DllImport("user32.dll")]
+    private static extern uint GetWindowThreadProcessId(IntPtr hwnd, out uint processId);
 
     private delegate bool EnumWindowsProc(IntPtr hwnd, IntPtr extraData);
 
     // SM_* virtual desktop metrics (physical pixels; the process is DPI aware).
     private const int SmXVirtualScreen = 76, SmYVirtualScreen = 77, SmCXVirtualScreen = 78, SmCYVirtualScreen = 79;
 
+    /// <summary>BitBlt raster op that copies the source pixels verbatim.</summary>
+    private const uint SrcCopy = 0x00CC0020;
+
+    /// <summary>WDA_NONE: the window appears in captures again (the default affinity).</summary>
+    private const uint WdaNone = 0x00000000;
+
+    /// <summary>
+    /// WDA_EXCLUDEFROMCAPTURE (Windows 10 2004+): the window is omitted from every capture
+    /// source at the DWM level — capture reads show the pixels behind it instead.
+    /// </summary>
+    private const uint WdaExcludeFromCapture = 0x00000011;
+
+    /// <summary>
+    /// Amortization window of the capture-affinity pass: a window created moments ago is
+    /// excluded by the next pass, so the steady state costs no enumeration per capture.
+    /// </summary>
+    private const int ExclusionPassIntervalMs = 250;
+
     private static readonly object HostGate = new();
     private static IntPtr resolvedHost;
     private static string resolvedHostDescription = "unresolved";
 
+    /// <summary>
+    /// Capture-source override for diagnostics and support: <c>screen</c> pins the screen
+    /// fallback (so the screen path can be exercised even where window printing works),
+    /// <c>window</c> disables the automatic fallback (so the window path can be observed
+    /// without the fallback masking it). Unset keeps the automatic behaviour.
+    /// </summary>
+    private static readonly string? CaptureOverride =
+        Environment.GetEnvironmentVariable("DESKCANVAS_GLASS_CAPTURE")?.Trim().ToLowerInvariant();
+
+    private static readonly bool ScreenFallbackDisabled = CaptureOverride == "window";
+
+    /// <summary>
+    /// 1 while captures come from the screen BitBlt instead of a wallpaper host window —
+    /// because no host could be printed (UIPI against a higher-integrity shell), or because
+    /// the <c>DESKCANVAS_GLASS_CAPTURE=screen</c> override pins it for testing.
+    /// </summary>
+    private static int screenFallback = CaptureOverride == "screen" ? 1 : 0;
+
+    /// <summary>Tick of the last capture-affinity pass; see <see cref="EnsureCaptureVisibilityExclusion"/>.</summary>
+    private static long lastExclusionPassAt;
+
+    /// <summary>1 once <see cref="EnsureCaptureVisibilityExclusion"/> actually excluded a window.</summary>
+    private static int exclusionApplied;
+
+    /// <summary>
+    /// Win32 error of the most recent PrintWindow refusal (0 when the last print succeeded).
+    /// 5 (ERROR_ACCESS_DENIED) is the UIPI signature of a host at a higher integrity level, and
+    /// the only failure the screen fallback exists for. A transient refusal (err 87 and friends)
+    /// must NOT flip the source: the window path retries those, and the wallpaper-only content
+    /// is strictly preferred over the screen.
+    /// </summary>
+    private static int lastPrintError;
+
+    /// <summary>Capture outcomes already written to the trace, so a novel one is never dropped.</summary>
+    private static readonly HashSet<string> seenCaptureTraces = new();
+
+    private static long lastCaptureTraceAt;
+
+    /// <summary>
+    /// How long a already-seen outcome may be repeated in the trace.
+    /// </summary>
+    private const int CaptureTraceRepeatMs = 5000;
+
+    /// <summary>
+    /// Record how a capture died, in the glass trace. Without this a dead capture is invisible:
+    /// <see cref="CaptureWindow"/>'s exception only reached <c>Debug.WriteLine</c>, and the slow
+    /// path quietly skips a candidate it rejects — so "captured but not a wallpaper" and "the
+    /// capture call itself failed" both surfaced as one bare <c>wallpaper capture failed</c> line
+    /// with no HWND, no stage and no reason, which is not diagnosable from a user's report.
+    /// <para>
+    /// <paramref name="key"/> is what deduplicates; <paramref name="message"/> is what is written.
+    /// Throttling on the message alone does not work here: a single failed resolution walks the
+    /// candidate list, so the messages <i>alternate</i> and every one of them looks new — that
+    /// filled 1216 of the trace's 2400 lines in one run. A novel key is still written immediately,
+    /// so the first occurrence of any new failure mode is never lost.
+    /// </para>
+    /// </summary>
+    private static void TraceCapture(string key, string message)
+    {
+        var now = Environment.TickCount64;
+        var novel = seenCaptureTraces.Add(key);
+        if (!novel && now - lastCaptureTraceAt < CaptureTraceRepeatMs) return;
+        lastCaptureTraceAt = now;
+        GlassDiagnostics.Event("[capture] " + message);
+    }
+
     /// <summary>Which window the current capture comes from — surfaced for diagnostics.</summary>
     public static string CaptureSourceDescription
     {
-        get { lock (HostGate) return resolvedHostDescription; }
+        get
+        {
+            if (ScreenFallbackActive) return "screen BitBlt (window printing blocked by UIPI)";
+            lock (HostGate) return resolvedHostDescription;
+        }
     }
+
+    /// <summary>
+    /// True while captures come from the screen instead of a wallpaper host window: the
+    /// window-print path was blocked (a shell at a higher integrity level) or the screen
+    /// source is pinned by the capture override. Material-visible only in that the sampled
+    /// content is the composited desktop rather than the wallpaper alone.
+    /// </summary>
+    public static bool ScreenFallbackActive => Volatile.Read(ref screenFallback) == 1;
 
     public static SKBitmap? CaptureBitmap() => CaptureBitmap(out _);
 
@@ -841,6 +970,12 @@ public static class DesktopCapturer
     /// caller masks it with the previous frame instead of re-resolving here: falling through to
     /// the next source on every flat frame would flip a genuinely dark animated scene back to
     /// Progman, a visible jump the fast path exists to avoid.
+    /// <para>
+    /// When every candidate is refused with ERROR_ACCESS_DENIED — UIPI against a shell at a
+    /// higher integrity level, see <see cref="TryScreenCapture"/> — captures switch to the
+    /// screen BitBlt for the session instead of dropping to the static file fallback. The
+    /// wallpaper-only window path stays the preferred source everywhere it works.
+    /// </para>
     /// </summary>
     /// <param name="reuse">
     /// Optional bitmap to capture into instead of allocating a new one; it must already be the
@@ -855,6 +990,22 @@ public static class DesktopCapturer
         var width = GetSystemMetrics(SmCXVirtualScreen);
         var height = GetSystemMetrics(SmCYVirtualScreen);
         if (width <= 0 || height <= 0) return null;
+
+        // Screen fallback fast path: engaged when no wallpaper host could be printed (UIPI —
+        // see TryScreenCapture) or pinned by the capture override. A screen capture needs no
+        // host, so this sits before the remembered-window check.
+        if (ScreenFallbackActive)
+        {
+            var screen = TryScreenCapture(width, height, reuse);
+            if (screen != null)
+            {
+                if (!LooksLikeWallpaper(screen)) flat = true;
+                else screen.SetImmutable();
+                return screen;
+            }
+            // The screen read itself failed (a session that cannot read the screen at all):
+            // fall through — the window path stays the only remaining option.
+        }
 
         // Fast path: the host resolved last time. This runs once per sampled frame, so it must not
         // walk every top-level window to rediscover a window that has not changed. The frame gets
@@ -880,12 +1031,25 @@ public static class DesktopCapturer
 
         // Slow path: first frame, or the remembered host died (a wallpaper engine restarting, a
         // monitor hot-plug, a shell restart). Re-resolve from scratch.
-        foreach (var (hwnd, description) in ResolveCandidates())
+        var candidates = ResolveCandidates();
+        var captured = 0;
+        var rejected = 0;
+        var uipiBlocked = false;
+        foreach (var (hwnd, description) in candidates)
         {
             var bmp = CaptureWindow(hwnd, width, height, reuse);
-            if (bmp == null) continue;
+            if (bmp == null)
+            {
+                if (Volatile.Read(ref lastPrintError) == 5) uipiBlocked = true;
+                continue;
+            }
+            captured++;
             if (!LooksLikeWallpaper(bmp))
             {
+                // A frame came back but shows nothing (a uniform or pure-black surface — including
+                // the empty one PrintWindow hands out while a host re-composites). Silently moving
+                // on is why "captured but unusable" reached the trace as "capture failed".
+                rejected++;
                 bmp.Dispose();
                 continue;
             }
@@ -895,9 +1059,37 @@ public static class DesktopCapturer
                 resolvedHost = hwnd;
                 resolvedHostDescription = description;
             }
+            // A host printed its content again: if the screen fallback was engaged (a resume
+            // crossed integrity levels, the shell restarted unelevated), the window path is
+            // the better source once more — leave the fallback and let the windows back in.
+            if (ScreenFallbackActive) LeaveScreenFallback();
+            TraceCapture($"resolved:{description}",
+                $"resolved '{description}' (0x{hwnd:X}) from {candidates.Count} candidate(s)");
             bmp.SetImmutable();
             return bmp;
         }
+
+        if (captured == 0 && uipiBlocked && !ScreenFallbackDisabled)
+        {
+            // Not one candidate would print, and at least one refusal was ERROR_ACCESS_DENIED:
+            // UIPI — the shell, the wallpaper host or both run at a higher integrity level (an
+            // elevated explorer.exe, a UAC-disabled/UAC-hardened session, an elevated wallpaper
+            // engine), so every cross-process PrintWindow is denied. The screen BitBlt involves
+            // no cross-process call and keeps working there — the last-resort source, since the
+            // wallpaper-only host content is what the material is designed around.
+            EnterScreenFallback();
+            var screen = TryScreenCapture(width, height, reuse);
+            if (screen != null)
+            {
+                if (!LooksLikeWallpaper(screen)) flat = true;
+                else screen.SetImmutable();
+                return screen;
+            }
+        }
+
+        TraceCapture($"nocandidate:{captured}:{rejected}",
+            $"{candidates.Count} candidate(s), {captured} captured, {rejected} rejected as blank " +
+            "— no wallpaper host produced a usable frame");
         return null;
     }
 
@@ -914,6 +1106,10 @@ public static class DesktopCapturer
             resolvedHost = IntPtr.Zero;
             resolvedHostDescription = "forgiven after persistent unusable captures";
         }
+
+        // Full re-validation includes the capture source itself: drop back to the window path
+        // (the next capture re-resolves it and re-engages the screen fallback if still blocked).
+        LeaveScreenFallback();
     }
 
     /// <summary>The host the current capture comes from, for cross-checking capture coherence.</summary>
@@ -978,10 +1174,22 @@ public static class DesktopCapturer
     }
 
     /// <summary>
-    /// Candidate windows in priority order: the animated wallpaper host, then the classic Progman
-    /// wallpaper, then any visible child surface of the animated host (some engines render into a
-    /// child of the WorkerW rather than into it). The already-remembered host is tried separately,
-    /// before this runs, so a steady state never enumerates the window list at all.
+    /// Candidate windows in priority order: the WorkerW inside Progman that hosts the animated
+    /// wallpaper, then the classic top-level animated host, then the classic Progman wallpaper,
+    /// then any visible child surface of an animated host (some engines render into a child of the
+    /// WorkerW rather than into it). The already-remembered host is tried separately, before this
+    /// runs, so a steady state never enumerates the window list at all.
+    /// <para>
+    /// <b>The Progman-child scan is not redundant with the top-level one.</b> On the shells that
+    /// re-parent (Windows 11 here, but also anything else that moves the desktop windows),
+    /// <c>SHELLDLL_DefView</c> hangs directly off Progman and so does the wallpaper WorkerW —
+    /// Wallpaper Engine's <c>WPELiveWallpaper</c> DX11 window is a child of exactly such a WorkerW.
+    /// <c>EnumWindows</c> only walks <i>top-level</i> windows, so that host was invisible to this
+    /// function: the "follows the icons' WorkerW" rule could never fire (the DefView is not under
+    /// any top-level WorkerW) and the "WorkerW parented to Progman" rule iterated the same
+    /// top-level-only list. The only candidate left was Progman — which is what every capture then
+    /// went through.
+    /// </para>
     /// </summary>
     private static List<(IntPtr Hwnd, string Description)> ResolveCandidates()
     {
@@ -997,6 +1205,14 @@ public static class DesktopCapturer
         var progman = FindWindow("Progman", null);
         var defViewHost = IntPtr.Zero;
         var workerViews = new List<IntPtr>();
+        var progmanWorkers = new List<IntPtr>();
+
+        if (progman != IntPtr.Zero)
+            EnumChildWindows(progman, (child, _) =>
+            {
+                if (ClassNameOf(child) == "WorkerW") progmanWorkers.Add(child);
+                return true;
+            }, IntPtr.Zero);
 
         EnumWindows((hwnd, _) =>
         {
@@ -1008,8 +1224,16 @@ public static class DesktopCapturer
             return true;
         }, IntPtr.Zero);
 
-        // The wallpaper WorkerW is the top-level WorkerW that follows the icons' WorkerW. When
-        // the desktop is static there is no such sibling and this contributes nothing.
+        // The re-parented host comes first: it is where the animated wallpaper actually renders on
+        // these shells, and a black candidate only costs one rejected capture before the next one.
+        foreach (var worker in progmanWorkers)
+        {
+            Add(worker, "WorkerW in Progman (animated wallpaper host)");
+            AddChildren(worker, "WorkerW child");
+        }
+
+        // Classic: the wallpaper WorkerW is the top-level WorkerW that follows the icons' WorkerW.
+        // When the desktop is static there is no such sibling and this contributes nothing.
         if (defViewHost != IntPtr.Zero)
         {
             var afterIcons = false;
@@ -1020,7 +1244,7 @@ public static class DesktopCapturer
             }
         }
 
-        // A WorkerW parented to Progman also hosts wallpaper on some shell versions.
+        // A top-level WorkerW owned by Progman also hosts wallpaper on some shell versions.
         foreach (var worker in workerViews)
             if (IsChildOf(progman, worker)) Add(worker, "WorkerW (Progman child)");
 
@@ -1063,18 +1287,53 @@ public static class DesktopCapturer
     private static SKBitmap? CaptureWindow(IntPtr hwnd, int width, int height, SKBitmap? reuse = null)
     {
         var screenDc = GetDC(IntPtr.Zero);
-        if (screenDc == IntPtr.Zero) return null;
+        if (screenDc == IntPtr.Zero)
+        {
+            var err = Marshal.GetLastWin32Error();
+            TraceCapture($"getdc:{err}", $"GetDC(screen) failed (err {err}) — no capture possible");
+            return null;
+        }
         var memDc = CreateCompatibleDC(screenDc);
         var bitmap = CreateCompatibleBitmap(screenDc, width, height);
+        if (memDc == IntPtr.Zero || bitmap == IntPtr.Zero)
+        {
+            // A GDI failure here is silent otherwise: SelectObject on a null DC, PrintWindow fails,
+            // and the caller only ever sees "the capture failed".
+            var err = Marshal.GetLastWin32Error();
+            TraceCapture($"gdi:{err}", $"CreateCompatibleDC/Bitmap failed for {ClassNameOf(hwnd)} " +
+                         $"{width}x{height} (memDc=0x{memDc:X} bmp=0x{bitmap:X} err {err})");
+            if (bitmap != IntPtr.Zero) DeleteObject(bitmap);
+            if (memDc != IntPtr.Zero) DeleteDC(memDc);
+            ReleaseDC(IntPtr.Zero, screenDc);
+            return null;
+        }
         var previous = SelectObject(memDc, bitmap);
         try
         {
-            if (!PrintWindow(hwnd, memDc, PwRenderFullContent)) return null;
+            // Windows refuses this outright when it cannot reach the window (UIPI against a
+            // higher-integrity host) and otherwise hands back a frame that may have nothing drawn
+            // on it — the two are indistinguishable to the caller without this.
+            if (!PrintWindow(hwnd, memDc, PwRenderFullContent))
+            {
+                var err = Marshal.GetLastWin32Error();
+                Volatile.Write(ref lastPrintError, err);
+                var hint = err == 5
+                    ? " — ERROR_ACCESS_DENIED: the window belongs to a process at a HIGHER integrity " +
+                      "level (an elevated shell), so UIPI blocks the cross-process print. " +
+                      "The screen-capture fallback covers this case."
+                    : "";
+                TraceCapture($"printwindow:{ClassNameOf(hwnd)}:{err}",
+                    $"{ClassNameOf(hwnd)}: PrintWindow(PW_RENDERFULLCONTENT) returned false (err {err}){hint}");
+                return null;
+            }
+            Volatile.Write(ref lastPrintError, 0);
             return ReadBitmap(memDc, bitmap, width, height, reuse);
         }
         catch (Exception ex)
         {
             Debug.WriteLine($"Wallpaper capture failed for {ClassNameOf(hwnd)}: {ex.Message}");
+            TraceCapture($"throw:{ClassNameOf(hwnd)}:{ex.GetType().Name}",
+                $"{ClassNameOf(hwnd)}: {ex.GetType().Name}: {ex.Message}");
             return null;
         }
         finally
@@ -1085,6 +1344,155 @@ public static class DesktopCapturer
             ReleaseDC(IntPtr.Zero, screenDc);
         }
     }
+
+    /// <summary>
+    /// Capture the composited desktop itself — the cross-integrity-level alternative to printing
+    /// a wallpaper host's window.
+    /// <para>
+    /// <c>PrintWindow</c> is a cross-process request, so UIPI refuses it when the target belongs
+    /// to a process at a higher integrity level (an elevated explorer.exe, an elevated wallpaper
+    /// engine — or a UAC-session where the shell is High while this process is Medium): every
+    /// candidate fails with ERROR_ACCESS_DENIED and the material would never leave the static
+    /// file fallback. A screen read sends no message and passes no permission gate, so it keeps
+    /// working there. The trade is content: the screen contains every visible window, not only
+    /// the wallpaper, so <see cref="EnsureCaptureVisibilityExclusion"/> keeps this process's own
+    /// windows out of the frame (the pixels behind them show through instead).
+    /// </para>
+    /// <para>
+    /// Same virtual-desktop geometry as <see cref="CaptureWindow"/>: the bitmap is the desktop
+    /// at physical pixels from <c>(SM_XVIRTUALSCREEN, SM_YVIRTUALSCREEN)</c>, which is exactly
+    /// the space the renderer's live-capture placement expects.
+    /// </para>
+    /// </summary>
+    private static SKBitmap? TryScreenCapture(int width, int height, SKBitmap? reuse)
+    {
+        EnsureCaptureVisibilityExclusion();
+
+        var screenDc = GetDC(IntPtr.Zero);
+        if (screenDc == IntPtr.Zero)
+        {
+            var err = Marshal.GetLastWin32Error();
+            TraceCapture($"blt:getdc:{err}", $"screen capture: GetDC(screen) failed (err {err})");
+            return null;
+        }
+        var memDc = CreateCompatibleDC(screenDc);
+        var bitmap = CreateCompatibleBitmap(screenDc, width, height);
+        if (memDc == IntPtr.Zero || bitmap == IntPtr.Zero)
+        {
+            var err = Marshal.GetLastWin32Error();
+            TraceCapture($"blt:gdi:{err}",
+                $"screen capture: CreateCompatibleDC/Bitmap failed ({width}x{height}, err {err})");
+            if (bitmap != IntPtr.Zero) DeleteObject(bitmap);
+            if (memDc != IntPtr.Zero) DeleteDC(memDc);
+            ReleaseDC(IntPtr.Zero, screenDc);
+            return null;
+        }
+
+        var previous = SelectObject(memDc, bitmap);
+        try
+        {
+            var x = GetSystemMetrics(SmXVirtualScreen);
+            var y = GetSystemMetrics(SmYVirtualScreen);
+            if (!BitBlt(memDc, 0, 0, width, height, screenDc, x, y, SrcCopy))
+            {
+                var err = Marshal.GetLastWin32Error();
+                TraceCapture($"blt:copy:{err}", $"screen capture: BitBlt failed (err {err})");
+                return null;
+            }
+            return ReadBitmap(memDc, bitmap, width, height, reuse);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Screen capture failed: {ex.Message}");
+            TraceCapture($"blt:throw:{ex.GetType().Name}", $"screen capture: {ex.GetType().Name}: {ex.Message}");
+            return null;
+        }
+        finally
+        {
+            SelectObject(memDc, previous);
+            DeleteObject(bitmap);
+            DeleteDC(memDc);
+            ReleaseDC(IntPtr.Zero, screenDc);
+        }
+    }
+
+    /// <summary>
+    /// Engage the screen fallback, once: the content source changes fundamentally (the screen
+    /// instead of a wallpaper host), and the temporal acceptance grid would read the first
+    /// screen frame as an overlay-transition wild jump against the host's last frame and drop
+    /// it. Retiring the acceptance reference lets the switch publish immediately.
+    /// </summary>
+    private static void EnterScreenFallback()
+    {
+        if (Interlocked.Exchange(ref screenFallback, 1) == 1) return;
+        LiquidGlassWallpaper.ResetAcceptanceOnSourceChange();
+        TraceCapture("screenfallback:engage",
+            "no wallpaper host could be printed (UIPI — a shell/host at a higher integrity " +
+            "level?); capturing the screen instead, with DeskCanvas's own windows excluded");
+    }
+
+    /// <summary>Leave the screen fallback and put this process's windows back into captures.</summary>
+    private static void LeaveScreenFallback()
+    {
+        // The capture override pins the source for diagnostics; only the automatic fallback
+        // may leave it.
+        if (CaptureOverride == "screen") return;
+        if (Interlocked.Exchange(ref screenFallback, 0) == 0) return;
+        LiquidGlassWallpaper.ResetAcceptanceOnSourceChange();
+        RestoreCaptureVisibility();
+        TraceCapture("screenfallback:leave", "a wallpaper host prints again — back to window captures");
+    }
+
+    /// <summary>
+    /// Keep this process's own windows out of the screen capture.
+    /// <para>
+    /// A screen capture contains every visible window — the widgets included — and feeding a
+    /// glass card its own pixels is a feedback loop: the card would refract a slightly stale
+    /// copy of itself, visibly echoing, and a neighbouring card's pixels would bleed through
+    /// the blur the same way. WDA_EXCLUDEFROMCAPTURE removes a window from every capture source
+    /// at the DWM level — what shows through is the content behind it, which is precisely "the
+    /// desktop minus ourselves". Only a window's own process may set it; all of them are ours.
+    /// </para>
+    /// <para>
+    /// Throttled and best-effort. The pass re-enumerates instead of tracking handles, so new
+    /// widgets, popups and the settings window are covered without a call site each — a window
+    /// created moments ago is excluded within <see cref="ExclusionPassIntervalMs"/>. A failure
+    /// (an OS build without WDA_EXCLUDEFROMCAPTURE, a window that refuses the affinity) costs
+    /// one call per window per pass and leaves that window merely included, as before.
+    /// </para>
+    /// </summary>
+    private static void EnsureCaptureVisibilityExclusion()
+    {
+        var now = Environment.TickCount64;
+        if (now - Interlocked.Read(ref lastExclusionPassAt) < ExclusionPassIntervalMs) return;
+        Interlocked.Exchange(ref lastExclusionPassAt, now);
+
+        var applied = 0;
+        EnumWindows((hwnd, _) =>
+        {
+            if (IsWindowVisible(hwnd) && IsOwnWindow(hwnd) &&
+                SetWindowDisplayAffinity(hwnd, WdaExcludeFromCapture))
+            {
+                applied++;
+            }
+            return true;
+        }, IntPtr.Zero);
+        if (applied > 0) Volatile.Write(ref exclusionApplied, 1);
+    }
+
+    /// <summary>Undo <see cref="EnsureCaptureVisibilityExclusion"/>: the windows capture again.</summary>
+    private static void RestoreCaptureVisibility()
+    {
+        if (Interlocked.Exchange(ref exclusionApplied, 0) == 0) return;
+        EnumWindows((hwnd, _) =>
+        {
+            if (IsWindowVisible(hwnd) && IsOwnWindow(hwnd)) SetWindowDisplayAffinity(hwnd, WdaNone);
+            return true;
+        }, IntPtr.Zero);
+    }
+
+    private static bool IsOwnWindow(IntPtr hwnd) =>
+        GetWindowThreadProcessId(hwnd, out var owner) != 0 && owner == (uint)Environment.ProcessId;
 
     /// <summary>A valid wallpaper capture has meaningful content: not uniform, not black.</summary>
     private static bool LooksLikeWallpaper(SKBitmap bmp)
@@ -1123,12 +1531,17 @@ public static class DesktopCapturer
         var pixels = skBitmap.GetPixels();
         if (pixels == IntPtr.Zero)
         {
+            TraceCapture("nopixels", "the capture bitmap has no pixels (SKBitmap allocation failed)");
             if (!ReferenceEquals(skBitmap, reuse)) skBitmap.Dispose();
             return null;
         }
 
-        if (GetDIBits(memDc, bitmap, 0, (uint)height, pixels, ref info, 0) != height)
+        var lines = GetDIBits(memDc, bitmap, 0, (uint)height, pixels, ref info, 0);
+        if (lines != height)
         {
+            var err = Marshal.GetLastWin32Error();
+            TraceCapture($"getdibits:{lines}:{err}",
+                $"GetDIBits copied {lines} of {height} rows (err {err})");
             if (!ReferenceEquals(skBitmap, reuse)) skBitmap.Dispose();
             return null;
         }

@@ -26,8 +26,10 @@ namespace DeskCanvas.Core.Models.Settings;
 /// <param name="Blur">模糊 (0-100): the light backdrop blur; the pipeline maps it to a Gaussian sigma.</param>
 /// <param name="Refraction">
 /// 折射 (0-100): lens strength. Peak displacement at the outline is
-/// <see cref="RefractionAmountMaxFrac"/> × this value of the card's short side; the band width is
-/// half of that, matching the library's height/amount ratio.
+/// <see cref="RefractionAmountMaxFrac"/> × this value of the card's short side, the band width is
+/// half of that (the library's height/amount ratio), and the result is then capped by
+/// <see cref="CornerBandCapFactor"/> × the corner radius so the corners cannot fold — see
+/// <see cref="LiquidGlassV2Lens.Compute"/> for the derived coefficients.
 /// </param>
 /// <param name="Highlight">
 /// 边缘高光 (0-100): the hairline rim stroke's additive strength; 0 removes it.
@@ -98,6 +100,32 @@ public record LiquidGlassV2Settings(
 
     /// <summary>The gradient radius of the lens/highlight field (the library's <c>min(radius * 1.5, min half size)</c>).</summary>
     public const double GradRadiusFactor = 1.5;
+
+    /// <summary>
+    /// Corner-aware ceiling on the refraction band, as a multiple of the corner radius. The
+    /// library's band is tied to the card's short side alone (<c>0.2 × side</c>), so it keeps
+    /// growing as the card grows while the corner geometry does not: past roughly
+    /// <c>1.17 × radius</c> the band's own tangential derivative changes sign and folds the rim
+    /// at the corners, and past <c>1.5 × radius</c> the inflated arc centre — the one point of
+    /// the direction field with no unique limit — starts to carry displacement. Capping at
+    /// <c>0.8 × radius</c> keeps the band inside both, so the corners never see the fold and the
+    /// field's single non-smooth point always sits in the zero-displacement region.
+    /// <para>
+    /// The cost is the real one: large cards refract noticeably less than the library's
+    /// short-side rule would give them (a 352 px card at 折射 100 drops from a 140.8 px
+    /// displacement to 38.4 px). This is a deliberate trade until a corner-only displacement
+    /// field exists; it is applied to the derived render coefficients only and is never written
+    /// back into <see cref="Refraction"/>.
+    /// </para>
+    /// </summary>
+    public const double CornerBandCapFactor = 0.8;
+
+    /// <summary>
+    /// Width of the smooth cap's transition, as a fraction of the cap itself. A hard <c>min</c>
+    /// would step the optical derivatives when a card is resized across the threshold (visible
+    /// as a flicker); the C1 transition spreads it over <c>±0.1 × cap</c> instead.
+    /// </summary>
+    public const double CornerBandCapTransitionFrac = 0.1;
 
     /// <summary>Slowest live sampling rate: 1 fps.</summary>
     public const int MaxLiveSamplingInterval = LiquidGlassSettings.MaxLiveSamplingInterval;

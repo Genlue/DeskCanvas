@@ -147,4 +147,58 @@
     <data name="Tools_Translator_AutoTranslate_Desc" xml:space="preserve">
         <value>Automatically trigger translation after typing pauses</value>
     </data>
+    <data name="Tools_Calculator_Title" xml:space="preserve">
+        <value>Calculator</value>
+    </data>
+    <data name="Tools_Calculator_Subtitle" xml:space="preserve">
+        <value>Quick expression evaluator, scientific &amp; programmer calculator with unit converter</value>
+    </data>
+    <data name="Tools_Calculator_InputHint" xml:space="preserve">
+        <value>Type expression, e.g. (350+120)*0.85</value>
+    </data>
+    <data name="Tools_Calculator_EmptyHistory" xml:space="preserve">
+        <value>No calculation history</value>
+    </data>
+    <data name="Tools_Calculator_Copied" xml:space="preserve">
+        <value>Copied result to clipboard</value>
+    </data>
+    <data name="Tools_Calculator_ClearHistory" xml:space="preserve">
+        <value>Clear History</value>
+    </data>
+    <data name="Tools_Calculator_DecimalPlaces" xml:space="preserve">
+        <value>Decimal Places</value>
+    </data>
+    <data name="Tools_Calculator_DecimalPlaces_Desc" xml:space="preserve">
+        <value>Maximum decimal digits to display (auto-trims trailing zeros)</value>
+    </data>
+    <data name="Tools_Calculator_ThousandsSep" xml:space="preserve">
+        <value>Thousands Separator</value>
+    </data>
+    <data name="Tools_Calculator_ThousandsSep_Desc" xml:space="preserve">
+        <value>Format numbers with commas (e.g. 1,024.5)</value>
+    </data>
+    <data name="Tools_Calculator_AngleMode" xml:space="preserve">
+        <value>Default Angle Unit</value>
+    </data>
+    <data name="Tools_Calculator_AngleMode_Desc" xml:space="preserve">
+        <value>Default unit for trigonometric functions (DEG / RAD)</value>
+    </data>
+    <data name="Tools_Calculator_DefaultTab" xml:space="preserve">
+        <value>Default Secondary Panel Tab</value>
+    </data>
+    <data name="Tools_Calculator_DefaultTab_Desc" xml:space="preserve">
+        <value>Default mode when opening the expanded calculator window</value>
+    </data>
+    <data name="Tools_Calculator_MaxHistory" xml:space="preserve">
+        <value>Max History Items</value>
+    </data>
+    <data name="Tools_Calculator_MaxHistory_Desc" xml:space="preserve">
+        <value>Maximum number of recent calculations to keep (10 - 100)</value>
+    </data>
+    <data name="Tools_Calculator_ClickToCopy" xml:space="preserve">
+        <value>Click History to Copy</value>
+    </data>
+    <data name="Tools_Calculator_ClickToCopy_Desc" xml:space="preserve">
+        <value>Copy result directly when clicking a history item instead of filling expression</value>
+    </data>
 </root>

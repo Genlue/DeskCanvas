@@ -71,6 +71,28 @@ public class ForecastViewModel : ReactiveObject, IDisposable
         ApplyForecast(forecast);
     }
 
+    private static readonly string[] ChineseWeekdays = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"];
+
+    private static string FormatDayOfWeek(DayOfWeek dayOfWeek)
+    {
+        var culture = Thread.CurrentThread.CurrentUICulture;
+        if (string.Equals(culture.TwoLetterISOLanguageName, "zh", StringComparison.OrdinalIgnoreCase))
+            return ChineseWeekdays[(int)dayOfWeek];
+        return culture.DateTimeFormat.AbbreviatedDayNames[(int)dayOfWeek];
+    }
+
+    private static IReadOnlyList<DailyForecastViewModel> BuildInitialFourDays()
+    {
+        var today = DateTime.Today;
+        var list = new List<DailyForecastViewModel>(4);
+        for (int i = 1; i <= 4; i++)
+        {
+            var dayName = FormatDayOfWeek(today.AddDays(i).DayOfWeek);
+            list.Add(new DailyForecastViewModel(dayName, WeatherIcon.Clear.Value, "--°", "--°", []));
+        }
+        return list;
+    }
+
     private void ApplyForecast(ForecastResponse forecast)
     {
         var currentHour = DateTime.Now.Hour;
@@ -81,6 +103,8 @@ public class ForecastViewModel : ReactiveObject, IDisposable
         CurrentMinMax = $"{forecast.Daily.Max[0]:0}°  {forecast.Daily.Min[0]:0}°";
         CurrentMin = $"{forecast.Daily.Min[0]:0}";
         CurrentMax = $"{forecast.Daily.Max[0]:0}";
+        CurrentMinDegree = $"{forecast.Daily.Min[0]:0}°";
+        CurrentMaxDegree = $"{forecast.Daily.Max[0]:0}°";
         TemperatureMetric = new(forecast.Daily.Min.Min(), forecast.Daily.Max.Max(), forecast.Current.Temperature, null);
         UVIndex = new(0, 10, forecast.Hourly.UVIndex[currentHour], WeatherIcon.Clear.Value);
         Pressure = new(960, 1050, forecast.Current.Pressure, WeatherIcon.Pressure.Value);
@@ -88,9 +112,12 @@ public class ForecastViewModel : ReactiveObject, IDisposable
         HourlyForecast = Enumerable
             .Range(currentHour, 24)
             .Select(hour => GetHourlyForecast(forecast, hour % 24));
-        DailyForecast = Enumerable
+        var dailyList = Enumerable
             .Range(0, forecast.Daily.Min.Count)
-            .Select(day => GetDailyForecast(forecast, day));
+            .Select(day => GetDailyForecast(forecast, day))
+            .ToList();
+        DailyForecast = dailyList;
+        UpcomingFourDaysForecast = dailyList.Skip(1).Take(4).ToList();
     }
 
     private SunriseSunsetViewModel GetSunsetSunrise(ForecastResponse forecast)
@@ -109,8 +136,7 @@ public class ForecastViewModel : ReactiveObject, IDisposable
 
     private DailyForecastViewModel GetDailyForecast(ForecastResponse forecast, int day)
     {
-        var dayOfWeek = (int) forecast.Daily.Time[day].DayOfWeek;
-        var dayOfWeekName = Thread.CurrentThread.CurrentUICulture.DateTimeFormat.AbbreviatedDayNames[dayOfWeek];
+        var dayOfWeekName = FormatDayOfWeek(forecast.Daily.Time[day].DayOfWeek);
         var code = forecast.Daily.WeatherCode[day];
         var icon = WeatherIconProvider.GetIcon(code);
         var min = forecast.Daily.Min[day];
@@ -141,7 +167,7 @@ public class ForecastViewModel : ReactiveObject, IDisposable
     
     private string? GetCondition(WeatherCode code) => Locales.Locale.ResourceManager.GetString($"Weather_Code_{(int)code}");
 
-    private StreamGeometry currentIcon = new();
+    private StreamGeometry currentIcon = WeatherIcon.Clear.Value;
     public StreamGeometry CurrentIcon
     {
         get => currentIcon;
@@ -160,6 +186,13 @@ public class ForecastViewModel : ReactiveObject, IDisposable
     {
         get => dailyForecast;
         private set => this.RaiseAndSetIfChanged(ref dailyForecast, value);
+    }
+
+    private IEnumerable<DailyForecastViewModel> upcomingFourDaysForecast = BuildInitialFourDays();
+    public IEnumerable<DailyForecastViewModel> UpcomingFourDaysForecast
+    {
+        get => upcomingFourDaysForecast;
+        private set => this.RaiseAndSetIfChanged(ref upcomingFourDaysForecast, value);
     }
     
     public string CityName => model.Name;
@@ -197,6 +230,20 @@ public class ForecastViewModel : ReactiveObject, IDisposable
     {
         get => currentMax;
         private set => this.RaiseAndSetIfChanged(ref currentMax, value);
+    }
+
+    private string? currentMinDegree = "--°";
+    public string? CurrentMinDegree
+    {
+        get => currentMinDegree;
+        private set => this.RaiseAndSetIfChanged(ref currentMinDegree, value);
+    }
+
+    private string? currentMaxDegree = "--°";
+    public string? CurrentMaxDegree
+    {
+        get => currentMaxDegree;
+        private set => this.RaiseAndSetIfChanged(ref currentMaxDegree, value);
     }
 
     private MetricViewModel temperatureMetric = new(0, 1, 0, null);

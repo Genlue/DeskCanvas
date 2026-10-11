@@ -1,10 +1,13 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
+using System.Runtime.InteropServices;
 using Avalonia;
 using Avalonia.Animation;
 using Avalonia.Animation.Easings;
 using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Media;
@@ -24,7 +27,7 @@ namespace DeskCanvas.Views;
 ///     transform origin pinned to the widget's center) while fading in, on the Material 3
 ///     "emphasized decelerate" curve,
 ///   - close transition: the card folds back into the widget on the "emphasized accelerate" curve,
-///   - dismissal: Escape, focus loss (after a grace period), or an explicit Close(),
+///   - dismissal: Escape, focus loss (after a grace period), outside click, or an explicit Close(),
 ///   - glass: the card is drawn by the same <see cref="LiquidGlassSurface"/> the widget card
 ///     uses, and the surface is fed the zoom's interpolated scale so its optics animate with
 ///     the visible transition (with or without live wallpaper sampling),
@@ -35,6 +38,59 @@ namespace DeskCanvas.Views;
 /// </summary>
 public abstract class SecondaryPanelWindow : Window
 {
+    private delegate IntPtr LowLevelMouseProc(int nCode, IntPtr wParam, IntPtr lParam);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    private static extern IntPtr SetWindowsHookEx(int idHook, LowLevelMouseProc lpfn, IntPtr hMod, uint dwThreadId);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool UnhookWindowsHookEx(IntPtr hhk);
+
+    [DllImport("user32.dll")]
+    private static extern IntPtr CallNextHookEx(IntPtr hhk, int nCode, IntPtr wParam, IntPtr lParam);
+
+    [DllImport("kernel32.dll", CharSet = CharSet.Auto, SetLastError = true)]
+    private static extern IntPtr GetModuleHandle(string? lpModuleName);
+
+    [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool GetWindowRect(IntPtr hWnd, out RECT lpRect);
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct POINT
+    {
+        public int X;
+        public int Y;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct MSLLHOOKSTRUCT
+    {
+        public POINT pt;
+        public uint mouseData;
+        public uint flags;
+        public uint time;
+        public IntPtr dwExtraInfo;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct RECT
+    {
+        public int Left;
+        public int Top;
+        public int Right;
+        public int Bottom;
+    }
+
+    private const int WH_MOUSE_LL = 14;
+    private const int WM_LBUTTONDOWN = 0x0201;
+    private const int WM_RBUTTONDOWN = 0x0204;
+    private const int WM_MBUTTONDOWN = 0x0207;
+    private const int WM_NCLBUTTONDOWN = 0x00A1;
+    private const int WM_NCRBUTTONDOWN = 0x00A4;
+    private const int WM_NCMBUTTONDOWN = 0x00A7;
+
     private static readonly Dictionary<Type, SecondaryPanelWindow> ActivePanels = new();
     private static readonly Dictionary<Type, DateTime> LastCloseTimes = new();
 
@@ -74,6 +130,8 @@ public abstract class SecondaryPanelWindow : Window
     private bool closeAnimationRunning;
     private bool wasActivated;
     private DateTime activatedAtUtc;
+    private LowLevelMouseProc? mouseHookProc;
+    private IntPtr hookHandle = IntPtr.Zero;
 
     // ---- Glass transition during the open/close zoom ----
     // The card's glass must follow the zoom: the liquid-glass surface re-parameterises its
@@ -162,6 +220,7 @@ public abstract class SecondaryPanelWindow : Window
         Loaded += OnPanelWindowLoaded;
         Activated += OnPanelWindowActivated;
         Deactivated += OnPanelWindowDeactivated;
+        Closing += OnPanelWindowClosing;
         Closed += OnPanelWindowClosed;
         KeyDown += OnPanelKeyDown;
     }
@@ -204,6 +263,11 @@ public abstract class SecondaryPanelWindow : Window
         LoadedAtUtc = DateTime.UtcNow;
         PositionPanel();
         OnPanelLoaded();
+        if (FocusManager?.GetFocusedElement() == null)
+        {
+            Focus();
+        }
+        InstallOutsideClickHook();
         PlayOpenAnimation();
     }
 
@@ -217,16 +281,118 @@ public abstract class SecondaryPanelWindow : Window
     private void OnPanelWindowDeactivated(object? sender, EventArgs e)
     {
         if (closeAnimationRunning || !wasActivated) return;
-        if ((DateTime.UtcNow - activatedAtUtc).TotalMilliseconds < DeactivateCloseGraceMs) return;
+        if ((DateTime.UtcNow - activatedAtUtc).TotalMilliseconds < DeactivateCloseGraceMs)
+        {
+            wasActivated = false;
+            Dispatcher.UIThread.Post(() =>
+            {
+                if (!closeAnimationRunning && IsVisible)
+                    Activate();
+            });
+            return;
+        }
         Close();
+    }
+
+    private void OnPanelWindowClosing(object? sender, WindowClosingEventArgs e)
+    {
+        UninstallOutsideClickHook();
     }
 
     private void OnPanelWindowClosed(object? sender, EventArgs e)
     {
+        UninstallOutsideClickHook();
         var type = GetType();
         if (ActivePanels.TryGetValue(type, out var current) && ReferenceEquals(current, this))
             ActivePanels.Remove(type);
         LastCloseTimes[type] = DateTime.UtcNow;
+    }
+
+    private void InstallOutsideClickHook()
+    {
+        if (!OperatingSystem.IsWindows() || hookHandle != IntPtr.Zero) return;
+        try
+        {
+            mouseHookProc = OutsideClickHookCallback;
+            using var curProcess = Process.GetCurrentProcess();
+            using var curModule = curProcess.MainModule;
+            var hMod = curModule != null ? GetModuleHandle(curModule.ModuleName) : IntPtr.Zero;
+            hookHandle = SetWindowsHookEx(WH_MOUSE_LL, mouseHookProc, hMod, 0);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Failed to install outside-click mouse hook: {ex.Message}");
+        }
+    }
+
+    private void UninstallOutsideClickHook()
+    {
+        if (hookHandle != IntPtr.Zero)
+        {
+            try
+            {
+                UnhookWindowsHookEx(hookHandle);
+            }
+            catch { }
+            hookHandle = IntPtr.Zero;
+        }
+        mouseHookProc = null;
+    }
+
+    private IntPtr OutsideClickHookCallback(int nCode, IntPtr wParam, IntPtr lParam)
+    {
+        if (nCode >= 0 && !closeAnimationRunning && LoadedAtUtc != DateTime.MinValue
+            && (DateTime.UtcNow - LoadedAtUtc).TotalMilliseconds > 150)
+        {
+            int msg = wParam.ToInt32();
+            if (msg is WM_LBUTTONDOWN or WM_RBUTTONDOWN or WM_MBUTTONDOWN
+                    or WM_NCLBUTTONDOWN or WM_NCRBUTTONDOWN or WM_NCMBUTTONDOWN)
+            {
+                var hookStruct = Marshal.PtrToStructure<MSLLHOOKSTRUCT>(lParam);
+                var handle = TryGetPlatformHandle()?.Handle;
+                if (handle.HasValue && GetWindowRect(handle.Value, out var rect))
+                {
+                    bool isInside = hookStruct.pt.X >= rect.Left && hookStruct.pt.X <= rect.Right &&
+                                    hookStruct.pt.Y >= rect.Top && hookStruct.pt.Y <= rect.Bottom;
+                    if (!isInside)
+                    {
+                        int ptX = hookStruct.pt.X;
+                        int ptY = hookStruct.pt.Y;
+                        Dispatcher.UIThread.Post(() =>
+                        {
+                            if (closeAnimationRunning) return;
+                            if (IsScreenPointInsideOpenPopup(ptX, ptY)) return;
+                            try
+                            {
+                                Close();
+                            }
+                            catch { }
+                        });
+                    }
+                }
+            }
+        }
+
+        return CallNextHookEx(hookHandle, nCode, wParam, lParam);
+    }
+
+    private bool IsScreenPointInsideOpenPopup(int x, int y)
+    {
+        try
+        {
+            foreach (var popup in this.GetVisualDescendants().OfType<Popup>())
+            {
+                if (!popup.IsOpen || popup.Host is not TopLevel popupRoot) continue;
+                var popupHandle = popupRoot.TryGetPlatformHandle()?.Handle;
+                if (popupHandle.HasValue && GetWindowRect(popupHandle.Value, out var rect))
+                {
+                    if (x >= rect.Left && x <= rect.Right && y >= rect.Top && y <= rect.Bottom)
+                        return true;
+                }
+            }
+        }
+        catch { }
+        return false;
     }
 
     private void OnPanelKeyDown(object? sender, KeyEventArgs e)
@@ -397,6 +563,7 @@ public abstract class SecondaryPanelWindow : Window
     public new void Close(object? dialogResult)
     {
         if (closeAnimationRunning) return;
+        UninstallOutsideClickHook();
 
         var card = PanelCard;
         if (card == null || !panelLoaded)

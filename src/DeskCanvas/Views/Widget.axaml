@@ -31,6 +31,10 @@
                 <MenuItem Header="2×2 (标准 200%)" Command="{Binding SetFixedSpanPreset}" CommandParameter="2x2" IsVisible="{Binding IsFixedSquareWidget}" />
                 <MenuItem Header="3×3 (中 300%)" Command="{Binding SetFixedSpanPreset}" CommandParameter="3x3" IsVisible="{Binding IsFixedSquareWidget}" />
                 <MenuItem Header="4×4 (大 400%)" Command="{Binding SetFixedSpanPreset}" CommandParameter="4x4" IsVisible="{Binding IsFixedSquareWidget}" />
+                <!-- 2x2 base square fixed widgets (e.g. FourDayForecast) -->
+                <MenuItem Header="2×2 (标准 100%)" Command="{Binding SetFixedSpanPreset}" CommandParameter="2x2" IsVisible="{Binding IsFixed2x2SquareWidget}" />
+                <MenuItem Header="3×3 (等比放大 150%)" Command="{Binding SetFixedSpanPreset}" CommandParameter="3x3" IsVisible="{Binding IsFixed2x2SquareWidget}" />
+                <MenuItem Header="4×4 (等比放大 200%)" Command="{Binding SetFixedSpanPreset}" CommandParameter="4x4" IsVisible="{Binding IsFixed2x2SquareWidget}" />
                 <!-- Map widget quick size presets (2x2, 4x2, 4x4) -->
                 <MenuItem Header="2×2 (小号方形 200%)" Command="{Binding SetFixedSpanPreset}" CommandParameter="2x2" IsVisible="{Binding IsMapWidget}" />
                 <MenuItem Header="4×2 (中号横版 400×200%)" Command="{Binding SetFixedSpanPreset}" CommandParameter="4x2" IsVisible="{Binding IsMapWidget}" />

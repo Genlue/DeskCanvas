@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <root>
   <!-- 
     Microsoft ResX Schema 
@@ -125,6 +125,12 @@
   </data>
   <data name="Weather_Forecast_Subtitle" xml:space="preserve">
     <value>查看某个地点的当前天气状况和预报</value>
+  </data>
+  <data name="Weather_FourDayForecast_Title" xml:space="preserve">
+    <value>四日预报</value>
+  </data>
+  <data name="Weather_FourDayForecast_Subtitle" xml:space="preserve">
+    <value>紧凑展示当前温度、今日高低温与未来四天天气预报</value>
   </data>
   <data name="Weather_Code_0" xml:space="preserve">
     <value>晴朗</value>

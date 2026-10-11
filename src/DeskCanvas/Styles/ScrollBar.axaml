@@ -1,0 +1,44 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!--  滚动条主题（全局素材）：Fluent 原生 ScrollBar 主题的叠加层，唯一改动是「展开态」。
+
+          原生 Fluent 的滚动条在鼠标进入其区域后会进入 IsExpanded 展开态，并把这个状态
+          「画」出来：Thumb 的 RenderTransform 被清成 none（16px 全宽）、TrackRect 的不透明度
+          抬到 1 并填上深色轨道、Root 铺一层深色、上下翻页箭头按钮 Opacity 置 1。深色模式下
+          这几项叠起来就是那个突兀的「大黑框」。
+
+          这里把展开态逐条钉回收起态的值 —— 于是悬停前后完全一致，只剩那条细长药丸。
+          做法：BasedOn 原生主题，只追加覆盖用的嵌套样式。同一个 ControlTheme 内、同优先级的
+          样式帧「后附着者胜出」，而这些 setter 是原生触发器之后才附着的，必定压过它
+          （App.axaml 的 Application.Styles 负责把 Theme 指过来）。  -->
+    <ControlTheme x:Key="DeskCanvasScrollBar"
+                  TargetType="ScrollBar"
+                  BasedOn="{StaticResource {x:Type ScrollBar}}">
+
+        <!--  展开时不再给整条滚动条铺底色（原生：ScrollBarBackgroundPointerOver）  -->
+        <Style Selector="^[IsExpanded=true] /template/ Grid#Root">
+            <Setter Property="Background" Value="Transparent" />
+        </Style>
+
+        <!--  展开时轨道保持收起态的不透明度 0（原生把它抬到 1 并填深色轨道）  -->
+        <Style Selector="^[IsExpanded=true] /template/ Rectangle#TrackRect">
+            <Setter Property="Opacity" Value="0" />
+        </Style>
+
+        <!--  展开时翻页 / 箭头按钮保持不可见（原生把它们 Opacity 置 1）  -->
+        <Style Selector="^[IsExpanded=true] /template/ RepeatButton">
+            <Setter Property="Opacity" Value="0" />
+        </Style>
+
+        <!--  展开时滑块保持收起态的缩放与配色，不再涨回 16px 全宽  -->
+        <Style Selector="^[IsExpanded=true]:vertical /template/ Thumb">
+            <Setter Property="RenderTransform" Value="{DynamicResource VerticalSmallScrollThumbScaleTransform}" />
+            <Setter Property="Background" Value="{DynamicResource ScrollBarPanningThumbBackground}" />
+        </Style>
+        <Style Selector="^[IsExpanded=true]:horizontal /template/ Thumb">
+            <Setter Property="RenderTransform" Value="{DynamicResource HorizontalSmallScrollThumbScaleTransform}" />
+            <Setter Property="Background" Value="{DynamicResource ScrollBarPanningThumbBackground}" />
+        </Style>
+    </ControlTheme>
+</ResourceDictionary>

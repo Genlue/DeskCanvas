@@ -3,4 +3,7 @@ using Avalonia.Media;
 
 namespace Weather.ViewModels;
 
-public record DailyForecastViewModel(string DayOfWeek, StreamGeometry Icon, string Min, string Max, List<GridLength> Graph);
+public record DailyForecastViewModel(string DayOfWeek, StreamGeometry Icon, string Min, string Max, List<GridLength> Graph)
+{
+    public string MinNumber => Min.TrimEnd('°');
+}

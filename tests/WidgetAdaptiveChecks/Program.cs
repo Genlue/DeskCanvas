@@ -76,6 +76,7 @@ internal static class Program
 
         CheckMinSizeMath();
         CheckControlBarDegradation();
+        CheckCalculatorWidgetAndEngine();
         WindowTopologyChecks.Run(Check);
 
         Console.WriteLine();
@@ -189,6 +190,54 @@ internal static class Program
         Check(NaturalBarWidth(floorBar) <= floorView.Bounds.Width + 0.5 || !floorExpand.IsVisible,
             "64×64: bar either fits or has collapsed to the last degradation level (never half-drawn)");
         floorWindow.Close();
+    }
+
+    private static void CheckCalculatorWidgetAndEngine()
+    {
+        Console.WriteLine();
+        Console.WriteLine("--- Calculator engine & 2x2 / 4x2 / 4x4 adaptive tier checks ---");
+
+        Check(Tools.Services.CalculatorEngine.TryEvaluate("(350 + 120) * 0.85", true, 0, out double r1, out _) && Math.Abs(r1 - 399.5) < 1e-9,
+            "Expression evaluation: (350 + 120) * 0.85 = 399.5");
+        Check(Tools.Services.CalculatorEngine.TryEvaluate("(30 × 12) + 25%", true, 0, out double r2, out _) && Math.Abs(r2 - 450) < 1e-9,
+            "Contextual percentage: (30 × 12) + 25% = 450");
+        Check(Tools.Services.CalculatorEngine.TryEvaluate("sin(30) + √(144) + 2^8", true, 0, out double r3, out _) && Math.Abs(r3 - 268.5) < 1e-9,
+            "Scientific functions (DEG): sin(30) + √(144) + 2^8 = 268.5");
+        Check(Tools.Services.CalculatorEngine.TryEvaluateProgrammer("FF & 0F", 16, out long p1) && p1 == 15,
+            "Programmer bitwise HEX: FF & 0F = 15");
+
+        foreach (var (w, h, expectedLayoutName) in new[]
+        {
+            (180.0, 180.0, "SmallLayout"),
+            (380.0, 180.0, "MediumLayout"),
+            (380.0, 380.0, "LargeLayout")
+        })
+        {
+            var calcView = new CalculatorView(new CalculatorModel());
+            var win = new Window
+            {
+                SystemDecorations = SystemDecorations.None,
+                ShowInTaskbar = false,
+                ShowActivated = false,
+                Width = w,
+                Height = h,
+                Content = calcView
+            };
+            win.Show();
+            Dispatcher.UIThread.RunJobs();
+            win.UpdateLayout();
+            Dispatcher.UIThread.RunJobs();
+            win.UpdateLayout();
+
+            var activeGrid = GetField<Grid>(calcView, expectedLayoutName)!;
+            var smallExpand = GetField<Button>(calcView, "SmallExpandBtn")!;
+            Check(activeGrid.IsVisible, $"CalculatorView {w}×{h} activates {expectedLayoutName}");
+            if (expectedLayoutName == "SmallLayout")
+            {
+                Check(smallExpand.IsVisible, $"CalculatorView {w}×{h} keeps secondary-panel expand button visible");
+            }
+            win.Close();
+        }
     }
 
     /// <summary>

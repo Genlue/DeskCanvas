@@ -1,0 +1,387 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:locales="clr-namespace:Tools.Locales"
+             x:Class="Tools.Views.CalculatorView">
+    <UserControl.Styles>
+        <Style Selector="Button.icon-btn">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="4" />
+            <Setter Property="CornerRadius" Value="6" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}" />
+        </Style>
+        <Style Selector="Button.icon-btn:pointerover">
+            <Setter Property="Background" Value="#25888888" />
+        </Style>
+
+        <Style Selector="Button.pill-btn">
+            <Setter Property="Background" Value="{DynamicResource CalculatorFuncButtonBackground}" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="7,3" />
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="CornerRadius" Value="{DynamicResource WidgetPillCornerRadius}" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}" />
+        </Style>
+        <Style Selector="Button.pill-btn:pointerover">
+            <Setter Property="Opacity" Value="0.85" />
+        </Style>
+        <Style Selector="Button.pill-btn.active">
+            <Setter Property="Background" Value="{DynamicResource CalculatorAccentBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource AccentContrastForegroundBrush}" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+        </Style>
+
+        <Style Selector="Border.calc-card">
+            <Setter Property="Background" Value="{DynamicResource CalculatorCardBackground}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource WidgetCardBorderBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="{DynamicResource WidgetInnerCornerRadius}" />
+        </Style>
+
+        <Style Selector="TextBox.expr-input">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="2" />
+            <Setter Property="FontSize" Value="12.5" />
+            <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}" />
+        </Style>
+        <Style Selector="TextBox.expr-input:focus /template/ Border#PART_BorderElement">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+        </Style>
+        <Style Selector="TextBox.expr-input:pointerover /template/ Border#PART_BorderElement">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+        </Style>
+
+        <Style Selector="Button.calc-num">
+            <Setter Property="Background" Value="{DynamicResource CalculatorNumButtonBackground}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource WidgetCardBorderBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="FontSize" Value="13.5" />
+            <Setter Property="FontWeight" Value="Medium" />
+            <Setter Property="HorizontalAlignment" Value="Stretch" />
+            <Setter Property="VerticalAlignment" Value="Stretch" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}" />
+        </Style>
+        <Style Selector="Button.calc-num:pointerover">
+            <Setter Property="Opacity" Value="0.82" />
+        </Style>
+
+        <Style Selector="Button.calc-func">
+            <Setter Property="Background" Value="{DynamicResource CalculatorFuncButtonBackground}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource WidgetCardBorderBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="FontWeight" Value="Medium" />
+            <Setter Property="HorizontalAlignment" Value="Stretch" />
+            <Setter Property="VerticalAlignment" Value="Stretch" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}" />
+        </Style>
+        <Style Selector="Button.calc-func:pointerover">
+            <Setter Property="Opacity" Value="0.82" />
+        </Style>
+
+        <Style Selector="Button.calc-op">
+            <Setter Property="Background" Value="{DynamicResource CalculatorOpButtonBackground}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource WidgetCardBorderBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="FontSize" Value="14.5" />
+            <Setter Property="FontWeight" Value="Bold" />
+            <Setter Property="HorizontalAlignment" Value="Stretch" />
+            <Setter Property="VerticalAlignment" Value="Stretch" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Foreground" Value="{DynamicResource CalculatorAccentBrush}" />
+        </Style>
+        <Style Selector="Button.calc-op:pointerover">
+            <Setter Property="Opacity" Value="0.82" />
+        </Style>
+
+        <Style Selector="Button.calc-eq">
+            <Setter Property="Background" Value="{DynamicResource CalculatorAccentBrush}" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="FontSize" Value="15" />
+            <Setter Property="FontWeight" Value="Bold" />
+            <Setter Property="HorizontalAlignment" Value="Stretch" />
+            <Setter Property="VerticalAlignment" Value="Stretch" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Foreground" Value="{DynamicResource AccentContrastForegroundBrush}" />
+        </Style>
+        <Style Selector="Button.calc-eq:pointerover">
+            <Setter Property="Opacity" Value="0.88" />
+        </Style>
+
+        <Style Selector="Border.mini-hist-row">
+            <Setter Property="Background" Value="{DynamicResource CalculatorNumButtonBackground}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource WidgetCardBorderBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="6" />
+            <Setter Property="Padding" Value="6,3" />
+            <Setter Property="Cursor" Value="Hand" />
+        </Style>
+        <Style Selector="Border.mini-hist-row:pointerover">
+            <Setter Property="Background" Value="{DynamicResource CalculatorFuncButtonBackground}" />
+        </Style>
+
+        <Style Selector=":is(UserControl).tier-small">
+            <Setter Property="Margin" Value="8,7" />
+        </Style>
+    </UserControl.Styles>
+
+    <Panel>
+        <!-- ==================== 1. 2x2 Small Layout (方案 B：表达式速算卡) ==================== -->
+        <Grid x:Name="SmallLayout" RowDefinitions="Auto,*,Auto" IsVisible="True">
+            <!-- Header -->
+            <Grid Grid.Row="0" ColumnDefinitions="*,Auto,Auto,Auto" Margin="0,0,0,4" VerticalAlignment="Center">
+                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="5" VerticalAlignment="Center"
+                            Cursor="Hand" PointerPressed="OnTitleOpenPanelPressed" ToolTip.Tip="点击打开计算器二级面板">
+                    <PathIcon Data="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-2 4H7V5h10v2zM9 17H7v-2h2v2zm0-4H7v-2h2v2zm4 4h-2v-2h2v2zm0-4h-2v-2h2v2zm4 4h-2v-6h2v6z"
+                              Width="13" Height="13" Foreground="{DynamicResource CalculatorAccentBrush}" />
+                    <TextBlock x:Name="SmallTitleText" Text="{x:Static locales:Locale.Tools_Calculator_Title}"
+                               FontSize="12.5" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"
+                               Foreground="{DynamicResource CalculatorAccentBrush}" VerticalAlignment="Center" />
+                </StackPanel>
+
+                <Button Grid.Column="1" x:Name="SmallClearBtn" Classes="icon-btn" Padding="3" Margin="2,0,0,0"
+                        Click="OnClearClicked" ToolTip.Tip="清空算式">
+                    <PathIcon Data="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"
+                              Width="10" Height="10" Opacity="0.65" />
+                </Button>
+                <Button Grid.Column="2" x:Name="SmallCopyBtn" Classes="icon-btn" Padding="3" Margin="1,0,0,0"
+                        Click="OnCopyResultClicked" ToolTip.Tip="复制计算结果">
+                    <PathIcon Data="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"
+                              Width="11" Height="11" Opacity="0.7" />
+                </Button>
+                <Button Grid.Column="3" x:Name="SmallExpandBtn" Classes="icon-btn" Padding="3" Margin="1,0,0,0"
+                        Click="OnOpenPanelClicked" ToolTip.Tip="展开科学/程序员/换算二级面板">
+                    <PathIcon Data="M15 3l2.3 2.3-2.89 2.87 1.42 1.42L18.7 6.7 21 9V3h-6zM3 9l2.3-2.3 2.87 2.89 1.42-1.42L6.7 5.3 9 3H3v6zm6 12l-2.3-2.3 2.89-2.87-1.42-1.42L5.3 17.3 3 15v6h6zm12-6l-2.3 2.3-2.87-2.89-1.42 1.42 2.89 2.87L15 21h6v-6z"
+                              Width="11" Height="11" Opacity="0.75" />
+                </Button>
+            </Grid>
+
+            <!-- Expression Box & Live Result Card -->
+            <Border Grid.Row="1" x:Name="SmallDisplayCard" Classes="calc-card" Padding="8,5" Margin="0,0,0,4">
+                <Grid RowDefinitions="*,Auto">
+                    <TextBox Grid.Row="0" x:Name="SmallExpressionBox" Classes="expr-input"
+                             FontSize="12" TextAlignment="Left"
+                             Watermark="输入算式回车求值..."
+                             TextChanged="OnSmallExpressionChanged"
+                             KeyDown="OnExpressionKeyDown" />
+                    <Grid Grid.Row="1" ColumnDefinitions="Auto,*" VerticalAlignment="Bottom" Margin="0,2,0,0">
+                        <TextBlock Grid.Column="0" Text="=" FontSize="14" FontWeight="Bold"
+                                   Foreground="{DynamicResource CalculatorAccentBrush}" VerticalAlignment="Center" Margin="2,0,4,0" />
+                        <TextBlock Grid.Column="1" x:Name="SmallResultText" Text="0"
+                                   FontSize="18" FontWeight="Bold" TextAlignment="Right"
+                                   TextTrimming="CharacterEllipsis" Cursor="Hand"
+                                   Foreground="{DynamicResource CalculatorAccentBrush}"
+                                   PointerPressed="OnResultPointerPressed"
+                                   ToolTip.Tip="点击复制结果 · 按回车保存记录" />
+                    </Grid>
+                </Grid>
+            </Border>
+
+            <!-- Recent 2 History Items -->
+            <StackPanel Grid.Row="2" x:Name="SmallHistoryList" Spacing="3" />
+        </Grid>
+
+        <!-- ==================== 2. 4x2 Medium Layout (左屏显+历史 / 右 5x4 键盘) ==================== -->
+        <Grid x:Name="MediumLayout" ColumnDefinitions="5*,7,7*" IsVisible="False">
+            <!-- Left Display & History Column -->
+            <Border Grid.Column="0" x:Name="MediumDisplayCard" Classes="calc-card" Padding="9,7">
+                <Grid RowDefinitions="Auto,*,Auto">
+                    <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto,Auto,Auto" Margin="0,0,0,2" VerticalAlignment="Center">
+                        <Button Grid.Column="0" x:Name="MedAngleBtn" Classes="pill-btn" Padding="5,1" FontSize="10"
+                                Content="DEG" Click="OnAngleToggleClicked" ToolTip.Tip="切换 DEG / RAD" />
+                        <Button Grid.Column="2" Classes="icon-btn" Padding="3" Click="OnClearClicked" ToolTip.Tip="清空">
+                            <PathIcon Data="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"
+                                      Width="10" Height="10" Opacity="0.65" />
+                        </Button>
+                        <Button Grid.Column="3" Classes="icon-btn" Padding="3" Click="OnCopyResultClicked" ToolTip.Tip="复制结果">
+                            <PathIcon Data="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"
+                                      Width="10.5" Height="10.5" Opacity="0.7" />
+                        </Button>
+                        <Button Grid.Column="4" Classes="icon-btn" Padding="3" Click="OnOpenPanelClicked" ToolTip.Tip="展开二级面板">
+                            <PathIcon Data="M15 3l2.3 2.3-2.89 2.87 1.42 1.42L18.7 6.7 21 9V3h-6zM3 9l2.3-2.3 2.87 2.89 1.42-1.42L6.7 5.3 9 3H3v6zm6 12l-2.3-2.3 2.89-2.87-1.42-1.42L5.3 17.3 3 15v6h6zm12-6l-2.3 2.3-2.87-2.89-1.42 1.42 2.89 2.87L15 21h6v-6z"
+                                      Width="10.5" Height="10.5" Opacity="0.75" />
+                        </Button>
+                    </Grid>
+
+                    <!-- Expression & Big Result -->
+                    <StackPanel Grid.Row="1" VerticalAlignment="Center" Spacing="1">
+                        <TextBox x:Name="MedExpressionBox" Classes="expr-input" FontSize="12" TextAlignment="Right"
+                                 Watermark="0"
+                                 TextChanged="OnMedExpressionChanged"
+                                 KeyDown="OnExpressionKeyDown" />
+                        <TextBlock x:Name="MedResultText" Text="0" FontSize="20" FontWeight="Bold"
+                                   TextAlignment="Right" TextTrimming="CharacterEllipsis" Cursor="Hand"
+                                   Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}"
+                                   PointerPressed="OnResultPointerPressed" ToolTip.Tip="点击复制结果" />
+                    </StackPanel>
+
+                    <!-- Bottom 2 History Rows -->
+                    <Border Grid.Row="2" BorderBrush="{DynamicResource WidgetCardBorderBrush}" BorderThickness="0,1,0,0"
+                            Padding="0,4,0,0" Margin="0,4,0,0">
+                        <StackPanel x:Name="MedHistoryList" Spacing="2" />
+                    </Border>
+                </Grid>
+            </Border>
+
+            <!-- Right 5x4 Ergonomic Keypad -->
+            <Grid Grid.Column="2" ColumnDefinitions="*,*,*,*,*" RowDefinitions="*,*,*,*">
+                <Button Grid.Row="0" Grid.Column="0" Classes="calc-num" Margin="0,0,2,2" Content="7" Tag="7" Click="OnKeypadTokenClicked" />
+                <Button Grid.Row="0" Grid.Column="1" Classes="calc-num" Margin="2,0,2,2" Content="8" Tag="8" Click="OnKeypadTokenClicked" />
+                <Button Grid.Row="0" Grid.Column="2" Classes="calc-num" Margin="2,0,2,2" Content="9" Tag="9" Click="OnKeypadTokenClicked" />
+                <Button Grid.Row="0" Grid.Column="3" Classes="calc-op" Margin="2,0,2,2" Content="÷" Tag="÷" Click="OnKeypadTokenClicked" />
+                <Button Grid.Row="0" Grid.Column="4" Classes="calc-func" Margin="2,0,0,2" Content="C" Click="OnClearClicked" />
+
+                <Button Grid.Row="1" Grid.Column="0" Classes="calc-num" Margin="0,2,2,2" Content="4" Tag="4" Click="OnKeypadTokenClicked" />
+                <Button Grid.Row="1" Grid.Column="1" Classes="calc-num" Margin="2,2,2,2" Content="5" Tag="5" Click="OnKeypadTokenClicked" />
+                <Button Grid.Row="1" Grid.Column="2" Classes="calc-num" Margin="2,2,2,2" Content="6" Tag="6" Click="OnKeypadTokenClicked" />
+                <Button Grid.Row="1" Grid.Column="3" Classes="calc-op" Margin="2,2,2,2" Content="×" Tag="×" Click="OnKeypadTokenClicked" />
+                <Button Grid.Row="1" Grid.Column="4" Classes="calc-func" Margin="2,2,0,2" Content="⌫" Click="OnBackspaceClicked" />
+
+                <Button Grid.Row="2" Grid.Column="0" Classes="calc-num" Margin="0,2,2,2" Content="1" Tag="1" Click="OnKeypadTokenClicked" />
+                <Button Grid.Row="2" Grid.Column="1" Classes="calc-num" Margin="2,2,2,2" Content="2" Tag="2" Click="OnKeypadTokenClicked" />
+                <Button Grid.Row="2" Grid.Column="2" Classes="calc-num" Margin="2,2,2,2" Content="3" Tag="3" Click="OnKeypadTokenClicked" />
+                <Button Grid.Row="2" Grid.Column="3" Classes="calc-op" Margin="2,2,2,2" Content="−" Tag="−" Click="OnKeypadTokenClicked" />
+                <Button Grid.Row="2" Grid.Column="4" Classes="calc-func" Margin="2,2,0,2" Content="%" Tag="%" Click="OnKeypadTokenClicked" />
+
+                <Button Grid.Row="3" Grid.Column="0" Classes="calc-func" Margin="0,2,2,0" Content="( )" Click="OnSmartParenClicked" />
+                <Button Grid.Row="3" Grid.Column="1" Classes="calc-num" Margin="2,2,2,0" Content="0" Tag="0" Click="OnKeypadTokenClicked" />
+                <Button Grid.Row="3" Grid.Column="2" Classes="calc-num" Margin="2,2,2,0" Content="." Tag="." Click="OnKeypadTokenClicked" />
+                <Button Grid.Row="3" Grid.Column="3" Classes="calc-op" Margin="2,2,2,0" Content="+" Tag="+" Click="OnKeypadTokenClicked" />
+                <Button Grid.Row="3" Grid.Column="4" Classes="calc-eq" Margin="2,2,0,0" Content="=" Click="OnEvaluateClicked" />
+            </Grid>
+        </Grid>
+
+        <!-- ==================== 3. 4x4 Large Layout (完整桌面计算工作台) ==================== -->
+        <Grid x:Name="LargeLayout" RowDefinitions="Auto,Auto,*" IsVisible="False">
+            <!-- Top Toolbar -->
+            <Grid Grid.Row="0" ColumnDefinitions="Auto,Auto,Auto,*,Auto,Auto,Auto" Margin="0,0,0,6" VerticalAlignment="Center">
+                <Button Grid.Column="0" x:Name="LargeKeypadModeBtn" Classes="pill-btn active" Content="标准/科学"
+                        Margin="0,0,4,0" Click="OnLargeKeypadModeClicked" />
+                <Button Grid.Column="1" x:Name="LargeHistoryModeBtn" Classes="pill-btn" Content="历史 (0)"
+                        Margin="0,0,4,0" Click="OnLargeHistoryModeClicked" />
+                <Button Grid.Column="2" x:Name="LargeAngleBtn" Classes="pill-btn" Content="DEG"
+                        Click="OnAngleToggleClicked" ToolTip.Tip="切换角度制 (DEG) / 弧度制 (RAD)" />
+
+                <Button Grid.Column="4" Classes="icon-btn" Padding="4" Click="OnClearClicked" ToolTip.Tip="清空算式">
+                    <PathIcon Data="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"
+                              Width="11" Height="11" Opacity="0.65" />
+                </Button>
+                <Button Grid.Column="5" Classes="icon-btn" Padding="4" Click="OnCopyResultClicked" ToolTip.Tip="复制计算结果">
+                    <PathIcon Data="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"
+                              Width="11.5" Height="11.5" Opacity="0.7" />
+                </Button>
+                <Button Grid.Column="6" Classes="icon-btn" Padding="4" Click="OnOpenPanelClicked" ToolTip.Tip="展开科学/程序员/单位换算二级面板">
+                    <PathIcon Data="M15 3l2.3 2.3-2.89 2.87 1.42 1.42L18.7 6.7 21 9V3h-6zM3 9l2.3-2.3 2.87 2.89 1.42-1.42L6.7 5.3 9 3H3v6zm6 12l-2.3-2.3 2.89-2.87-1.42-1.42L5.3 17.3 3 15v6h6zm12-6l-2.3 2.3-2.87-2.89-1.42 1.42 2.89 2.87L15 21h6v-6z"
+                              Width="11.5" Height="11.5" Opacity="0.75" />
+                </Button>
+            </Grid>
+
+            <!-- Display Card with Recent Tape Preview -->
+            <Border Grid.Row="1" x:Name="LargeDisplayCard" Classes="calc-card" Padding="10,7" Margin="0,0,0,6">
+                <StackPanel Spacing="2">
+                    <StackPanel x:Name="LargeTapePreviewList" Spacing="1" Margin="0,0,0,2" />
+                    <TextBox x:Name="LargeExpressionBox" Classes="expr-input" FontSize="13.5" TextAlignment="Right"
+                             Watermark="{x:Static locales:Locale.Tools_Calculator_InputHint}"
+                             TextChanged="OnLargeExpressionChanged"
+                             KeyDown="OnExpressionKeyDown" />
+                    <TextBlock x:Name="LargeResultText" Text="0" FontSize="24" FontWeight="Bold"
+                               TextAlignment="Right" TextTrimming="CharacterEllipsis" Cursor="Hand"
+                               Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}"
+                               PointerPressed="OnResultPointerPressed" ToolTip.Tip="点击复制结果" />
+                </StackPanel>
+            </Border>
+
+            <!-- Lower Area: Switchable between Keypad and Full History -->
+            <Panel Grid.Row="2">
+                <!-- Keypad Container -->
+                <Grid x:Name="LargeKeypadContainer" RowDefinitions="Auto,*">
+                    <!-- Scientific Quick Row (5 buttons) -->
+                    <Grid Grid.Row="0" ColumnDefinitions="*,*,*,*,*" Height="30" Margin="0,0,0,4">
+                        <Button Grid.Column="0" Classes="calc-func" Margin="0,0,2,0" Content="(" Tag="(" Click="OnKeypadTokenClicked" />
+                        <Button Grid.Column="1" Classes="calc-func" Margin="2,0,2,0" Content=")" Tag=")" Click="OnKeypadTokenClicked" />
+                        <Button Grid.Column="2" Classes="calc-func" Margin="2,0,2,0" Content="x²" Tag="²" Click="OnKeypadTokenClicked" />
+                        <Button Grid.Column="3" Classes="calc-func" Margin="2,0,2,0" Content="√x" Tag="√(" Click="OnKeypadTokenClicked" />
+                        <Button Grid.Column="4" Classes="calc-func" Margin="2,0,0,0" Content="xʸ" Tag="^" Click="OnKeypadTokenClicked" />
+                    </Grid>
+
+                    <!-- Standard 4x5 Keypad -->
+                    <Grid Grid.Row="1" ColumnDefinitions="*,*,*,*" RowDefinitions="*,*,*,*,*">
+                        <Button Grid.Row="0" Grid.Column="0" Classes="calc-func" Margin="0,0,2,2" Content="C" Click="OnClearClicked" />
+                        <Button Grid.Row="0" Grid.Column="1" Classes="calc-func" Margin="2,0,2,2" Content="⌫" Click="OnBackspaceClicked" />
+                        <Button Grid.Row="0" Grid.Column="2" Classes="calc-func" Margin="2,0,2,2" Content="%" Tag="%" Click="OnKeypadTokenClicked" />
+                        <Button Grid.Row="0" Grid.Column="3" Classes="calc-op" Margin="2,0,0,2" Content="÷" Tag="÷" Click="OnKeypadTokenClicked" />
+
+                        <Button Grid.Row="1" Grid.Column="0" Classes="calc-num" Margin="0,2,2,2" Content="7" Tag="7" Click="OnKeypadTokenClicked" />
+                        <Button Grid.Row="1" Grid.Column="1" Classes="calc-num" Margin="2,2,2,2" Content="8" Tag="8" Click="OnKeypadTokenClicked" />
+                        <Button Grid.Row="1" Grid.Column="2" Classes="calc-num" Margin="2,2,2,2" Content="9" Tag="9" Click="OnKeypadTokenClicked" />
+                        <Button Grid.Row="1" Grid.Column="3" Classes="calc-op" Margin="2,2,0,2" Content="×" Tag="×" Click="OnKeypadTokenClicked" />
+
+                        <Button Grid.Row="2" Grid.Column="0" Classes="calc-num" Margin="0,2,2,2" Content="4" Tag="4" Click="OnKeypadTokenClicked" />
+                        <Button Grid.Row="2" Grid.Column="1" Classes="calc-num" Margin="2,2,2,2" Content="5" Tag="5" Click="OnKeypadTokenClicked" />
+                        <Button Grid.Row="2" Grid.Column="2" Classes="calc-num" Margin="2,2,2,2" Content="6" Tag="6" Click="OnKeypadTokenClicked" />
+                        <Button Grid.Row="2" Grid.Column="3" Classes="calc-op" Margin="2,2,0,2" Content="−" Tag="−" Click="OnKeypadTokenClicked" />
+
+                        <Button Grid.Row="3" Grid.Column="0" Classes="calc-num" Margin="0,2,2,2" Content="1" Tag="1" Click="OnKeypadTokenClicked" />
+                        <Button Grid.Row="3" Grid.Column="1" Classes="calc-num" Margin="2,2,2,2" Content="2" Tag="2" Click="OnKeypadTokenClicked" />
+                        <Button Grid.Row="3" Grid.Column="2" Classes="calc-num" Margin="2,2,2,2" Content="3" Tag="3" Click="OnKeypadTokenClicked" />
+                        <Button Grid.Row="3" Grid.Column="3" Classes="calc-op" Margin="2,2,0,2" Content="+" Tag="+" Click="OnKeypadTokenClicked" />
+
+                        <Button Grid.Row="4" Grid.Column="0" Classes="calc-func" Margin="0,2,2,0" Content="±" Click="OnNegateClicked" />
+                        <Button Grid.Row="4" Grid.Column="1" Classes="calc-num" Margin="2,2,2,0" Content="0" Tag="0" Click="OnKeypadTokenClicked" />
+                        <Button Grid.Row="4" Grid.Column="2" Classes="calc-num" Margin="2,2,2,0" Content="." Tag="." Click="OnKeypadTokenClicked" />
+                        <Button Grid.Row="4" Grid.Column="3" Classes="calc-eq" Margin="2,2,0,0" Content="=" Click="OnEvaluateClicked" />
+                    </Grid>
+                </Grid>
+
+                <!-- Full History Tape Container (in 4x4) -->
+                <Border x:Name="LargeHistoryContainer" Classes="calc-card" Padding="8,6" IsVisible="False">
+                    <Grid RowDefinitions="Auto,*">
+                        <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="0,0,0,4">
+                            <TextBlock Text="点击任意记录回填算式或复制" FontSize="11"
+                                       Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}" VerticalAlignment="Center" />
+                            <Button Grid.Column="1" Classes="pill-btn" Padding="6,2" FontSize="10.5"
+                                    Content="{x:Static locales:Locale.Tools_Calculator_ClearHistory}"
+                                    Click="OnClearHistoryClicked" />
+                        </Grid>
+                        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                            <StackPanel x:Name="LargeFullHistoryList" Spacing="4" />
+                        </ScrollViewer>
+                    </Grid>
+                </Border>
+            </Panel>
+        </Grid>
+
+        <!-- Toast Banner -->
+        <Border x:Name="ToastBanner" IsVisible="False" HorizontalAlignment="Center" VerticalAlignment="Bottom"
+                Margin="0,0,0,6" Padding="10,4" CornerRadius="12"
+                Background="{DynamicResource CalculatorAccentBrush}">
+            <TextBlock x:Name="ToastText" Text="已复制" FontSize="11" FontWeight="SemiBold"
+                       Foreground="{DynamicResource AccentContrastForegroundBrush}" />
+        </Border>
+    </Panel>
+</UserControl>

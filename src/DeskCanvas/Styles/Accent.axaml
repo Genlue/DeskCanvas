@@ -78,6 +78,11 @@
                     <SolidColorBrush x:Key="FolderAccentBrush" Color="{DynamicResource SystemAccentColorDark1}" />
                     <SolidColorBrush x:Key="TranslateAccentBrush" Color="{DynamicResource SystemAccentColorDark1}" />
                     <SolidColorBrush x:Key="TranslateCardBackground" Color="Transparent" />
+                    <SolidColorBrush x:Key="CalculatorAccentBrush" Color="{DynamicResource SystemAccentColorDark1}" />
+                    <SolidColorBrush x:Key="CalculatorCardBackground" Color="Transparent" />
+                    <SolidColorBrush x:Key="CalculatorNumButtonBackground" Color="#12808080" />
+                    <SolidColorBrush x:Key="CalculatorFuncButtonBackground" Color="#20808080" />
+                    <SolidColorBrush x:Key="CalculatorOpButtonBackground" Color="#20808080" />
                     <SolidColorBrush x:Key="ProgressMoveBrush" Color="{DynamicResource SystemAccentColorDark1}" />
                     <SolidColorBrush x:Key="ProgressExerciseBrush" Color="{DynamicResource SystemAccentColorDark1}" />
                     <SolidColorBrush x:Key="ProgressStandBrush" Color="{DynamicResource SystemAccentColorDark1}" />
@@ -145,6 +150,11 @@
                     <SolidColorBrush x:Key="FolderAccentBrush" Color="{DynamicResource SystemAccentColorLight2}" />
                     <SolidColorBrush x:Key="TranslateAccentBrush" Color="{DynamicResource SystemAccentColorLight2}" />
                     <SolidColorBrush x:Key="TranslateCardBackground" Color="Transparent" />
+                    <SolidColorBrush x:Key="CalculatorAccentBrush" Color="{DynamicResource SystemAccentColorLight2}" />
+                    <SolidColorBrush x:Key="CalculatorCardBackground" Color="Transparent" />
+                    <SolidColorBrush x:Key="CalculatorNumButtonBackground" Color="#16808080" />
+                    <SolidColorBrush x:Key="CalculatorFuncButtonBackground" Color="#24808080" />
+                    <SolidColorBrush x:Key="CalculatorOpButtonBackground" Color="#24808080" />
                     <SolidColorBrush x:Key="ProgressMoveBrush" Color="{DynamicResource SystemAccentColorLight2}" />
                     <SolidColorBrush x:Key="ProgressExerciseBrush" Color="{DynamicResource SystemAccentColorLight2}" />
                     <SolidColorBrush x:Key="ProgressStandBrush" Color="{DynamicResource SystemAccentColorLight2}" />

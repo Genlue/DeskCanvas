@@ -1,4 +1,4 @@
-﻿<Window xmlns="https://github.com/avaloniaui"
+<Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:viewModels="clr-namespace:Weather.ViewModels"
         xmlns:locales="clr-namespace:Weather.Locales"
@@ -39,7 +39,7 @@
         </Style>
     </Window.Styles>
 
-    <Panel Background="Transparent" PointerPressed="OnRootPointerPressed">
+    <Panel Background="Transparent">
         <!-- Main Card Border with Zoom Transform -->
         <Border x:Name="CardBorder"
                 Margin="0"

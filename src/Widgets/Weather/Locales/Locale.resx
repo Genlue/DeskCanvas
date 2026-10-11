@@ -27,6 +27,12 @@
     <data name="Weather_Forecast_Subtitle" xml:space="preserve">
         <value>See the current weather conditions and forecast for a location</value>
     </data>
+    <data name="Weather_FourDayForecast_Title" xml:space="preserve">
+        <value>4-Day Forecast</value>
+    </data>
+    <data name="Weather_FourDayForecast_Subtitle" xml:space="preserve">
+        <value>See current temperature, today's high/low, and upcoming 4-day forecast</value>
+    </data>
     <data name="Weather_Code_0" xml:space="preserve">
         <value>Clear</value>
     </data>
