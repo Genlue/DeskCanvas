@@ -28,9 +28,9 @@ public class AppSettingsProvider() : JsonParser<AppSettings>(Const.AppSettingsFi
         }
 
         var layout = settings.Layout;
-        if ((int)layout.GridMode == 1)
+        if (layout.GridMode != GridMode.Manual || layout.LockSize)
         {
-            layout = layout with { GridMode = GridMode.Manual };
+            layout = layout with { GridMode = GridMode.Manual, LockSize = false };
         }
 
         return settings with

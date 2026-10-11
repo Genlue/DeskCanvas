@@ -8,14 +8,8 @@ using DeskCanvas.Core.Models;
 using DeskCanvas.Core.Models.Settings;
 using DeskCanvas.Locales;
 using DeskCanvas.Services;
-using GridModeEnum = DeskCanvas.Core.Models.Settings.GridMode;
 
 namespace DeskCanvas.ViewModels;
-
-/// <summary>
-/// A grid-mode option shown in the grid mode picker.
-/// </summary>
-public record GridModeOption(string Label, GridMode Value);
 
 /// <summary>
 /// An HTTP proxy option shown in the proxy picker.
@@ -127,14 +121,9 @@ public class AdvancedViewModel : ReactiveObject, IDisposable
 
     private void RaiseAllPropertiesUnsafe()
     {
-        this.RaisePropertyChanged(nameof(GridMode));
-        this.RaisePropertyChanged(nameof(IsManualGrid));
         this.RaisePropertyChanged(nameof(ScreenTargets));
         this.RaisePropertyChanged(nameof(SelectedScreenTarget));
         RaiseGridProperties();
-        this.RaisePropertyChanged(nameof(SnapSize));
-        this.RaisePropertyChanged(nameof(LockSize));
-        this.RaisePropertyChanged(nameof(SnapPosition));
         this.RaisePropertyChanged(nameof(LockPosition));
         this.RaisePropertyChanged(nameof(ProxyMode));
         this.RaisePropertyChanged(nameof(ProxyCustomUrl));
@@ -263,28 +252,7 @@ public class AdvancedViewModel : ReactiveObject, IDisposable
         RaiseGridProperties();
     }
 
-    // ---------- Grid mode ----------
-
-    public GridModeOption[] GridModes =>
-    [
-        new(Locale.Settings_Advanced_GridMode_Manual, GridModeEnum.Manual),
-        new(Locale.Settings_Advanced_GridMode_Free, GridModeEnum.Free)
-    ];
-
-    public GridModeOption GridMode
-    {
-        get => GridModes.FirstOrDefault(mode => mode.Value == appSettingsProvider.Get().Layout.GridMode)
-               ?? GridModes[0];
-        set
-        {
-            var settings = appSettingsProvider.Get();
-            var newLayout = settings.Layout with { GridMode = value.Value };
-            appSettingsProvider.Save(settings with { Layout = newLayout });
-            this.RaisePropertyChanged(nameof(IsManualGrid));
-        }
-    }
-
-    public bool IsManualGrid => appSettingsProvider.Get().Layout.GridMode == GridModeEnum.Manual;
+    // ---------- Grid ----------
 
     public int GridColumns
     {
@@ -316,27 +284,7 @@ public class AdvancedViewModel : ReactiveObject, IDisposable
         set => SaveGrid(EffectiveGrid with { YPercent = Math.Clamp(value, 0, 100) });
     }
 
-    // ---------- Sizing ----------
-
-    public bool SnapPosition
-    {
-        get => appSettingsProvider.Get().Layout.SnapPosition;
-        set
-        {
-            var settings = appSettingsProvider.Get();
-            appSettingsProvider.Save(settings with { Layout = settings.Layout with { SnapPosition = value } });
-        }
-    }
-
-    public bool SnapSize
-    {
-        get => appSettingsProvider.Get().Layout.SnapSize;
-        set
-        {
-            var settings = appSettingsProvider.Get();
-            appSettingsProvider.Save(settings with { Layout = settings.Layout with { SnapSize = value } });
-        }
-    }
+    // ---------- Positioning ----------
 
     public bool LockPosition
     {
@@ -345,16 +293,6 @@ public class AdvancedViewModel : ReactiveObject, IDisposable
         {
             var settings = appSettingsProvider.Get();
             appSettingsProvider.Save(settings with { Layout = settings.Layout with { LockPosition = value } });
-        }
-    }
-
-    public bool LockSize
-    {
-        get => appSettingsProvider.Get().Layout.LockSize;
-        set
-        {
-            var settings = appSettingsProvider.Get();
-            appSettingsProvider.Save(settings with { Layout = settings.Layout with { LockSize = value } });
         }
     }
 

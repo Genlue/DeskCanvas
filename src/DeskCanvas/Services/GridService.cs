@@ -11,52 +11,34 @@ public class GridService(IAppSettingsProvider appSettingsProvider, DisplayMonito
 {
     public void SetSize(Widget window, int columns, int rows)
     {
-        var settings = appSettingsProvider.Get();
-
         // Manual grid mode: widget size is driven by the grid cell size (span × cell).
         // Grid metrics are physical pixels; window sizes are DIPs → convert.
-        if (settings.Layout.GridMode == GridMode.Manual)
-        {
-            var cell = GetGridMetrics(window).cell / GetScaling(window);
-            window.Width = columns * cell;
-            window.Height = rows * cell;
-            return;
-        }
-
-        // Free mode presets: 80px per unit base
-        window.Width = Math.Max(48, columns * 80);
-        window.Height = Math.Max(48, rows * 80);
+        var cell = GetGridMetrics(window).cell / GetScaling(window);
+        window.Width = columns * cell;
+        window.Height = rows * cell;
     }
 
     public void SnapSize(Widget window)
     {
-        if (appSettingsProvider.Get().Layout.GridMode == GridMode.Manual)
-        {
-            var cell = GetGridMetrics(window).cell / GetScaling(window);
-            window.Width = Math.Max(cell, (int) Math.Round(window.Width / (double) cell) * cell);
-            window.Height = Math.Max(cell, (int) Math.Round(window.Height / (double) cell) * cell);
-        }
-        // In Free mode: no size snapping
+        var cell = GetGridMetrics(window).cell / GetScaling(window);
+        window.Width = Math.Max(cell, (int) Math.Round(window.Width / (double) cell) * cell);
+        window.Height = Math.Max(cell, (int) Math.Round(window.Height / (double) cell) * cell);
     }
 
     public void SnapPosition(Widget window)
     {
-        if (appSettingsProvider.Get().Layout.GridMode == GridMode.Manual)
-        {
-            var scaling = GetScaling(window);
-            var (cell, gridX, gridY) = GetGridMetrics(window);
-            var x = gridX + SnapToCell(window.Position.X - gridX, cell);
-            var y = gridY + SnapToCell(window.Position.Y - gridY, cell);
-            // Keep the whole card inside the grid area: a snapped position beyond
-            // the last column/row used to leave widgets floating off the grid.
-            var (columns, rows) = GetGridExtent(window);
-            var width = (int) Math.Round(window.Width * scaling);
-            var height = (int) Math.Round(window.Height * scaling);
-            x = ClampToGrid(x, gridX, columns * cell, width);
-            y = ClampToGrid(y, gridY, rows * cell, height);
-            window.Position = new PixelPoint(x, y);
-        }
-        // In Free mode: no position snapping
+        var scaling = GetScaling(window);
+        var (cell, gridX, gridY) = GetGridMetrics(window);
+        var x = gridX + SnapToCell(window.Position.X - gridX, cell);
+        var y = gridY + SnapToCell(window.Position.Y - gridY, cell);
+        // Keep the whole card inside the grid area: a snapped position beyond
+        // the last column/row used to leave widgets floating off the grid.
+        var (columns, rows) = GetGridExtent(window);
+        var width = (int) Math.Round(window.Width * scaling);
+        var height = (int) Math.Round(window.Height * scaling);
+        x = ClampToGrid(x, gridX, columns * cell, width);
+        y = ClampToGrid(y, gridY, rows * cell, height);
+        window.Position = new PixelPoint(x, y);
     }
 
     /// <summary>
@@ -124,27 +106,5 @@ public class GridService(IAppSettingsProvider appSettingsProvider, DisplayMonito
     {
         var units = (int) Math.Round(offset / (double) cellSize);
         return units * cellSize;
-    }
-
-    private int SnapDimension(double pixels, double scaling = 1.0, bool addMargin = false, int minValue = 1)
-    {
-        var dimensions = appSettingsProvider.Get().Dimensions;
-        var size = dimensions.Size;
-        var margin = dimensions.Margin;
-        var units = (int) Math.Max(minValue, Math.Round(pixels / (scaling * (size + margin))));
-
-        return GetSize(units, scaling, addMargin);
-    }
-
-    private int GetSize(int units, double scaling = 1.0, bool addMargin = false)
-    {
-        var dimensions = appSettingsProvider.Get().Dimensions;
-        var size = dimensions.Size;
-        var margin = dimensions.Margin;
-
-        if (addMargin)
-            return (int) (scaling * units * (size + margin) + scaling * margin);
-
-        return (int) (scaling * units * (size + margin) - scaling * margin);
     }
 }

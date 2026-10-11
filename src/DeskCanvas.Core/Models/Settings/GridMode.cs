@@ -14,13 +14,14 @@ public enum GridMode
     Manual = 0,
 
     /// <summary>
-    /// Free layout: no grid at all, widgets can be positioned and sized freely.
+    /// Deprecated: Free layout mode has been removed.
     /// </summary>
+    [System.Obsolete("Free layout has been removed. Use Manual.")]
     Free = 2,
 
     /// <summary>
     /// Deprecated: Virtual grid mode has been removed.
     /// </summary>
-    [System.Obsolete("Virtual grid has been removed. Use Manual or Free.")]
+    [System.Obsolete("Virtual grid has been removed. Use Manual.")]
     Virtual = 1
 }

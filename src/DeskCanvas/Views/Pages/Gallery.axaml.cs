@@ -302,23 +302,10 @@ public partial class Gallery : UserControl, INotifyPropertyChanged
         var area = screen.WorkingArea;
         var scaling = screen.Scaling;
 
-        int width;
-        int height;
-
-        if (settings.Layout.GridMode != GridMode.Manual)
-        {
-            // Free placement (no grid): tile the working area with the widget's own
-            // footprint (left → right, top → bottom), first slot without overlap wins.
-            width = (int) (defaultCols * settings.Dimensions.Size + (defaultCols - 1) * settings.Dimensions.Margin);
-            height = (int) (defaultRows * settings.Dimensions.Size + (defaultRows - 1) * settings.Dimensions.Margin);
-            var (freeX, freeY) = FindFreeSpot(screenConfig.Layout, area, scaling, width, height);
-            return (freeX, freeY, width, height);
-        }
-
         var grid = screenConfig.Grid ?? settings.Grid ?? DeskCanvas.Core.Models.Settings.Grid.Default;
         var (cell, gridX, gridY) = GridMetrics.Resolve(grid, area.X, area.Y, area.Width, area.Height);
-        width = (int) Math.Round(defaultCols * cell / scaling);
-        height = (int) Math.Round(defaultRows * cell / scaling);
+        var width = (int) Math.Round(defaultCols * cell / scaling);
+        var height = (int) Math.Round(defaultRows * cell / scaling);
         var widthPhys = (int) Math.Round(width * scaling);
         var heightPhys = (int) Math.Round(height * scaling);
 
@@ -344,34 +331,6 @@ public partial class Gallery : UserControl, INotifyPropertyChanged
         return (gridX - area.X, gridY - area.Y, width, height);
     }
 
-    /// <summary>
-    /// Scan the working area with the widget's own footprint as the step
-    /// (left → right, top → bottom) for the first position that does not intersect
-    /// any widget already on the screen; the working-area origin is the "full"
-    /// fallback. Returns coordinates relative to the working area.
-    /// </summary>
-    private (int X, int Y) FindFreeSpot(
-        IReadOnlyList<WidgetLayout> layout, PixelRect area, double scaling, int widthDip, int heightDip)
-    {
-        var widthPhys = Math.Max(1, (int) Math.Round(widthDip * scaling));
-        var heightPhys = Math.Max(1, (int) Math.Round(heightDip * scaling));
-        var columns = Math.Max(1, area.Width / widthPhys);
-        var rows = Math.Max(1, area.Height / heightPhys);
-
-        for (var row = 0; row < rows; row++)
-        {
-            for (var col = 0; col < columns; col++)
-            {
-                var x = area.X + col * widthPhys;
-                var y = area.Y + row * heightPhys;
-                if (!IntersectsAnyWidget(layout, area, scaling, x, y, widthPhys, heightPhys))
-                    return (x - area.X, y - area.Y);
-            }
-        }
-
-        return (0, 0);
-    }
-
     /// <summary>Whether a candidate rectangle (physical pixels) intersects any widget
     /// already stored on this screen (stored positions are working-area-relative).</summary>
     private static bool IntersectsAnyWidget(
@@ -394,16 +353,10 @@ public partial class Gallery : UserControl, INotifyPropertyChanged
     private (int Width, int Height) DefaultSize(Window? settingsWindow, int defaultCols = 2, int defaultRows = 2)
     {
         var settings = appSettingsProvider.Get();
-        if (settings.Layout.GridMode == GridMode.Manual)
-        {
-            var screen = settingsWindow?.Screens.Primary;
-            var area = screen?.WorkingArea;
-            var (cell, _, _) = GridMetrics.Resolve(settings.Grid, area?.X ?? 0, area?.Y ?? 0, area?.Width ?? 1920, area?.Height ?? 1080);
-            var scaling = screen?.Scaling ?? 1.0;
-            return ((int) Math.Round(defaultCols * cell / scaling), (int) Math.Round(defaultRows * cell / scaling));
-        }
-        var w = (int) (defaultCols * settings.Dimensions.Size + (defaultCols - 1) * settings.Dimensions.Margin);
-        var h = (int) (defaultRows * settings.Dimensions.Size + (defaultRows - 1) * settings.Dimensions.Margin);
-        return (w, h);
+        var screen = settingsWindow?.Screens.Primary;
+        var area = screen?.WorkingArea;
+        var (cell, _, _) = GridMetrics.Resolve(settings.Grid, area?.X ?? 0, area?.Y ?? 0, area?.Width ?? 1920, area?.Height ?? 1080);
+        var scaling = screen?.Scaling ?? 1.0;
+        return ((int) Math.Round(defaultCols * cell / scaling), (int) Math.Round(defaultRows * cell / scaling));
     }
 }

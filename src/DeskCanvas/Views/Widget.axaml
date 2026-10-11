@@ -22,8 +22,6 @@
             <MenuItem Header="编辑重叠组件…" Command="{Binding EditWidget}" IsVisible="{Binding ShowStackEditButton}" />
             <MenuItem Header="{Binding Edit}" Command="{Binding EditWidget}" IsVisible="{Binding ShowNormalEditButton}" />
             <MenuItem Header="{Binding SizeMenuTitle}">
-                <MenuItem Header="自定义尺寸…" Command="{Binding OpenCustomSizeDialog}" IsVisible="{Binding IsFreeMode}" />
-                <Separator IsVisible="{Binding IsFreeMode}" />
                 <!-- 4:2 ratio fixed widgets (e.g. Aggregate) -->
                 <MenuItem Header="4×2 (标准 100%)" Command="{Binding SetFixedSpanPreset}" CommandParameter="4x2" IsVisible="{Binding IsFixed2x1Widget}" />
                 <MenuItem Header="6×3 (等比放大 150%)" Command="{Binding SetFixedSpanPreset}" CommandParameter="6x3" IsVisible="{Binding IsFixed2x1Widget}" />
@@ -204,27 +202,6 @@
                     </DataTemplate>
                 </ItemsControl.ItemTemplate>
             </ItemsControl>
-        </Border>
-
-        <!-- Bottom-right corner resize handle (visible in Free mode when not locked) -->
-        <Border Name="ResizeHandle"
-                HorizontalAlignment="Right"
-                VerticalAlignment="Bottom"
-                Width="20" Height="20"
-                Background="Transparent"
-                Cursor="BottomRightCorner"
-                IsVisible="{Binding ShowResizeHandle, RelativeSource={RelativeSource AncestorType=views:Widget}}"
-                PointerPressed="OnResizeHandlePressed"
-                ZIndex="100"
-                Margin="0,0,2,2">
-            <Path Data="M14 6L6 14M14 10L10 14M14 14L14 14"
-                  Stroke="{DynamicResource SystemControlForegroundBaseMediumBrush}"
-                  StrokeThickness="1.5"
-                  StrokeLineCap="Round"
-                  Opacity="0.45"
-                  HorizontalAlignment="Right"
-                  VerticalAlignment="Bottom"
-                  Margin="0,0,4,4"/>
         </Border>
     </Grid>
 </Window>

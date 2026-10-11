@@ -276,7 +276,7 @@ internal static class WindowTopologyChecks
     {
         var settings = new SettingsStore(new AppSettings(
             new Theme(true, null, 1, false, false, "Segoe UI", Surface: SurfaceStyle.Solid), [],
-            new Layout(GridMode.Free, false, false, false, false), new Dimensions(100, 10, 16),
+            new Layout(GridMode.Manual, false, false, false, false), new Dimensions(100, 10, 16),
             new Region("en"), false, null));
         var entry = new WidgetLayout("Topology", nameof(TopologyContent), 40, 60, 200, 180, null);
         var a = new ScreenLayout("a", "A|1920x1080", null, null, null, 100, []);
@@ -304,7 +304,7 @@ internal static class WindowTopologyChecks
             widget.Position = new PixelPoint(10, 10); // Windows has moved it onto screen A.
             var writes = store.Writes;
             widget.RefreshDisplayMetrics();
-            check(widget.Position == new PixelPoint(1960, 60), $"DPI {dpi}: restores B-relative saved position after Windows relocation (actual {widget.Position}, expected 1960,60; provider {provider.Get().X},{provider.Get().Y})");
+            check(widget.Position == new PixelPoint(2496, 104), $"DPI {dpi}: restores and snaps B-relative saved position after Windows relocation (actual {widget.Position}, expected 2496,104; provider {provider.Get().X},{provider.Get().Y})");
             check(widget.EffectiveMargin == 24 && widget.EffectiveBaseRadius == 36,
                 $"DPI {dpi}: uses B's margin and corner radius while physical placement was A");
             var scale = (double) typeof(Widget).GetProperty("EffectiveContentScale", BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(widget)!;
@@ -314,7 +314,6 @@ internal static class WindowTopologyChecks
             check(store.Writes == writes, $"DPI {dpi}: restoring metrics does not persist transient geometry");
         }
 
-        settings.Save(settings.Get() with { Layout = new Layout(GridMode.Manual, false, false, false, false) });
         var bGrid = new DeskCanvas.Core.Models.Settings.Grid(10, 8, 10, 5, 6);
         b = b with { Grid = bGrid };
         SetAttached(monitor, a, b, 2);
@@ -333,19 +332,10 @@ internal static class WindowTopologyChecks
         var writesBeforeReflow = store.Writes;
         widget.RefreshDisplayMetrics();
         var manualPosition = widget.Position;
-        check(manualPosition == new PixelPoint(-1152, -646) && Math.Abs(widget.Width - 154) < 0.001,
+        check(manualPosition == new PixelPoint(-1152, -646) && Math.Abs(widget.Width - 77) < 0.001,
             $"manual topology restoration recalculates size and snaps into the moved smaller work area (position {manualPosition}, width {widget.Width})");
         check(store.Writes == writesBeforeReflow && provider.Get().X == 40 && provider.Get().Y == 60,
             "manual work-area reflow preserves saved coordinates without writing transient snapped placement");
-        settings.Save(settings.Get() with { Layout = new Layout(GridMode.Free, false, false, false, false) });
-        var tinyB = new Screen(2, new PixelRect(-500, -300, 300, 240), new PixelRect(-500, -280, 300, 220), false);
-        typeof(DisplayMonitorService).GetProperty(nameof(DisplayMonitorService.Attached))!.SetValue(monitor,
-            new[] { new AttachedScreen(tinyB, new ScreenIdentity("B", "B", 300, 240, false, 2), b) });
-        typeof(DisplayMonitorService).GetProperty(nameof(DisplayMonitorService.IsTopologyChanging))!.SetValue(monitor, false);
-        var writesBeforeClamp = store.Writes;
-        widget.RefreshDisplayMetrics();
-        check(widget.Position == tinyB.WorkingArea.Position && store.Writes == writesBeforeClamp && provider.Get().X == 40,
-            $"free mode clamps presentation into a reduced work area while retaining saved placement (position {widget.Position}, width {widget.Width}, height {widget.Height}, writes {store.Writes}/{writesBeforeClamp})");
 
         factory.SuspendForDisplayChange();
         factory.SetWidgetsHidden(true);

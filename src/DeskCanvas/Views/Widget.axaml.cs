@@ -166,16 +166,14 @@ public partial class Widget : Window, INotifyPropertyChanged
         Title = $"{widgetLayoutProvider.Get().Type} {widgetLayoutProvider.Get().SubType}";
         DataContext = this;
         
-        SetMinMaxSize(this.appSettingsProvider.Get().Layout.LockSize);
+        SetMinMaxSize(false);
         RenderOptions.SetTextRenderingMode(this, TextRenderingMode.Antialias);
         UpdateContentSize();
         
         // Manual grid: size is driven by the grid (span derived from the stored pixel size).
-        if (appSettingsProvider.Get().Layout.GridMode == GridMode.Manual)
-        {
-            manualSpan = GetSpan();
-            gridService.SetSize(this, manualSpan.Value.Columns, manualSpan.Value.Rows);
-        }
+        manualSpan = GetSpan();
+        gridService.SetSize(this, manualSpan.Value.Columns, manualSpan.Value.Rows);
+        SetMinMaxSize(true);
         
         Activated += OnActivated;
         Opened += OnOpened;
@@ -227,7 +225,6 @@ public partial class Widget : Window, INotifyPropertyChanged
             });
         }
         ActualThemeVariantChanged += OnActualThemeVariantChanged;
-        ContentPresenter.LayoutUpdated += OnContentLayoutUpdated;
         Unloaded += OnUnloaded;
     }
 
@@ -316,22 +313,12 @@ public partial class Widget : Window, INotifyPropertyChanged
         try
         {
             ApplyPosition();
-            var settings = widgetLayoutProvider.Get();
             SetMinMaxSize(false);
-            if (appSettingsProvider.Get().Layout.GridMode == GridMode.Manual)
-            {
-                manualSpan ??= GetSpan();
-                gridService.SetSize(this, manualSpan.Value.Columns, manualSpan.Value.Rows);
-                gridService.SnapPosition(this);
-                ClampRestoredPosition();
-            }
-            else
-            {
-                Width = settings.Width;
-                Height = settings.Height;
-                ClampRestoredPosition();
-            }
-            SetMinMaxSize(appSettingsProvider.Get().Layout.LockSize || appSettingsProvider.Get().Layout.GridMode == GridMode.Manual);
+            manualSpan ??= GetSpan();
+            gridService.SetSize(this, manualSpan.Value.Columns, manualSpan.Value.Rows);
+            gridService.SnapPosition(this);
+            ClampRestoredPosition();
+            SetMinMaxSize(true);
             RefreshScreenStyle();
         }
         finally
@@ -833,10 +820,7 @@ public partial class Widget : Window, INotifyPropertyChanged
         ScreenConfig?.Margin
         ?? appSettingsProvider.Get().Dimensions.Margin;
 
-    public Thickness WidgetMargin => isFrameless ? new Thickness(0) :
-        (appSettingsProvider.Get().Layout.GridMode == GridMode.Manual
-            ? new Thickness(EffectiveMargin)
-            : new Thickness(0));
+    public Thickness WidgetMargin => isFrameless ? new Thickness(0) : new Thickness(EffectiveMargin);
 
     /// <summary>
     /// Margin of the stack pagination dots host. Every surface keeps the dots floating in
@@ -904,43 +888,18 @@ public partial class Widget : Window, INotifyPropertyChanged
     }
 
     /// <summary>
-    /// Context-menu size section title: "Grid size" in manual mode, with the
-    /// current cell span (S/M/L presets are 1×1 / 2×1 / 2×2; anything else is
-    /// a custom size from the dialog).
+    /// Context-menu size section title: "Grid size", with the current cell span.
     /// </summary>
     public string SizeMenuTitle
     {
         get
         {
-            if (appSettingsProvider.Get().Layout.GridMode == GridMode.Manual)
-            {
-                var (columns, rows) = CurrentSpan;
-                return $"{Locale.Widget_Size_Grid} · {columns}×{rows}";
-            }
-            return $"{Locale.Widget_Size} · {(int)Width}×{(int)Height} px";
+            var (columns, rows) = CurrentSpan;
+            return $"{Locale.Widget_Size_Grid} · {columns}×{rows}";
         }
     }
 
-    public bool IsFreeMode => appSettingsProvider.Get().Layout.GridMode != GridMode.Manual;
-
-    public bool ShowResizeHandle => !isFrameless
-                                    && !appSettingsProvider.Get().Theme.UseNativeFrame
-                                    && !appSettingsProvider.Get().Layout.LockSize
-                                    && appSettingsProvider.Get().Layout.GridMode != GridMode.Manual;
-
-    public void OpenCustomSizeDialog() =>
-        new CustomSizeDialog((int)Width, (int)Height, ApplyCustomSize).ShowDialog(this);
-
-    private void ApplyCustomSize(int w, int h)
-    {
-        SetMinMaxSize(false);
-        Width = w;
-        Height = h;
-        AfterResize();
-        SetMinMaxSize(appSettingsProvider.Get().Layout.LockSize || appSettingsProvider.Get().Layout.GridMode == GridMode.Manual);
-    }
-
-    /// <summary>The widget's current cell span for the active grid mode.</summary>
+    /// <summary>The widget's current cell span for the active grid.</summary>
     public (int Columns, int Rows) CurrentSpan
     {
         get
@@ -949,17 +908,8 @@ public partial class Widget : Window, INotifyPropertyChanged
             // values — report the target span until it settles.
             if (pendingSpan is { } target) return target;
 
-            if (appSettingsProvider.Get().Layout.GridMode == GridMode.Manual)
-            {
-                manualSpan ??= GetSpan();
-                return manualSpan.Value;
-            }
-
-            var dimensions = appSettingsProvider.Get().Dimensions;
-            var unit = dimensions.Size + dimensions.Margin;
-            return (
-                Math.Max(1, (int) Math.Round((Width + dimensions.Margin) / unit)),
-                Math.Max(1, (int) Math.Round((Height + dimensions.Margin) / unit)));
+            manualSpan ??= GetSpan();
+            return manualSpan.Value;
         }
     }
 
@@ -970,7 +920,6 @@ public partial class Widget : Window, INotifyPropertyChanged
         ? SystemDecorations.BorderOnly
         : SystemDecorations.None;
 
-    public bool ToolTipVisible => ShowResizeHandle;
     public bool WidgetExtendClientArea => appSettingsProvider.Get().Theme.UseNativeFrame;
     public void EditWidget() => editWidgetWindow?.Invoke().Show();
 
@@ -1228,71 +1177,6 @@ public partial class Widget : Window, INotifyPropertyChanged
         Notify(nameof(WidgetOutlineBrush));
     }
 
-    // ---- 内容驱动最小窗口尺寸 ----
-    // 自由模式下窗口可以被拖到/填到任意像素（48px 起），而组件内容里总有放不下的
-    // 固定宽行（控件栏 pill、按钮组、表头…）：Grid 星号列缩到 0 后固定列溢出，被
-    // ContentPresenter.Clip 裁掉（截断）或与同级元素叠在一起（重叠）。这里的闭环是：
-    // 内容每次布局完成后读它的 DesiredSize——Avalonia 测量语义下，被压缩的布局会把
-    // 放不下的自然尺寸报进 DesiredSize（> 可用尺寸即为溢出信号）——据此抬高窗口的
-    // Min 尺寸，让缩放手柄 / 自定义尺寸 / 拖拽都不可能低于"内容能存活"的下限；已经
-    // 小于下限的窗口（旧布局、locale 换更长的文案）则长到下限。内容自身在各尺寸档
-    // 位的自适应收缩（隐藏次要控件等）会让 DesiredSize 跟着变小，所以这个下限是
-    // "视图已尽力收缩后仍需要的"尺寸，而不是视图不作为的借口。
-
-    /// <summary>上一次应用到窗口的 Min 尺寸（去重用：布局高频触发，值没变就不动窗口）。</summary>
-    private double appliedMinWidth;
-    private double appliedMinHeight;
-    private bool minSizeUpdateQueued;
-
-    private void OnContentLayoutUpdated(object? sender, EventArgs e) => QueueContentMinSizeUpdate();
-
-    private void QueueContentMinSizeUpdate()
-    {
-        if (minSizeUpdateQueued) return;
-        minSizeUpdateQueued = true;
-        // Background 优先级：排在当前这轮布局之后，读到的 DesiredSize 才包含
-        // 视图刚做过的可见性/档位调整；同时把一轮布局里的多次触发合并成一次。
-        Dispatcher.UIThread.Post(() =>
-        {
-            minSizeUpdateQueued = false;
-            UpdateContentMinSize();
-        }, DispatcherPriority.Background);
-    }
-
-    private void UpdateContentMinSize()
-    {
-        // 无边框组件自管窗口区域与字形裁剪，尺寸即设计，不干预。
-        if (isFrameless) return;
-        // 手动网格：尺寸由网格驱动，视图靠 SizeTiers 分档自行退化。
-        // 锁定尺寸：Min=Max=当前值是用户的显式选择，覆盖它反而破坏锁定。
-        var layoutSettings = appSettingsProvider.Get().Layout;
-        if (layoutSettings.GridMode == GridMode.Manual || layoutSettings.LockSize) return;
-        // 预设档位过渡动画进行中：Width/Height 携带中间值，此时抬高 Min 会
-        // 把动画钳死在目标尺寸上，300ms 过渡直接跳变。
-        if (pendingSpan != null) return;
-        // DesiredSize 只在真实测量后有意义（挂载初期为 0），等下一轮布局。
-        if (ContentPresenter.Child is not Layoutable child || !child.IsMeasureValid) return;
-
-        var desired = child.DesiredSize;
-        var (minW, minH) = ComputeContentMinWindowSize(desired, WidgetMargin, WidgetOutlineThickness);
-        if (Math.Abs(minW - appliedMinWidth) < 0.5 && Math.Abs(minH - appliedMinHeight) < 0.5) return;
-        appliedMinWidth = minW;
-        appliedMinHeight = minH;
-
-        MinWidth = minW;
-        MinHeight = minH;
-
-        // 实际尺寸低于新下限（旧版本存的布局、locale 切到更长文案后）：长到能放下
-        // 为止。只增不减——空间变大时视图会展示更多内容，Min 跟着涨是正常方向；
-        // 绝不自动缩窗，避免和用户手里正在进行的拖拽打架。
-        if (Width < minW || Height < minH)
-        {
-            Width = Math.Max(Width, minW);
-            Height = Math.Max(Height, minH);
-            AfterResize();
-        }
-    }
-
     /// <summary>
     /// Smallest window that fits the content's measured minimum: the content
     /// DesiredSize already includes the view's own margin, so the window just adds
@@ -1382,32 +1266,18 @@ public partial class Widget : Window, INotifyPropertyChanged
         // The tray icon can also be switched from the tray menu itself.
         Notify(nameof(TrayIconVisible));
 
-        if (oldData?.Layout.LockSize != newData.Layout.LockSize)
-            SetMinMaxSize(newData.Layout.LockSize);
-
-        // Grid mode / grid geometry changed → re-apply the grid-driven size and
+        // Grid geometry changed → re-apply the grid-driven size and
         // re-snap the position while keeping the cell span.
-        if (oldData?.Layout.GridMode != newData.Layout.GridMode || oldData?.Grid != newData.Grid)
+        if (oldData?.Grid != newData.Grid)
         {
-            if (newData.Layout.GridMode == GridMode.Manual)
-            {
-                manualSpan ??= GetSpan();
-                var (columns, rows) = manualSpan.Value;
+            manualSpan ??= GetSpan();
+            var (columns, rows) = manualSpan.Value;
 
-                SetMinMaxSize(false);
-                gridService.SetSize(this, columns, rows);
-                SetMinMaxSize(true);
-                AfterMove();
-                AfterResize();
-            }
-            else
-            {
-                manualSpan = null;
-                SetMinMaxSize(newData.Layout.LockSize);
-                AfterResize();
-            }
-            Notify(nameof(ShowResizeHandle));
-            Notify(nameof(IsFreeMode));
+            SetMinMaxSize(false);
+            gridService.SetSize(this, columns, rows);
+            SetMinMaxSize(true);
+            AfterMove();
+            AfterResize();
             Notify(nameof(SizeMenuTitle));
         }
 
@@ -1418,10 +1288,9 @@ public partial class Widget : Window, INotifyPropertyChanged
         }
 
         // Make bound properties reactive so style changes apply immediately
-        // (margin from grid lines, corner radius, context menu, tooltip and the
+        // (margin from grid lines, corner radius, context menu, and the
         // outlined-glass highlight ring…).
-        if (oldData?.Dimensions != newData.Dimensions || oldData?.Layout.GridMode != newData.Layout.GridMode
-            || oldData?.Layout.LockSize != newData.Layout.LockSize || oldData?.Theme != newData.Theme)
+        if (oldData?.Dimensions != newData.Dimensions || oldData?.Theme != newData.Theme)
         {
             // Surface switch (毛玻璃↔纯色): reconfigure the native transparency.
             if (oldData?.Theme?.UsesNativeBlur != newData.Theme.UsesNativeBlur)
@@ -1435,9 +1304,6 @@ public partial class Widget : Window, INotifyPropertyChanged
             Notify(nameof(InnerRadius));
             Notify(nameof(PillRadius));
             Notify(nameof(SizeMenuTitle));
-            Notify(nameof(ToolTipVisible));
-            Notify(nameof(ShowResizeHandle));
-            Notify(nameof(IsFreeMode));
             Notify(nameof(WidgetOutlineThickness));
             Notify(nameof(WidgetOutlineBrush));
             UpdateContentSize();
@@ -1464,31 +1330,18 @@ public partial class Widget : Window, INotifyPropertyChanged
 
     private void SetMinMaxSize(bool lockSize)
     {
-        if (appSettingsProvider.Get().Layout.GridMode == GridMode.Manual)
+        // Grid-driven size: lock to the current size
+        // (unlock temporarily while the span changes via the context menu).
+        if (lockSize)
         {
-            // Manual grid: size is fully grid-driven — lock to the current size
-            // (unlock temporarily while the span changes via the context menu).
-            if (lockSize)
-            {
-                MinWidth = MaxWidth = Width;
-                MinHeight = MaxHeight = Height;
-            }
-            else
-            {
-                MinWidth = MinHeight = 1;
-                MaxWidth = MaxHeight = double.PositiveInfinity;
-            }
-            return;
+            MinWidth = MaxWidth = Width;
+            MinHeight = MaxHeight = Height;
         }
-
-        // 自由模式的下限不能低于内容测出来的存活下限（见 UpdateContentMinSize）：
-        // 解锁/初始路径重置 Min 时若直接回到 48，内容会被重新允许拖进截断区。
-        var minSize = 48.0;
-
-        MinWidth = lockSize ? Width : Math.Max(minSize, appliedMinWidth);
-        MinHeight = lockSize ? Height : Math.Max(minSize, appliedMinHeight);
-        MaxWidth = lockSize ? Width : double.PositiveInfinity;
-        MaxHeight = lockSize ? Height : double.PositiveInfinity;
+        else
+        {
+            MinWidth = MinHeight = 1;
+            MaxWidth = MaxHeight = double.PositiveInfinity;
+        }
     }
 
     /// <summary>
@@ -1563,7 +1416,6 @@ public partial class Widget : Window, INotifyPropertyChanged
         profileService.ActiveProfileChanged -= OnProfilesChanged;
         profileService.ProfilesListChanged -= OnProfilesChanged;
         ActualThemeVariantChanged -= OnActualThemeVariantChanged;
-        ContentPresenter.LayoutUpdated -= OnContentLayoutUpdated;
         AttachStackWidget(null);
     }
 
@@ -1625,16 +1477,13 @@ public partial class Widget : Window, INotifyPropertyChanged
 
         if (appSettingsProvider.Get().Layout.LockPosition) return;
 
-        // In manual grid mode, ignore drag if the click landed in the outer grid margin
-        if (appSettingsProvider.Get().Layout.GridMode == GridMode.Manual)
-        {
-            var margin = WidgetMargin;
-            var p = e.GetPosition(this);
-            var card = new Rect(margin.Left, margin.Top,
-                Math.Max(0, (ClientSize.Width > 0 ? ClientSize.Width : Width) - margin.Left - margin.Right),
-                Math.Max(0, (ClientSize.Height > 0 ? ClientSize.Height : Height) - margin.Top - margin.Bottom));
-            if (!card.Contains(p)) return;
-        }
+        // Ignore drag if the click landed in the outer grid margin
+        var margin = WidgetMargin;
+        var p = e.GetPosition(this);
+        var card = new Rect(margin.Left, margin.Top,
+            Math.Max(0, (ClientSize.Width > 0 ? ClientSize.Width : Width) - margin.Left - margin.Right),
+            Math.Max(0, (ClientSize.Height > 0 ? ClientSize.Height : Height) - margin.Top - margin.Bottom));
+        if (!card.Contains(p)) return;
 
         ToolTip.SetIsOpen(this, false);
         e.Handled = true;
@@ -1649,16 +1498,13 @@ public partial class Widget : Window, INotifyPropertyChanged
         // 循环，否则后续滚轮事件会被移动循环吞掉，切页手势失效。（非重叠组件保持原行为。）
         if (StackWidget != null && e.GetCurrentPoint(this).Properties.IsMiddleButtonPressed) return;
 
-        // In manual grid mode, ignore drag if the click landed in the outer grid margin
-        if (appSettingsProvider.Get().Layout.GridMode == GridMode.Manual)
-        {
-            var margin = WidgetMargin;
-            var p = e.GetPosition(this);
-            var card = new Rect(margin.Left, margin.Top,
-                Math.Max(0, (ClientSize.Width > 0 ? ClientSize.Width : Width) - margin.Left - margin.Right),
-                Math.Max(0, (ClientSize.Height > 0 ? ClientSize.Height : Height) - margin.Top - margin.Bottom));
-            if (!card.Contains(p)) return;
-        }
+        // Ignore drag if the click landed in the outer grid margin
+        var margin = WidgetMargin;
+        var p = e.GetPosition(this);
+        var card = new Rect(margin.Left, margin.Top,
+            Math.Max(0, (ClientSize.Width > 0 ? ClientSize.Width : Width) - margin.Left - margin.Right),
+            Math.Max(0, (ClientSize.Height > 0 ? ClientSize.Height : Height) - margin.Top - margin.Bottom));
+        if (!card.Contains(p)) return;
 
         ToolTip.SetIsOpen(this, false);
         if (e.GetCurrentPoint(this).Properties.IsRightButtonPressed) return;
@@ -1761,8 +1607,6 @@ public partial class Widget : Window, INotifyPropertyChanged
             }
         }
 
-        var appSettings = appSettingsProvider.Get();
-        
         // Cross-screen move: capture the span against the ORIGINAL screen before
         // ownership transfers (after the transfer the stored size would be read
         // against the new cell and become ambiguous, e.g. 2×2 → 1×1).
@@ -1774,7 +1618,7 @@ public partial class Widget : Window, INotifyPropertyChanged
         
         if (movedToAnotherScreen) TransferOwnership();
         
-        if (movedToAnotherScreen && appSettings.Layout.GridMode == GridMode.Manual)
+        if (movedToAnotherScreen)
         {
             manualSpan = span;
             SetMinMaxSize(false);
@@ -1782,8 +1626,7 @@ public partial class Widget : Window, INotifyPropertyChanged
             SetMinMaxSize(true);
         }
 
-        if (appSettings.Layout.GridMode == GridMode.Manual || appSettings.Layout.SnapPosition)
-            gridService.SnapPosition(this);
+        gridService.SnapPosition(this);
         if (movedToAnotherScreen) RefreshScreenStyle();
         
         var positioned = StorePosition(widgetLayoutProvider.Get());
@@ -1885,7 +1728,7 @@ public partial class Widget : Window, INotifyPropertyChanged
         await Task.Delay(320);
         Transitions = null;
         AfterResize();
-        SetMinMaxSize(appSettingsProvider.Get().Layout.LockSize || appSettingsProvider.Get().Layout.GridMode == GridMode.Manual);
+        SetMinMaxSize(true);
         pendingSpan = null;
     }
 
@@ -1893,24 +1736,20 @@ public partial class Widget : Window, INotifyPropertyChanged
     {
         displayMonitor.Refresh();
         if (tornDown || restoringDisplayMetrics || displayMonitor.IsTopologyChanging || OwningScreen == null) return;
-        var appSettings = appSettingsProvider.Get();
         
-        if (appSettings.Layout.GridMode == GridMode.Manual)
+        if (FixedSizeWidget is { } fixedWidget)
         {
-            if (FixedSizeWidget is { } fixedWidget)
+            var (c, r) = GetSpan();
+            var (sc, sr) = fixedWidget.SnapSpan(c, r);
+            if (sc != c || sr != r)
             {
-                var (c, r) = GetSpan();
-                var (sc, sr) = fixedWidget.SnapSpan(c, r);
-                if (sc != c || sr != r)
-                {
-                    manualSpan = (sc, sr);
-                    gridService.SetSize(this, sc, sr);
-                }
+                manualSpan = (sc, sr);
+                gridService.SetSize(this, sc, sr);
             }
-            else
-            {
-                gridService.SnapSize(this);
-            }
+        }
+        else
+        {
+            gridService.SnapSize(this);
         }
         
         Scale();
@@ -1932,39 +1771,11 @@ public partial class Widget : Window, INotifyPropertyChanged
         Close();
     }
 
-    private void OnResizeHandlePressed(object? sender, PointerPressedEventArgs e)
-    {
-        // Manual grid: widget size is grid-driven, free resizing is disabled.
-        if (appSettingsProvider.Get().Layout.GridMode == GridMode.Manual) return;
-        if (appSettingsProvider.Get().Layout.LockSize) return;
-        // Left button only: a middle press here must not enter the modal resize loop
-        // (it would swallow the wheel and kill the stack switch chord), and a right
-        // press must keep bubbling to the context menu.
-        if (!e.GetCurrentPoint(this).Properties.IsLeftButtonPressed) return;
-
-        CanResize = true;
-        BeginResizeDrag(WindowEdge.SouthEast, e);
-        CanResize = false;
-        AfterResize();
-        e.Handled = true;
-    }
-
-    private void Resize(object? sender, PointerPressedEventArgs e) => OnResizeHandlePressed(sender, e);
-
     /// <summary>
     /// The widget's cell span (columns, rows) derived from the stored pixel size.
     /// </summary>
     private (int Columns, int Rows) GetSpan()
     {
-        if (appSettingsProvider.Get().Layout.GridMode != GridMode.Manual)
-        {
-            var dimensions = appSettingsProvider.Get().Dimensions;
-            var unit = dimensions.Size + dimensions.Margin;
-            return (
-                Math.Max(1, (int) Math.Round((Width + dimensions.Margin) / unit)),
-                Math.Max(1, (int) Math.Round((Height + dimensions.Margin) / unit)));
-        }
-
         var (cellPx, _, _) = GetGridMetrics();
         var scaling = ScreenScaling;
         var layout = widgetLayoutProvider.Get();
@@ -2077,7 +1888,7 @@ public partial class Widget : Window, INotifyPropertyChanged
             ApplyWidgetRegion();
         }
 
-        if (appSettingsProvider.Get().Layout.GridMode == GridMode.Manual && !Equals(oldConfig?.Grid, config.Grid))
+        if (!Equals(oldConfig?.Grid, config.Grid))
         {
             manualSpan ??= (oldConfig?.Grid != null ? ResolveSpanAgainstGrid(oldConfig.Grid) : GetSpan());
             var (columns, rows) = manualSpan.Value;
