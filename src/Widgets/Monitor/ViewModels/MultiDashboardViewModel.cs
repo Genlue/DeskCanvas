@@ -10,6 +10,14 @@ public class MultiDashboardViewModel : ReactiveObject, IDisposable
     private readonly MetricType[] types;
     private readonly Action updateAction;
 
+    /// <summary>
+    /// In-flight latch: the tick fires every second, but a round is up to four WMI queries
+    /// (Win32_NetworkAdapter alone can take hundreds of milliseconds on a busy machine). Without
+    /// the latch every slow round stacked another one behind it — "慢速 WMI 未完成时跳过下一轮".
+    /// The next tick simply finds the previous round still running and skips.
+    /// </summary>
+    private int updateInFlight;
+
     public MultiDashboardItemViewModel[] Items { get; }
 
     public MultiDashboardViewModel(MultiDashboardModel model)
@@ -35,16 +43,27 @@ public class MultiDashboardViewModel : ReactiveObject, IDisposable
         return result.Take(4).ToArray();
     }
 
-    private void Update() => _ = UpdateAsync();
+    private void Update()
+    {
+        if (Interlocked.CompareExchange(ref updateInFlight, 1, 0) != 0) return;
+        _ = UpdateAsync();
+    }
 
     private async Task UpdateAsync()
     {
-        for (var i = 0; i < types.Length; i++)
+        try
         {
-            var type = types[i];
-            var value = await MetricService.GetMetricValue(type);
-            if (value.HasValue)
-                Items[i].Metric = new MetricViewModel(value.Value, MetricService.GetMetricIcon(type));
+            for (var i = 0; i < types.Length; i++)
+            {
+                var type = types[i];
+                var value = await MetricService.GetMetricValue(type);
+                if (value.HasValue)
+                    Items[i].Metric = new MetricViewModel(value.Value, MetricService.GetMetricIcon(type));
+            }
+        }
+        finally
+        {
+            Interlocked.Exchange(ref updateInFlight, 0);
         }
     }
 

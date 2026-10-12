@@ -40,12 +40,34 @@ public class AdvancedViewModel : ReactiveObject, IDisposable
     /// <summary>True while a burst is being raised (guards against re-entrant raise).</summary>
     private bool raisingAllProperties;
 
+    /// <summary>True while subscribed to the change sources (guards the Attach/Dispose pair).</summary>
+    private bool attached;
+
     public AdvancedViewModel(IAppSettingsProvider appSettingsProvider, ILayoutProvider layoutProvider, DisplayMonitorService displayMonitor, ProfileService? profileService = null)
     {
         this.appSettingsProvider = appSettingsProvider;
         this.layoutProvider = layoutProvider;
         this.displayMonitor = displayMonitor;
         this.profileService = profileService;
+
+        Attach();
+    }
+
+    /// <summary>
+    /// Subscribe to the sources whose changes this page mirrors. Called once at construction and
+    /// again every time the page is <i>re-attached</i>; idempotent, so a Loaded firing twice
+    /// cannot double-subscribe.
+    /// <para>
+    /// The re-attach case is real: the settings window caches its pages, and its close path
+    /// detaches the current page to release its resources (a hidden window would otherwise keep
+    /// the whole page tree, subscriptions included, alive). The cached instance comes back on
+    /// the next open, and without this it would never see another change.
+    /// </para>
+    /// </summary>
+    public void Attach()
+    {
+        if (attached) return;
+        attached = true;
 
         layoutProvider.DataChanged += OnLayoutDataChanged;
         appSettingsProvider.DataChanged += OnAppSettingsDataChanged;
@@ -56,9 +78,15 @@ public class AdvancedViewModel : ReactiveObject, IDisposable
         }
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// Unsubscribe (the page left the tree). The cached page re-subscribes through
+    /// <see cref="Attach"/> when it is attached again; idempotent.
+    /// </summary>
     public void Dispose()
     {
+        if (!attached) return;
+        attached = false;
+
         layoutProvider.DataChanged -= OnLayoutDataChanged;
         appSettingsProvider.DataChanged -= OnAppSettingsDataChanged;
         displayMonitor.ScreensChanged -= OnScreensChanged;

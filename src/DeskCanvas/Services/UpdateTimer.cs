@@ -12,10 +12,12 @@ public class UpdateTimer : IDisposable
     private readonly List<Action> subscribers = [];
 
     /// <summary>
-    /// Snapshot the ticks are delivered from. A subscriber may (un)subscribe from inside its own
-    /// callback — the lock is re-entrant on that thread — so the tick cannot iterate the live
-    /// list; the snapshot is rebuilt only when the subscription set actually changes instead of
-    /// allocating a fresh list on every tick (this runs 10×/s just for the 100 ms timer).
+    /// Snapshot the ticks are delivered from. Subscribers may (un)subscribe from inside their own
+    /// callback — including the last one leaving, which stops the timer — so the tick cannot
+    /// iterate the live list; the snapshot is rebuilt when the subscription set actually changes
+    /// instead of allocating a fresh array on every tick (this runs 10×/s just for the 100 ms
+    /// timer). It is also published eagerly on unsubscribe, so a stopped timer cannot pin the
+    /// delegates of components that already left.
     /// </summary>
     private Action[] tickSnapshot = [];
     private bool snapshotDirty = true;
@@ -51,7 +53,14 @@ public class UpdateTimer : IDisposable
         {
             if (!subscribers.Contains(action)) return;
             subscribers.Remove(action);
-            snapshotDirty = true;
+            // Publish the trimmed snapshot immediately instead of only marking it dirty.
+            // While the timer keeps ticking the dirty flag would be consumed on the next tick
+            // anyway — but the moment the last subscriber leaves the timer stops, and a stale
+            // snapshot would then pin every removed action (and through the closure the whole
+            // widget) for as long as nothing subscribes again. Clearing it here releases the
+            // removed component's delegate right away.
+            tickSnapshot = subscribers.ToArray();
+            snapshotDirty = false;
             if (subscribers.Count == 0) timer.Stop();
         }
     }
@@ -89,6 +98,13 @@ public class UpdateTimer : IDisposable
 
     private void OnTimerTick(object? sender, EventArgs e)
     {
+        // The tick runs over a local snapshot taken under the lock, then invokes subscribers with
+        // no lock held. A subscriber that (un)subscribes from inside its own callback keeps the
+        // previous semantics — the set for *this* tick is fixed, a newly added action waits for
+        // the next tick, a removed one still sees the current tick — but the callback no longer
+        // runs under the subscription lock, so a slow widget cannot delay another one's
+        // subscribe/unsubscribe.
+        Action[] snapshot;
         lock (subscribers)
         {
             if (paused) return;
@@ -97,18 +113,19 @@ public class UpdateTimer : IDisposable
                 tickSnapshot = subscribers.ToArray();
                 snapshotDirty = false;
             }
+            snapshot = tickSnapshot;
+        }
 
-            foreach (var action in tickSnapshot)
+        foreach (var action in snapshot)
+        {
+            try
             {
-                try
-                {
-                    action();
-                }
-                catch (Exception ex)
-                {
-                    // One misbehaving widget must not stop every other widget's tick.
-                    System.Diagnostics.Debug.WriteLine($"[UpdateTimer] subscriber failed: {ex.Message}");
-                }
+                action();
+            }
+            catch (Exception ex)
+            {
+                // One misbehaving widget must not stop every other widget's tick.
+                System.Diagnostics.Debug.WriteLine($"[UpdateTimer] subscriber failed: {ex.Message}");
             }
         }
     }

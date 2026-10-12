@@ -227,14 +227,52 @@ public partial class StorageView : UserControl, IWidgetSelfRefreshing, IWidgetSu
         return (2, 2, false);
     }
 
+    /// <summary>Signature of the last list build: span, header mode and the model flags that shape controls.</summary>
+    private string? listBuildSignature;
+
+    /// <summary>Drive identity (in order) of the last list build; a change means the topology changed.</summary>
+    private string? listBuildIdentity;
+
+    /// <summary>Value updaters of the built list rows/cards, each bound to its drive index.</summary>
+    private readonly List<(int DriveIndex, Action<DriveItemViewModel> Update)> listDriveUpdaters = new();
+
+    /// <summary>Value updaters of the built list aggregates (header, overview banner).</summary>
+    private readonly List<Action> listAggregateUpdaters = new();
+
+    /// <summary>
+    /// The ten-second drive refresh used to route through here and clear + rebuild the whole
+    /// control tree every time. Controls are reused by drive identity instead: when the layout
+    /// signature and the drive identity list are unchanged, only the values (texts, bar widths,
+    /// colours, tooltips) are pushed into the existing controls. A topology change (drive added
+    /// or removed), a span/DPI change or a model switch still takes the full rebuild path,
+    /// and the refresh period and styling are untouched.
+    /// </summary>
     private void ApplyListLayout(int spanCols, int spanRows)
     {
         if (viewModel == null) return;
+
+        var drives = viewModel.Drives;
+        var signature = $"{spanCols}x{spanRows}|{model.ShowHeader}|{model.DoubleClickToOpen}|{model.UseWarningColors}";
+        var identity = string.Join('\u0001', drives.Select(d => d.RootPath));
+
+        if (signature == listBuildSignature && identity == listBuildIdentity)
+        {
+            foreach (var update in listAggregateUpdaters) update();
+            foreach (var (index, update) in listDriveUpdaters)
+            {
+                if (index < drives.Count) update(drives[index]);
+            }
+            return;
+        }
+
+        listBuildSignature = signature;
+        listBuildIdentity = identity;
+        listDriveUpdaters.Clear();
+        listAggregateUpdaters.Clear();
+
         ListBoard.Children.Clear();
         ListBoard.RowDefinitions.Clear();
         ListBoard.ColumnDefinitions.Clear();
-
-        var drives = viewModel.Drives;
 
         // 1. Wide Strip (e.g. 2x1, 3x1, 4x1)
         if (spanRows == 1 && spanCols >= 2)
@@ -251,14 +289,18 @@ public partial class StorageView : UserControl, IWidgetSelfRefreshing, IWidgetSu
                 Margin = new Thickness(2, 0)
             };
 
-            foreach (var d in drives.Take(maxDrives))
+            for (var i = 0; i < maxDrives; i++)
             {
+                var d = drives[i];
                 stack.Children.Add(BuildCompactDriveRow(
                     d,
                     barMaxWidth: ListBoard.Width - 6,
                     barHeight: 8.5,
                     showSubLine: maxDrives == 1,
-                    largeFont: false));
+                    largeFont: false,
+                    out var update));
+                var index = i;
+                listDriveUpdaters.Add((index, update));
             }
 
             ListBoard.Children.Add(stack);
@@ -275,10 +317,15 @@ public partial class StorageView : UserControl, IWidgetSelfRefreshing, IWidgetSu
             int contentRow = 0;
             if (model.ShowHeader)
             {
-                var header = BuildHeaderBar(viewModel.HeaderTitle, viewModel.WideSummaryText, fontSize: 13.5);
+                var header = BuildHeaderBar(viewModel.HeaderTitle, viewModel.WideSummaryText, fontSize: 13.5,
+                    out _, out var headerSummary);
                 header.Margin = new Thickness(2, 0, 2, 6);
                 Grid.SetRow(header, 0);
                 ListBoard.Children.Add(header);
+                listAggregateUpdaters.Add(() =>
+                {
+                    if (viewModel != null) headerSummary.Text = viewModel.WideSummaryText;
+                });
                 contentRow = 1;
             }
 
@@ -291,10 +338,11 @@ public partial class StorageView : UserControl, IWidgetSelfRefreshing, IWidgetSu
             var truncated = drives.Take(4).ToList();
             for (int i = 0; i < truncated.Count; i++)
             {
-                var card = BuildDriveSubCard(truncated[i], cardInnerWidth: 148, showBadge: false);
+                var card = BuildDriveSubCard(truncated[i], cardInnerWidth: 148, showBadge: false, out var update);
                 Grid.SetColumn(card, (i % 2) * 2);
                 Grid.SetRow(card, (i / 2) * 2);
                 grid.Children.Add(card);
+                listDriveUpdaters.Add((i, update));
             }
 
             Grid.SetRow(grid, contentRow);
@@ -312,10 +360,11 @@ public partial class StorageView : UserControl, IWidgetSelfRefreshing, IWidgetSu
             int contentRow = 0;
             if (model.ShowHeader)
             {
-                var overviewBanner = BuildLargeOverviewBanner(viewModel, bannerWidth: 324);
+                var overviewBanner = BuildLargeOverviewBanner(viewModel, bannerWidth: 324, out var bannerUpdate);
                 overviewBanner.Margin = new Thickness(0, 0, 0, 8);
                 Grid.SetRow(overviewBanner, 0);
                 ListBoard.Children.Add(overviewBanner);
+                listAggregateUpdaters.Add(bannerUpdate);
                 contentRow = 1;
             }
 
@@ -332,10 +381,11 @@ public partial class StorageView : UserControl, IWidgetSelfRefreshing, IWidgetSu
             var truncated = drives.Take(maxSlots).ToList();
             for (int i = 0; i < truncated.Count; i++)
             {
-                var card = BuildDriveSubCard(truncated[i], cardInnerWidth: 148, showBadge: true);
+                var card = BuildDriveSubCard(truncated[i], cardInnerWidth: 148, showBadge: true, out var update);
                 Grid.SetColumn(card, (i % 2) * 2);
                 Grid.SetRow(card, (i / 2) * 2);
                 grid.Children.Add(card);
+                listDriveUpdaters.Add((i, update));
             }
 
             Grid.SetRow(grid, contentRow);
@@ -353,10 +403,15 @@ public partial class StorageView : UserControl, IWidgetSelfRefreshing, IWidgetSu
         int listRow = 0;
         if (model.ShowHeader)
         {
-            var header = BuildHeaderBar(viewModel.HeaderTitle, viewModel.HeaderSummaryText, fontSize: 14);
+            var header = BuildHeaderBar(viewModel.HeaderTitle, viewModel.HeaderSummaryText, fontSize: 14,
+                out _, out var headerSummary);
             header.Margin = new Thickness(1, 0, 1, 4);
             Grid.SetRow(header, 0);
             ListBoard.Children.Add(header);
+            listAggregateUpdaters.Add(() =>
+            {
+                if (viewModel != null) headerSummary.Text = viewModel.HeaderSummaryText;
+            });
             listRow = 1;
         }
 
@@ -379,10 +434,12 @@ public partial class StorageView : UserControl, IWidgetSelfRefreshing, IWidgetSu
                     barMaxWidth: 164,
                     barHeight: twoOrFewer ? 9.5 : 8,
                     showSubLine: twoOrFewer,
-                    largeFont: twoOrFewer);
+                    largeFont: twoOrFewer,
+                    out var update);
                 rowCtrl.VerticalAlignment = VerticalAlignment.Center;
                 Grid.SetRow(rowCtrl, i);
                 listContainer.Children.Add(rowCtrl);
+                listDriveUpdaters.Add((i, update));
             }
         }
 
@@ -390,7 +447,13 @@ public partial class StorageView : UserControl, IWidgetSelfRefreshing, IWidgetSu
         ListBoard.Children.Add(listContainer);
     }
 
-    private Control BuildHeaderBar(string title, string rightSummary, double fontSize)
+    /// <summary>
+    /// Build the header row. The title/summary blocks are handed back through <paramref name="titleText"/>
+    /// and <paramref name="summaryText"/> so a refresh can update the texts in place (the summary
+    /// changes with every drive poll).
+    /// </summary>
+    private Control BuildHeaderBar(string title, string rightSummary, double fontSize,
+        out TextBlock titleText, out TextBlock summaryText)
     {
         var grid = new Grid
         {
@@ -437,16 +500,26 @@ public partial class StorageView : UserControl, IWidgetSelfRefreshing, IWidgetSu
         grid.Children.Add(icon);
         grid.Children.Add(titleBlock);
         grid.Children.Add(summaryBlock);
+
+        titleText = titleBlock;
+        summaryText = summaryBlock;
         return grid;
     }
 
+    /// <summary>
+    /// Build one compact drive row. <paramref name="update"/> pushes a newer drive snapshot into
+    /// the already-built controls (the ten-second refresh path), so a refresh does not have to
+    /// tear the row down and rebuild it.
+    /// </summary>
     private Control BuildCompactDriveRow(
         DriveItemViewModel item,
         double barMaxWidth,
-        double barHeight = 8,
-        bool showSubLine = false,
-        bool largeFont = false)
+        double barHeight,
+        bool showSubLine,
+        bool largeFont,
+        out Action<DriveItemViewModel> update)
     {
+        var current = item;
         var container = new Border
         {
             Background = Brushes.Transparent,
@@ -454,7 +527,7 @@ public partial class StorageView : UserControl, IWidgetSelfRefreshing, IWidgetSu
             Cursor = model.DoubleClickToOpen ? new Cursor(StandardCursorType.Hand) : Cursor.Default
         };
         ToolTip.SetTip(container, item.TooltipText);
-        AttachDriveClickHandler(container, () => item);
+        AttachDriveClickHandler(container, () => current);
 
         var stack = new StackPanel
         {
@@ -468,9 +541,10 @@ public partial class StorageView : UserControl, IWidgetSelfRefreshing, IWidgetSu
         };
 
         var iconSize = largeFont ? 14.5 : 13;
+        var iconData = item.IconData;
         var icon = new PathIcon
         {
-            Data = StreamGeometry.Parse(item.IconData),
+            Data = StreamGeometry.Parse(iconData),
             Width = iconSize,
             Height = iconSize,
             Margin = new Thickness(0, 0, 5, 0),
@@ -511,18 +585,20 @@ public partial class StorageView : UserControl, IWidgetSelfRefreshing, IWidgetSu
         topRow.Children.Add(nameText);
         topRow.Children.Add(statusText);
 
-        var barTrack = BuildProgressBar(item.UsageFraction, item.StatusBrush, barMaxWidth, barHeight);
+        var (barTrack, barUpdate) = BuildProgressBar(item.UsageFraction, item.StatusBrush, barMaxWidth, barHeight);
 
         stack.Children.Add(topRow);
         stack.Children.Add(barTrack);
 
+        TextBlock? leftSub = null;
+        TextBlock? rightSub = null;
         if (showSubLine)
         {
             var subRow = new Grid
             {
                 ColumnDefinitions = new ColumnDefinitions("*,Auto")
             };
-            var leftSub = new TextBlock
+            leftSub = new TextBlock
             {
                 Text = item.UsedOverTotalText,
                 FontSize = 12,
@@ -532,7 +608,7 @@ public partial class StorageView : UserControl, IWidgetSelfRefreshing, IWidgetSu
             leftSub.Bind(TextBlock.ForegroundProperty, new DynamicResourceExtension("SystemControlForegroundBaseHighBrush"));
             Grid.SetColumn(leftSub, 0);
 
-            var rightSub = new TextBlock
+            rightSub = new TextBlock
             {
                 Text = $"{item.UsagePercent}%",
                 FontSize = 12,
@@ -548,11 +624,45 @@ public partial class StorageView : UserControl, IWidgetSelfRefreshing, IWidgetSu
         }
 
         container.Child = stack;
+
+        update = next =>
+        {
+            current = next;
+            nameText.Text = next.DisplayTitle;
+            if (next.IconData != iconData)
+            {
+                iconData = next.IconData;
+                icon.Data = StreamGeometry.Parse(iconData);
+            }
+            statusText.Text = next.RightStatusText;
+            var warn = next.UsagePercent >= 75 && model.UseWarningColors;
+            statusText.Opacity = warn ? 0.98 : 0.86;
+            if (warn)
+            {
+                statusText.Foreground = next.StatusBrush;
+            }
+            else
+            {
+                statusText.Bind(TextBlock.ForegroundProperty, new DynamicResourceExtension("SystemControlForegroundBaseHighBrush"));
+            }
+            ToolTip.SetTip(container, next.TooltipText);
+            barUpdate(next.UsageFraction, next.StatusBrush);
+            if (leftSub != null) leftSub.Text = next.UsedOverTotalText;
+            if (rightSub != null) rightSub.Text = $"{next.UsagePercent}%";
+        };
+
         return container;
     }
 
-    private Control BuildDriveSubCard(DriveItemViewModel item, double cardInnerWidth, bool showBadge)
+    /// <summary>
+    /// Build one drive sub-card. Like <see cref="BuildCompactDriveRow"/>, the returned
+    /// <paramref name="update"/> pushes newer values into the built controls so the periodic
+    /// refresh never rebuilds the card.
+    /// </summary>
+    private Control BuildDriveSubCard(DriveItemViewModel item, double cardInnerWidth, bool showBadge,
+        out Action<DriveItemViewModel> update)
     {
+        var current = item;
         var card = new Border
         {
             CornerRadius = new CornerRadius(9),
@@ -563,7 +673,7 @@ public partial class StorageView : UserControl, IWidgetSelfRefreshing, IWidgetSu
             Cursor = model.DoubleClickToOpen ? new Cursor(StandardCursorType.Hand) : Cursor.Default
         };
         ToolTip.SetTip(card, item.TooltipText);
-        AttachDriveClickHandler(card, () => item);
+        AttachDriveClickHandler(card, () => current);
 
         var grid = new Grid
         {
@@ -576,9 +686,10 @@ public partial class StorageView : UserControl, IWidgetSelfRefreshing, IWidgetSu
             ColumnDefinitions = new ColumnDefinitions("Auto,*,Auto,Auto")
         };
 
+        var iconData = item.IconData;
         var icon = new PathIcon
         {
-            Data = StreamGeometry.Parse(item.IconData),
+            Data = StreamGeometry.Parse(iconData),
             Width = 14,
             Height = 14,
             Margin = new Thickness(0, 0, 5, 0),
@@ -600,8 +711,17 @@ public partial class StorageView : UserControl, IWidgetSelfRefreshing, IWidgetSu
         titleText.Bind(TextBlock.ForegroundProperty, new DynamicResourceExtension("SystemControlForegroundBaseHighBrush"));
         Grid.SetColumn(titleText, 1);
 
+        TextBlock? badgeText = null;
         if (showBadge)
         {
+            badgeText = new TextBlock
+            {
+                Text = item.DriveFormat,
+                FontSize = 10,
+                FontWeight = FontWeight.SemiBold,
+                Opacity = 0.8
+            };
+
             var fsBadge = new Border
             {
                 CornerRadius = new CornerRadius(4),
@@ -609,15 +729,9 @@ public partial class StorageView : UserControl, IWidgetSelfRefreshing, IWidgetSu
                 Padding = new Thickness(4, 1),
                 Margin = new Thickness(4, 0, 4, 0),
                 VerticalAlignment = VerticalAlignment.Center,
-                Child = new TextBlock
-                {
-                    Text = item.DriveFormat,
-                    FontSize = 10,
-                    FontWeight = FontWeight.SemiBold,
-                    Opacity = 0.8
-                }
+                Child = badgeText
             };
-            ((TextBlock)fsBadge.Child!).Bind(TextBlock.ForegroundProperty, new DynamicResourceExtension("SystemControlForegroundBaseHighBrush"));
+            badgeText.Bind(TextBlock.ForegroundProperty, new DynamicResourceExtension("SystemControlForegroundBaseHighBrush"));
             Grid.SetColumn(fsBadge, 2);
             topRow.Children.Add(fsBadge);
         }
@@ -638,7 +752,7 @@ public partial class StorageView : UserControl, IWidgetSelfRefreshing, IWidgetSu
         topRow.Children.Add(pctText);
         Grid.SetRow(topRow, 0);
 
-        var bar = BuildProgressBar(item.UsageFraction, item.StatusBrush, cardInnerWidth, barHeight: 8);
+        var (bar, barUpdate) = BuildProgressBar(item.UsageFraction, item.StatusBrush, cardInnerWidth, barHeight: 8);
         bar.VerticalAlignment = VerticalAlignment.Center;
         bar.Margin = new Thickness(0, 4);
         Grid.SetRow(bar, 1);
@@ -678,10 +792,29 @@ public partial class StorageView : UserControl, IWidgetSelfRefreshing, IWidgetSu
         grid.Children.Add(bar);
         grid.Children.Add(bottomRow);
         card.Child = grid;
+
+        update = next =>
+        {
+            current = next;
+            titleText.Text = next.DisplayTitle;
+            if (next.IconData != iconData)
+            {
+                iconData = next.IconData;
+                icon.Data = StreamGeometry.Parse(iconData);
+            }
+            if (badgeText != null) badgeText.Text = next.DriveFormat;
+            pctText.Text = next.PercentText;
+            pctText.Foreground = next.StatusBrush;
+            ToolTip.SetTip(card, next.TooltipText);
+            barUpdate(next.UsageFraction, next.StatusBrush);
+            usedText.Text = next.UsedOverTotalText;
+            freeText.Text = next.FreeSpaceText;
+        };
+
         return card;
     }
 
-    private Control BuildLargeOverviewBanner(StorageViewModel vm, double bannerWidth)
+    private Control BuildLargeOverviewBanner(StorageViewModel vm, double bannerWidth, out Action update)
     {
         var banner = new Border
         {
@@ -698,17 +831,29 @@ public partial class StorageView : UserControl, IWidgetSelfRefreshing, IWidgetSu
             Spacing = 5
         };
 
-        var header = BuildHeaderBar($"{vm.HeaderTitle} ({vm.Drives.Count} 个分区)", vm.WideSummaryText, fontSize: 13.5);
+        var header = BuildHeaderBar($"{vm.HeaderTitle} ({vm.Drives.Count} 个分区)", vm.WideSummaryText, fontSize: 13.5,
+            out var headerTitle, out var headerSummary);
         var primaryBrush = vm.Drives.FirstOrDefault()?.StatusBrush ?? new SolidColorBrush(Color.Parse("#007AFF"));
-        var bar = BuildProgressBar(vm.TotalUsageFraction, primaryBrush, bannerWidth, barHeight: 8.5);
+        var (bar, barUpdate) = BuildProgressBar(vm.TotalUsageFraction, primaryBrush, bannerWidth, barHeight: 8.5);
 
         stack.Children.Add(header);
         stack.Children.Add(bar);
         banner.Child = stack;
+
+        update = () =>
+        {
+            var current = viewModel;
+            if (current == null) return;
+            headerTitle.Text = $"{current.HeaderTitle} ({current.Drives.Count} 个分区)";
+            headerSummary.Text = current.WideSummaryText;
+            barUpdate(current.TotalUsageFraction,
+                current.Drives.FirstOrDefault()?.StatusBrush ?? new SolidColorBrush(Color.Parse("#007AFF")));
+        };
+
         return banner;
     }
 
-    private static Border BuildProgressBar(double fraction, IBrush fillBrush, double trackWidth, double barHeight)
+    private static (Border Track, Action<double, IBrush> Update) BuildProgressBar(double fraction, IBrush fillBrush, double trackWidth, double barHeight)
     {
         var clamped = Math.Clamp(fraction, 0.0, 1.0);
         var radius = new CornerRadius(barHeight / 2.0);
@@ -735,7 +880,17 @@ public partial class StorageView : UserControl, IWidgetSelfRefreshing, IWidgetSu
         fill.Classes.Add("elem-shadow");
 
         track.Child = fill;
-        return track;
+
+        // The bar's value is one of the things the periodic refresh updates in place: width
+        // derives from the fraction, colour from the drive's status brush.
+        Action<double, IBrush> update = (nextFraction, nextBrush) =>
+        {
+            var next = Math.Clamp(nextFraction, 0.0, 1.0);
+            fill.Width = next <= 0.0 ? 0.0 : Math.Max(barHeight, trackWidth * next);
+            fill.Background = nextBrush;
+        };
+
+        return (track, update);
     }
 
     private (int Columns, int Rows) ResolveSpan()

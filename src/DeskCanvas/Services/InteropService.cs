@@ -25,6 +25,12 @@ public class InteropService
     /// working-set trim used to run before the collection had even finished — which is why pausing
     /// the widgets behind a fullscreen game visibly freed nothing.
     /// </para>
+    /// <para>
+    /// This is the mechanism, not the policy: it is expensive (a compacting gen-2 collection) and
+    /// a working-set trim only evicts resident pages that get touched again, so it must not run on
+    /// a timer. Call it through <see cref="MemoryTrimmerService.RequestTrim"/>, which applies the
+    /// single-flight / cooldown / hysteresis guards and keeps it off the UI thread.
+    /// </para>
     /// </summary>
     public static void TrimProcessMemory()
     {

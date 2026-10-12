@@ -40,7 +40,6 @@ public class App : Application
             .AddSingleton<WidgetFactory>()
             .AddSingleton<IWidgetFactory<Window, UserControl>>(sp => sp.GetRequiredService<WidgetFactory>())
             .AddSingleton<ProfileService>()
-            .AddSingleton<MemoryTrimmerService>()
             .AddSingleton<Settings, Settings>()
             // One settings window for the whole process: widgets (and a hand-over from a second
             // launch) resolve this same instance instead of each building their own.
@@ -185,12 +184,11 @@ public class App : Application
         
         services.GetRequiredService<UpdateService>().CheckForUpdates();
 
-        // Long sessions creep upwards on the native side (Skia surfaces, shell icons, DWM
-        // buffers) because a mostly-idle process rarely runs the finalizers that would release
-        // them; this sweeps back down whenever the process is holding more than its budget.
-        services.GetRequiredService<MemoryTrimmerService>().Start();
-
-        System.Threading.Tasks.Task.Delay(6000).ContinueWith(_ => InteropService.TrimProcessMemory());
+        // One startup maintenance point, not a routine: the first seconds of a session build every
+        // widget's surfaces, captures and caches at once, and the leftover segments from that burst
+        // are worth handing back once it has settled. The trimmer's single-flight / cooldown /
+        // hysteresis guards keep this a one-off — there is no periodic sweep any more.
+        System.Threading.Tasks.Task.Delay(6000).ContinueWith(_ => MemoryTrimmerService.RequestTrim());
 
         base.OnFrameworkInitializationCompleted();
     }

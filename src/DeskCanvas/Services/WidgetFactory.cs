@@ -217,6 +217,8 @@ public class WidgetFactory(IAssemblyProvider assemblyProvider, ILayoutProvider l
             // A user drag may have changed ownership since this window was created.
             foreach (var currentList in activeWidgets.Values)
                 currentList.Remove(widget);
+
+            OnWidgetClosed();
         };
 
         // A widget added while the tray toggle hides the desktop (Gallery "add", profile switch)
@@ -252,6 +254,29 @@ public class WidgetFactory(IAssemblyProvider assemblyProvider, ILayoutProvider l
     {
         CloseAll();
         CreateFromLayout();
+    }
+
+    /// <summary>
+    /// A widget window has closed.
+    /// <para>
+    /// The closed widget has just given up its native resources (render surfaces, decoded
+    /// pictures, per-widget caches), so the guarded maintenance trim is requested — the service
+    /// coalesces a burst of closes into a single trim, so removing a whole layout cannot turn
+    /// into a trim per widget. When the <b>last</b> widget is gone, the shared, rebuildable
+    /// material caches — the full-desktop capture and the blurred backdrops, tens of megabytes
+    /// each on a large desktop — are released with it; they are re-created on demand. Without
+    /// this, removing a layout's widgets left those caches and their heap resident with nothing
+    /// on screen to justify them.
+    /// </para>
+    /// </summary>
+    private void OnWidgetClosed()
+    {
+        MemoryTrimmerService.RequestTrim();
+
+        if (HasWidgets) return;
+
+        LiquidGlassSourceCache.Clear();
+        LiquidGlassWallpaper.Release();
     }
 
     /// <summary>
@@ -349,10 +374,11 @@ public class WidgetFactory(IAssemblyProvider assemblyProvider, ILayoutProvider l
         // full-desktop bitmaps, tens of MB each on a large desktop).
         LiquidGlassSourceCache.Clear();
 
-        // Off the UI thread: this is a double compacting GC; synchronously here it stalled the
-        // fullscreen transition for as long as the heap took to compact (MemoryTrimmerService
-        // runs the same trim on a worker for the same reason).
-        Task.Run(InteropService.TrimProcessMemory);
+        // Large native blocks were just released (the capture, the shared backdrops); hand the
+        // freed pages back promptly. The trimmer runs the compacting collection off the UI thread
+        // and applies its own single-flight / cooldown / hysteresis guards, so a fullscreen app
+        // toggling repeatedly cannot turn this into back-to-back trims.
+        MemoryTrimmerService.RequestTrim();
     }
 
     /// <summary>Resume the timers and let the widgets rebuild the released caches.</summary>

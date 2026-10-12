@@ -20,23 +20,59 @@ public static class MetricService
         };
     }
     
+    /// <summary>
+    /// Shared per-metric snapshot cache. The widgets tick once a second, and every view used to
+    /// run its own WMI round — a single dashboard fired four queries per tick, and a second view
+    /// of the same metric (another screen, a stack child beside a standalone card) doubled that.
+    /// WMI queries are the expensive part (Win32_NetworkAdapter alone can take hundreds of
+    /// milliseconds), so one snapshot per type is collected and shared:
+    /// <list type="bullet">
+    /// <item>a result younger than <see cref="SnapshotTtlMs"/> is handed to every asker;</item>
+    /// <item>an <b>in-flight</b> query is also shared — a slow round no longer stacks another
+    /// one on top (single-flight), it is simply awaited by everyone.</item>
+    /// </list>
+    /// Values stay per-tick fresh: the window is shorter than the update interval.
+    /// </summary>
+    private const int SnapshotTtlMs = 900;
+
+    private static readonly object snapshotGate = new();
+    private static readonly Dictionary<MetricType, (Task<double?> Value, long At)> snapshots = new();
+
     public static Task<double?> GetMetricValue(MetricType type)
+    {
+        lock (snapshotGate)
+        {
+            var now = Environment.TickCount64;
+            if (snapshots.TryGetValue(type, out var cached))
+            {
+                if (!cached.Value.IsCompleted) return cached.Value;          // single flight
+                if (now - cached.At < SnapshotTtlMs) return cached.Value;    // still this tick's snapshot
+            }
+
+            var task = Task.Run(() => Read(type));
+            snapshots[type] = (task, now);
+            return task;
+        }
+    }
+
+    /// <summary>One collection round. A failing query yields "no value" rather than a faulted task.</summary>
+    private static double? Read(MetricType type)
     {
         try
         {
             return type switch
             {
-                MetricType.CpuUsage => Task.Run(GetCpuUsage),
-                MetricType.RamUsage => Task.Run(GetRamUsage),
-                MetricType.DiskUsage => Task.Run(GetDiskUsage),
-                MetricType.NetworkUsage => Task.Run(GetNetworkUsage),
-                MetricType.BatteryLevel => Task.Run(GetBatteryLevel),
-                _ => throw new ArgumentException()
+                MetricType.CpuUsage => GetCpuUsage(),
+                MetricType.RamUsage => GetRamUsage(),
+                MetricType.DiskUsage => GetDiskUsage(),
+                MetricType.NetworkUsage => GetNetworkUsage(),
+                MetricType.BatteryLevel => GetBatteryLevel(),
+                _ => null
             };
         }
         catch (Exception)
         {
-            return Task.FromResult((double?)null);
+            return null;
         }
     }
 

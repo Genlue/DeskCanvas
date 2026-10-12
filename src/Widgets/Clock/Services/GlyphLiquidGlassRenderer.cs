@@ -42,8 +42,8 @@ public static class GlyphLiquidGlassRenderer
         var height = frame.Height;
         var sigma = (float)optics.Blur * scale / 8f;
 
-        // Distance field + result buffers come from the pool (see Scratch): one frame needs ~29
-        // bytes per pixel in eight arrays, and the clock draws a frame every minute/second.
+        // Distance field + result buffers come from the pool (see Scratch): one frame needs ~40
+        // bytes per pixel in ten arrays, and the clock draws a frame every minute/second.
         var scratch = RentScratch(width * height, Math.Max(width, height));
         try
         {
@@ -568,17 +568,28 @@ public static class GlyphLiquidGlassRenderer
     /// <summary>
     /// Per-frame compute buffers, reused across frames.
     ///
-    /// One frame needs eight arrays of <c>width × height</c> entries — seven <c>float[]</c> for the
-    /// distance field and its gradients plus the <c>SKColor[]</c> result — which is ~29 bytes per
-    /// pixel (≈8 MB for a 4×2 clock at 2×, all of it on the large object heap). Allocating that
-    /// per tick churned gigabytes a day through the LOH and fragmented the heap for no reason: the
+    /// One frame needs nine <c>float[]</c> arrays plus the <c>SKColor[]</c> result — the distance
+    /// field, its gradients, the transform workspace and the output — which is 40 bytes per pixel
+    /// (≈31 MiB for a 4×2 clock at 2×, all of it on the large object heap). Allocating that per
+    /// tick churned gigabytes a day through the LOH and fragmented the heap for no reason: the
     /// clock renders one frame at a time, and every pixel of these arrays is written before it is
     /// read. Buffers are pooled by pixel count and handed back when the frame is done.
+    ///
+    /// The pool is bounded in <b>bytes</b>, not just count (see the pool below): two parked
+    /// objects of a large clock are over 150 MiB of scratch, which is what the old count-only
+    /// limit allowed. <see cref="Bytes"/> is the estimate the budget is enforced against.
     /// </summary>
     private sealed class Scratch
     {
+        /// <summary>Nine <c>float[]</c> (dist/normals/gradients/transform) + the <c>SKColor[]</c> result.</summary>
+        public const int BytesPerPixel = 10 * 4;
+
+        /// <summary>Per line slot: Line + LineOut (float), Envelope (int), Boundaries (float).</summary>
+        public const int BytesPerLineSlot = 4 * 4;
+
         public int Capacity;
         public int LineCapacity;
+        public long LastReturnedAt;
         public float[] Dist = [];
         public float[] Nx = [];
         public float[] Ny = [];
@@ -595,6 +606,9 @@ public static class GlyphLiquidGlassRenderer
         public float[] LineOut = [];
         public int[] Envelope = [];
         public float[] Boundaries = [];
+
+        /// <summary>Estimated resident bytes of the currently allocated arrays.</summary>
+        public long Bytes => (long)Capacity * BytesPerPixel + (long)LineCapacity * BytesPerLineSlot;
 
         /// <summary>Grow the buffers to hold <paramref name="size"/> pixels and
         /// <paramref name="lineLength"/>-long transform lines.</summary>
@@ -628,27 +642,96 @@ public static class GlyphLiquidGlassRenderer
     }
 
     private static readonly object scratchGate = new();
-    private static readonly Stack<Scratch> scratchPool = new();
+    private static readonly List<Scratch> scratchPool = [];
 
-    /// <summary>Take a set of buffers sized for <paramref name="size"/> pixels (never blocks a frame).</summary>
+    /// <summary>Total estimated bytes parked in <see cref="scratchPool"/>; guarded by <see cref="scratchGate"/>.</summary>
+    private static long scratchPoolBytes;
+
+    /// <summary>Most objects kept idle. Two covers a frame whose hand-back overlaps the next rent.</summary>
+    private const int MaxPooledScratch = 2;
+
+    /// <summary>
+    /// Idle-pool byte budget. The pool is a shared static resource used by every frameless clock:
+    /// it must keep a workspace that is genuinely reused every second (re-allocating it per tick
+    /// is what the pool exists to avoid) but must not park an oversized clock's buffers forever.
+    /// Workspaces whose return would push the pool over this are simply dropped — they were two
+    /// frames' worth of use, not a resident requirement.
+    /// </summary>
+    private const long ScratchPoolBudgetBytes = 32L * 1024 * 1024;
+
+    /// <summary>Pooled workspaces that have not been used for this long are retired on the next rent.</summary>
+    private static readonly TimeSpan ScratchIdleAge = TimeSpan.FromMinutes(10);
+
+    /// <summary>
+    /// Take a set of buffers able to hold <paramref name="size"/> pixels (never blocks a frame).
+    /// Best fit is deliberate: with several pooled sizes, a small frame must not rent the largest
+    /// workspace (it would then sit on those oversized arrays for as long as it keeps rendering).
+    /// </summary>
     private static Scratch RentScratch(int size, int lineLength)
     {
-        Scratch scratch;
+        Scratch? best = null;
         lock (scratchGate)
         {
-            scratch = scratchPool.Count > 0 ? scratchPool.Pop() : new Scratch();
+            RetireStalePooledScratch();
+
+            var bestIndex = -1;
+            for (var i = 0; i < scratchPool.Count; i++)
+            {
+                var candidate = scratchPool[i];
+                if (candidate.Capacity < size || candidate.LineCapacity < lineLength) continue;
+                if (best == null || candidate.Bytes < best.Bytes)
+                {
+                    best = candidate;
+                    bestIndex = i;
+                }
+            }
+
+            if (best != null)
+            {
+                scratchPool.RemoveAt(bestIndex);
+                scratchPoolBytes -= best.Bytes;
+            }
         }
 
+        var scratch = best ?? new Scratch();
         scratch.EnsureCapacity(size, lineLength);
         return scratch;
     }
 
-    /// <summary>Hand the buffers back. Only a couple are kept: more would just be resident memory.</summary>
+    /// <summary>
+    /// Hand the buffers back. A workspace is only parked when it fits both the object count and
+    /// the byte budget; over-budget (oversized) workspaces are released for the GC instead of
+    /// being kept resident, and stale ones were already retired in <see cref="RentScratch"/>.
+    /// </summary>
     private static void ReturnScratch(Scratch scratch)
     {
         lock (scratchGate)
         {
-            if (scratchPool.Count < 2) scratchPool.Push(scratch);
+            if (scratchPool.Count >= MaxPooledScratch ||
+                scratchPoolBytes + scratch.Bytes > ScratchPoolBudgetBytes)
+            {
+                return;
+            }
+
+            scratch.LastReturnedAt = Environment.TickCount64;
+            scratchPool.Add(scratch);
+            scratchPoolBytes += scratch.Bytes;
+        }
+    }
+
+    /// <summary>
+    /// Retire idle pooled workspaces (see <see cref="ScratchIdleAge"/>). A long-unused scratch is
+    /// not "in use by another clock" — a live clock re-rents every tick — so releasing it only
+    /// gives back memory nobody is about to reuse. Callers must hold <see cref="scratchGate"/>.
+    /// </summary>
+    private static void RetireStalePooledScratch()
+    {
+        var now = Environment.TickCount64;
+        for (var i = scratchPool.Count - 1; i >= 0; i--)
+        {
+            if (now - scratchPool[i].LastReturnedAt < (long)ScratchIdleAge.TotalMilliseconds) continue;
+            scratchPoolBytes -= scratchPool[i].Bytes;
+            scratchPool.RemoveAt(i);
         }
     }
 

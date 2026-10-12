@@ -117,9 +117,10 @@ if (File.Exists(toolsDll))
     var widgetInfos = System.Reflection.CustomAttributeData.GetCustomAttributes(toolsAsm)
         .Where(cad => cad.AttributeType.Name == "WidgetInfoAttribute")
         .ToList();
-    Check(widgetInfos.Count == 2, "Tools assembly exports exactly 2 widgets (Clipboard & Translator)");
+    Check(widgetInfos.Count == 3, "Tools assembly exports exactly 3 widgets (Clipboard, Translator & Calculator)");
     Check(widgetInfos.Any(w => w.ConstructorArguments[0].Value?.ToString()?.Contains("ClipboardView") == true), "Tools exports ClipboardView");
     Check(widgetInfos.Any(w => w.ConstructorArguments[0].Value?.ToString()?.Contains("TranslatorView") == true), "Tools exports TranslatorView");
+    Check(widgetInfos.Any(w => w.ConstructorArguments[0].Value?.ToString()?.Contains("CalculatorView") == true), "Tools exports CalculatorView");
 
     var youdaoType = toolsAsm.GetType("Tools.Services.Translation.YoudaoTranslationEngine");
     if (youdaoType != null)

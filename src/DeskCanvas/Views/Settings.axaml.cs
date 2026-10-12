@@ -87,6 +87,13 @@ public partial class Settings : Window
             if (WindowState == WindowState.Minimized)
                 WindowState = WindowState.Normal;
 
+            // Re-attach the page the close path detached, before the window is shown: the page's
+            // Loaded contract runs as it re-attaches (the gallery rebuilds its previews, pages
+            // re-subscribe), so the first visible frame is already complete. The swap runs
+            // transition-less (see OnClosing): the attach must be synchronous too, and a
+            // transition started on a hidden window would only replay as a slide on show.
+            SwapPageWithoutTransition(() => viewModel.RestoreCurrentPage());
+
             Show();
 
             // WindowStartupLocation="CenterScreen" re-applies on every Show, and it derives the
@@ -207,6 +214,32 @@ public partial class Settings : Window
         AppTitle.IsVisible = !isTraffic;
     }
     
+    /// <summary>
+    /// Swap the page host's content without the page transition.
+    /// <para>
+    /// The close/reopen path cannot ride the transition: <c>TransitioningContentControl</c> hides
+    /// the outgoing presenter — the call that actually detaches the old page and runs its
+    /// Unloaded contract — only from the transition's completion callback. On a hidden window
+    /// nothing is guaranteed to drive that animation, so the release (and the page detach) would
+    /// sit behind it indefinitely. Dropping the transition for this one swap takes the control's
+    /// immediate path, which clears the outgoing presenter synchronously; navigation between
+    /// pages keeps its animation.
+    /// </para>
+    /// </summary>
+    private void SwapPageWithoutTransition(Action swap)
+    {
+        var transition = PageHost.PageTransition;
+        PageHost.PageTransition = null;
+        try
+        {
+            swap();
+        }
+        finally
+        {
+            PageHost.PageTransition = transition;
+        }
+    }
+
     private void Restart(object? sender, RoutedEventArgs e) => AppRestart.Restart();
 
     private void Exit(object? sender, RoutedEventArgs e) => AppShutdown.Request();
@@ -228,6 +261,14 @@ public partial class Settings : Window
     /// exit announces itself through <see cref="AppShutdown.Request"/>, which shuts the
     /// application down explicitly.
     /// </para>
+    /// <para>
+    /// Hiding keeps the window, but not the page: the window outlives every close, and its pages
+    /// hold live resources (the gallery's widget previews) while they are attached, so the hide
+    /// path detaches the current page — through an immediate, transition-less swap, so the
+    /// release cannot sit behind the page transition's completion callback — and asks for a
+    /// prompt trim; see <see cref="SettingsViewModel.ReleaseCurrentPage"/>.
+    /// <see cref="ShowAndActivate"/> restores it from the page cache.
+    /// </para>
     /// </summary>
     protected override void OnClosing(WindowClosingEventArgs e)
     {
@@ -236,12 +277,26 @@ public partial class Settings : Window
             e.Cancel = true;
             transparencyWatch.Stop();
             Hide();
-            InteropService.TrimProcessMemory();
+
+            // Hiding a window does NOT unload its content (Avalonia keeps a hidden window's
+            // visual tree attached), so without this the current page would keep its live
+            // resources — the gallery's real widget previews and their timers, page event
+            // subscriptions — alive for the whole time the window stays closed, and the trim
+            // below would find nothing to release. Detach the page AFTER hiding, through an
+            // immediate (transition-less) swap: with the page transition in place the
+            // TransitioningContentControl only releases the outgoing page when the transition
+            // completes, so the release would sit behind an animation clock that nothing drives
+            // on a hidden window — and the trim below would race it.
+            SwapPageWithoutTransition(() => viewModel.ReleaseCurrentPage());
+
+            // The one release the user is directly watching does not wait out the trimmer's
+            // coalescing cooldown (single-flight and the floor still apply — see TrimPriority).
+            MemoryTrimmerService.RequestTrim(TrimPriority.Immediate);
             return;
         }
 
         base.OnClosing(e);
-        System.Threading.Tasks.Task.Delay(500).ContinueWith(_ => InteropService.TrimProcessMemory());
+        System.Threading.Tasks.Task.Delay(500).ContinueWith(_ => MemoryTrimmerService.RequestTrim());
     }
 
     private void OnResized(object? sender, WindowResizedEventArgs e) => 

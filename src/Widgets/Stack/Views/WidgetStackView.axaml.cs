@@ -24,7 +24,7 @@ using DeskCanvas.Views;
 
 namespace StackWidgets.Views;
 
-public partial class WidgetStackView : UserControl, IWidgetSelfRefreshing, IStackWidget
+public partial class WidgetStackView : UserControl, IWidgetSelfRefreshing, IStackWidget, IWidgetSuspendable
 {
     private readonly IWidgetLayoutProvider widgetLayoutProvider;
     private readonly IAssemblyProvider assemblyProvider;
@@ -179,6 +179,57 @@ public partial class WidgetStackView : UserControl, IWidgetSelfRefreshing, IStac
         EnsureAllChildrenLoaded();
     }
 
+    /// <summary>
+    /// Fullscreen suspension, forwarded to the child cards.
+    /// <para>
+    /// The host only ever sees this stack (it is the widget's content), so before the forward the
+    /// children — every one of which already knows how to release its rebuildable graphics — kept
+    /// their timers, polls and caches alive behind a fullscreen application. Children are all
+    /// created up front (<see cref="EnsureAllChildrenLoaded"/>), so the forward reaches hidden
+    /// and active cards alike: nothing in the stack can be seen while every screen is covered,
+    /// and each child restores itself on <see cref="Resume"/> without changing switching or the
+    /// transition animation.
+    /// </para>
+    /// </summary>
+    private bool suspended;
+
+    public void Suspend()
+    {
+        if (suspended) return;
+        suspended = true;
+
+        foreach (var control in childControls.Values)
+        {
+            ForwardSuspend(control, suspend: true);
+        }
+    }
+
+    public void Resume()
+    {
+        if (!suspended) return;
+        suspended = false;
+
+        foreach (var control in childControls.Values)
+        {
+            ForwardSuspend(control, suspend: false);
+        }
+    }
+
+    private static void ForwardSuspend(UserControl? control, bool suspend)
+    {
+        if (control is not IWidgetSuspendable child) return;
+        try
+        {
+            if (suspend) child.Suspend();
+            else child.Resume();
+        }
+        catch (Exception ex)
+        {
+            // One misbehaving child must not abort the suspension of the whole stack.
+            System.Diagnostics.Debug.WriteLine($"[WidgetStack] child {(suspend ? "Suspend" : "Resume")} failed: {ex.Message}");
+        }
+    }
+
     private void UpdateDots()
     {
         try
@@ -265,6 +316,10 @@ public partial class WidgetStackView : UserControl, IWidgetSelfRefreshing, IStac
             if (control == null) return null;
 
             childControls[index] = control;
+
+            // A child created while the desktop is covered (a settings-driven rebuild, a layout
+            // change) must not start sampling behind the fullscreen application.
+            if (suspended) ForwardSuspend(control, suspend: true);
 
             if (entry.ContentScale.HasValue && Math.Abs(entry.ContentScale.Value - 1.0) > 0.001)
             {

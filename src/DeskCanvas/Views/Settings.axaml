@@ -170,7 +170,10 @@
                             </Button>
                         </StackPanel>
                         <ScrollViewer Grid.Row="1" Grid.ColumnSpan="2">
-                            <TransitioningContentControl Margin="24 0 16 16" Content="{Binding CurrentPage}">
+                            <!-- PageHost: the close path detaches / re-attaches the current page through
+                                 this host, temporarily suppressing its transition so the swap (and with
+                                 it the page's release / rebuild) is synchronous — see Settings.axaml.cs. -->
+                            <TransitioningContentControl x:Name="PageHost" Margin="24 0 16 16" Content="{Binding CurrentPage}">
                                 <TransitioningContentControl.PageTransition>
                                     <CompositePageTransition>
                                         <CrossFade Duration="0:00:00.000" />

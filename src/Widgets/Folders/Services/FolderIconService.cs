@@ -15,15 +15,27 @@ namespace Folders.Services;
 public static class FolderIconService
 {
     /// <summary>
-    /// Icon cache bound. Every entry is a decoded 256 px bitmap (~256 KB of unmanaged pixels),
-    /// so this is really a memory budget: 64 icons ≈ 16 MB, which still covers a full desktop
-    /// folder plus the big-folder popup without letting the cache grow with the whole disk.
+    /// Icon cache bounds. Every entry is a decoded 256 px bitmap (~256 KB of unmanaged pixels),
+    /// so this is really a memory budget, enforced on both axes: 64 entries ≈ 16 MiB, which still
+    /// covers a full desktop folder plus the big-folder popup without letting the cache grow with
+    /// the whole disk — and the byte budget (measured from the real pixels) holds even when a
+    /// custom icon source returns something larger than the nominal 256 px.
     /// </summary>
     private const int MaxCacheSize = 64;
+
+    /// <summary>Byte budget of the icon cache; eviction returns to <see cref="TargetCacheBytesAfterEviction"/>.</summary>
+    private const long MaxCacheBytes = 16L * 1024 * 1024;
+    private const long TargetCacheBytesAfterEviction = 12L * 1024 * 1024;
 
     private static readonly Dictionary<string, (Bitmap? Icon, DateTime Stamp, long AccessOrder)> iconCache = new(StringComparer.OrdinalIgnoreCase);
     private static readonly object cacheLock = new();
     private static long accessCounter = 0;
+
+    /// <summary>Pixel bytes currently held by <see cref="iconCache"/>; guarded by <see cref="cacheLock"/>.</summary>
+    private static long cacheBytes;
+
+    private static long IconBytes(Bitmap? icon) =>
+        icon == null ? 0 : (long)icon.PixelSize.Width * icon.PixelSize.Height * 4;
 
     public static void ClearCache()
     {
@@ -38,6 +50,7 @@ public static class FolderIconService
             }
 
             iconCache.Clear();
+            cacheBytes = 0;
         }
     }
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
@@ -179,7 +192,10 @@ public static class FolderIconService
 
         lock (cacheLock)
         {
-            if (iconCache.Count >= MaxCacheSize)
+            // Both limits feed the same access-order eviction: the count ceiling keeps the batch
+            // behaviour (roughly 30 entries leave at once, so inserts do not each trigger a scan),
+            // and the byte budget keeps dropping until the cache is back under its target.
+            if (iconCache.Count >= MaxCacheSize || cacheBytes + IconBytes(icon) > MaxCacheBytes)
             {
                 // Evicting by access order is deliberately a *cache* eviction only: the bitmap
                 // that is handed out here is assigned to item view models and drawn by the
@@ -187,11 +203,23 @@ public static class FolderIconService
                 // free the surface of a bitmap that is being rendered; dropping the reference
                 // instead lets the GC (and the bitmap's own finalizer) reclaim it once the
                 // visual tree has let go of it.
-                var toEvict = iconCache.OrderBy(kv => kv.Value.AccessOrder).Take(30).ToList();
-                foreach (var kv in toEvict)
+                var ordered = new List<KeyValuePair<string, (Bitmap? Icon, DateTime Stamp, long AccessOrder)>>(iconCache);
+                ordered.Sort((a, b) => a.Value.AccessOrder.CompareTo(b.Value.AccessOrder));
+                foreach (var kv in ordered)
                 {
+                    if (iconCache.Count < MaxCacheSize - 30 && cacheBytes + IconBytes(icon) <= TargetCacheBytesAfterEviction)
+                        break;
+
                     iconCache.Remove(kv.Key);
+                    cacheBytes -= IconBytes(kv.Value.Icon);
                 }
+            }
+
+            // A same-path refresh (stale stamp, low-quality retry) replaces its own entry; the
+            // displaced bitmap is only dereferenced, exactly like an eviction (it may be showing).
+            if (iconCache.TryGetValue(path, out var displaced))
+            {
+                cacheBytes -= IconBytes(displaced.Icon);
             }
 
             // A small result means every 256-capable source failed (often the
@@ -200,6 +228,7 @@ public static class FolderIconService
             // freezing the blurry 32px variant forever.
             var lowQuality = icon != null && icon.PixelSize.Width < 128;
             iconCache[path] = (icon, lowQuality ? DateTime.MinValue : stamp, ++accessCounter);
+            cacheBytes += IconBytes(icon);
         }
         return icon;
     }

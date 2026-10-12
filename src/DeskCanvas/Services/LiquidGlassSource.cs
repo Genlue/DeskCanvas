@@ -82,6 +82,12 @@ internal sealed class GlassSource : IDisposable
 /// once per card is what makes live sampling affordable: the expensive optics then run on the GPU
 /// against this single texture, and widgets with the same blur genuinely share one bitmap.
 /// </para>
+/// <para>
+/// Eviction is bounded by both an entry count and a real-pixel byte budget (<see cref="BudgetBytes"/>).
+/// Everything the render side still needs is protected by reference counting rather than by
+/// special cases here: the caller of <see cref="Get"/> owns a reference, so eviction can only ever
+/// drop the cache's own copy — never the backdrop a frame is being drawn from.
+/// </para>
 /// </summary>
 internal static class LiquidGlassSourceCache
 {
@@ -94,10 +100,27 @@ internal static class LiquidGlassSourceCache
     /// <summary>Entries kept before the oldest is released. Widgets may differ in blur strength.</summary>
     private const int Capacity = 3;
 
+    /// <summary>
+    /// Byte budget for the evictable backdrops. The entry count alone cannot bound real memory:
+    /// a 2560×1440 backdrop is ~14 MiB, so three entries are ~42 MiB, while a 4K multi-monitor
+    /// desktop at full clarity is well over 60 MiB for a single entry — on such a desktop the
+    /// count limit would happily pin multiples of that. The budget is measured from the real
+    /// pixels (<c>RowBytes × Height</c>, which includes the row padding), and it is deliberately
+    /// an <i>eviction</i> budget only: the entry just built (and therefore about to be drawn) is
+    /// never evicted by it, so a single oversized backdrop is kept rather than silently degraded —
+    /// 4K/multi-screen clarity must not be traded away to hit a constant.
+    /// </summary>
+    private const long BudgetBytes = 64L * 1024 * 1024;
+
     private static readonly object Gate = new();
     private static readonly List<Entry> entries = new();
 
+    /// <summary>Total bytes held by <see cref="entries"/>; guarded by <see cref="Gate"/>.</summary>
+    private static long cachedBytes;
+
     private sealed record Entry(GlassSourceKey Key, GlassSource Source);
+
+    private static long BytesOf(GlassSource source) => (long)source.Backdrop.RowBytes * source.Backdrop.Height;
 
     /// <summary>
     /// The shared backdrop for this frame, built when the capture or the blur changed.
@@ -132,7 +155,7 @@ internal static class LiquidGlassSourceCache
         var key = new GlassSourceKey(wallpaper, sigma, scale);
 
         GlassSource? built;
-        GlassSource? evicted = null;
+        List<GlassSource>? evicted = null;
         lock (Gate)
         {
             foreach (var entry in entries)
@@ -151,17 +174,31 @@ internal static class LiquidGlassSourceCache
             if (built == null) return null;
 
             entries.Add(new Entry(key, built));
-            while (entries.Count > Capacity)
+            cachedBytes += BytesOf(built);
+
+            // Oldest first, both limits enforced. The newest entry (the one just built, about to
+            // be drawn by the caller) is never evicted: if its bytes alone exceed the budget there
+            // is nothing left to give and it stays — clarity wins over the constant.
+            while (entries.Count > Capacity || cachedBytes > BudgetBytes)
             {
-                evicted = entries[0].Source;
+                if (entries.Count <= 1) break;
+
+                var oldest = entries[0].Source;
                 entries.RemoveAt(0);
+                cachedBytes -= BytesOf(oldest);
+                (evicted ??= new List<GlassSource>()).Add(oldest);
             }
+
             // The cache now holds its own reference; the caller gets one to own.
             built.AddRef();
         }
 
-        // Drop the cache's reference to the evicted entry; live callers keep it alive through theirs.
-        evicted?.Dispose();
+        // Drop the cache's references to evicted entries; live callers keep them alive through
+        // their own (an evicted backdrop that a draw operation still holds is not freed here).
+        if (evicted != null)
+        {
+            foreach (var source in evicted) source.Dispose();
+        }
         return built;
     }
 
@@ -174,6 +211,7 @@ internal static class LiquidGlassSourceCache
             dropped = new List<GlassSource>(entries.Count);
             foreach (var entry in entries) dropped.Add(entry.Source);
             entries.Clear();
+            cachedBytes = 0;
         }
         foreach (var source in dropped) source.Dispose();
     }

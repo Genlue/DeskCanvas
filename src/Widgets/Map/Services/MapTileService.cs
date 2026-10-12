@@ -31,6 +31,13 @@ public class MapTileService : IDisposable
     private const int MaxMemoryCacheTiles = 400;
     private const int TargetCacheTilesAfterEviction = 320;
 
+    /// <summary>RAM cache budget in real pixel bytes. 256×256 tiles are ~256 KiB each, so the
+    /// 400-entry ceiling alone allowed ~100 MiB; the byte budget is what bounds the cache when the
+    /// provider ever returns larger tiles (retina 512s), and the entry ceiling is what bounds it
+    /// when they are tiny. Both are enforced; eviction returns to the RAM target below.</summary>
+    private const long MaxMemoryCacheBytes = 64L * 1024 * 1024;
+    private const long TargetMemoryCacheBytesAfterEviction = 48L * 1024 * 1024;
+
     /// <summary>Disk cache budget and the level it is pruned back to. Tiles are ~10-60 KB PNGs;
     /// without a cap the cache grew for the lifetime of the machine — every panned zoom level
     /// of every provider kept its files forever.</summary>
@@ -45,6 +52,14 @@ public class MapTileService : IDisposable
     private readonly ConcurrentQueue<string> evictionQueue = new();
     private readonly ConcurrentDictionary<string, byte> activeRequests = new();
     private readonly string cacheBaseDir;
+
+    /// <summary>Pixel bytes currently held by <see cref="memoryCache"/>; adjusted under <see cref="trimGate"/>.</summary>
+    private long memoryCacheBytes;
+
+    /// <summary>Serializes the trim pass: inserts arrive from the UI thread (disk hit) and from
+    /// download workers, and the queue + byte accounting must stay exact.</summary>
+    private readonly object trimGate = new();
+
     private bool isDisposed;
 
     public event Action? TileLoaded;
@@ -122,27 +137,40 @@ public class MapTileService : IDisposable
         return null;
     }
 
-    private void AddToMemoryCache(string key, Bitmap bitmap)
+    private bool AddToMemoryCache(string key, Bitmap bitmap)
     {
-        if (memoryCache.TryAdd(key, bitmap))
-        {
-            evictionQueue.Enqueue(key);
-            TrimMemoryCacheIfNeeded();
-        }
+        if (!memoryCache.TryAdd(key, bitmap)) return false;
+
+        lock (trimGate) memoryCacheBytes += BitmapBytes(bitmap);
+        evictionQueue.Enqueue(key);
+        TrimMemoryCacheIfNeeded();
+        return true;
     }
+
+    /// <summary>The tile's real pixel cost (32-bit BGRA: 宽 × 高 × 4).</summary>
+    private static long BitmapBytes(Bitmap bitmap) =>
+        (long)bitmap.PixelSize.Width * bitmap.PixelSize.Height * 4;
 
     private void TrimMemoryCacheIfNeeded()
     {
-        if (memoryCache.Count <= MaxMemoryCacheTiles) return;
+        if (memoryCache.Count <= MaxMemoryCacheTiles && Interlocked.Read(ref memoryCacheBytes) <= MaxMemoryCacheBytes)
+            return;
 
-        // Evict oldest keys down to TargetCacheTilesAfterEviction
-        while (memoryCache.Count > TargetCacheTilesAfterEviction && evictionQueue.TryDequeue(out var oldKey))
+        // Oldest-first (insertion order) down to both targets. The ownership contract is
+        // unchanged: an evicted bitmap is only dereferenced, never disposed here — the UI render
+        // thread may still be executing context.DrawImage on it, and the GC (plus the bitmap's
+        // own finalizer) reclaims it once the last draw reference is gone.
+        lock (trimGate)
         {
-            memoryCache.TryRemove(oldKey, out _);
-            // CRITICAL: We intentionally do NOT call bmp.Dispose() here.
-            // The UI render thread may concurrently be executing context.DrawImage(bmp, ...).
-            // Dereferenced bitmaps are safely reclaimed and finalized by the .NET GC
-            // once rendering completes, eliminating AccessViolationExceptions.
+            while (memoryCache.Count > TargetCacheTilesAfterEviction
+                   || memoryCacheBytes > TargetMemoryCacheBytesAfterEviction)
+            {
+                if (!evictionQueue.TryDequeue(out var oldKey)) break;
+                if (memoryCache.TryRemove(oldKey, out var removed))
+                {
+                    memoryCacheBytes -= BitmapBytes(removed);
+                }
+            }
         }
     }
 
@@ -173,7 +201,15 @@ public class MapTileService : IDisposable
             using var ms = new MemoryStream(bytes);
             var bitmap = new Bitmap(ms);
 
-            AddToMemoryCache(key, bitmap);
+            // Ownership: a decode that finishes after the view was unloaded (or after a raced-in
+            // insert for the same key) has no cache to return to — nobody else has ever seen this
+            // instance, so it is released here instead of being parked on the finalizer queue.
+            // The eviction path still never disposes: there the bitmap may be on screen.
+            if (isDisposed || !AddToMemoryCache(key, bitmap))
+            {
+                bitmap.Dispose();
+                return;
+            }
 
             // Notify UI
             Dispatcher.UIThread.Post(() =>
@@ -301,6 +337,7 @@ public class MapTileService : IDisposable
     {
         memoryCache.Clear();
         while (evictionQueue.TryDequeue(out _)) { }
+        lock (trimGate) memoryCacheBytes = 0;
     }
 
     public void Dispose()

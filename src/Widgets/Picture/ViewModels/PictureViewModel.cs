@@ -22,9 +22,16 @@ namespace Picture.ViewModels;
 /// <item>a picture currently assigned to a rendering slot (<see cref="CurrentBitmap"/> /
 /// <see cref="PreviousBitmap"/>) is <i>pinned</i> and can never be disposed while pinned —
 /// otherwise the compositor renders a freed bitmap and the process dies (native crash);</item>
-/// <item>a picture that is neither cached nor pinned goes to a pending queue and is disposed
-/// only after a short delay, so an in-flight cross-fade / render pass is never invalidated.</item>
+/// <item>a picture that loses its owner goes to the pending queue and is disposed only after a
+/// short delay and only once nothing is rendering it, so an in-flight cross-fade / render pass
+/// is never invalidated.</item>
 /// </list>
+/// Every decoded picture is tracked in <see cref="allPictures"/> and handed to the queue the
+/// moment it has no owner any more (<see cref="SweepOrphans"/>). Ownership is <b>always</b>
+/// recorded when given up — a picture the renderer still holds is queued and skipped by the
+/// flushes until its slot lets go, rather than being dropped "to the GC": its pixel buffer is
+/// full-size (megabytes) and waiting for a finalizer is what made a slideshow over a photo
+/// folder hold on to one decoded picture per switch.
 /// </summary>
 public class PictureViewModel : ReactiveObject, IDisposable
 {
@@ -42,6 +49,10 @@ public class PictureViewModel : ReactiveObject, IDisposable
     private readonly DispatcherTimer disposeTimer;
 
     private readonly Dictionary<string, DecodedPicture> pictureCache = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>Every decoded picture that has not been disposed yet (see the ownership rules).</summary>
+    private readonly HashSet<DecodedPicture> allPictures = [];
+
     private readonly List<DecodedPicture> pendingDispose = [];
     private readonly Random random = new();
     private double currentTransitionStep;
@@ -185,14 +196,24 @@ public class PictureViewModel : ReactiveObject, IDisposable
             return null;
 
         picturesCreated++;
+        allPictures.Add(decoded);
 
-        // Evict least-recently-used entries until there is room. Eviction only *releases*
-        // ownership: a picture that is currently on screen stays alive until it leaves its slot.
+        // Make room by releasing entries that are not currently on screen. A picture the
+        // renderer is still drawing (the outgoing one during a fade) is never evicted here —
+        // dropping it would leave it with no owner while its pixels are still being read; the
+        // cache may stay one entry over the cap for that moment and the next load finishes
+        // the eviction.
         while (pictureCache.Count >= MaxCacheCount)
         {
-            var lruKey = pictureCache.Keys.FirstOrDefault();
-            if (lruKey == null) break;
-            if (pictureCache.Remove(lruKey, out var evicted)) ReleasePicture(evicted);
+            string? evictKey = null;
+            foreach (var kvp in pictureCache)
+            {
+                if (IsInUse(kvp.Value)) continue;
+                evictKey = kvp.Key;
+                break;
+            }
+            if (evictKey == null) break;
+            if (pictureCache.Remove(evictKey, out var evicted)) ReleasePicture(evicted);
         }
 
         pictureCache[path] = decoded;
@@ -230,15 +251,16 @@ public class PictureViewModel : ReactiveObject, IDisposable
     }
 
     /// <summary>
-    /// Gives up ownership of a picture. It goes to the pending queue and is disposed once the
-    /// frame it might still be part of has been rendered — never while it is in use.
+    /// Gives up ownership of a picture: it goes to the pending queue. The queue defers until
+    /// nothing is rendering it — a picture the renderer still holds is <b>kept queued</b> and
+    /// skipped by the flushes until its slot lets go, so ownership is never silently lost. An
+    /// earlier version returned early for in-use pictures, and every switch that overlapped a
+    /// fade left one full-size decoded picture reachable only from the renderer until the GC
+    /// finalizer happened to run.
     /// </summary>
     private void ReleasePicture(DecodedPicture picture)
     {
         if (picture.IsDisposed || pendingDispose.Contains(picture))
-            return;
-
-        if (IsInUse(picture))
             return;
 
         pendingDispose.Add(picture);
@@ -251,6 +273,7 @@ public class PictureViewModel : ReactiveObject, IDisposable
     {
         if (picture.IsDisposed) return;
         picturesDisposed++;
+        allPictures.Remove(picture);
         picture.Dispose();
     }
 
@@ -272,8 +295,10 @@ public class PictureViewModel : ReactiveObject, IDisposable
     }
 
     /// <summary>
-    /// Frees released pictures. Anything that came back into use is dropped from the queue
-    /// instead of being disposed.
+    /// Frees released pictures. Anything still on screen stays <b>queued</b>: it has no owner
+    /// any more, and the ownership change that finally releases its slot (or the next sweep in
+    /// <see cref="ReleaseUnusedPictures"/>) flushes it then. Dropping it from the queue here
+    /// would strand it — it is not in the cache, so no later pass could ever find it again.
     /// </summary>
     private void FlushPendingDisposals()
     {
@@ -281,10 +306,7 @@ public class PictureViewModel : ReactiveObject, IDisposable
         {
             var picture = pendingDispose[i];
             if (IsInUse(picture))
-            {
-                pendingDispose.RemoveAt(i); // re-referenced: forget about disposing it
                 continue;
-            }
             pendingDispose.RemoveAt(i);
             DisposePicture(picture);
         }
@@ -294,6 +316,35 @@ public class PictureViewModel : ReactiveObject, IDisposable
     {
         if (pendingDispose.Count == 0) disposeTimer.Stop();
         else ScheduleDispose();
+    }
+
+    /// <summary>
+    /// Queue every live picture that no longer has an owner: not in the cache, not the active
+    /// picture, not in either rendering slot. Slot replacement in the middle of a fade and an
+    /// overlapping switch used to strand such pictures — nothing referenced them any more, but
+    /// nothing disposed them either. Running this after every ownership change keeps the rule
+    /// airtight: a decoded picture is always either owned (cache / slot / active) or queued.
+    /// </summary>
+    private void SweepOrphans()
+    {
+        if (allPictures.Count == 0) return;
+
+        foreach (var picture in allPictures)
+        {
+            if (picture.IsDisposed || pendingDispose.Contains(picture)) continue;
+            if (ReferenceEquals(picture, activePicture) || IsInUse(picture)) continue;
+
+            var cached = false;
+            foreach (var candidate in pictureCache.Values)
+            {
+                if (!ReferenceEquals(candidate, picture)) continue;
+                cached = true;
+                break;
+            }
+            if (cached) continue;
+
+            pendingDispose.Add(picture);
+        }
     }
 
     /// <summary>
@@ -311,6 +362,8 @@ public class PictureViewModel : ReactiveObject, IDisposable
             pictureCache.Remove(kvp.Key);
             ReleasePicture(kvp.Value);
         }
+
+        SweepOrphans();
         RefreshDisposeTimer();
     }
 
@@ -559,10 +612,10 @@ public class PictureViewModel : ReactiveObject, IDisposable
     /// steady stream of decode allocations for pixels nobody can see, while the decoded
     /// animations (up to ~64 MB each at the frame budget) stay pinned in RAM.
     /// <para>
-    /// Stops every timer the widget owns and releases ALL decoded pictures. Mirrors the
-    /// Dispose() ordering: rendering slots are detached before any bitmap is freed, so no
-    /// render pass can reach a disposed bitmap. <see cref="Resume"/> re-decodes and restarts.
-    /// Idempotent.
+    /// Stops every timer the widget owns and disposes ALL decoded pictures — the cache, the
+    /// pending queue and any picture the renderer held. Mirrors the Dispose() ordering:
+    /// rendering slots are detached before any bitmap is freed, so no render pass can reach a
+    /// disposed bitmap. <see cref="Resume"/> re-decodes and restarts. Idempotent.
     /// </para>
     /// </summary>
     public void Suspend()
@@ -576,16 +629,12 @@ public class PictureViewModel : ReactiveObject, IDisposable
         activePicture = null;
         currentGifFrameIndex = 0;
 
-        foreach (var pic in pictureCache.Values)
+        foreach (var picture in allPictures.ToList())
         {
-            DisposePicture(pic);
+            DisposePicture(picture);
         }
+        allPictures.Clear();
         pictureCache.Clear();
-
-        foreach (var pic in pendingDispose)
-        {
-            DisposePicture(pic);
-        }
         pendingDispose.Clear();
 
         // ClearSlots' property updates can re-arm the dispose timer through the slot setters,
@@ -630,16 +679,12 @@ public class PictureViewModel : ReactiveObject, IDisposable
         // 2. no slot references any picture any more, so everything can go
         activePicture = null;
 
-        foreach (var pic in pictureCache.Values)
+        foreach (var picture in allPictures.ToList())
         {
-            DisposePicture(pic);
+            DisposePicture(picture);
         }
+        allPictures.Clear();
         pictureCache.Clear();
-
-        foreach (var pic in pendingDispose)
-        {
-            DisposePicture(pic);
-        }
         pendingDispose.Clear();
 
         // Deliberately no GC.Collect here: forcing a collection on every widget unload caused

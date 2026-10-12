@@ -28,6 +28,10 @@ public partial class Advanced : UserControl
         var viewModel = new AdvancedViewModel(appSettingsProvider, layoutProvider, displayMonitor, profileService);
         DataContext = viewModel;
         InitializeComponent();
+        // The settings window caches its pages and detaches the current one on close (to release
+        // its resources), so the pair must be able to cycle: Loaded re-subscribes, Unloaded
+        // unsubscribes.
+        Loaded += (_, _) => viewModel.Attach();
         Unloaded += (_, _) => viewModel.Dispose();
     }
 

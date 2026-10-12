@@ -64,6 +64,19 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
     private CancellationTokenSource? preRenderCts;
     private bool wallpaperStale;
 
+    /// <summary>Renders currently running on the pool (immediate ones included).</summary>
+    private int inFlightRenderCount;
+
+    /// <summary>
+    /// Ceiling on concurrent pre-renders. Five look-ahead seconds used to start up to five
+    /// <see cref="Task.Run"/> renders at once, each renting a full-size scratch workspace — the
+    /// pool's budget bounds what is parked, not what is in flight. Immediate renders (the frame
+    /// the clock is switching to right now) are never held back by this: only speculative future
+    /// frames wait for a slot, and the look-ahead loop retries them next tick, nearest second
+    /// first. Nothing about the visible timing changes.
+    /// </summary>
+    private const int MaxConcurrentPreRenders = 3;
+
     private const long CacheBudgetBytes = 48L * 1024 * 1024;
 
     private string? lastRegionKey;
@@ -551,54 +564,71 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
         var key = CacheKey(targetTime);
         if (frameCache.Contains(key) || inFlightRenders.Contains(key)) return;
 
+        // Speculative future frames yield to the in-flight ceiling (see MaxConcurrentPreRenders):
+        // they are retried on the next tick, nearest second first, so nothing is lost — only the
+        // concurrency is bounded. The immediate frame (the one the clock is switching to right
+        // now) is never held back.
+        if (!isImmediate && Volatile.Read(ref inFlightRenderCount) >= MaxConcurrentPreRenders) return;
+
         var inputs = PrepareGlassRenderInputs(targetTime);
         if (inputs == null) return;
         var (frame, glyphMask) = inputs.Value;
 
         inFlightRenders.Add(key);
+        Interlocked.Increment(ref inFlightRenderCount);
         preRenderCts ??= new CancellationTokenSource();
         var token = preRenderCts.Token;
 
         _ = Task.Run(() =>
         {
-            if (token.IsCancellationRequested) return;
-            using var wallpaper = LiquidGlassWallpaper.Get();
-            if (token.IsCancellationRequested) return;
-
-            var pngBytes = GlyphLiquidGlassRenderer.Render(frame, wallpaper, glyphMask);
-            if (token.IsCancellationRequested || pngBytes == null || pngBytes.Length == 0) return;
-
-            Dispatcher.UIThread.Post(() =>
+            try
             {
-                inFlightRenders.Remove(key);
+                if (token.IsCancellationRequested) return;
+                using var wallpaper = LiquidGlassWallpaper.Get();
                 if (token.IsCancellationRequested) return;
 
-                try
+                var pngBytes = GlyphLiquidGlassRenderer.Render(frame, wallpaper, glyphMask);
+                if (token.IsCancellationRequested || pngBytes == null || pngBytes.Length == 0) return;
+
+                Dispatcher.UIThread.Post(() =>
                 {
-                    using var ms = new MemoryStream(pngBytes);
-                    var bmp = new Bitmap(ms);
+                    inFlightRenders.Remove(key);
+                    if (token.IsCancellationRequested) return;
 
-                    frameCache.Store(key, targetTime, bmp);
-
-                    var currentKey = CacheKey(GetCurrentTime());
-                    if (isImmediate || key == currentKey || liquidGlassBitmap == null)
+                    try
                     {
-                        SetDisplayedFrame(bmp);
-                        InvalidateVisual();
-                    }
+                        using var ms = new MemoryStream(pngBytes);
+                        var bmp = new Bitmap(ms);
 
-                    if (wallpaperStale && inFlightRenders.Count == 0)
-                    {
-                        wallpaperStale = false;
-                        frameCache.Clear();
-                        SchedulePreRender(GetCurrentTime(), isImmediate: true);
+                        frameCache.Store(key, targetTime, bmp);
+
+                        var currentKey = CacheKey(GetCurrentTime());
+                        if (isImmediate || key == currentKey || liquidGlassBitmap == null)
+                        {
+                            SetDisplayedFrame(bmp);
+                            InvalidateVisual();
+                        }
+
+                        if (wallpaperStale && inFlightRenders.Count == 0)
+                        {
+                            wallpaperStale = false;
+                            frameCache.Clear();
+                            SchedulePreRender(GetCurrentTime(), isImmediate: true);
+                        }
                     }
-                }
-                catch (Exception ex)
-                {
-                    Debug.WriteLine($"Failed to decode pre-rendered frameless glass: {ex.Message}");
-                }
-            }, DispatcherPriority.Render);
+                    catch (Exception ex)
+                    {
+                        Debug.WriteLine($"Failed to decode pre-rendered frameless glass: {ex.Message}");
+                    }
+                }, DispatcherPriority.Render);
+            }
+            finally
+            {
+                // The scratch workspace is released the moment the render itself ends — the
+                // posted decode callback does not hold one. The count must fall on every path,
+                // cancellation included.
+                Interlocked.Decrement(ref inFlightRenderCount);
+            }
         }, token);
     }
 
@@ -606,7 +636,9 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
     {
         var minAge = model.ShowSeconds ? TimeSpan.FromSeconds(2) : TimeSpan.FromMinutes(2);
         var maxFrames = model.ShowSeconds ? 8 : 3;
-        frameCache.EvictExpired(now, minAge, maxFrames);
+        // The declared budget finally participates: eviction checks the displayed-frame pin, the
+        // frame-count ceiling and the stored pixel bytes together (see FramelessGlassFrameCache).
+        frameCache.EvictExpired(now, minAge, maxFrames, CacheBudgetBytes);
     }
 
     private void ClearLiquidGlassCache()

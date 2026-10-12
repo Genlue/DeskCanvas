@@ -31,6 +31,9 @@ public class SettingsViewModel : ReactiveObject
         set => this.RaiseAndSetIfChanged(ref currentPage, value);
     }
 
+    /// <summary>Last item whose page is (or was) showing; survives a <see cref="ReleaseCurrentPage"/>.</summary>
+    private PageViewModel? currentItem;
+
     private string? currentPageTitle;
     public string? CurrentPageTitle
     {
@@ -145,6 +148,7 @@ public class SettingsViewModel : ReactiveObject
     public void SetCurrentPage(PageViewModel? value)
     {
         if (value == null || !value.IsItem) return;
+        currentItem = value;
 
         if (!pageCache.TryGetValue(value, out var page))
         {
@@ -183,5 +187,34 @@ public class SettingsViewModel : ReactiveObject
 
         CurrentPage = page;
         CurrentPageTitle = value.Text;
+    }
+
+    /// <summary>
+    /// Detach the page currently shown in the window's content host.
+    /// <para>
+    /// Hiding the settings window does <b>not</b> unload its content — Avalonia keeps a hidden
+    /// window's visual tree attached — so the current page would otherwise hold its live
+    /// resources (the gallery's real widget previews and their timers, page event subscriptions)
+    /// for the whole time the window stays closed, and the maintenance trim requested on close
+    /// would find nothing to release. Detaching runs the pages' regular Unloaded contract — the
+    /// same one page navigation uses — while the window is hidden.
+    /// </para>
+    /// <para>
+    /// The control itself stays in the page cache; <see cref="RestoreCurrentPage"/> re-attaches
+    /// the same instance when the window is shown again.
+    /// </para>
+    /// </summary>
+    public void ReleaseCurrentPage() => CurrentPage = null;
+
+    /// <summary>
+    /// Re-attach the page <see cref="ReleaseCurrentPage"/> detached, from the page cache — called
+    /// when the window is shown again. The page's Loaded contract runs as it re-attaches (the
+    /// gallery rebuilds its previews), so the window reopens on the page the user left, ready to
+    /// render.
+    /// </summary>
+    public void RestoreCurrentPage()
+    {
+        if (CurrentPage != null) return;
+        SetCurrentPage(currentItem ?? DefaultItem);
     }
 }

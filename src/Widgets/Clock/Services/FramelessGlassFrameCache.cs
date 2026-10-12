@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using Avalonia.Media.Imaging;
 
 namespace Clock.Services;
@@ -8,9 +9,10 @@ namespace Clock.Services;
 /// The pre-rendered liquid glass frames of the frameless clock, keyed by time string.
 ///
 /// Every entry is a full-window bitmap, so the policy here is a <b>memory budget</b> rather than a
-/// frame count: expired frames (older than the widget's own tick) and the oldest entries beyond
-/// the budget are dropped, and a hard ceiling keeps a full-screen frameless clock from parking
-/// hundreds of megabytes of pre-rendered frames.
+/// frame count: expired frames (older than the widget's own tick) are dropped, and the oldest
+/// entries beyond either the frame-count ceiling or the byte budget are dropped too — a full-screen
+/// frameless clock must not be able to park hundreds of megabytes of pre-rendered frames.
+/// The byte count is the frame's real pixel cost (<c>宽 × 高 × 4</c>).
 ///
 /// The one frame that must never be disposed behind the renderer's back is the one currently
 /// composited on screen — <see cref="SetDisplayed"/> marks it, and every disposal path in this
@@ -19,12 +21,23 @@ namespace Clock.Services;
 /// </summary>
 internal sealed class FramelessGlassFrameCache
 {
-    private readonly Dictionary<string, (DateTime ValidTime, Bitmap Bitmap)> frames = new();
+    private readonly Dictionary<string, Entry> frames = new();
 
     /// <summary>The frame currently on screen. Disposal paths must skip it.</summary>
     private Bitmap? displayed;
 
+    /// <summary>Total bytes of the stored frames; kept exact by <see cref="Remove"/> / <see cref="Store"/>.</summary>
+    private long totalBytes;
+
+    /// <summary>Over-budget level already reported, so the diagnostic does not repeat every tick.</summary>
+    private long loggedOverage;
+
+    private readonly record struct Entry(DateTime ValidTime, Bitmap Bitmap, long Bytes);
+
     public int Count => frames.Count;
+
+    /// <summary>Bytes currently held by the cache; diagnostics/tests.</summary>
+    public long TotalBytes => totalBytes;
 
     public bool Contains(string key) => frames.ContainsKey(key);
 
@@ -55,28 +68,36 @@ internal sealed class FramelessGlassFrameCache
     /// <summary>
     /// Insert or replace a frame. A replaced frame is disposed unless it is the one on screen —
     /// a key can be re-rendered (wallpaper refresh) while its old bitmap is still being shown.
+    /// The byte accounting follows the same swap.
     /// </summary>
     public void Store(string key, DateTime validTime, Bitmap bitmap)
     {
-        if (frames.TryGetValue(key, out var existing) &&
-            !ReferenceEquals(existing.Bitmap, displayed) &&
-            !ReferenceEquals(existing.Bitmap, bitmap))
+        var bytes = BytesOf(bitmap);
+        if (frames.TryGetValue(key, out var existing))
         {
-            existing.Bitmap.Dispose();
+            totalBytes -= existing.Bytes;
+            if (!ReferenceEquals(existing.Bitmap, displayed) &&
+                !ReferenceEquals(existing.Bitmap, bitmap))
+            {
+                existing.Bitmap.Dispose();
+            }
         }
-        frames[key] = (validTime, bitmap);
+        frames[key] = new Entry(validTime, bitmap, bytes);
+        totalBytes += bytes;
     }
 
     /// <summary>
     /// Drop expired frames first (older than <paramref name="minAge"/>, the widget's own tick plus
-    /// slack), then the oldest entries while more than <paramref name="maxFrames"/> remain.
+    /// slack), then the oldest entries while more than <paramref name="maxFrames"/> remain or the
+    /// stored pixels exceed <paramref name="maxBytes"/>. The displayed frame is never evicted; if
+    /// it alone exceeds the budget, the excess is recorded instead (never silently degrade it).
     /// </summary>
-    public void EvictExpired(DateTime now, TimeSpan minAge, int maxFrames)
+    public void EvictExpired(DateTime now, TimeSpan minAge, int maxFrames, long maxBytes)
     {
         List<string>? expiredKeys = null;
-        foreach (var (key, (validTime, _)) in frames)
+        foreach (var (key, entry) in frames)
         {
-            if (validTime < now - minAge)
+            if (entry.ValidTime < now - minAge)
                 (expiredKeys ??= new List<string>()).Add(key);
         }
 
@@ -85,19 +106,39 @@ internal sealed class FramelessGlassFrameCache
             foreach (var key in expiredKeys) Remove(key);
         }
 
-        while (frames.Count > maxFrames)
+        while (frames.Count > maxFrames || totalBytes > maxBytes)
         {
             string? oldest = null;
             var oldestTime = DateTime.MaxValue;
-            foreach (var (key, (validTime, _)) in frames)
+            foreach (var (key, entry) in frames)
             {
-                if (validTime < oldestTime)
+                // The frame on screen is pinned outright: it cannot be removed from the cache
+                // (its bytes stay accounted) and evicting it would pull the picture out from
+                // under the renderer.
+                if (ReferenceEquals(entry.Bitmap, displayed)) continue;
+                if (entry.ValidTime < oldestTime)
                 {
-                    oldestTime = validTime;
+                    oldestTime = entry.ValidTime;
                     oldest = key;
                 }
             }
             if (oldest == null || !Remove(oldest)) break;
+        }
+
+        // The pinned frames alone can exceed the budget (a single 4K frame is ~32 MiB, the
+        // required current + upcoming frames more). That is accepted — the frames cost what the
+        // clock needs — but it is recorded, so an unexplained rise has a named cause.
+        var overage = totalBytes - maxBytes;
+        if (overage > 0 && overage != loggedOverage)
+        {
+            loggedOverage = overage;
+            Debug.WriteLine(
+                $"[FramelessGlassFrameCache] required frames exceed the budget by " +
+                $"{overage / 1048576.0:F1} MiB ({frames.Count} frames, {totalBytes / 1048576.0:F1} MiB held)");
+        }
+        else if (overage <= 0)
+        {
+            loggedOverage = 0;
         }
     }
 
@@ -112,15 +153,21 @@ internal sealed class FramelessGlassFrameCache
             }
         }
         frames.Clear();
+        totalBytes = 0;
     }
 
     private bool Remove(string key)
     {
         if (!frames.Remove(key, out var entry)) return false;
+        totalBytes -= entry.Bytes;
         if (!ReferenceEquals(entry.Bitmap, displayed))
         {
             entry.Bitmap.Dispose();
         }
         return true;
     }
+
+    /// <summary>The frame's real pixel cost (32-bit BGRA: 宽 × 高 × 4).</summary>
+    internal static long BytesOf(Bitmap bitmap) =>
+        (long)bitmap.PixelSize.Width * bitmap.PixelSize.Height * 4;
 }

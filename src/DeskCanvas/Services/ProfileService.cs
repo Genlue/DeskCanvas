@@ -225,8 +225,10 @@ public class ProfileService
             // 9. Notify listeners
             ActiveProfileChanged?.Invoke(this, EventArgs.Empty);
 
-            // 10. Trim working set after widgets have settled
-            System.Threading.Tasks.Task.Delay(1500).ContinueWith(_ => InteropService.TrimProcessMemory());
+            // 10. The old widget set's native resources were just torn down; request the guarded
+            // maintenance trim (off the UI thread, single-flighted, cooled down — see
+            // MemoryTrimmerService) once the new widgets have settled.
+            System.Threading.Tasks.Task.Delay(1500).ContinueWith(_ => MemoryTrimmerService.RequestTrim());
 
             return true;
         }

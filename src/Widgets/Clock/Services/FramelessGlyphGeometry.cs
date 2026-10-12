@@ -378,7 +378,7 @@ public static class FramelessGlyphGeometry
             ctx.DrawGeometry(Brushes.Black, null, geometry);
         }
 
-        var buffer = new byte[pixelW * pixelH * 4];
+        var buffer = System.Buffers.ArrayPool<byte>.Shared.Rent(pixelW * pixelH * 4);
         var handle = System.Runtime.InteropServices.GCHandle.Alloc(buffer, System.Runtime.InteropServices.GCHandleType.Pinned);
         try
         {
@@ -391,6 +391,10 @@ public static class FramelessGlyphGeometry
         finally
         {
             handle.Free();
+            // The 4-byte-per-pixel readback buffer is scratch: pooled so a full-size clock does
+            // not churn another pixel-width allocation through the LOH on every frame. Only the
+            // alpha bytes were copied out; the (garbage) contents are never read.
+            System.Buffers.ArrayPool<byte>.Shared.Return(buffer);
         }
         return mask;
     }
