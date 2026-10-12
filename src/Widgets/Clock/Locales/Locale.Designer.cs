@@ -349,5 +349,161 @@ namespace Clock.Locales {
                 return ResourceManager.GetString("Clock_FontWeight_900", resourceCulture);
             }
         }
+
+        public static string Clock_Flip_Title {
+            get {
+                return ResourceManager.GetString("Clock_Flip_Title", resourceCulture);
+            }
+        }
+
+        public static string Clock_Flip_Subtitle {
+            get {
+                return ResourceManager.GetString("Clock_Flip_Subtitle", resourceCulture);
+            }
+        }
+
+        public static string Clock_SecondsStyle {
+            get {
+                return ResourceManager.GetString("Clock_SecondsStyle", resourceCulture);
+            }
+        }
+
+        public static string Clock_SecondsStyle_FlipCard {
+            get {
+                return ResourceManager.GetString("Clock_SecondsStyle_FlipCard", resourceCulture);
+            }
+        }
+
+        public static string Clock_SecondsStyle_Badge {
+            get {
+                return ResourceManager.GetString("Clock_SecondsStyle_Badge", resourceCulture);
+            }
+        }
+
+        public static string Clock_DatePosition {
+            get {
+                return ResourceManager.GetString("Clock_DatePosition", resourceCulture);
+            }
+        }
+
+        public static string Clock_DatePosition_TopBar {
+            get {
+                return ResourceManager.GetString("Clock_DatePosition_TopBar", resourceCulture);
+            }
+        }
+
+        public static string Clock_DatePosition_BottomBar {
+            get {
+                return ResourceManager.GetString("Clock_DatePosition_BottomBar", resourceCulture);
+            }
+        }
+
+        public static string Clock_DatePosition_CardOverlay {
+            get {
+                return ResourceManager.GetString("Clock_DatePosition_CardOverlay", resourceCulture);
+            }
+        }
+
+        public static string Clock_MaterialTheme {
+            get {
+                return ResourceManager.GetString("Clock_MaterialTheme", resourceCulture);
+            }
+        }
+
+        public static string Clock_MaterialTheme_Subtitle {
+            get {
+                return ResourceManager.GetString("Clock_MaterialTheme_Subtitle", resourceCulture);
+            }
+        }
+
+        public static string Clock_Material_FollowGlobal {
+            get {
+                return ResourceManager.GetString("Clock_Material_FollowGlobal", resourceCulture);
+            }
+        }
+
+        public static string Clock_Material_Acrylic {
+            get {
+                return ResourceManager.GetString("Clock_Material_Acrylic", resourceCulture);
+            }
+        }
+
+        public static string Clock_Material_LiquidGlass {
+            get {
+                return ResourceManager.GetString("Clock_Material_LiquidGlass", resourceCulture);
+            }
+        }
+
+        public static string Clock_Material_LiquidGlassV2 {
+            get {
+                return ResourceManager.GetString("Clock_Material_LiquidGlassV2", resourceCulture);
+            }
+        }
+
+        public static string Clock_Material_Solid {
+            get {
+                return ResourceManager.GetString("Clock_Material_Solid", resourceCulture);
+            }
+        }
+
+        public static string Clock_Material_Colorful {
+            get {
+                return ResourceManager.GetString("Clock_Material_Colorful", resourceCulture);
+            }
+        }
+
+        public static string Clock_LiquidGlassOpacity {
+            get {
+                return ResourceManager.GetString("Clock_LiquidGlassOpacity", resourceCulture);
+            }
+        }
+
+        public static string Clock_FontSource {
+            get {
+                return ResourceManager.GetString("Clock_FontSource", resourceCulture);
+            }
+        }
+
+        public static string Clock_FontSource_Artistic {
+            get {
+                return ResourceManager.GetString("Clock_FontSource_Artistic", resourceCulture);
+            }
+        }
+
+        public static string Clock_FontSource_System {
+            get {
+                return ResourceManager.GetString("Clock_FontSource_System", resourceCulture);
+            }
+        }
+
+        public static string Clock_ArtisticFont {
+            get {
+                return ResourceManager.GetString("Clock_ArtisticFont", resourceCulture);
+            }
+        }
+
+        public static string Clock_SystemFont {
+            get {
+                return ResourceManager.GetString("Clock_SystemFont", resourceCulture);
+            }
+        }
+
+        public static string Clock_FontWeight_Subtitle {
+            get {
+                return ResourceManager.GetString("Clock_FontWeight_Subtitle", resourceCulture);
+            }
+        }
+
+        public static string Clock_FixedWidthDigits {
+            get {
+                return ResourceManager.GetString("Clock_FixedWidthDigits", resourceCulture);
+            }
+        }
+
+        public static string Clock_FixedWidthDigits_Subtitle {
+            get {
+                return ResourceManager.GetString("Clock_FixedWidthDigits_Subtitle", resourceCulture);
+            }
+        }
     }
 }

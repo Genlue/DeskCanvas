@@ -73,7 +73,58 @@
         <value>Frameless Clock</value>
     </data>
     <data name="Clock_FramelessDigital_Subtitle" xml:space="preserve">
-        <value>Pure digits adaptively stretched to grid with frosted glass numerals</value>
+        <value>Adaptive frameless digital clock with lock screen fonts and multi-theme materials</value>
+    </data>
+    <data name="Clock_MaterialTheme" xml:space="preserve">
+        <value>Material Theme</value>
+    </data>
+    <data name="Clock_MaterialTheme_Subtitle" xml:space="preserve">
+        <value>Follow global appearance or specify an independent material for this clock</value>
+    </data>
+    <data name="Clock_Material_FollowGlobal" xml:space="preserve">
+        <value>Follow Global Theme</value>
+    </data>
+    <data name="Clock_Material_Acrylic" xml:space="preserve">
+        <value>Acrylic Blur</value>
+    </data>
+    <data name="Clock_Material_LiquidGlass" xml:space="preserve">
+        <value>Liquid Glass</value>
+    </data>
+    <data name="Clock_Material_LiquidGlassV2" xml:space="preserve">
+        <value>New Liquid Glass</value>
+    </data>
+    <data name="Clock_Material_Solid" xml:space="preserve">
+        <value>Solid</value>
+    </data>
+    <data name="Clock_Material_Colorful" xml:space="preserve">
+        <value>Colorful</value>
+    </data>
+    <data name="Clock_LiquidGlassOpacity" xml:space="preserve">
+        <value>Liquid Glass Opacity</value>
+    </data>
+    <data name="Clock_FontSource" xml:space="preserve">
+        <value>Font Source</value>
+    </data>
+    <data name="Clock_FontSource_Artistic" xml:space="preserve">
+        <value>Lock Screen Artistic Fonts</value>
+    </data>
+    <data name="Clock_FontSource_System" xml:space="preserve">
+        <value>System Installed Fonts</value>
+    </data>
+    <data name="Clock_ArtisticFont" xml:space="preserve">
+        <value>Artistic Font</value>
+    </data>
+    <data name="Clock_SystemFont" xml:space="preserve">
+        <value>System Font</value>
+    </data>
+    <data name="Clock_FontWeight_Subtitle" xml:space="preserve">
+        <value>Does not apply to all fonts (only effective on multi-weight or variable fonts)</value>
+    </data>
+    <data name="Clock_FixedWidthDigits" xml:space="preserve">
+        <value>Fixed Digit Width (Anti-jitter)</value>
+    </data>
+    <data name="Clock_FixedWidthDigits_Subtitle" xml:space="preserve">
+        <value>Keep each digit in a fixed-width slot so the clock never shifts horizontally</value>
     </data>
     <data name="Clock_FontFamily" xml:space="preserve">
         <value>Font Family</value>
@@ -137,5 +188,32 @@
     </data>
     <data name="Clock_FontWeight_900" xml:space="preserve">
         <value>Black (900)</value>
+    </data>
+    <data name="Clock_Flip_Title" xml:space="preserve">
+        <value>Flip Clock</value>
+    </data>
+    <data name="Clock_Flip_Subtitle" xml:space="preserve">
+        <value>Mechanical split-flap clock locked to 2:1 proportion</value>
+    </data>
+    <data name="Clock_SecondsStyle" xml:space="preserve">
+        <value>Seconds style</value>
+    </data>
+    <data name="Clock_SecondsStyle_FlipCard" xml:space="preserve">
+        <value>3-Card Flip (HH:MM:SS)</value>
+    </data>
+    <data name="Clock_SecondsStyle_Badge" xml:space="preserve">
+        <value>Corner Badge (2-Card)</value>
+    </data>
+    <data name="Clock_DatePosition" xml:space="preserve">
+        <value>Date position</value>
+    </data>
+    <data name="Clock_DatePosition_TopBar" xml:space="preserve">
+        <value>Top status bar</value>
+    </data>
+    <data name="Clock_DatePosition_BottomBar" xml:space="preserve">
+        <value>Bottom status bar</value>
+    </data>
+    <data name="Clock_DatePosition_CardOverlay" xml:space="preserve">
+        <value>Inside flip card</value>
     </data>
 </root>

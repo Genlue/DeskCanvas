@@ -102,6 +102,11 @@
                     <SolidColorBrush x:Key="WidgetCardBorderBrush" Color="#15000000" />
                     <SolidColorBrush x:Key="ClockDialBackgroundBrush" Color="{DynamicResource SystemBaseHighColor}" Opacity="0.2" />
                     <SolidColorBrush x:Key="ClockStrokesBrush" Color="{DynamicResource SystemBaseHighColor}" />
+                    <SolidColorBrush x:Key="FlipClockTopFlapBrush" Color="#12000000" />
+                    <SolidColorBrush x:Key="FlipClockBottomFlapBrush" Color="#1B000000" />
+                    <SolidColorBrush x:Key="FlipClockFlapBorderBrush" Color="#18000000" />
+                    <SolidColorBrush x:Key="FlipClockCreaseBrush" Color="#28000000" />
+                    <SolidColorBrush x:Key="FlipClockHingeBrush" Color="#42000000" />
                 </ResourceDictionary>
                 <ResourceDictionary x:Key="Dark">
                     <SolidColorBrush x:Key="AccentContrastForegroundBrush" Color="White" />
@@ -174,6 +179,11 @@
                     <SolidColorBrush x:Key="WidgetCardBorderBrush" Color="#25FFFFFF" />
                     <SolidColorBrush x:Key="ClockDialBackgroundBrush" Color="{DynamicResource SystemBaseHighColor}" Opacity="0.2" />
                     <SolidColorBrush x:Key="ClockStrokesBrush" Color="{DynamicResource SystemBaseHighColor}" />
+                    <SolidColorBrush x:Key="FlipClockTopFlapBrush" Color="#1FFFFFFF" />
+                    <SolidColorBrush x:Key="FlipClockBottomFlapBrush" Color="#15FFFFFF" />
+                    <SolidColorBrush x:Key="FlipClockFlapBorderBrush" Color="#22FFFFFF" />
+                    <SolidColorBrush x:Key="FlipClockCreaseBrush" Color="#78000000" />
+                    <SolidColorBrush x:Key="FlipClockHingeBrush" Color="#48FFFFFF" />
                 </ResourceDictionary>
             </ResourceDictionary.ThemeDictionaries>
         </ResourceDictionary>

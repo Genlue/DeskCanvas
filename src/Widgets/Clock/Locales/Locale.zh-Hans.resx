@@ -172,7 +172,58 @@
     <value>无边框时钟</value>
   </data>
   <data name="Clock_FramelessDigital_Subtitle" xml:space="preserve">
-    <value>纯净数字自适应网格拉伸，毛玻璃效果直达数字轮廓</value>
+    <value>自适应网格大字时钟，支持多款锁屏艺术字体与玻璃/纯色/多彩主题</value>
+  </data>
+  <data name="Clock_MaterialTheme" xml:space="preserve">
+    <value>材质主题</value>
+  </data>
+  <data name="Clock_MaterialTheme_Subtitle" xml:space="preserve">
+    <value>默认跟随全局外观，也可单独为此时钟指定材质</value>
+  </data>
+  <data name="Clock_Material_FollowGlobal" xml:space="preserve">
+    <value>跟随全局外观</value>
+  </data>
+  <data name="Clock_Material_Acrylic" xml:space="preserve">
+    <value>毛玻璃</value>
+  </data>
+  <data name="Clock_Material_LiquidGlass" xml:space="preserve">
+    <value>液态玻璃</value>
+  </data>
+  <data name="Clock_Material_LiquidGlassV2" xml:space="preserve">
+    <value>新液态玻璃</value>
+  </data>
+  <data name="Clock_Material_Solid" xml:space="preserve">
+    <value>纯色</value>
+  </data>
+  <data name="Clock_Material_Colorful" xml:space="preserve">
+    <value>多彩</value>
+  </data>
+  <data name="Clock_LiquidGlassOpacity" xml:space="preserve">
+    <value>液态玻璃透明度</value>
+  </data>
+  <data name="Clock_FontSource" xml:space="preserve">
+    <value>字体类型</value>
+  </data>
+  <data name="Clock_FontSource_Artistic" xml:space="preserve">
+    <value>精选锁屏艺术字体</value>
+  </data>
+  <data name="Clock_FontSource_System" xml:space="preserve">
+    <value>系统自带字体</value>
+  </data>
+  <data name="Clock_ArtisticFont" xml:space="preserve">
+    <value>锁屏艺术字体</value>
+  </data>
+  <data name="Clock_SystemFont" xml:space="preserve">
+    <value>系统自带字体</value>
+  </data>
+  <data name="Clock_FontWeight_Subtitle" xml:space="preserve">
+    <value>不生效于所有字体（仅对包含多种字重或可变字重的字体生效）</value>
+  </data>
+  <data name="Clock_FixedWidthDigits" xml:space="preserve">
+    <value>固定数字宽度（防跳动）</value>
+  </data>
+  <data name="Clock_FixedWidthDigits_Subtitle" xml:space="preserve">
+    <value>每个数字固定占格，时间变化时不会左右伸缩跳动</value>
   </data>
   <data name="Clock_FontFamily" xml:space="preserve">
     <value>字体</value>
@@ -236,5 +287,32 @@
   </data>
   <data name="Clock_FontWeight_900" xml:space="preserve">
     <value>黑体 Black (900)</value>
+  </data>
+  <data name="Clock_Flip_Title" xml:space="preserve">
+    <value>翻页时钟</value>
+  </data>
+  <data name="Clock_Flip_Subtitle" xml:space="preserve">
+    <value>经典机械翻页时钟，锁定 2:1 黄金比例</value>
+  </data>
+  <data name="Clock_SecondsStyle" xml:space="preserve">
+    <value>秒数样式</value>
+  </data>
+  <data name="Clock_SecondsStyle_FlipCard" xml:space="preserve">
+    <value>独立翻页卡 (三卡 HH:MM:SS)</value>
+  </data>
+  <data name="Clock_SecondsStyle_Badge" xml:space="preserve">
+    <value>叶片右下角标 (双卡)</value>
+  </data>
+  <data name="Clock_DatePosition" xml:space="preserve">
+    <value>日期与星期位置</value>
+  </data>
+  <data name="Clock_DatePosition_TopBar" xml:space="preserve">
+    <value>顶部状态栏</value>
+  </data>
+  <data name="Clock_DatePosition_BottomBar" xml:space="preserve">
+    <value>底部状态栏</value>
+  </data>
+  <data name="Clock_DatePosition_CardOverlay" xml:space="preserve">
+    <value>叶片内嵌角标</value>
   </data>
 </root>

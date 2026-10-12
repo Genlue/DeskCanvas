@@ -107,6 +107,11 @@
                     <SolidColorBrush x:Key="WidgetCardBorderBrush" Color="#15000000" />
                     <SolidColorBrush x:Key="ClockDialBackgroundBrush" Color="#FFFFFF" />
                     <SolidColorBrush x:Key="ClockStrokesBrush" Color="#8E8E93" />
+                    <SolidColorBrush x:Key="FlipClockTopFlapBrush" Color="#F4F4F8" />
+                    <SolidColorBrush x:Key="FlipClockBottomFlapBrush" Color="#EAEAF0" />
+                    <SolidColorBrush x:Key="FlipClockFlapBorderBrush" Color="#16000000" />
+                    <SolidColorBrush x:Key="FlipClockCreaseBrush" Color="#24000000" />
+                    <SolidColorBrush x:Key="FlipClockHingeBrush" Color="#3E000000" />
                 </ResourceDictionary>
 
                 <!-- ==================== Light Theme (Light Alias) ==================== -->
@@ -205,6 +210,11 @@
                     <SolidColorBrush x:Key="WidgetCardBorderBrush" Color="#15000000" />
                     <SolidColorBrush x:Key="ClockDialBackgroundBrush" Color="#FFFFFF" />
                     <SolidColorBrush x:Key="ClockStrokesBrush" Color="#8E8E93" />
+                    <SolidColorBrush x:Key="FlipClockTopFlapBrush" Color="#F4F4F8" />
+                    <SolidColorBrush x:Key="FlipClockBottomFlapBrush" Color="#EAEAF0" />
+                    <SolidColorBrush x:Key="FlipClockFlapBorderBrush" Color="#16000000" />
+                    <SolidColorBrush x:Key="FlipClockCreaseBrush" Color="#24000000" />
+                    <SolidColorBrush x:Key="FlipClockHingeBrush" Color="#3E000000" />
                 </ResourceDictionary>
 
                 <!-- ==================== Dark Theme (Dark) ==================== -->
@@ -303,6 +313,11 @@
                     <SolidColorBrush x:Key="WidgetCardBorderBrush" Color="#25FFFFFF" />
                     <SolidColorBrush x:Key="ClockDialBackgroundBrush" Color="#2C2C2E" />
                     <SolidColorBrush x:Key="ClockStrokesBrush" Color="#8E8E93" />
+                    <SolidColorBrush x:Key="FlipClockTopFlapBrush" Color="#2C2C2E" />
+                    <SolidColorBrush x:Key="FlipClockBottomFlapBrush" Color="#232325" />
+                    <SolidColorBrush x:Key="FlipClockFlapBorderBrush" Color="#20FFFFFF" />
+                    <SolidColorBrush x:Key="FlipClockCreaseBrush" Color="#88000000" />
+                    <SolidColorBrush x:Key="FlipClockHingeBrush" Color="#48FFFFFF" />
                 </ResourceDictionary>
             </ResourceDictionary.ThemeDictionaries>
         </ResourceDictionary>

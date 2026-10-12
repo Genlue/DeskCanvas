@@ -1,0 +1,159 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="Clock.Views.Controls.FlipCard"
+             Margin="0">
+
+    <Grid x:Name="RootGrid">
+
+        <!-- ==================== 1. Static Upper Flap (Reveals New Value) ==================== -->
+        <Border x:Name="StaticTopFlap"
+                VerticalAlignment="Top"
+                Background="{DynamicResource FlipClockTopFlapBrush}"
+                ClipToBounds="True">
+            <Panel>
+                <Grid x:Name="StaticTopInnerGrid"
+                      VerticalAlignment="Top">
+                    <TextBlock x:Name="StaticTopText"
+                               FontWeight="Bold"
+                               Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}"
+                               HorizontalAlignment="Center"
+                               VerticalAlignment="Center"
+                               TextAlignment="Center" />
+                </Grid>
+                <Border x:Name="StaticTopShade"
+                        Background="Black"
+                        Opacity="0"
+                        IsHitTestVisible="False" />
+            </Panel>
+        </Border>
+
+        <!-- ==================== 2. Static Lower Flap (Holds Old Value until covered) ==================== -->
+        <Border x:Name="StaticBottomFlap"
+                VerticalAlignment="Bottom"
+                Background="{DynamicResource FlipClockBottomFlapBrush}"
+                ClipToBounds="True">
+            <Panel>
+                <Grid x:Name="StaticBottomInnerGrid"
+                      VerticalAlignment="Bottom">
+                    <TextBlock x:Name="StaticBottomText"
+                               FontWeight="Bold"
+                               Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}"
+                               HorizontalAlignment="Center"
+                               VerticalAlignment="Center"
+                               TextAlignment="Center" />
+                </Grid>
+                <Border x:Name="StaticBottomShade"
+                        Background="Black"
+                        Opacity="0"
+                        IsHitTestVisible="False" />
+            </Panel>
+        </Border>
+
+        <!-- ==================== 3. Animated Upper Flap (Phase 1: 0° -> -90° around bottom edge) ==================== -->
+        <Border x:Name="AnimTopFlap"
+                VerticalAlignment="Top"
+                Background="{DynamicResource FlipClockTopFlapBrush}"
+                ClipToBounds="True"
+                IsVisible="False"
+                RenderTransformOrigin="50%,100%">
+            <Panel>
+                <Grid x:Name="AnimTopInnerGrid"
+                      VerticalAlignment="Top">
+                    <TextBlock x:Name="AnimTopText"
+                               FontWeight="Bold"
+                               Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}"
+                               HorizontalAlignment="Center"
+                               VerticalAlignment="Center"
+                               TextAlignment="Center" />
+                </Grid>
+                <Border x:Name="AnimTopShade"
+                        Background="Black"
+                        Opacity="0"
+                        IsHitTestVisible="False" />
+            </Panel>
+        </Border>
+
+        <!-- ==================== 4. Animated Lower Flap (Phase 2: 90° -> 0° around top edge) ==================== -->
+        <Border x:Name="AnimBottomFlap"
+                VerticalAlignment="Bottom"
+                Background="{DynamicResource FlipClockBottomFlapBrush}"
+                ClipToBounds="True"
+                IsVisible="False"
+                RenderTransformOrigin="50%,0%">
+            <Panel>
+                <Grid x:Name="AnimBottomInnerGrid"
+                      VerticalAlignment="Bottom">
+                    <TextBlock x:Name="AnimBottomText"
+                               FontWeight="Bold"
+                               Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}"
+                               HorizontalAlignment="Center"
+                               VerticalAlignment="Center"
+                               TextAlignment="Center" />
+                </Grid>
+                <Border x:Name="AnimBottomShade"
+                        Background="Black"
+                        Opacity="0"
+                        IsHitTestVisible="False" />
+            </Panel>
+        </Border>
+
+        <!-- ==================== 5. Corner Metadata Badges ==================== -->
+        <TextBlock x:Name="TopLeftBadgeText"
+                   IsVisible="False"
+                   FontWeight="Bold"
+                   Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}"
+                   Opacity="0.58"
+                   HorizontalAlignment="Left"
+                   VerticalAlignment="Top"
+                   Margin="9,6,0,0"
+                   IsHitTestVisible="False" />
+
+        <TextBlock x:Name="TopRightBadgeText"
+                   IsVisible="False"
+                   FontWeight="SemiBold"
+                   Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}"
+                   Opacity="0.58"
+                   HorizontalAlignment="Right"
+                   VerticalAlignment="Top"
+                   Margin="0,6,9,0"
+                   IsHitTestVisible="False" />
+
+        <TextBlock x:Name="BottomRightBadgeText"
+                   IsVisible="False"
+                   FontWeight="Bold"
+                   Foreground="{DynamicResource SystemControlForegroundAccentBrush}"
+                   Opacity="0.9"
+                   HorizontalAlignment="Right"
+                   VerticalAlignment="Bottom"
+                   Margin="0,0,9,6"
+                   IsHitTestVisible="False" />
+
+        <!-- ==================== 6. Mechanical Split Crease, Side Hinges & Rim ==================== -->
+        <Rectangle Height="1.6"
+                   HorizontalAlignment="Stretch"
+                   VerticalAlignment="Center"
+                   Fill="{DynamicResource FlipClockCreaseBrush}"
+                   IsHitTestVisible="False" />
+
+        <Border Width="3.2"
+                Height="9"
+                HorizontalAlignment="Left"
+                VerticalAlignment="Center"
+                CornerRadius="0,2,2,0"
+                Background="{DynamicResource FlipClockHingeBrush}"
+                IsHitTestVisible="False" />
+
+        <Border Width="3.2"
+                Height="9"
+                HorizontalAlignment="Right"
+                VerticalAlignment="Center"
+                CornerRadius="2,0,0,2"
+                Background="{DynamicResource FlipClockHingeBrush}"
+                IsHitTestVisible="False" />
+
+        <Border x:Name="OuterRimBorder"
+                BorderThickness="1"
+                BorderBrush="{DynamicResource FlipClockFlapBorderBrush}"
+                IsHitTestVisible="False" />
+    </Grid>
+</UserControl>

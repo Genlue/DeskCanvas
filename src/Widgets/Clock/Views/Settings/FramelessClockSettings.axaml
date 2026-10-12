@@ -16,9 +16,44 @@
                 <ToggleSwitch IsChecked="{Binding ShowSeconds}"/>
             </controls:Setting>
 
-            <!-- 字体选择（精选手机锁屏艺术大字 + 全部系统字体） -->
-            <controls:Setting Title="{x:Static locales:Locale.Clock_FontFamily}">
-                <ComboBox ItemsSource="{Binding FontOptions}" SelectedItem="{Binding SelectedFontOption}" Width="210">
+            <!-- 独立材质主题选择（跟随全局 / 毛玻璃 / 液态玻璃 / 新液态玻璃 / 纯色 / 多彩） -->
+            <controls:Setting Title="{x:Static locales:Locale.Clock_MaterialTheme}"
+                              Subtitle="{x:Static locales:Locale.Clock_MaterialTheme_Subtitle}">
+                <ComboBox ItemsSource="{Binding MaterialOptions}" SelectedItem="{Binding SelectedMaterialOption}" Width="210">
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate x:DataType="viewModels:ClockMaterialOption">
+                            <StackPanel Orientation="Vertical" Margin="0 3">
+                                <TextBlock Text="{Binding DisplayName}" FontWeight="SemiBold" FontSize="12.5"/>
+                                <TextBlock Text="{Binding Description}" FontSize="10.5" Opacity="0.65"/>
+                            </StackPanel>
+                        </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                </ComboBox>
+            </controls:Setting>
+
+            <controls:Setting IsVisible="{Binding ShowLiquidGlassOpacity}"
+                              Title="{x:Static locales:Locale.Clock_LiquidGlassOpacity}">
+                <Grid ColumnDefinitions="*,Auto" Width="180">
+                    <Slider Minimum="0" Maximum="100" Value="{Binding LiquidGlassOpacityPercent}" VerticalAlignment="Center"/>
+                    <TextBlock Grid.Column="1" Text="{Binding LiquidGlassOpacityPercent, StringFormat='{}{0}%'}" Width="42" TextAlignment="Right" VerticalAlignment="Center" Margin="8 0 0 0"/>
+                </Grid>
+            </controls:Setting>
+
+            <!-- 字体分类（将精选锁屏艺术字体与系统自带字体分开选） -->
+            <controls:Setting Title="{x:Static locales:Locale.Clock_FontSource}">
+                <ComboBox ItemsSource="{Binding FontSourceOptions}" SelectedItem="{Binding SelectedFontSourceOption}" Width="210">
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate x:DataType="viewModels:ClockFontSourceOption">
+                            <TextBlock Text="{Binding DisplayName}" FontWeight="SemiBold" FontSize="12.5" Margin="0 2"/>
+                        </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                </ComboBox>
+            </controls:Setting>
+
+            <!-- 精选 iOS 锁屏艺术字体 -->
+            <controls:Setting IsVisible="{Binding ShowArtisticFontSelector}"
+                              Title="{x:Static locales:Locale.Clock_ArtisticFont}">
+                <ComboBox ItemsSource="{Binding ArtisticFontOptions}" SelectedItem="{Binding SelectedArtisticFont}" Width="210">
                     <ComboBox.ItemTemplate>
                         <DataTemplate x:DataType="viewModels:ClockFontOption">
                             <StackPanel Orientation="Vertical" Margin="0 3">
@@ -30,11 +65,24 @@
                 </ComboBox>
             </controls:Setting>
 
-            <!-- 字体粗细: a continuous slider with no numbers. A discrete weight picker was
-                 meaningless for the curated fonts (each ships a single face, so every step resolved
-                 to the same one); the widget now maps the slider's travel onto the family's real
-                 range and synthesises the rest, so this always reads 最细 → 最粗. -->
-            <controls:Setting Title="{x:Static locales:Locale.Clock_FontWeight}">
+            <!-- 系统自带字体 -->
+            <controls:Setting IsVisible="{Binding ShowSystemFontSelector}"
+                              Title="{x:Static locales:Locale.Clock_SystemFont}">
+                <ComboBox ItemsSource="{Binding SystemFontOptions}" SelectedItem="{Binding SelectedSystemFont}" Width="210">
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate x:DataType="viewModels:ClockFontOption">
+                            <StackPanel Orientation="Vertical" Margin="0 3">
+                                <TextBlock Text="{Binding DisplayName}" FontWeight="SemiBold" FontSize="12.5"/>
+                                <TextBlock Text="{Binding Description}" FontSize="10.5" Opacity="0.65"/>
+                            </StackPanel>
+                        </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                </ComboBox>
+            </controls:Setting>
+
+            <!-- 字体粗细（预留滑块，不强制描边合成，下方注明：不生效于所有字体） -->
+            <controls:Setting Title="{x:Static locales:Locale.Clock_FontWeight}"
+                              Subtitle="{x:Static locales:Locale.Clock_FontWeight_Subtitle}">
                 <Grid ColumnDefinitions="Auto,200,Auto" VerticalAlignment="Center">
                     <TextBlock Grid.Column="0" Text="{x:Static locales:Locale.Clock_FontWeight_Thin}"
                                FontSize="11" Opacity="0.7" Margin="0 0 8 0" VerticalAlignment="Center" />
@@ -45,6 +93,12 @@
                     <TextBlock Grid.Column="2" Text="{x:Static locales:Locale.Clock_FontWeight_Thick}"
                                FontSize="11" Opacity="0.7" Margin="8 0 0 0" VerticalAlignment="Center" />
                 </Grid>
+            </controls:Setting>
+
+            <!-- 固定数字宽度（防跳动） -->
+            <controls:Setting Title="{x:Static locales:Locale.Clock_FixedWidthDigits}"
+                              Subtitle="{x:Static locales:Locale.Clock_FixedWidthDigits_Subtitle}">
+                <ToggleSwitch IsChecked="{Binding FixedWidthDigits}"/>
             </controls:Setting>
 
             <!-- 拉伸模式 -->

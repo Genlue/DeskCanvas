@@ -1,0 +1,423 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="ControlCenter.Views.Controls.ControlCapsuleView"
+             Margin="0"
+             HorizontalAlignment="Stretch"
+             VerticalAlignment="Stretch">
+
+    <UserControl.Styles>
+        <Style Selector="Border.capsule-root">
+            <Setter Property="CornerRadius" Value="{DynamicResource WidgetInnerCornerRadius}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource WidgetCardBorderBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="ClipToBounds" Value="True" />
+            <Setter Property="Transitions">
+                <Transitions>
+                    <BrushTransition Property="Background" Duration="0:0:0.15" />
+                </Transitions>
+            </Setter>
+        </Style>
+
+        <Style Selector="Border.pill-badge">
+            <Setter Property="CornerRadius" Value="{DynamicResource WidgetPillCornerRadius}" />
+            <Setter Property="Transitions">
+                <Transitions>
+                    <BrushTransition Property="Background" Duration="0:0:0.15" />
+                </Transitions>
+            </Setter>
+        </Style>
+
+        <Style Selector="Button.capsule-sub-btn">
+            <Setter Property="CornerRadius" Value="{DynamicResource WidgetPillCornerRadius}" />
+            <Setter Property="Background" Value="#18808080" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="6,4" />
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="HorizontalAlignment" Value="Stretch" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}" />
+        </Style>
+        <Style Selector="Button.capsule-sub-btn:pointerover">
+            <Setter Property="Background" Value="#2C808080" />
+        </Style>
+        <Style Selector="Button.capsule-sub-btn.active">
+            <Setter Property="Background" Value="{DynamicResource SystemControlForegroundAccentBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource AccentContrastForegroundBrush}" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+        </Style>
+
+        <Style Selector="Button.icon-hit-btn">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="4" />
+            <Setter Property="CornerRadius" Value="{DynamicResource WidgetPillCornerRadius}" />
+            <Setter Property="Cursor" Value="Hand" />
+        </Style>
+        <Style Selector="Button.icon-hit-btn:pointerover">
+            <Setter Property="Background" Value="#20808080" />
+        </Style>
+    </UserControl.Styles>
+
+    <Border x:Name="CapsuleRoot"
+            Classes="capsule-root"
+            Background="#18808080"
+            Cursor="Hand"
+            PointerPressed="OnCapsulePointerPressed"
+            PointerMoved="OnCapsulePointerMoved"
+            PointerReleased="OnCapsulePointerReleased"
+            PointerCaptureLost="OnCapsulePointerCaptureLost"
+            PointerWheelChanged="OnCapsulePointerWheelChanged">
+        <Panel x:Name="ContentStage">
+
+            <!-- =========================================================================
+                 LAYER 1: Base Content Layer (Unfilled region for sliders, full for toggles)
+                 ========================================================================= -->
+            <Panel x:Name="BaseContentLayer" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+
+                <!-- Mode 1: 1x1 Compact Tile (Toggles & 1x1 Vertical Mini-Sliders) -->
+                <Grid x:Name="Layout1x1" IsVisible="False" RowDefinitions="*,Auto" Margin="6,5">
+                    <PathIcon x:Name="Icon1x1"
+                              Grid.Row="0"
+                              Classes="elem-shadow"
+                              Width="22" Height="22"
+                              HorizontalAlignment="Center"
+                              VerticalAlignment="Center" />
+                    <TextBlock x:Name="Label1x1"
+                               Grid.Row="1"
+                               FontSize="10.5"
+                               FontWeight="SemiBold"
+                               HorizontalAlignment="Center"
+                               TextAlignment="Center"
+                               TextTrimming="CharacterEllipsis"
+                               MaxLines="1"
+                               Margin="0,1,0,0" />
+                </Grid>
+
+                <!-- Mode 2A: 2x1 Horizontal Slider (Brightness / Volume / Mic) -->
+                <Grid x:Name="Layout2x1Slider" IsVisible="False" ColumnDefinitions="Auto,*,Auto" Margin="10,0,12,0">
+                    <Button x:Name="Slider2x1IconBtn"
+                            Grid.Column="0"
+                            Classes="icon-hit-btn"
+                            Width="30" Height="30"
+                            VerticalAlignment="Center"
+                            Click="OnSliderIconButtonClicked">
+                        <PathIcon x:Name="Icon2x1Slider"
+                                  Classes="elem-shadow"
+                                  Width="18" Height="18"
+                                  HorizontalAlignment="Center"
+                                  VerticalAlignment="Center" />
+                    </Button>
+                    <TextBlock x:Name="Title2x1Slider"
+                               Grid.Column="1"
+                               FontSize="12.5"
+                               FontWeight="SemiBold"
+                               VerticalAlignment="Center"
+                               Margin="6,0,4,0"
+                               TextTrimming="CharacterEllipsis" />
+                    <TextBlock x:Name="Value2x1Slider"
+                               Grid.Column="2"
+                               FontSize="12.5"
+                               FontWeight="Bold"
+                               VerticalAlignment="Center" />
+                </Grid>
+
+                <!-- Mode 2B: 2x1 Horizontal Toggle / Device Pill -->
+                <Grid x:Name="Layout2x1Toggle" IsVisible="False" ColumnDefinitions="Auto,*,Auto" Margin="9,6,10,6">
+                    <Border x:Name="Badge2x1Toggle"
+                            Grid.Column="0"
+                            Classes="pill-badge"
+                            Width="34" Height="34"
+                            VerticalAlignment="Center">
+                        <PathIcon x:Name="Icon2x1Toggle"
+                                  Classes="elem-shadow"
+                                  Width="17" Height="17"
+                                  HorizontalAlignment="Center"
+                                  VerticalAlignment="Center" />
+                    </Border>
+                    <StackPanel Grid.Column="1"
+                                VerticalAlignment="Center"
+                                Margin="9,0,4,0"
+                                Spacing="1">
+                        <TextBlock x:Name="Title2x1Toggle"
+                                   FontSize="12.5"
+                                   FontWeight="SemiBold"
+                                   TextTrimming="CharacterEllipsis"
+                                   MaxLines="1" />
+                        <TextBlock x:Name="Subtitle2x1Toggle"
+                                   FontSize="10.5"
+                                   Opacity="0.72"
+                                   TextTrimming="CharacterEllipsis"
+                                   MaxLines="1" />
+                    </StackPanel>
+                    <Button x:Name="Action2x1Btn"
+                            Grid.Column="2"
+                            Classes="icon-hit-btn"
+                            Width="24" Height="24"
+                            VerticalAlignment="Center"
+                            IsVisible="False"
+                            Click="OnSecondaryActionClicked"
+                            ToolTip.Tip="打开系统设置">
+                        <PathIcon Width="12" Height="12"
+                                  Data="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"
+                                  Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}" />
+                    </Button>
+                </Grid>
+
+                <!-- Mode 3A: 1x2 Vertical Slider (iOS Control Center Vertical Pill) -->
+                <Grid x:Name="Layout1x2Slider" IsVisible="False" RowDefinitions="Auto,*,Auto" Margin="6,10">
+                    <TextBlock x:Name="Value1x2Slider"
+                               Grid.Row="0"
+                               FontSize="11.5"
+                               FontWeight="Bold"
+                               HorizontalAlignment="Center" />
+                    <TextBlock x:Name="Title1x2Slider"
+                               Grid.Row="1"
+                               FontSize="10.5"
+                               FontWeight="Medium"
+                               Opacity="0.75"
+                               HorizontalAlignment="Center"
+                               VerticalAlignment="Center" />
+                    <Button x:Name="Slider1x2IconBtn"
+                            Grid.Row="2"
+                            Classes="icon-hit-btn"
+                            Width="32" Height="32"
+                            HorizontalAlignment="Center"
+                            Click="OnSliderIconButtonClicked">
+                        <PathIcon x:Name="Icon1x2Slider"
+                                  Classes="elem-shadow"
+                                  Width="20" Height="20"
+                                  HorizontalAlignment="Center"
+                                  VerticalAlignment="Center" />
+                    </Button>
+                </Grid>
+
+                <!-- Mode 3B: 1x2 Vertical Toggle Pill -->
+                <Grid x:Name="Layout1x2Toggle" IsVisible="False" RowDefinitions="Auto,*,Auto" Margin="8,10">
+                    <Border x:Name="Badge1x2Toggle"
+                            Grid.Row="0"
+                            Classes="pill-badge"
+                            Width="36" Height="36"
+                            HorizontalAlignment="Center">
+                        <PathIcon x:Name="Icon1x2Toggle"
+                                  Classes="elem-shadow"
+                                  Width="18" Height="18"
+                                  HorizontalAlignment="Center"
+                                  VerticalAlignment="Center" />
+                    </Border>
+                    <StackPanel Grid.Row="2" Spacing="2" HorizontalAlignment="Center">
+                        <TextBlock x:Name="Title1x2Toggle"
+                                   FontSize="12"
+                                   FontWeight="SemiBold"
+                                   HorizontalAlignment="Center"
+                                   TextAlignment="Center"
+                                   TextTrimming="CharacterEllipsis" />
+                        <TextBlock x:Name="Subtitle1x2Toggle"
+                                   FontSize="10.5"
+                                   Opacity="0.72"
+                                   HorizontalAlignment="Center"
+                                   TextAlignment="Center"
+                                   TextTrimming="CharacterEllipsis" />
+                    </StackPanel>
+                </Grid>
+
+                <!-- Mode 4A: 2x2 Large Audio Output Device List Card -->
+                <Grid x:Name="Layout2x2Audio" IsVisible="False" RowDefinitions="Auto,*" Margin="10,9">
+                    <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto" Margin="0,0,0,6">
+                        <PathIcon Grid.Column="0"
+                                  Width="16" Height="16"
+                                  Data="M12 1a9 9 0 0 0-9 9v7c0 1.66 1.34 3 3 3h3v-8H5v-2c0-3.87 3.13-7 7-7s7 3.13 7 7v2h-4v8h3c1.66 0 3-1.34 3-3v-7a9 9 0 0 0-9-9z"
+                                  Foreground="{DynamicResource SystemControlForegroundAccentBrush}"
+                                  VerticalAlignment="Center" />
+                        <TextBlock Grid.Column="1"
+                                   Text="音频输出设备"
+                                   FontSize="12.5"
+                                   FontWeight="SemiBold"
+                                   Margin="7,0,0,0"
+                                   VerticalAlignment="Center"
+                                   Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}" />
+                        <Button Grid.Column="2"
+                                Classes="icon-hit-btn"
+                                Width="22" Height="22"
+                                Click="OnSecondaryActionClicked"
+                                ToolTip.Tip="打开系统声音设置">
+                            <PathIcon Width="12" Height="12"
+                                      Data="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.488.488 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"
+                                      Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}" />
+                        </Button>
+                    </Grid>
+                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Hidden">
+                        <StackPanel x:Name="AudioDeviceListPanel" Spacing="4" />
+                    </ScrollViewer>
+                </Grid>
+
+                <!-- Mode 4B: 2x2 Large Precision Slider / Feature Card -->
+                <Grid x:Name="Layout2x2General" IsVisible="False" RowDefinitions="Auto,*,Auto" Margin="11,10">
+                    <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto">
+                        <Border x:Name="Badge2x2"
+                                Grid.Column="0"
+                                Classes="pill-badge"
+                                Width="36" Height="36">
+                            <PathIcon x:Name="Icon2x2"
+                                      Classes="elem-shadow"
+                                      Width="19" Height="19"
+                                      HorizontalAlignment="Center"
+                                      VerticalAlignment="Center" />
+                        </Border>
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="9,0,4,0">
+                            <TextBlock x:Name="Title2x2"
+                                       FontSize="13"
+                                       FontWeight="SemiBold"
+                                       Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}" />
+                            <TextBlock x:Name="Subtitle2x2"
+                                       FontSize="11"
+                                       Opacity="0.7"
+                                       TextTrimming="CharacterEllipsis"
+                                       Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}" />
+                        </StackPanel>
+                        <TextBlock x:Name="Value2x2"
+                                   Grid.Column="2"
+                                   FontSize="16"
+                                   FontWeight="Bold"
+                                   VerticalAlignment="Center"
+                                   Foreground="{DynamicResource SystemControlForegroundAccentBrush}" />
+                    </Grid>
+
+                    <!-- Quick Preset Buttons Row at Bottom of 2x2 Card -->
+                    <UniformGrid x:Name="Presets2x2Grid"
+                                 Grid.Row="2"
+                                 Rows="1"
+                                 Columns="4"
+                                 Margin="0,6,0,0">
+                        <Button x:Name="PresetBtn0" Classes="capsule-sub-btn" Margin="0,0,3,0" Click="OnPresetButtonClicked" />
+                        <Button x:Name="PresetBtn1" Classes="capsule-sub-btn" Margin="2,0,2,0" Click="OnPresetButtonClicked" />
+                        <Button x:Name="PresetBtn2" Classes="capsule-sub-btn" Margin="2,0,2,0" Click="OnPresetButtonClicked" />
+                        <Button x:Name="PresetBtn3" Classes="capsule-sub-btn" Margin="3,0,0,0" Click="OnPresetButtonClicked" />
+                    </UniformGrid>
+                </Grid>
+
+            </Panel>
+
+            <!-- =========================================================================
+                 LAYER 2: Filled Slider Overlay Layer (Clipped to filled bar area,
+                          renders inverted contrast foreground over the fill bar)
+                 ========================================================================= -->
+            <Panel x:Name="FilledOverlayLayer"
+                   IsVisible="False"
+                   HorizontalAlignment="Stretch"
+                   VerticalAlignment="Stretch">
+                <Border x:Name="SliderFillBar"
+                        IsHitTestVisible="False"
+                        Background="{DynamicResource SystemControlForegroundAccentBrush}"
+                        Opacity="0.92"
+                        HorizontalAlignment="Stretch"
+                        VerticalAlignment="Stretch" />
+
+                <!-- 1x1 Overlay (Contrast Foreground) -->
+                <Grid x:Name="Overlay1x1" IsVisible="False" IsHitTestVisible="False" RowDefinitions="*,Auto" Margin="6,5">
+                    <PathIcon x:Name="OverlayIcon1x1"
+                              Grid.Row="0"
+                              Width="22" Height="22"
+                              HorizontalAlignment="Center"
+                              VerticalAlignment="Center" />
+                    <TextBlock x:Name="OverlayLabel1x1"
+                               Grid.Row="1"
+                               FontSize="10.5"
+                               FontWeight="SemiBold"
+                               HorizontalAlignment="Center"
+                               TextAlignment="Center"
+                               TextTrimming="CharacterEllipsis"
+                               MaxLines="1"
+                               Margin="0,1,0,0" />
+                </Grid>
+
+                <!-- 2x1 Horizontal Slider Overlay (Contrast Foreground) -->
+                <Grid x:Name="Overlay2x1Slider" IsVisible="False" ColumnDefinitions="Auto,*,Auto" Margin="10,0,12,0">
+                    <Button Grid.Column="0"
+                            Classes="icon-hit-btn"
+                            Width="30" Height="30"
+                            VerticalAlignment="Center"
+                            Click="OnSliderIconButtonClicked">
+                        <PathIcon x:Name="OverlayIcon2x1Slider"
+                                  Width="18" Height="18"
+                                  HorizontalAlignment="Center"
+                                  VerticalAlignment="Center" />
+                    </Button>
+                    <TextBlock x:Name="OverlayTitle2x1Slider"
+                               Grid.Column="1"
+                               IsHitTestVisible="False"
+                               FontSize="12.5"
+                               FontWeight="SemiBold"
+                               VerticalAlignment="Center"
+                               Margin="6,0,4,0"
+                               TextTrimming="CharacterEllipsis" />
+                    <TextBlock x:Name="OverlayValue2x1Slider"
+                               Grid.Column="2"
+                               IsHitTestVisible="False"
+                               FontSize="12.5"
+                               FontWeight="Bold"
+                               VerticalAlignment="Center" />
+                </Grid>
+
+                <!-- 1x2 Vertical Slider Overlay (Contrast Foreground) -->
+                <Grid x:Name="Overlay1x2Slider" IsVisible="False" RowDefinitions="Auto,*,Auto" Margin="6,10">
+                    <TextBlock x:Name="OverlayValue1x2Slider"
+                               Grid.Row="0"
+                               IsHitTestVisible="False"
+                               FontSize="11.5"
+                               FontWeight="Bold"
+                               HorizontalAlignment="Center" />
+                    <TextBlock x:Name="OverlayTitle1x2Slider"
+                               Grid.Row="1"
+                               IsHitTestVisible="False"
+                               FontSize="10.5"
+                               FontWeight="Medium"
+                               Opacity="0.82"
+                               HorizontalAlignment="Center"
+                               VerticalAlignment="Center" />
+                    <Button Grid.Row="2"
+                            Classes="icon-hit-btn"
+                            Width="32" Height="32"
+                            HorizontalAlignment="Center"
+                            Click="OnSliderIconButtonClicked">
+                        <PathIcon x:Name="OverlayIcon1x2Slider"
+                                  Width="20" Height="20"
+                                  HorizontalAlignment="Center"
+                                  VerticalAlignment="Center" />
+                    </Button>
+                </Grid>
+
+                <!-- 2x2 Large Slider Overlay (Contrast Foreground) -->
+                <Grid x:Name="Overlay2x2General" IsVisible="False" IsHitTestVisible="False" RowDefinitions="Auto,*,Auto" Margin="11,10">
+                    <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto">
+                        <Border x:Name="OverlayBadge2x2"
+                                Grid.Column="0"
+                                Classes="pill-badge"
+                                Width="36" Height="36">
+                            <PathIcon x:Name="OverlayIcon2x2"
+                                      Width="19" Height="19"
+                                      HorizontalAlignment="Center"
+                                      VerticalAlignment="Center" />
+                        </Border>
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="9,0,4,0">
+                            <TextBlock x:Name="OverlayTitle2x2"
+                                       FontSize="13"
+                                       FontWeight="SemiBold" />
+                            <TextBlock x:Name="OverlaySubtitle2x2"
+                                       FontSize="11"
+                                       Opacity="0.78"
+                                       TextTrimming="CharacterEllipsis" />
+                        </StackPanel>
+                        <TextBlock x:Name="OverlayValue2x2"
+                                   Grid.Column="2"
+                                   FontSize="16"
+                                   FontWeight="Bold"
+                                   VerticalAlignment="Center" />
+                    </Grid>
+                </Grid>
+            </Panel>
+
+        </Panel>
+    </Border>
+</UserControl>

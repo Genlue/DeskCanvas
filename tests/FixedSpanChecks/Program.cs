@@ -54,6 +54,36 @@ class Program
         Check("every preset is on the lattice", AggregateView.PresetSpansOf.All(span => AggregateView.IsAllowedSpanOf(span.Columns, span.Rows)));
         Check("every snap result is on the lattice", SnapResultsAreValid());
 
+        // --- FlipClock 4×2 2:1 lattice & viewmodel mode checks ---
+        Check("FlipClock base span is 4×2", Clock.Views.FlipClock.AllowedBaseSpansOf.Contains((4, 2)));
+        Check("FlipClock presets include 4×2, 6×3, 8×4",
+            Clock.Views.FlipClock.PresetSpansOf.Contains((4, 2)) &&
+            Clock.Views.FlipClock.PresetSpansOf.Contains((6, 3)) &&
+            Clock.Views.FlipClock.PresetSpansOf.Contains((8, 4)));
+        Check("FlipClock allows 4×2 and 6×3, rejects 4×3 and 2×1",
+            Clock.Views.FlipClock.IsAllowedSpanOf(4, 2) &&
+            Clock.Views.FlipClock.IsAllowedSpanOf(6, 3) &&
+            !Clock.Views.FlipClock.IsAllowedSpanOf(4, 3) &&
+            !Clock.Views.FlipClock.IsAllowedSpanOf(2, 1));
+        Check("FlipClock snaps 6×2 -> 6×3 and 1×1 -> 4×2",
+            Clock.Views.FlipClock.SnapSpanOf(6, 2) == (6, 3) &&
+            Clock.Views.FlipClock.SnapSpanOf(1, 1) == (4, 2));
+
+        using (var vm = new Clock.ViewModels.FlipClockViewModel(new Clock.Models.FlipClockModel()))
+        {
+            Check("FlipClock default mode has top bar, 2 cards, and BarRightText AM/PM", vm.ShowTopBar && !vm.ShowThirdFlipCard && !string.IsNullOrEmpty(vm.BarRightText) && vm.HourTopLeftBadge == null);
+            vm.UpdateModel(new Clock.Models.FlipClockModel(Use24Hours: false, ShowSeconds: true, SecondsStyle: Clock.Models.FlipSecondsStyle.FlipCard, ShowDate: true, DatePosition: Clock.Models.FlipDatePosition.CardOverlay));
+            Check("FlipClock 3-card + CardOverlay mode sets 3rd card, HourTopLeftBadge, and SecondTopRightBadge", vm.ShowThirdFlipCard && !vm.ShowTopBar && !string.IsNullOrEmpty(vm.HourTopLeftBadge) && !string.IsNullOrEmpty(vm.SecondTopRightBadge));
+            vm.UpdateModel(new Clock.Models.FlipClockModel(Use24Hours: false, ShowSeconds: true, SecondsStyle: Clock.Models.FlipSecondsStyle.Badge, ShowDate: true, DatePosition: Clock.Models.FlipDatePosition.BottomBar));
+            Check("FlipClock 2-card + Badge seconds + BottomBar sets MinuteBottomRightBadge and ShowBottomBar", !vm.ShowThirdFlipCard && vm.ShowBottomBar && !string.IsNullOrEmpty(vm.MinuteBottomRightBadge));
+
+            // Verify exact 328 DIP width math in both 2-card and 3-card modes (zero overflow)
+            var width2Card = vm.CardWidth * 2 + vm.CardSpacing;
+            vm.UpdateModel(new Clock.Models.FlipClockModel(ShowSeconds: true, SecondsStyle: Clock.Models.FlipSecondsStyle.FlipCard));
+            var width3Card = vm.CardWidth * 3 + vm.CardSpacing * 2;
+            Check($"FlipClock 2-card width ({width2Card}) and 3-card width ({width3Card}) both fit 328 DIP", Math.Abs(width2Card - 328.0) < 0.01 && Math.Abs(width3Card - 328.0) < 0.01);
+        }
+
         Console.WriteLine();
         Console.WriteLine(failures == 0 ? "ALL CHECKS PASSED" : $"{failures} CHECK(S) FAILED");
         return failures == 0 ? 0 : 1;

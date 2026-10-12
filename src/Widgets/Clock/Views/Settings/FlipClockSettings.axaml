@@ -1,0 +1,71 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="clr-namespace:DeskCanvas.Views.Controls;assembly=DeskCanvas"
+             xmlns:locales="clr-namespace:Clock.Locales"
+             xmlns:system="clr-namespace:System;assembly=System.Runtime"
+             xmlns:viewModels="clr-namespace:Clock.ViewModels"
+             x:Class="Clock.Views.Settings.FlipClockSettings"
+             x:DataType="viewModels:FlipClockSettingsViewModel">
+    <ScrollViewer>
+        <StackPanel Orientation="Vertical" Spacing="6" Margin="0 0 10 0">
+            <!-- 24 小时制 -->
+            <controls:Setting Title="{x:Static locales:Locale.Clock_Use24Hours}">
+                <ToggleSwitch IsChecked="{Binding Use24Hours}" />
+            </controls:Setting>
+
+            <!-- 显示秒数 & 秒数样式 -->
+            <controls:Setting Title="{x:Static locales:Locale.Clock_ShowSeconds}">
+                <ToggleSwitch IsChecked="{Binding ShowSeconds}" />
+            </controls:Setting>
+
+            <controls:Setting IsVisible="{Binding ShowSeconds}"
+                              Title="{x:Static locales:Locale.Clock_SecondsStyle}">
+                <ComboBox ItemsSource="{Binding SecondsStyleOptions}"
+                          SelectedItem="{Binding SelectedSecondsStyleOption}"
+                          Width="195">
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate x:DataType="viewModels:FlipSecondsStyleOption">
+                            <TextBlock Text="{Binding DisplayName}" Margin="0 3" />
+                        </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                </ComboBox>
+            </controls:Setting>
+
+            <!-- 显示日期 & 日期位置 -->
+            <controls:Setting Title="{x:Static locales:Locale.Clock_ShowDate}">
+                <ToggleSwitch IsChecked="{Binding ShowDate}" />
+            </controls:Setting>
+
+            <controls:Setting IsVisible="{Binding ShowDate}"
+                              Title="{x:Static locales:Locale.Clock_DatePosition}">
+                <ComboBox ItemsSource="{Binding DatePositionOptions}"
+                          SelectedItem="{Binding SelectedDatePositionOption}"
+                          Width="195">
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate x:DataType="viewModels:FlipDatePositionOption">
+                            <TextBlock Text="{Binding DisplayName}" Margin="0 3" />
+                        </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                </ComboBox>
+            </controls:Setting>
+
+            <!-- 时区设置 -->
+            <controls:Setting Title="{x:Static locales:Locale.Clock_LocalTimeZone}">
+                <ToggleSwitch IsChecked="{Binding UseLocalTimeZone}" />
+            </controls:Setting>
+
+            <controls:Setting IsVisible="{Binding ShowTimeZones}"
+                              Title="{x:Static locales:Locale.Clock_TimeZone}">
+                <ComboBox ItemsSource="{Binding TimeZones}"
+                          Width="195"
+                          SelectedItem="{Binding TimeZone}">
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate DataType="system:TimeZoneInfo">
+                            <TextBlock Text="{Binding DisplayName}" Margin="0 4" />
+                        </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                </ComboBox>
+            </controls:Setting>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

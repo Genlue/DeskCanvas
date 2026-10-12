@@ -1,0 +1,258 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="clr-namespace:Storage.ViewModels"
+             x:Class="Storage.Views.StorageView"
+             x:DataType="vm:StorageViewModel">
+
+    <Grid>
+        <!-- Mode 1: Progress Bar List / Grid View -->
+        <Viewbox x:Name="ListScaleHost" Stretch="Uniform" StretchDirection="Both">
+            <Grid x:Name="ListBoard" Width="168" Height="162" />
+        </Viewbox>
+
+        <!-- Mode 2: 4-Slot Ring Dashboard View (macOS / MultiDashboard style) -->
+        <Viewbox x:Name="RingScaleHost" Stretch="Uniform" StretchDirection="Both" IsVisible="False">
+            <Grid x:Name="RingBoard">
+                <!-- Slot 0 -->
+                <Grid x:Name="RingItem0" x:DataType="vm:DriveItemViewModel" Margin="6"
+                      Background="Transparent"
+                      ToolTip.Tip="{Binding TooltipText}">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <Viewbox Grid.Row="0" Stretch="Uniform" ClipToBounds="False">
+                        <Canvas Width="110" Height="110">
+                            <Path Opacity="0.15" StrokeThickness="8"
+                                  Stroke="{DynamicResource SystemControlForegroundBaseHighBrush}">
+                                <Path.Data>
+                                    <EllipseGeometry Center="55,55" RadiusX="50" RadiusY="50" />
+                                </Path.Data>
+                            </Path>
+                            <Path Classes="elem-shadow" StrokeThickness="8" StrokeDashArray="39.27,39.27" StrokeLineCap="Round"
+                                  StrokeDashOffset="{Binding StrokeDashOffset}"
+                                  Stroke="{Binding StatusBrush}"
+                                  IsVisible="{Binding HasDrive}"
+                                  RenderTransformOrigin="55,55">
+                                <Path.RenderTransform>
+                                    <RotateTransform Angle="-90" />
+                                </Path.RenderTransform>
+                                <Path.Data>
+                                    <EllipseGeometry Center="55,55" RadiusX="50" RadiusY="50" />
+                                </Path.Data>
+                            </Path>
+                            <StackPanel Canvas.Left="15" Canvas.Top="20" Width="80" Spacing="1"
+                                        HorizontalAlignment="Center"
+                                        IsVisible="{Binding HasDrive}">
+                                <PathIcon Classes="elem-shadow" Data="{Binding IconData}"
+                                          Width="24" Height="24"
+                                          HorizontalAlignment="Center"
+                                          Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}"
+                                          Opacity="0.88" />
+                                <TextBlock Text="{Binding PercentText}"
+                                           FontSize="21" FontWeight="Bold"
+                                           TextAlignment="Center"
+                                           HorizontalAlignment="Stretch"
+                                           Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}" />
+                                <TextBlock Text="{Binding DriveLetter}"
+                                           FontSize="15" FontWeight="Bold"
+                                           Opacity="0.82"
+                                           TextAlignment="Center"
+                                           HorizontalAlignment="Stretch"
+                                           Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}" />
+                            </StackPanel>
+                        </Canvas>
+                    </Viewbox>
+                    <Grid x:Name="RingValueContainer0" Grid.Row="1" Height="32" Margin="0,4,0,0" IsVisible="False">
+                        <TextBlock HorizontalAlignment="Stretch" TextAlignment="Center"
+                                   VerticalAlignment="Center"
+                                   FontSize="22" FontWeight="SemiBold"
+                                   Text="{Binding RingBottomText}"
+                                   Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}"
+                                   Opacity="0.9" />
+                    </Grid>
+                </Grid>
+
+                <!-- Slot 1 -->
+                <Grid x:Name="RingItem1" x:DataType="vm:DriveItemViewModel" Margin="6"
+                      Background="Transparent"
+                      ToolTip.Tip="{Binding TooltipText}">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <Viewbox Grid.Row="0" Stretch="Uniform" ClipToBounds="False">
+                        <Canvas Width="110" Height="110">
+                            <Path Opacity="0.15" StrokeThickness="8"
+                                  Stroke="{DynamicResource SystemControlForegroundBaseHighBrush}">
+                                <Path.Data>
+                                    <EllipseGeometry Center="55,55" RadiusX="50" RadiusY="50" />
+                                </Path.Data>
+                            </Path>
+                            <Path Classes="elem-shadow" StrokeThickness="8" StrokeDashArray="39.27,39.27" StrokeLineCap="Round"
+                                  StrokeDashOffset="{Binding StrokeDashOffset}"
+                                  Stroke="{Binding StatusBrush}"
+                                  IsVisible="{Binding HasDrive}"
+                                  RenderTransformOrigin="55,55">
+                                <Path.RenderTransform>
+                                    <RotateTransform Angle="-90" />
+                                </Path.RenderTransform>
+                                <Path.Data>
+                                    <EllipseGeometry Center="55,55" RadiusX="50" RadiusY="50" />
+                                </Path.Data>
+                            </Path>
+                            <StackPanel Canvas.Left="15" Canvas.Top="20" Width="80" Spacing="1"
+                                        HorizontalAlignment="Center"
+                                        IsVisible="{Binding HasDrive}">
+                                <PathIcon Classes="elem-shadow" Data="{Binding IconData}"
+                                          Width="24" Height="24"
+                                          HorizontalAlignment="Center"
+                                          Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}"
+                                          Opacity="0.88" />
+                                <TextBlock Text="{Binding PercentText}"
+                                           FontSize="21" FontWeight="Bold"
+                                           TextAlignment="Center"
+                                           HorizontalAlignment="Stretch"
+                                           Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}" />
+                                <TextBlock Text="{Binding DriveLetter}"
+                                           FontSize="15" FontWeight="Bold"
+                                           Opacity="0.82"
+                                           TextAlignment="Center"
+                                           HorizontalAlignment="Stretch"
+                                           Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}" />
+                            </StackPanel>
+                        </Canvas>
+                    </Viewbox>
+                    <Grid x:Name="RingValueContainer1" Grid.Row="1" Height="32" Margin="0,4,0,0" IsVisible="False">
+                        <TextBlock HorizontalAlignment="Stretch" TextAlignment="Center"
+                                   VerticalAlignment="Center"
+                                   FontSize="22" FontWeight="SemiBold"
+                                   Text="{Binding RingBottomText}"
+                                   Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}"
+                                   Opacity="0.9" />
+                    </Grid>
+                </Grid>
+
+                <!-- Slot 2 -->
+                <Grid x:Name="RingItem2" x:DataType="vm:DriveItemViewModel" Margin="6"
+                      Background="Transparent"
+                      ToolTip.Tip="{Binding TooltipText}">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <Viewbox Grid.Row="0" Stretch="Uniform" ClipToBounds="False">
+                        <Canvas Width="110" Height="110">
+                            <Path Opacity="0.15" StrokeThickness="8"
+                                  Stroke="{DynamicResource SystemControlForegroundBaseHighBrush}">
+                                <Path.Data>
+                                    <EllipseGeometry Center="55,55" RadiusX="50" RadiusY="50" />
+                                </Path.Data>
+                            </Path>
+                            <Path Classes="elem-shadow" StrokeThickness="8" StrokeDashArray="39.27,39.27" StrokeLineCap="Round"
+                                  StrokeDashOffset="{Binding StrokeDashOffset}"
+                                  Stroke="{Binding StatusBrush}"
+                                  IsVisible="{Binding HasDrive}"
+                                  RenderTransformOrigin="55,55">
+                                <Path.RenderTransform>
+                                    <RotateTransform Angle="-90" />
+                                </Path.RenderTransform>
+                                <Path.Data>
+                                    <EllipseGeometry Center="55,55" RadiusX="50" RadiusY="50" />
+                                </Path.Data>
+                            </Path>
+                            <StackPanel Canvas.Left="15" Canvas.Top="20" Width="80" Spacing="1"
+                                        HorizontalAlignment="Center"
+                                        IsVisible="{Binding HasDrive}">
+                                <PathIcon Classes="elem-shadow" Data="{Binding IconData}"
+                                          Width="24" Height="24"
+                                          HorizontalAlignment="Center"
+                                          Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}"
+                                          Opacity="0.88" />
+                                <TextBlock Text="{Binding PercentText}"
+                                           FontSize="21" FontWeight="Bold"
+                                           TextAlignment="Center"
+                                           HorizontalAlignment="Stretch"
+                                           Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}" />
+                                <TextBlock Text="{Binding DriveLetter}"
+                                           FontSize="15" FontWeight="Bold"
+                                           Opacity="0.82"
+                                           TextAlignment="Center"
+                                           HorizontalAlignment="Stretch"
+                                           Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}" />
+                            </StackPanel>
+                        </Canvas>
+                    </Viewbox>
+                    <Grid x:Name="RingValueContainer2" Grid.Row="1" Height="32" Margin="0,4,0,0" IsVisible="False">
+                        <TextBlock HorizontalAlignment="Stretch" TextAlignment="Center"
+                                   VerticalAlignment="Center"
+                                   FontSize="22" FontWeight="SemiBold"
+                                   Text="{Binding RingBottomText}"
+                                   Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}"
+                                   Opacity="0.9" />
+                    </Grid>
+                </Grid>
+
+                <!-- Slot 3 -->
+                <Grid x:Name="RingItem3" x:DataType="vm:DriveItemViewModel" Margin="6"
+                      Background="Transparent"
+                      ToolTip.Tip="{Binding TooltipText}">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <Viewbox Grid.Row="0" Stretch="Uniform" ClipToBounds="False">
+                        <Canvas Width="110" Height="110">
+                            <Path Opacity="0.15" StrokeThickness="8"
+                                  Stroke="{DynamicResource SystemControlForegroundBaseHighBrush}">
+                                <Path.Data>
+                                    <EllipseGeometry Center="55,55" RadiusX="50" RadiusY="50" />
+                                </Path.Data>
+                            </Path>
+                            <Path Classes="elem-shadow" StrokeThickness="8" StrokeDashArray="39.27,39.27" StrokeLineCap="Round"
+                                  StrokeDashOffset="{Binding StrokeDashOffset}"
+                                  Stroke="{Binding StatusBrush}"
+                                  IsVisible="{Binding HasDrive}"
+                                  RenderTransformOrigin="55,55">
+                                <Path.RenderTransform>
+                                    <RotateTransform Angle="-90" />
+                                </Path.RenderTransform>
+                                <Path.Data>
+                                    <EllipseGeometry Center="55,55" RadiusX="50" RadiusY="50" />
+                                </Path.Data>
+                            </Path>
+                            <StackPanel Canvas.Left="15" Canvas.Top="20" Width="80" Spacing="1"
+                                        HorizontalAlignment="Center"
+                                        IsVisible="{Binding HasDrive}">
+                                <PathIcon Classes="elem-shadow" Data="{Binding IconData}"
+                                          Width="24" Height="24"
+                                          HorizontalAlignment="Center"
+                                          Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}"
+                                          Opacity="0.88" />
+                                <TextBlock Text="{Binding PercentText}"
+                                           FontSize="21" FontWeight="Bold"
+                                           TextAlignment="Center"
+                                           HorizontalAlignment="Stretch"
+                                           Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}" />
+                                <TextBlock Text="{Binding DriveLetter}"
+                                           FontSize="15" FontWeight="Bold"
+                                           Opacity="0.82"
+                                           TextAlignment="Center"
+                                           HorizontalAlignment="Stretch"
+                                           Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}" />
+                            </StackPanel>
+                        </Canvas>
+                    </Viewbox>
+                    <Grid x:Name="RingValueContainer3" Grid.Row="1" Height="32" Margin="0,4,0,0" IsVisible="False">
+                        <TextBlock HorizontalAlignment="Stretch" TextAlignment="Center"
+                                   VerticalAlignment="Center"
+                                   FontSize="22" FontWeight="SemiBold"
+                                   Text="{Binding RingBottomText}"
+                                   Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}"
+                                   Opacity="0.9" />
+                    </Grid>
+                </Grid>
+            </Grid>
+        </Viewbox>
+    </Grid>
+</UserControl>

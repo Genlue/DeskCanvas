@@ -237,12 +237,14 @@ if (File.Exists(clockDll))
             Check(weightProp != null && (int)weightProp.GetValue(modelInst)! == 700, "FramelessClockModel has FontWeight with default 700");
             var stretchProp = modelType.GetProperty("StretchFill");
             Check(stretchProp != null && (bool)stretchProp.GetValue(modelInst)! == true, "FramelessClockModel has StretchFill with default true");
-            // The clock is locked to the 毛玻璃 material and carries no glass-parameter overrides:
-            // the material itself, the lens width, the edge dye and the coating opacity are not
-            // widget settings, so none of these properties may come back.
             Check(modelType.GetProperty("DyeIntensity") == null, "FramelessClockModel no longer declares DyeIntensity");
             Check(modelType.GetProperty("RefractionWidth") == null, "FramelessClockModel no longer declares RefractionWidth");
-            Check(modelType.GetProperty("LiquidGlassOpacity") == null, "FramelessClockModel no longer declares LiquidGlassOpacity");
+            var lgOpacityProp = modelType.GetProperty("LiquidGlassOpacity");
+            Check(lgOpacityProp != null && Math.Abs((double)lgOpacityProp.GetValue(modelInst)! - 100.0) < 0.01, "FramelessClockModel has LiquidGlassOpacity with default 100.0");
+            var surfaceOverrideProp = modelType.GetProperty("SurfaceOverride");
+            Check(surfaceOverrideProp != null && surfaceOverrideProp.GetValue(modelInst) == null, "FramelessClockModel has SurfaceOverride defaulting to null (FollowGlobal)");
+            var fixedWidthProp = modelType.GetProperty("FixedWidthDigits");
+            Check(fixedWidthProp != null && (bool)fixedWidthProp.GetValue(modelInst)! == false, "FramelessClockModel has FixedWidthDigits defaulting to false");
         }
 
         var asmProvider = new DeskCanvas.Core.Services.AssemblyProvider(new EmptyServiceProvider());

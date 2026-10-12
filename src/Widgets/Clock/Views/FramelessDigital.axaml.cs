@@ -2,8 +2,12 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
+using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text.Json;
+using System.Threading;
+using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Media;
@@ -20,56 +24,71 @@ using DeskCanvas.Services;
 namespace Clock.Views;
 
 /// <summary>
-/// The 无边框时钟: a clock whose numerals ARE the widget — no card, no plate; the glyphs render
-/// straight onto the desktop, <b>locked to the 毛玻璃 material</b>.
+/// 无边框时钟: a clock whose numerals ARE the widget — no card, no plate; the glyphs render
+/// straight onto the desktop across all themes (跟随全局外观, 毛玻璃, 液态玻璃, 新液态玻璃, 纯色, 多彩).
 /// <para>
-/// The clock used to follow the global app theme through four materials (毛玻璃 / 液态玻璃 /
-/// 新液态玻璃 / 纯色), which made it the one widget whose look silently changed with 外观
-/// settings and the historic source of "stopped following the global theme" regressions. It is
-/// now locked to 毛玻璃: the glyphs are always a wash over the OS's native acrylic backdrop,
-/// confined to the glyph outline by the window region, whatever the global surface is — the
-/// rendered-glass pipeline (theme resolver, glyph glass renderer, pre-render frame cache and the
-/// wallpaper sampling) is gone entirely. The global theme is still read, but only for the
-/// appearance inputs the 毛玻璃 look itself uses: the light/dark wash, the accent behind
-/// 跟随强调色 and the global font family.
-/// </para>
-/// <para>
-/// Architecture contract — the part that must survive every future edit:
+/// Architecture contract:
 /// <list type="number">
-/// <item>There is ONE invalidation entry, <see cref="InvalidateGlyphs"/>: it resets the window
-/// region key and repaints. Every look-affecting event (load, light/dark variant change, model
-/// refresh, size change, a global settings change) funnels through it. No event re-implements
-/// steps inline — re-implemented hand-picked subsets of steps are exactly how the old
-/// theme-following regressions kept happening.</item>
-/// <item>The OS acrylic backdrop is asserted once per load (<see cref="VerifyAcrylicBackdrop"/>,
-/// bounded self-healing) and never reconfigured afterwards — with the lock there is no second
-/// material to switch to, so a frame can never straddle two materials.</item>
+/// <item><see cref="material"/> is the single resolved material snapshot, written in exactly one
+/// place (<see cref="ApplyCurrentMaterial"/>) and read everywhere else.</item>
+/// <item>Every material- or model-affecting event (load, theme change, variant change, model
+/// refresh, resume) funnels through <see cref="ApplyCurrentMaterial"/>, which synchronises the
+/// timer, material snapshot, frame cache, window transparency and native glyph region in one
+/// deterministic sequence.</item>
 /// </list>
 /// </para>
 /// </summary>
-public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSelfRefreshing
+public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSelfRefreshing, IWidgetSuspendable
 {
     private FramelessClockModel model;
     private readonly IWidgetLayoutProvider? widgetLayoutProvider;
     private readonly IAppSettingsProvider? appSettingsProvider;
 
+    /// <summary>The resolved material, snapshotted by <see cref="ApplyCurrentMaterial"/>.</summary>
+    private FramelessMaterial material;
+
     private UpdateTimer? currentTimer;
     private Window? window;
     private bool IsDesktopWidget => window is DeskCanvas.Views.Widget;
+
+    // The frame currently composited on screen, plus the pre-rendered frames around it.
+    // The field name is part of the widget's checked contract (tests/ClockThemeChecks reads it).
+    private Bitmap? liquidGlassBitmap;
+    private readonly FramelessGlassFrameCache frameCache = new();
 
     // Per-tick window region recompute buffers (see UpdateWindowRegion).
     private RenderTargetBitmap? regionBitmap;
     private byte[]? regionBuffer;
 
+    private readonly HashSet<string> inFlightRenders = new();
+    private CancellationTokenSource? preRenderCts;
+    private bool wallpaperStale;
+
+    private const long CacheBudgetBytes = 48L * 1024 * 1024;
+
     private string? lastRegionKey;
     private bool hasRegionSet;
+    private bool suspended;
+
+    private static readonly Theme FallbackTheme = new(
+        DarkMode: null,
+        AccentColor: null,
+        OpacityLevel: 0.18,
+        Monochrome: false,
+        UseNativeFrame: false,
+        FontFamily: "Segoe UI",
+        Surface: SurfaceStyle.LiquidGlass,
+        LiquidGlass: new LiquidGlassSettings());
 
     public FramelessDigital() : this(new FramelessClockModel(), null, null) { }
 
     public FramelessDigital(FramelessClockModel model) : this(model, null, null) { }
 
     public FramelessDigital(IWidgetLayoutProvider widgetLayoutProvider)
-        : this(new FramelessClockModel(), widgetLayoutProvider, null) { }
+        : this(widgetLayoutProvider.Get().GetModel<FramelessClockModel>() ?? new FramelessClockModel(), widgetLayoutProvider, null) { }
+
+    public FramelessDigital(IWidgetLayoutProvider widgetLayoutProvider, IAppSettingsProvider appSettingsProvider)
+        : this(widgetLayoutProvider.Get().GetModel<FramelessClockModel>() ?? new FramelessClockModel(), widgetLayoutProvider, appSettingsProvider) { }
 
     public FramelessDigital(FramelessClockModel model, IWidgetLayoutProvider? widgetLayoutProvider)
         : this(model, widgetLayoutProvider, null) { }
@@ -80,6 +99,8 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
         this.widgetLayoutProvider = widgetLayoutProvider;
         this.appSettingsProvider = appSettingsProvider;
 
+        material = FramelessThemeResolver.Resolve(this.model, appSettingsProvider?.Get().Theme);
+
         InitializeComponent();
         Classes.Add("Frameless");
         Margin = new Thickness(0);
@@ -87,7 +108,7 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
 
         Loaded += OnLoaded;
         Unloaded += OnUnloaded;
-        SizeChanged += (_, _) => InvalidateGlyphs();
+        SizeChanged += (_, _) => OnSizeChanged();
 
         if (appSettingsProvider != null)
         {
@@ -100,12 +121,15 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
     protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
     {
         base.OnAttachedToVisualTree(e);
+        LiquidGlassWallpaper.WallpaperInvalidated -= OnWallpaperInvalidated;
+        LiquidGlassWallpaper.WallpaperInvalidated += OnWallpaperInvalidated;
         ActualThemeVariantChanged -= OnActualThemeVariantChanged;
         ActualThemeVariantChanged += OnActualThemeVariantChanged;
     }
 
     protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
     {
+        LiquidGlassWallpaper.WallpaperInvalidated -= OnWallpaperInvalidated;
         ActualThemeVariantChanged -= OnActualThemeVariantChanged;
         base.OnDetachedFromVisualTree(e);
     }
@@ -113,6 +137,16 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
     private void OnLoaded(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
         window = TopLevel.GetTopLevel(this) as Window;
+        if (window != null && IsDesktopWidget)
+        {
+            window.PositionChanged -= OnWindowPositionChanged;
+            window.PositionChanged += OnWindowPositionChanged;
+        }
+
+        LiquidGlassWallpaper.WallpaperInvalidated -= OnWallpaperInvalidated;
+        LiquidGlassWallpaper.WallpaperInvalidated += OnWallpaperInvalidated;
+        ActualThemeVariantChanged -= OnActualThemeVariantChanged;
+        ActualThemeVariantChanged += OnActualThemeVariantChanged;
 
         if (appSettingsProvider != null)
         {
@@ -122,32 +156,27 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
 
         lastRegionKey = null;
         hasRegionSet = false;
-        SetupTimer();
-
-        if (window != null && IsDesktopWidget)
-        {
-            // The one place the OS backdrop is configured: the lock means it is never switched
-            // again, only re-asserted if the platform dropped it.
-            ApplyWindowTransparency(window);
-            VerifyAcrylicBackdrop(attemptsLeft: 3);
-        }
-
-        InvalidateGlyphs();
+        ApplyCurrentMaterial();
     }
 
     private void OnUnloaded(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
+        LiquidGlassWallpaper.WallpaperInvalidated -= OnWallpaperInvalidated;
         ActualThemeVariantChanged -= OnActualThemeVariantChanged;
 
         if (window != null)
         {
-            if (IsDesktopWidget && hasRegionSet)
+            if (IsDesktopWidget)
             {
-                InteropService.ClearWidgetRegion(window);
+                window.PositionChanged -= OnWindowPositionChanged;
+                if (hasRegionSet)
+                {
+                    InteropService.ClearWidgetRegion(window);
+                    hasRegionSet = false;
+                }
             }
             window = null;
         }
-        hasRegionSet = false;
 
         if (appSettingsProvider != null)
         {
@@ -157,26 +186,87 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
         currentTimer?.Unsubscribe(OnTimerTick);
         currentTimer = null;
 
+        ClearLiquidGlassCache();
+        SetDisplayedFrame(null);
+
         regionBitmap?.Dispose();
         regionBitmap = null;
         regionBuffer = null;
     }
 
+    private void OnWallpaperInvalidated()
+    {
+        if (!Dispatcher.UIThread.CheckAccess())
+        {
+            Dispatcher.UIThread.Post(OnWallpaperInvalidated);
+            return;
+        }
+
+        lastRegionKey = null;
+        UpdateTransparencyLevel();
+
+        if (!material.IsRenderedGlass)
+        {
+            InvalidateVisual();
+            return;
+        }
+
+        if (inFlightRenders.Count > 0)
+        {
+            wallpaperStale = true;
+            return;
+        }
+
+        wallpaperStale = false;
+        frameCache.Clear();
+        SchedulePreRender(GetCurrentTime(), isImmediate: true);
+    }
+
     private void OnActualThemeVariantChanged(object? sender, EventArgs e)
     {
-        // The variant changes the wash and the specular rim, so the cached region key is stale.
         if (!Dispatcher.UIThread.CheckAccess())
         {
             Dispatcher.UIThread.Post(() => OnActualThemeVariantChanged(sender, e));
             return;
         }
 
-        InvalidateGlyphs();
+        ApplyCurrentMaterial();
+    }
+
+    private void OnSizeChanged()
+    {
+        RefreshBackdrop(clearCache: true);
+    }
+
+    private void OnWindowPositionChanged(object? sender, PixelPointEventArgs e)
+    {
+        if (!IsDesktopWidget || !material.IsRenderedGlass) return;
+        RefreshBackdrop(clearCache: true, invalidate: false, resetRegionKey: false);
+    }
+
+    public void Suspend()
+    {
+        suspended = true;
+        ClearLiquidGlassCache();
+        if (liquidGlassBitmap == null && material.IsRenderedGlass)
+            RequestBackdropRender();
+    }
+
+    public void Resume()
+    {
+        suspended = false;
+        ApplyCurrentMaterial();
     }
 
     private void OnAppSettingsChanged(object sender, AppSettings? oldData, AppSettings newData)
     {
-        InvalidateGlyphs();
+        if (!Dispatcher.UIThread.CheckAccess())
+        {
+            Dispatcher.UIThread.Post(() => OnAppSettingsChanged(sender, oldData, newData));
+            return;
+        }
+
+        ApplyCurrentMaterial();
     }
 
     public void Refresh(WidgetLayout layout)
@@ -193,7 +283,9 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
                 if (updated != null)
                 {
                     model = updated;
-                    InvalidateGlyphs();
+                    frameCache.Clear();
+                    inFlightRenders.Clear();
+                    ApplyCurrentMaterial();
                 }
             }
             catch (Exception ex)
@@ -215,57 +307,330 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
     }
 
     /// <summary>
-    /// The ONE invalidation entry: everything that can change the rendered look (load,
-    /// light/dark variant change, model refresh, size change, a global settings change) funnels
-    /// through here. It only resets the region key and repaints — the glyph geometry, the wash
-    /// and the specular rim are all recomputed in the next <see cref="Render"/> pass.
+    /// The single invalidation entry for all material- and model-affecting events.
     /// </summary>
-    private void InvalidateGlyphs()
+    private void ApplyCurrentMaterial()
     {
+        SetupTimer();
+        material = FramelessThemeResolver.Resolve(model, appSettingsProvider?.Get().Theme);
+
         lastRegionKey = null;
+        ClearLiquidGlassCache();
+
+        UpdateTransparencyLevel(force: true);
+        ClearGlyphRegionIfNotAcrylic();
+
+        RequestBackdropRender();
         InvalidateVisual();
+
+        VerifyMaterialWindowState();
     }
 
-    /// <summary>
-    /// Check that the window really ended up on the acrylic backdrop the lock requires, and
-    /// re-assert it if not: the platform does not always honour the hint in the same turn, and a
-    /// plain Transparent window would put the wash on the wallpaper with no blur behind it.
-    /// Bounded to a few passes, so a platform that genuinely refuses the level cannot turn this
-    /// into an endless loop.
-    /// </summary>
-    private void VerifyAcrylicBackdrop(int attemptsLeft)
+    private void RefreshBackdrop(bool clearCache, bool invalidate = true, bool resetRegionKey = true)
+    {
+        if (resetRegionKey) lastRegionKey = null;
+        if (clearCache) ClearLiquidGlassCache();
+        RequestBackdropRender();
+        if (invalidate) InvalidateVisual();
+    }
+
+    private void ClearGlyphRegionIfNotAcrylic()
+    {
+        if (window == null || !IsDesktopWidget) return;
+        if (material.IsAcrylic || !hasRegionSet) return;
+        InteropService.ClearWidgetRegion(window);
+        hasRegionSet = false;
+    }
+
+    private void VerifyMaterialWindowState(int attemptsLeft = 3)
     {
         Dispatcher.UIThread.Post(() =>
         {
             if (window == null || !IsDesktopWidget) return;
-            if (window.ActualTransparencyLevel == WindowTransparencyLevel.AcrylicBlur) return;
 
-            Debug.WriteLine($"[FramelessClock] expected the acrylic backdrop but the window is at {window.ActualTransparencyLevel} — re-asserting");
-            ApplyWindowTransparency(window);
+            var wantAcrylic = material.IsAcrylic;
+            var level = window.ActualTransparencyLevel;
+            var levelOk = wantAcrylic
+                ? level == WindowTransparencyLevel.AcrylicBlur
+                : level != WindowTransparencyLevel.AcrylicBlur;
+
+            if (levelOk)
+            {
+                ClearGlyphRegionIfNotAcrylic();
+                return;
+            }
+
+            Debug.WriteLine($"[FramelessClock] material {(wantAcrylic ? "毛玻璃" : "非毛玻璃")} but window backdrop is {level} — re-asserting");
+            ApplyWindowTransparency(window, wantAcrylic);
+            ClearGlyphRegionIfNotAcrylic();
 
             if (attemptsLeft > 1)
-                DispatcherTimer.RunOnce(() => VerifyAcrylicBackdrop(attemptsLeft - 1), TimeSpan.FromMilliseconds(120));
+                DispatcherTimer.RunOnce(() => VerifyMaterialWindowState(attemptsLeft - 1), TimeSpan.FromMilliseconds(120));
         }, DispatcherPriority.Background);
     }
 
-    // Cached hint array: re-assigning the hint makes the Win32 impl re-apply the window
-    // transparency each time.
-    private static readonly WindowTransparencyLevel[] AcrylicHint = [WindowTransparencyLevel.AcrylicBlur];
+    private void UpdateTransparencyLevel(bool force = false)
+    {
+        if (window == null || !IsDesktopWidget) return;
+        var wantAcrylic = material.IsAcrylic;
+        var expected = wantAcrylic ? WindowTransparencyLevel.AcrylicBlur : WindowTransparencyLevel.Transparent;
+        if (!force && window.TransparencyLevelHint is { Count: 1 } current && current[0] == expected)
+            return;
+
+        ApplyWindowTransparency(window, wantAcrylic);
+    }
+
+    /// <summary>Assert the OS acrylic backdrop on <paramref name="target"/>.</summary>
+    private static void ApplyWindowTransparency(Window target) =>
+        ApplyWindowTransparency(target, acrylic: true);
 
     /// <summary>
-    /// Assert the OS acrylic backdrop. A static member on purpose:
-    /// <c>tests/ClockThemeChecks</c> drives it to pin the native backdrop contract.
+    /// Configure window transparency using a fresh array instance so Avalonia's StyledProperty
+    /// setter never short-circuits on reference equality.
     /// </summary>
-    private static void ApplyWindowTransparency(Window target)
+    private static void ApplyWindowTransparency(Window target, bool acrylic)
     {
-        target.TransparencyLevelHint = AcrylicHint;
+        target.TransparencyLevelHint = acrylic
+            ? new[] { WindowTransparencyLevel.AcrylicBlur }
+            : new[] { WindowTransparencyLevel.Transparent };
     }
 
     private void OnTimerTick()
     {
-        // The region key carries the time text, so a tick that changes the digits also moves the
-        // window region inside the Render pass; the tick itself only has to repaint.
+        if (material.IsRenderedGlass)
+        {
+            var now = GetCurrentTime();
+            var timeStr = CacheKey(now);
+
+            EvictExpiredCacheEntries(now);
+
+            if (frameCache.TryGet(timeStr, out var cached))
+            {
+                SetDisplayedFrame(cached);
+            }
+            else
+            {
+                SchedulePreRender(now, isImmediate: true);
+            }
+
+            ScheduleUpcomingPreRenders(now);
+        }
+
         InvalidateVisual();
+    }
+
+    private void RequestBackdropRender()
+    {
+        if (!material.IsRenderedGlass)
+        {
+            SetDisplayedFrame(null);
+            return;
+        }
+
+        var now = GetCurrentTime();
+        SchedulePreRender(now, isImmediate: true);
+        ScheduleUpcomingPreRenders(now);
+    }
+
+    private void ScheduleUpcomingPreRenders(DateTime now)
+    {
+        if (!IsDesktopWidget || suspended) return;
+
+        if (model.ShowSeconds)
+        {
+            for (int s = 1; s <= 5; s++)
+            {
+                var upcoming = now.AddSeconds(s);
+                var key = CacheKey(upcoming);
+                if (!frameCache.Contains(key) && !inFlightRenders.Contains(key))
+                {
+                    SchedulePreRender(upcoming, isImmediate: false);
+                }
+            }
+        }
+        else
+        {
+            var nextMinute = now.AddMinutes(1);
+            var key = CacheKey(nextMinute);
+            if (!frameCache.Contains(key) && !inFlightRenders.Contains(key))
+            {
+                SchedulePreRender(nextMinute, isImmediate: false);
+            }
+        }
+    }
+
+    private (LiquidGlassRenderer.Frame Frame, byte[] GlyphMask)? PrepareGlassRenderInputs(DateTime targetTime)
+    {
+        if (Bounds.Width < 1 || Bounds.Height < 1) return null;
+
+        var scaling = window?.RenderScaling ?? 1.0;
+        var width = Math.Max(1, (int)Math.Ceiling(Bounds.Width * scaling));
+        var height = Math.Max(1, (int)Math.Ceiling(Bounds.Height * scaling));
+
+        var effectiveTheme = FramelessThemeResolver.EffectiveTheme(appSettingsProvider?.Get().Theme, model.SurfaceOverride);
+        if (!effectiveTheme.UsesRenderedGlass)
+        {
+            effectiveTheme = effectiveTheme with { Surface = SurfaceStyle.LiquidGlass };
+        }
+
+        var stretchedGeometry = FramelessGlyphGeometry.BuildStretch(
+            FormatTime(targetTime), Bounds.Width, Bounds.Height,
+            model.FontFamily, model.FontWeight, model.StretchFill, effectiveTheme, model.FixedWidthDigits);
+        if (stretchedGeometry == null) return null;
+
+        byte[] glyphMask = FramelessGlyphGeometry.ExtractMask(stretchedGeometry, Bounds.Width, Bounds.Height, scaling, width, height);
+
+        if (model.EnableOverlay)
+        {
+            var overlay = ResolveOverlayColor(model, effectiveTheme);
+            var overlayHex = $"#{overlay.R:X2}{overlay.G:X2}{overlay.B:X2}";
+            effectiveTheme = effectiveTheme with { AccentColor = overlayHex };
+        }
+
+        var isDark = ActualThemeVariant == ThemeVariant.Dark;
+        var screen = window?.Screens.ScreenFromWindow(window);
+        var screenPos = window != null ? this.PointToScreen(default) : default;
+
+        var screens = window?.Screens.All;
+        var left = screens?.Min(s => s.Bounds.X) ?? 0;
+        var top = screens?.Min(s => s.Bounds.Y) ?? 0;
+        var desktopWidth = (screens?.Max(s => s.Bounds.Right) ?? 1920) - left;
+        var desktopHeight = (screens?.Max(s => s.Bounds.Bottom) ?? 1080) - top;
+
+        var widget = window as DeskCanvas.Views.Widget;
+        var (cols, rows) = widget?.CurrentSpan ?? (0, 0);
+
+        var frame = new LiquidGlassRenderer.Frame(
+            width, height, (float)scaling, 0f,
+            screenPos.X - left, screenPos.Y - top,
+            desktopWidth, desktopHeight,
+            (screen?.Bounds.X ?? 0) - left, (screen?.Bounds.Y ?? 0) - top,
+            screen?.Bounds.Width ?? 1920, screen?.Bounds.Height ?? 1080,
+            effectiveTheme, isDark,
+            Columns: cols, Rows: rows,
+            GlyphOpacity: (float)Math.Clamp(model.LiquidGlassOpacity / 100.0, 0, 2));
+
+        return (frame, glyphMask);
+    }
+
+    private void RenderGlassFrameSynchronously(DateTime targetTime)
+    {
+        var key = CacheKey(targetTime);
+        if (frameCache.TryGet(key, out var existing))
+        {
+            SetDisplayedFrame(existing);
+            return;
+        }
+
+        var inputs = PrepareGlassRenderInputs(targetTime);
+        if (inputs == null) return;
+
+        try
+        {
+            using var wallpaper = LiquidGlassWallpaper.Get();
+            var pngBytes = GlyphLiquidGlassRenderer.Render(inputs.Value.Frame, wallpaper, inputs.Value.GlyphMask);
+            if (pngBytes is { Length: > 0 })
+            {
+                using var ms = new MemoryStream(pngBytes);
+                var bmp = new Bitmap(ms);
+                frameCache.Store(key, targetTime, bmp);
+                SetDisplayedFrame(bmp);
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Synchronous frameless glass render failed: {ex.Message}");
+        }
+    }
+
+    private void SchedulePreRender(DateTime targetTime, bool isImmediate)
+    {
+        if (Bounds.Width < 1 || Bounds.Height < 1) return;
+        if (!material.IsRenderedGlass) return;
+
+        var key = CacheKey(targetTime);
+        if (frameCache.Contains(key) || inFlightRenders.Contains(key)) return;
+
+        var inputs = PrepareGlassRenderInputs(targetTime);
+        if (inputs == null) return;
+        var (frame, glyphMask) = inputs.Value;
+
+        inFlightRenders.Add(key);
+        preRenderCts ??= new CancellationTokenSource();
+        var token = preRenderCts.Token;
+
+        _ = Task.Run(() =>
+        {
+            if (token.IsCancellationRequested) return;
+            using var wallpaper = LiquidGlassWallpaper.Get();
+            if (token.IsCancellationRequested) return;
+
+            var pngBytes = GlyphLiquidGlassRenderer.Render(frame, wallpaper, glyphMask);
+            if (token.IsCancellationRequested || pngBytes == null || pngBytes.Length == 0) return;
+
+            Dispatcher.UIThread.Post(() =>
+            {
+                inFlightRenders.Remove(key);
+                if (token.IsCancellationRequested) return;
+
+                try
+                {
+                    using var ms = new MemoryStream(pngBytes);
+                    var bmp = new Bitmap(ms);
+
+                    frameCache.Store(key, targetTime, bmp);
+
+                    var currentKey = CacheKey(GetCurrentTime());
+                    if (isImmediate || key == currentKey || liquidGlassBitmap == null)
+                    {
+                        SetDisplayedFrame(bmp);
+                        InvalidateVisual();
+                    }
+
+                    if (wallpaperStale && inFlightRenders.Count == 0)
+                    {
+                        wallpaperStale = false;
+                        frameCache.Clear();
+                        SchedulePreRender(GetCurrentTime(), isImmediate: true);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"Failed to decode pre-rendered frameless glass: {ex.Message}");
+                }
+            }, DispatcherPriority.Render);
+        }, token);
+    }
+
+    private void EvictExpiredCacheEntries(DateTime now)
+    {
+        var minAge = model.ShowSeconds ? TimeSpan.FromSeconds(2) : TimeSpan.FromMinutes(2);
+        var maxFrames = model.ShowSeconds ? 8 : 3;
+        frameCache.EvictExpired(now, minAge, maxFrames);
+    }
+
+    private void ClearLiquidGlassCache()
+    {
+        wallpaperStale = false;
+        preRenderCts?.Cancel();
+        preRenderCts?.Dispose();
+        preRenderCts = null;
+        inFlightRenders.Clear();
+        frameCache.Clear();
+    }
+
+    private void SetDisplayedFrame(Bitmap? next)
+    {
+        if (ReferenceEquals(liquidGlassBitmap, next)) return;
+
+        var previous = liquidGlassBitmap;
+        liquidGlassBitmap = next;
+        frameCache.SetDisplayed(next);
+
+        if (previous != null && !frameCache.Holds(previous))
+        {
+            previous.Dispose();
+        }
     }
 
     private string FormatTime(DateTime dt)
@@ -274,6 +639,9 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
         var ss = model.ShowSeconds ? ":ss" : "";
         return dt.ToString($"{hh}:mm{ss}", CultureInfo.InvariantCulture);
     }
+
+    private string CacheKey(DateTime dt) =>
+        $"{FormatTime(dt)}@{Math.Round(model.LiquidGlassOpacity)}_{material.EffectiveSurface}_{model.FontFamily}_{model.FontWeight}_{model.StretchFill}_{model.FixedWidthDigits}_{ActualThemeVariant == ThemeVariant.Dark}";
 
     public override void Render(DrawingContext context)
     {
@@ -285,43 +653,162 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
 
         var now = GetCurrentTime();
         var timeStr = FormatTime(now);
+        var cacheKey = CacheKey(now);
 
-        var theme = appSettingsProvider?.Get().Theme;
+        var globalTheme = appSettingsProvider?.Get().Theme;
+        var effectiveTheme = FramelessThemeResolver.EffectiveTheme(globalTheme, model.SurfaceOverride);
+        material = FramelessThemeResolver.Resolve(model, globalTheme);
+
         var stretchedGeometry = FramelessGlyphGeometry.BuildStretch(
-            timeStr, targetW, targetH, model.FontFamily, model.FontWeight, model.StretchFill, theme);
+            timeStr, targetW, targetH,
+            model.FontFamily, model.FontWeight, model.StretchFill,
+            effectiveTheme, model.FixedWidthDigits);
         if (stretchedGeometry == null) return;
 
         var isDark = ActualThemeVariant == ThemeVariant.Dark;
 
-        if (IsDesktopWidget)
+        // Theme 1: 毛玻璃 (OS-level Acrylic blur confined to the glyph region)
+        if (material.IsAcrylic)
         {
-            // Time text, size, font and variant are part of the key so a variant switch can
-            // never leave a glyph region shaped for the previous wash on the window.
-            var regionKey = $"{timeStr}_{targetW}_{targetH}_{model.FontFamily}_{model.FontWeight}_{model.StretchFill}_{isDark}";
-            if (regionKey != lastRegionKey || !hasRegionSet)
+            if (IsDesktopWidget)
             {
-                lastRegionKey = regionKey;
-                UpdateWindowRegion(stretchedGeometry, targetW, targetH);
+                var contentScale = ResolveHostContentScale();
+                var regionKey = $"{timeStr}_{targetW}_{targetH}_{model.FontFamily}_{model.FontWeight}_{model.StretchFill}_{model.FixedWidthDigits}_{isDark}_{contentScale:F3}";
+                if (regionKey != lastRegionKey || !hasRegionSet)
+                {
+                    lastRegionKey = regionKey;
+                    UpdateWindowRegion(stretchedGeometry, targetW, targetH);
+                }
             }
+
+            using (context.PushGeometryClip(stretchedGeometry))
+            {
+                var alpha = IsDesktopWidget ? (isDark ? 70 : 48) : (isDark ? 160 : 180);
+                var tintWash = isDark
+                    ? Color.FromArgb((byte)alpha, 60, 60, 60)
+                    : Color.FromArgb((byte)alpha, 240, 240, 240);
+                context.DrawRectangle(new SolidColorBrush(tintWash), null, new Rect(0, 0, targetW, targetH));
+
+                if (model.EnableOverlay)
+                {
+                    var overlayColor = ResolveOverlayColor(model, effectiveTheme);
+                    context.DrawRectangle(new SolidColorBrush(overlayColor), null, new Rect(0, 0, targetW, targetH));
+                }
+            }
+
+            DrawSpecularRim(context, stretchedGeometry, targetW, targetH, isDark, model, effectiveTheme);
+            return;
         }
 
-        using (context.PushGeometryClip(stretchedGeometry))
+        // All non-acrylic materials composite via clean 32-bit per-pixel alpha — no 1-bit GDI window region.
+        ClearGlyphRegionIfNotAcrylic();
+
+        // Theme 2: 液态玻璃 / 新液态玻璃 / 柔光玻璃 (Per-pixel refractive optical glass)
+        if (material.IsRenderedGlass)
         {
-            // Acrylic surface wash: in preview, provide higher opacity so it looks frosted in the gallery card
-            var alpha = IsDesktopWidget ? (isDark ? 70 : 48) : (isDark ? 160 : 180);
-            var tintWash = isDark
-                ? Color.FromArgb((byte)alpha, 60, 60, 60)
-                : Color.FromArgb((byte)alpha, 240, 240, 240);
-            context.DrawRectangle(new SolidColorBrush(tintWash), null, new Rect(0, 0, targetW, targetH));
+            if (frameCache.TryGet(cacheKey, out var cached))
+            {
+                SetDisplayedFrame(cached);
+            }
+            else if (!IsDesktopWidget && liquidGlassBitmap == null)
+            {
+                RenderGlassFrameSynchronously(now);
+            }
+
+            if (liquidGlassBitmap != null)
+            {
+                context.DrawImage(liquidGlassBitmap, new Rect(0, 0, targetW, targetH));
+            }
+            else
+            {
+                using (context.PushGeometryClip(stretchedGeometry))
+                {
+                    var fallbackHex = isDark ? "#282828" : "#F0F0F0";
+                    var c = Color.TryParse(fallbackHex, out var parsed) ? parsed : Colors.Gray;
+                    context.DrawRectangle(new SolidColorBrush(Color.FromArgb(120, c.R, c.G, c.B)), null, new Rect(0, 0, targetW, targetH));
+                }
+                SchedulePreRender(now, isImmediate: true);
+                DrawSpecularRim(context, stretchedGeometry, targetW, targetH, isDark, model, effectiveTheme);
+            }
 
             if (model.EnableOverlay)
             {
-                var overlayColor = ResolveOverlayColor(model, theme);
+                using (context.PushGeometryClip(stretchedGeometry))
+                {
+                    var overlayColor = ResolveOverlayColor(model, effectiveTheme);
+                    context.DrawRectangle(new SolidColorBrush(overlayColor), null, new Rect(0, 0, targetW, targetH));
+                }
+            }
+
+            return;
+        }
+
+        // Theme 3: 多彩 (Vibrant gradient numeral fill + luminous specular rim)
+        if (material.IsColorful)
+        {
+            using (context.PushGeometryClip(stretchedGeometry))
+            {
+                if (model.EnableOverlay)
+                {
+                    var overlayColor = ResolveOverlayColor(model, effectiveTheme);
+                    context.DrawRectangle(new SolidColorBrush(overlayColor), null, new Rect(0, 0, targetW, targetH));
+                }
+                else
+                {
+                    var accent = ResolveAccentColor(effectiveTheme) ?? DefaultOverlayColor;
+                    var startColor = BlendColors(accent, Colors.White, isDark ? 0.28f : 0.38f);
+                    var midColor = accent;
+                    var endColor = BlendColors(accent, isDark ? Color.FromRgb(25, 20, 60) : Color.FromRgb(40, 30, 95), 0.32f);
+
+                    var colorfulBrush = new LinearGradientBrush
+                    {
+                        StartPoint = new RelativePoint(0, 0, RelativeUnit.Relative),
+                        EndPoint = new RelativePoint(1, 1, RelativeUnit.Relative),
+                        GradientStops =
+                        {
+                            new GradientStop(startColor, 0.0),
+                            new GradientStop(midColor, 0.52),
+                            new GradientStop(endColor, 1.0)
+                        }
+                    };
+                    context.DrawRectangle(colorfulBrush, null, new Rect(0, 0, targetW, targetH));
+                }
+            }
+
+            DrawSpecularRim(context, stretchedGeometry, targetW, targetH, isDark, model, effectiveTheme);
+            return;
+        }
+
+        // Theme 4: 纯色 (Pure vector solid color fill with transparency, overlay, and crisp rim)
+        using (context.PushGeometryClip(stretchedGeometry))
+        {
+            if (model.EnableOverlay)
+            {
+                var overlayColor = ResolveOverlayColor(model, effectiveTheme);
                 context.DrawRectangle(new SolidColorBrush(overlayColor), null, new Rect(0, 0, targetW, targetH));
+            }
+            else
+            {
+                var solidHex = isDark
+                    ? (effectiveTheme.EffectiveSolidBackgroundDark ?? "#2E2E2E")
+                    : (effectiveTheme.EffectiveSolidBackgroundLight ?? "#FFFFFF");
+                var baseSolid = Color.TryParse(solidHex, out var parsed) ? parsed : (isDark ? Colors.Black : Colors.White);
+                var opacity = (float)Math.Clamp(effectiveTheme.OpacityLevel, 0.05, 1.0);
+                var brushColor = Color.FromArgb((byte)(opacity * 255), baseSolid.R, baseSolid.G, baseSolid.B);
+                context.DrawRectangle(new SolidColorBrush(brushColor), null, new Rect(0, 0, targetW, targetH));
             }
         }
 
-        DrawSpecularRim(context, stretchedGeometry, targetW, targetH, isDark, model, theme);
+        DrawSpecularRim(context, stretchedGeometry, targetW, targetH, isDark, model, effectiveTheme);
+    }
+
+    private double ResolveHostContentScale()
+    {
+        if (Parent is Visual parent && parent.RenderTransform is ScaleTransform scaleTransform)
+        {
+            return scaleTransform.ScaleX;
+        }
+        return 1.0;
     }
 
     private void UpdateWindowRegion(Geometry geometry, double width, double height)
@@ -331,9 +818,6 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
         var pixelW = Math.Max(1, (int)Math.Ceiling(width * scaling));
         var pixelH = Math.Max(1, (int)Math.Ceiling(height * scaling));
 
-        // Both buffers are reused across calls: with ShowSeconds this runs once per second and a
-        // fresh RenderTargetBitmap plus a fresh full-window byte[] (2.5-8 MB, straight onto the
-        // LOH) per call kept gen2 collections running all day.
         var size = new PixelSize(pixelW, pixelH);
         var rtb = regionBitmap;
         if (rtb == null || rtb.PixelSize != size)
@@ -342,9 +826,25 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
             rtb = regionBitmap = new RenderTargetBitmap(size, new Vector(96 * scaling, 96 * scaling));
         }
 
+        var contentScale = ResolveHostContentScale();
         using (var ctx = rtb.CreateDrawingContext())
         {
-            ctx.DrawGeometry(Brushes.Black, null, geometry);
+            if (Math.Abs(contentScale - 1.0) > 0.001)
+            {
+                var cx = width * 0.5;
+                var cy = height * 0.5;
+                var scaleMatrix = Matrix.CreateTranslation(-cx, -cy)
+                    * Matrix.CreateScale(contentScale, contentScale)
+                    * Matrix.CreateTranslation(cx, cy);
+                using (ctx.PushTransform(scaleMatrix))
+                {
+                    ctx.DrawGeometry(Brushes.Black, null, geometry);
+                }
+            }
+            else
+            {
+                ctx.DrawGeometry(Brushes.Black, null, geometry);
+            }
         }
 
         var bytesNeeded = pixelW * pixelH * 4;
@@ -405,49 +905,43 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
         return spans;
     }
 
+    private static Color BlendColors(Color baseC, Color tintC, float weight)
+    {
+        byte r = (byte)Math.Clamp((int)Math.Round((1f - weight) * baseC.R + weight * tintC.R), 0, 255);
+        byte g = (byte)Math.Clamp((int)Math.Round((1f - weight) * baseC.G + weight * tintC.G), 0, 255);
+        byte b = (byte)Math.Clamp((int)Math.Round((1f - weight) * baseC.B + weight * tintC.B), 0, 255);
+        return Color.FromArgb(baseC.A, r, g, b);
+    }
+
     private static void DrawSpecularRim(DrawingContext context, Geometry geometry, double targetW, double targetH, bool isDark, FramelessClockModel model, Theme? theme)
     {
-        // The rim dye strength is the historic shipping default. The rim used to follow the
-        // global 边缘染色强度 (LiquidGlassSettings.EdgeTint) — a 液态玻璃 optic — but with the
-        // clock locked to 毛玻璃 that cross-material coupling is gone: the look no longer
-        // changes when the global surface (or its optics) is not 毛玻璃's.
-        const float edgeTint = (float)(LiquidGlassSettings.DefaultEdgeTint / 100.0);
+        var edgeTint = (float)Math.Clamp(
+            (theme?.EffectiveLiquidGlass.EdgeTint ?? LiquidGlassSettings.DefaultEdgeTint) / 100.0, 0.0, 1.0);
 
         Color dye = isDark ? Color.FromRgb(200, 220, 245) : Color.FromRgb(240, 240, 245);
         bool hasDye = false;
 
-        // 1. If model overlay is active, dye with overlay color
         if (model.EnableOverlay)
         {
             var oc = ResolveOverlayColor(model, theme);
             dye = Color.FromRgb(oc.R, oc.G, oc.B);
             hasDye = true;
         }
-        // 2. Otherwise if Theme Accent is configured, dye with accent
-        else if (!string.IsNullOrEmpty(theme?.AccentColor) && Color.TryParse(theme.AccentColor, out var accent))
+        else if (ResolveAccentColor(theme) is { } accent)
         {
             dye = accent;
-            hasDye = true;
+            hasDye = !string.IsNullOrEmpty(theme?.AccentColor);
         }
 
         var tintFactor = hasDye ? edgeTint : 0f;
 
-        static Color Blend(Color baseC, Color tintC, float weight)
-        {
-            byte r = (byte)Math.Clamp((int)Math.Round((1f - weight) * baseC.R + weight * tintC.R), 0, 255);
-            byte g = (byte)Math.Clamp((int)Math.Round((1f - weight) * baseC.G + weight * tintC.G), 0, 255);
-            byte b = (byte)Math.Clamp((int)Math.Round((1f - weight) * baseC.B + weight * tintC.B), 0, 255);
-            return Color.FromArgb(baseC.A, r, g, b);
-        }
-
-        // Luminous dyed specular glass rim stops
         var stop0Base = isDark ? Color.FromArgb(200, 255, 255, 255) : Color.FromArgb(220, 255, 255, 255);
         var stop1Base = isDark ? Color.FromArgb(40, 255, 255, 255) : Color.FromArgb(50, 255, 255, 255);
         var stop2Base = isDark ? Color.FromArgb(140, 255, 255, 255) : Color.FromArgb(160, 255, 255, 255);
 
-        var stop0 = Blend(stop0Base, dye, 0.45f * tintFactor);
-        var stop1 = Blend(stop1Base, dye, 0.85f * tintFactor);
-        var stop2 = Blend(stop2Base, dye, 0.35f * tintFactor);
+        var stop0 = BlendColors(stop0Base, dye, 0.45f * tintFactor);
+        var stop1 = BlendColors(stop1Base, dye, 0.85f * tintFactor);
+        var stop2 = BlendColors(stop2Base, dye, 0.35f * tintFactor);
 
         var rimBrush = new LinearGradientBrush
         {
@@ -462,7 +956,11 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
         };
 
         var rimThickness = Math.Clamp(Math.Min(targetW, targetH) * 0.009, 0.8, 2.2);
-        var rimPen = new Pen(rimBrush, rimThickness);
+        var rimPen = new Pen(rimBrush, rimThickness)
+        {
+            LineJoin = PenLineJoin.Round,
+            LineCap = PenLineCap.Round
+        };
         context.DrawGeometry(null, rimPen, geometry);
     }
 
@@ -484,13 +982,8 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
         return DateTime.Now;
     }
 
-    /// <summary>Last-resort overlay colour, used only when neither the accent nor a custom hex resolves.</summary>
     private static readonly Color DefaultOverlayColor = Color.FromRgb(0, 120, 215);
 
-    /// <summary>
-    /// The overlay wash colour, already carrying the model's opacity. A static member on purpose:
-    /// <c>tests/ClockThemeChecks</c> drives it by reflection to pin the accent-following contract.
-    /// </summary>
     private static Color ResolveOverlayColor(FramelessClockModel model, Theme? theme)
     {
         var baseColor = model.FollowAccentColor
@@ -501,26 +994,8 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
         return Color.FromArgb((byte)(opacity * 255), baseColor.R, baseColor.G, baseColor.B);
     }
 
-    /// <summary>
-    /// The accent colour actually in effect, which is a two-step resolution:
-    /// <list type="number">
-    /// <item>an explicitly picked accent (<see cref="Theme.AccentColor"/>) wins;</item>
-    /// <item>跟随系统强调色 — the default, where <c>AccentColor</c> is <c>null</c> — falls through to
-    /// the <c>SystemAccentColor</c> resource. <c>ThemeService.ApplyAccent</c> writes a hand-picked
-    /// accent there, and Avalonia's Fluent theme seeds the same key (plus its shade ramp) from the
-    /// OS accent when the app leaves the choice to the system.</item>
-    /// </list>
-    /// Reading only <see cref="Theme.AccentColor"/> made the overlay a hard-coded Windows blue for
-    /// every user who left the accent on 跟随系统, whatever their actual accent was. This is the same
-    /// lookup the other accent-driven widgets use (<c>Calendar/Views/Month.axaml.cs</c>,
-    /// <c>Notes/Views/Note.axaml.cs</c>, <c>Fixed/ViewModels/AggregateViewModel</c>).
-    /// </summary>
     private static Color? ResolveAccentColor(Theme? theme)
     {
-        // 黑白/背景色 monochrome: the accent resource is ThemeService's monochrome ramp
-        // (pure white/black in 黑白, the inverted background in 背景色) — the hand-picked
-        // accent hex must not bypass it, so it is only honored in the 强调色 variant and
-        // outside monochrome.
         var achromaticMonochrome = theme is { Monochrome: true }
             && theme.EffectiveMonochromeVariant != MonochromeStyle.Accent;
         if (!achromaticMonochrome && ParseHex(theme?.AccentColor) is { } picked)
@@ -534,7 +1009,6 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
         return null;
     }
 
-    /// <summary>Parse a <c>#hex</c> colour, or <c>null</c> when absent or malformed.</summary>
     private static Color? ParseHex(string? hex) =>
         !string.IsNullOrEmpty(hex) && Color.TryParse(hex, out var parsed) ? parsed : null;
 }

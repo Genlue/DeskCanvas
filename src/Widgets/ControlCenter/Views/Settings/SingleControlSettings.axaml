@@ -1,0 +1,44 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="ControlCenter.Views.Settings.SingleControlSettings">
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Orientation="Vertical" Spacing="10" Margin="0,4,8,10">
+            <TextBlock Text="选择该快捷磁贴绑定的系统控制项："
+                       FontSize="13"
+                       FontWeight="SemiBold"
+                       Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}" />
+
+            <UniformGrid x:Name="ItemsGrid" Columns="2" />
+
+            <Border Background="#10808080"
+                    BorderBrush="#20808080"
+                    BorderThickness="1"
+                    CornerRadius="10"
+                    Padding="10,8"
+                    Margin="0,6,0,0">
+                <Grid ColumnDefinitions="*,Auto">
+                    <StackPanel Grid.Column="0" Spacing="1" VerticalAlignment="Center">
+                        <TextBlock Text="鼠标滚轮调节步进"
+                                   FontSize="12.5"
+                                   FontWeight="SemiBold"
+                                   Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}" />
+                        <TextBlock Text="当选择亮度、音量或麦克风时，滚轮单次增减百分比"
+                                   FontSize="11"
+                                   Opacity="0.65"
+                                   Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}" />
+                    </StackPanel>
+                    <ComboBox x:Name="WheelStepCombo"
+                              Grid.Column="1"
+                              Width="90"
+                              VerticalAlignment="Center"
+                              SelectionChanged="OnWheelStepChanged">
+                        <ComboBoxItem Content="1%" Tag="1" />
+                        <ComboBoxItem Content="2%" Tag="2" />
+                        <ComboBoxItem Content="5%" Tag="5" />
+                        <ComboBoxItem Content="10%" Tag="10" />
+                    </ComboBox>
+                </Grid>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

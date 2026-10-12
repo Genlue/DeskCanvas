@@ -1,0 +1,14 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="clr-namespace:ControlCenter.Views.Controls"
+             x:Class="ControlCenter.Views.SingleControlView"
+             Classes="Flush"
+             Margin="0"
+             HorizontalAlignment="Stretch"
+             VerticalAlignment="Stretch">
+    <Grid Margin="5" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+        <controls:ControlCapsuleView x:Name="MainCapsule"
+                                     HorizontalAlignment="Stretch"
+                                     VerticalAlignment="Stretch" />
+    </Grid>
+</UserControl>

@@ -1,0 +1,172 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="ControlCenter.Views.Settings.ControlCenterSettings">
+
+    <UserControl.Styles>
+        <Style Selector="Button.tier-tab">
+            <Setter Property="Background" Value="#14808080" />
+            <Setter Property="BorderBrush" Value="#25808080" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="6" />
+            <Setter Property="Padding" Value="10,4" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}" />
+        </Style>
+        <Style Selector="Button.tier-tab:pointerover">
+            <Setter Property="Background" Value="#26808080" />
+        </Style>
+        <Style Selector="Button.tier-tab.active">
+            <Setter Property="Background" Value="{DynamicResource SystemControlForegroundAccentBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource AccentContrastForegroundBrush}" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+        </Style>
+
+        <Style Selector="Button.small-action">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderBrush" Value="#30808080" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="5" />
+            <Setter Property="Padding" Value="8,3" />
+            <Setter Property="FontSize" Value="11.5" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}" />
+        </Style>
+        <Style Selector="Button.small-action:pointerover">
+            <Setter Property="Background" Value="#20808080" />
+        </Style>
+    </UserControl.Styles>
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <StackPanel Orientation="Vertical" Spacing="10" Margin="0,2,8,10">
+
+            <!-- 1. Canvas Size Tier Switcher & Presets -->
+            <Grid ColumnDefinitions="Auto,*,Auto">
+                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="5">
+                    <Button x:Name="Tab2x2Btn" Classes="tier-tab" Content="2×2 画布" Click="OnTier2x2Clicked" />
+                    <Button x:Name="Tab4x2Btn" Classes="tier-tab" Content="4×2 画布" Click="OnTier4x2Clicked" />
+                    <Button x:Name="Tab4x4Btn" Classes="tier-tab" Content="4×4 画布" Click="OnTier4x4Clicked" />
+                </StackPanel>
+
+                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                    <Button x:Name="PresetVerticalBtn"
+                            Classes="small-action"
+                            Content="iOS 竖条预设"
+                            Click="OnPresetVerticalClicked"
+                            ToolTip.Tip="将右侧亮度与音量切换为 1×2 竖向胶囊滑块" />
+                    <Button x:Name="ResetDefaultBtn"
+                            Classes="small-action"
+                            Content="恢复默认"
+                            Click="OnResetDefaultClicked" />
+                </StackPanel>
+            </Grid>
+
+            <!-- 2. Interactive Bento Grid Composer Board -->
+            <Border Background="#12808080"
+                    BorderBrush="#24808080"
+                    BorderThickness="1"
+                    CornerRadius="12"
+                    Padding="12">
+                <StackPanel Spacing="8">
+                    <Grid ColumnDefinitions="*,Auto">
+                        <TextBlock Grid.Column="0"
+                                   Text="拖拽卡片调整格子位置；拖动卡片右下角 ◢ 或点击下方按钮切换横竖方向与大小"
+                                   FontSize="11"
+                                   Opacity="0.68"
+                                   TextWrapping="Wrap"
+                                   VerticalAlignment="Center"
+                                   Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}" />
+                    </Grid>
+
+                    <!-- Centered Canvas Host -->
+                    <Border HorizontalAlignment="Center"
+                            VerticalAlignment="Center"
+                            Background="#0C000000"
+                            CornerRadius="10"
+                            Padding="6">
+                        <Canvas x:Name="ComposerCanvas"
+                                Width="360"
+                                Height="180"
+                                Background="Transparent"
+                                PointerMoved="OnCanvasPointerMoved"
+                                PointerReleased="OnCanvasPointerReleased" />
+                    </Border>
+
+                    <!-- Selected Tile Span / Orientation Toolbar -->
+                    <Border x:Name="SelectionToolbar"
+                            Background="#14808080"
+                            CornerRadius="8"
+                            Padding="8,5">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <TextBlock x:Name="SelectedTileLabel"
+                                       Grid.Column="0"
+                                       Text="点击画布中的模块可快速切换横竖与尺寸"
+                                       FontSize="11.5"
+                                       FontWeight="Medium"
+                                       VerticalAlignment="Center"
+                                       TextTrimming="CharacterEllipsis"
+                                       Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}" />
+                            <StackPanel x:Name="SpanButtonsPanel"
+                                        Grid.Column="1"
+                                        Orientation="Horizontal"
+                                        Spacing="4"
+                                        IsEnabled="False">
+                                <Button x:Name="Span1x1Btn" Classes="small-action" Content="1×1 单格" Click="OnSpanButtonClicked" Tag="1x1" />
+                                <Button x:Name="Span2x1Btn" Classes="small-action" Content="2×1 横向" Click="OnSpanButtonClicked" Tag="2x1" />
+                                <Button x:Name="Span1x2Btn" Classes="small-action" Content="1×2 竖向" Click="OnSpanButtonClicked" Tag="1x2" />
+                                <Button x:Name="Span2x2Btn" Classes="small-action" Content="2×2 大卡" Click="OnSpanButtonClicked" Tag="2x2" />
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+                </StackPanel>
+            </Border>
+
+            <!-- 3. Available Control Items Pool (Click or Drag into Grid) -->
+            <Border Background="#10808080"
+                    BorderBrush="#20808080"
+                    BorderThickness="1"
+                    CornerRadius="10"
+                    Padding="10,8">
+                <StackPanel Spacing="6">
+                    <TextBlock Text="待选设置项池（点击或拖拽填入上方空格）："
+                               FontSize="12"
+                               FontWeight="SemiBold"
+                               Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}" />
+                    <WrapPanel x:Name="DockWrapPanel" Orientation="Horizontal" />
+                </StackPanel>
+            </Border>
+
+            <!-- 4. Wheel Step Configuration -->
+            <Border Background="#10808080"
+                    BorderBrush="#20808080"
+                    BorderThickness="1"
+                    CornerRadius="10"
+                    Padding="10,8">
+                <Grid ColumnDefinitions="*,Auto">
+                    <StackPanel Grid.Column="0" Spacing="1" VerticalAlignment="Center">
+                        <TextBlock Text="鼠标滚轮调节步进"
+                                   FontSize="12.5"
+                                   FontWeight="SemiBold"
+                                   Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}" />
+                        <TextBlock Text="悬停在亮度、音量或麦克风胶囊上滚动滚轮时的单次增减幅度"
+                                   FontSize="11"
+                                   Opacity="0.65"
+                                   Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}" />
+                    </StackPanel>
+                    <ComboBox x:Name="WheelStepCombo"
+                              Grid.Column="1"
+                              Width="90"
+                              VerticalAlignment="Center"
+                              SelectionChanged="OnWheelStepChanged">
+                        <ComboBoxItem Content="1%" Tag="1" />
+                        <ComboBoxItem Content="2%" Tag="2" />
+                        <ComboBoxItem Content="5%" Tag="5" />
+                        <ComboBoxItem Content="10%" Tag="10" />
+                    </ComboBox>
+                </Grid>
+            </Border>
+
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>
