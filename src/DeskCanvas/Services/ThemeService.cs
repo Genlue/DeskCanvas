@@ -3,6 +3,7 @@ using Avalonia;
 using Avalonia.Markup.Xaml.Styling;
 using Avalonia.Media;
 using Avalonia.Styling;
+using Avalonia.Threading;
 using DeskCanvas.Core.Interfaces;
 using DeskCanvas.Core.Models.Settings;
 
@@ -36,6 +37,15 @@ public class ThemeService : IThemeService
             if (settings.Theme.AutoTheme || settings.Theme.DarkMode != null) return;
             Apply(settings.Theme);
         };
+        // System accent changes while the variant stays put trigger neither DataChanging nor
+        // ActualThemeVariantChanged, yet the accent brush behind selected text changes — the
+        // computed selection pair must follow. Post to the next dispatcher pass so the Fluent
+        // accent resources have settled before re-resolving.
+        if (Application.Current.PlatformSettings is { } platformSettings)
+        {
+            platformSettings.ColorValuesChanged += (_, _) =>
+                Dispatcher.UIThread.Post(RefreshTextSelectionPaletteCore, DispatcherPriority.Background);
+        }
     }
     
     private readonly StyleInclude transparentStyle = new(new Uri("avares://DeskCanvas/"))
@@ -225,5 +235,33 @@ public class ThemeService : IThemeService
         // Loaded after accentStyle so its vibrant palette (Red calendar, Orange clock second hand,
         // Blue/Purple/Orange monitor rings, etc.) takes precedence over single-color accent fallbacks.
         ThemeResourceHelper.SwitchStyle(colorfulStyle, theme.IsColorful);
+
+        // Text selection pair (W1): refresh only after every style switch above has landed, so
+        // the resolver reads the FINAL accent brush of each variant rather than a mid-switch one.
+        RefreshTextSelectionPalette();
+    }
+
+    /// <summary>
+    /// Recomputes the paired text-selection brushes (background + readable foreground) for
+    /// both variants. Must run on the UI thread; off-thread callers are coalesced onto the
+    /// next dispatcher pass so pending resource updates settle first.
+    /// </summary>
+    private static void RefreshTextSelectionPalette()
+    {
+        if (Dispatcher.UIThread.CheckAccess())
+        {
+            RefreshTextSelectionPaletteCore();
+        }
+        else
+        {
+            Dispatcher.UIThread.Post(RefreshTextSelectionPaletteCore, DispatcherPriority.Background);
+        }
+    }
+
+    private static void RefreshTextSelectionPaletteCore()
+    {
+        var light = TextSelectionPaletteResolver.Resolve(ThemeVariant.Light, TextSelectionPaletteResolver.LightFallback);
+        var dark = TextSelectionPaletteResolver.Resolve(ThemeVariant.Dark, TextSelectionPaletteResolver.DarkFallback);
+        ThemeResourceHelper.UpdateTextSelectionResources(light, dark);
     }
 }

@@ -1,0 +1,45 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!-- Shared interaction resources (W1 of the UI convergence plan). One semantic key per
+         role instead of per-page grey literals; pages that still carry local greys migrate
+         onto these keys in later batches. Values are the first-pass baseline picked from the
+         current screens (Apple-ish surfaces, same tones as Settings*/MenuSurface* above) and
+         are allowed to drift while the migration lands.
+
+         TextSelectionBackgroundBrush / TextSelectionForegroundBrush are the PAIRED text
+         selection keys: they default to predictable light/dark pairs here and are recomputed
+         from the real accent brush by TextSelectionPaletteResolver after every ThemeService
+         apply (WCAG relative luminance, the higher-contrast of black/white wins). A local
+         fixed-surface scope (GridEditor) may redeclare the same two keys as a documented,
+         window-local exception — the shared rules consume the keys, not the values. -->
+    <ResourceDictionary.ThemeDictionaries>
+        <ResourceDictionary x:Key="Default">
+            <SolidColorBrush x:Key="ControlSurfaceBrush" Color="#FFFFFF" Opacity="0.82" />
+            <SolidColorBrush x:Key="ControlBorderBrush" Color="#000000" Opacity="0.12" />
+            <SolidColorBrush x:Key="ControlFocusBorderBrush" Color="{DynamicResource SystemAccentColor}" Opacity="0.75" />
+            <SolidColorBrush x:Key="ControlHoverBrush" Color="#000000" Opacity="0.05" />
+            <SolidColorBrush x:Key="ControlPressedBrush" Color="#000000" Opacity="0.09" />
+            <SolidColorBrush x:Key="SubtleSurfaceBrush" Color="#000000" Opacity="0.04" />
+            <SolidColorBrush x:Key="SeparatorBrush" Color="#000000" Opacity="0.08" />
+            <SolidColorBrush x:Key="SecondaryTextBrush" Color="#8A8A8E" />
+            <SolidColorBrush x:Key="ValidationErrorBrush" Color="#D70015" />
+            <!-- Predictable fallback pair (see resolver): 5.4:1 white-on-#0F6CBD. -->
+            <SolidColorBrush x:Key="TextSelectionBackgroundBrush" Color="#0F6CBD" />
+            <SolidColorBrush x:Key="TextSelectionForegroundBrush" Color="#FFFFFF" />
+        </ResourceDictionary>
+        <ResourceDictionary x:Key="Dark">
+            <SolidColorBrush x:Key="ControlSurfaceBrush" Color="#2C2C2E" Opacity="0.85" />
+            <SolidColorBrush x:Key="ControlBorderBrush" Color="#FFFFFF" Opacity="0.16" />
+            <SolidColorBrush x:Key="ControlFocusBorderBrush" Color="{DynamicResource SystemAccentColor}" Opacity="0.75" />
+            <SolidColorBrush x:Key="ControlHoverBrush" Color="#FFFFFF" Opacity="0.08" />
+            <SolidColorBrush x:Key="ControlPressedBrush" Color="#FFFFFF" Opacity="0.12" />
+            <SolidColorBrush x:Key="SubtleSurfaceBrush" Color="#FFFFFF" Opacity="0.06" />
+            <SolidColorBrush x:Key="SeparatorBrush" Color="#FFFFFF" Opacity="0.12" />
+            <SolidColorBrush x:Key="SecondaryTextBrush" Color="#98989D" />
+            <SolidColorBrush x:Key="ValidationErrorBrush" Color="#FF453A" />
+            <!-- Predictable fallback pair (see resolver): 10.5:1 black-on-#4CC2FF. -->
+            <SolidColorBrush x:Key="TextSelectionBackgroundBrush" Color="#4CC2FF" />
+            <SolidColorBrush x:Key="TextSelectionForegroundBrush" Color="#000000" />
+        </ResourceDictionary>
+    </ResourceDictionary.ThemeDictionaries>
+</ResourceDictionary>

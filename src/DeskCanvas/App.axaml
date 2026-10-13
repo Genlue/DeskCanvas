@@ -11,12 +11,15 @@
                 <ColorPaletteResources x:Key="Dark" AltHigh="#2E2E2E" />
             </FluentTheme.Palettes>
         </FluentTheme>
+        <!-- Shared input rules (selection pair). Loaded after Fluent so the setters outrank
+             the control themes; before the inline page-level styles below. -->
+        <StyleInclude Source="avares://DeskCanvas/Styles/Controls/Input.axaml" />
         <Style Selector="TextBox">
             <Setter Property="Background" Value="Transparent" />
             <Setter Property="BorderThickness" Value="0" />
-            <!-- Selection must follow the accent polarity, including white accents in dark mode. -->
-            <Setter Property="SelectionBrush" Value="{DynamicResource SystemControlHighlightAccentBrush}" />
-            <Setter Property="SelectionForegroundBrush" Value="{DynamicResource AccentContrastForegroundBrush}" />
+            <!-- Text selection moved to Styles/Controls/Input.axaml: the raw accent + fixed
+                 white foreground pair broke on high-luminance accents (yellow/light cyan);
+                 the shared rule now consumes the computed contrast pair instead. -->
         </Style>
         <Style Selector="NumericUpDown">
             <Setter Property="MinWidth" Value="{DynamicResource ControlNumericMinWidth}" />
@@ -156,6 +159,11 @@
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
                 <ResourceInclude Source="avares://DeskCanvas/Styles/DesignTokens.axaml" />
+                <!-- Shared interaction resources: one semantic key per role (input surfaces,
+                 borders, hover/pressed, separators, secondary text, validation, the paired
+                 text selection brushes). The selection pair is recomputed per theme variant
+                 by TextSelectionPaletteResolver after every ThemeService apply. -->
+                <ResourceInclude Source="avares://DeskCanvas/Styles/InteractionResources.axaml" />
                 <!-- 滚动条主题：覆盖 Fluent 原生 ScrollBar 的悬停展开态（去掉大黑框）。
                      放在这里（而非 Application.Styles）才能被上面的 Theme 引用到。 -->
                 <ResourceInclude Source="avares://DeskCanvas/Styles/ScrollBar.axaml" />

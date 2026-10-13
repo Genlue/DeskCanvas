@@ -9,6 +9,19 @@
         WindowStartupLocation="Manual"
         RequestedThemeVariant="Light">
 
+    <Window.Resources>
+        <ResourceDictionary>
+            <!-- The editor is a fixed light tool surface (hard-coded dark scrim + light sheet),
+                 so it redeclares the paired selection keys LOCALLY: the shared input rules
+                 (Styles/Controls/Input.axaml) still decide the painting, but the nearest
+                 resource scope supplies the dark-selection/white-text pair. This is a
+                 documented local exception — never promote it to the app level (a white
+                 monochrome accent would otherwise get white-on-white selection). -->
+            <SolidColorBrush x:Key="TextSelectionBackgroundBrush" Color="#1C1C1E" />
+            <SolidColorBrush x:Key="TextSelectionForegroundBrush" Color="#FFFFFF" />
+        </ResourceDictionary>
+    </Window.Resources>
+
     <Window.Styles>
         <!--
           The editor is an overlay on the desktop, not a normal app window: its surfaces are
@@ -54,20 +67,17 @@
             <Setter Property="BorderBrush" Value="#26000000" />
             <Setter Property="TextElement.Foreground" Value="#FFFFFF" />
         </Style>
-        <!-- Ensure numeric input boxes inside the light parameter panel always invert
-             selection colors (#1C1C1E highlight box + #FFFFFF selected text) even when
-             the global app theme uses a white monochrome accent. -->
+        <!-- Ensure numeric input boxes inside the light parameter panel always invert their
+             own text/caret colours even when the global app theme renders them differently.
+             Selection colours are NOT set here anymore: the shared rules consume the local
+             TextSelection* pair declared in Window.Resources above. -->
         <Style Selector="TextBox, NumericUpDown /template/ TextBox">
             <Setter Property="Foreground" Value="#1C1C1E" />
             <Setter Property="CaretBrush" Value="#1C1C1E" />
-            <Setter Property="SelectionBrush" Value="#1C1C1E" />
-            <Setter Property="SelectionForegroundBrush" Value="#FFFFFF" />
         </Style>
         <Style Selector="TextBox:pointerover, TextBox:focus, NumericUpDown /template/ TextBox:pointerover, NumericUpDown /template/ TextBox:focus">
             <Setter Property="Foreground" Value="#1C1C1E" />
             <Setter Property="CaretBrush" Value="#1C1C1E" />
-            <Setter Property="SelectionBrush" Value="#1C1C1E" />
-            <Setter Property="SelectionForegroundBrush" Value="#FFFFFF" />
         </Style>
         <Style Selector="TextBox:pointerover /template/ Border#PART_BorderElement, TextBox:focus /template/ Border#PART_BorderElement">
             <Setter Property="Background" Value="Transparent" />

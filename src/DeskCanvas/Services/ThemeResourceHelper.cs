@@ -1,6 +1,9 @@
+using System;
 using Avalonia;
+using Avalonia.Controls;
 using Avalonia.Markup.Xaml.Styling;
 using Avalonia.Media;
+using Avalonia.Styling;
 
 namespace DeskCanvas.Services;
 
@@ -49,5 +52,75 @@ internal static class ThemeResourceHelper
             styles.Add(style);
         else if (!enable && styles.Contains(style))
             styles.Remove(style);
+    }
+
+    // ---- text selection pair (W1) --------------------------------------------------------
+
+    public const string TextSelectionBackgroundKey = "TextSelectionBackgroundBrush";
+    public const string TextSelectionForegroundKey = "TextSelectionForegroundBrush";
+
+    /// <summary>
+    /// Writes the computed selection pair into the ThemeDictionaries of the merged
+    /// InteractionResources dictionary — Default (light) and Dark separately, so a dark window
+    /// never inherits the light result. Only the two paired keys are touched; the current
+    /// variant dictionary is never bulk-replaced. Writes happen only when a colour actually
+    /// changed, so a refresh triggered by ResourcesChanged can not loop back into itself.
+    /// </summary>
+    public static void UpdateTextSelectionResources(TextSelectionPalette light, TextSelectionPalette dark)
+    {
+        var dictionary = FindInteractionDictionary();
+        if (dictionary is null) return;
+        WriteSelectionPair(dictionary, ThemeVariant.Default, light);
+        WriteSelectionPair(dictionary, ThemeVariant.Dark, dark);
+    }
+
+    private static void WriteSelectionPair(ResourceDictionary dictionary, ThemeVariant variant, TextSelectionPalette palette)
+    {
+        if (!dictionary.ThemeDictionaries.TryGetValue(variant, out var provider)) return;
+        if (provider is not ResourceDictionary themed) return;
+        UpdateBrush(themed, TextSelectionBackgroundKey, palette.Background);
+        UpdateBrush(themed, TextSelectionForegroundKey, palette.Foreground);
+    }
+
+    private static void UpdateBrush(ResourceDictionary themed, string key, Color color)
+    {
+        if (themed.TryGetValue(key, out var existing)
+            && existing is ISolidColorBrush brush
+            && brush.Color == color
+            && Math.Abs(brush.Opacity - 1.0) < 0.001)
+        {
+            return;
+        }
+
+        themed[key] = new SolidColorBrush(color);
+    }
+
+    /// <summary>
+    /// Locates the InteractionResources dictionary among the application's merged dictionaries
+    /// by probing for the selection key in its theme dictionaries (the include may be either a
+    /// raw dictionary or a ResourceInclude).
+    /// </summary>
+    private static ResourceDictionary? FindInteractionDictionary()
+    {
+        var app = Application.Current;
+        if (app is null) return null;
+
+        foreach (var provider in app.Resources.MergedDictionaries)
+        {
+            var dictionary = provider as ResourceDictionary
+                ?? (provider as ResourceInclude)?.Loaded as ResourceDictionary;
+            if (dictionary is null) continue;
+
+            foreach (var themed in dictionary.ThemeDictionaries.Values)
+            {
+                if (themed is ResourceDictionary themedDictionary
+                    && themedDictionary.ContainsKey(TextSelectionBackgroundKey))
+                {
+                    return dictionary;
+                }
+            }
+        }
+
+        return null;
     }
 }

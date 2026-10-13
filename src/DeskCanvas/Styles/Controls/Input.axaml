@@ -1,0 +1,22 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!-- Shared input rules (W1). The text-selection pair is the ONE place that decides how
+         selected text is painted: the brushes come from the paired semantic resources
+         (InteractionResources defaults; recomputed from the real accent by
+         TextSelectionPaletteResolver). Local scopes with a fixed surface (GridEditor) resolve
+         the same keys from their own window resources instead of re-writing colours here.
+
+         App-level styles outrank the Fluent control themes, so these setters win over the
+         TextBox/NumericUpDown templates' own values. The explicit `/template/` selector is
+         kept next to the plain one on purpose: it pins the NumericUpDown inner TextBox even
+         if a future Fluent update stops letting the plain TextBox selector reach template
+         children (the current 11.1.3 behaviour is verified by UiFoundationChecks). -->
+    <Style Selector="TextBox">
+        <Setter Property="SelectionBrush" Value="{DynamicResource TextSelectionBackgroundBrush}" />
+        <Setter Property="SelectionForegroundBrush" Value="{DynamicResource TextSelectionForegroundBrush}" />
+    </Style>
+    <Style Selector="NumericUpDown /template/ TextBox">
+        <Setter Property="SelectionBrush" Value="{DynamicResource TextSelectionBackgroundBrush}" />
+        <Setter Property="SelectionForegroundBrush" Value="{DynamicResource TextSelectionForegroundBrush}" />
+    </Style>
+</Styles>
