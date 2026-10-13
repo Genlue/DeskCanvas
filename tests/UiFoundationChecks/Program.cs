@@ -49,7 +49,12 @@ namespace UiFoundationChecks;
 /// </list>
 /// Usage: dotnet run --project tests/UiFoundationChecks -c Release
 /// </summary>
-internal static class Program
+/// <summary>
+/// Split across several files so several work packages can extend the suite without editing
+/// the same file: <c>Program.cs</c> owns Main and the shared helpers, every W-package owns its
+/// own <c>Check…</c> section file.
+/// </summary>
+internal static partial class Program
 {
     private static int failures;
 
@@ -86,6 +91,13 @@ internal static class Program
         CheckWindowGeometry();
         CheckIconButtonsAndSectionHeaders();
         CheckCompoundInputs();
+        CheckPanelShell();
+        CheckPopupMigrationTools();
+        CheckPopupMigrationInfo();
+        CheckPopupMigrationHeavy();
+        CheckSettingsPagesAndLocale();
+        CheckHostDecoupling();
+        CheckRedundancyGuard();
 
         Console.WriteLine();
         Console.WriteLine(failures == 0 ? "ALL UI FOUNDATION CHECKS PASSED" : $"{failures} CHECK(S) FAILED");
