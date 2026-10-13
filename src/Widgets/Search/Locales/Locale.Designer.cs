@@ -60,5 +60,29 @@ namespace Search.Locales {
         public static string Search_Category_Dev => ResourceManager.GetString("Search_Category_Dev", resourceCulture) ?? "Dev";
         public static string Search_Category_Media => ResourceManager.GetString("Search_Category_Media", resourceCulture) ?? "Media";
         public static string Search_Category_Community => ResourceManager.GetString("Search_Category_Community", resourceCulture) ?? "Community";
+        public static string Search_Category_General => ResourceManager.GetString("Search_Category_General", resourceCulture) ?? "General";
+        public static string Search_Switch_Engine_Tooltip => ResourceManager.GetString("Search_Switch_Engine_Tooltip", resourceCulture) ?? "Click to switch search engine";
+        public static string Search_Open_Homepage_Tooltip => ResourceManager.GetString("Search_Open_Homepage_Tooltip", resourceCulture) ?? "Open website in browser";
+        public static string Search_History_Short => ResourceManager.GetString("Search_History_Short", resourceCulture) ?? "History";
+        public static string Search_General_Header => ResourceManager.GetString("Search_General_Header", resourceCulture) ?? "General & Search Behavior";
+        public static string Search_Default_Engine => ResourceManager.GetString("Search_Default_Engine", resourceCulture) ?? "Default Search Engine";
+        public static string Search_Clear_History_Desc => ResourceManager.GetString("Search_Clear_History_Desc", resourceCulture) ?? "Clear all recent search history";
+        public static string Search_Clear_Now => ResourceManager.GetString("Search_Clear_Now", resourceCulture) ?? "Clear Now";
+        public static string Search_Manage_Engines_Hint => ResourceManager.GetString("Search_Manage_Engines_Hint", resourceCulture) ?? "Check to enable/disable engines; engines higher in the list have higher priority.";
+        public static string Search_Add_Custom_Engine => ResourceManager.GetString("Search_Add_Custom_Engine", resourceCulture) ?? "+ Add Custom Engine";
+        public static string Search_Add_Custom_Engine_Title => ResourceManager.GetString("Search_Add_Custom_Engine_Title", resourceCulture) ?? "Add Custom Search Engine";
+        public static string Search_Engine_Name_Label => ResourceManager.GetString("Search_Engine_Name_Label", resourceCulture) ?? "Name:";
+        public static string Search_Engine_Name_Watermark => ResourceManager.GetString("Search_Engine_Name_Watermark", resourceCulture) ?? "e.g. StackOverflow";
+        public static string Search_Engine_Url_Label => ResourceManager.GetString("Search_Engine_Url_Label", resourceCulture) ?? "URL Template:";
+        public static string Search_Engine_Url_Watermark => ResourceManager.GetString("Search_Engine_Url_Watermark", resourceCulture) ?? "e.g. https://stackoverflow.com/search?q={q}";
+        public static string Search_Engine_Category_Label => ResourceManager.GetString("Search_Engine_Category_Label", resourceCulture) ?? "Category:";
+        public static string Search_Engine_Icon_Label => ResourceManager.GetString("Search_Engine_Icon_Label", resourceCulture) ?? "Icon:";
+        public static string Search_Engine_Color_Label => ResourceManager.GetString("Search_Engine_Color_Label", resourceCulture) ?? "Brand Color:";
+        public static string Search_Cancel => ResourceManager.GetString("Search_Cancel", resourceCulture) ?? "Cancel";
+        public static string Search_Save => ResourceManager.GetString("Search_Save", resourceCulture) ?? "Save";
+        public static string Search_MoveUp => ResourceManager.GetString("Search_MoveUp", resourceCulture) ?? "Move Up";
+        public static string Search_MoveDown => ResourceManager.GetString("Search_MoveDown", resourceCulture) ?? "Move Down";
+        public static string Search_Edit => ResourceManager.GetString("Search_Edit", resourceCulture) ?? "Edit";
+        public static string Search_Delete => ResourceManager.GetString("Search_Delete", resourceCulture) ?? "Delete";
     }
 }

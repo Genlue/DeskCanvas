@@ -105,6 +105,69 @@ namespace Clock.Locales {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Dial 3.
+        /// </summary>
+        public static string Clock_AnalogIV_Title {
+            get {
+                return ResourceManager.GetString("Clock_AnalogIV_Title", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Follow Background.
+        /// </summary>
+        public static string Clock_DialColor_Background {
+            get {
+                return ResourceManager.GetString("Clock_DialColor_Background", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Black &amp; White.
+        /// </summary>
+        public static string Clock_DialColor_BlackWhite {
+            get {
+                return ResourceManager.GetString("Clock_DialColor_BlackWhite", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Custom.
+        /// </summary>
+        public static string Clock_DialColor_Custom {
+            get {
+                return ResourceManager.GetString("Clock_DialColor_Custom", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Dark Mode.
+        /// </summary>
+        public static string Clock_DialColor_Dark {
+            get {
+                return ResourceManager.GetString("Clock_DialColor_Dark", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Light Mode.
+        /// </summary>
+        public static string Clock_DialColor_Light {
+            get {
+                return ResourceManager.GetString("Clock_DialColor_Light", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Dial Color.
+        /// </summary>
+        public static string Clock_DialColor_Title {
+            get {
+                return ResourceManager.GetString("Clock_DialColor_Title", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Digital.
         /// </summary>
         public static string Clock_Digital_Title {

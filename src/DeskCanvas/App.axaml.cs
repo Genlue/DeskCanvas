@@ -86,6 +86,43 @@ public class App : Application
             }, DispatcherPriority.Render);
         });
 
+        // Strip OS-level AcrylicBlur, window shadow and DWM capsule border from ToolTip PopupRoots
+        // so hover tooltips render only the shadowed text without any pill/capsule background.
+        static void ConfigureToolTipPopupRoot(ToolTip tt)
+        {
+            if (tt.GetVisualRoot() is WindowBase wb)
+            {
+                wb.TransparencyLevelHint = [WindowTransparencyLevel.Transparent];
+                wb.Background = Avalonia.Media.Brushes.Transparent;
+                if (wb is Avalonia.Controls.Primitives.PopupRoot pr)
+                {
+                    pr.WindowManagerAddShadowHint = false;
+                }
+                var handle = wb.TryGetPlatformHandle()?.Handle;
+                if (handle.HasValue && handle.Value != IntPtr.Zero)
+                {
+                    InteropService.DisableWindowBorder(handle.Value);
+                }
+            }
+        }
+
+        Control.LoadedEvent.AddClassHandler<ToolTip>((tt, _) =>
+        {
+            ConfigureToolTipPopupRoot(tt);
+            Dispatcher.UIThread.Post(() => ConfigureToolTipPopupRoot(tt), DispatcherPriority.Render);
+        });
+        ToolTip.IsOpenProperty.Changed.AddClassHandler<Control>((ctrl, e) =>
+        {
+            if (e.NewValue is true)
+            {
+                Dispatcher.UIThread.Post(() =>
+                {
+                    if (ToolTip.GetTip(ctrl) is ToolTip tt)
+                        ConfigureToolTipPopupRoot(tt);
+                }, DispatcherPriority.Render);
+            }
+        });
+
         // 全局元素阴影: any TextBlock (or elem-shadow-marked template part) that attaches inside a
         // desktop widget window picks up the current shadow (see WidgetTextShadow — settings,
         // dialog and panel text is excluded).

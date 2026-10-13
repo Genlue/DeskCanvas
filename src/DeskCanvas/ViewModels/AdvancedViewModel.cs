@@ -6,6 +6,7 @@ using ReactiveUI;
 using DeskCanvas.Core.Interfaces;
 using DeskCanvas.Core.Models;
 using DeskCanvas.Core.Models.Settings;
+using DeskCanvas.Core.Services;
 using DeskCanvas.Locales;
 using DeskCanvas.Services;
 
@@ -14,7 +15,10 @@ namespace DeskCanvas.ViewModels;
 /// <summary>
 /// An HTTP proxy option shown in the proxy picker.
 /// </summary>
-public record ProxyOption(string Label, string Value);
+public record ProxyOption(string Label, string Value)
+{
+    public override string ToString() => Label;
+}
 
 /// <summary>
 /// A target screen option shown in the Advanced grid screen selector.
@@ -326,33 +330,60 @@ public class AdvancedViewModel : ReactiveObject, IDisposable
 
     // ---------- Network ----------
 
+    private bool customProxySelected;
+
     public ProxyOption[] ProxyOptions =>
     [
-        new(Locale.Settings_Advanced_Proxy_Direct, ""),
+        new(Locale.Settings_Advanced_Proxy_Auto, "auto"),
+        new(Locale.Settings_Advanced_Proxy_Direct, "direct"),
         new(Locale.Settings_Advanced_Proxy_System, "system"),
         new(Locale.Settings_Advanced_Proxy_Custom, "custom")
     ];
 
     /// <summary>
-    /// Current proxy mode: Direct (""), System ("system") or Custom ("custom").
+    /// Current proxy mode: Auto ("auto"), Direct ("direct"), System ("system") or Custom ("custom").
     /// </summary>
     public ProxyOption ProxyMode
     {
         get
         {
             var proxy = appSettingsProvider.Get().HttpProxy;
-            if (string.IsNullOrEmpty(proxy)) return ProxyOptions[0];
-            if (proxy == "system") return ProxyOptions[1];
-            return ProxyOptions[2];
+            var mode = ProxySettings.GetMode(proxy);
+            if (customProxySelected && mode != ProxyModeKind.Custom)
+                return ProxyOptions[3];
+
+            return mode switch
+            {
+                ProxyModeKind.Auto => ProxyOptions[0],
+                ProxyModeKind.Direct => ProxyOptions[1],
+                ProxyModeKind.System => ProxyOptions[2],
+                ProxyModeKind.Custom => ProxyOptions[3],
+                _ => ProxyOptions[0]
+            };
         }
         set
         {
+            if (value == null) return;
             var settings = appSettingsProvider.Get();
+            if (value.Value == "custom")
+            {
+                customProxySelected = true;
+                var customUrl = ProxyCustomUrl.Trim();
+                if (!string.IsNullOrWhiteSpace(customUrl))
+                {
+                    appSettingsProvider.Save(settings with { HttpProxy = customUrl });
+                }
+                this.RaisePropertyChanged(nameof(ProxyMode));
+                this.RaisePropertyChanged(nameof(ProxyCustomUrl));
+                return;
+            }
+
+            customProxySelected = false;
             var proxy = value.Value switch
             {
+                "direct" => "direct",
                 "system" => "system",
-                "custom" => string.IsNullOrWhiteSpace(ProxyCustomUrl) ? "" : ProxyCustomUrl.Trim(),
-                _ => ""
+                _ => "auto"
             };
             appSettingsProvider.Save(settings with { HttpProxy = proxy });
             this.RaisePropertyChanged(nameof(ProxyCustomUrl));
@@ -367,12 +398,21 @@ public class AdvancedViewModel : ReactiveObject, IDisposable
         get
         {
             var proxy = appSettingsProvider.Get().HttpProxy;
-            return proxy is null or "" or "system" ? "" : proxy;
+            return ProxySettings.GetMode(proxy) == ProxyModeKind.Custom ? (proxy ?? "") : "";
         }
         set
         {
+            var trimmed = value?.Trim() ?? "";
             var settings = appSettingsProvider.Get();
-            appSettingsProvider.Save(settings with { HttpProxy = value });
+            if (!string.IsNullOrWhiteSpace(trimmed))
+            {
+                customProxySelected = true;
+                appSettingsProvider.Save(settings with { HttpProxy = trimmed });
+            }
+            else if (customProxySelected)
+            {
+                appSettingsProvider.Save(settings with { HttpProxy = "auto" });
+            }
         }
     }
 

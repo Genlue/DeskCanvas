@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using Avalonia.Media.Imaging;
 using Avalonia.Threading;
+using Music.Locales;
 using Music.Models;
 using Music.Services;
 
@@ -24,10 +25,10 @@ public class MusicViewModel : INotifyPropertyChanged, IDisposable
     private long lastSyncTimestamp;
     private DateTimeOffset lastSeekTime = DateTimeOffset.MinValue;
 
-    private string trackTitle = "未在播放";
-    private string artist = "启动音乐软件开始聆听";
+    private string trackTitle = Locale.Music_NotPlaying;
+    private string artist = Locale.Music_OpenPlayerHint;
     private string albumTitle = string.Empty;
-    private string playerName = "音乐";
+    private string playerName = Locale.Music_DefaultPlayer;
     private Bitmap? coverBitmap;
     private bool isPlaying;
     private bool hasTrack;
@@ -212,10 +213,10 @@ public class MusicViewModel : INotifyPropertyChanged, IDisposable
             if (isDisposed) return;
 
             HasTrack = track.HasTrack;
-            TrackTitle = track.HasTrack ? track.Title : "未在播放";
-            Artist = track.HasTrack ? (string.IsNullOrWhiteSpace(track.Artist) ? "未知艺术家" : track.Artist) : "启动音乐软件开始聆听";
+            TrackTitle = track.HasTrack ? track.Title : Locale.Music_NotPlaying;
+            Artist = track.HasTrack ? (string.IsNullOrWhiteSpace(track.Artist) ? Locale.Music_UnknownArtist : track.Artist) : Locale.Music_OpenPlayerHint;
             AlbumTitle = track.AlbumTitle;
-            PlayerName = string.IsNullOrWhiteSpace(track.PlayerName) ? "音乐" : track.PlayerName;
+            PlayerName = string.IsNullOrWhiteSpace(track.PlayerName) ? Locale.Music_DefaultPlayer : track.PlayerName;
             IsPlaying = track.IsPlaying;
             CanPlayPause = track.CanPlayPause;
             CanSkipNext = track.CanSkipNext;

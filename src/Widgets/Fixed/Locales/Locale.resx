@@ -15,6 +15,9 @@
     <resheader name="writer">
         <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
     </resheader>
+    <data name="FixedWidgets" xml:space="preserve">
+        <value>Panoramic Hub</value>
+    </data>
     <data name="Fixed_Aggregate_Title" xml:space="preserve">
         <value>Aggregate Info</value>
     </data>
@@ -26,6 +29,21 @@
     </data>
     <data name="Setting_CustomCity" xml:space="preserve">
         <value>Custom City Name</value>
+    </data>
+    <data name="Setting_SearchWatermark" xml:space="preserve">
+        <value>Search city (English / Chinese)...</value>
+    </data>
+    <data name="Setting_CoordFormat" xml:space="preserve">
+        <value>Coordinates: {0:F2}°, {1:F2}°</value>
+    </data>
+    <data name="Setting_CityMatchedFormat" xml:space="preserve">
+        <value>Matched: {0}</value>
+    </data>
+    <data name="Setting_CitySearching" xml:space="preserve">
+        <value>Searching weather source...</value>
+    </data>
+    <data name="Setting_CityNotFound" xml:space="preserve">
+        <value>City not found in weather source</value>
     </data>
     <data name="Setting_TempUnit" xml:space="preserve">
         <value>Temperature Unit</value>

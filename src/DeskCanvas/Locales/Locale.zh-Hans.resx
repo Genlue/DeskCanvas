@@ -544,7 +544,10 @@
         <value>HTTP 代理</value>
     </data>
     <data name="Settings_Advanced_Proxy_Subtitle" xml:space="preserve">
-        <value>天气与更新请求的网络连接方式。直连可绕过失效的系统代理</value>
+        <value>天气与更新请求的网络连接方式。自动检测会探测系统代理与本地代理端口，未开启时自动直连</value>
+    </data>
+    <data name="Settings_Advanced_Proxy_Auto" xml:space="preserve">
+        <value>自动检测 (推荐)</value>
     </data>
     <data name="Settings_Advanced_Proxy_Direct" xml:space="preserve">
         <value>直连</value>
@@ -1007,5 +1010,86 @@
     </data>
     <data name="Update_WhatsNew" xml:space="preserve">
         <value>更新日志</value>
+    </data>
+    <data name="Settings_General_Update_AutoProxy" xml:space="preserve">
+        <value>自动检测代理</value>
+    </data>
+    <data name="Settings_General_Update_AutoProxy_Subtitle_On" xml:space="preserve">
+        <value>自动探测系统代理、环境变量与常用本地端口（7890/7897/10809 等），代理未开启时自动直连</value>
+    </data>
+    <data name="Settings_General_Update_AutoProxy_Subtitle_Direct" xml:space="preserve">
+        <value>已关闭自动检测，当前使用直连模式（不使用代理）</value>
+    </data>
+    <data name="Settings_General_Update_AutoProxy_Subtitle_System" xml:space="preserve">
+        <value>当前在「高级 → 网络」中固定为系统代理模式</value>
+    </data>
+    <data name="Settings_General_Update_AutoProxy_Subtitle_Custom" xml:space="preserve">
+        <value>当前在「高级 → 网络」中固定为自定义代理: {0}</value>
+    </data>
+    <data name="Settings_General_Update_Connectivity" xml:space="preserve">
+        <value>GitHub 连通测试</value>
+    </data>
+    <data name="Settings_General_Update_Connectivity_Subtitle" xml:space="preserve">
+        <value>测试与 GitHub 更新服务器的连接延迟及当前代理生效状态</value>
+    </data>
+    <data name="Settings_General_Update_Connectivity_Action" xml:space="preserve">
+        <value>测试连接</value>
+    </data>
+    <data name="Settings_General_Update_Connectivity_Testing" xml:space="preserve">
+        <value>正在检测代理并测试 GitHub 连通性...</value>
+    </data>
+    <data name="Settings_General_Update_Connectivity_Success" xml:space="preserve">
+        <value>连接成功 (HTTP {0}) · {1} ms · {2}</value>
+    </data>
+    <data name="Settings_General_Update_Connectivity_RateLimited" xml:space="preserve">
+        <value>已连通 GitHub (API 频率受限 HTTP 403) · {0} ms · {1}</value>
+    </data>
+    <data name="Settings_General_Update_Connectivity_Failed" xml:space="preserve">
+        <value>连接失败 ({0}) · {1} ms · {2}</value>
+    </data>
+    <data name="Settings_General_Update_Route_Direct" xml:space="preserve">
+        <value>直连</value>
+    </data>
+    <data name="Settings_General_Update_Route_DirectNoProxy" xml:space="preserve">
+        <value>直连 (未检测到活动代理)</value>
+    </data>
+    <data name="Settings_General_Update_Route_SystemProxy" xml:space="preserve">
+        <value>代理 {0} (系统代理)</value>
+    </data>
+    <data name="Settings_General_Update_Route_EnvProxy" xml:space="preserve">
+        <value>代理 {0} (环境变量)</value>
+    </data>
+    <data name="Settings_General_Update_Route_LocalPort" xml:space="preserve">
+        <value>代理 {0} (本地端口自动探测)</value>
+    </data>
+    <data name="Settings_General_Update_Route_CustomProxy" xml:space="preserve">
+        <value>代理 {0} (自定义)</value>
+    </data>
+    <data name="Settings_General_Update_Record_UpToDate" xml:space="preserve">
+        <value>上次检查 {0} · 已是最新版本 ({1}) · {2}</value>
+    </data>
+    <data name="Settings_General_Update_Record_FoundNew" xml:space="preserve">
+        <value>上次检查 {0} · 发现新版本 {1} · {2}</value>
+    </data>
+    <data name="Settings_General_Update_Record_Failed" xml:space="preserve">
+        <value>上次检查 {0} · 未能连接 GitHub ({1}) · {2}</value>
+    </data>
+    <data name="Settings_General_Update_Error_Timeout" xml:space="preserve">
+        <value>连接超时</value>
+    </data>
+    <data name="Settings_General_Update_Error_ProxyRefused" xml:space="preserve">
+        <value>代理端口拒绝连接</value>
+    </data>
+    <data name="Settings_General_Update_Error_Dns" xml:space="preserve">
+        <value>DNS 解析失败</value>
+    </data>
+    <data name="Settings_General_Update_Error_TlsOrReset" xml:space="preserve">
+        <value>连接被重置或 TLS 握手受阻</value>
+    </data>
+    <data name="Settings_General_Update_Error_RateLimit" xml:space="preserve">
+        <value>HTTP 403 API 速率限制</value>
+    </data>
+    <data name="Settings_General_Update_Error_Network" xml:space="preserve">
+        <value>网络请求失败</value>
     </data>
 </root>

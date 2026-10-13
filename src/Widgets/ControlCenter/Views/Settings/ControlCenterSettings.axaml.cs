@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text.Json;
 using Avalonia;
@@ -24,6 +25,9 @@ public partial class ControlCenterSettings : UserControl
     private List<ControlTilePlacement> currentPlacements = [];
     private ControlItemType? selectedType;
     private bool isInitializing = true;
+
+    private static bool IsZh =>
+        CultureInfo.CurrentUICulture.TwoLetterISOLanguageName.Equals("zh", StringComparison.OrdinalIgnoreCase);
 
     // Drag / Resize state on ComposerCanvas
     private enum InteractionMode
@@ -59,12 +63,39 @@ public partial class ControlCenterSettings : UserControl
         model = ReadModel(widgetLayoutProvider?.Get()) ?? new ControlCenterModel();
 
         InitializeComponent();
+        ApplyLocalization();
 
         DetectInitialTierFromWidget();
         InitWheelStepCombo();
 
         isInitializing = false;
         LoadTierLayout(activeGridCols, activeGridRows);
+    }
+
+    private void ApplyLocalization()
+    {
+        Tab2x2Btn.Content = IsZh ? "2×2 画布" : "2×2 Grid";
+        Tab4x2Btn.Content = IsZh ? "4×2 画布" : "4×2 Grid";
+        Tab4x4Btn.Content = IsZh ? "4×4 画布" : "4×4 Grid";
+        PresetVerticalBtn.Content = IsZh ? "iOS 竖条预设" : "iOS Vertical Preset";
+        ToolTip.SetTip(PresetVerticalBtn, IsZh
+            ? "将右侧亮度与音量切换为 1×2 竖向胶囊滑块"
+            : "Switch right-side brightness & volume to 1×2 vertical sliders");
+        ResetDefaultBtn.Content = IsZh ? "恢复默认" : "Reset Default";
+        ComposerHintText.Text = IsZh
+            ? "拖拽卡片调整格子位置；拖动卡片右下角 ◢ 或点击下方按钮切换横竖方向与大小"
+            : "Drag tiles to rearrange; drag bottom-right ◢ or click buttons below to change size & orientation";
+        Span1x1Btn.Content = IsZh ? "1×1 单格" : "1×1 Single";
+        Span2x1Btn.Content = IsZh ? "2×1 横向" : "2×1 Wide";
+        Span1x2Btn.Content = IsZh ? "1×2 竖向" : "1×2 Tall";
+        Span2x2Btn.Content = IsZh ? "2×2 大卡" : "2×2 Large";
+        DockHeaderText.Text = IsZh
+            ? "待选设置项池（点击或拖拽填入上方空格）："
+            : "Available Controls (Click or drag into grid above):";
+        WheelStepTitleText.Text = IsZh ? "鼠标滚轮调节步进" : "Mouse Wheel Step";
+        WheelStepSubtitleText.Text = IsZh
+            ? "悬停在亮度、音量或麦克风胶囊上滚动滚轮时的单次增减幅度"
+            : "Increment per scroll notch when hovering over brightness, volume, or mic sliders";
     }
 
     private void DetectInitialTierFromWidget()
@@ -266,7 +297,7 @@ public partial class ControlCenterSettings : UserControl
             Margin = new Thickness(0, 3, 3, 0),
             Cursor = new Cursor(StandardCursorType.Hand)
         };
-        ToolTip.SetTip(removeBtn, "移出画布");
+        ToolTip.SetTip(removeBtn, IsZh ? "移出画布" : "Remove from grid");
         removeBtn.Click += (_, e) =>
         {
             e.Handled = true;
@@ -297,7 +328,9 @@ public partial class ControlCenterSettings : UserControl
                 Margin = new Thickness(0, 0, 3, 1)
             }
         };
-        ToolTip.SetTip(resizeGrip, "拖拽改变横竖跨度 (1×1 / 2×1 / 1×2 / 2×2)");
+        ToolTip.SetTip(resizeGrip, IsZh
+            ? "拖拽改变横竖跨度 (1×1 / 2×1 / 1×2 / 2×2)"
+            : "Drag to resize span (1×1 / 2×1 / 1×2 / 2×2)");
         resizeGrip.PointerPressed += (_, e) =>
         {
             if (!e.GetCurrentPoint(this).Properties.IsLeftButtonPressed) return;
@@ -385,7 +418,9 @@ public partial class ControlCenterSettings : UserControl
         {
             DockWrapPanel.Children.Add(new TextBlock
             {
-                Text = "所有控制项均已放入画布（点击卡片右上角 ✕ 可移回此处）",
+                Text = IsZh
+                    ? "所有控制项均已放入画布（点击卡片右上角 ✕ 可移回此处）"
+                    : "All controls are placed on the grid (click ✕ on a tile to remove it)",
                 FontSize = 11,
                 Opacity = 0.55,
                 Margin = new Thickness(0, 2)
@@ -401,7 +436,9 @@ public partial class ControlCenterSettings : UserControl
 
         if (tile == null)
         {
-            SelectedTileLabel.Text = "点击画布中的模块可快速切换横竖与尺寸";
+            SelectedTileLabel.Text = IsZh
+                ? "点击画布中的模块可快速切换横竖与尺寸"
+                : "Click a tile on the grid to change its size and orientation";
             SpanButtonsPanel.IsEnabled = false;
             Span1x1Btn.Classes.Set("active", false);
             Span2x1Btn.Classes.Set("active", false);
@@ -410,7 +447,9 @@ public partial class ControlCenterSettings : UserControl
             return;
         }
 
-        SelectedTileLabel.Text = $"已选：{ControlCenterModel.GetItemDisplayName(tile.Type)} ({FormatSpanBadge(tile.ColumnSpan, tile.RowSpan)})";
+        SelectedTileLabel.Text = IsZh
+            ? $"已选：{ControlCenterModel.GetItemDisplayName(tile.Type)} ({FormatSpanBadge(tile.ColumnSpan, tile.RowSpan)})"
+            : $"Selected: {ControlCenterModel.GetItemDisplayName(tile.Type)} ({FormatSpanBadge(tile.ColumnSpan, tile.RowSpan)})";
         SpanButtonsPanel.IsEnabled = true;
 
         SetSpanBtnActive(Span1x1Btn, tile.ColumnSpan == 1 && tile.RowSpan == 1);
@@ -845,10 +884,10 @@ public partial class ControlCenterSettings : UserControl
 
     private static string FormatSpanBadge(int colSpan, int rowSpan) => (colSpan, rowSpan) switch
     {
-        (1, 1) => "1×1 单格",
-        (2, 1) => "2×1 横向",
-        (1, 2) => "1×2 竖向",
-        (2, 2) => "2×2 大卡",
+        (1, 1) => IsZh ? "1×1 单格" : "1×1 Single",
+        (2, 1) => IsZh ? "2×1 横向" : "2×1 Wide",
+        (1, 2) => IsZh ? "1×2 竖向" : "1×2 Tall",
+        (2, 2) => IsZh ? "2×2 大卡" : "2×2 Large",
         _ => $"{colSpan}×{rowSpan}"
     };
 

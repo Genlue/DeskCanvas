@@ -69,6 +69,15 @@ namespace Picture.Locales {
         public static string Picture_CropSettings => ResourceManager.GetString("Picture_CropSettings", resourceCulture) ?? "当前所选图片裁切与取景";
         public static string Picture_CropX => ResourceManager.GetString("Picture_CropX", resourceCulture) ?? "水平取景偏移 (左 ~ 右)";
         public static string Picture_CropY => ResourceManager.GetString("Picture_CropY", resourceCulture) ?? "垂直取景偏移 (上 ~ 下)";
-        public static string Picture_Zoom => ResourceManager.GetString("Picture_Zoom", resourceCulture) ?? "画面缩放倍率";
+        public static string Picture_Zoom => ResourceManager.GetString("Picture_Zoom", resourceCulture) ?? "Zoom Level";
+        public static string Picture_EmptyHint => ResourceManager.GetString("Picture_EmptyHint", resourceCulture) ?? "Right-click widget to add photos";
+        public static string Picture_SelectImageHint => ResourceManager.GetString("Picture_SelectImageHint", resourceCulture) ?? "Select or add an image";
+        public static string Picture_LibraryTitle => ResourceManager.GetString("Picture_LibraryTitle", resourceCulture) ?? "Photo Library";
+        public static string Picture_LibrarySubtitle => ResourceManager.GetString("Picture_LibrarySubtitle", resourceCulture) ?? "Add photos or folders to display and rotate";
+        public static string Picture_CropTip => ResourceManager.GetString("Picture_CropTip", resourceCulture) ?? "💡 Tip: Drag inside the preview to pan, scroll wheel to zoom";
+        public static string Picture_QuickAlign => ResourceManager.GetString("Picture_QuickAlign", resourceCulture) ?? "Quick Align:";
+        public static string Picture_Filter_Images => ResourceManager.GetString("Picture_Filter_Images", resourceCulture) ?? "Images & Animations (*.jpg, *.png, *.webp, *.gif, *.bmp, *.ico, *.tiff)";
+        public static string Picture_Filter_Animations => ResourceManager.GetString("Picture_Filter_Animations", resourceCulture) ?? "Animations (*.gif, *.webp)";
+        public static string Picture_Filter_AllFiles => ResourceManager.GetString("Picture_Filter_AllFiles", resourceCulture) ?? "All Files (*.*)";
     }
 }

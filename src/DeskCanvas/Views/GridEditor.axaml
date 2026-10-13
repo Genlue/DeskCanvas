@@ -54,6 +54,24 @@
             <Setter Property="BorderBrush" Value="#26000000" />
             <Setter Property="TextElement.Foreground" Value="#FFFFFF" />
         </Style>
+        <!-- Ensure numeric input boxes inside the light parameter panel always invert
+             selection colors (#1C1C1E highlight box + #FFFFFF selected text) even when
+             the global app theme uses a white monochrome accent. -->
+        <Style Selector="TextBox, NumericUpDown /template/ TextBox">
+            <Setter Property="Foreground" Value="#1C1C1E" />
+            <Setter Property="CaretBrush" Value="#1C1C1E" />
+            <Setter Property="SelectionBrush" Value="#1C1C1E" />
+            <Setter Property="SelectionForegroundBrush" Value="#FFFFFF" />
+        </Style>
+        <Style Selector="TextBox:pointerover, TextBox:focus, NumericUpDown /template/ TextBox:pointerover, NumericUpDown /template/ TextBox:focus">
+            <Setter Property="Foreground" Value="#1C1C1E" />
+            <Setter Property="CaretBrush" Value="#1C1C1E" />
+            <Setter Property="SelectionBrush" Value="#1C1C1E" />
+            <Setter Property="SelectionForegroundBrush" Value="#FFFFFF" />
+        </Style>
+        <Style Selector="TextBox:pointerover /template/ Border#PART_BorderElement, TextBox:focus /template/ Border#PART_BorderElement">
+            <Setter Property="Background" Value="Transparent" />
+        </Style>
     </Window.Styles>
 
     <Panel PointerPressed="OnRootPressed">
@@ -89,13 +107,13 @@
                 BoxShadow="0 8 24 0 #59000000">
             <StackPanel Spacing="6" Width="240">
                 <TextBlock Name="ParamTitle" FontWeight="Bold" Foreground="#1C1C1E" FontSize="14" />
-                <TextBlock Foreground="#8A000000" FontSize="12" Text="列数 (Columns)" />
+                <TextBlock Name="ColumnsLabel" Foreground="#8A000000" FontSize="12" Text="列数 (Columns)" />
                 <NumericUpDown Name="ColumnsInput" Minimum="1" Increment="1" FormatString="F0" ParsingNumberStyle="Integer"
                                Background="#FFFFFF" BorderBrush="#33000000" BorderThickness="1" Foreground="#1C1C1E" />
-                <TextBlock Foreground="#8A000000" FontSize="12" Text="行数 (Rows)" />
+                <TextBlock Name="RowsLabel" Foreground="#8A000000" FontSize="12" Text="行数 (Rows)" />
                 <NumericUpDown Name="RowsInput" Minimum="1" Increment="1" FormatString="F0" ParsingNumberStyle="Integer"
                                Background="#FFFFFF" BorderBrush="#33000000" BorderThickness="1" Foreground="#1C1C1E" />
-                <TextBlock Foreground="#8A000000" FontSize="12" Text="格子边长 (%)" />
+                <TextBlock Name="CellLabel" Foreground="#8A000000" FontSize="12" Text="格子边长 (%)" />
                 <NumericUpDown Name="CellInput" Minimum="0.01" Increment="0.1" FormatString="0.##"
                                Background="#FFFFFF" BorderBrush="#33000000" BorderThickness="1" Foreground="#1C1C1E" />
                 <Separator Margin="0 6" Height="1" Background="#26000000" />
@@ -103,12 +121,12 @@
                      working area; these inputs set the origin exactly. -->
                 <Grid ColumnDefinitions="*,*">
                     <StackPanel Grid.Column="0" Margin="0 0 3 0" Spacing="4">
-                        <TextBlock Foreground="#8A000000" FontSize="12" Text="X 位置 (%)" />
+                        <TextBlock Name="XLabel" Foreground="#8A000000" FontSize="12" Text="X 位置 (%)" />
                         <NumericUpDown Name="XInput" Minimum="0" Maximum="100" Increment="0.1" FormatString="0.##"
                                        Background="#FFFFFF" BorderBrush="#33000000" BorderThickness="1" Foreground="#1C1C1E" />
                     </StackPanel>
                     <StackPanel Grid.Column="1" Margin="3 0 0 0" Spacing="4">
-                        <TextBlock Foreground="#8A000000" FontSize="12" Text="Y 位置 (%)" />
+                        <TextBlock Name="YLabel" Foreground="#8A000000" FontSize="12" Text="Y 位置 (%)" />
                         <NumericUpDown Name="YInput" Minimum="0" Maximum="100" Increment="0.1" FormatString="0.##"
                                        Background="#FFFFFF" BorderBrush="#33000000" BorderThickness="1" Foreground="#1C1C1E" />
                     </StackPanel>

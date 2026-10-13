@@ -15,7 +15,7 @@ public class SearchViewModel : INotifyPropertyChanged
     private SearchModel model;
     private string queryText = "";
     private SearchEngine currentEngine;
-    private string selectedCategory = "全部";
+    private string selectedCategory = Locale.Search_Category_All;
 
     public event PropertyChangedEventHandler? PropertyChanged;
     public event Action<SearchModel>? ModelChanged;
@@ -185,12 +185,26 @@ public class SearchViewModel : INotifyPropertyChanged
     {
         AllEngines.Clear();
         var defaults = PresetEngines.GetDefaults();
+        var defaultById = defaults.ToDictionary(d => d.Id, StringComparer.OrdinalIgnoreCase);
 
         // Check if user has custom engines or override
         var list = new List<SearchEngine>();
         if (model.CustomEngines != null && model.CustomEngines.Count > 0)
         {
-            list.AddRange(model.CustomEngines.Select(e => e.Clone()));
+            foreach (var e in model.CustomEngines)
+            {
+                var clone = e.Clone();
+                if (!clone.IsCustom && defaultById.TryGetValue(clone.Id, out var preset))
+                {
+                    clone.Name = preset.Name;
+                    clone.Category = preset.Category;
+                }
+                else
+                {
+                    clone.Category = LocalizeCategory(clone.Category);
+                }
+                list.Add(clone);
+            }
         }
         else
         {
@@ -203,11 +217,36 @@ public class SearchViewModel : INotifyPropertyChanged
         }
     }
 
+    private static string LocalizeCategory(string? cat) => NormalizeCategoryKey(cat) switch
+    {
+        "all" => Locale.Search_Category_All,
+        "general" => Locale.Search_Category_General,
+        "dev" => Locale.Search_Category_Dev,
+        "ai" => Locale.Search_Category_AI,
+        "media" => Locale.Search_Category_Media,
+        "community" => Locale.Search_Category_Community,
+        _ => cat ?? Locale.Search_Category_General
+    };
+
+    private static string NormalizeCategoryKey(string? cat) => cat switch
+    {
+        "全部" or "All" => "all",
+        "通用" or "General" => "general",
+        "开发者" or "开发" or "Dev" => "dev",
+        "AI 智能" or "AI" => "ai",
+        "影音媒体" or "Media" => "media",
+        "问答社区" or "Community" => "community",
+        _ => cat ?? ""
+    };
+
     private void UpdateCategories()
     {
         Categories.Clear();
-        Categories.Add("全部");
-        var cats = AllEngines.Where(e => e.IsEnabled).Select(e => e.Category).Distinct().Where(c => !string.IsNullOrEmpty(c) && c != "全部");
+        Categories.Add(Locale.Search_Category_All);
+        var cats = AllEngines.Where(e => e.IsEnabled)
+            .Select(e => e.Category)
+            .Distinct()
+            .Where(c => !string.IsNullOrEmpty(c) && NormalizeCategoryKey(c) != "all");
         foreach (var cat in cats)
         {
             Categories.Add(cat);
@@ -217,9 +256,10 @@ public class SearchViewModel : INotifyPropertyChanged
     private void UpdateDisplayEngines()
     {
         DisplayEngines.Clear();
-        var filtered = (selectedCategory == "全部"
+        var selKey = NormalizeCategoryKey(selectedCategory);
+        var filtered = (selKey == "all" || string.IsNullOrEmpty(selKey)
             ? AllEngines.Where(e => e.IsEnabled)
-            : AllEngines.Where(e => e.IsEnabled && e.Category == selectedCategory)).ToList();
+            : AllEngines.Where(e => e.IsEnabled && NormalizeCategoryKey(e.Category) == selKey)).ToList();
 
         foreach (var eng in filtered)
         {

@@ -33,7 +33,7 @@ public partial class Widget : Window, INotifyPropertyChanged
     private readonly Func<EditWidget>? editWidgetWindow;
     private readonly ProfileService profileService;
     private (int Columns, int Rows)? manualSpan;
-    private readonly bool isFrameless;
+    private bool isFrameless;
 
     /// <summary>
     /// Reads the shared menu surface radius for Clip / native window region alignment. The XAML
@@ -146,7 +146,7 @@ public partial class Widget : Window, INotifyPropertyChanged
         InitializeComponent();
 
         var control = userControl();
-        isFrameless = control is IFramelessWidget;
+        isFrameless = control is IFramelessWidget { IsFrameless: true };
         // Host-owned class markers only (Frameless / Flush). The content inset itself is NOT
         // set here — it comes from the .widget-content-host styles in App.axaml, which the
         // card Border below carries, and which the 组件库 preview carries as well so both
@@ -363,10 +363,27 @@ public partial class Widget : Window, INotifyPropertyChanged
         || widgetLayoutProvider.Get().Type is "Stack" or "StackWidgets"
         || widgetLayoutProvider.Get().SubType is "WidgetStackView" or "WidgetStack";
 
+    private static bool IsZh => System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName.Equals("zh", StringComparison.OrdinalIgnoreCase);
+
     public bool ShowNormalEditButton => !IsStackWidget && ShowEditButton;
     public bool ShowStackEditButton => IsStackWidget && ShowEditButton;
     public bool CanEditStackedWidgetChild => StackWidget?.CanEditCurrentChild == true;
+    public string EditStackTitle => IsZh ? "编辑重叠组件…" : "Edit Widget Stack…";
     public string EditStackChildTitle => $"{Locale.Widget_Edit} \"{StackWidget?.CurrentChildTitle ?? ""}\"";
+
+    public string Preset4x2StdTitle => IsZh ? "4×2 (标准 100%)" : "4×2 (Standard 100%)";
+    public string Preset6x3ScaleTitle => IsZh ? "6×3 (等比放大 150%)" : "6×3 (Scaled 150%)";
+    public string Preset8x4ScaleTitle => IsZh ? "8×4 (等比放大 200%)" : "8×4 (Scaled 200%)";
+    public string Preset1x1SmallTitle => IsZh ? "1×1 (小 100%)" : "1×1 (Small 100%)";
+    public string Preset2x2SquareStdTitle => IsZh ? "2×2 (标准 200%)" : "2×2 (Standard 200%)";
+    public string Preset3x3MediumTitle => IsZh ? "3×3 (中 300%)" : "3×3 (Medium 300%)";
+    public string Preset4x4LargeTitle => IsZh ? "4×4 (大 400%)" : "4×4 (Large 400%)";
+    public string Preset2x2BaseStdTitle => IsZh ? "2×2 (标准 100%)" : "2×2 (Standard 100%)";
+    public string Preset3x3ScaleTitle => IsZh ? "3×3 (等比放大 150%)" : "3×3 (Scaled 150%)";
+    public string Preset4x4ScaleTitle => IsZh ? "4×4 (等比放大 200%)" : "4×4 (Scaled 200%)";
+    public string PresetMap2x2Title => IsZh ? "2×2 (小号方形 200%)" : "2×2 (Small Square 200%)";
+    public string PresetMap4x2Title => IsZh ? "4×2 (中号横版 400×200%)" : "4×2 (Medium Wide 400×200%)";
+    public string PresetMap4x4Title => IsZh ? "4×4 (大号全景 400×400%)" : "4×4 (Large Panoramic 400×400%)";
 
     public void EditCurrentStackedWidget()
     {
@@ -491,24 +508,6 @@ public partial class Widget : Window, INotifyPropertyChanged
     /// their own glyph material instead.
     /// </summary>
     public bool ShowsGlassMaterial => !isFrameless && GlassMaterial.UsesRenderedGlass;
-
-    /// <summary>
-    /// Widgets that provide their own edge-to-edge background or tiles (e.g. Note, MapView),
-    /// which should suppress the window card outline and background in Colorful theme to avoid
-    /// double borders or background leakage.
-    /// Note: Flush widgets like AggregateView rely on the window card background and must NOT be suppressed.
-    /// </summary>
-    private bool IsSelfFramingWidget
-    {
-        get
-        {
-            var contentName = ContentPresenter?.Content?.GetType().Name;
-            var layout = widgetLayoutProvider?.Get();
-            return contentName is "Note" or "MapView"
-                   || layout?.SubType is "Note" or "MapView"
-                   || layout?.Type is "Notes" or "Map";
-        }
-    }
 
     private DeskCanvas.Core.Interfaces.IStackWidget? activeStackWidget;
 
@@ -737,8 +736,8 @@ public partial class Widget : Window, INotifyPropertyChanged
     /// </summary>
     private bool IsOutlined =>
         !isFrameless
-        && ((appSettingsProvider.Get().Theme.IsGlass && appSettingsProvider.Get().Theme.OutlineWidth > 0)
-            || appSettingsProvider.Get().Theme.IsColorful)
+        && appSettingsProvider.Get().Theme.IsGlass
+        && appSettingsProvider.Get().Theme.OutlineWidth > 0
         && !appSettingsProvider.Get().Theme.UseNativeFrame;
 
     /// <summary>Highlight ring thickness (DIPs), 0 when the surface is not outlined glass.</summary>
@@ -747,11 +746,7 @@ public partial class Widget : Window, INotifyPropertyChanged
         get
         {
             if (!IsOutlined || IsStackWidget) return new Thickness(0);
-            if (appSettingsProvider.Get().Theme.IsColorful && IsSelfFramingWidget)
-                return new Thickness(0);
             var width = Math.Clamp(appSettingsProvider.Get().Theme.OutlineWidth, 0, 6);
-            if (width <= 0 && appSettingsProvider.Get().Theme.IsColorful)
-                return new Thickness(1);
             return new Thickness(width);
         }
     }
@@ -763,19 +758,14 @@ public partial class Widget : Window, INotifyPropertyChanged
     /// the whole edge, not just a short notch near the corner). Built as a conic
     /// gradient whose sweep starts at the actual top-left corner, so the fades
     /// follow the real corners for any aspect ratio.
-    /// In Colorful mode, a subtle 1px macOS card rim light is used by default.
     /// </summary>
     public IBrush? WidgetOutlineBrush
     {
         get
         {
             if (!IsOutlined || IsStackWidget) return null;
-            if (appSettingsProvider.Get().Theme.IsColorful && IsSelfFramingWidget)
-                return null;
             if (appSettingsProvider.Get().Theme.OutlineWidth > 0)
                 return BuildOutlineBrush();
-            if (appSettingsProvider.Get().Theme.IsColorful && this.TryFindResource("WidgetCardBorderBrush", ActualThemeVariant, out var res) && res is IBrush b)
-                return b;
             return null;
         }
     }
@@ -862,16 +852,6 @@ public partial class Widget : Window, INotifyPropertyChanged
                 {
                     if (this.TryFindResource("ProgressCardBackground", variant, out var pcb) && pcb is IBrush pb)
                         return pb;
-                }
-                else if (contentName == "AnalogI")
-                {
-                    // Clock Style 1 (AnalogI):
-                    // Outer perimeter background is always authentic dark mode charcoal (#1C1C1E)
-                    return new SolidColorBrush(Color.Parse("#1C1C1E"));
-                }
-                else if (IsSelfFramingWidget)
-                {
-                    return Brushes.Transparent;
                 }
 
                 // Explicit fallback guarantee for Colorful theme to ensure pure white (light) or charcoal (dark)
@@ -1360,7 +1340,24 @@ public partial class Widget : Window, INotifyPropertyChanged
         Notify(nameof(ShowNormalEditButton));
         Notify(nameof(ShowStackEditButton));
         Notify(nameof(CanEditStackedWidgetChild));
+        Notify(nameof(EditStackTitle));
         Notify(nameof(EditStackChildTitle));
+        Notify(nameof(Edit));
+        Notify(nameof(SizeMenuTitle));
+        Notify(nameof(ScaleMenuTitle));
+        Notify(nameof(Preset4x2StdTitle));
+        Notify(nameof(Preset6x3ScaleTitle));
+        Notify(nameof(Preset8x4ScaleTitle));
+        Notify(nameof(Preset1x1SmallTitle));
+        Notify(nameof(Preset2x2SquareStdTitle));
+        Notify(nameof(Preset3x3MediumTitle));
+        Notify(nameof(Preset4x4LargeTitle));
+        Notify(nameof(Preset2x2BaseStdTitle));
+        Notify(nameof(Preset3x3ScaleTitle));
+        Notify(nameof(Preset4x4ScaleTitle));
+        Notify(nameof(PresetMap2x2Title));
+        Notify(nameof(PresetMap4x2Title));
+        Notify(nameof(PresetMap4x4Title));
         if (sender is ContextMenu cm)
         {
             // 圆角完全交给 XAML 样式（见 WidgetContextMenu）——此前这里按组件卡片
@@ -1453,6 +1450,8 @@ public partial class Widget : Window, INotifyPropertyChanged
                 ContentPresenter.Content = newCtrl;
                 AttachStackWidget(newCtrl);
             }
+
+            RefreshFramelessState();
         }
 
         if (oldLayout?.ContentScale != newLayout.ContentScale)
@@ -1460,6 +1459,53 @@ public partial class Widget : Window, INotifyPropertyChanged
             Scale();
             Notify(nameof(ScaleMenuTitle));
         }
+    }
+
+    /// <summary>
+    /// Re-evaluate whether the hosted control is in frameless mode after its settings
+    /// refresh, updating the card border, glass surface, margins and native window region.
+    /// </summary>
+    public void RefreshFramelessState()
+    {
+        if (ContentPresenter.Content is UserControl ctrl)
+            WidgetContentHost.Prepare(ctrl);
+
+        var next = ContentPresenter.Content is IFramelessWidget { IsFrameless: true };
+        if (isFrameless == next) return;
+        isFrameless = next;
+
+        if (isFrameless && lastAppliedRegion != null)
+        {
+            InteropService.ClearWidgetRegion(this);
+            lastAppliedRegion = null;
+        }
+
+        if (isFrameless)
+        {
+            TransparencyLevelHint = [WindowTransparencyLevel.Transparent];
+        }
+        else
+        {
+            ApplyTransparencyHint();
+            Border.ClearValue(Border.MarginProperty);
+            Border.ClearValue(Border.BorderThicknessProperty);
+            Border.ClearValue(Border.CornerRadiusProperty);
+            Border.ClearValue(Border.BorderBrushProperty);
+            Border.ClearValue(Border.BackgroundProperty);
+        }
+
+        Notify(nameof(IsFrameless));
+        Notify(nameof(ShowsGlassMaterial));
+        Notify(nameof(WidgetMargin));
+        Notify(nameof(StackIndicatorsMargin));
+        Notify(nameof(WidgetCardBackground));
+        Notify(nameof(Radius));
+        Notify(nameof(InnerRadius));
+        Notify(nameof(PillRadius));
+        Notify(nameof(WidgetOutlineThickness));
+        Notify(nameof(WidgetOutlineBrush));
+        UpdateContentSize();
+        ApplyWidgetRegion();
     }
 
     [DllImport("user32.dll")]

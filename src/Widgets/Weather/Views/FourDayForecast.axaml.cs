@@ -33,7 +33,9 @@ public partial class FourDayForecast : UserControl, IFixedSizeWidget, IWidgetSel
         return (k, k);
     }
 
-    public FourDayForecast() : this(new ForecastModel("杭州", 30.2741, 120.1551, "celsius")) {}
+    private static bool IsZh => System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName.Equals("zh", StringComparison.OrdinalIgnoreCase);
+
+    public FourDayForecast() : this(new ForecastModel(IsZh ? "杭州" : "Hangzhou", 30.2741, 120.1551, "celsius")) {}
 
     public FourDayForecast(ForecastModel model)
     {
@@ -99,7 +101,7 @@ public partial class FourDayForecast : UserControl, IFixedSizeWidget, IWidgetSel
 
     public void Refresh(WidgetLayout layout)
     {
-        var newModel = layout.GetModel<ForecastModel>() ?? new ForecastModel("杭州", 30.2741, 120.1551, "celsius");
+        var newModel = layout.GetModel<ForecastModel>() ?? new ForecastModel(IsZh ? "杭州" : "Hangzhou", 30.2741, 120.1551, "celsius");
         model = newModel;
         if (viewModel != null)
         {

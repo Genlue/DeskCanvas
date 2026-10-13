@@ -19,23 +19,29 @@ internal readonly struct GlassSourceKey : IEquatable<GlassSourceKey>
     private readonly WallpaperSnapshot wallpaper;
     private readonly float sigma;
     private readonly float scale;
+    private readonly int width;
+    private readonly int height;
 
-    public GlassSourceKey(WallpaperSnapshot wallpaper, float sigma, float scale)
+    public GlassSourceKey(WallpaperSnapshot wallpaper, float sigma, float scale, int width, int height)
     {
         this.wallpaper = wallpaper;
         this.sigma = sigma;
         this.scale = scale;
+        this.width = width;
+        this.height = height;
     }
 
     public bool Equals(GlassSourceKey other) =>
         ReferenceEquals(wallpaper, other.wallpaper) &&
+        width == other.width &&
+        height == other.height &&
         Math.Abs(sigma - other.sigma) < 0.01f &&
         Math.Abs(scale - other.scale) < 0.001f;
 
     public override bool Equals(object? obj) => obj is GlassSourceKey other && Equals(other);
 
     public override int GetHashCode() =>
-        System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(wallpaper);
+        HashCode.Combine(System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(wallpaper), width, height);
 }
 
 /// <summary>
@@ -122,6 +128,9 @@ internal static class LiquidGlassSourceCache
 
     private static long BytesOf(GlassSource source) => (long)source.Backdrop.RowBytes * source.Backdrop.Height;
 
+    /// <summary>Number of entries currently held in the shared backdrop cache (for diagnostics and tests).</summary>
+    internal static int CachedEntryCount { get { lock (Gate) return entries.Count; } }
+
     /// <summary>
     /// The shared backdrop for this frame, built when the capture or the blur changed.
     /// <para>
@@ -144,15 +153,19 @@ internal static class LiquidGlassSourceCache
         // their own clarity/blur values on the shared cache.
         var glass = frame.Theme.EffectiveGlass;
         var scale = Math.Clamp((float)(glass.BackdropClarity / 100.0), MinBackdropScale, 1f);
+        var width = Math.Max(1, (int)MathF.Ceiling(desktopWidth * scale));
+        var height = Math.Max(1, (int)MathF.Ceiling(desktopHeight * scale));
         // The blur is stated in **desktop pixels**, not backdrop-texture pixels. Build draws the
         // wallpaper under a canvas scaled by `scale`, and Skia maps an image filter's sigma
         // through the CTM — so the CTM's one `scale` is the desktop-px → texture-px conversion,
         // and pre-multiplying here as well would square it: the texture received
         // 模糊 · scale², i.e. the very same 模糊 value read ever softer the lower 背景清晰度
-        // was set (a quarter of the blur at the 25% default). Matches the CPU renderers, which
-        // blur at `Blur · frame.Scale / 8` render px on unscaled canvases.
-        var sigma = (float)glass.Blur * frame.Scale / 8f;
-        var key = new GlassSourceKey(wallpaper, sigma, scale);
+        // was set (a quarter of the blur at the 25% default).
+        // Use EffectiveBackdropScale (desktop-wide reference DPI) so monitors with different DPIs
+        // share a single virtual-desktop backdrop instead of splitting and ping-pong evicting.
+        var backdropScale = frame.EffectiveBackdropScale;
+        var sigma = (float)glass.Blur * backdropScale / 8f;
+        var key = new GlassSourceKey(wallpaper, sigma, scale, width, height);
 
         GlassSource? built;
         List<GlassSource>? evicted = null;
@@ -170,7 +183,7 @@ internal static class LiquidGlassSourceCache
             // frame's backdrop at the same moment, and without this they would each capture-blur a
             // full desktop copy concurrently — the exact cost this cache exists to remove. The
             // waiters simply find the finished entry above.
-            built = Build(frame, wallpaper, desktopWidth, desktopHeight, scale, sigma);
+            built = Build(frame, wallpaper, width, height, scale, sigma, backdropScale);
             if (built == null) return null;
 
             entries.Add(new Entry(key, built));
@@ -217,7 +230,7 @@ internal static class LiquidGlassSourceCache
     }
 
     private static GlassSource? Build(LiquidGlassRenderer.Frame frame, WallpaperSnapshot wallpaper,
-        float desktopWidth, float desktopHeight, float scale, float sigma)
+        int width, int height, float scale, float sigma, float backdropScale)
     {
         SKBitmap? image = wallpaper.CachedBitmap;
         var ownsImage = false;
@@ -235,52 +248,47 @@ internal static class LiquidGlassSourceCache
             catch { return null; }
         }
 
+        SKBitmap? backdrop = null;
         try
         {
-            var width = Math.Max(1, (int)MathF.Ceiling(desktopWidth * scale));
-            var height = Math.Max(1, (int)MathF.Ceiling(desktopHeight * scale));
-            using var surface = SKSurface.Create(new SKImageInfo(width, height, SKColorType.Bgra8888, SKAlphaType.Opaque));
-            if (surface == null) return null;
+            var info = new SKImageInfo(width, height, SKColorType.Bgra8888, SKAlphaType.Opaque);
+            backdrop = new SKBitmap(info);
+            if (backdrop.GetPixels() == IntPtr.Zero)
+            {
+                backdrop.Dispose();
+                return null;
+            }
 
-            var canvas = surface.Canvas;
-            canvas.Clear(wallpaper.Background);
-            // sigma arrives in desktop px and is converted to texture px by the Scale below —
-            // Skia maps an image filter's sigma through the CTM (see Get for why that matters).
-            using var filter = sigma > 0.05f ? SKImageFilter.CreateBlur(sigma, sigma, SKShaderTileMode.Clamp) : null;
-            using var paint = new SKPaint { IsAntialias = true, FilterQuality = SKFilterQuality.High, ImageFilter = filter };
-            canvas.Save();
-            canvas.Scale(scale);
-            // Desktop space: DesktopX/Y are zeroed so the card's own origin drops out of the
-            // placement, leaving the shader a lookup it can do with one multiply-add.
-            LiquidGlassRenderer.DrawWallpaper(canvas, image!, paint,
-                frame with { DesktopX = 0f, DesktopY = 0f }, wallpaper);
-            canvas.Restore();
+            using (var canvas = new SKCanvas(backdrop))
+            {
+                canvas.Clear(wallpaper.Background);
+                // sigma arrives in desktop px and is converted to texture px by the Scale below —
+                // Skia maps an image filter's sigma through the CTM (see Get for why that matters).
+                using var filter = sigma > 0.05f ? SKImageFilter.CreateBlur(sigma, sigma, SKShaderTileMode.Clamp) : null;
+                using var paint = new SKPaint { IsAntialias = true, FilterQuality = SKFilterQuality.High, ImageFilter = filter };
+                canvas.Save();
+                canvas.Scale(scale);
+                // Desktop space: DesktopX/Y are zeroed so the card's own origin drops out of the
+                // placement, leaving the shader a lookup it can do with one multiply-add.
+                LiquidGlassRenderer.DrawWallpaper(canvas, image!, paint,
+                    frame with { DesktopX = 0f, DesktopY = 0f, Scale = backdropScale }, wallpaper);
+                canvas.Restore();
+                canvas.Flush();
+            }
 
-            var backdrop = Snapshot(surface, width, height);
-            if (backdrop == null) return null;
-            return new GlassSource(backdrop, scale);
+            backdrop.SetImmutable();
+            var result = new GlassSource(backdrop, scale);
+            backdrop = null;
+            return result;
         }
         catch
         {
+            backdrop?.Dispose();
             return null;
         }
         finally
         {
             if (ownsImage) image?.Dispose();
         }
-    }
-
-    private static SKBitmap? Snapshot(SKSurface surface, int width, int height)
-    {
-        using var image = surface.Snapshot();
-        var info = new SKImageInfo(width, height, SKColorType.Bgra8888, SKAlphaType.Opaque);
-        var bitmap = new SKBitmap(info);
-        if (!image.ReadPixels(info, bitmap.GetPixels(), bitmap.RowBytes, 0, 0))
-        {
-            bitmap.Dispose();
-            return null;
-        }
-        bitmap.SetImmutable();
-        return bitmap;
     }
 }

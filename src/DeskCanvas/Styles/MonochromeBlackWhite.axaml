@@ -63,6 +63,7 @@
                     <SolidColorBrush x:Key="SearchPillBackground" Color="Transparent" />
                     <SolidColorBrush x:Key="WidgetCardBorderBrush" Color="#15000000" />
                     <SolidColorBrush x:Key="ClockDialBackgroundBrush" Color="Black" Opacity="0.2" />
+                    <SolidColorBrush x:Key="ClockOpaqueDialBackgroundBrush" Color="{DynamicResource SolidBackgroundLight}" Opacity="1.0" />
                     <SolidColorBrush x:Key="ClockStrokesBrush" Color="Black" />
                 </ResourceDictionary>
                 <ResourceDictionary x:Key="Dark">
@@ -111,6 +112,7 @@
                     <SolidColorBrush x:Key="SearchPillBackground" Color="Transparent" />
                     <SolidColorBrush x:Key="WidgetCardBorderBrush" Color="#25FFFFFF" />
                     <SolidColorBrush x:Key="ClockDialBackgroundBrush" Color="White" Opacity="0.2" />
+                    <SolidColorBrush x:Key="ClockOpaqueDialBackgroundBrush" Color="{DynamicResource SolidBackgroundDark}" Opacity="1.0" />
                     <SolidColorBrush x:Key="ClockStrokesBrush" Color="White" />
                 </ResourceDictionary>
             </ResourceDictionary.ThemeDictionaries>

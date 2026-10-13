@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+    <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+        <xsd:element name="root" msdata:IsDataSet="true" />
+    </xsd:schema>
+    <resheader name="resmimetype">
+        <value>text/microsoft-resx</value>
+    </resheader>
+    <resheader name="version">
+        <value>1.3</value>
+    </resheader>
+    <resheader name="reader">
+        <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    </resheader>
+    <resheader name="writer">
+        <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    </resheader>
+    <data name="Batteries" xml:space="preserve">
+        <value>电池</value>
+    </data>
+    <data name="Batteries_Title" xml:space="preserve">
+        <value>电池与外设</value>
+    </data>
+    <data name="Batteries_Subtitle" xml:space="preserve">
+        <value>macOS 风格的主机电池与蓝牙外设电量监控看板</value>
+    </data>
+    <data name="Batteries_MainDevice" xml:space="preserve">
+        <value>电脑电池</value>
+    </data>
+    <data name="Batteries_AcPower" xml:space="preserve">
+        <value>电源适配器供电</value>
+    </data>
+    <data name="Batteries_Charging" xml:space="preserve">
+        <value>正在充电</value>
+    </data>
+    <data name="Batteries_ShowPercentage" xml:space="preserve">
+        <value>显示百分比数字</value>
+    </data>
+    <data name="Batteries_ShowPeripherals" xml:space="preserve">
+        <value>显示蓝牙外设电量</value>
+    </data>
+    <data name="Batteries_ShowRemainingTime" xml:space="preserve">
+        <value>显示预计可用时间</value>
+    </data>
+    <data name="Batteries_Mouse" xml:space="preserve">
+        <value>鼠标</value>
+    </data>
+    <data name="Batteries_Keyboard" xml:space="preserve">
+        <value>键盘</value>
+    </data>
+    <data name="Batteries_Headphones" xml:space="preserve">
+        <value>耳机</value>
+    </data>
+</root>

@@ -21,15 +21,17 @@ public class ClipboardItem
     [JsonIgnore]
     public Bitmap? Thumbnail { get; set; }
 
+    private static bool IsZh => System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName.Equals("zh", StringComparison.OrdinalIgnoreCase);
+
     [JsonIgnore]
     public string RelativeTime
     {
         get
         {
             var span = DateTime.Now - Timestamp;
-            if (span.TotalSeconds < 60) return "刚刚";
-            if (span.TotalMinutes < 60) return $"{(int)span.TotalMinutes} 分钟前";
-            if (span.TotalHours < 24) return $"{(int)span.TotalHours} 小时前";
+            if (span.TotalSeconds < 60) return IsZh ? "刚刚" : "Just now";
+            if (span.TotalMinutes < 60) return IsZh ? $"{(int)span.TotalMinutes} 分钟前" : $"{(int)span.TotalMinutes}m ago";
+            if (span.TotalHours < 24) return IsZh ? $"{(int)span.TotalHours} 小时前" : $"{(int)span.TotalHours}h ago";
             return Timestamp.ToString("MM-dd HH:mm");
         }
     }
@@ -46,18 +48,18 @@ public class ClipboardItem
     [JsonIgnore]
     public string DisplayTitle => Type switch
     {
-        ClipboardType.Text => string.IsNullOrWhiteSpace(Text) ? "(空白文本)" : Text.Replace("\r", " ").Replace("\n", " ").Trim(),
-        ClipboardType.Image => $"图片 ({ImageWidth}×{ImageHeight})",
-        ClipboardType.Files => FilePaths?.Length > 0 ? Path.GetFileName(FilePaths[0]) : "文件",
-        _ => "剪贴板条目"
+        ClipboardType.Text => string.IsNullOrWhiteSpace(Text) ? (IsZh ? "(空白文本)" : "(Empty text)") : Text.Replace("\r", " ").Replace("\n", " ").Trim(),
+        ClipboardType.Image => IsZh ? $"图片 ({ImageWidth}×{ImageHeight})" : $"Image ({ImageWidth}×{ImageHeight})",
+        ClipboardType.Files => FilePaths?.Length > 0 ? Path.GetFileName(FilePaths[0]) : (IsZh ? "文件" : "File"),
+        _ => IsZh ? "剪贴板条目" : "Clipboard item"
     };
 
     [JsonIgnore]
     public string DisplaySubtitle => Type switch
     {
-        ClipboardType.Text => $"{Text?.Length ?? 0} 字符",
-        ClipboardType.Image => $"{ImageWidth}×{ImageHeight} 像素",
-        ClipboardType.Files => FilePaths?.Length > 1 ? $"等共 {FilePaths.Length} 个文件" : (FilePaths?.Length == 1 ? FilePaths[0] : ""),
+        ClipboardType.Text => IsZh ? $"{Text?.Length ?? 0} 字符" : $"{Text?.Length ?? 0} chars",
+        ClipboardType.Image => IsZh ? $"{ImageWidth}×{ImageHeight} 像素" : $"{ImageWidth}×{ImageHeight} px",
+        ClipboardType.Files => FilePaths?.Length > 1 ? (IsZh ? $"等共 {FilePaths.Length} 个文件" : $"+{FilePaths.Length - 1} more ({FilePaths.Length} files)") : (FilePaths?.Length == 1 ? FilePaths[0] : ""),
         _ => ""
     };
 }

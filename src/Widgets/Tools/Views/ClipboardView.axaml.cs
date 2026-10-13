@@ -273,10 +273,10 @@ public partial class ClipboardView : UserControl, IWidgetSelfRefreshing
 
         CompactFilterText.Text = filter switch
         {
-            "Text" => "文本",
-            "Image" => "图片",
-            "Files" => "文件",
-            _ => "全部"
+            "Text" => Locales.Locale.Tools_Clipboard_Text,
+            "Image" => Locales.Locale.Tools_Clipboard_Image,
+            "Files" => Locales.Locale.Tools_Clipboard_Files,
+            _ => Locales.Locale.Tools_Clipboard_All
         };
 
         RefreshDisplay();
@@ -285,7 +285,7 @@ public partial class ClipboardView : UserControl, IWidgetSelfRefreshing
     private void OnClearClicked(object? sender, RoutedEventArgs e)
     {
         monitor.ClearAll();
-        ShowToast("已清空剪贴板历史");
+        ShowToast(Locales.Locale.Tools_Clipboard_HistoryCleared);
     }
 
     private void OnCardPointerPressed(object? sender, PointerPressedEventArgs e)
@@ -321,7 +321,7 @@ public partial class ClipboardView : UserControl, IWidgetSelfRefreshing
     {
         if (monitor.CopyToClipboard(item))
         {
-            ShowToast("已复制到剪贴板");
+            ShowToast(Locales.Locale.Tools_Clipboard_Copied);
         }
     }
 

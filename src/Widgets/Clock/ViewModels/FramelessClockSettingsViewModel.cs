@@ -52,14 +52,16 @@ public class FramelessClockSettingsViewModel : ReactiveObject
         this.appSettingsProvider = appSettingsProvider;
         model = widgetLayoutProvider.Get().GetModel<FramelessClockModel>() ?? new FramelessClockModel();
 
+        var isZh = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName.Equals("zh", StringComparison.OrdinalIgnoreCase);
+
         MaterialOptions = new List<ClockMaterialOption>
         {
-            new(null, Locale.Clock_Material_FollowGlobal, "自动同步控制中心设置的全局主题材质"),
-            new(SurfaceStyle.Acrylic, Locale.Clock_Material_Acrylic, "亚克力磨砂半透明背景"),
-            new(SurfaceStyle.LiquidGlass, Locale.Clock_Material_LiquidGlass, "经典流体光泽折射质感"),
-            new(SurfaceStyle.LiquidGlassV2, Locale.Clock_Material_LiquidGlassV2, "实时背景折射 · 高光色散字形玻璃"),
-            new(SurfaceStyle.Solid, Locale.Clock_Material_Solid, "纯净不透明高对比文字卡片"),
-            new(SurfaceStyle.Colorful, Locale.Clock_Material_Colorful, "绚丽灵动渐变色彩材质")
+            new(null, Locale.Clock_Material_FollowGlobal, isZh ? "自动同步控制中心设置的全局主题材质" : "Sync with global theme surface set in Control Center"),
+            new(SurfaceStyle.Acrylic, Locale.Clock_Material_Acrylic, isZh ? "亚克力磨砂半透明背景" : "Frosted translucent acrylic background"),
+            new(SurfaceStyle.LiquidGlass, Locale.Clock_Material_LiquidGlass, isZh ? "经典流体光泽折射质感" : "Classic fluid glossy refraction surface"),
+            new(SurfaceStyle.LiquidGlassV2, Locale.Clock_Material_LiquidGlassV2, isZh ? "实时背景折射 · 高光色散字形玻璃" : "Real-time refraction · Dispersion glass glyphs"),
+            new(SurfaceStyle.Solid, Locale.Clock_Material_Solid, isZh ? "纯净不透明高对比文字卡片" : "Clean opaque high-contrast card"),
+            new(SurfaceStyle.Colorful, Locale.Clock_Material_Colorful, isZh ? "绚丽灵动渐变色彩材质" : "Vibrant gradient color surface")
         };
 
         FontSourceOptions = new List<ClockFontSourceOption>
@@ -70,27 +72,61 @@ public class FramelessClockSettingsViewModel : ReactiveObject
 
         ArtisticFontOptions = new List<ClockFontOption>
         {
-            new("HarmonyOS Sans Condensed", "🔥 iOS / 鸿蒙修长海报体", "修长窄体海报大字 · 纵向视觉冲击力极强"),
-            new("Bebas Neue", "🔥 iOS 经典重型块体 (Bebas Neue)", "iOS 16 经典锁屏硬朗窄体 · 粗犷有力"),
-            new("DM Serif Display", "🔥 iOS 高定时尚衬线 (Didone)", "高对比度优雅衬线 · 杂志封面高级感"),
-            new("Bungee Inline", "🔥 iOS 复古双线轨体 (Rail)", "iOS 锁屏同款中空内嵌双线 · 摩登复古"),
-            new("Black Ops One", "🔥 iOS 重工镂空切角 (Stencil)", "机甲军工切角镂空 · 硬核工业设计感"),
-            new("Titan One", "🔥 iOS 圆润泡芙软糖体 (Bubble)", "饱满圆润立体大字 · 活泼柔和视觉"),
-            new("Righteous", "🔥 iOS 摩登几何艺术体 (Deco)", "装饰艺术圆弧转角 · 现代时尚几何感"),
-            new("Orbitron", "🔥 赛博机甲可变数码体 (Orbitron)", "未来科技方正折角 · 支持滑块无级调节粗细")
+            new("HarmonyOS Sans Condensed",
+                isZh ? "🔥 iOS / 鸿蒙修长海报体" : "🔥 iOS / HarmonyOS Tall Poster",
+                isZh ? "修长窄体海报大字 · 纵向视觉冲击力极强" : "Tall condensed poster display · Strong vertical impact"),
+            new("Bebas Neue",
+                isZh ? "🔥 iOS 经典重型块体 (Bebas Neue)" : "🔥 iOS Classic Heavy Block (Bebas Neue)",
+                isZh ? "iOS 16 经典锁屏硬朗窄体 · 粗犷有力" : "iOS 16 lock screen bold condensed · Crisp and punchy"),
+            new("DM Serif Display",
+                isZh ? "🔥 iOS 高定时尚衬线 (Didone)" : "🔥 iOS Fashion Editorial Serif (Didone)",
+                isZh ? "高对比度优雅衬线 · 杂志封面高级感" : "High-contrast elegant serif · Magazine cover feel"),
+            new("Bungee Inline",
+                isZh ? "🔥 iOS 复古双线轨体 (Rail)" : "🔥 iOS Retro Inline Rail (Rail)",
+                isZh ? "iOS 锁屏同款中空内嵌双线 · 摩登复古" : "Lock screen inline double-stroke · Modern retro"),
+            new("Black Ops One",
+                isZh ? "🔥 iOS 重工镂空切角 (Stencil)" : "🔥 iOS Heavy Industrial Stencil (Stencil)",
+                isZh ? "机甲军工切角镂空 · 硬核工业设计感" : "Mecha military stencil cuts · Hardcore industrial"),
+            new("Titan One",
+                isZh ? "🔥 iOS 圆润泡芙软糖体 (Bubble)" : "🔥 iOS Rounded Bubble Display (Bubble)",
+                isZh ? "饱满圆润立体大字 · 活泼柔和视觉" : "Plump rounded display · Playful and soft"),
+            new("Righteous",
+                isZh ? "🔥 iOS 摩登几何艺术体 (Deco)" : "🔥 iOS Modern Art Deco (Deco)",
+                isZh ? "装饰艺术圆弧转角 · 现代时尚几何感" : "Art Deco curved corners · Modern geometric style"),
+            new("Orbitron",
+                isZh ? "🔥 赛博机甲可变数码体 (Orbitron)" : "🔥 Cyber Mecha Variable Digital (Orbitron)",
+                isZh ? "未来科技方正折角 · 支持滑块无级调节粗细" : "Futuristic angular sci-fi · Supports smooth weight slider")
         };
 
         var sysList = new List<ClockFontOption>
         {
-            new(null, "⚙ 系统默认字体 (Segoe UI)", "跟随系统默认无衬线字体"),
-            new("Segoe UI Variable", "Segoe UI Variable (原生流体现代体)", "微软原生可变字重系统字体 · 推荐配合粗细滑块"),
-            new("Bahnschrift", "Bahnschrift (德国工业 DIN 标准体)", "现代工业标准几何字体 · 支持可变字重"),
-            new("Impact", "Impact (美式重型块体)", "Windows 经典重型窄体"),
-            new("Arial Black", "Arial Black (超粗无衬线黑体)", "宽幅厚重实心黑体"),
-            new("Georgia", "Georgia (古典衬线体)", "Windows 经典优雅衬线"),
-            new("Century Gothic", "Century Gothic (包豪斯几何体)", "纯净几何圆融线条"),
-            new("Cascadia Code", "Cascadia Code (极客等宽终端体)", "微软现代等宽编程字体 · 支持可变字重"),
-            new("Consolas", "Consolas (经典等宽数字体)", "等宽规整数字排版")
+            new(null,
+                isZh ? "⚙ 系统默认字体 (Segoe UI)" : "⚙ System Default (Segoe UI)",
+                isZh ? "跟随系统默认无衬线字体" : "Follow system default sans-serif font"),
+            new("Segoe UI Variable",
+                isZh ? "Segoe UI Variable (原生流体现代体)" : "Segoe UI Variable (Modern Variable Sans)",
+                isZh ? "微软原生可变字重系统字体 · 推荐配合粗细滑块" : "Native Windows variable font · Great with weight slider"),
+            new("Bahnschrift",
+                isZh ? "Bahnschrift (德国工业 DIN 标准体)" : "Bahnschrift (German DIN Industrial)",
+                isZh ? "现代工业标准几何字体 · 支持可变字重" : "Standard industrial geometric font · Variable weight"),
+            new("Impact",
+                isZh ? "Impact (美式重型块体)" : "Impact (Heavy Condensed Block)",
+                isZh ? "Windows 经典重型窄体" : "Classic Windows heavy condensed display"),
+            new("Arial Black",
+                isZh ? "Arial Black (超粗无衬线黑体)" : "Arial Black (Extra Bold Sans)",
+                isZh ? "宽幅厚重实心黑体" : "Wide solid heavy sans-serif"),
+            new("Georgia",
+                isZh ? "Georgia (古典衬线体)" : "Georgia (Classic Serif)",
+                isZh ? "Windows 经典优雅衬线" : "Classic Windows elegant serif"),
+            new("Century Gothic",
+                isZh ? "Century Gothic (包豪斯几何体)" : "Century Gothic (Bauhaus Geometric)",
+                isZh ? "纯净几何圆融线条" : "Clean geometric rounded lines"),
+            new("Cascadia Code",
+                isZh ? "Cascadia Code (极客等宽终端体)" : "Cascadia Code (Monospace Terminal)",
+                isZh ? "微软现代等宽编程字体 · 支持可变字重" : "Modern monospace coding font · Variable weight"),
+            new("Consolas",
+                isZh ? "Consolas (经典等宽数字体)" : "Consolas (Classic Monospace)",
+                isZh ? "等宽规整数字排版" : "Clean tabular monospace numerals")
         };
 
         var featuredSystemSet = new HashSet<string>(
@@ -104,7 +140,7 @@ public class FramelessClockSettingsViewModel : ReactiveObject
             {
                 if (!featuredSystemSet.Contains(sf) && !BundledArtisticFamilies.Contains(sf))
                 {
-                    sysList.Add(new ClockFontOption(sf, sf, "Windows 本地已安装系统字体"));
+                    sysList.Add(new ClockFontOption(sf, sf, isZh ? "Windows 本地已安装系统字体" : "Installed Windows font"));
                 }
             }
         }
@@ -258,6 +294,8 @@ public class FramelessClockSettingsViewModel : ReactiveObject
         }
     }
 
+    private static bool IsZh => System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName.Equals("zh", StringComparison.OrdinalIgnoreCase);
+
     public ClockFontOption SelectedSystemFont
     {
         get
@@ -267,7 +305,7 @@ public class FramelessClockSettingsViewModel : ReactiveObject
 
             return SystemFontOptions.FirstOrDefault(f =>
                        string.Equals(f.FontFamily, model.FontFamily, StringComparison.OrdinalIgnoreCase))
-                   ?? new ClockFontOption(model.FontFamily, model.FontFamily, "自定义系统字体");
+                   ?? new ClockFontOption(model.FontFamily, model.FontFamily, IsZh ? "自定义系统字体" : "Custom system font");
         }
         set
         {
@@ -344,7 +382,7 @@ public class FramelessClockSettingsViewModel : ReactiveObject
                 return FontOptions[0];
 
             return FontOptions.FirstOrDefault(f => string.Equals(f.FontFamily, model.FontFamily, StringComparison.OrdinalIgnoreCase))
-                   ?? new ClockFontOption(model.FontFamily, model.FontFamily, "自定义字体");
+                   ?? new ClockFontOption(model.FontFamily, model.FontFamily, IsZh ? "自定义字体" : "Custom font");
         }
         set
         {

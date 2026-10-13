@@ -123,4 +123,31 @@
     <data name="Picture_Zoom" xml:space="preserve">
         <value>Zoom Level</value>
     </data>
+    <data name="Picture_EmptyHint" xml:space="preserve">
+        <value>Right-click widget to add photos</value>
+    </data>
+    <data name="Picture_SelectImageHint" xml:space="preserve">
+        <value>Select or add an image</value>
+    </data>
+    <data name="Picture_LibraryTitle" xml:space="preserve">
+        <value>Photo Library</value>
+    </data>
+    <data name="Picture_LibrarySubtitle" xml:space="preserve">
+        <value>Add photos or folders to display and rotate</value>
+    </data>
+    <data name="Picture_CropTip" xml:space="preserve">
+        <value>💡 Tip: Drag inside the preview to pan, scroll wheel to zoom</value>
+    </data>
+    <data name="Picture_QuickAlign" xml:space="preserve">
+        <value>Quick Align:</value>
+    </data>
+    <data name="Picture_Filter_Images" xml:space="preserve">
+        <value>Images &amp; Animations (*.jpg, *.png, *.webp, *.gif, *.bmp, *.ico, *.tiff)</value>
+    </data>
+    <data name="Picture_Filter_Animations" xml:space="preserve">
+        <value>Animations (*.gif, *.webp)</value>
+    </data>
+    <data name="Picture_Filter_AllFiles" xml:space="preserve">
+        <value>All Files (*.*)</value>
+    </data>
 </root>

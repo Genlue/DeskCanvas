@@ -3,7 +3,8 @@
              x:Class="ControlCenter.Views.Settings.SingleControlSettings">
     <ScrollViewer VerticalScrollBarVisibility="Auto">
         <StackPanel Orientation="Vertical" Spacing="10" Margin="0,4,8,10">
-            <TextBlock Text="选择该快捷磁贴绑定的系统控制项："
+            <TextBlock x:Name="HeaderLabel"
+                       Text="选择该快捷磁贴绑定的系统控制项："
                        FontSize="13"
                        FontWeight="SemiBold"
                        Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}" />
@@ -18,11 +19,13 @@
                     Margin="0,6,0,0">
                 <Grid ColumnDefinitions="*,Auto">
                     <StackPanel Grid.Column="0" Spacing="1" VerticalAlignment="Center">
-                        <TextBlock Text="鼠标滚轮调节步进"
+                        <TextBlock x:Name="WheelStepTitleLabel"
+                                   Text="鼠标滚轮调节步进"
                                    FontSize="12.5"
                                    FontWeight="SemiBold"
                                    Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}" />
-                        <TextBlock Text="当选择亮度、音量或麦克风时，滚轮单次增减百分比"
+                        <TextBlock x:Name="WheelStepSubtitleLabel"
+                                   Text="当选择亮度、音量或麦克风时，滚轮单次增减百分比"
                                    FontSize="11"
                                    Opacity="0.65"
                                    Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}" />

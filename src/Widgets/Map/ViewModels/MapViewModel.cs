@@ -108,12 +108,24 @@ public class MapViewModel : INotifyPropertyChanged
         }
     }
 
+    private static bool IsZh =>
+        System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName.Equals("zh", StringComparison.OrdinalIgnoreCase);
+
     private string? runtimeLocationName;
     public string LocationName
     {
-        get => !string.IsNullOrWhiteSpace(runtimeLocationName)
-            ? runtimeLocationName
-            : (!string.IsNullOrWhiteSpace(model.LocationName) ? model.LocationName : "当前位置");
+        get
+        {
+            if (!string.IsNullOrWhiteSpace(runtimeLocationName))
+                return runtimeLocationName;
+            if (!string.IsNullOrWhiteSpace(model.LocationName))
+            {
+                if (!IsZh && model.LocationName == "北京 · 故宫博物院")
+                    return "Beijing · The Palace Museum";
+                return model.LocationName;
+            }
+            return IsZh ? "当前位置" : "Current Location";
+        }
         set
         {
             if (runtimeLocationName != value)
@@ -127,9 +139,14 @@ public class MapViewModel : INotifyPropertyChanged
     private string? runtimeLocationDescription;
     public string LocationDescription
     {
-        get => !string.IsNullOrWhiteSpace(runtimeLocationDescription)
-            ? runtimeLocationDescription
-            : (model.LocationDescription ?? "");
+        get
+        {
+            if (!string.IsNullOrWhiteSpace(runtimeLocationDescription))
+                return runtimeLocationDescription;
+            if (!IsZh && model.LocationDescription == "北京市东城区景山前街4号")
+                return "4 Jingshan Front St, Dongcheng, Beijing";
+            return model.LocationDescription ?? "";
+        }
         set
         {
             if (runtimeLocationDescription != value)
@@ -153,16 +170,16 @@ public class MapViewModel : INotifyPropertyChanged
 
     public string ProviderDisplayName => CurrentProvider switch
     {
-        MapProvider.Amap => "高德地图",
-        MapProvider.AmapSatellite => "高德卫星",
+        MapProvider.Amap => IsZh ? "高德地图" : "Amap",
+        MapProvider.AmapSatellite => IsZh ? "高德卫星" : "Amap Sat",
         MapProvider.Google => "Google Maps",
-        MapProvider.GoogleSatellite => "Google 卫星",
-        MapProvider.GoogleHybrid => "Google 混合",
-        MapProvider.AppleLight => "iPad 浅色",
-        MapProvider.AppleDark => "iPad 深色",
-        MapProvider.Baidu => "百度地图",
-        MapProvider.OpenStreetMap => "OSM 开源",
-        _ => "地图"
+        MapProvider.GoogleSatellite => IsZh ? "Google 卫星" : "Google Sat",
+        MapProvider.GoogleHybrid => IsZh ? "Google 混合" : "Google Hybrid",
+        MapProvider.AppleLight => IsZh ? "iPad 浅色" : "iPad Light",
+        MapProvider.AppleDark => IsZh ? "iPad 深色" : "iPad Dark",
+        MapProvider.Baidu => IsZh ? "百度地图" : "Baidu Maps",
+        MapProvider.OpenStreetMap => IsZh ? "OSM 开源" : "OSM",
+        _ => IsZh ? "地图" : "Map"
     };
 
     // ---------- 4 种主题适配属性 ----------

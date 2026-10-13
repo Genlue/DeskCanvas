@@ -48,11 +48,11 @@
     <ScrollViewer VerticalScrollBarVisibility="Auto">
         <StackPanel Orientation="Vertical" Spacing="8" Margin="0,2,16,8">
             <!-- Group 1: General & Behavior -->
-            <TextBlock Classes="group-header" Text="常规与搜索行为" />
+            <TextBlock Classes="group-header" Text="{x:Static locales:Locale.Search_General_Header}" />
 
             <!-- Default Search Engine -->
             <Grid ColumnDefinitions="*,Auto" Margin="0,2">
-                <TextBlock Classes="setting-label" Text="默认搜索引擎" />
+                <TextBlock Classes="setting-label" Text="{x:Static locales:Locale.Search_Default_Engine}" />
                 <ComboBox x:Name="DefaultEngineCombo" Grid.Column="1" Width="150" SelectionChanged="OnDefaultEngineChanged" />
             </Grid>
 
@@ -64,58 +64,58 @@
                       IsCheckedChanged="OnToggleChanged" FontSize="13" />
 
             <Grid ColumnDefinitions="*,Auto" Margin="0,2">
-                <TextBlock Classes="setting-label" Text="清除所有最近搜索历史" FontSize="12" Opacity="0.7"/>
-                <Button Grid.Column="1" Classes="small-button" Content="立即清空" Click="OnClearHistoryClicked" />
+                <TextBlock Classes="setting-label" Text="{x:Static locales:Locale.Search_Clear_History_Desc}" FontSize="12" Opacity="0.7"/>
+                <Button Grid.Column="1" Classes="small-button" Content="{x:Static locales:Locale.Search_Clear_Now}" Click="OnClearHistoryClicked" />
             </Grid>
 
             <!-- Group 2: Engine Management -->
-            <TextBlock Classes="group-header" Text="搜索引擎管理" />
-            <TextBlock Text="勾选可启用/禁用引擎；列表上方的引擎在界面中拥有更高优先级。"
+            <TextBlock Classes="group-header" Text="{x:Static locales:Locale.Search_Manage_Engines}" />
+            <TextBlock Text="{x:Static locales:Locale.Search_Manage_Engines_Hint}"
                        FontSize="11" Opacity="0.65" TextWrapping="Wrap"
                        Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}" Margin="0,0,0,4"/>
 
             <!-- Toolbar -->
             <WrapPanel Orientation="Horizontal" Margin="0,0,0,6">
-                <Button Classes="small-button" Content="+ 新增自定义引擎"
+                <Button Classes="small-button" Content="{x:Static locales:Locale.Search_Add_Custom_Engine}"
                         Click="OnShowAddPanelClicked" Margin="0,0,6,4" />
-                <Button Classes="small-button" Content="恢复出厂预设"
+                <Button Classes="small-button" Content="{x:Static locales:Locale.Search_Restore_Defaults}"
                         Click="OnResetDefaultsClicked" Margin="0,0,6,4" />
             </WrapPanel>
 
             <!-- Inline Add / Edit Panel -->
             <Border x:Name="EditPanel" Background="#15888888" CornerRadius="6" Padding="10" Margin="0,0,0,6" IsVisible="False">
                 <StackPanel Spacing="6">
-                    <TextBlock x:Name="EditPanelTitle" Text="添加自定义搜索引擎" FontSize="12" FontWeight="SemiBold"
+                    <TextBlock x:Name="EditPanelTitle" Text="{x:Static locales:Locale.Search_Add_Custom_Engine_Title}" FontSize="12" FontWeight="SemiBold"
                                Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}" />
                     
                     <Grid ColumnDefinitions="Auto,*" Margin="0,2">
-                        <TextBlock Classes="setting-label" Text="引擎名称：" FontSize="12" Width="80"/>
-                        <TextBox x:Name="EditNameBox" Grid.Column="1" FontSize="12" Watermark="例如：StackOverflow" Height="26" Padding="4,2"/>
+                        <TextBlock Classes="setting-label" Text="{x:Static locales:Locale.Search_Engine_Name_Label}" FontSize="12" Width="90"/>
+                        <TextBox x:Name="EditNameBox" Grid.Column="1" FontSize="12" Watermark="{x:Static locales:Locale.Search_Engine_Name_Watermark}" Height="26" Padding="4,2"/>
                     </Grid>
 
                     <Grid ColumnDefinitions="Auto,*" Margin="0,2">
-                        <TextBlock Classes="setting-label" Text="URL 模板：" FontSize="12" Width="80"/>
-                        <TextBox x:Name="EditUrlBox" Grid.Column="1" FontSize="12" Watermark="例如：https://stackoverflow.com/search?q={q}" Height="26" Padding="4,2"/>
+                        <TextBlock Classes="setting-label" Text="{x:Static locales:Locale.Search_Engine_Url_Label}" FontSize="12" Width="90"/>
+                        <TextBox x:Name="EditUrlBox" Grid.Column="1" FontSize="12" Watermark="{x:Static locales:Locale.Search_Engine_Url_Watermark}" Height="26" Padding="4,2"/>
                     </Grid>
 
                     <Grid ColumnDefinitions="Auto,*" Margin="0,2">
-                        <TextBlock Classes="setting-label" Text="所属分类：" FontSize="12" Width="80"/>
+                        <TextBlock Classes="setting-label" Text="{x:Static locales:Locale.Search_Engine_Category_Label}" FontSize="12" Width="90"/>
                         <ComboBox x:Name="EditCategoryCombo" Grid.Column="1" HorizontalAlignment="Stretch"/>
                     </Grid>
 
                     <Grid ColumnDefinitions="Auto,*" Margin="0,2">
-                        <TextBlock Classes="setting-label" Text="内置图标：" FontSize="12" Width="80"/>
+                        <TextBlock Classes="setting-label" Text="{x:Static locales:Locale.Search_Engine_Icon_Label}" FontSize="12" Width="90"/>
                         <ComboBox x:Name="EditIconCombo" Grid.Column="1" HorizontalAlignment="Stretch"/>
                     </Grid>
 
                     <Grid ColumnDefinitions="Auto,*" Margin="0,2">
-                        <TextBlock Classes="setting-label" Text="品牌颜色：" FontSize="12" Width="80"/>
+                        <TextBlock Classes="setting-label" Text="{x:Static locales:Locale.Search_Engine_Color_Label}" FontSize="12" Width="90"/>
                         <TextBox x:Name="EditColorBox" Grid.Column="1" FontSize="12" Watermark="#4285F4" Height="26" Padding="4,2"/>
                     </Grid>
 
                     <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right" Margin="0,4,0,0">
-                        <Button Classes="small-button" Content="取消" Click="OnCancelEdit" />
-                        <Button Classes="small-button" Content="保存" Click="OnConfirmEdit" />
+                        <Button Classes="small-button" Content="{x:Static locales:Locale.Search_Cancel}" Click="OnCancelEdit" />
+                        <Button Classes="small-button" Content="{x:Static locales:Locale.Search_Save}" Click="OnConfirmEdit" />
                     </StackPanel>
                 </StackPanel>
             </Border>
@@ -158,16 +158,16 @@
 
                                 <!-- Action Buttons: Up, Down, Edit, Delete -->
                                 <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="2" VerticalAlignment="Center">
-                                    <Button Classes="icon-button" Click="OnMoveUpClicked" Tag="{Binding}" ToolTip.Tip="上移">
+                                    <Button Classes="icon-button" Click="OnMoveUpClicked" Tag="{Binding}" ToolTip.Tip="{x:Static locales:Locale.Search_MoveUp}">
                                         <TextBlock Text="▲" FontSize="9" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                     </Button>
-                                    <Button Classes="icon-button" Click="OnMoveDownClicked" Tag="{Binding}" ToolTip.Tip="下移">
+                                    <Button Classes="icon-button" Click="OnMoveDownClicked" Tag="{Binding}" ToolTip.Tip="{x:Static locales:Locale.Search_MoveDown}">
                                         <TextBlock Text="▼" FontSize="9" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                     </Button>
-                                    <Button Classes="icon-button" Click="OnEditEngineClicked" Tag="{Binding}" ToolTip.Tip="编辑">
+                                    <Button Classes="icon-button" Click="OnEditEngineClicked" Tag="{Binding}" ToolTip.Tip="{x:Static locales:Locale.Search_Edit}">
                                         <TextBlock Text="✎" FontSize="11" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                     </Button>
-                                    <Button Classes="icon-button" Click="OnDeleteEngineClicked" Tag="{Binding}" ToolTip.Tip="删除">
+                                    <Button Classes="icon-button" Click="OnDeleteEngineClicked" Tag="{Binding}" ToolTip.Tip="{x:Static locales:Locale.Search_Delete}">
                                         <TextBlock Text="✕" FontSize="11" Foreground="#E05555" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                     </Button>
                                 </StackPanel>

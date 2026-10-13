@@ -47,7 +47,9 @@ public partial class FolderSettings : UserControl
         BoldNamesToggle.IsChecked = model.BoldNames;
         CamelCaseWrapToggle.IsChecked = model.CamelCaseWrap;
         HideSubfoldersToggle.IsChecked = model.HideSubfolders;
-        TitleBox.Text = model.Title;
+        TitleBox.Text = model.Title == "文件夹" && !System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName.Equals("zh", StringComparison.OrdinalIgnoreCase)
+            ? "Folder"
+            : model.Title;
         TitleOffsetSlider.Value = model.TitleOffsetX;
         TitleOffsetValue.Text = $"{model.TitleOffsetX:0}%";
         LayoutModeBox.SelectedItem = model.LayoutMode;
@@ -98,7 +100,9 @@ public partial class FolderSettings : UserControl
         BoldNamesToggle.IsChecked = model.BoldNames;
         CamelCaseWrapToggle.IsChecked = model.CamelCaseWrap;
         HideSubfoldersToggle.IsChecked = model.HideSubfolders;
-        TitleBox.Text = model.Title;
+        TitleBox.Text = model.Title == "文件夹" && !System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName.Equals("zh", StringComparison.OrdinalIgnoreCase)
+            ? "Folder"
+            : model.Title;
         TitleOffsetSlider.Value = model.TitleOffsetX;
         TitleOffsetValue.Text = $"{model.TitleOffsetX:0}%";
         ColumnsBox.SelectedItem = model.Columns;

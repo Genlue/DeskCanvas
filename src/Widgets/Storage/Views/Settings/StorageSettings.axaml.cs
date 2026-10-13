@@ -22,23 +22,15 @@ public partial class StorageSettings : UserControl
     private StorageModel model;
     private bool isInitializing = true;
 
+    private static bool IsZh => System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName.Equals("zh", StringComparison.OrdinalIgnoreCase);
+
     private record OptionItem<T>(string Label, T Value)
     {
         public override string ToString() => Label;
     }
 
-    private static readonly OptionItem<StorageDisplayMode>[] DisplayModeOptions =
-    [
-        new("📊 进度条列表", StorageDisplayMode.ProgressBarList),
-        new("⭕ 圆环仪表盘", StorageDisplayMode.RingDashboard)
-    ];
-
-    private static readonly OptionItem<StorageTextFormat>[] TextFormatOptions =
-    [
-        new("剩余可用 (如 138G 可用)", StorageTextFormat.FreeSpace),
-        new("已用 / 总计 (如 374G / 512G)", StorageTextFormat.UsedAndTotal),
-        new("使用率百分比 (如 73%)", StorageTextFormat.Percentage)
-    ];
+    private readonly OptionItem<StorageDisplayMode>[] displayModeOptions;
+    private readonly OptionItem<StorageTextFormat>[] textFormatOptions;
 
     public StorageSettings() : this(null) { }
 
@@ -49,10 +41,32 @@ public partial class StorageSettings : UserControl
             ? (ReadModel(widgetLayoutProvider.Get()) ?? new StorageModel())
             : new StorageModel();
 
+        displayModeOptions =
+        [
+            new(IsZh ? "📊 进度条列表" : "📊 Progress Bar List", StorageDisplayMode.ProgressBarList),
+            new(IsZh ? "⭕ 圆环仪表盘" : "⭕ Ring Dashboard", StorageDisplayMode.RingDashboard)
+        ];
+
+        textFormatOptions =
+        [
+            new(IsZh ? "剩余可用 (如 138G 可用)" : "Free Space (e.g. 138G free)", StorageTextFormat.FreeSpace),
+            new(IsZh ? "已用 / 总计 (如 374G / 512G)" : "Used / Total (e.g. 374G / 512G)", StorageTextFormat.UsedAndTotal),
+            new(IsZh ? "使用率百分比 (如 73%)" : "Percentage (e.g. 73%)", StorageTextFormat.Percentage)
+        ];
+
         InitializeComponent();
 
-        DisplayModeCombo.ItemsSource = DisplayModeOptions;
-        TextFormatCombo.ItemsSource = TextFormatOptions;
+        if (!IsZh)
+        {
+            AppearanceSectionHeader.Text = "Appearance & Interaction";
+            FilterSectionHeader.Text = "Drive Filtering";
+            DrivesSectionHeader.Text = "Local Drives & Visibility";
+            RefreshDrivesButton.Content = "Refresh Drives";
+            DrivesHintText.Text = "Check or uncheck drives to show or hide them in the widget; extra drives are truncated by drive letter order to fit the card size.";
+        }
+
+        DisplayModeCombo.ItemsSource = displayModeOptions;
+        TextFormatCombo.ItemsSource = textFormatOptions;
 
         LoadFromModel();
         RefreshDrivesList();
@@ -61,8 +75,8 @@ public partial class StorageSettings : UserControl
 
     private void LoadFromModel()
     {
-        DisplayModeCombo.SelectedItem = Array.Find(DisplayModeOptions, x => x.Value == model.DisplayMode) ?? DisplayModeOptions[0];
-        TextFormatCombo.SelectedItem = Array.Find(TextFormatOptions, x => x.Value == model.TextFormat) ?? TextFormatOptions[0];
+        DisplayModeCombo.SelectedItem = Array.Find(displayModeOptions, x => x.Value == model.DisplayMode) ?? displayModeOptions[0];
+        TextFormatCombo.SelectedItem = Array.Find(textFormatOptions, x => x.Value == model.TextFormat) ?? textFormatOptions[0];
         ShowHeaderSwitch.IsChecked = model.ShowHeader;
         UseWarningColorsSwitch.IsChecked = model.UseWarningColors;
         DoubleClickToOpenSwitch.IsChecked = model.DoubleClickToOpen;
@@ -116,7 +130,7 @@ public partial class StorageSettings : UserControl
         {
             var emptyText = new TextBlock
             {
-                Text = "未检测到可用的磁盘驱动器",
+                Text = IsZh ? "未检测到可用的磁盘驱动器" : "No available disk drives detected",
                 FontSize = 12,
                 Opacity = 0.6,
                 Margin = new Thickness(4, 8)
@@ -171,7 +185,9 @@ public partial class StorageSettings : UserControl
             Margin = new Thickness(0, 0, 8, 0),
             MinWidth = 24
         };
-        ToolTip.SetTip(checkBox, isTypeEnabled ? "勾选在小组件中显示该分区" : "请先在上方开启对应驱动器类型");
+        ToolTip.SetTip(checkBox, isTypeEnabled
+            ? (IsZh ? "勾选在小组件中显示该分区" : "Check to show this drive in widget")
+            : (IsZh ? "请先在上方开启对应驱动器类型" : "Please enable this drive type above first"));
         checkBox.IsCheckedChanged += (_, _) =>
         {
             if (isInitializing) return;
@@ -187,12 +203,12 @@ public partial class StorageSettings : UserControl
         };
 
         var typeTag = d.IsSystemDrive
-            ? "系统盘"
+            ? (IsZh ? "系统盘" : "System")
             : d.DriveType switch
             {
-                DriveType.Removable => "可移动盘",
-                DriveType.Network => "网络盘",
-                _ => "本地盘"
+                DriveType.Removable => IsZh ? "可移动盘" : "Removable",
+                DriveType.Network => IsZh ? "网络盘" : "Network",
+                _ => IsZh ? "本地盘" : "Local"
             };
 
         var titleBlock = new TextBlock
@@ -206,7 +222,9 @@ public partial class StorageSettings : UserControl
 
         var subBlock = new TextBlock
         {
-            Text = $"已用 {StorageService.FormatBytes(d.UsedBytes)} / {StorageService.FormatBytes(d.TotalBytes)} · 剩余 {StorageService.FormatBytes(d.FreeBytes)}",
+            Text = IsZh
+                ? $"已用 {StorageService.FormatBytes(d.UsedBytes)} / {StorageService.FormatBytes(d.TotalBytes)} · 剩余 {StorageService.FormatBytes(d.FreeBytes)}"
+                : $"Used {StorageService.FormatBytes(d.UsedBytes)} / {StorageService.FormatBytes(d.TotalBytes)} · {StorageService.FormatBytes(d.FreeBytes)} free",
             FontSize = 11,
             Opacity = 0.7,
             Margin = new Thickness(0, 3, 0, 0)
@@ -220,7 +238,7 @@ public partial class StorageSettings : UserControl
         // 2. Open in Explorer button
         var openBtn = new Button
         {
-            Content = "打开",
+            Content = IsZh ? "打开" : "Open",
             Classes = { "action-btn" },
             VerticalAlignment = VerticalAlignment.Center,
             Margin = new Thickness(0, 0, 8, 0),

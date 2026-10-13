@@ -12,7 +12,7 @@ namespace DeskCanvas.Core.Models.Settings;
 /// <param name="IgnoreUpdate">Version to ignore for update checks.</param>
 /// <param name="UpdateUrl">Custom update source (releases/latest page or API URL); <c>null</c>/empty disables update checks.</param>
 /// <param name="Grid">Custom manual grid settings (used when <see cref="Layout.GridMode"/> is <see cref="GridMode.Manual"/>).</param>
-/// <param name="HttpProxy">HTTP proxy for network requests: <c>null</c>/empty = direct connection (bypass system proxy), <c>"system"</c> = use the system proxy, otherwise a proxy URL.</param>
+/// <param name="HttpProxy">HTTP proxy for network requests: <c>null</c>/empty/<c>"auto"</c> = auto-detect active proxy and fall back to direct connection, <c>"direct"</c> = direct connection (bypass all proxies), <c>"system"</c> = use the system proxy, otherwise a custom proxy URL.</param>
 /// <param name="TitleBarStyle">Title bar style of the settings window (macOS traffic lights or native system buttons); <c>null</c> uses <see cref="TitleBarStyle.Native"/> so old configurations keep their look.</param>
 /// <param name="TitleBarSize">Traffic light diameter in DIPs; <c>null</c> uses <see cref="DefaultTitleBarSize"/> (14 — a bit larger than the 12px macOS standard for high-DPI screens).</param>
 /// <param name="ActiveProfile">Active profile name; <c>null</c> or empty defaults to "默认配置".</param>
@@ -23,6 +23,7 @@ namespace DeskCanvas.Core.Models.Settings;
 /// <param name="UpdateInterval">How often to check for updates.</param>
 /// <param name="LastUpdateCheckTime">UTC timestamp of the last update check; <c>null</c> when never checked.</param>
 /// <param name="SurfaceThemes">Per-surface theme overrides keyed by <see cref="SurfaceStyle"/> name; <c>null</c> falls back to the built-in presets.</param>
+/// <param name="LastUpdateCheckStatus">Summary of the most recent update check outcome (connected/up-to-date, new version, or GitHub connection failure).</param>
 public record AppSettings(
     Theme Theme,
     Theme[] Templates,
@@ -33,14 +34,15 @@ public record AppSettings(
     string? IgnoreUpdate,
     string? UpdateUrl = null,
     Grid? Grid = null,
-    string? HttpProxy = null,
+    string? HttpProxy = "auto",
     TitleBarStyle? TitleBarStyle = null,
     double? TitleBarSize = null,
     string? ActiveProfile = null,
     bool ShowTrayIcon = true,
     UpdateCheckInterval UpdateInterval = UpdateCheckInterval.Daily,
     DateTime? LastUpdateCheckTime = null,
-    Dictionary<string, Theme>? SurfaceThemes = null)
+    Dictionary<string, Theme>? SurfaceThemes = null,
+    string? LastUpdateCheckStatus = null)
 {
     /// <summary>
     /// Gets the saved theme configuration for the specified surface, falling back to default presets.

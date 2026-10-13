@@ -15,7 +15,11 @@ public class LocaleService : ILocaleService
     
     public void SetCulture(string cultureName)
     {
-        Thread.CurrentThread.CurrentUICulture = new CultureInfo(cultureName);
-        Locale.Culture = Thread.CurrentThread.CurrentUICulture;
+        var culture = new CultureInfo(cultureName);
+        Thread.CurrentThread.CurrentUICulture = culture;
+        Thread.CurrentThread.CurrentCulture = culture;
+        CultureInfo.DefaultThreadCurrentUICulture = culture;
+        CultureInfo.DefaultThreadCurrentCulture = culture;
+        Locale.Culture = culture;
     }
 }

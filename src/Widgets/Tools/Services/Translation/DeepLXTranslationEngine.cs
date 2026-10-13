@@ -49,7 +49,8 @@ public class DeepLXTranslationEngine : ITranslationEngine
             }
         }
 
-        throw new InvalidOperationException("DeepLX 接口未返回有效翻译内容");
+        bool isZh = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName.Equals("zh", StringComparison.OrdinalIgnoreCase);
+        throw new InvalidOperationException(isZh ? "DeepLX 接口未返回有效翻译内容" : "DeepLX endpoint did not return valid translated content");
     }
 
     private static string NormalizeLang(string lang) => lang.ToLowerInvariant() switch

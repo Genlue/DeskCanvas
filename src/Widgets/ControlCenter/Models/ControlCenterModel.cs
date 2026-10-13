@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 
 namespace ControlCenter.Models;
@@ -217,29 +218,32 @@ public class ControlCenterModel
         return false;
     }
 
+    private static bool IsZh =>
+        CultureInfo.CurrentUICulture.TwoLetterISOLanguageName.Equals("zh", StringComparison.OrdinalIgnoreCase);
+
     public static string GetItemDisplayName(ControlItemType type) => type switch
     {
-        ControlItemType.Brightness => "屏幕亮度",
-        ControlItemType.Volume => "系统音量",
-        ControlItemType.AudioOutput => "音频输出设备",
-        ControlItemType.Microphone => "麦克风静音",
-        ControlItemType.WiFi => "无线网络 (Wi-Fi)",
-        ControlItemType.Bluetooth => "蓝牙",
-        ControlItemType.DarkMode => "系统深浅色",
-        ControlItemType.DesktopIcons => "桌面图标显隐",
+        ControlItemType.Brightness => IsZh ? "屏幕亮度" : "Screen Brightness",
+        ControlItemType.Volume => IsZh ? "系统音量" : "System Volume",
+        ControlItemType.AudioOutput => IsZh ? "音频输出设备" : "Audio Output",
+        ControlItemType.Microphone => IsZh ? "麦克风静音" : "Microphone Mute",
+        ControlItemType.WiFi => IsZh ? "无线网络 (Wi-Fi)" : "Wi-Fi",
+        ControlItemType.Bluetooth => IsZh ? "蓝牙" : "Bluetooth",
+        ControlItemType.DarkMode => IsZh ? "系统深浅色" : "System Theme",
+        ControlItemType.DesktopIcons => IsZh ? "桌面图标显隐" : "Desktop Icons",
         _ => type.ToString()
     };
 
     public static string GetItemShortName(ControlItemType type) => type switch
     {
-        ControlItemType.Brightness => "亮度",
-        ControlItemType.Volume => "音量",
-        ControlItemType.AudioOutput => "音频输出",
-        ControlItemType.Microphone => "麦克风",
+        ControlItemType.Brightness => IsZh ? "亮度" : "Brightness",
+        ControlItemType.Volume => IsZh ? "音量" : "Volume",
+        ControlItemType.AudioOutput => IsZh ? "音频输出" : "Audio Output",
+        ControlItemType.Microphone => IsZh ? "麦克风" : "Mic",
         ControlItemType.WiFi => "Wi-Fi",
-        ControlItemType.Bluetooth => "蓝牙",
-        ControlItemType.DarkMode => "深色模式",
-        ControlItemType.DesktopIcons => "桌面图标",
+        ControlItemType.Bluetooth => IsZh ? "蓝牙" : "Bluetooth",
+        ControlItemType.DarkMode => IsZh ? "深色模式" : "Dark Mode",
+        ControlItemType.DesktopIcons => IsZh ? "桌面图标" : "Desktop Icons",
         _ => type.ToString()
     };
 

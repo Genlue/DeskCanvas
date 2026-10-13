@@ -189,7 +189,7 @@
                          KeyUp="OnInputKeyUp" TextChanged="OnInputTextChanged" />
 
                 <Grid Grid.Row="1" ColumnDefinitions="*,Auto,Auto" Margin="4,2,2,0">
-                    <TextBlock x:Name="CharCountText" Text="0 字符" FontSize="10" Opacity="0.4" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"
+                    <TextBlock x:Name="CharCountText" Text="0" FontSize="10" Opacity="0.4" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"
                                Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}" />
                     <Button Grid.Column="1" Classes="icon-btn" Margin="0,0,2,0" Click="OnClearInputClicked" ToolTip.Tip="{x:Static locales:Locale.Tools_Translator_Clear}">
                         <PathIcon Data="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"
@@ -208,7 +208,7 @@
             <!-- Source Language Menu Button -->
             <Button x:Name="SourceLangBtn" Grid.Column="0" Classes="menu-btn" Click="OnMenuBtnClicked">
                 <StackPanel Orientation="Horizontal" Spacing="2">
-                    <TextBlock x:Name="SourceLangText" Text="自动" FontSize="10" />
+                    <TextBlock x:Name="SourceLangText" Text="{x:Static locales:Locale.Tools_Translator_Auto}" FontSize="10" />
                     <TextBlock Text="▾" FontSize="8" Opacity="0.6" VerticalAlignment="Center" />
                 </StackPanel>
                 <Button.ContextMenu>
@@ -225,7 +225,7 @@
             <!-- Target Language Menu Button -->
             <Button x:Name="TargetLangBtn" Grid.Column="2" Classes="menu-btn" Click="OnMenuBtnClicked">
                 <StackPanel Orientation="Horizontal" Spacing="2">
-                    <TextBlock x:Name="TargetLangText" Text="中文" FontSize="10" />
+                    <TextBlock x:Name="TargetLangText" Text="ZH" FontSize="10" />
                     <TextBlock Text="▾" FontSize="8" Opacity="0.6" VerticalAlignment="Center" />
                 </StackPanel>
                 <Button.ContextMenu>
@@ -239,7 +239,7 @@
             <!-- Translation Engine Menu Button -->
             <Button x:Name="EngineBtn" Grid.Column="4" Classes="menu-btn" Margin="0" Click="OnMenuBtnClicked">
                 <StackPanel Orientation="Horizontal" Spacing="2">
-                    <TextBlock x:Name="EngineText" Text="有道" FontSize="10" />
+                    <TextBlock x:Name="EngineText" Text="Youdao" FontSize="10" />
                     <TextBlock Text="▾" FontSize="8" Opacity="0.6" VerticalAlignment="Center" />
                 </StackPanel>
                 <Button.ContextMenu>
@@ -258,7 +258,7 @@
             </Button>
 
             <!-- Expand: open the secondary panel (large editing/reading window) -->
-            <Button x:Name="ExpandBtn" Grid.Column="6" Classes="icon-btn" Margin="3,0,0,0" Click="OnOpenPanelClicked" ToolTip.Tip="展开大窗翻译">
+            <Button x:Name="ExpandBtn" Grid.Column="6" Classes="icon-btn" Margin="3,0,0,0" Click="OnOpenPanelClicked" ToolTip.Tip="{x:Static locales:Locale.Tools_Translator_ExpandPanel}">
                 <PathIcon Data="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"
                           Width="11" Height="11" Foreground="{DynamicResource TranslateAccentBrush}" />
             </Button>

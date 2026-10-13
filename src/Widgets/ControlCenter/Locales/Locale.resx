@@ -16,18 +16,18 @@
         <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
     </resheader>
     <data name="ControlCenter" xml:space="preserve">
-        <value>控制中心</value>
+        <value>Control Center</value>
     </data>
     <data name="ControlCenter_Title" xml:space="preserve">
-        <value>控制中心</value>
+        <value>Control Center</value>
     </data>
     <data name="ControlCenter_Subtitle" xml:space="preserve">
-        <value>自由拼装的系统控制面板：亮度、音量、音频输出、网络、蓝牙、深浅色与桌面图标一键调控</value>
+        <value>Customizable system control panel: brightness, volume, audio output, Wi-Fi, Bluetooth, theme &amp; desktop icons</value>
     </data>
     <data name="SingleControl_Title" xml:space="preserve">
-        <value>快捷控制磁贴</value>
+        <value>Quick Control Tile</value>
     </data>
     <data name="SingleControl_Subtitle" xml:space="preserve">
-        <value>独立放置的单项系统开关或音量/亮度滑块磁贴</value>
+        <value>Standalone system toggle or volume/brightness slider tile</value>
     </data>
 </root>

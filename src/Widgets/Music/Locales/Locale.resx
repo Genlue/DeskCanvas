@@ -42,4 +42,28 @@
     <data name="Music_Prompt" xml:space="preserve">
         <value>Start playing in your music app</value>
     </data>
+    <data name="Music_OpenPlayerHint" xml:space="preserve">
+        <value>Start playing in your music app</value>
+    </data>
+    <data name="Music_DefaultPlayer" xml:space="preserve">
+        <value>Music</value>
+    </data>
+    <data name="Music_UnknownArtist" xml:space="preserve">
+        <value>Unknown Artist</value>
+    </data>
+    <data name="Music_Untitled" xml:space="preserve">
+        <value>Untitled</value>
+    </data>
+    <data name="Music_QuickAdd" xml:space="preserve">
+        <value>Quick Add</value>
+    </data>
+    <data name="Music_MoveUp" xml:space="preserve">
+        <value>Move Up Priority</value>
+    </data>
+    <data name="Music_MoveDown" xml:space="preserve">
+        <value>Move Down Priority</value>
+    </data>
+    <data name="Music_DeleteRule" xml:space="preserve">
+        <value>Delete Rule</value>
+    </data>
 </root>

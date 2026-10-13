@@ -110,7 +110,9 @@ public partial class Folder : UserControl, IWidgetSelfRefreshing, INotifyPropert
     public int RowSpacing => model.RowSpacing;
     public bool ShowScrollbar => model.ShowScrollbar;
     public bool ShowTitle => model.ShowTitle;
-    public string Title => model.Title;
+    public string Title => model.Title == "文件夹" && !CultureInfo.CurrentUICulture.TwoLetterISOLanguageName.Equals("zh", StringComparison.OrdinalIgnoreCase)
+        ? "Folder"
+        : model.Title;
     public double IconSize => model.IconSize;
     public new double FontSize => model.FontSize;
     public double TitleOffsetX => model.TitleOffsetX;

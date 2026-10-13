@@ -25,7 +25,9 @@ public partial class WeatherPopupWindow : SecondaryPanelWindow
     protected override Visual? PanelCard => CardBorder;
     protected override Point? SpawnScreenCenter => spawnScreenCenter;
 
-    public WeatherPopupWindow() : this(new ForecastViewModel(new Models.ForecastModel("北京", 39.9042, 116.4074, "celsius")), null) { }
+    private static bool IsZh => System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName.Equals("zh", StringComparison.OrdinalIgnoreCase);
+
+    public WeatherPopupWindow() : this(new ForecastViewModel(new Models.ForecastModel(IsZh ? "北京" : "Beijing", 39.9042, 116.4074, "celsius")), null) { }
 
     public WeatherPopupWindow(ForecastViewModel viewModel, Point? screenCenter = null, double? cornerRadius = null)
     {
@@ -61,7 +63,7 @@ public partial class WeatherPopupWindow : SecondaryPanelWindow
         TempText.Text = viewModel.CurrentTemperature;
         ConditionText.Text = viewModel.CurrentCondition;
         ConditionIcon.Data = viewModel.CurrentIcon;
-        MinMaxText.Text = $"最高/最低: {viewModel.CurrentMinMax}";
+        MinMaxText.Text = IsZh ? $"最高/最低: {viewModel.CurrentMinMax}" : $"High/Low: {viewModel.CurrentMinMax}";
 
         HourlyList.ItemsSource = viewModel.HourlyForecast;
         DailyList.ItemsSource = viewModel.DailyForecast;
@@ -69,10 +71,10 @@ public partial class WeatherPopupWindow : SecondaryPanelWindow
         UVText.Text = $"{viewModel.UVIndex.Value:0.0}";
         UVLevelText.Text = viewModel.UVIndex.Value switch
         {
-            < 3 => "弱 · 无需特殊防护",
-            < 6 => "中等 · 建议涂防晒霜",
-            < 8 => "高 · 建议遮阳伞与防晒",
-            _ => "极高 · 尽量避免直晒"
+            < 3 => IsZh ? "弱 · 无需特殊防护" : "Low · No protection needed",
+            < 6 => IsZh ? "中等 · 建议涂防晒霜" : "Moderate · Sunscreen advised",
+            < 8 => IsZh ? "高 · 建议遮阳伞与防晒" : "High · Shade & sunscreen advised",
+            _ => IsZh ? "极高 · 尽量避免直晒" : "Very High · Avoid direct sun"
         };
 
         PressureText.Text = $"{viewModel.Pressure.Value:0} hPa";

@@ -115,6 +115,33 @@
             <Setter Property="TransparencyLevelHint" Value="AcrylicBlur" />
             <Setter Property="Background" Value="Transparent" />
         </Style>
+        <!-- Hover tooltips: strip the capsule/pill background and border globally so only
+             the text with a drop shadow is displayed. Padding gives the PopupRoot room
+             around the glyphs so the drop shadow is never clipped at the window edge. -->
+        <Style Selector="ToolTip">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderBrush" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="CornerRadius" Value="0" />
+            <Setter Property="Margin" Value="0" />
+            <Setter Property="Padding" Value="6,4" />
+            <Setter Property="ClipToBounds" Value="False" />
+        </Style>
+        <Style Selector="ToolTip /template/ Border#PART_LayoutRoot">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderBrush" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="CornerRadius" Value="0" />
+            <Setter Property="BoxShadow" Value="0 0 0 0 Transparent" />
+            <Setter Property="ClipToBounds" Value="False" />
+        </Style>
+        <Style Selector="ToolTip /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="ClipToBounds" Value="False" />
+            <Setter Property="Effect">
+                <DropShadowEffect BlurRadius="6" OffsetX="1.2" OffsetY="1.2" Color="Black" Opacity="0.75" />
+            </Setter>
+        </Style>
         <Style>
             <Style.Resources>
                 <!-- Fallback for the widget card background (overridden by the

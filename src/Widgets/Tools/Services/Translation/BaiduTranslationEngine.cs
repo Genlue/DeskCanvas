@@ -25,9 +25,11 @@ public class BaiduTranslationEngine : ITranslationEngine
     {
         if (string.IsNullOrWhiteSpace(text)) return string.Empty;
 
+        bool isZh = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName.Equals("zh", StringComparison.OrdinalIgnoreCase);
+
         if (string.IsNullOrWhiteSpace(AppId) || string.IsNullOrWhiteSpace(SecretKey))
         {
-            throw new InvalidOperationException("请先在设置中配置百度翻译 AppID 与密钥");
+            throw new InvalidOperationException(isZh ? "请先在设置中配置百度翻译 AppID 与密钥" : "Please configure Baidu Translate AppID and Secret Key in settings first");
         }
 
         string from = NormalizeLang(sourceLang);
@@ -60,7 +62,7 @@ public class BaiduTranslationEngine : ITranslationEngine
             if (code != "52000" && !string.IsNullOrEmpty(code))
             {
                 var msg = doc.RootElement.TryGetProperty("error_msg", out var errMsg) ? errMsg.GetString() : code;
-                throw new InvalidOperationException($"百度翻译错误 ({code}): {msg}");
+                throw new InvalidOperationException(isZh ? $"百度翻译错误 ({code}): {msg}" : $"Baidu Translate Error ({code}): {msg}");
             }
         }
 
@@ -78,7 +80,7 @@ public class BaiduTranslationEngine : ITranslationEngine
             return sb.ToString();
         }
 
-        throw new InvalidOperationException("百度翻译未返回有效结果");
+        throw new InvalidOperationException(isZh ? "百度翻译未返回有效结果" : "Baidu Translate did not return a valid result");
     }
 
     private static string ComputeMd5(string input)

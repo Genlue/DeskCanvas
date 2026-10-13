@@ -276,6 +276,8 @@ public class ProgressViewModel : ReactiveObject, IDisposable
         }
     }
 
+    private static bool IsZh => CultureInfo.CurrentUICulture.TwoLetterISOLanguageName.Equals("zh", StringComparison.OrdinalIgnoreCase);
+
     private void UpdateYearProgress(DateTime now)
     {
         int daysInYear = DateTime.IsLeapYear(now.Year) ? 366 : 365;
@@ -291,15 +293,23 @@ public class ProgressViewModel : ReactiveObject, IDisposable
             ? model.CustomTitle
             : now.Year.ToString();
 
-        CountText = $"{currentDay} / {daysInYear}";
+        CountText = IsZh ? $"{currentDay} / {daysInYear}" : $"{currentDay} / {daysInYear} d";
         PercentageText = $"{((double)currentDay / daysInYear * 100.0):F1}%";
 
         DotTooltipFunc = index =>
         {
             int dayNum = index + 1;
             var dt = new DateTime(now.Year, 1, 1).AddDays(index);
-            string status = index < passed ? "已过" : (index == passed ? "今天" : "未到");
-            return $"第 {dayNum} 天 · {dt:M月d日} ({status})";
+            if (IsZh)
+            {
+                string status = index < passed ? "已过" : (index == passed ? "今天" : "未到");
+                return $"第 {dayNum} 天 · {dt:M月d日} ({status})";
+            }
+            else
+            {
+                string status = index < passed ? "Passed" : (index == passed ? "Today" : "Upcoming");
+                return $"Day {dayNum} · {dt.ToString("MMM d", CultureInfo.CurrentUICulture)} ({status})";
+            }
         };
     }
 
@@ -316,17 +326,25 @@ public class ProgressViewModel : ReactiveObject, IDisposable
 
         TitleText = !string.IsNullOrWhiteSpace(model.CustomTitle)
             ? model.CustomTitle
-            : $"{now.Year}年{now.Month}月";
+            : (IsZh ? $"{now.Year}年{now.Month}月" : now.ToString("MMM yyyy", CultureInfo.CurrentUICulture));
 
-        CountText = $"{currentDay} / {daysInMonth}";
+        CountText = IsZh ? $"{currentDay} / {daysInMonth}" : $"{currentDay} / {daysInMonth} d";
         PercentageText = $"{((double)currentDay / daysInMonth * 100.0):F1}%";
 
         DotTooltipFunc = index =>
         {
             int dayNum = index + 1;
             var dt = new DateTime(now.Year, now.Month, dayNum);
-            string status = index < passed ? "已过" : (index == passed ? "今天" : "未到");
-            return $"{dt:M月d日} · 星期{GetDayOfWeekName(dt.DayOfWeek)} ({status})";
+            if (IsZh)
+            {
+                string status = index < passed ? "已过" : (index == passed ? "今天" : "未到");
+                return $"{dt:M月d日} · 星期{GetDayOfWeekName(dt.DayOfWeek)} ({status})";
+            }
+            else
+            {
+                string status = index < passed ? "Passed" : (index == passed ? "Today" : "Upcoming");
+                return $"{dt.ToString("MMM d", CultureInfo.CurrentUICulture)} · {GetDayOfWeekName(dt.DayOfWeek)} ({status})";
+            }
         };
     }
 
@@ -341,22 +359,30 @@ public class ProgressViewModel : ReactiveObject, IDisposable
         HasCurrentDot = true;
         PreferredColumns = 7;
 
-        var cal = CultureInfo.CurrentCulture.Calendar;
+        var cal = CultureInfo.CurrentUICulture.Calendar;
         int weekNum = cal.GetWeekOfYear(now, CalendarWeekRule.FirstDay, DayOfWeek.Monday);
 
         TitleText = !string.IsNullOrWhiteSpace(model.CustomTitle)
             ? model.CustomTitle
-            : $"第 {weekNum} 周";
+            : (IsZh ? $"第 {weekNum} 周" : $"Week {weekNum}");
 
-        CountText = $"{currentDayNum} / 7";
+        CountText = IsZh ? $"{currentDayNum} / 7" : $"{currentDayNum} / 7 d";
         PercentageText = $"{((double)currentDayNum / 7.0 * 100.0):F1}%";
 
         var weekStart = now.Date.AddDays(-dayOfWeekIndex);
         DotTooltipFunc = index =>
         {
             var dt = weekStart.AddDays(index);
-            string status = index < dayOfWeekIndex ? "已过" : (index == dayOfWeekIndex ? "今天" : "未到");
-            return $"星期{GetDayOfWeekName((DayOfWeek)((index + 1) % 7))} · {dt:M月d日} ({status})";
+            if (IsZh)
+            {
+                string status = index < dayOfWeekIndex ? "已过" : (index == dayOfWeekIndex ? "今天" : "未到");
+                return $"星期{GetDayOfWeekName((DayOfWeek)((index + 1) % 7))} · {dt:M月d日} ({status})";
+            }
+            else
+            {
+                string status = index < dayOfWeekIndex ? "Passed" : (index == dayOfWeekIndex ? "Today" : "Upcoming");
+                return $"{GetDayOfWeekName((DayOfWeek)((index + 1) % 7))} · {dt.ToString("MMM d", CultureInfo.CurrentUICulture)} ({status})";
+            }
         };
     }
 
@@ -406,7 +432,7 @@ public class ProgressViewModel : ReactiveObject, IDisposable
 
         TitleText = !string.IsNullOrWhiteSpace(model.CustomTitle)
             ? model.CustomTitle
-            : $"{now:M月d日} 周{GetDayOfWeekName(now.DayOfWeek)}";
+            : (IsZh ? $"{now:M月d日} 周{GetDayOfWeekName(now.DayOfWeek)}" : $"{now.ToString("MMM d", CultureInfo.CurrentUICulture)} {GetDayOfWeekName(now.DayOfWeek)}");
 
         CountText = $"{currentSlot + 1} / {total}";
         PercentageText = $"{((double)(currentSlot + 1) / total * 100.0):F1}%";
@@ -417,7 +443,7 @@ public class ProgressViewModel : ReactiveObject, IDisposable
             int endMin = (index + 1) * stepMinutes;
             string startStr = $"{startMin / 60:D2}:{startMin % 60:D2}";
             string endStr = $"{endMin / 60:D2}:{endMin % 60:D2}";
-            string status = index < currentSlot ? "已过" : (index == currentSlot ? "当前" : "未到");
+            string status = index < currentSlot ? (IsZh ? "已过" : "Passed") : (index == currentSlot ? (IsZh ? "当前" : "Now") : (IsZh ? "未到" : "Upcoming"));
             return $"{startStr} ~ {endStr} ({status})";
         };
     }
@@ -446,29 +472,49 @@ public class ProgressViewModel : ReactiveObject, IDisposable
 
         TitleText = !string.IsNullOrWhiteSpace(model.CustomTitle)
             ? model.CustomTitle
-            : "人生进度";
+            : (IsZh ? "人生进度" : "Life Progress");
 
-        CountText = $"{passedMonths} / {totalMonths} 月";
+        CountText = IsZh ? $"{passedMonths} / {totalMonths} 月" : $"{passedMonths} / {totalMonths} mo";
         PercentageText = $"{((double)passedMonths / totalMonths * 100.0):F1}%";
 
         DotTooltipFunc = index =>
         {
             int ageYears = index / 12;
             int ageMonths = index % 12;
-            string status = index < passedMonths ? "已度过" : (index == passedMonths ? "此刻" : "未来");
-            return $"{ageYears} 岁 {ageMonths + 1} 个月 ({status})";
+            if (IsZh)
+            {
+                string status = index < passedMonths ? "已度过" : (index == passedMonths ? "此刻" : "未来");
+                return $"{ageYears} 岁 {ageMonths + 1} 个月 ({status})";
+            }
+            else
+            {
+                string status = index < passedMonths ? "Passed" : (index == passedMonths ? "Now" : "Upcoming");
+                return $"{ageYears}y {ageMonths + 1}m ({status})";
+            }
         };
     }
 
-    private static string GetDayOfWeekName(DayOfWeek day) => day switch
-    {
-        DayOfWeek.Monday => "一",
-        DayOfWeek.Tuesday => "二",
-        DayOfWeek.Wednesday => "三",
-        DayOfWeek.Thursday => "四",
-        DayOfWeek.Friday => "五",
-        DayOfWeek.Saturday => "六",
-        DayOfWeek.Sunday => "日",
-        _ => ""
-    };
+    private static string GetDayOfWeekName(DayOfWeek day) => IsZh
+        ? day switch
+        {
+            DayOfWeek.Monday => "一",
+            DayOfWeek.Tuesday => "二",
+            DayOfWeek.Wednesday => "三",
+            DayOfWeek.Thursday => "四",
+            DayOfWeek.Friday => "五",
+            DayOfWeek.Saturday => "六",
+            DayOfWeek.Sunday => "日",
+            _ => ""
+        }
+        : day switch
+        {
+            DayOfWeek.Monday => "Mon",
+            DayOfWeek.Tuesday => "Tue",
+            DayOfWeek.Wednesday => "Wed",
+            DayOfWeek.Thursday => "Thu",
+            DayOfWeek.Friday => "Fri",
+            DayOfWeek.Saturday => "Sat",
+            DayOfWeek.Sunday => "Sun",
+            _ => ""
+        };
 }

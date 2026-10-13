@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using Search.Locales;
 using Search.Services;
 
 namespace Search.Models;
@@ -10,7 +11,7 @@ public class SearchEngine
     public string UrlTemplate { get; set; } = "";
     public string IconKey { get; set; } = "Google";
     public string IconColor { get; set; } = "#4285F4";
-    public string Category { get; set; } = "通用";
+    public string Category { get; set; } = Locale.Search_Category_General;
     public bool IsEnabled { get; set; } = true;
     public bool IsCustom { get; set; } = false;
     public int Priority { get; set; } = 0;

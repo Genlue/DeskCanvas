@@ -4,6 +4,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="using:Search.ViewModels"
              xmlns:services="using:Search.Services"
+             xmlns:locales="clr-namespace:Search.Locales"
              mc:Ignorable="d" d:DesignWidth="72" d:DesignHeight="72"
              x:Class="Search.Views.Controls.Search1x1"
              x:DataType="vm:SearchViewModel">
@@ -87,7 +88,7 @@
                                     CornerRadius="6"
                                     Margin="0,0,6,0"
                                     Click="OnEngineIconClicked"
-                                    ToolTip.Tip="点击切换搜索引擎">
+                                    ToolTip.Tip="{x:Static locales:Locale.Search_Switch_Engine_Tooltip}">
                                 <PathIcon Data="{Binding EngineIconPath}"
                                           Foreground="{Binding EngineColor}"
                                           Width="18" Height="18"

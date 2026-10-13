@@ -14,7 +14,7 @@
                     <AutoCompleteBox Name="SearchBox"
                                      MinWidth="180"
                                      FilterMode="None"
-                                     Watermark="搜索城市 (中/英文)..."
+                                     Watermark="{x:Static locales:Locale.Setting_SearchWatermark}"
                                      ValueMemberBinding="{Binding Name, x:DataType=models:City}"
                                      SelectionChanged="SearchBox_OnSelectionChanged"
                                      LostFocus="SearchBox_OnLostFocus"

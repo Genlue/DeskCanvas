@@ -95,6 +95,34 @@ namespace DeskCanvas.Locales {
         public static string Update_ReadyToInstall => ResourceManager.GetString("Update_ReadyToInstall", resourceCulture);
         public static string Update_Installing => ResourceManager.GetString("Update_Installing", resourceCulture);
         public static string Update_WhatsNew => ResourceManager.GetString("Update_WhatsNew", resourceCulture);
+        public static string Settings_Advanced_Proxy_Auto => ResourceManager.GetString("Settings_Advanced_Proxy_Auto", resourceCulture);
+        public static string Settings_General_Update_AutoProxy => ResourceManager.GetString("Settings_General_Update_AutoProxy", resourceCulture);
+        public static string Settings_General_Update_AutoProxy_Subtitle_On => ResourceManager.GetString("Settings_General_Update_AutoProxy_Subtitle_On", resourceCulture);
+        public static string Settings_General_Update_AutoProxy_Subtitle_Direct => ResourceManager.GetString("Settings_General_Update_AutoProxy_Subtitle_Direct", resourceCulture);
+        public static string Settings_General_Update_AutoProxy_Subtitle_System => ResourceManager.GetString("Settings_General_Update_AutoProxy_Subtitle_System", resourceCulture);
+        public static string Settings_General_Update_AutoProxy_Subtitle_Custom => ResourceManager.GetString("Settings_General_Update_AutoProxy_Subtitle_Custom", resourceCulture);
+        public static string Settings_General_Update_Connectivity => ResourceManager.GetString("Settings_General_Update_Connectivity", resourceCulture);
+        public static string Settings_General_Update_Connectivity_Subtitle => ResourceManager.GetString("Settings_General_Update_Connectivity_Subtitle", resourceCulture);
+        public static string Settings_General_Update_Connectivity_Action => ResourceManager.GetString("Settings_General_Update_Connectivity_Action", resourceCulture);
+        public static string Settings_General_Update_Connectivity_Testing => ResourceManager.GetString("Settings_General_Update_Connectivity_Testing", resourceCulture);
+        public static string Settings_General_Update_Connectivity_Success => ResourceManager.GetString("Settings_General_Update_Connectivity_Success", resourceCulture);
+        public static string Settings_General_Update_Connectivity_RateLimited => ResourceManager.GetString("Settings_General_Update_Connectivity_RateLimited", resourceCulture);
+        public static string Settings_General_Update_Connectivity_Failed => ResourceManager.GetString("Settings_General_Update_Connectivity_Failed", resourceCulture);
+        public static string Settings_General_Update_Route_Direct => ResourceManager.GetString("Settings_General_Update_Route_Direct", resourceCulture);
+        public static string Settings_General_Update_Route_DirectNoProxy => ResourceManager.GetString("Settings_General_Update_Route_DirectNoProxy", resourceCulture);
+        public static string Settings_General_Update_Route_SystemProxy => ResourceManager.GetString("Settings_General_Update_Route_SystemProxy", resourceCulture);
+        public static string Settings_General_Update_Route_EnvProxy => ResourceManager.GetString("Settings_General_Update_Route_EnvProxy", resourceCulture);
+        public static string Settings_General_Update_Route_LocalPort => ResourceManager.GetString("Settings_General_Update_Route_LocalPort", resourceCulture);
+        public static string Settings_General_Update_Route_CustomProxy => ResourceManager.GetString("Settings_General_Update_Route_CustomProxy", resourceCulture);
+        public static string Settings_General_Update_Record_UpToDate => ResourceManager.GetString("Settings_General_Update_Record_UpToDate", resourceCulture);
+        public static string Settings_General_Update_Record_FoundNew => ResourceManager.GetString("Settings_General_Update_Record_FoundNew", resourceCulture);
+        public static string Settings_General_Update_Record_Failed => ResourceManager.GetString("Settings_General_Update_Record_Failed", resourceCulture);
+        public static string Settings_General_Update_Error_Timeout => ResourceManager.GetString("Settings_General_Update_Error_Timeout", resourceCulture);
+        public static string Settings_General_Update_Error_ProxyRefused => ResourceManager.GetString("Settings_General_Update_Error_ProxyRefused", resourceCulture);
+        public static string Settings_General_Update_Error_Dns => ResourceManager.GetString("Settings_General_Update_Error_Dns", resourceCulture);
+        public static string Settings_General_Update_Error_TlsOrReset => ResourceManager.GetString("Settings_General_Update_Error_TlsOrReset", resourceCulture);
+        public static string Settings_General_Update_Error_RateLimit => ResourceManager.GetString("Settings_General_Update_Error_RateLimit", resourceCulture);
+        public static string Settings_General_Update_Error_Network => ResourceManager.GetString("Settings_General_Update_Error_Network", resourceCulture);
         
         private static global::System.Resources.ResourceManager resourceMan;
         

@@ -24,36 +24,42 @@ namespace Tools.Views;
 
 public partial class TranslatorView : UserControl, IWidgetSelfRefreshing
 {
+    private static bool IsZh => System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName.Equals("zh", StringComparison.OrdinalIgnoreCase);
+
     /// <summary>Panel combos render items through ToString (compiled bindings can't see the record's properties).</summary>
-    internal record LangOption(string Name, string ShortName, string Code)
+    internal record LangOption(string NameZh, string NameEn, string ShortNameZh, string ShortNameEn, string Code)
     {
+        public string Name => IsZh ? NameZh : NameEn;
+        public string ShortName => IsZh ? ShortNameZh : ShortNameEn;
         public override string ToString() => Name;
     }
 
-    internal record EngineOption(string FullName, string ShortName, string Code)
+    internal record EngineOption(string FullNameZh, string FullNameEn, string ShortNameZh, string ShortNameEn, string Code)
     {
+        public string FullName => IsZh ? FullNameZh : FullNameEn;
+        public string ShortName => IsZh ? ShortNameZh : ShortNameEn;
         public override string ToString() => FullName;
     }
 
     internal static readonly List<LangOption> Languages =
     [
-        new("自动检测", "自动", "auto"),
-        new("简体中文", "中文", "zh"),
-        new("英语", "英语", "en"),
-        new("日语", "日语", "ja"),
-        new("韩语", "韩语", "ko"),
-        new("法语", "法语", "fr"),
-        new("德语", "德语", "de"),
-        new("西班牙语", "西语", "es"),
-        new("俄语", "俄语", "ru")
+        new("自动检测", "Auto Detect", "自动", "Auto", "auto"),
+        new("简体中文", "Chinese (Simplified)", "中文", "ZH", "zh"),
+        new("英语", "English", "英语", "EN", "en"),
+        new("日语", "Japanese", "日语", "JA", "ja"),
+        new("韩语", "Korean", "韩语", "KO", "ko"),
+        new("法语", "French", "法语", "FR", "fr"),
+        new("德语", "German", "德语", "DE", "de"),
+        new("西班牙语", "Spanish", "西语", "ES", "es"),
+        new("俄语", "Russian", "俄语", "RU", "ru")
     ];
 
     internal static readonly List<EngineOption> Engines =
     [
-        new("有道 (国内直连)", "有道", "Youdao"),
-        new("MyMemory (免Key)", "MyMem", "MyMemory"),
-        new("百度翻译 (开放平台)", "百度", "Baidu"),
-        new("DeepLX / 自定义", "DeepLX", "DeepLX")
+        new("有道 (国内直连)", "Youdao (Direct)", "有道", "Youdao", "Youdao"),
+        new("MyMemory (免Key)", "MyMemory (Keyless)", "MyMem", "MyMem", "MyMemory"),
+        new("百度翻译 (开放平台)", "Baidu Translate (API)", "百度", "Baidu", "Baidu"),
+        new("DeepLX / 自定义", "DeepLX / Custom", "DeepLX", "DeepLX", "DeepLX")
     ];
 
     private TranslatorModel model;
@@ -513,6 +519,9 @@ public partial class TranslatorView : UserControl, IWidgetSelfRefreshing
         TargetLangText.Text = isSmall ? tgt.ShortName : tgt.Name;
         EngineText.Text = isSmall ? GetCompactEngineName(eng.Code) : (isMedium ? eng.ShortName : eng.FullName);
 
+        var textLen = (InputTextBox.Text ?? string.Empty).Length;
+        CharCountText.Text = IsZh ? $"{textLen} 字符" : $"{textLen} chars";
+
         // 标签换了自然宽度就变了，清掉让下一轮适配重新采集（可见时立即采集，
         // 隐藏时等恢复后再采——期间旧缓存只影响一轮的档位估计）。
         barNaturalWidths.Remove(SourceLangBtn);
@@ -522,11 +531,11 @@ public partial class TranslatorView : UserControl, IWidgetSelfRefreshing
 
     private static string GetCompactEngineName(string engineCode) => engineCode switch
     {
-        "Youdao" => "有道",
-        "Baidu" => "百度",
+        "Youdao" => IsZh ? "有道" : "YD",
+        "Baidu" => IsZh ? "百度" : "BD",
         "MyMemory" => "MyM",
         "DeepLX" => "DLX",
-        _ => "引擎"
+        _ => IsZh ? "引擎" : "Eng"
     };
 
     private void RebuildMenus()
@@ -647,7 +656,7 @@ public partial class TranslatorView : UserControl, IWidgetSelfRefreshing
     private void OnInputTextChanged(object? sender, TextChangedEventArgs e)
     {
         var text = InputTextBox.Text ?? string.Empty;
-        CharCountText.Text = $"{text.Length} 字符";
+        CharCountText.Text = IsZh ? $"{text.Length} 字符" : $"{text.Length} chars";
 
         if (string.IsNullOrWhiteSpace(text))
         {
@@ -710,7 +719,7 @@ public partial class TranslatorView : UserControl, IWidgetSelfRefreshing
 
         bool isSmall = currentTier == WidgetTier.Small || currentTier == WidgetTier.Cell;
         LoadingText.IsVisible = !isSmall;
-        StatusText.Text = isSmall ? "翻译中" : "请求中...";
+        StatusText.Text = isSmall ? (IsZh ? "翻译中" : "...") : (IsZh ? "请求中..." : "Requesting...");
 
         try
         {
@@ -718,7 +727,7 @@ public partial class TranslatorView : UserControl, IWidgetSelfRefreshing
             if (!token.IsCancellationRequested)
             {
                 OutputTextBox.Text = result;
-                StatusText.Text = isSmall ? "完成" : $"完成 ({currentEngine})";
+                StatusText.Text = isSmall ? (IsZh ? "完成" : "Done") : (IsZh ? $"完成 ({currentEngine})" : $"Done ({currentEngine})");
             }
         }
         catch (OperationCanceledException)
@@ -729,8 +738,8 @@ public partial class TranslatorView : UserControl, IWidgetSelfRefreshing
         {
             if (!token.IsCancellationRequested)
             {
-                StatusText.Text = "翻译失败";
-                OutputTextBox.Text = $"[错误] {ex.Message}";
+                StatusText.Text = IsZh ? "翻译失败" : "Translation failed";
+                OutputTextBox.Text = IsZh ? $"[错误] {ex.Message}" : $"[Error] {ex.Message}";
             }
         }
         finally
@@ -774,7 +783,7 @@ public partial class TranslatorView : UserControl, IWidgetSelfRefreshing
         var oldInput = InputTextBox.Text;
         var oldOutput = OutputTextBox.Text;
 
-        if (!string.IsNullOrWhiteSpace(oldOutput) && !oldOutput.StartsWith("[错误]"))
+        if (!string.IsNullOrWhiteSpace(oldOutput) && !oldOutput.StartsWith("[错误]") && !oldOutput.StartsWith("[Error]"))
         {
             InputTextBox.Text = oldOutput;
             OutputTextBox.Text = oldInput;
@@ -795,7 +804,7 @@ public partial class TranslatorView : UserControl, IWidgetSelfRefreshing
         if (!string.IsNullOrWhiteSpace(result))
         {
             ClipboardNative.SetText(result);
-            ShowToast("已复制译文到剪贴板");
+            ShowToast(IsZh ? "已复制译文到剪贴板" : "Translation copied to clipboard");
         }
     }
 

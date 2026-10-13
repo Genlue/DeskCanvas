@@ -19,26 +19,26 @@
     <Window.ContextMenu>
         <ContextMenu Classes="WidgetContextMenu">
             <MenuItem Header="{Binding EditStackChildTitle}" Command="{Binding EditCurrentStackedWidget}" IsVisible="{Binding CanEditStackedWidgetChild}" />
-            <MenuItem Header="编辑重叠组件…" Command="{Binding EditWidget}" IsVisible="{Binding ShowStackEditButton}" />
+            <MenuItem Header="{Binding EditStackTitle}" Command="{Binding EditWidget}" IsVisible="{Binding ShowStackEditButton}" />
             <MenuItem Header="{Binding Edit}" Command="{Binding EditWidget}" IsVisible="{Binding ShowNormalEditButton}" />
             <MenuItem Header="{Binding SizeMenuTitle}">
                 <!-- 4:2 ratio fixed widgets (e.g. Aggregate) -->
-                <MenuItem Header="4×2 (标准 100%)" Command="{Binding SetFixedSpanPreset}" CommandParameter="4x2" IsVisible="{Binding IsFixed2x1Widget}" />
-                <MenuItem Header="6×3 (等比放大 150%)" Command="{Binding SetFixedSpanPreset}" CommandParameter="6x3" IsVisible="{Binding IsFixed2x1Widget}" />
-                <MenuItem Header="8×4 (等比放大 200%)" Command="{Binding SetFixedSpanPreset}" CommandParameter="8x4" IsVisible="{Binding IsFixed2x1Widget}" />
+                <MenuItem Header="{Binding Preset4x2StdTitle}" Command="{Binding SetFixedSpanPreset}" CommandParameter="4x2" IsVisible="{Binding IsFixed2x1Widget}" />
+                <MenuItem Header="{Binding Preset6x3ScaleTitle}" Command="{Binding SetFixedSpanPreset}" CommandParameter="6x3" IsVisible="{Binding IsFixed2x1Widget}" />
+                <MenuItem Header="{Binding Preset8x4ScaleTitle}" Command="{Binding SetFixedSpanPreset}" CommandParameter="8x4" IsVisible="{Binding IsFixed2x1Widget}" />
                 <!-- 1:1 square fixed widgets (e.g. Single-dial Analog Clock) -->
-                <MenuItem Header="1×1 (小 100%)" Command="{Binding SetFixedSpanPreset}" CommandParameter="1x1" IsVisible="{Binding IsFixedSquareWidget}" />
-                <MenuItem Header="2×2 (标准 200%)" Command="{Binding SetFixedSpanPreset}" CommandParameter="2x2" IsVisible="{Binding IsFixedSquareWidget}" />
-                <MenuItem Header="3×3 (中 300%)" Command="{Binding SetFixedSpanPreset}" CommandParameter="3x3" IsVisible="{Binding IsFixedSquareWidget}" />
-                <MenuItem Header="4×4 (大 400%)" Command="{Binding SetFixedSpanPreset}" CommandParameter="4x4" IsVisible="{Binding IsFixedSquareWidget}" />
+                <MenuItem Header="{Binding Preset1x1SmallTitle}" Command="{Binding SetFixedSpanPreset}" CommandParameter="1x1" IsVisible="{Binding IsFixedSquareWidget}" />
+                <MenuItem Header="{Binding Preset2x2SquareStdTitle}" Command="{Binding SetFixedSpanPreset}" CommandParameter="2x2" IsVisible="{Binding IsFixedSquareWidget}" />
+                <MenuItem Header="{Binding Preset3x3MediumTitle}" Command="{Binding SetFixedSpanPreset}" CommandParameter="3x3" IsVisible="{Binding IsFixedSquareWidget}" />
+                <MenuItem Header="{Binding Preset4x4LargeTitle}" Command="{Binding SetFixedSpanPreset}" CommandParameter="4x4" IsVisible="{Binding IsFixedSquareWidget}" />
                 <!-- 2x2 base square fixed widgets (e.g. FourDayForecast) -->
-                <MenuItem Header="2×2 (标准 100%)" Command="{Binding SetFixedSpanPreset}" CommandParameter="2x2" IsVisible="{Binding IsFixed2x2SquareWidget}" />
-                <MenuItem Header="3×3 (等比放大 150%)" Command="{Binding SetFixedSpanPreset}" CommandParameter="3x3" IsVisible="{Binding IsFixed2x2SquareWidget}" />
-                <MenuItem Header="4×4 (等比放大 200%)" Command="{Binding SetFixedSpanPreset}" CommandParameter="4x4" IsVisible="{Binding IsFixed2x2SquareWidget}" />
+                <MenuItem Header="{Binding Preset2x2BaseStdTitle}" Command="{Binding SetFixedSpanPreset}" CommandParameter="2x2" IsVisible="{Binding IsFixed2x2SquareWidget}" />
+                <MenuItem Header="{Binding Preset3x3ScaleTitle}" Command="{Binding SetFixedSpanPreset}" CommandParameter="3x3" IsVisible="{Binding IsFixed2x2SquareWidget}" />
+                <MenuItem Header="{Binding Preset4x4ScaleTitle}" Command="{Binding SetFixedSpanPreset}" CommandParameter="4x4" IsVisible="{Binding IsFixed2x2SquareWidget}" />
                 <!-- Map widget quick size presets (2x2, 4x2, 4x4) -->
-                <MenuItem Header="2×2 (小号方形 200%)" Command="{Binding SetFixedSpanPreset}" CommandParameter="2x2" IsVisible="{Binding IsMapWidget}" />
-                <MenuItem Header="4×2 (中号横版 400×200%)" Command="{Binding SetFixedSpanPreset}" CommandParameter="4x2" IsVisible="{Binding IsMapWidget}" />
-                <MenuItem Header="4×4 (大号全景 400×400%)" Command="{Binding SetFixedSpanPreset}" CommandParameter="4x4" IsVisible="{Binding IsMapWidget}" />
+                <MenuItem Header="{Binding PresetMap2x2Title}" Command="{Binding SetFixedSpanPreset}" CommandParameter="2x2" IsVisible="{Binding IsMapWidget}" />
+                <MenuItem Header="{Binding PresetMap4x2Title}" Command="{Binding SetFixedSpanPreset}" CommandParameter="4x2" IsVisible="{Binding IsMapWidget}" />
+                <MenuItem Header="{Binding PresetMap4x4Title}" Command="{Binding SetFixedSpanPreset}" CommandParameter="4x4" IsVisible="{Binding IsMapWidget}" />
                 <Separator IsVisible="{Binding IsMapWidget}" />
                 <Separator IsVisible="{Binding IsFixedWidget}" />
                 <MenuItem StaysOpenOnClick="True">
@@ -104,12 +104,6 @@
         <!-- 组件内容的内边距不在这里定义：它由 App.axaml 的 .widget-content-host 规则给出，
              下面卡片的 Border 带这个类。搬到全局是为了让组件库预览用同一条规则——此前预览
              自己硬编码 12px，30 个组件里 14 个（自带 Margin="0" 的那些）被多缩进了一圈。 -->
-        <Style Selector="ToolTip">
-            <Setter Property="Background" Value="Transparent" />
-            <Setter Property="BorderThickness" Value="0" />
-            <Setter Property="Margin" Value="0" />
-            <Setter Property="Padding" Value="0" />
-        </Style>
     </Window.Styles>
     
     <Grid>

@@ -1,3 +1,8 @@
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.IO;
+using System.Linq;
 using System.Text.Json;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
@@ -18,6 +23,9 @@ public partial class MusicSettings : UserControl
     private MusicModel model;
     private bool isInitializing = true;
 
+    private static bool IsZh =>
+        CultureInfo.CurrentUICulture.TwoLetterISOLanguageName.Equals("zh", StringComparison.OrdinalIgnoreCase);
+
     public MusicSettings() : this(null!) { }
 
     public MusicSettings(IWidgetLayoutProvider? widgetLayoutProvider)
@@ -27,6 +35,28 @@ public partial class MusicSettings : UserControl
         model = widgetLayoutProvider != null ? (ReadModel(widgetLayoutProvider.Get()) ?? new MusicModel()) : new MusicModel();
 
         InitializeComponent();
+
+        if (!IsZh)
+        {
+            GeneralHeader.Text = "General & Display";
+            AmbientGlowToggle.Content = "Enable Album Cover Ambient Glow";
+            ShowProgressToggle.Content = "Show Timeline Progress Bar & Scrubber";
+            PlayersHeader.Text = "Music Players & Smart Detection";
+            PlayersHintText.Text = "When multiple apps are active, players higher in the list take priority.";
+            AddRunningBtn.Content = "Add from Running";
+            BrowseExeBtn.Content = "Browse App (.exe)";
+            AddManualBtn.Content = "Add Custom Rule";
+            ResetDefaultsBtn.Content = "Restore Defaults";
+            ManualAddTitle.Text = "Add Custom Player Rule";
+            ManualNameLabel.Text = "App Name:";
+            ManualNameBox.Watermark = "e.g. YesPlayMusic";
+            ManualPatternLabel.Text = "Pattern:";
+            ManualPatternBox.Watermark = "e.g. yesplaymusic (process or AUMID keyword)";
+            CancelManualBtn.Content = "Cancel";
+            ConfirmManualBtn.Content = "Add";
+            RunningSessionsTitle.Text = "Active Media Sessions (Click to Add):";
+            CloseRunningBtn.Content = "Close";
+        }
 
         AmbientGlowToggle.IsChecked = model.AmbientGlow;
         ShowProgressToggle.IsChecked = model.ShowProgressBar;
@@ -58,6 +88,23 @@ public partial class MusicSettings : UserControl
 
     private void RefreshList()
     {
+        if (!IsZh)
+        {
+            foreach (var r in model.PlayerRules)
+            {
+                r.Name = r.Name switch
+                {
+                    "网易云音乐" => "NetEase Cloud Music",
+                    "QQ音乐" => "QQ Music",
+                    "汽水音乐" => "Soda Music",
+                    "酷狗音乐" => "KuGou Music",
+                    "酷我音乐" => "Kuwo Music",
+                    "Windows 媒体播放器" => "Windows Media Player",
+                    "浏览器 (Edge/Chrome/Firefox)" => "Browsers (Edge/Chrome/Firefox)",
+                    _ => r.Name
+                };
+            }
+        }
         RulesList.ItemsSource = null;
         RulesList.ItemsSource = model.PlayerRules.OrderBy(r => r.Priority).ToList();
     }
@@ -133,11 +180,11 @@ public partial class MusicSettings : UserControl
 
         var files = await topLevel.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
         {
-            Title = "选择音乐播放器可执行文件",
+            Title = IsZh ? "选择音乐播放器可执行文件" : "Select Music Player Executable",
             AllowMultiple = false,
             FileTypeFilter =
             [
-                new FilePickerFileType("应用程序") { Patterns = ["*.exe"] }
+                new FilePickerFileType(IsZh ? "应用程序" : "Applications") { Patterns = ["*.exe"] }
             ]
         });
 
@@ -170,7 +217,10 @@ public partial class MusicSettings : UserControl
         {
             RunningSessionsList.ItemsSource = new List<ActiveSessionItem>
             {
-                new("未检测到正在运行的媒体软件", "请先在任意音乐软件中播放音乐")
+                new(
+                    IsZh ? "未检测到正在运行的媒体软件" : "No running media sessions detected",
+                    IsZh ? "请先在任意音乐软件中播放音乐" : "Please start playing music in any audio player first"
+                )
             };
         }
         else
@@ -189,7 +239,7 @@ public partial class MusicSettings : UserControl
         if (RunningSessionsList.SelectedItem is ActiveSessionItem item)
         {
             var appId = item.AppId;
-            if (!string.IsNullOrWhiteSpace(appId) && !appId.Contains("请先在"))
+            if (!string.IsNullOrWhiteSpace(appId) && !appId.Contains("请先在") && !appId.Contains("Please start"))
             {
                 var friendlyName = Path.GetFileNameWithoutExtension(appId);
                 if (string.IsNullOrWhiteSpace(friendlyName)) friendlyName = appId;

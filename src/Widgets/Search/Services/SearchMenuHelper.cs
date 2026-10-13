@@ -42,9 +42,10 @@ public static class SearchMenuHelper
 
         flyout.Items.Add(new Separator());
 
+        bool isZh = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName.Equals("zh", StringComparison.OrdinalIgnoreCase);
         var homeItem = new MenuItem
         {
-            Header = $"🌐 打开 {vm.EngineName} 官网",
+            Header = isZh ? $"🌐 打开 {vm.EngineName} 官网" : $"🌐 Open {vm.EngineName} Website",
             Icon = new PathIcon
             {
                 Data = Geometry.Parse(SearchIconProvider.ExternalLinkIcon),

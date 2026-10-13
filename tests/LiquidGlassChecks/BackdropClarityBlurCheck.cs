@@ -52,6 +52,8 @@ internal static class BackdropClarityBlurCheck
             var deviation = Math.Abs(quarter - native) / native;
             Check(deviation < 0.20,
                 $"edge blur width in desktop px matches across clarity (100%: {native:F1} px, 25%: {quarter:F1} px, deviation {deviation:P1})");
+
+            CheckMultiScreenBackdropSharing(wallpaper);
         }
         finally
         {
@@ -60,6 +62,36 @@ internal static class BackdropClarityBlurCheck
 
         Console.WriteLine(failures == 0 ? "backdrop clarity blur check passed" : $"{failures} BACKDROP CLARITY CHECK(S) FAILED");
         return failures;
+    }
+
+    private static void CheckMultiScreenBackdropSharing(WallpaperSnapshot wallpaper)
+    {
+        LiquidGlassSourceCache.Clear();
+        var theme = new Theme(null, null, 0.18, false, false, "Inter",
+            Surface: SurfaceStyle.LiquidGlass,
+            LiquidGlass: new LiquidGlassSettings(Blur: 78, BackdropClarity: 100));
+
+        // Monitor 1: 4K @ 150% DPI (Scale = 1.5f), shared primary BackdropScale = 1.5f
+        var frameScreen1 = new LiquidGlassRenderer.Frame(
+            Width: 600, Height: 450, Scale: 1.5f, Radius: 24f,
+            DesktopX: 100f, DesktopY: 100f, DesktopWidth: 1600f, DesktopHeight: 1200f,
+            ScreenX: 0f, ScreenY: 0f, ScreenWidth: 800f, ScreenHeight: 1200f,
+            Theme: theme, Dark: false, BackdropScale: 1.5f);
+
+        // Monitor 2: 1080p @ 100% DPI (Scale = 1.0f), shared primary BackdropScale = 1.5f
+        var frameScreen2 = new LiquidGlassRenderer.Frame(
+            Width: 400, Height: 300, Scale: 1.0f, Radius: 16f,
+            DesktopX: 900f, DesktopY: 100f, DesktopWidth: 1600f, DesktopHeight: 1200f,
+            ScreenX: 800f, ScreenY: 0f, ScreenWidth: 800f, ScreenHeight: 1200f,
+            Theme: theme, Dark: false, BackdropScale: 1.5f);
+
+        using var s1 = LiquidGlassSourceCache.Get(frameScreen1, wallpaper);
+        using var s2 = LiquidGlassSourceCache.Get(frameScreen2, wallpaper);
+
+        Check(s1 != null && s2 != null && ReferenceEquals(s1.Backdrop, s2.Backdrop),
+            "multi-screen heterogeneous DPI widgets (150% vs 100%) share the exact same GlassSource backdrop");
+        Check(LiquidGlassSourceCache.CachedEntryCount == 1,
+            $"multi-screen heterogeneous DPI creates only 1 cache entry (got {LiquidGlassSourceCache.CachedEntryCount})");
     }
 
     private static GlassSource BuildSource(WallpaperSnapshot wallpaper, double backdropClarity)

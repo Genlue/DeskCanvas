@@ -38,7 +38,7 @@
 
     <ScrollViewer VerticalScrollBarVisibility="Auto">
         <StackPanel Orientation="Vertical" Spacing="10" Margin="0,2,16,8">
-            <TextBlock Classes="group-header" Text="常规翻译设置" />
+            <TextBlock Classes="group-header" Text="{x:Static locales:Locale.Tools_Translator_Settings_GeneralGroup}" />
 
             <!-- Default Engine -->
             <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto">
@@ -56,28 +56,28 @@
                               IsCheckedChanged="OnToggleChanged" />
             </Grid>
 
-            <TextBlock Classes="group-header" Text="百度翻译开放平台设置 (可选)" />
+            <TextBlock Classes="group-header" Text="{x:Static locales:Locale.Tools_Translator_Settings_BaiduGroup}" />
 
             <!-- Baidu AppId -->
             <Grid ColumnDefinitions="Auto,*" Margin="0,2">
                 <TextBlock Classes="setting-label" Text="{x:Static locales:Locale.Tools_Translator_BaiduAppId}" Width="130" />
-                <TextBox x:Name="BaiduAppIdBox" Grid.Column="1" Classes="setting-input" Watermark="填入百度翻译开放平台 AppID"
+                <TextBox x:Name="BaiduAppIdBox" Grid.Column="1" Classes="setting-input" Watermark="{x:Static locales:Locale.Tools_Translator_Settings_BaiduAppIdWatermark}"
                          TextChanged="OnBaiduCredentialsChanged" />
             </Grid>
 
             <!-- Baidu Secret -->
             <Grid ColumnDefinitions="Auto,*" Margin="0,2">
                 <TextBlock Classes="setting-label" Text="{x:Static locales:Locale.Tools_Translator_BaiduSecret}" Width="130" />
-                <TextBox x:Name="BaiduSecretBox" Grid.Column="1" Classes="setting-input" PasswordChar="•" Watermark="填入密钥 SecretKey"
+                <TextBox x:Name="BaiduSecretBox" Grid.Column="1" Classes="setting-input" PasswordChar="•" Watermark="{x:Static locales:Locale.Tools_Translator_Settings_BaiduSecretWatermark}"
                          TextChanged="OnBaiduCredentialsChanged" />
             </Grid>
 
-            <TextBlock Classes="group-header" Text="自定义 / DeepLX 接口设置 (可选)" />
+            <TextBlock Classes="group-header" Text="{x:Static locales:Locale.Tools_Translator_Settings_CustomGroup}" />
 
             <!-- Custom URL -->
             <Grid ColumnDefinitions="Auto,*" Margin="0,2">
                 <TextBlock Classes="setting-label" Text="{x:Static locales:Locale.Tools_Translator_CustomUrl}" Width="130" />
-                <TextBox x:Name="CustomUrlBox" Grid.Column="1" Classes="setting-input" Watermark="例如 http://127.0.0.1:1188/translate"
+                <TextBox x:Name="CustomUrlBox" Grid.Column="1" Classes="setting-input" Watermark="{x:Static locales:Locale.Tools_Translator_Settings_CustomUrlWatermark}"
                          TextChanged="OnCustomUrlChanged" />
             </Grid>
         </StackPanel>

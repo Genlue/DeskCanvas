@@ -831,7 +831,10 @@ public partial class StorageView : UserControl, IWidgetSelfRefreshing, IWidgetSu
             Spacing = 5
         };
 
-        var header = BuildHeaderBar($"{vm.HeaderTitle} ({vm.Drives.Count} 个分区)", vm.WideSummaryText, fontSize: 13.5,
+        var isZh = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName.Equals("zh", StringComparison.OrdinalIgnoreCase);
+        var header = BuildHeaderBar(
+            isZh ? $"{vm.HeaderTitle} ({vm.Drives.Count} 个分区)" : $"{vm.HeaderTitle} ({vm.Drives.Count} drives)",
+            vm.WideSummaryText, fontSize: 13.5,
             out var headerTitle, out var headerSummary);
         var primaryBrush = vm.Drives.FirstOrDefault()?.StatusBrush ?? new SolidColorBrush(Color.Parse("#007AFF"));
         var (bar, barUpdate) = BuildProgressBar(vm.TotalUsageFraction, primaryBrush, bannerWidth, barHeight: 8.5);
@@ -844,7 +847,8 @@ public partial class StorageView : UserControl, IWidgetSelfRefreshing, IWidgetSu
         {
             var current = viewModel;
             if (current == null) return;
-            headerTitle.Text = $"{current.HeaderTitle} ({current.Drives.Count} 个分区)";
+            var zh = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName.Equals("zh", StringComparison.OrdinalIgnoreCase);
+            headerTitle.Text = zh ? $"{current.HeaderTitle} ({current.Drives.Count} 个分区)" : $"{current.HeaderTitle} ({current.Drives.Count} drives)";
             headerSummary.Text = current.WideSummaryText;
             barUpdate(current.TotalUsageFraction,
                 current.Drives.FirstOrDefault()?.StatusBrush ?? new SolidColorBrush(Color.Parse("#007AFF")));

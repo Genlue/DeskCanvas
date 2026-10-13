@@ -13,17 +13,20 @@ namespace Tools.Views.Settings;
 
 public partial class TranslatorSettings : UserControl
 {
-    private record EngineOption(string Name, string Code)
+    private static bool IsZh => System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName.Equals("zh", StringComparison.OrdinalIgnoreCase);
+
+    private record EngineOption(string NameZh, string NameEn, string Code)
     {
+        public string Name => IsZh ? NameZh : NameEn;
         public override string ToString() => Name;
     }
 
     private static readonly List<EngineOption> Engines =
     [
-        new("有道翻译 (国内直连免Key)", "Youdao"),
-        new("MyMemory (国际直连免Key)", "MyMemory"),
-        new("百度翻译 (个人开放平台)", "Baidu"),
-        new("DeepLX / 自定义接口", "DeepLX")
+        new("有道翻译 (国内直连免Key)", "Youdao Translate (Direct, Keyless)", "Youdao"),
+        new("MyMemory (国际直连免Key)", "MyMemory (Global, Keyless)", "MyMemory"),
+        new("百度翻译 (个人开放平台)", "Baidu Translate (Open Platform)", "Baidu"),
+        new("DeepLX / 自定义接口", "DeepLX / Custom Endpoint", "DeepLX")
     ];
 
     private readonly IWidgetLayoutProvider widgetLayoutProvider;

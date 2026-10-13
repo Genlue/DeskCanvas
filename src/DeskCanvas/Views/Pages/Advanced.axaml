@@ -25,7 +25,13 @@
         <controls:Setting Icon="{DynamicResource SnapPosition}" 
                           Title="{x:Static locales:Locale.Settings_Advanced_Proxy_Title}" 
                           Subtitle="{x:Static locales:Locale.Settings_Advanced_Proxy_Subtitle}">
-            <ComboBox ItemsSource="{Binding ProxyOptions}" SelectedItem="{Binding ProxyMode}" MinWidth="150" />
+            <ComboBox ItemsSource="{Binding ProxyOptions}" SelectedItem="{Binding ProxyMode}" MinWidth="150">
+                <ComboBox.ItemTemplate>
+                    <DataTemplate DataType="viewModels:ProxyOption">
+                        <TextBlock Text="{Binding Label}" Margin="0 4" />
+                    </DataTemplate>
+                </ComboBox.ItemTemplate>
+            </ComboBox>
         </controls:Setting>
         <controls:Setting Icon="{DynamicResource SnapPosition}"
                           Title="{x:Static locales:Locale.Settings_Advanced_ProxyCustom_Title}"

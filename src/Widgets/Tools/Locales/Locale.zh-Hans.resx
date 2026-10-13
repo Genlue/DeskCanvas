@@ -201,4 +201,196 @@
     <data name="Tools_Calculator_ClickToCopy_Desc" xml:space="preserve">
         <value>单击历史项时直接复制结果（关闭则回填到当前输入框）</value>
     </data>
+    <data name="Tools_Clipboard_PopupTitle" xml:space="preserve">
+        <value>剪贴板历史管理器</value>
+    </data>
+    <data name="Tools_Clipboard_SearchHint" xml:space="preserve">
+        <value>搜索剪贴板历史...</value>
+    </data>
+    <data name="Tools_Clipboard_EmptyFiltered" xml:space="preserve">
+        <value>暂无符合条件的剪贴记录</value>
+    </data>
+    <data name="Tools_Clipboard_TogglePin" xml:space="preserve">
+        <value>置顶/取消置顶</value>
+    </data>
+    <data name="Tools_Clipboard_DeleteItem" xml:space="preserve">
+        <value>删除记录</value>
+    </data>
+    <data name="Tools_Clipboard_OpenManagerTip" xml:space="preserve">
+        <value>点击打开剪贴板历史管理器</value>
+    </data>
+    <data name="Tools_Clipboard_FilterByTypeTip" xml:space="preserve">
+        <value>按类型过滤</value>
+    </data>
+    <data name="Tools_Clipboard_ExpandTip" xml:space="preserve">
+        <value>展开管理器</value>
+    </data>
+    <data name="Tools_Clipboard_CopyTip" xml:space="preserve">
+        <value>复制</value>
+    </data>
+    <data name="Tools_Clipboard_DeleteTip" xml:space="preserve">
+        <value>删除</value>
+    </data>
+    <data name="Tools_Clipboard_HistoryCleared" xml:space="preserve">
+        <value>已清空剪贴板历史</value>
+    </data>
+    <data name="Tools_Clipboard_Group_History" xml:space="preserve">
+        <value>历史记录设置</value>
+    </data>
+    <data name="Tools_Clipboard_Group_Capture" xml:space="preserve">
+        <value>监听内容格式</value>
+    </data>
+    <data name="Tools_Clipboard_CaptureText" xml:space="preserve">
+        <value>监听并记录文本 (Text)</value>
+    </data>
+    <data name="Tools_Clipboard_CaptureImages" xml:space="preserve">
+        <value>监听并记录图片 (Image)</value>
+    </data>
+    <data name="Tools_Clipboard_CaptureFiles" xml:space="preserve">
+        <value>监听并记录文件 (Files)</value>
+    </data>
+    <data name="Tools_Clipboard_Group_Cache" xml:space="preserve">
+        <value>缓存与管理</value>
+    </data>
+    <data name="Tools_Clipboard_ClearAllTitle" xml:space="preserve">
+        <value>清空所有剪贴板记录与缩略图缓存</value>
+    </data>
+    <data name="Tools_Clipboard_ClearAllDesc" xml:space="preserve">
+        <value>清除所有已保存的历史数据及临时图片文件</value>
+    </data>
+    <data name="Tools_Clipboard_ClearNow" xml:space="preserve">
+        <value>立即清空</value>
+    </data>
+    <data name="Tools_Translator_CopySourceTip" xml:space="preserve">
+        <value>复制原文</value>
+    </data>
+    <data name="Tools_Translator_ExpandTip" xml:space="preserve">
+        <value>展开大窗翻译</value>
+    </data>
+    <data name="Tools_Translator_Group_General" xml:space="preserve">
+        <value>常规翻译设置</value>
+    </data>
+    <data name="Tools_Translator_Group_Baidu" xml:space="preserve">
+        <value>百度翻译开放平台设置 (可选)</value>
+    </data>
+    <data name="Tools_Translator_BaiduAppId_Hint" xml:space="preserve">
+        <value>填入百度翻译开放平台 AppID</value>
+    </data>
+    <data name="Tools_Translator_BaiduSecret_Hint" xml:space="preserve">
+        <value>填入密钥 SecretKey</value>
+    </data>
+    <data name="Tools_Translator_Group_Custom" xml:space="preserve">
+        <value>自定义 / DeepLX 接口设置 (可选)</value>
+    </data>
+    <data name="Tools_Translator_CustomUrl_Hint" xml:space="preserve">
+        <value>例如 http://127.0.0.1:1188/translate</value>
+    </data>
+    <data name="Tools_Calculator_Tab_Scientific" xml:space="preserve">
+        <value>科学计算</value>
+    </data>
+    <data name="Tools_Calculator_Tab_Programmer" xml:space="preserve">
+        <value>程序员</value>
+    </data>
+    <data name="Tools_Calculator_Tab_Converter" xml:space="preserve">
+        <value>单位换算</value>
+    </data>
+    <data name="Tools_Calculator_ToggleAngleTip" xml:space="preserve">
+        <value>切换角度制 (DEG) / 弧度制 (RAD)</value>
+    </data>
+    <data name="Tools_Calculator_ClearExprTip" xml:space="preserve">
+        <value>清空算式</value>
+    </data>
+    <data name="Tools_Calculator_CopyResultTip" xml:space="preserve">
+        <value>复制计算结果</value>
+    </data>
+    <data name="Tools_Calculator_ClickToCopyTip" xml:space="preserve">
+        <value>点击复制结果</value>
+    </data>
+    <data name="Tools_Calculator_SmallResultTip" xml:space="preserve">
+        <value>点击复制结果 · 按回车保存记录</value>
+    </data>
+    <data name="Tools_Calculator_SmallWatermark" xml:space="preserve">
+        <value>输入算式回车求值...</value>
+    </data>
+    <data name="Tools_Calculator_OpenPanelTip" xml:space="preserve">
+        <value>点击打开计算器二级面板</value>
+    </data>
+    <data name="Tools_Calculator_ExpandPanelTip" xml:space="preserve">
+        <value>展开科学/程序员/换算二级面板</value>
+    </data>
+    <data name="Tools_Calculator_LargeKeypadTab" xml:space="preserve">
+        <value>标准/科学</value>
+    </data>
+    <data name="Tools_Calculator_LargeHistoryHint" xml:space="preserve">
+        <value>点击任意记录回填算式或复制</value>
+    </data>
+    <data name="Tools_Calculator_ProgWatermark" xml:space="preserve">
+        <value>输入整数或位运算算式...</value>
+    </data>
+    <data name="Tools_Calculator_BaseHexTip" xml:space="preserve">
+        <value>切换为 16 进制输入 (点击右侧复制)</value>
+    </data>
+    <data name="Tools_Calculator_BaseDecTip" xml:space="preserve">
+        <value>切换为 10 进制输入 (点击右侧复制)</value>
+    </data>
+    <data name="Tools_Calculator_BaseOctTip" xml:space="preserve">
+        <value>切换为 8 进制输入 (点击右侧复制)</value>
+    </data>
+    <data name="Tools_Calculator_BaseBinTip" xml:space="preserve">
+        <value>切换为 2 进制输入 (点击右侧复制)</value>
+    </data>
+    <data name="Tools_Calculator_ConvFrom" xml:space="preserve">
+        <value>从 (输入数值)</value>
+    </data>
+    <data name="Tools_Calculator_ConvSwap" xml:space="preserve">
+        <value>⇅ 互换单位</value>
+    </data>
+    <data name="Tools_Calculator_ConvReset" xml:space="preserve">
+        <value>重置为 1</value>
+    </data>
+    <data name="Tools_Calculator_ConvTo" xml:space="preserve">
+        <value>转换结果</value>
+    </data>
+    <data name="Tools_Calculator_ConvCopyTip" xml:space="preserve">
+        <value>复制转换结果</value>
+    </data>
+    <data name="Tools_Calculator_ConvAllUnitsHint" xml:space="preserve">
+        <value>同类别全单位速览（点击任意行即可复制）</value>
+    </data>
+    <data name="Tools_Calculator_SidebarHistory" xml:space="preserve">
+        <value>历史记录</value>
+    </data>
+    <data name="Tools_Calculator_SidebarMemory" xml:space="preserve">
+        <value>内存 (M)</value>
+    </data>
+    <data name="Tools_Calculator_MemClearTip" xml:space="preserve">
+        <value>清空内存 (Memory Clear)</value>
+    </data>
+    <data name="Tools_Calculator_MemRecallTip" xml:space="preserve">
+        <value>读取内存 (Memory Recall)</value>
+    </data>
+    <data name="Tools_Calculator_MemAddTip" xml:space="preserve">
+        <value>内存累加 (Memory Add)</value>
+    </data>
+    <data name="Tools_Calculator_MemSubTip" xml:space="preserve">
+        <value>内存累减 (Memory Subtract)</value>
+    </data>
+    <data name="Tools_Calculator_MemStoreTip" xml:space="preserve">
+        <value>存入内存 (Memory Store)</value>
+    </data>
+    <data name="Tools_Calculator_Group_Display" xml:space="preserve">
+        <value>显示与精度设置</value>
+    </data>
+    <data name="Tools_Calculator_Group_Mode" xml:space="preserve">
+        <value>计算模式与二级面板</value>
+    </data>
+    <data name="Tools_Calculator_Group_History" xml:space="preserve">
+        <value>历史记录与交互</value>
+    </data>
+    <data name="Tools_Calculator_ClearAllTitle" xml:space="preserve">
+        <value>清空计算历史记录与内存槽</value>
+    </data>
+    <data name="Tools_Calculator_ClearAllDesc" xml:space="preserve">
+        <value>清除所有已保存的历史算式记录及 M 内存数值</value>
+    </data>
 </root>

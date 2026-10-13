@@ -16,36 +16,36 @@
         <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
     </resheader>
     <data name="Storage" xml:space="preserve">
-        <value>磁盘存储</value>
+        <value>Storage</value>
     </data>
     <data name="Storage_Title" xml:space="preserve">
-        <value>磁盘存储</value>
+        <value>Disk Space</value>
     </data>
     <data name="Storage_Subtitle" xml:space="preserve">
-        <value>直观展示本机各硬盘分区的存储容量、剩余空间与使用率</value>
+        <value>Real-time local disk partition capacity, usage and remaining space monitor</value>
     </data>
     <data name="Storage_HeaderTitle" xml:space="preserve">
-        <value>存储空间</value>
+        <value>Storage</value>
     </data>
     <data name="Storage_DisplayMode" xml:space="preserve">
-        <value>显示样式</value>
+        <value>Layout Style</value>
     </data>
     <data name="Storage_TextFormat" xml:space="preserve">
-        <value>容量数值格式</value>
+        <value>Capacity Text Format</value>
     </data>
     <data name="Storage_ShowHeader" xml:space="preserve">
-        <value>显示顶部总览栏</value>
+        <value>Show top title &amp; summary bar</value>
     </data>
     <data name="Storage_UseWarningColors" xml:space="preserve">
-        <value>空间不足变色预警</value>
+        <value>Show orange/red warning when space is low</value>
     </data>
     <data name="Storage_DoubleClickToOpen" xml:space="preserve">
-        <value>双击打开磁盘文件夹</value>
+        <value>Double-click drive to open in Explorer</value>
     </data>
     <data name="Storage_ShowRemovableDrives" xml:space="preserve">
-        <value>显示可移动磁盘 (U盘/移动硬盘)</value>
+        <value>Show removable drives (USB)</value>
     </data>
     <data name="Storage_ShowNetworkDrives" xml:space="preserve">
-        <value>显示网络映射驱动器</value>
+        <value>Show network drives</value>
     </data>
 </root>

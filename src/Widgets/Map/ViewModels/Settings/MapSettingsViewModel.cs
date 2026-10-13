@@ -20,6 +20,9 @@ public class MapSettingsViewModel : INotifyPropertyChanged
 
     public event PropertyChangedEventHandler? PropertyChanged;
 
+    private static bool IsZh =>
+        System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName.Equals("zh", StringComparison.OrdinalIgnoreCase);
+
     public static readonly IReadOnlyList<PresetCity> PresetCities =
     [
         new("自定义 (手动经纬度)", 39.9042, 116.4074, 14, ""),
@@ -36,6 +39,22 @@ public class MapSettingsViewModel : INotifyPropertyChanged
         new("巴黎 · 埃菲尔铁塔", 48.8584, 2.2945, 15, "Champ de Mars, 75007 Paris")
     ];
 
+    private static readonly IReadOnlyList<PresetCity> PresetCitiesEn =
+    [
+        new("Custom (Manual Coordinates)", 39.9042, 116.4074, 14, ""),
+        new("Beijing · The Palace Museum", 39.9163, 116.3972, 15, "4 Jingshan Front St, Dongcheng, Beijing"),
+        new("Shanghai · The Bund", 31.2397, 121.4998, 15, "East Zhongshan 1st Rd, Huangpu, Shanghai"),
+        new("Guangzhou · Canton Tower", 23.1065, 113.3245, 15, "222 Yuejiang W Rd, Haizhu, Guangzhou"),
+        new("Shenzhen · Civic Center", 22.5431, 114.0579, 15, "Fuzhong 3rd Rd, Futian, Shenzhen"),
+        new("Hangzhou · West Lake Broken Bridge", 30.2588, 120.1510, 14, "Bai Causeway, Xihu, Hangzhou"),
+        new("Chengdu · Taikoo Li Chunxi Road", 30.6558, 104.0818, 15, "8 Middle Shamao St, Jinjiang, Chengdu"),
+        new("Hong Kong · Victoria Harbour", 22.2933, 114.1717, 14, "Tsim Sha Tsui Promenade, Kowloon, HK"),
+        new("Tokyo · Tokyo Tower", 35.6586, 139.7454, 15, "4-2-8 Shibakoen, Minato City, Tokyo"),
+        new("London · Big Ben & River Thames", 51.5007, -0.1246, 15, "Westminster, London SW1A 0AA"),
+        new("New York · Times Square", 40.7580, -73.9855, 15, "Manhattan, NY 10036"),
+        new("Paris · Eiffel Tower", 48.8584, 2.2945, 15, "Champ de Mars, 75007 Paris")
+    ];
+
     public static readonly IReadOnlyList<ProviderOption> ProviderOptions =
     [
         new(MapProvider.Amap, "高德地图 (标准路网 · 推荐)"),
@@ -49,6 +68,19 @@ public class MapSettingsViewModel : INotifyPropertyChanged
         new(MapProvider.Baidu, "百度地图 (Baidu Maps)")
     ];
 
+    private static readonly IReadOnlyList<ProviderOption> ProviderOptionsEn =
+    [
+        new(MapProvider.Amap, "Amap (Standard Roads · Recommended)"),
+        new(MapProvider.AmapSatellite, "Amap (Satellite Imagery)"),
+        new(MapProvider.AppleLight, "iPad Apple Style (CartoDB Positron Light)"),
+        new(MapProvider.AppleDark, "iPad Apple Dark (CartoDB Dark Matter)"),
+        new(MapProvider.Google, "Google Maps (Streets)"),
+        new(MapProvider.GoogleSatellite, "Google Maps (Satellite)"),
+        new(MapProvider.GoogleHybrid, "Google Maps (Hybrid)"),
+        new(MapProvider.OpenStreetMap, "OpenStreetMap (Standard)"),
+        new(MapProvider.Baidu, "Baidu Maps")
+    ];
+
     private PresetCity selectedCity;
     private ProviderOption selectedProviderOption;
 
@@ -58,16 +90,18 @@ public class MapSettingsViewModel : INotifyPropertyChanged
         var layout = widgetLayoutProvider.Get();
         model = layout?.GetModel<MapModel>() ?? new MapModel();
 
-        selectedProviderOption = ProviderOptions.FirstOrDefault(p => p.Provider == model.Provider) ?? ProviderOptions[0];
+        var providers = Providers;
+        selectedProviderOption = providers.FirstOrDefault(p => p.Provider == model.Provider) ?? providers[0];
 
         // Match existing coordinates to preset city if close
-        selectedCity = PresetCities.FirstOrDefault(c =>
+        var cities = Cities;
+        selectedCity = cities.Skip(1).FirstOrDefault(c =>
             Math.Abs(c.Latitude - model.Latitude) < 0.005 &&
-            Math.Abs(c.Longitude - model.Longitude) < 0.005) ?? PresetCities[0];
+            Math.Abs(c.Longitude - model.Longitude) < 0.005) ?? cities[0];
     }
 
-    public IReadOnlyList<PresetCity> Cities => PresetCities;
-    public IReadOnlyList<ProviderOption> Providers => ProviderOptions;
+    public IReadOnlyList<PresetCity> Cities => IsZh ? PresetCities : PresetCitiesEn;
+    public IReadOnlyList<ProviderOption> Providers => IsZh ? ProviderOptions : ProviderOptionsEn;
 
     public PresetCity SelectedCity
     {
@@ -79,7 +113,7 @@ public class MapSettingsViewModel : INotifyPropertyChanged
                 selectedCity = value;
                 OnPropertyChanged();
 
-                if (value.Latitude != 0 && value.Name != PresetCities[0].Name)
+                if (value.Latitude != 0 && value.Name != Cities[0].Name)
                 {
                     Latitude = value.Latitude;
                     Longitude = value.Longitude;
@@ -164,7 +198,12 @@ public class MapSettingsViewModel : INotifyPropertyChanged
 
     public string LocationName
     {
-        get => model.LocationName ?? "";
+        get
+        {
+            if (!IsZh && model.LocationName == "北京 · 故宫博物院")
+                return "Beijing · The Palace Museum";
+            return model.LocationName ?? "";
+        }
         set
         {
             if (model.LocationName != value)
@@ -178,7 +217,12 @@ public class MapSettingsViewModel : INotifyPropertyChanged
 
     public string LocationDescription
     {
-        get => model.LocationDescription ?? "";
+        get
+        {
+            if (!IsZh && model.LocationDescription == "北京市东城区景山前街4号")
+                return "4 Jingshan Front St, Dongcheng, Beijing";
+            return model.LocationDescription ?? "";
+        }
         set
         {
             if (model.LocationDescription != value)
@@ -314,7 +358,7 @@ public class MapSettingsViewModel : INotifyPropertyChanged
     {
         if (IsLocating) return;
         IsLocating = true;
-        LocationStatusText = "正在获取网络定位...";
+        LocationStatusText = IsZh ? "正在获取网络定位..." : "Locating via network...";
         try
         {
             var result = await Map.Services.GeoLocationService.GetCurrentLocationAsync();
@@ -331,17 +375,19 @@ public class MapSettingsViewModel : INotifyPropertyChanged
                 {
                     LocationDescription = result.FormattedAddress;
                 }
-                LocationStatusText = $"已定位至：{result.City ?? "当前位置"} ({result.Latitude:F4}, {result.Longitude:F4})";
+                LocationStatusText = IsZh
+                    ? $"已定位至：{result.City ?? "当前位置"} ({result.Latitude:F4}, {result.Longitude:F4})"
+                    : $"Located: {result.City ?? "Current Location"} ({result.Latitude:F4}, {result.Longitude:F4})";
                 Save();
             }
             else
             {
-                LocationStatusText = result.ErrorMessage ?? "定位失败";
+                LocationStatusText = result.ErrorMessage ?? (IsZh ? "定位失败" : "Location failed");
             }
         }
         catch (Exception ex)
         {
-            LocationStatusText = $"定位出错: {ex.Message}";
+            LocationStatusText = IsZh ? $"定位出错: {ex.Message}" : $"Location error: {ex.Message}";
         }
         finally
         {

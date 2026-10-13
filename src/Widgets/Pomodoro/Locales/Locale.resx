@@ -16,51 +16,66 @@
         <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
     </resheader>
     <data name="Pomodoro" xml:space="preserve">
-        <value>番茄钟</value>
+        <value>Pomodoro</value>
     </data>
     <data name="Pomodoro_Title" xml:space="preserve">
-        <value>番茄钟</value>
+        <value>Pomodoro Timer</value>
     </data>
     <data name="Pomodoro_Subtitle" xml:space="preserve">
-        <value>极简高效的番茄工作法计时器与专注看板</value>
+        <value>Focus &amp; break timer with task tracking</value>
     </data>
     <data name="Pomodoro_Phase_Focus" xml:space="preserve">
-        <value>专注</value>
+        <value>Focus</value>
     </data>
     <data name="Pomodoro_Phase_ShortBreak" xml:space="preserve">
-        <value>短休息</value>
+        <value>Short Break</value>
     </data>
     <data name="Pomodoro_Phase_LongBreak" xml:space="preserve">
-        <value>长休息</value>
+        <value>Long Break</value>
+    </data>
+    <data name="Pomodoro_Tab_Focus" xml:space="preserve">
+        <value>🍅 Focus</value>
+    </data>
+    <data name="Pomodoro_Tab_ShortBreak" xml:space="preserve">
+        <value>☕ Short Break</value>
+    </data>
+    <data name="Pomodoro_Tab_LongBreak" xml:space="preserve">
+        <value>🌴 Long Break</value>
     </data>
     <data name="Pomodoro_Start" xml:space="preserve">
-        <value>开始</value>
+        <value>Start</value>
     </data>
     <data name="Pomodoro_Pause" xml:space="preserve">
-        <value>暂停</value>
+        <value>Pause</value>
     </data>
     <data name="Pomodoro_Reset" xml:space="preserve">
-        <value>重置</value>
+        <value>Reset</value>
     </data>
     <data name="Pomodoro_Skip" xml:space="preserve">
-        <value>跳过</value>
+        <value>Skip</value>
+    </data>
+    <data name="Pomodoro_SkipPhase" xml:space="preserve">
+        <value>Skip this phase</value>
+    </data>
+    <data name="Pomodoro_SwitchMode" xml:space="preserve">
+        <value>Click to switch mode</value>
     </data>
     <data name="Pomodoro_FocusMinutes" xml:space="preserve">
-        <value>专注时长 (分钟)</value>
+        <value>Focus duration (min)</value>
     </data>
     <data name="Pomodoro_ShortBreakMinutes" xml:space="preserve">
-        <value>短休息时长 (分钟)</value>
+        <value>Short break duration (min)</value>
     </data>
     <data name="Pomodoro_LongBreakMinutes" xml:space="preserve">
-        <value>长休息时长 (分钟)</value>
+        <value>Long break duration (min)</value>
     </data>
     <data name="Pomodoro_LongBreakInterval" xml:space="preserve">
-        <value>长休息间隔 (周期)</value>
+        <value>Long break interval (cycles)</value>
     </data>
     <data name="Pomodoro_AutoStartBreaks" xml:space="preserve">
-        <value>自动开始休息</value>
+        <value>Auto-start breaks</value>
     </data>
     <data name="Pomodoro_AutoStartFocus" xml:space="preserve">
-        <value>自动开始下一个专注</value>
+        <value>Auto-start focus</value>
     </data>
 </root>

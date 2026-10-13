@@ -79,8 +79,9 @@ public partial class AggregateSettings : UserControl
 
     private void LoadFromModel()
     {
-        SearchBox.Text = model.City;
-        CityStatusText.Text = $"当前坐标: {model.Latitude:F2}°, {model.Longitude:F2}°";
+        bool isZh = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName.Equals("zh", StringComparison.OrdinalIgnoreCase);
+        SearchBox.Text = !isZh && model.City == "北京" ? "Beijing" : model.City;
+        CityStatusText.Text = string.Format(Locale.Setting_CoordFormat, model.Latitude, model.Longitude);
 
         UnitCombo.SelectedIndex = string.Equals(model.TemperatureUnit, "fahrenheit", StringComparison.OrdinalIgnoreCase) ? 1 : 0;
         Use24HoursSwitch.IsChecked = model.Is24Hour;
@@ -162,7 +163,7 @@ public partial class AggregateSettings : UserControl
             Longitude = city.Longitude
         };
         Save();
-        CityStatusText.Text = $"已识别: {city.SearchName}";
+        CityStatusText.Text = string.Format(Locale.Setting_CityMatchedFormat, city.SearchName);
     }
 
     private async Task ResolveCityAsync(string query)
@@ -172,7 +173,7 @@ public partial class AggregateSettings : UserControl
         var current = weatherService;
         if (current == null) return;
 
-        CityStatusText.Text = "正在从天气源识别...";
+        CityStatusText.Text = Locale.Setting_CitySearching;
 
         var results = await current.SearchCitiesAsync(query);
         if (results != null && results.Count > 0)
@@ -182,7 +183,7 @@ public partial class AggregateSettings : UserControl
         }
         else
         {
-            CityStatusText.Text = "未在天气源检索到该城市";
+            CityStatusText.Text = Locale.Setting_CityNotFound;
         }
     }
 

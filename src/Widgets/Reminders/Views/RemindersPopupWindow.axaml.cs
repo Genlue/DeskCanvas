@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -99,13 +99,23 @@ public partial class RemindersPopupWindow : SecondaryPanelWindow
 
         ItemsList.ItemsSource = items;
 
-        TitleBox.Text = !string.IsNullOrWhiteSpace(currentModel.ListName) ? currentModel.ListName : Locale.Reminders_List_Title;
+        TitleBox.Text = GetDisplayListName(currentModel);
 
         ApplyTheme();
         PopulateItems();
 
         RemindersStore.ModelChanged += OnStoreModelChanged;
         Closed += OnWindowClosed;
+    }
+
+    private static string GetDisplayListName(RemindersListModel model)
+    {
+        if (string.IsNullOrWhiteSpace(model.ListName))
+            return Locale.Reminders_List_Title;
+        bool isZh = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName.Equals("zh", StringComparison.OrdinalIgnoreCase);
+        if (!isZh && (model.ListName == "待办清单" || model.ListName == "清单"))
+            return Locale.Reminders_DefaultListName;
+        return model.ListName;
     }
 
     public static void ShowPopup(
@@ -217,7 +227,10 @@ public partial class RemindersPopupWindow : SecondaryPanelWindow
         int total = items.Count;
         int completed = items.Count(i => i.Completed);
 
-        SubtitleText.Text = $"共 {total} 项" + (completed > 0 ? $" · {completed} 项已完成" : "");
+        bool isZh = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName.Equals("zh", StringComparison.OrdinalIgnoreCase);
+        SubtitleText.Text = isZh
+            ? $"共 {total} 项" + (completed > 0 ? $" · {completed} 项已完成" : "")
+            : $"{total} items" + (completed > 0 ? $" · {completed} completed" : "");
         EmptyPanel.IsVisible = total == 0;
         ClearCompletedButton.IsVisible = completed > 0;
     }
@@ -366,7 +379,7 @@ public partial class RemindersPopupWindow : SecondaryPanelWindow
     {
         if (Equals(currentModel, newModel)) return;
         currentModel = newModel;
-        TitleBox.Text = !string.IsNullOrWhiteSpace(currentModel.ListName) ? currentModel.ListName : Locale.Reminders_List_Title;
+        TitleBox.Text = GetDisplayListName(currentModel);
         PopulateItems();
     }
 }

@@ -38,9 +38,14 @@ public partial class UpdatePopup : Window, INotifyPropertyChanged
     public string Changelog => releaseInfo.Changelog?.Trim() ?? "";
     public bool HasChangelog => !string.IsNullOrWhiteSpace(Changelog);
 
+    private static bool IsZh => System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName.Equals("zh", StringComparison.OrdinalIgnoreCase);
+
     public string DownloadButtonText => string.IsNullOrWhiteSpace(releaseInfo.DownloadUrl)
         ? Locale.Update_Download
         : Locale.Update_Download;
+
+    public string RetryButtonText => IsZh ? "重试" : "Retry";
+    public string OpenInBrowserButtonText => IsZh ? "在浏览器中打开" : "Open in Browser";
 
     private bool isDownloading;
     public bool IsDownloading
@@ -113,7 +118,7 @@ public partial class UpdatePopup : Window, INotifyPropertyChanged
         IsDownloading = true;
         DownloadPercentage = 0;
         IsProgressIndeterminate = true;
-        StatusText = "正在准备下载安装包...";
+        StatusText = IsZh ? "正在准备下载安装包..." : "Preparing installer download...";
 
         downloadCts = new CancellationTokenSource();
 
@@ -131,7 +136,9 @@ public partial class UpdatePopup : Window, INotifyPropertyChanged
             else
             {
                 IsProgressIndeterminate = true;
-                StatusText = $"正在下载... {p.downloaded / 1048576.0:0.0} MB";
+                StatusText = IsZh
+                    ? $"正在下载... {p.downloaded / 1048576.0:0.0} MB"
+                    : $"Downloading... {p.downloaded / 1048576.0:0.0} MB";
             }
         });
 

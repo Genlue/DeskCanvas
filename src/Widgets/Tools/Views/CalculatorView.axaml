@@ -156,7 +156,7 @@
             <!-- Header -->
             <Grid Grid.Row="0" ColumnDefinitions="*,Auto,Auto,Auto" Margin="0,0,0,4" VerticalAlignment="Center">
                 <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="5" VerticalAlignment="Center"
-                            Cursor="Hand" PointerPressed="OnTitleOpenPanelPressed" ToolTip.Tip="点击打开计算器二级面板">
+                            Cursor="Hand" PointerPressed="OnTitleOpenPanelPressed" ToolTip.Tip="{x:Static locales:Locale.Tools_Calculator_OpenPanelTip}">
                     <PathIcon Data="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-2 4H7V5h10v2zM9 17H7v-2h2v2zm0-4H7v-2h2v2zm4 4h-2v-2h2v2zm0-4h-2v-2h2v2zm4 4h-2v-6h2v6z"
                               Width="13" Height="13" Foreground="{DynamicResource CalculatorAccentBrush}" />
                     <TextBlock x:Name="SmallTitleText" Text="{x:Static locales:Locale.Tools_Calculator_Title}"
@@ -165,17 +165,17 @@
                 </StackPanel>
 
                 <Button Grid.Column="1" x:Name="SmallClearBtn" Classes="icon-btn" Padding="3" Margin="2,0,0,0"
-                        Click="OnClearClicked" ToolTip.Tip="清空算式">
+                        Click="OnClearClicked" ToolTip.Tip="{x:Static locales:Locale.Tools_Calculator_ClearExprTip}">
                     <PathIcon Data="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"
                               Width="10" Height="10" Opacity="0.65" />
                 </Button>
                 <Button Grid.Column="2" x:Name="SmallCopyBtn" Classes="icon-btn" Padding="3" Margin="1,0,0,0"
-                        Click="OnCopyResultClicked" ToolTip.Tip="复制计算结果">
+                        Click="OnCopyResultClicked" ToolTip.Tip="{x:Static locales:Locale.Tools_Calculator_CopyResultTip}">
                     <PathIcon Data="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"
                               Width="11" Height="11" Opacity="0.7" />
                 </Button>
                 <Button Grid.Column="3" x:Name="SmallExpandBtn" Classes="icon-btn" Padding="3" Margin="1,0,0,0"
-                        Click="OnOpenPanelClicked" ToolTip.Tip="展开科学/程序员/换算二级面板">
+                        Click="OnOpenPanelClicked" ToolTip.Tip="{x:Static locales:Locale.Tools_Calculator_ExpandPanelTip}">
                     <PathIcon Data="M15 3l2.3 2.3-2.89 2.87 1.42 1.42L18.7 6.7 21 9V3h-6zM3 9l2.3-2.3 2.87 2.89 1.42-1.42L6.7 5.3 9 3H3v6zm6 12l-2.3-2.3 2.89-2.87-1.42-1.42L5.3 17.3 3 15v6h6zm12-6l-2.3 2.3-2.87-2.89-1.42 1.42 2.89 2.87L15 21h6v-6z"
                               Width="11" Height="11" Opacity="0.75" />
                 </Button>
@@ -186,7 +186,7 @@
                 <Grid RowDefinitions="*,Auto">
                     <TextBox Grid.Row="0" x:Name="SmallExpressionBox" Classes="expr-input"
                              FontSize="12" TextAlignment="Left"
-                             Watermark="输入算式回车求值..."
+                             Watermark="{x:Static locales:Locale.Tools_Calculator_SmallWatermark}"
                              TextChanged="OnSmallExpressionChanged"
                              KeyDown="OnExpressionKeyDown" />
                     <Grid Grid.Row="1" ColumnDefinitions="Auto,*" VerticalAlignment="Bottom" Margin="0,2,0,0">
@@ -197,7 +197,7 @@
                                    TextTrimming="CharacterEllipsis" Cursor="Hand"
                                    Foreground="{DynamicResource CalculatorAccentBrush}"
                                    PointerPressed="OnResultPointerPressed"
-                                   ToolTip.Tip="点击复制结果 · 按回车保存记录" />
+                                   ToolTip.Tip="{x:Static locales:Locale.Tools_Calculator_SmallResultTip}" />
                     </Grid>
                 </Grid>
             </Border>
@@ -213,16 +213,16 @@
                 <Grid RowDefinitions="Auto,*,Auto">
                     <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto,Auto,Auto" Margin="0,0,0,2" VerticalAlignment="Center">
                         <Button Grid.Column="0" x:Name="MedAngleBtn" Classes="pill-btn" Padding="5,1" FontSize="10"
-                                Content="DEG" Click="OnAngleToggleClicked" ToolTip.Tip="切换 DEG / RAD" />
-                        <Button Grid.Column="2" Classes="icon-btn" Padding="3" Click="OnClearClicked" ToolTip.Tip="清空">
+                                Content="DEG" Click="OnAngleToggleClicked" ToolTip.Tip="{x:Static locales:Locale.Tools_Calculator_ToggleAngleTip}" />
+                        <Button Grid.Column="2" Classes="icon-btn" Padding="3" Click="OnClearClicked" ToolTip.Tip="{x:Static locales:Locale.Tools_Translator_Clear}">
                             <PathIcon Data="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"
                                       Width="10" Height="10" Opacity="0.65" />
                         </Button>
-                        <Button Grid.Column="3" Classes="icon-btn" Padding="3" Click="OnCopyResultClicked" ToolTip.Tip="复制结果">
+                        <Button Grid.Column="3" Classes="icon-btn" Padding="3" Click="OnCopyResultClicked" ToolTip.Tip="{x:Static locales:Locale.Tools_Calculator_CopyResultTip}">
                             <PathIcon Data="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"
                                       Width="10.5" Height="10.5" Opacity="0.7" />
                         </Button>
-                        <Button Grid.Column="4" Classes="icon-btn" Padding="3" Click="OnOpenPanelClicked" ToolTip.Tip="展开二级面板">
+                        <Button Grid.Column="4" Classes="icon-btn" Padding="3" Click="OnOpenPanelClicked" ToolTip.Tip="{x:Static locales:Locale.Tools_Calculator_ExpandPanelTip}">
                             <PathIcon Data="M15 3l2.3 2.3-2.89 2.87 1.42 1.42L18.7 6.7 21 9V3h-6zM3 9l2.3-2.3 2.87 2.89 1.42-1.42L6.7 5.3 9 3H3v6zm6 12l-2.3-2.3 2.89-2.87-1.42-1.42L5.3 17.3 3 15v6h6zm12-6l-2.3 2.3-2.87-2.89-1.42 1.42 2.89 2.87L15 21h6v-6z"
                                       Width="10.5" Height="10.5" Opacity="0.75" />
                         </Button>
@@ -237,7 +237,7 @@
                         <TextBlock x:Name="MedResultText" Text="0" FontSize="20" FontWeight="Bold"
                                    TextAlignment="Right" TextTrimming="CharacterEllipsis" Cursor="Hand"
                                    Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}"
-                                   PointerPressed="OnResultPointerPressed" ToolTip.Tip="点击复制结果" />
+                                   PointerPressed="OnResultPointerPressed" ToolTip.Tip="{x:Static locales:Locale.Tools_Calculator_ClickToCopyTip}" />
                     </StackPanel>
 
                     <!-- Bottom 2 History Rows -->
@@ -280,22 +280,22 @@
         <Grid x:Name="LargeLayout" RowDefinitions="Auto,Auto,*" IsVisible="False">
             <!-- Top Toolbar -->
             <Grid Grid.Row="0" ColumnDefinitions="Auto,Auto,Auto,*,Auto,Auto,Auto" Margin="0,0,0,6" VerticalAlignment="Center">
-                <Button Grid.Column="0" x:Name="LargeKeypadModeBtn" Classes="pill-btn active" Content="标准/科学"
+                <Button Grid.Column="0" x:Name="LargeKeypadModeBtn" Classes="pill-btn active" Content="{x:Static locales:Locale.Tools_Calculator_LargeKeypadTab}"
                         Margin="0,0,4,0" Click="OnLargeKeypadModeClicked" />
-                <Button Grid.Column="1" x:Name="LargeHistoryModeBtn" Classes="pill-btn" Content="历史 (0)"
+                <Button Grid.Column="1" x:Name="LargeHistoryModeBtn" Classes="pill-btn" Content="History (0)"
                         Margin="0,0,4,0" Click="OnLargeHistoryModeClicked" />
                 <Button Grid.Column="2" x:Name="LargeAngleBtn" Classes="pill-btn" Content="DEG"
-                        Click="OnAngleToggleClicked" ToolTip.Tip="切换角度制 (DEG) / 弧度制 (RAD)" />
+                        Click="OnAngleToggleClicked" ToolTip.Tip="{x:Static locales:Locale.Tools_Calculator_ToggleAngleTip}" />
 
-                <Button Grid.Column="4" Classes="icon-btn" Padding="4" Click="OnClearClicked" ToolTip.Tip="清空算式">
+                <Button Grid.Column="4" Classes="icon-btn" Padding="4" Click="OnClearClicked" ToolTip.Tip="{x:Static locales:Locale.Tools_Calculator_ClearExprTip}">
                     <PathIcon Data="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"
                               Width="11" Height="11" Opacity="0.65" />
                 </Button>
-                <Button Grid.Column="5" Classes="icon-btn" Padding="4" Click="OnCopyResultClicked" ToolTip.Tip="复制计算结果">
+                <Button Grid.Column="5" Classes="icon-btn" Padding="4" Click="OnCopyResultClicked" ToolTip.Tip="{x:Static locales:Locale.Tools_Calculator_CopyResultTip}">
                     <PathIcon Data="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"
                               Width="11.5" Height="11.5" Opacity="0.7" />
                 </Button>
-                <Button Grid.Column="6" Classes="icon-btn" Padding="4" Click="OnOpenPanelClicked" ToolTip.Tip="展开科学/程序员/单位换算二级面板">
+                <Button Grid.Column="6" Classes="icon-btn" Padding="4" Click="OnOpenPanelClicked" ToolTip.Tip="{x:Static locales:Locale.Tools_Calculator_ExpandPanelTip}">
                     <PathIcon Data="M15 3l2.3 2.3-2.89 2.87 1.42 1.42L18.7 6.7 21 9V3h-6zM3 9l2.3-2.3 2.87 2.89 1.42-1.42L6.7 5.3 9 3H3v6zm6 12l-2.3-2.3 2.89-2.87-1.42-1.42L5.3 17.3 3 15v6h6zm12-6l-2.3 2.3-2.87-2.89-1.42 1.42 2.89 2.87L15 21h6v-6z"
                               Width="11.5" Height="11.5" Opacity="0.75" />
                 </Button>
@@ -312,7 +312,7 @@
                     <TextBlock x:Name="LargeResultText" Text="0" FontSize="24" FontWeight="Bold"
                                TextAlignment="Right" TextTrimming="CharacterEllipsis" Cursor="Hand"
                                Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}"
-                               PointerPressed="OnResultPointerPressed" ToolTip.Tip="点击复制结果" />
+                               PointerPressed="OnResultPointerPressed" ToolTip.Tip="{x:Static locales:Locale.Tools_Calculator_ClickToCopyTip}" />
                 </StackPanel>
             </Border>
 
@@ -362,7 +362,7 @@
                 <Border x:Name="LargeHistoryContainer" Classes="calc-card" Padding="8,6" IsVisible="False">
                     <Grid RowDefinitions="Auto,*">
                         <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="0,0,0,4">
-                            <TextBlock Text="点击任意记录回填算式或复制" FontSize="11"
+                            <TextBlock Text="{x:Static locales:Locale.Tools_Calculator_LargeHistoryHint}" FontSize="11"
                                        Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}" VerticalAlignment="Center" />
                             <Button Grid.Column="1" Classes="pill-btn" Padding="6,2" FontSize="10.5"
                                     Content="{x:Static locales:Locale.Tools_Calculator_ClearHistory}"
@@ -380,7 +380,7 @@
         <Border x:Name="ToastBanner" IsVisible="False" HorizontalAlignment="Center" VerticalAlignment="Bottom"
                 Margin="0,0,0,6" Padding="10,4" CornerRadius="12"
                 Background="{DynamicResource CalculatorAccentBrush}">
-            <TextBlock x:Name="ToastText" Text="已复制" FontSize="11" FontWeight="SemiBold"
+            <TextBlock x:Name="ToastText" Text="{x:Static locales:Locale.Tools_Calculator_Copied}" FontSize="11" FontWeight="SemiBold"
                        Foreground="{DynamicResource AccentContrastForegroundBrush}" />
         </Border>
     </Panel>

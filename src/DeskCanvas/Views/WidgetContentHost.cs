@@ -31,8 +31,10 @@ public static class WidgetContentHost
     /// </summary>
     public static void Prepare(UserControl control)
     {
-        if (control is IFramelessWidget)
+        if (control is IFramelessWidget { IsFrameless: true })
             Add(control, "Frameless");
+        else
+            control.Classes.Remove("Frameless");
 
         if (IsFlush(control))
             Add(control, "Flush");

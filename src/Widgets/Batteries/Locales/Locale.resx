@@ -16,39 +16,39 @@
         <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
     </resheader>
     <data name="Batteries" xml:space="preserve">
-        <value>电池</value>
+        <value>Batteries</value>
     </data>
     <data name="Batteries_Title" xml:space="preserve">
-        <value>电池与外设</value>
+        <value>Batteries &amp; Peripherals</value>
     </data>
     <data name="Batteries_Subtitle" xml:space="preserve">
-        <value>macOS 风格的主机电池与蓝牙外设电量监控看板</value>
+        <value>macOS-style battery monitor for host PC and Bluetooth peripherals</value>
     </data>
     <data name="Batteries_MainDevice" xml:space="preserve">
-        <value>电脑电池</value>
+        <value>PC Battery</value>
     </data>
     <data name="Batteries_AcPower" xml:space="preserve">
-        <value>电源适配器供电</value>
+        <value>AC Power</value>
     </data>
     <data name="Batteries_Charging" xml:space="preserve">
-        <value>正在充电</value>
+        <value>Charging</value>
     </data>
     <data name="Batteries_ShowPercentage" xml:space="preserve">
-        <value>显示百分比数字</value>
+        <value>Show percentage numbers</value>
     </data>
     <data name="Batteries_ShowPeripherals" xml:space="preserve">
-        <value>显示蓝牙外设电量</value>
+        <value>Show Bluetooth peripherals</value>
     </data>
     <data name="Batteries_ShowRemainingTime" xml:space="preserve">
-        <value>显示预计可用时间</value>
+        <value>Show estimated remaining time</value>
     </data>
     <data name="Batteries_Mouse" xml:space="preserve">
-        <value>鼠标</value>
+        <value>Mouse</value>
     </data>
     <data name="Batteries_Keyboard" xml:space="preserve">
-        <value>键盘</value>
+        <value>Keyboard</value>
     </data>
     <data name="Batteries_Headphones" xml:space="preserve">
-        <value>耳机</value>
+        <value>Headphones</value>
     </data>
 </root>

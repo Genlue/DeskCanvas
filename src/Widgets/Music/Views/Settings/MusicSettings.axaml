@@ -45,7 +45,7 @@
     <ScrollViewer VerticalScrollBarVisibility="Auto">
         <StackPanel Orientation="Vertical" Spacing="8" Margin="0,2,16,8">
             <!-- Group 1: General Display -->
-            <TextBlock Classes="group-header" Text="常规与显示" />
+            <TextBlock x:Name="GeneralHeader" Classes="group-header" Text="常规与显示" />
 
             <CheckBox x:Name="AmbientGlowToggle" Content="启用专辑封面流光氛围 (Ambient Glow)"
                       IsCheckedChanged="OnToggleChanged" FontSize="13" />
@@ -54,40 +54,40 @@
                       IsCheckedChanged="OnToggleChanged" FontSize="13" />
 
             <!-- Group 2: Player Management -->
-            <TextBlock Classes="group-header" Text="音乐软件列表与智能识别" />
+            <TextBlock x:Name="PlayersHeader" Classes="group-header" Text="音乐软件列表与智能识别" />
 
-            <TextBlock Text="当多个软件均处于活动状态时，列表上方的软件具有优先识别权。"
+            <TextBlock x:Name="PlayersHintText" Text="当多个软件均处于活动状态时，列表上方的软件具有优先识别权。"
                        FontSize="11" Opacity="0.65" TextWrapping="Wrap"
                        Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}" Margin="0,0,0,4"/>
 
             <!-- Action Toolbar -->
             <WrapPanel Orientation="Horizontal" Margin="0,0,0,6">
-                <Button Classes="small-button" Content="从运行中添加"
+                <Button x:Name="AddRunningBtn" Classes="small-button" Content="从运行中添加"
                         Click="OnAddFromRunningClicked" Margin="0,0,6,4" />
-                <Button Classes="small-button" Content="浏览程序 (.exe)"
+                <Button x:Name="BrowseExeBtn" Classes="small-button" Content="浏览程序 (.exe)"
                         Click="OnBrowseExeClicked" Margin="0,0,6,4" />
-                <Button Classes="small-button" Content="手动添加规则"
+                <Button x:Name="AddManualBtn" Classes="small-button" Content="手动添加规则"
                         Click="OnAddManualRuleClicked" Margin="0,0,6,4" />
-                <Button Classes="small-button" Content="恢复默认预设"
+                <Button x:Name="ResetDefaultsBtn" Classes="small-button" Content="恢复默认预设"
                         Click="OnResetDefaultsClicked" Margin="0,0,6,4" />
             </WrapPanel>
 
             <!-- Manual Add Input Panel (hidden by default) -->
             <Border x:Name="ManualAddPanel" Background="#15888888" CornerRadius="6" Padding="8" Margin="0,0,0,6" IsVisible="False">
                 <StackPanel Spacing="6">
-                    <TextBlock Text="添加自定义软件规则" FontSize="12" FontWeight="SemiBold"
+                    <TextBlock x:Name="ManualAddTitle" Text="添加自定义软件规则" FontSize="12" FontWeight="SemiBold"
                                Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}" />
                     <Grid ColumnDefinitions="Auto,*" Margin="0,2">
-                        <TextBlock Classes="setting-label" Text="软件名称：" FontSize="12" Width="70"/>
+                        <TextBlock x:Name="ManualNameLabel" Classes="setting-label" Text="软件名称：" FontSize="12" Width="70"/>
                         <TextBox x:Name="ManualNameBox" Grid.Column="1" FontSize="12" Watermark="例如：YesPlayMusic" Height="26" Padding="4,2"/>
                     </Grid>
                     <Grid ColumnDefinitions="Auto,*" Margin="0,2">
-                        <TextBlock Classes="setting-label" Text="匹配特征：" FontSize="12" Width="70"/>
+                        <TextBlock x:Name="ManualPatternLabel" Classes="setting-label" Text="匹配特征：" FontSize="12" Width="70"/>
                         <TextBox x:Name="ManualPatternBox" Grid.Column="1" FontSize="12" Watermark="例如：yesplaymusic (进程或AUMID关键字)" Height="26" Padding="4,2"/>
                     </Grid>
                     <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right" Margin="0,4,0,0">
-                        <Button Classes="small-button" Content="取消" Click="OnCancelManualAdd" />
-                        <Button Classes="small-button" Content="确定添加" Click="OnConfirmManualAdd" />
+                        <Button x:Name="CancelManualBtn" Classes="small-button" Content="取消" Click="OnCancelManualAdd" />
+                        <Button x:Name="ConfirmManualBtn" Classes="small-button" Content="确定添加" Click="OnConfirmManualAdd" />
                     </StackPanel>
                 </StackPanel>
             </Border>
@@ -95,7 +95,7 @@
             <!-- Running Sessions Selector (hidden by default) -->
             <Border x:Name="RunningSessionsPanel" Background="#15888888" CornerRadius="6" Padding="8" Margin="0,0,0,6" IsVisible="False">
                 <StackPanel Spacing="6">
-                    <TextBlock Text="系统当前运行的媒体会话（点击添加）：" FontSize="12" FontWeight="SemiBold"
+                    <TextBlock x:Name="RunningSessionsTitle" Text="系统当前运行的媒体会话（点击添加）：" FontSize="12" FontWeight="SemiBold"
                                Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}" />
                     <ListBox x:Name="RunningSessionsList" MaxHeight="120" Background="Transparent"
                              SelectionChanged="OnRunningSessionSelected">
@@ -108,13 +108,13 @@
                                         <TextBlock Text="{Binding AppId}" FontSize="10" Opacity="0.6"
                                                    Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"/>
                                     </StackPanel>
-                                    <TextBlock Grid.Column="1" Text="一键添加" FontSize="11" VerticalAlignment="Center"
+                                    <TextBlock Grid.Column="1" Text="{x:Static locales:Locale.Music_QuickAdd}" FontSize="11" VerticalAlignment="Center"
                                                Foreground="{DynamicResource SystemAccentColor}" Margin="8,0,0,0"/>
                                 </Grid>
                             </DataTemplate>
                         </ListBox.ItemTemplate>
                     </ListBox>
-                    <Button Classes="small-button" Content="关闭" HorizontalAlignment="Right" Click="OnCloseRunningSessions" />
+                    <Button x:Name="CloseRunningBtn" Classes="small-button" Content="关闭" HorizontalAlignment="Right" Click="OnCloseRunningSessions" />
                 </StackPanel>
             </Border>
 
@@ -140,11 +140,11 @@
 
                                     <!-- Priority & Delete Buttons -->
                                     <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="2" VerticalAlignment="Center">
-                                        <Button Classes="icon-button" Content="↑" ToolTip.Tip="上移优先级"
+                                        <Button Classes="icon-button" Content="↑" ToolTip.Tip="{x:Static locales:Locale.Music_MoveUp}"
                                                 Click="OnMoveUpClicked" Tag="{Binding}"/>
-                                        <Button Classes="icon-button" Content="↓" ToolTip.Tip="下移优先级"
+                                        <Button Classes="icon-button" Content="↓" ToolTip.Tip="{x:Static locales:Locale.Music_MoveDown}"
                                                 Click="OnMoveDownClicked" Tag="{Binding}"/>
-                                        <Button Classes="icon-button" Content="✕" ToolTip.Tip="删除规则"
+                                        <Button Classes="icon-button" Content="✕" ToolTip.Tip="{x:Static locales:Locale.Music_DeleteRule}"
                                                 Click="OnDeleteRuleClicked" Tag="{Binding}"/>
                                     </StackPanel>
                                 </Grid>

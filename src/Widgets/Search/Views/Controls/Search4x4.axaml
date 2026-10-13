@@ -5,6 +5,7 @@
              xmlns:vm="using:Search.ViewModels"
              xmlns:services="using:Search.Services"
              xmlns:models="using:Search.Models"
+             xmlns:locales="clr-namespace:Search.Locales"
              mc:Ignorable="d" d:DesignWidth="312" d:DesignHeight="312"
              x:Class="Search.Views.Controls.Search4x4"
              x:DataType="vm:SearchViewModel">
@@ -83,7 +84,7 @@
                     Classes="engine-btn"
                     Height="30"
                     Click="OnEngineSelectorClicked"
-                    ToolTip.Tip="点击切换搜索引擎">
+                    ToolTip.Tip="{x:Static locales:Locale.Search_Switch_Engine_Tooltip}">
                 <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
                     <PathIcon Data="{Binding EngineIconPath}"
                               Foreground="{Binding EngineColor}"
@@ -106,10 +107,10 @@
                         Orientation="Horizontal"
                         Spacing="4"
                         HorizontalAlignment="Right">
-                <Button Classes="cat-pill" Content="全部" Tag="全部" Click="OnCategoryClicked"/>
-                <Button Classes="cat-pill" Content="通用" Tag="通用" Click="OnCategoryClicked"/>
-                <Button Classes="cat-pill" Content="开发" Tag="开发者" Click="OnCategoryClicked"/>
-                <Button Classes="cat-pill" Content="AI" Tag="AI 智能" Click="OnCategoryClicked"/>
+                <Button Classes="cat-pill" Content="{x:Static locales:Locale.Search_Category_All}" Tag="全部" Click="OnCategoryClicked"/>
+                <Button Classes="cat-pill" Content="{x:Static locales:Locale.Search_Category_General}" Tag="通用" Click="OnCategoryClicked"/>
+                <Button Classes="cat-pill" Content="{x:Static locales:Locale.Search_Category_Dev}" Tag="开发者" Click="OnCategoryClicked"/>
+                <Button Classes="cat-pill" Content="{x:Static locales:Locale.Search_Category_AI}" Tag="AI 智能" Click="OnCategoryClicked"/>
             </StackPanel>
         </Grid>
 
@@ -146,7 +147,7 @@
                         Margin="2,0"
                         IsVisible="{Binding HasQuery}"
                         Click="OnClearClicked"
-                        ToolTip.Tip="清空">
+                        ToolTip.Tip="{x:Static locales:Locale.Search_Clear}">
                     <PathIcon Data="{x:Static services:SearchIconProvider.ClearIcon}"
                               Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"
                               Width="11" Height="11"
@@ -162,7 +163,7 @@
                         Margin="2,0,1,0"
                         Background="{Binding EngineColor}"
                         Click="OnSearchActionClicked"
-                        ToolTip.Tip="搜索">
+                        ToolTip.Tip="{x:Static locales:Locale.Search_Button}">
                     <PathIcon Data="{x:Static services:SearchIconProvider.DefaultSearchIcon}"
                               Foreground="#FFFFFF"
                               Width="14" Height="14"
@@ -175,7 +176,7 @@
         <!-- Section 2: Engine Grid Matrix (8 cards, 4 columns x 2 rows, perfectly symmetric) -->
         <Grid Grid.Row="2" RowDefinitions="Auto, *" Margin="0,0,0,8">
             <TextBlock Grid.Row="0"
-                       Text="搜索引擎直达"
+                       Text="{x:Static locales:Locale.Search_Quick_Engines}"
                        FontSize="11"
                        FontWeight="SemiBold"
                        Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"
@@ -223,7 +224,7 @@
               IsVisible="{Binding HasHistory}">
             <Grid Grid.Row="0" ColumnDefinitions="*, Auto" Margin="2,0,2,4">
                 <TextBlock Grid.Column="0"
-                           Text="最近搜索"
+                           Text="{x:Static locales:Locale.Search_History}"
                            FontSize="11"
                            FontWeight="SemiBold"
                            Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"/>
@@ -232,7 +233,7 @@
                         Classes="cat-pill"
                         Padding="4,1"
                         Click="OnClearAllHistoryClicked"
-                        ToolTip.Tip="清空所有历史">
+                        ToolTip.Tip="{x:Static locales:Locale.Search_Clear_History}">
                     <PathIcon Data="{x:Static services:SearchIconProvider.TrashIcon}"
                               Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"
                               Width="11" Height="11"/>

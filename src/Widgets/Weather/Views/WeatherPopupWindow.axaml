@@ -80,7 +80,7 @@
                     <!-- Hourly Forecast Strip (Row 1) -->
                     <Border Grid.Row="1" Background="#12808080" CornerRadius="14" Padding="10,8" Margin="0,0,0,10">
                         <StackPanel Spacing="6">
-                            <TextBlock Text="逐时预报 (24小时)" FontSize="11" FontWeight="SemiBold" Opacity="0.5" />
+                            <TextBlock Text="{x:Static locales:Locale.Weather_Popup_HourlyTitle}" FontSize="11" FontWeight="SemiBold" Opacity="0.5" />
                             <ScrollViewer x:Name="HourlyScroll" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Disabled">
                                 <ItemsControl x:Name="HourlyList">
                                     <ItemsControl.ItemTemplate>
@@ -110,7 +110,7 @@
                     <!-- 7-Day Forecast (Row 2) -->
                     <Border Grid.Row="2" Background="#12808080" CornerRadius="14" Padding="12,8" Margin="0,0,0,10">
                         <Grid RowDefinitions="Auto,*">
-                            <TextBlock Grid.Row="0" Text="未来 7 天天气预报" FontSize="11" FontWeight="SemiBold" Opacity="0.5" Margin="0,0,0,4" />
+                            <TextBlock Grid.Row="0" Text="{x:Static locales:Locale.Weather_Popup_DailyTitle}" FontSize="11" FontWeight="SemiBold" Opacity="0.5" Margin="0,0,0,4" />
                             <ScrollViewer Grid.Row="1">
                                 <ItemsControl x:Name="DailyList">
                                     <ItemsControl.ItemTemplate>
@@ -160,30 +160,30 @@
                         <!-- Air Quality (AQI) / UV Index -->
                         <Border Grid.Row="0" Grid.Column="0" Classes="metric-card" Margin="0,0,4,4">
                             <StackPanel Spacing="2">
-                                <TextBlock Text="紫外线指数 (UV)" FontSize="10" Opacity="0.5" FontWeight="SemiBold" />
+                                <TextBlock Text="{x:Static locales:Locale.Weather_Popup_UVHeader}" FontSize="10" Opacity="0.5" FontWeight="SemiBold" />
                                 <TextBlock x:Name="UVText" FontSize="16" FontWeight="Bold" />
-                                <TextBlock x:Name="UVLevelText" FontSize="10" Opacity="0.7" Text="全天适度" />
+                                <TextBlock x:Name="UVLevelText" FontSize="10" Opacity="0.7" Text="{x:Static locales:Locale.Weather_Popup_UVDefaultDesc}" />
                             </StackPanel>
                         </Border>
                         <Border Grid.Row="0" Grid.Column="1" Classes="metric-card" Margin="4,0,0,4">
                             <StackPanel Spacing="2">
-                                <TextBlock Text="大气压强 (Pressure)" FontSize="10" Opacity="0.5" FontWeight="SemiBold" />
+                                <TextBlock Text="{x:Static locales:Locale.Weather_Popup_PressureHeader}" FontSize="10" Opacity="0.5" FontWeight="SemiBold" />
                                 <TextBlock x:Name="PressureText" FontSize="16" FontWeight="Bold" />
-                                <TextBlock FontSize="10" Opacity="0.7" Text="标准大气压正常" />
+                                <TextBlock FontSize="10" Opacity="0.7" Text="{x:Static locales:Locale.Weather_Popup_PressureDesc}" />
                             </StackPanel>
                         </Border>
                         <Border Grid.Row="1" Grid.Column="0" Classes="metric-card" Margin="0,4,4,0">
                             <StackPanel Spacing="2">
-                                <TextBlock Text="日出与日落" FontSize="10" Opacity="0.5" FontWeight="SemiBold" />
+                                <TextBlock Text="{x:Static locales:Locale.Weather_Popup_SunHeader}" FontSize="10" Opacity="0.5" FontWeight="SemiBold" />
                                 <TextBlock x:Name="SunText" FontSize="16" FontWeight="Bold" />
-                                <TextBlock FontSize="10" Opacity="0.7" Text="晨曦与黄昏" />
+                                <TextBlock FontSize="10" Opacity="0.7" Text="{x:Static locales:Locale.Weather_Popup_SunDesc}" />
                             </StackPanel>
                         </Border>
                         <Border Grid.Row="1" Grid.Column="1" Classes="metric-card" Margin="4,4,0,0">
                             <StackPanel Spacing="2">
-                                <TextBlock Text="空气质量与体感" FontSize="10" Opacity="0.5" FontWeight="SemiBold" />
-                                <TextBlock x:Name="AqiText" FontSize="16" FontWeight="Bold" Text="优良 (AQI 32)" />
-                                <TextBlock FontSize="10" Opacity="0.7" Text="清新宜人" />
+                                <TextBlock Text="{x:Static locales:Locale.Weather_Popup_AqiHeader}" FontSize="10" Opacity="0.5" FontWeight="SemiBold" />
+                                <TextBlock x:Name="AqiText" FontSize="16" FontWeight="Bold" Text="{x:Static locales:Locale.Weather_Popup_AqiDefault}" />
+                                <TextBlock FontSize="10" Opacity="0.7" Text="{x:Static locales:Locale.Weather_Popup_AqiDesc}" />
                             </StackPanel>
                         </Border>
                     </Grid>

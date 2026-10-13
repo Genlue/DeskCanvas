@@ -13,7 +13,10 @@ public partial class General : UserControl
 {
     public General(IAppSettingsProvider appSettingsProvider, UpdateService? updateService = null)
     {
-        DataContext = new GeneralViewModel(appSettingsProvider, updateService);
+        var viewModel = new GeneralViewModel(appSettingsProvider, updateService);
+        DataContext = viewModel;
         InitializeComponent();
+        Loaded += (_, _) => viewModel.Attach();
+        Unloaded += (_, _) => viewModel.Dispose();
     }
 }

@@ -18,19 +18,69 @@ namespace DeskCanvas.ViewModels;
 
 public record UpdateIntervalOption(UpdateCheckInterval Value, string Label);
 
-public class GeneralViewModel : ReactiveObject
+public class GeneralViewModel : ReactiveObject, IDisposable
 {
     private readonly IAppSettingsProvider appSettingsProvider;
     private readonly UpdateService updateService;
+    private bool attached;
 
     public GeneralViewModel(IAppSettingsProvider appSettingsProvider, UpdateService? updateService = null)
     {
         this.appSettingsProvider = appSettingsProvider;
         this.updateService = updateService ?? new UpdateService(appSettingsProvider);
 
-        var lastCheck = appSettingsProvider.Get().LastUpdateCheckTime;
-        updateStatusText = lastCheck.HasValue
-            ? string.Format(Locale.Settings_General_Update_LastChecked, lastCheck.Value.ToLocalTime().ToString("yyyy-MM-dd HH:mm"))
+        updateStatusText = FormatStoredUpdateStatus(appSettingsProvider.Get());
+        connectivityStatusText = Locale.Settings_General_Update_Connectivity_Subtitle;
+
+        Attach();
+    }
+
+    /// <summary>
+    /// Subscribe to settings changes while the page is attached to the visual tree.
+    /// </summary>
+    public void Attach()
+    {
+        if (attached) return;
+        attached = true;
+        appSettingsProvider.DataChanged += OnAppSettingsDataChanged;
+        RefreshFromSettings(appSettingsProvider.Get());
+    }
+
+    /// <summary>
+    /// Unsubscribe when the page leaves the visual tree so a closed settings window retains no page subscribers.
+    /// </summary>
+    public void Dispose()
+    {
+        if (!attached) return;
+        attached = false;
+        appSettingsProvider.DataChanged -= OnAppSettingsDataChanged;
+    }
+
+    private void OnAppSettingsDataChanged(object? sender, AppSettings? oldData, AppSettings newData)
+    {
+        Dispatcher.UIThread.Post(() => RefreshFromSettings(newData), DispatcherPriority.Background);
+    }
+
+    private void RefreshFromSettings(AppSettings settings)
+    {
+        this.RaisePropertyChanged(nameof(SelectedUpdateInterval));
+        this.RaisePropertyChanged(nameof(AutoDetectProxy));
+        this.RaisePropertyChanged(nameof(AutoProxySubtitle));
+        if (!IsCheckingUpdates)
+        {
+            UpdateStatusText = FormatStoredUpdateStatus(settings);
+        }
+    }
+
+    private static string FormatStoredUpdateStatus(AppSettings settings)
+    {
+        if (!string.IsNullOrWhiteSpace(settings.LastUpdateCheckStatus))
+        {
+            return settings.LastUpdateCheckStatus;
+        }
+
+        return settings.LastUpdateCheckTime.HasValue
+            ? string.Format(Locale.Settings_General_Update_LastChecked, settings.LastUpdateCheckTime.Value.ToLocalTime().ToString("yyyy-MM-dd HH:mm"))
             : "";
     }
 
@@ -89,6 +139,81 @@ public class GeneralViewModel : ReactiveObject
         }
     }
 
+    /// <summary>
+    /// Synchronized with <see cref="AppSettings.HttpProxy"/>: <c>true</c> sets mode to <c>"auto"</c>,
+    /// <c>false</c> sets mode to <c>"direct"</c>.
+    /// </summary>
+    public bool AutoDetectProxy
+    {
+        get => ProxySettings.GetMode(appSettingsProvider.Get().HttpProxy) == ProxyModeKind.Auto;
+        set
+        {
+            var settings = appSettingsProvider.Get();
+            var currentIsAuto = ProxySettings.GetMode(settings.HttpProxy) == ProxyModeKind.Auto;
+            if (currentIsAuto == value) return;
+
+            var nextProxy = value ? "auto" : "direct";
+            appSettingsProvider.Save(settings with { HttpProxy = nextProxy });
+            this.RaisePropertyChanged(nameof(AutoDetectProxy));
+            this.RaisePropertyChanged(nameof(AutoProxySubtitle));
+        }
+    }
+
+    public string AutoProxySubtitle
+    {
+        get
+        {
+            var raw = appSettingsProvider.Get().HttpProxy;
+            return ProxySettings.GetMode(raw) switch
+            {
+                ProxyModeKind.Auto => Locale.Settings_General_Update_AutoProxy_Subtitle_On,
+                ProxyModeKind.Direct => Locale.Settings_General_Update_AutoProxy_Subtitle_Direct,
+                ProxyModeKind.System => Locale.Settings_General_Update_AutoProxy_Subtitle_System,
+                ProxyModeKind.Custom => string.Format(Locale.Settings_General_Update_AutoProxy_Subtitle_Custom, raw),
+                _ => Locale.Settings_General_Update_AutoProxy_Subtitle_On
+            };
+        }
+    }
+
+    private bool isTestingConnectivity;
+    public bool IsTestingConnectivity
+    {
+        get => isTestingConnectivity;
+        set => this.RaiseAndSetIfChanged(ref isTestingConnectivity, value);
+    }
+
+    private string connectivityStatusText;
+    public string ConnectivityStatusText
+    {
+        get => connectivityStatusText;
+        set => this.RaiseAndSetIfChanged(ref connectivityStatusText, value);
+    }
+
+    public async Task TestGitHubConnectivity()
+    {
+        if (IsTestingConnectivity) return;
+        IsTestingConnectivity = true;
+        ConnectivityStatusText = Locale.Settings_General_Update_Connectivity_Testing;
+
+        try
+        {
+            var result = await updateService.TestGitHubConnectivityAsync();
+            ConnectivityStatusText = result.Summary;
+        }
+        catch (Exception ex)
+        {
+            ConnectivityStatusText = string.Format(
+                Locale.Settings_General_Update_Connectivity_Failed,
+                ex.Message,
+                0,
+                Locale.Settings_General_Update_Route_Direct);
+        }
+        finally
+        {
+            IsTestingConnectivity = false;
+        }
+    }
+
     private bool isCheckingUpdates;
     public bool IsCheckingUpdates
     {
@@ -112,9 +237,13 @@ public class GeneralViewModel : ReactiveObject
         try
         {
             var (info, result) = await updateService.CheckForUpdatesDetailedAsync(isManual: true);
+            var storedStatus = FormatStoredUpdateStatus(appSettingsProvider.Get());
+
             if (result == UpdateCheckResult.UpdateAvailable && info != null)
             {
-                UpdateStatusText = string.Format(Locale.Settings_General_Update_FoundNew, info.Version);
+                UpdateStatusText = !string.IsNullOrWhiteSpace(storedStatus)
+                    ? storedStatus
+                    : string.Format(Locale.Settings_General_Update_FoundNew, info.Version);
                 Dispatcher.UIThread.Post(() =>
                 {
                     new UpdatePopup(info, updateService).Show();
@@ -123,11 +252,15 @@ public class GeneralViewModel : ReactiveObject
             else if (result == UpdateCheckResult.UpToDate)
             {
                 var curVer = Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "latest";
-                UpdateStatusText = string.Format(Locale.Settings_General_Update_AlreadyLatest, curVer);
+                UpdateStatusText = !string.IsNullOrWhiteSpace(storedStatus)
+                    ? storedStatus
+                    : string.Format(Locale.Settings_General_Update_AlreadyLatest, curVer);
             }
             else
             {
-                UpdateStatusText = Locale.Settings_General_Update_CheckFailed;
+                UpdateStatusText = !string.IsNullOrWhiteSpace(storedStatus)
+                    ? storedStatus
+                    : Locale.Settings_General_Update_CheckFailed;
             }
         }
         catch

@@ -106,6 +106,9 @@ public record LiquidGlassSettings(
     /// </summary>
     public const int MinLiveSamplingInterval = 3;
 
+    /// <summary>Default live sampling state (<c>false</c> = static wallpaper mode).</summary>
+    public const bool DefaultLiveSampling = false;
+
     /// <summary>
     /// Default live sampling interval: 5 ms — with the demand-driven sampler this reads as
     /// "as fast as this machine can go". The static material (the <c>LiveSampling</c> default)

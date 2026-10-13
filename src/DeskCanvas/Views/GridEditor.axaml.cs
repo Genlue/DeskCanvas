@@ -64,6 +64,12 @@ public partial class GridEditor : Window
         XInput.ValueChanged += OnPositionInputChanged;
         YInput.ValueChanged += OnPositionInputChanged;
 
+        var isZh = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName.Equals("zh", StringComparison.OrdinalIgnoreCase);
+        ColumnsLabel.Text = Locale.Settings_Advanced_GridColumns_Title;
+        RowsLabel.Text = Locale.Settings_Advanced_GridRows_Title;
+        CellLabel.Text = $"{Locale.Settings_Advanced_GridCellSize_Title} (%)";
+        XLabel.Text = isZh ? "X 位置 (%)" : "X Position (%)";
+        YLabel.Text = isZh ? "Y 位置 (%)" : "Y Position (%)";
         HintText.Text = Locale.Settings_Advanced_GridEditorHint;
         SaveButton.Content = Locale.Settings_Advanced_GridEditorSave;
         // The dismiss button used to be left without content, so it rendered as a blank chip.

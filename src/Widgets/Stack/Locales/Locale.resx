@@ -45,4 +45,38 @@
     <data name="Setting_Auto_Hide_Dots" xml:space="preserve">
         <value>Hide Dots While Idle (Shown When Switching Or Hovering)</value>
     </data>
+    <data name="StackWidgets" xml:space="preserve">
+        <value>Widget Stack</value>
+    </data>
+    <data name="EmptyCard_Title" xml:space="preserve">
+        <value>Empty Stack Card</value>
+    </data>
+    <data name="EmptyCard_Hint" xml:space="preserve">
+        <value>Right-click &amp; Edit to add widgets</value>
+    </data>
+    <data name="Setting_DropZone_Title" xml:space="preserve">
+        <value>📥 Drag Desktop Widgets Here</value>
+    </data>
+    <data name="Setting_DropZone_Desc" xml:space="preserve">
+        <value>Drag any widget on the desktop and drop it into this window to add it to the stack</value>
+    </data>
+    <data name="Setting_Stacked_List_Title" xml:space="preserve">
+        <value>Stacked Widgets (configure, reorder, or move back to desktop)</value>
+    </data>
+    <data name="Setting_Stacked_Empty_Hint" xml:space="preserve">
+        <value>No widgets stacked yet (shown as an empty card on the desktop).
+Drag widgets from the desktop into the drop zone above, or select and add one below.</value>
+    </data>
+    <data name="Setting_Extract_To_Desktop" xml:space="preserve">
+        <value>↖ To Desktop</value>
+    </data>
+    <data name="Setting_Extract_To_Desktop_Tip" xml:space="preserve">
+        <value>Remove this widget from the stack and restore it to the desktop</value>
+    </data>
+    <data name="Setting_Edit_Child" xml:space="preserve">
+        <value>⚙ Settings</value>
+    </data>
+    <data name="Setting_Edit_Child_Tip" xml:space="preserve">
+        <value>Configure this widget</value>
+    </data>
 </root>

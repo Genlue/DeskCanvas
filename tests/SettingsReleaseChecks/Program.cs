@@ -92,6 +92,7 @@ internal static class Program
 
         CheckTrimmerPriority();
         CheckSettingsWindowRelease();
+        CheckProxyAndUpdateDiagnostics();
 
         Console.WriteLine();
         Console.WriteLine(failures == 0 ? "ALL SETTINGS RELEASE CHECKS PASSED" : $"{failures} CHECK(S) FAILED");
@@ -231,6 +232,68 @@ internal static class Program
         Check(ProbePreview.Disposals == 1, "the rebuilt preview is a fresh control, not the disposed one");
         Check(settingsStore.DataChangedSubscribers == floorSettings && layoutStore.DataChangedSubscribers == floorLayout,
             $"the reopened gallery adds no subscriptions (settings {settingsStore.DataChangedSubscribers}/{floorSettings}, layout {layoutStore.DataChangedSubscribers}/{floorLayout})");
+
+        window.Close();
+        Dispatcher.UIThread.RunJobs();
+    }
+
+    // ---- 3. Proxy auto-detection, General/Advanced sync, and update status persistence ----
+
+    private static void CheckProxyAndUpdateDiagnostics()
+    {
+        Console.WriteLine("--- proxy auto-detect, General/Advanced sync & update status persistence ---");
+
+        Check(DeskCanvas.Core.Services.ProxySettings.GetMode(null) == DeskCanvas.Core.Services.ProxyModeKind.Auto &&
+              DeskCanvas.Core.Services.ProxySettings.GetMode("") == DeskCanvas.Core.Services.ProxyModeKind.Auto &&
+              DeskCanvas.Core.Services.ProxySettings.GetMode("auto") == DeskCanvas.Core.Services.ProxyModeKind.Auto,
+            "null, empty and 'auto' all resolve to ProxyModeKind.Auto");
+        Check(DeskCanvas.Core.Services.ProxySettings.GetMode("direct") == DeskCanvas.Core.Services.ProxyModeKind.Direct,
+            "'direct' resolves to ProxyModeKind.Direct");
+        Check(DeskCanvas.Core.Services.ProxySettings.GetMode("system") == DeskCanvas.Core.Services.ProxyModeKind.System,
+            "'system' resolves to ProxyModeKind.System");
+        Check(DeskCanvas.Core.Services.ProxySettings.GetMode("http://127.0.0.1:7890") == DeskCanvas.Core.Services.ProxyModeKind.Custom,
+            "custom URL resolves to ProxyModeKind.Custom");
+
+        Check(DeskCanvas.Core.Services.ProxySettings.ParseWindowsProxyServer("127.0.0.1:7890") == "http://127.0.0.1:7890",
+            "ParseWindowsProxyServer normalizes bare host:port");
+        Check(DeskCanvas.Core.Services.ProxySettings.ParseWindowsProxyServer("http=127.0.0.1:7890;https=127.0.0.1:7897") == "http://127.0.0.1:7897",
+            "ParseWindowsProxyServer prefers https= entry in protocol list");
+
+        var settingsStore = new SettingsStore(DefaultSettings());
+        var layoutStore = new LayoutStore();
+        var monitor = new DisplayMonitorService(layoutStore);
+        var updateService = new UpdateService(settingsStore);
+
+        using var generalVm = new GeneralViewModel(settingsStore, updateService);
+        using var advancedVm = new AdvancedViewModel(settingsStore, layoutStore, monitor);
+
+        Check(generalVm.AutoDetectProxy, "GeneralViewModel.AutoDetectProxy is enabled by default");
+        Check(advancedVm.ProxyMode.Value == "auto", "AdvancedViewModel.ProxyMode defaults to 'auto'");
+
+        generalVm.AutoDetectProxy = false;
+        Dispatcher.UIThread.RunJobs();
+        Check(settingsStore.Get().HttpProxy == "direct", "toggling AutoDetectProxy off saves 'direct'");
+        Check(advancedVm.ProxyMode.Value == "direct", "AdvancedViewModel.ProxyMode reflects 'direct'");
+
+        advancedVm.ProxyMode = advancedVm.ProxyOptions.First(o => o.Value == "auto");
+        Dispatcher.UIThread.RunJobs();
+        Check(generalVm.AutoDetectProxy, "switching AdvancedViewModel.ProxyMode back to 'auto' updates GeneralViewModel.AutoDetectProxy");
+
+        // Test failed update check persistence (unreachable local port in direct mode)
+        settingsStore.Save(settingsStore.Get() with
+        {
+            HttpProxy = "direct",
+            UpdateUrl = "http://127.0.0.1:1/repos/test/test/releases/latest"
+        });
+        var (failInfo, failResult) = updateService.CheckForUpdatesDetailedAsync(isManual: false).GetAwaiter().GetResult();
+        Check(failInfo == null && failResult == UpdateCheckResult.Failed, "unreachable endpoint returns UpdateCheckResult.Failed");
+        Check(settingsStore.Get().LastUpdateCheckTime != null &&
+              !string.IsNullOrWhiteSpace(settingsStore.Get().LastUpdateCheckStatus),
+            $"failed automatic check records timestamp and failure reason ({settingsStore.Get().LastUpdateCheckStatus})");
+
+        var connFail = updateService.TestGitHubConnectivityAsync().GetAwaiter().GetResult();
+        Check(!connFail.Success && !string.IsNullOrWhiteSpace(connFail.Summary),
+            $"connectivity test against unreachable endpoint reports failure ({connFail.Summary})");
     }
 
     // ---- rig ----

@@ -167,9 +167,12 @@ public partial class TranslatorPopupWindow : SecondaryPanelWindow
         EngineCombo.SelectedItem = TranslatorView.Engines.FirstOrDefault(e => e.Code.Equals(engine, StringComparison.OrdinalIgnoreCase)) ?? TranslatorView.Engines[0];
     }
 
+    private static bool IsZh => System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName.Equals("zh", StringComparison.OrdinalIgnoreCase);
+
     private void UpdateCharCount()
     {
-        CharCountText.Text = $"{(InputBox.Text ?? string.Empty).Length} 字符";
+        var len = (InputBox.Text ?? string.Empty).Length;
+        CharCountText.Text = IsZh ? $"{len} 字符" : $"{len} chars";
     }
 
     private void OnInputTextChanged(object? sender, TextChangedEventArgs e)
@@ -263,7 +266,7 @@ public partial class TranslatorPopupWindow : SecondaryPanelWindow
         var token = requestCts.Token;
 
         TranslateButton.IsEnabled = false;
-        StatusText.Text = "请求中...";
+        StatusText.Text = IsZh ? "请求中..." : "Requesting...";
 
         try
         {
@@ -272,7 +275,7 @@ public partial class TranslatorPopupWindow : SecondaryPanelWindow
             if (!token.IsCancellationRequested)
             {
                 OutputBox.Text = result;
-                StatusText.Text = $"完成 ({engine})";
+                StatusText.Text = IsZh ? $"完成 ({engine})" : $"Done ({engine})";
                 ownerView?.ApplyPanelResult(InputBox.Text ?? string.Empty, result);
             }
         }
@@ -284,8 +287,8 @@ public partial class TranslatorPopupWindow : SecondaryPanelWindow
         {
             if (!token.IsCancellationRequested)
             {
-                StatusText.Text = "翻译失败";
-                OutputBox.Text = $"[错误] {ex.Message}";
+                StatusText.Text = IsZh ? "翻译失败" : "Translation failed";
+                OutputBox.Text = IsZh ? $"[错误] {ex.Message}" : $"[Error] {ex.Message}";
             }
         }
         finally
@@ -309,7 +312,7 @@ public partial class TranslatorPopupWindow : SecondaryPanelWindow
         if (!string.IsNullOrWhiteSpace(text))
         {
             ClipboardNative.SetText(text);
-            StatusText.Text = "已复制原文";
+            StatusText.Text = IsZh ? "已复制原文" : "Source text copied";
         }
     }
 
@@ -319,7 +322,7 @@ public partial class TranslatorPopupWindow : SecondaryPanelWindow
         if (!string.IsNullOrWhiteSpace(result))
         {
             ClipboardNative.SetText(result);
-            StatusText.Text = "已复制译文";
+            StatusText.Text = IsZh ? "已复制译文" : "Translation copied";
         }
     }
 

@@ -33,10 +33,10 @@ namespace ControlCenter.Locales
             set => resourceCulture = value;
         }
 
-        public static string ControlCenter => ResourceManager.GetString("ControlCenter", resourceCulture) ?? "控制中心";
-        public static string ControlCenter_Title => ResourceManager.GetString("ControlCenter_Title", resourceCulture) ?? "控制中心";
-        public static string ControlCenter_Subtitle => ResourceManager.GetString("ControlCenter_Subtitle", resourceCulture) ?? "自由拼装的系统控制面板：亮度、音量、音频输出、网络、蓝牙、深浅色与桌面图标一键调控";
-        public static string SingleControl_Title => ResourceManager.GetString("SingleControl_Title", resourceCulture) ?? "快捷控制磁贴";
-        public static string SingleControl_Subtitle => ResourceManager.GetString("SingleControl_Subtitle", resourceCulture) ?? "独立放置的单项系统开关或音量/亮度滑块磁贴";
+        public static string ControlCenter => ResourceManager.GetString("ControlCenter", resourceCulture) ?? "Control Center";
+        public static string ControlCenter_Title => ResourceManager.GetString("ControlCenter_Title", resourceCulture) ?? "Control Center";
+        public static string ControlCenter_Subtitle => ResourceManager.GetString("ControlCenter_Subtitle", resourceCulture) ?? "Customizable system control panel: brightness, volume, audio output, Wi-Fi, Bluetooth, theme & desktop icons";
+        public static string SingleControl_Title => ResourceManager.GetString("SingleControl_Title", resourceCulture) ?? "Quick Control Tile";
+        public static string SingleControl_Subtitle => ResourceManager.GetString("SingleControl_Subtitle", resourceCulture) ?? "Standalone system toggle or volume/brightness slider tile";
     }
 }

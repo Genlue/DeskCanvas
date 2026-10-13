@@ -6,10 +6,11 @@ using Clock.Views.Settings;
 using DeskCanvas.Core.Models.Attributes;
 
 [assembly: AssemblyCompany("creewick")]
-[assembly: AssemblyVersion("1.6.0")]
+[assembly: AssemblyVersion("1.7.0")]
 
 [assembly: WidgetInfo(typeof(AnalogI), typeof(ClockModel), typeof(AnalogClockSettings), "Clock_AnalogI_Title", "Clock_Analog_Subtitle")]
 [assembly: WidgetInfo(typeof(AnalogIII), typeof(ClockModel), typeof(AnalogClockSettings), "Clock_AnalogIII_Title", "Clock_Analog_Subtitle")]
+[assembly: WidgetInfo(typeof(AnalogIV), typeof(ClockModel), typeof(AnalogClockSettings), "Clock_AnalogIV_Title", "Clock_Analog_Subtitle")]
 [assembly: WidgetInfo(typeof(Digital), typeof(ClockModel), typeof(DigitalClockSettings), "Clock_Digital_Title", "Clock_Analog_Subtitle", defaultColumns: 4, defaultRows: 2, presetSpans: "2x1,4x2")]
 [assembly: WidgetInfo(typeof(FlipClock), typeof(FlipClockModel), typeof(FlipClockSettings), "Clock_Flip_Title", "Clock_Flip_Subtitle", defaultColumns: 4, defaultRows: 2)]
 [assembly: WidgetInfo(typeof(FramelessDigital), typeof(FramelessClockModel), typeof(FramelessClockSettings), "Clock_FramelessDigital_Title", "Clock_FramelessDigital_Subtitle", defaultColumns: 4, defaultRows: 2)]

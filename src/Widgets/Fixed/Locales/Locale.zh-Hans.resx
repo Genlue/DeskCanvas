@@ -15,6 +15,9 @@
     <resheader name="writer">
         <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
     </resheader>
+    <data name="FixedWidgets" xml:space="preserve">
+        <value>全景聚合</value>
+    </data>
     <data name="Fixed_Aggregate_Title" xml:space="preserve">
         <value>聚合信息</value>
     </data>
@@ -26,6 +29,21 @@
     </data>
     <data name="Setting_CustomCity" xml:space="preserve">
         <value>自定义城市名称</value>
+    </data>
+    <data name="Setting_SearchWatermark" xml:space="preserve">
+        <value>搜索城市 (中/英文)...</value>
+    </data>
+    <data name="Setting_CoordFormat" xml:space="preserve">
+        <value>当前坐标: {0:F2}°, {1:F2}°</value>
+    </data>
+    <data name="Setting_CityMatchedFormat" xml:space="preserve">
+        <value>已识别: {0}</value>
+    </data>
+    <data name="Setting_CitySearching" xml:space="preserve">
+        <value>正在从天气源识别...</value>
+    </data>
+    <data name="Setting_CityNotFound" xml:space="preserve">
+        <value>未在天气源检索到该城市</value>
     </data>
     <data name="Setting_TempUnit" xml:space="preserve">
         <value>温度单位</value>

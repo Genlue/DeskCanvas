@@ -257,6 +257,19 @@ public abstract class SecondaryPanelWindow : Window
         return true;
     }
 
+    /// <summary>
+    /// Drop a panel whose construction failed before it was ever shown. The active-panel map is how
+    /// a later open of the same type decides between "toggle" and "create", and a window that never
+    /// loaded never fires Closed — without this the failed instance would block the next open as if
+    /// a live panel existed.
+    /// </summary>
+    protected static void AbandonPanel(SecondaryPanelWindow panel)
+    {
+        var type = panel.GetType();
+        if (ActivePanels.TryGetValue(type, out var current) && ReferenceEquals(current, panel))
+            ActivePanels.Remove(type);
+    }
+
     private void OnPanelWindowLoaded(object? sender, RoutedEventArgs e)
     {
         panelLoaded = true;

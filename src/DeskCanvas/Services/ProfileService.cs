@@ -438,7 +438,11 @@ public class ProfileService
         var backup = BackupService.Parse(json);
 
         var baseName = Path.GetFileNameWithoutExtension(sourceFilePath);
-        if (string.IsNullOrWhiteSpace(baseName)) baseName = "导入配置";
+        if (string.IsNullOrWhiteSpace(baseName))
+        {
+            var isZh = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName.Equals("zh", StringComparison.OrdinalIgnoreCase);
+            baseName = isZh ? "导入配置" : "Imported Profile";
+        }
 
         baseName = SanitizeProfileName(baseName);
         var targetName = baseName;

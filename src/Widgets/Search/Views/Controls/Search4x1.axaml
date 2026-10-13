@@ -4,6 +4,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="using:Search.ViewModels"
              xmlns:services="using:Search.Services"
+             xmlns:locales="clr-namespace:Search.Locales"
              mc:Ignorable="d" d:DesignWidth="312" d:DesignHeight="72"
              x:Class="Search.Views.Controls.Search4x1"
              x:DataType="vm:SearchViewModel">
@@ -52,7 +53,7 @@
                 Padding="10,0"
                 VerticalAlignment="Center"
                 Click="OnEngineSelectorClicked"
-                ToolTip.Tip="点击切换搜索引擎">
+                ToolTip.Tip="{x:Static locales:Locale.Search_Switch_Engine_Tooltip}">
             <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Spacing="7">
                 <PathIcon Data="{Binding EngineIconPath}"
                           Foreground="{Binding EngineColor}"
@@ -98,7 +99,7 @@
                 VerticalAlignment="Center"
                 IsVisible="{Binding HasQuery}"
                 Click="OnClearClicked"
-                ToolTip.Tip="清空">
+                ToolTip.Tip="{x:Static locales:Locale.Search_Clear}">
             <PathIcon Data="{x:Static services:SearchIconProvider.ClearIcon}"
                       Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"
                       Width="12" Height="12"
@@ -115,7 +116,7 @@
                 VerticalAlignment="Center"
                 Background="{Binding EngineColor}"
                 Click="OnSearchActionClicked"
-                ToolTip.Tip="搜索">
+                ToolTip.Tip="{x:Static locales:Locale.Search_Button}">
             <PathIcon Data="{x:Static services:SearchIconProvider.DefaultSearchIcon}"
                       Foreground="#FFFFFF"
                       Width="16" Height="16"

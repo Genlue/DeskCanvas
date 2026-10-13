@@ -28,7 +28,7 @@
     <ScrollViewer VerticalScrollBarVisibility="Auto">
         <StackPanel Orientation="Vertical" Spacing="6" Margin="0,0,10,12">
             <!-- 选项设置 -->
-            <TextBlock Classes="group-header" Text="显示选项" Margin="0,4,0,4" />
+            <TextBlock Name="DisplayOptionsHeader" Classes="group-header" Text="显示选项" Margin="0,4,0,4" />
 
             <!-- 显示蓝牙外设电量 -->
             <controls:Setting Title="{x:Static locales:Locale.Batteries_ShowPeripherals}">
@@ -47,8 +47,8 @@
 
             <!-- 设备详情 Header with Refresh Button -->
             <Grid Margin="0,14,0,2">
-                <TextBlock Classes="group-header" Text="设备详情" VerticalAlignment="Center" Margin="0" />
-                <Button Classes="action-btn" Content="刷新设备" HorizontalAlignment="Right"
+                <TextBlock Name="DeviceDetailsHeader" Classes="group-header" Text="设备详情" VerticalAlignment="Center" Margin="0" />
+                <Button Name="RefreshDevicesBtn" Classes="action-btn" Content="刷新设备" HorizontalAlignment="Right"
                         Click="OnRefreshDevicesClicked" />
             </Grid>
 
@@ -63,7 +63,7 @@
                               Data="M20 18c1.1 0 1.99-.9 1.99-2L22 6c0-1.1-.9-2-2-2H4c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2H0v2h24v-2h-4zM4 6h16v10H4V6z" />
                     <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,10,0">
                         <TextBlock Name="MainDeviceTitle" FontSize="13" FontWeight="Medium"
-                                   Text="电脑供电"
+                                   Text="{x:Static locales:Locale.Batteries_AcPower}"
                                    Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}" />
                         <TextBlock Name="MainDeviceSubtitle" FontSize="11" Opacity="0.7" Margin="0,3,0,0"
                                    Text="正在使用电池 · 剩余 99%"
@@ -87,18 +87,18 @@
                     Background="{DynamicResource SystemControlBackgroundAltHighBrush}"
                     IsVisible="False">
                 <StackPanel Orientation="Vertical" HorizontalAlignment="Center" Spacing="4">
-                    <TextBlock Text="未检测到已连接的蓝牙外设电量" FontSize="12" Opacity="0.8"
+                    <TextBlock Name="NoPeripheralsTitle" Text="未检测到已连接的蓝牙外设电量" FontSize="12" Opacity="0.8"
                                HorizontalAlignment="Center"
                                Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}" />
-                    <TextBlock Text="支持低功耗蓝牙 (BLE) 及音频外设电量协议的耳机、手柄、鼠标或键盘等设备" FontSize="11" Opacity="0.5"
+                    <TextBlock Name="NoPeripheralsSubtitle" Text="支持低功耗蓝牙 (BLE) 及音频外设电量协议的耳机、手柄、鼠标或键盘等设备" FontSize="11" Opacity="0.5"
                                HorizontalAlignment="Center"
                                Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}" />
                 </StackPanel>
             </Border>
 
             <!-- 已配对蓝牙设备与类型记忆 -->
-            <TextBlock Classes="group-header" Text="蓝牙设备管理与类型记忆" Margin="0,14,0,2" />
-            <TextBlock Text="支持手动指定设备类型（鼠标/手柄/耳机等）。设置后将自动保存，下次连接时将自动识别。"
+            <TextBlock Name="PairedDevicesHeader" Classes="group-header" Text="蓝牙设备管理与类型记忆" Margin="0,14,0,2" />
+            <TextBlock Name="PairedDevicesHint" Text="支持手动指定设备类型（鼠标/手柄/耳机等）。设置后将自动保存，下次连接时将自动识别。"
                        FontSize="11" Opacity="0.6" Margin="0,0,0,6" TextWrapping="Wrap"
                        Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}" />
             <StackPanel Name="PairedDevicesPanel" Orientation="Vertical" Spacing="6" />

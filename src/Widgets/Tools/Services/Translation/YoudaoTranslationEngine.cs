@@ -63,18 +63,20 @@ public class YoudaoTranslationEngine : ITranslationEngine
 
         var html = await response.Content.ReadAsStringSafeAsync(cancellationToken);
 
+        bool isZh = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName.Equals("zh", StringComparison.OrdinalIgnoreCase);
+
         // Extract <ul id="translateResult">...<li>result</li>...</ul>
         var match = Regex.Match(html, @"<ul\s+id=[""']translateResult[""'][^>]*>([\s\S]*?)</ul>", RegexOptions.IgnoreCase);
         if (!match.Success)
         {
-            throw new InvalidOperationException("未找到翻译结果");
+            throw new InvalidOperationException(isZh ? "未找到翻译结果" : "Translation result not found");
         }
 
         var listContent = match.Groups[1].Value;
         var liMatches = Regex.Matches(listContent, @"<li>([\s\S]*?)</li>", RegexOptions.IgnoreCase);
         if (liMatches.Count == 0)
         {
-            throw new InvalidOperationException("未找到翻译文本");
+            throw new InvalidOperationException(isZh ? "未找到翻译文本" : "Translated text not found");
         }
 
         var sb = new StringBuilder();

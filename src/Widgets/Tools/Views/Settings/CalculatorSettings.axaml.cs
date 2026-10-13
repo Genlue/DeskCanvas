@@ -14,36 +14,38 @@ namespace Tools.Views.Settings;
 
 public partial class CalculatorSettings : UserControl
 {
-    private record IntOption(string Label, int Value)
+    private static bool IsZh => System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName.Equals("zh", StringComparison.OrdinalIgnoreCase);
+
+    private record IntOption(string ZhLabel, string EnLabel, int Value)
     {
-        public override string ToString() => Label;
+        public override string ToString() => IsZh ? ZhLabel : EnLabel;
     }
 
-    private record StrOption(string Label, string Code)
+    private record StrOption(string ZhLabel, string EnLabel, string Code)
     {
-        public override string ToString() => Label;
+        public override string ToString() => IsZh ? ZhLabel : EnLabel;
     }
 
     private static readonly List<IntOption> DecimalOptions =
     [
-        new("2 位小数", 2),
-        new("4 位小数", 4),
-        new("6 位小数 (默认)", 6),
-        new("8 位小数", 8),
-        new("10 位小数", 10),
+        new("2 位小数", "2 decimal places", 2),
+        new("4 位小数", "4 decimal places", 4),
+        new("6 位小数 (默认)", "6 decimal places (Default)", 6),
+        new("8 位小数", "8 decimal places", 8),
+        new("10 位小数", "10 decimal places", 10),
     ];
 
     private static readonly List<StrOption> AngleOptions =
     [
-        new("角度制 (DEG)", "DEG"),
-        new("弧度制 (RAD)", "RAD"),
+        new("角度制 (DEG)", "Degrees (DEG)", "DEG"),
+        new("弧度制 (RAD)", "Radians (RAD)", "RAD"),
     ];
 
     private static readonly List<StrOption> TabOptions =
     [
-        new("科学计算 (Scientific)", "Scientific"),
-        new("程序员 (Programmer)", "Programmer"),
-        new("单位换算 (Converter)", "Converter"),
+        new("科学计算 (Scientific)", "Scientific", "Scientific"),
+        new("程序员 (Programmer)", "Programmer", "Programmer"),
+        new("单位换算 (Converter)", "Unit Converter", "Converter"),
     ];
 
     private readonly IWidgetLayoutProvider? widgetLayoutProvider;

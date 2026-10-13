@@ -85,6 +85,9 @@ public class ProfilesViewModel : ReactiveObject
 
     private void OnServiceChanged(object? sender, EventArgs e) => Refresh();
 
+    private static bool IsZh => System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName.Equals(
+        "zh", StringComparison.OrdinalIgnoreCase);
+
     public void Refresh()
     {
         ActiveProfileName = profileService.GetActiveProfile();
@@ -101,7 +104,8 @@ public class ProfilesViewModel : ReactiveObject
                 var p = profileService.GetProfilePath(name);
                 if (File.Exists(p))
                 {
-                    modStr = File.GetLastWriteTime(p).ToString("yyyy-MM-dd HH:mm");
+                    var dt = File.GetLastWriteTime(p).ToString("yyyy-MM-dd HH:mm");
+                    modStr = IsZh ? $"修改时间：{dt}" : $"Modified: {dt}";
                 }
             }
             catch { }
@@ -120,18 +124,18 @@ public class ProfilesViewModel : ReactiveObject
     {
         var newName = await InputDialog.PromptAsync(
             owner,
-            Locale.Profiles_New_Title ?? "新建配置方案",
-            Locale.Profiles_New_Prompt ?? "请输入新方案名称：",
-            "新方案",
+            Locale.Profiles_New_Title ?? (IsZh ? "新建配置方案" : "Create Profile"),
+            Locale.Profiles_New_Prompt ?? (IsZh ? "请输入新方案名称：" : "Enter profile name:"),
+            Locale.Profiles_New ?? (IsZh ? "新方案" : "New Profile"),
             name =>
             {
                 if (string.IsNullOrWhiteSpace(name))
-                    return Locale.Profiles_NameInvalid ?? "方案名称不能为空";
+                    return Locale.Profiles_NameInvalid ?? (IsZh ? "方案名称不能为空" : "Profile name cannot be empty");
                 var invalid = Path.GetInvalidFileNameChars();
                 if (name.Any(c => invalid.Contains(c)))
-                    return Locale.Profiles_NameInvalid ?? "方案名称包含非法字符";
+                    return Locale.Profiles_NameInvalid ?? (IsZh ? "方案名称包含非法字符" : "Profile name contains invalid characters");
                 if (profileService.GetProfiles().Any(p => string.Equals(p, name.Trim(), StringComparison.OrdinalIgnoreCase)))
-                    return Locale.Profiles_NameExists ?? "该方案名称已存在";
+                    return Locale.Profiles_NameExists ?? (IsZh ? "该方案名称已存在" : "Profile name already exists");
                 return null;
             });
 
@@ -151,19 +155,19 @@ public class ProfilesViewModel : ReactiveObject
 
         var newName = await InputDialog.PromptAsync(
             owner,
-            Locale.Profiles_Rename_Title ?? "重命名配置方案",
-            Locale.Profiles_Rename_Prompt ?? "请输入新名称：",
+            Locale.Profiles_Rename_Title ?? (IsZh ? "重命名配置方案" : "Rename Profile"),
+            Locale.Profiles_Rename_Prompt ?? (IsZh ? "请输入新名称：" : "Enter new name:"),
             item.Name,
             name =>
             {
                 if (string.IsNullOrWhiteSpace(name))
-                    return Locale.Profiles_NameInvalid ?? "方案名称不能为空";
+                    return Locale.Profiles_NameInvalid ?? (IsZh ? "方案名称不能为空" : "Profile name cannot be empty");
                 var invalid = Path.GetInvalidFileNameChars();
                 if (name.Any(c => invalid.Contains(c)))
-                    return Locale.Profiles_NameInvalid ?? "方案名称包含非法字符";
+                    return Locale.Profiles_NameInvalid ?? (IsZh ? "方案名称包含非法字符" : "Profile name contains invalid characters");
                 if (!string.Equals(name.Trim(), item.Name, StringComparison.OrdinalIgnoreCase) &&
                     profileService.GetProfiles().Any(p => string.Equals(p, name.Trim(), StringComparison.OrdinalIgnoreCase)))
-                    return Locale.Profiles_NameExists ?? "该方案名称已存在";
+                    return Locale.Profiles_NameExists ?? (IsZh ? "该方案名称已存在" : "Profile name already exists");
                 return null;
             });
 
@@ -178,14 +182,14 @@ public class ProfilesViewModel : ReactiveObject
         if (item == null || item.IsActive || Profiles.Count <= 1) return;
 
         var confirmMsg = string.Format(
-            Locale.Profiles_Delete_Confirm ?? "确定要删除配置方案“{0}”吗？此操作无法撤销。",
+            Locale.Profiles_Delete_Confirm ?? (IsZh ? "确定要删除配置方案“{0}”吗？此操作无法撤销。" : "Are you sure you want to delete profile \"{0}\"? This cannot be undone."),
             item.Name);
 
         var ok = await ConfirmDialog.ConfirmAsync(
             owner,
             confirmMsg,
-            Locale.Profiles_Delete ?? "删除",
-            Locale.Cancel ?? "取消");
+            Locale.Profiles_Delete ?? (IsZh ? "删除" : "Delete"),
+            Locale.Cancel ?? (IsZh ? "取消" : "Cancel"));
 
         if (ok)
         {
@@ -197,21 +201,21 @@ public class ProfilesViewModel : ReactiveObject
     {
         if (item == null) return;
 
-        var defaultCopyName = $"{item.Name}_副本";
+        var defaultCopyName = IsZh ? $"{item.Name}_副本" : $"{item.Name}_Copy";
         var newName = await InputDialog.PromptAsync(
             owner,
-            Locale.Profiles_Duplicate ?? "复制配置方案",
-            Locale.Profiles_New_Prompt ?? "请输入方案名称：",
+            Locale.Profiles_Duplicate ?? (IsZh ? "复制配置方案" : "Duplicate Profile"),
+            Locale.Profiles_New_Prompt ?? (IsZh ? "请输入方案名称：" : "Enter profile name:"),
             defaultCopyName,
             name =>
             {
                 if (string.IsNullOrWhiteSpace(name))
-                    return Locale.Profiles_NameInvalid ?? "方案名称不能为空";
+                    return Locale.Profiles_NameInvalid ?? (IsZh ? "方案名称不能为空" : "Profile name cannot be empty");
                 var invalid = Path.GetInvalidFileNameChars();
                 if (name.Any(c => invalid.Contains(c)))
-                    return Locale.Profiles_NameInvalid ?? "方案名称包含非法字符";
+                    return Locale.Profiles_NameInvalid ?? (IsZh ? "方案名称包含非法字符" : "Profile name contains invalid characters");
                 if (profileService.GetProfiles().Any(p => string.Equals(p, name.Trim(), StringComparison.OrdinalIgnoreCase)))
-                    return Locale.Profiles_NameExists ?? "该方案名称已存在";
+                    return Locale.Profiles_NameExists ?? (IsZh ? "该方案名称已存在" : "Profile name already exists");
                 return null;
             });
 
@@ -230,7 +234,7 @@ public class ProfilesViewModel : ReactiveObject
 
         var file = await storage.SaveFilePickerAsync(new FilePickerSaveOptions
         {
-            Title = Locale.Profiles_Export ?? "导出配置方案",
+            Title = Locale.Profiles_Export ?? (IsZh ? "导出配置方案" : "Export Profile"),
             SuggestedFileName = $"{item.Name}.json",
             DefaultExtension = "json",
             FileTypeChoices = [new FilePickerFileType("JSON") { Patterns = ["*.json"] }]
@@ -245,7 +249,10 @@ public class ProfilesViewModel : ReactiveObject
             }
             catch (Exception ex)
             {
-                await ConfirmDialog.InformAsync(owner, $"导出失败: {ex.Message}", "确定");
+                await ConfirmDialog.InformAsync(
+                    owner,
+                    IsZh ? $"导出失败: {ex.Message}" : $"Export failed: {ex.Message}",
+                    Locale.Settings_Advanced_Backup_OkButton ?? (IsZh ? "确定" : "OK"));
             }
         }
     }
@@ -257,7 +264,7 @@ public class ProfilesViewModel : ReactiveObject
 
         var files = await storage.OpenFilePickerAsync(new FilePickerOpenOptions
         {
-            Title = Locale.Profiles_Import ?? "导入配置方案",
+            Title = Locale.Profiles_Import ?? (IsZh ? "导入配置方案" : "Import Profile"),
             AllowMultiple = false,
             FileTypeFilter = [new FilePickerFileType("JSON") { Patterns = ["*.json"] }]
         });
@@ -270,9 +277,11 @@ public class ProfilesViewModel : ReactiveObject
                 var importedName = profileService.ImportProfile(localPath);
                 var switchNow = await ConfirmDialog.ConfirmAsync(
                     owner,
-                    $"已成功导入方案“{importedName}”。是否立即切换到该方案？",
-                    "立即切换",
-                    "稍后切换");
+                    IsZh
+                        ? $"已成功导入方案“{importedName}”。是否立即切换到该方案？"
+                        : $"Imported profile \"{importedName}\". Switch to it now?",
+                    IsZh ? "立即切换" : "Switch Now",
+                    IsZh ? "稍后切换" : "Later");
                 if (switchNow)
                 {
                     profileService.SwitchProfile(importedName);
@@ -280,7 +289,10 @@ public class ProfilesViewModel : ReactiveObject
             }
             catch (Exception ex)
             {
-                await ConfirmDialog.InformAsync(owner, $"导入失败: {ex.Message}", "确定");
+                await ConfirmDialog.InformAsync(
+                    owner,
+                    IsZh ? $"导入失败: {ex.Message}" : $"Import failed: {ex.Message}",
+                    Locale.Settings_Advanced_Backup_OkButton ?? (IsZh ? "确定" : "OK"));
             }
         }
     }

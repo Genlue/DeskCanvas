@@ -217,10 +217,12 @@ public partial class CalculatorView : UserControl, IWidgetSelfRefreshing
         RebuildHistoryViews(Bounds.Height);
     }
 
+    private static bool IsZh => System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName.Equals("zh", StringComparison.OrdinalIgnoreCase);
+
     private void RebuildHistoryViews(double availableHeight)
     {
         var items = CalculatorStore.Instance.GetHistory();
-        LargeHistoryModeBtn.Content = $"历史 ({items.Count})";
+        LargeHistoryModeBtn.Content = IsZh ? $"历史 ({items.Count})" : $"History ({items.Count})";
 
         // 1. 2x2 Small History Strip (up to 2 items)
         SmallHistoryList.Children.Clear();
@@ -257,7 +259,7 @@ public partial class CalculatorView : UserControl, IWidgetSelfRefreshing
             var hintRow = new Border { Classes = { "mini-hist-row" }, Opacity = 0.6 };
             hintRow.Child = new TextBlock
             {
-                Text = "按 Enter 保存记录 · 右上角展开面板",
+                Text = IsZh ? "按 Enter 保存记录 · 右上角展开面板" : "Press Enter to save · Expand panel top-right",
                 FontSize = 10,
                 HorizontalAlignment = HorizontalAlignment.Center
             };
@@ -574,7 +576,7 @@ public partial class CalculatorView : UserControl, IWidgetSelfRefreshing
     private void OnClearHistoryClicked(object? sender, RoutedEventArgs e)
     {
         CalculatorStore.Instance.ClearHistory();
-        ShowToast("已清空计算历史");
+        ShowToast(IsZh ? "已清空计算历史" : "Calculation history cleared");
     }
 
     private void OnCopyResultClicked(object? sender, RoutedEventArgs e)

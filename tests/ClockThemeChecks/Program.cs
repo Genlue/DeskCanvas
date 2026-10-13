@@ -222,10 +222,94 @@ class Program
             faint == Color.FromArgb((byte)(0.40 * 255), 0xFF, 0x3B, 0x30));
 
         CheckNativeWindowTransparency();
+        CheckAnalogIVDial3Contract();
 
         Console.WriteLine();
         Console.WriteLine(failures == 0 ? "ALL CHECKS PASSED" : $"{failures} CHECK(S) FAILED");
         return failures == 0 ? 0 : 1;
+    }
+
+    private static void CheckAnalogIVDial3Contract()
+    {
+        Console.WriteLine();
+        Console.WriteLine("--- AnalogIV (表盘-3 / Dial 3) widget contract ---");
+
+        var widgetAttr = typeof(AnalogIV).Assembly
+            .GetCustomAttributes<DeskCanvas.Core.Models.Attributes.WidgetInfoAttribute>()
+            .FirstOrDefault(a => a.ViewType == typeof(AnalogIV));
+
+        Check("AnalogIV is registered via [WidgetInfo] in Clock assembly",
+            widgetAttr != null
+            && widgetAttr.ModelType == typeof(ClockModel)
+            && widgetAttr.EditModelViewType == typeof(AnalogClockSettings)
+            && widgetAttr.Title == "Clock_AnalogIV_Title"
+            && widgetAttr.Subtitle == "Clock_Analog_Subtitle");
+
+        var prevCulture = Clock.Locales.Locale.Culture;
+        try
+        {
+            Clock.Locales.Locale.Culture = new System.Globalization.CultureInfo("zh-Hans");
+            Check("Clock_AnalogIV_Title resolves to '表盘-3' in zh-Hans",
+                Clock.Locales.Locale.Clock_AnalogIV_Title == "表盘-3");
+
+            Clock.Locales.Locale.Culture = System.Globalization.CultureInfo.InvariantCulture;
+            Check("Clock_AnalogIV_Title resolves to 'Dial 3' in English",
+                Clock.Locales.Locale.Clock_AnalogIV_Title == "Dial 3");
+        }
+        finally
+        {
+            Clock.Locales.Locale.Culture = prevCulture;
+        }
+
+        var dial1 = new AnalogI(new ClockModel());
+        var dial3 = new AnalogIV(new ClockModel());
+
+        Check("AnalogIV shares identical PresetSpans and AllowedBaseSpans with AnalogI",
+            dial3.PresetSpans.SequenceEqual(dial1.PresetSpans)
+            && dial3.AllowedBaseSpans.SequenceEqual(dial1.AllowedBaseSpans)
+            && dial3.IsAllowedSpan(2, 2) && !dial3.IsAllowedSpan(2, 1)
+            && dial3.SnapSpan(3, 3) == (3, 3));
+
+        // ---- 表盘颜色 (dial color) resolution contract ----
+        Check("表盘颜色 defaults to 跟随背景 (null resolution — the theme brush is used)",
+            AnalogIV.ResolveDialColor(new ClockModel(), isDarkVariant: false) == null
+            && AnalogIV.ResolveDialColor(new ClockModel(), isDarkVariant: true) == null);
+
+        Check("黑白 resolves to white (#FFFFFF) in light mode and black (#1C1C1E) in dark mode",
+            AnalogIV.ResolveDialColor(
+                new ClockModel(DialColorMode: ClockDialColorMode.BlackWhite), isDarkVariant: false)
+                == Color.Parse("#FFFFFF")
+            && AnalogIV.ResolveDialColor(
+                new ClockModel(DialColorMode: ClockDialColorMode.BlackWhite), isDarkVariant: true)
+                == Color.Parse("#1C1C1E"));
+
+        Check("自定义 resolves the picked light/dark colors per variant",
+            AnalogIV.ResolveDialColor(new ClockModel(
+                DialColorMode: ClockDialColorMode.Custom,
+                DialColorLight: "#12C46A",
+                DialColorDark: "#FF3B30"), isDarkVariant: false) == Color.Parse("#12C46A")
+            && AnalogIV.ResolveDialColor(new ClockModel(
+                DialColorMode: ClockDialColorMode.Custom,
+                DialColorLight: "#12C46A",
+                DialColorDark: "#FF3B30"), isDarkVariant: true) == Color.Parse("#FF3B30"));
+
+        Check("自定义 without picked colors starts from the 黑白 pair",
+            AnalogIV.ResolveDialColor(
+                new ClockModel(DialColorMode: ClockDialColorMode.Custom), isDarkVariant: false)
+                == Color.Parse(ClockModel.DefaultDialColorLight)
+            && AnalogIV.ResolveDialColor(
+                new ClockModel(DialColorMode: ClockDialColorMode.Custom), isDarkVariant: true)
+                == Color.Parse(ClockModel.DefaultDialColorDark));
+
+        var legacyModel = JsonSerializer.Deserialize<ClockModel>("{\"Use24Hours\":false}",
+            new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+        Check("stored models without dial-color fields default to 跟随背景",
+            legacyModel is
+            {
+                DialColorMode: ClockDialColorMode.BackgroundColor,
+                DialColorLight: null,
+                DialColorDark: null
+            });
     }
 
     private static void CheckNativeWindowTransparency()

@@ -17,7 +17,8 @@ namespace StackWidgets.Views.Settings;
 
 public record AvailableWidgetOption(string AssemblyName, string ViewTypeName, string Title)
 {
-    public override string ToString() => Title;
+    public string LocalizedTitle => StackWidgetTitleHelper.Localize(AssemblyName, ViewTypeName, Title);
+    public override string ToString() => LocalizedTitle;
 }
 
 public partial class WidgetStackSettings : UserControl
@@ -30,6 +31,7 @@ public partial class WidgetStackSettings : UserControl
     private static readonly List<AvailableWidgetOption> AvailableOptions =
     [
         new("Clock", "AnalogI", "时钟 (经典表盘 I)"),
+        new("Clock", "AnalogIV", "时钟 (表盘-3)"),
         new("Clock", "Digital", "时钟 (数字时钟)"),
         new("Notes", "Note", "便签"),
         new("Reminders", "List", "待办清单"),
@@ -95,7 +97,7 @@ public partial class WidgetStackSettings : UserControl
             if (layout.Type is "Stack" or "StackWidgets") return false;
 
             var opt = AvailableOptions.FirstOrDefault(o => o.AssemblyName == layout.Type && o.ViewTypeName == layout.SubType);
-            string title = opt?.Title ?? ResolveDynamicTitle(layout);
+            string title = opt?.LocalizedTitle ?? ResolveDynamicTitle(layout);
             string? settingsJson = layout.Settings?.GetRawText();
 
             bool wasEmpty = model.Entries.Count == 0;
@@ -214,7 +216,7 @@ public partial class WidgetStackSettings : UserControl
     {
         if (AvailableWidgetsCombo.SelectedItem is AvailableWidgetOption opt)
         {
-            var newEntry = new StackedWidgetEntry(opt.AssemblyName, opt.ViewTypeName, opt.Title);
+            var newEntry = new StackedWidgetEntry(opt.AssemblyName, opt.ViewTypeName, opt.LocalizedTitle);
             var list = model.Entries.ToList();
             list.Add(newEntry);
             model = model with { Entries = list };

@@ -34,16 +34,16 @@ namespace Storage.Locales {
             }
         }
         
-        public static string Storage => ResourceManager.GetString("Storage", resourceCulture) ?? "磁盘存储";
-        public static string Storage_Title => ResourceManager.GetString("Storage_Title", resourceCulture) ?? "磁盘存储";
-        public static string Storage_Subtitle => ResourceManager.GetString("Storage_Subtitle", resourceCulture) ?? "直观展示本机各硬盘分区的存储容量、剩余空间与使用率";
-        public static string Storage_HeaderTitle => ResourceManager.GetString("Storage_HeaderTitle", resourceCulture) ?? "存储空间";
-        public static string Storage_DisplayMode => ResourceManager.GetString("Storage_DisplayMode", resourceCulture) ?? "显示样式";
-        public static string Storage_TextFormat => ResourceManager.GetString("Storage_TextFormat", resourceCulture) ?? "容量数值格式";
-        public static string Storage_ShowHeader => ResourceManager.GetString("Storage_ShowHeader", resourceCulture) ?? "显示顶部总览栏";
-        public static string Storage_UseWarningColors => ResourceManager.GetString("Storage_UseWarningColors", resourceCulture) ?? "空间不足变色预警";
-        public static string Storage_DoubleClickToOpen => ResourceManager.GetString("Storage_DoubleClickToOpen", resourceCulture) ?? "双击打开磁盘文件夹";
-        public static string Storage_ShowRemovableDrives => ResourceManager.GetString("Storage_ShowRemovableDrives", resourceCulture) ?? "显示可移动磁盘 (U盘/移动硬盘)";
-        public static string Storage_ShowNetworkDrives => ResourceManager.GetString("Storage_ShowNetworkDrives", resourceCulture) ?? "显示网络映射驱动器";
+        public static string Storage => ResourceManager.GetString("Storage", resourceCulture) ?? "Storage";
+        public static string Storage_Title => ResourceManager.GetString("Storage_Title", resourceCulture) ?? "Disk Space";
+        public static string Storage_Subtitle => ResourceManager.GetString("Storage_Subtitle", resourceCulture) ?? "Real-time local disk partition capacity, usage and remaining space monitor";
+        public static string Storage_HeaderTitle => ResourceManager.GetString("Storage_HeaderTitle", resourceCulture) ?? "Storage";
+        public static string Storage_DisplayMode => ResourceManager.GetString("Storage_DisplayMode", resourceCulture) ?? "Layout Style";
+        public static string Storage_TextFormat => ResourceManager.GetString("Storage_TextFormat", resourceCulture) ?? "Capacity Text Format";
+        public static string Storage_ShowHeader => ResourceManager.GetString("Storage_ShowHeader", resourceCulture) ?? "Show top title & summary bar";
+        public static string Storage_UseWarningColors => ResourceManager.GetString("Storage_UseWarningColors", resourceCulture) ?? "Show orange/red warning when space is low";
+        public static string Storage_DoubleClickToOpen => ResourceManager.GetString("Storage_DoubleClickToOpen", resourceCulture) ?? "Double-click drive to open in Explorer";
+        public static string Storage_ShowRemovableDrives => ResourceManager.GetString("Storage_ShowRemovableDrives", resourceCulture) ?? "Show removable drives (USB)";
+        public static string Storage_ShowNetworkDrives => ResourceManager.GetString("Storage_ShowNetworkDrives", resourceCulture) ?? "Show network drives";
     }
 }

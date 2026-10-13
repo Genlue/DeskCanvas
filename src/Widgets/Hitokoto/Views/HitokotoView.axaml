@@ -1,0 +1,145 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:locales="clr-namespace:Hitokoto.Locales"
+             x:Class="Hitokoto.Views.HitokotoView"
+             Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}">
+    <UserControl.Styles>
+        <Style Selector="Button.hitokoto-btn">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="5,3" />
+            <Setter Property="CornerRadius" Value="{DynamicResource WidgetPillCornerRadius}" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}" />
+        </Style>
+        <Style Selector="Button.hitokoto-btn:pointerover">
+            <Setter Property="Background" Value="#25888888" />
+        </Style>
+        <Style Selector="Button.hitokoto-btn:pressed">
+            <Setter Property="Background" Value="#40888888" />
+        </Style>
+        <Style Selector="Border#ActionToolbar">
+            <Setter Property="Transitions">
+                <Transitions>
+                    <DoubleTransition Property="Opacity" Duration="0:0:0.18" />
+                </Transitions>
+            </Setter>
+        </Style>
+        <Style Selector="Grid#QuoteContentHost">
+            <Setter Property="Transitions">
+                <Transitions>
+                    <DoubleTransition Property="Opacity" Duration="0:0:0.16" />
+                </Transitions>
+            </Setter>
+        </Style>
+    </UserControl.Styles>
+
+    <Grid x:Name="RootGrid" RowDefinitions="Auto,*,Auto" Background="Transparent">
+        <!-- Toast Notification Pill -->
+        <Border x:Name="ToastBanner" Grid.Row="0" Grid.RowSpan="3"
+                VerticalAlignment="Top" HorizontalAlignment="Center"
+                Background="{DynamicResource SystemControlHighlightAccentBrush}"
+                CornerRadius="{DynamicResource WidgetInnerCornerRadius}"
+                Padding="12,3" Margin="0,2,0,0"
+                IsVisible="False" ZIndex="20">
+            <TextBlock x:Name="ToastText" Text="{x:Static locales:Locale.Hitokoto_Copied}"
+                       FontSize="11" FontWeight="SemiBold"
+                       Foreground="{DynamicResource AccentContrastForegroundBrush}" />
+        </Border>
+
+        <!-- Decorative Opening Quote Watermark -->
+        <TextBlock x:Name="WatermarkQuote" Grid.Row="0" Grid.RowSpan="3"
+                   Text="“" FontSize="68" FontWeight="Bold"
+                   FontFamily="Georgia, SimSun, Serif"
+                   Opacity="0.11" IsHitTestVisible="False"
+                   HorizontalAlignment="Left" VerticalAlignment="Top"
+                   Margin="-2,-14,0,0" />
+
+        <!-- Top Bar: Category Pill + Action Buttons -->
+        <Grid x:Name="TopBarGrid" Grid.Row="0" ColumnDefinitions="Auto,*,Auto" Margin="0,0,0,2" ZIndex="5">
+            <Border x:Name="CategoryPill" Grid.Column="0"
+                    Background="#1E808080" BorderBrush="#22ffffff" BorderThickness="1"
+                    CornerRadius="{DynamicResource WidgetPillCornerRadius}"
+                    Padding="8,2" VerticalAlignment="Center">
+                <TextBlock x:Name="CategoryText" Text="诗词" FontSize="11" FontWeight="Medium"
+                           Opacity="0.88" />
+            </Border>
+
+            <Panel Grid.Column="1" />
+
+            <Border x:Name="ActionToolbar" Grid.Column="2" VerticalAlignment="Center">
+                <StackPanel Orientation="Horizontal" Spacing="2">
+                    <!-- Core API Like Button -->
+                    <Button x:Name="LikeBtn" Classes="hitokoto-btn" Click="OnLikeClicked"
+                            ToolTip.Tip="{x:Static locales:Locale.Hitokoto_Like}">
+                        <StackPanel Orientation="Horizontal" Spacing="3" VerticalAlignment="Center">
+                            <TextBlock x:Name="LikeIconText" Text="♡" FontSize="12" VerticalAlignment="Center" />
+                            <TextBlock x:Name="LikeCountText" Text="0" FontSize="11" Opacity="0.8" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+
+                    <!-- Local Favorite Button -->
+                    <Button x:Name="FavoriteBtn" Classes="hitokoto-btn" Click="OnFavoriteClicked"
+                            ToolTip.Tip="{x:Static locales:Locale.Hitokoto_Favorite}">
+                        <TextBlock x:Name="FavoriteIconText" Text="☆" FontSize="12" />
+                    </Button>
+
+                    <!-- Copy Button -->
+                    <Button x:Name="CopyBtn" Classes="hitokoto-btn" Click="OnCopyClicked"
+                            ToolTip.Tip="{x:Static locales:Locale.Hitokoto_Copy}">
+                        <PathIcon Data="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"
+                                  Width="11" Height="11" Opacity="0.75" />
+                    </Button>
+
+                    <!-- Refresh / Next Quote Button -->
+                    <Button x:Name="NextBtn" Classes="hitokoto-btn" Click="OnNextClicked"
+                            ToolTip.Tip="{x:Static locales:Locale.Hitokoto_Next}">
+                        <PathIcon Data="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"
+                                  Width="11.5" Height="11.5" Opacity="0.75" />
+                    </Button>
+
+                    <!-- Open Secondary Panel Button -->
+                    <Button x:Name="ExpandBtn" Classes="hitokoto-btn" Click="OnOpenPanelClicked"
+                            ToolTip.Tip="{x:Static locales:Locale.Hitokoto_OpenPanel}">
+                        <PathIcon Data="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"
+                                  Width="11.5" Height="11.5" Opacity="0.78" />
+                    </Button>
+                </StackPanel>
+            </Border>
+        </Grid>
+
+        <!-- Center Quote Content -->
+        <Grid x:Name="QuoteContentHost" Grid.Row="1" VerticalAlignment="Center" Margin="2,2">
+            <ScrollViewer x:Name="QuoteScroll" VerticalScrollBarVisibility="Hidden" HorizontalScrollBarVisibility="Disabled">
+                <TextBlock x:Name="QuoteTextBlock"
+                           Text="往者不可谏，来者犹可追。"
+                           FontSize="15"
+                           FontWeight="Medium"
+                           TextWrapping="Wrap"
+                           LineHeight="22"
+                           VerticalAlignment="Center" />
+            </ScrollViewer>
+        </Grid>
+
+        <!-- Bottom Bar: Attribution & Source Link -->
+        <Grid x:Name="BottomBarGrid" Grid.Row="2" ColumnDefinitions="Auto,*,Auto" Margin="0,2,0,0">
+            <TextBlock x:Name="SourceBadgeText" Grid.Column="0"
+                       Text="hitokoto.cn" FontSize="10.5" Opacity="0.4"
+                       VerticalAlignment="Center" Cursor="Hand"
+                       PointerPressed="OnSourceBadgePressed"
+                       ToolTip.Tip="点击在浏览器查看该一言详情" />
+
+            <Panel Grid.Column="1" />
+
+            <TextBlock x:Name="AttributionText" Grid.Column="2"
+                       Text="—— 孔子《论语·微子篇》"
+                       FontSize="12" Opacity="0.72"
+                       TextTrimming="CharacterEllipsis"
+                       VerticalAlignment="Center"
+                       HorizontalAlignment="Right" />
+        </Grid>
+    </Grid>
+</UserControl>

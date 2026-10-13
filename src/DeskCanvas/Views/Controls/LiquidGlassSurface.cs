@@ -523,14 +523,24 @@ public sealed class LiquidGlassSurface : Control
     private LiquidGlassRenderer.Frame BuildFrame()
     {
         var scaling = window?.RenderScaling ?? 1;
-        // Bound CPU/memory use for very large widgets. Text is rendered separately at native DPI.
-        var quality = Math.Min(1, Math.Min(2048 / (Math.Max(Bounds.Width, Bounds.Height) * scaling),
-            Math.Sqrt(1200000 / (Bounds.Width * Bounds.Height * scaling * scaling))));
+        // On the GPU path the backdrop is already downscaled by BackdropClarity and the shader
+        // runs at native window bounds; only the CPU fallback path needs per-card quality
+        // downscaling. Keeping quality = 1 on GPU ensures large cards stay in physical desktop
+        // coordinates and share the same GlassSource as normal cards.
+        var useGpu = Volatile.Read(ref gpuState) != 2 && LiquidGlassGpuEffect.IsSupported;
+        var quality = useGpu
+            ? 1.0
+            : Math.Min(1, Math.Min(2048 / (Math.Max(Bounds.Width, Bounds.Height) * scaling),
+                Math.Sqrt(1200000 / (Bounds.Width * Bounds.Height * scaling * scaling))));
         var renderScale = (float)(scaling * quality);
         var width = Math.Max(1, (int)Math.Ceiling(Bounds.Width * renderScale));
         var height = Math.Max(1, (int)Math.Ceiling(Bounds.Height * renderScale));
         var screen = window?.Screens.ScreenFromWindow(window);
         var screens = window?.Screens.All;
+        var primaryScaling = screens?.FirstOrDefault(s => s.IsPrimary)?.Scaling
+                             ?? screens?.FirstOrDefault()?.Scaling
+                             ?? scaling;
+        var backdropScale = (float)(primaryScaling * quality);
         var left = screens?.Min(s => s.Bounds.X) ?? 0;
         var top = screens?.Min(s => s.Bounds.Y) ?? 0;
         var desktopWidth = (screens?.Max(s => s.Bounds.Right) ?? 1920) - left;
@@ -545,7 +555,7 @@ public sealed class LiquidGlassSurface : Control
             (float)(((screen?.Bounds.X ?? 0) - left) * quality), (float)(((screen?.Bounds.Y ?? 0) - top) * quality),
             (float)((screen?.Bounds.Width ?? 1920) * quality), (float)((screen?.Bounds.Height ?? 1080) * quality),
             material, ActualThemeVariant == ThemeVariant.Dark, SettingsSurface, (float)quality,
-            Columns: cols, Rows: rows);
+            Columns: cols, Rows: rows, BackdropScale: backdropScale);
         if (!Preview) return frame;
         // The preview card is tiny (45×45 in the theme button): calm both materials down so the
         // miniature shows the recipe rather than a bloated lens / flooded diffusion.
@@ -555,6 +565,7 @@ public sealed class LiquidGlassSurface : Control
                 DesktopX = 70 * renderScale, DesktopY = 40 * renderScale, ScreenX = 0, ScreenY = 0,
                 DesktopWidth = 120 * renderScale, DesktopHeight = 90 * renderScale,
                 ScreenWidth = 120 * renderScale, ScreenHeight = 90 * renderScale,
+                BackdropScale = renderScale,
                 Theme = frame.Theme with
                 {
                     LiquidGlassV2 = frame.Theme.EffectiveLiquidGlassV2 with
@@ -566,6 +577,7 @@ public sealed class LiquidGlassSurface : Control
                 DesktopX = 70 * renderScale, DesktopY = 40 * renderScale, ScreenX = 0, ScreenY = 0,
                 DesktopWidth = 120 * renderScale, DesktopHeight = 90 * renderScale,
                 ScreenWidth = 120 * renderScale, ScreenHeight = 90 * renderScale,
+                BackdropScale = renderScale,
                 Theme = material with
                 {
                     LiquidGlass = material.EffectiveLiquidGlass with
@@ -786,8 +798,14 @@ public sealed class LiquidGlassSurface : Control
             // One-off readback of what the shader actually produces. The GPU path cannot be
             // validated offline, so this is the only way to tell "the shader drew nothing" apart
             // from "the shader drew something that never reached the screen". The staged walk is
-            // tuned to the lens material; the new material relies on the opaque self-test below.
-            if (!isV2 && Interlocked.Exchange(ref probedShader, 1) == 0) Probe(lease, shader, destination);
+            // tuned to the lens material; only run the 12-stage compile/readback walk when
+            // explicitly requested via DESKCANVAS_GLASS_PROBE=1, since RendersOpaque below covers
+            // the production self-test.
+            if (!isV2 && Environment.GetEnvironmentVariable("DESKCANVAS_GLASS_PROBE") == "1"
+                && Interlocked.Exchange(ref probedShader, 1) == 0)
+            {
+                Probe(lease, shader, destination);
+            }
 
             // A runtime-effect program is only built for the device at draw time, from a narrower
             // dialect than SKRuntimeEffect.Create accepts, and a program that fails to build there

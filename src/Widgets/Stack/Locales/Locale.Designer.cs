@@ -43,6 +43,17 @@ namespace StackWidgets.Locales {
         public static string Setting_Move_Down => ResourceManager.GetString("Setting_Move_Down", resourceCulture) ?? "下移";
         public static string Setting_Allow_Wheel => ResourceManager.GetString("Setting_Allow_Wheel", resourceCulture) ?? "鼠标滚轮切页";
         public static string Setting_Wheel_Only_On_Dots => ResourceManager.GetString("Setting_Wheel_Only_On_Dots", resourceCulture) ?? "仅圆点处可用滚轮切页";
-        public static string Setting_Auto_Hide_Dots => ResourceManager.GetString("Setting_Auto_Hide_Dots", resourceCulture) ?? "常态隐藏切换圆点（切换或悬停时显示）";
+        public static string Setting_Auto_Hide_Dots => ResourceManager.GetString("Setting_Auto_Hide_Dots", resourceCulture) ?? "Hide Dots While Idle (Shown When Switching Or Hovering)";
+        public static string StackWidgets => ResourceManager.GetString("StackWidgets", resourceCulture) ?? "Widget Stack";
+        public static string EmptyCard_Title => ResourceManager.GetString("EmptyCard_Title", resourceCulture) ?? "Empty Stack Card";
+        public static string EmptyCard_Hint => ResourceManager.GetString("EmptyCard_Hint", resourceCulture) ?? "Right-click & Edit to add widgets";
+        public static string Setting_DropZone_Title => ResourceManager.GetString("Setting_DropZone_Title", resourceCulture) ?? "📥 Drag Desktop Widgets Here";
+        public static string Setting_DropZone_Desc => ResourceManager.GetString("Setting_DropZone_Desc", resourceCulture) ?? "Drag any widget on the desktop and drop it into this window to add it to the stack";
+        public static string Setting_Stacked_List_Title => ResourceManager.GetString("Setting_Stacked_List_Title", resourceCulture) ?? "Stacked Widgets (configure, reorder, or move back to desktop)";
+        public static string Setting_Stacked_Empty_Hint => ResourceManager.GetString("Setting_Stacked_Empty_Hint", resourceCulture) ?? "No widgets stacked yet (shown as an empty card on the desktop).\nDrag widgets from the desktop into the drop zone above, or select and add one below.";
+        public static string Setting_Extract_To_Desktop => ResourceManager.GetString("Setting_Extract_To_Desktop", resourceCulture) ?? "↖ To Desktop";
+        public static string Setting_Extract_To_Desktop_Tip => ResourceManager.GetString("Setting_Extract_To_Desktop_Tip", resourceCulture) ?? "Remove this widget from the stack and restore it to the desktop";
+        public static string Setting_Edit_Child => ResourceManager.GetString("Setting_Edit_Child", resourceCulture) ?? "⚙ Settings";
+        public static string Setting_Edit_Child_Tip => ResourceManager.GetString("Setting_Edit_Child_Tip", resourceCulture) ?? "Configure this widget";
     }
 }

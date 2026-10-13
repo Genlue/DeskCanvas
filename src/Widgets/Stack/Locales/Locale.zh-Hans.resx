@@ -45,4 +45,38 @@
     <data name="Setting_Auto_Hide_Dots" xml:space="preserve">
         <value>常态隐藏切换圆点（切换或悬停时显示）</value>
     </data>
+    <data name="StackWidgets" xml:space="preserve">
+        <value>重叠组件</value>
+    </data>
+    <data name="EmptyCard_Title" xml:space="preserve">
+        <value>空白重叠卡片</value>
+    </data>
+    <data name="EmptyCard_Hint" xml:space="preserve">
+        <value>右键编辑以添加组件</value>
+    </data>
+    <data name="Setting_DropZone_Title" xml:space="preserve">
+        <value>📥 拖入桌面小组件</value>
+    </data>
+    <data name="Setting_DropZone_Desc" xml:space="preserve">
+        <value>直接在桌面上拖拽任意小组件并松开在此窗口中，即可将其收纳进重叠卡片</value>
+    </data>
+    <data name="Setting_Stacked_List_Title" xml:space="preserve">
+        <value>已叠放的小组件列表（支持单独设置、排序与移回桌面）</value>
+    </data>
+    <data name="Setting_Stacked_Empty_Hint" xml:space="preserve">
+        <value>当前暂无已叠放组件（桌面呈现为空白卡片）。
+请在桌面上直接拖动小组件至此窗口上方区域，或在下方选择添加。</value>
+    </data>
+    <data name="Setting_Extract_To_Desktop" xml:space="preserve">
+        <value>↖ 移至桌面</value>
+    </data>
+    <data name="Setting_Extract_To_Desktop_Tip" xml:space="preserve">
+        <value>将此组件从重叠中移出并还原放回桌面</value>
+    </data>
+    <data name="Setting_Edit_Child" xml:space="preserve">
+        <value>⚙ 设置</value>
+    </data>
+    <data name="Setting_Edit_Child_Tip" xml:space="preserve">
+        <value>配置此组件</value>
+    </data>
 </root>

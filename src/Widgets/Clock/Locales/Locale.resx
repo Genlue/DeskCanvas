@@ -39,6 +39,27 @@
     <data name="Clock_AnalogIII_Title" xml:space="preserve">
         <value>Dial 2</value>
     </data>
+    <data name="Clock_AnalogIV_Title" xml:space="preserve">
+        <value>Dial 3</value>
+    </data>
+    <data name="Clock_DialColor_Title" xml:space="preserve">
+        <value>Dial Color</value>
+    </data>
+    <data name="Clock_DialColor_Background" xml:space="preserve">
+        <value>Follow Background</value>
+    </data>
+    <data name="Clock_DialColor_BlackWhite" xml:space="preserve">
+        <value>Black &amp; White</value>
+    </data>
+    <data name="Clock_DialColor_Custom" xml:space="preserve">
+        <value>Custom</value>
+    </data>
+    <data name="Clock_DialColor_Dark" xml:space="preserve">
+        <value>Dark Mode</value>
+    </data>
+    <data name="Clock_DialColor_Light" xml:space="preserve">
+        <value>Light Mode</value>
+    </data>
     <data name="Clock_Digital_Title" xml:space="preserve">
         <value>Digital</value>
     </data>

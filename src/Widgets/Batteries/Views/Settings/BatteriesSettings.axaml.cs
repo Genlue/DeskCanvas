@@ -1,10 +1,12 @@
 using System;
+using System.Globalization;
 using System.Text.Json;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Layout;
 using Avalonia.Media;
+using Batteries.Locales;
 using Batteries.Models;
 using Batteries.Services;
 using DeskCanvas.Core.Interfaces;
@@ -18,6 +20,9 @@ public partial class BatteriesSettings : UserControl
     private BatteriesModel model;
     private bool isInitializing = true;
 
+    private static bool IsZh =>
+        CultureInfo.CurrentUICulture.TwoLetterISOLanguageName.Equals("zh", StringComparison.OrdinalIgnoreCase);
+
     public BatteriesSettings() : this(null!) { }
 
     public BatteriesSettings(IWidgetLayoutProvider? widgetLayoutProvider)
@@ -26,9 +31,25 @@ public partial class BatteriesSettings : UserControl
         model = widgetLayoutProvider != null ? (ReadModel(widgetLayoutProvider.Get()) ?? new BatteriesModel()) : new BatteriesModel();
 
         InitializeComponent();
+        ApplyLocalization();
         LoadFromModel();
         RefreshDevices();
         isInitializing = false;
+    }
+
+    private void ApplyLocalization()
+    {
+        DisplayOptionsHeader.Text = IsZh ? "显示选项" : "Display Options";
+        DeviceDetailsHeader.Text = IsZh ? "设备详情" : "Device Details";
+        RefreshDevicesBtn.Content = IsZh ? "刷新设备" : "Refresh";
+        NoPeripheralsTitle.Text = IsZh ? "未检测到已连接的蓝牙外设电量" : "No connected Bluetooth peripheral batteries detected";
+        NoPeripheralsSubtitle.Text = IsZh
+            ? "支持低功耗蓝牙 (BLE) 及音频外设电量协议的耳机、手柄、鼠标或键盘等设备"
+            : "Supports headphones, controllers, mice, and keyboards with BLE or Bluetooth battery reporting";
+        PairedDevicesHeader.Text = IsZh ? "蓝牙设备管理与类型记忆" : "Bluetooth Devices & Type Overrides";
+        PairedDevicesHint.Text = IsZh
+            ? "支持手动指定设备类型（鼠标/手柄/耳机等）。设置后将自动保存，下次连接时将自动识别。"
+            : "Manually assign a device category (mouse, controller, headphones, etc.). Saved automatically for future connections.";
     }
 
     private void LoadFromModel()
@@ -92,18 +113,26 @@ public partial class BatteriesSettings : UserControl
 
         if (!power.HasBattery)
         {
-            MainDeviceTitle.Text = "电源适配器供电";
-            MainDeviceSubtitle.Text = power.IsAcConnected ? "已连接交流电源 (无内置电池)" : "未检测到系统电池";
+            MainDeviceTitle.Text = Locale.Batteries_AcPower;
+            MainDeviceSubtitle.Text = power.IsAcConnected
+                ? (IsZh ? "已连接交流电源 (无内置电池)" : "Connected to AC power (no internal battery)")
+                : (IsZh ? "未检测到系统电池" : "No system battery detected");
             MainDevicePercent.Text = "100%";
             MainDeviceBadge.Background = new SolidColorBrush(Color.FromArgb(32, 0, 122, 255));
             MainDevicePercent.Foreground = new SolidColorBrush(Color.Parse("#007AFF"));
         }
         else
         {
-            MainDeviceTitle.Text = "电脑内置电池";
-            var status = power.IsCharging ? "正在充电 ⚡" : (power.IsAcConnected ? "已连接电源 (未充电)" : "使用电池");
+            MainDeviceTitle.Text = IsZh ? "电脑内置电池" : Locale.Batteries_MainDevice;
+            var status = power.IsCharging
+                ? (IsZh ? "正在充电 ⚡" : "Charging ⚡")
+                : (power.IsAcConnected
+                    ? (IsZh ? "已连接电源 (未充电)" : "Plugged in (not charging)")
+                    : (IsZh ? "使用电池" : "On battery"));
             var time = power.RemainingMinutes > 0
-                ? $" · 预计可用 {power.RemainingMinutes / 60}小时{power.RemainingMinutes % 60}分"
+                ? (IsZh
+                    ? $" · 预计可用 {power.RemainingMinutes / 60}小时{power.RemainingMinutes % 60}分"
+                    : $" · ~{power.RemainingMinutes / 60}h {power.RemainingMinutes % 60}m remaining")
                 : "";
             MainDeviceSubtitle.Text = $"{status}{time}";
             MainDevicePercent.Text = $"{power.Percentage}%";
@@ -135,7 +164,7 @@ public partial class BatteriesSettings : UserControl
         {
             var emptyLabel = new TextBlock
             {
-                Text = "未扫描到其他已配对的蓝牙设备",
+                Text = IsZh ? "未扫描到其他已配对的蓝牙设备" : "No other paired Bluetooth devices found",
                 FontSize = 12,
                 Opacity = 0.6,
                 Margin = new Thickness(4, 6, 0, 6)
@@ -165,13 +194,13 @@ public partial class BatteriesSettings : UserControl
 
     private static string GetDeviceKindName(DeviceKind kind) => kind switch
     {
-        DeviceKind.Mouse => "鼠标",
-        DeviceKind.Gamepad => "游戏手柄",
-        DeviceKind.Headphones => "耳机",
-        DeviceKind.Keyboard => "键盘",
-        DeviceKind.Phone => "手机",
-        DeviceKind.Computer => "电脑",
-        _ => "其他外设"
+        DeviceKind.Mouse => IsZh ? "鼠标" : "Mouse",
+        DeviceKind.Gamepad => IsZh ? "游戏手柄" : "Controller",
+        DeviceKind.Headphones => IsZh ? "耳机" : "Headphones",
+        DeviceKind.Keyboard => IsZh ? "键盘" : "Keyboard",
+        DeviceKind.Phone => IsZh ? "手机" : "Phone",
+        DeviceKind.Computer => IsZh ? "电脑" : "PC",
+        _ => IsZh ? "其他外设" : "Other"
     };
 
     private record DeviceKindOption(string Display, DeviceKind Kind)
@@ -179,15 +208,15 @@ public partial class BatteriesSettings : UserControl
         public override string ToString() => Display;
     }
 
-    private static readonly DeviceKindOption[] KindOptions =
+    private static DeviceKindOption[] GetKindOptions() =>
     [
-        new("🖱️ 鼠标", DeviceKind.Mouse),
-        new("🎮 游戏手柄", DeviceKind.Gamepad),
-        new("🎧 蓝牙耳机", DeviceKind.Headphones),
-        new("⌨️ 蓝牙键盘", DeviceKind.Keyboard),
-        new("📱 手机", DeviceKind.Phone),
-        new("💻 电脑", DeviceKind.Computer),
-        new("🔌 其他外设", DeviceKind.Other)
+        new(IsZh ? "🖱️ 鼠标" : "🖱️ Mouse", DeviceKind.Mouse),
+        new(IsZh ? "🎮 游戏手柄" : "🎮 Controller", DeviceKind.Gamepad),
+        new(IsZh ? "🎧 蓝牙耳机" : "🎧 Headphones", DeviceKind.Headphones),
+        new(IsZh ? "⌨️ 蓝牙键盘" : "⌨️ Keyboard", DeviceKind.Keyboard),
+        new(IsZh ? "📱 手机" : "📱 Phone", DeviceKind.Phone),
+        new(IsZh ? "💻 电脑" : "💻 PC", DeviceKind.Computer),
+        new(IsZh ? "🔌 其他外设" : "🔌 Other", DeviceKind.Other)
     ];
 
     private void SetDeviceTypeOverride(string name, DeviceKind kind)
@@ -257,7 +286,9 @@ public partial class BatteriesSettings : UserControl
         titleBlock.Bind(TextBlock.ForegroundProperty, new Avalonia.Markup.Xaml.MarkupExtensions.DynamicResourceExtension("SystemControlForegroundBaseHighBrush"));
 
         bool isOverridden = model.DeviceTypeOverrides != null && model.DeviceTypeOverrides.ContainsKey(p.Name);
-        var subText = isOverridden ? $"已连接 · {GetDeviceKindName(p.Kind)} (已自定义)" : $"已连接 · {GetDeviceKindName(p.Kind)}";
+        var connectedText = IsZh ? "已连接" : "Connected";
+        var customText = IsZh ? " (已自定义)" : " (Custom)";
+        var subText = isOverridden ? $"{connectedText} · {GetDeviceKindName(p.Kind)}{customText}" : $"{connectedText} · {GetDeviceKindName(p.Kind)}";
         var subBlock = new TextBlock
         {
             Text = subText,
@@ -272,10 +303,11 @@ public partial class BatteriesSettings : UserControl
         Grid.SetColumn(stack, 1);
 
         // Type ComboBox selector
+        var kindOptions = GetKindOptions();
         var combo = new ComboBox
         {
-            ItemsSource = KindOptions,
-            SelectedItem = System.Array.Find(KindOptions, o => o.Kind == p.Kind) ?? KindOptions[0],
+            ItemsSource = kindOptions,
+            SelectedItem = System.Array.Find(kindOptions, o => o.Kind == p.Kind) ?? kindOptions[0],
             VerticalAlignment = VerticalAlignment.Center,
             Margin = new Thickness(0, 0, 10, 0),
             FontSize = 11,
@@ -367,9 +399,11 @@ public partial class BatteriesSettings : UserControl
         bool isOverridden = model.DeviceTypeOverrides != null &&
             (model.DeviceTypeOverrides.ContainsKey(d.CleanName) || model.DeviceTypeOverrides.ContainsKey(d.Name));
 
-        var statusText = d.IsConnected ? "● 已连接" : "○ 未连接";
+        var statusText = d.IsConnected
+            ? (IsZh ? "● 已连接" : "● Connected")
+            : (IsZh ? "○ 未连接" : "○ Disconnected");
         if (d.BatteryPercentage != null) statusText += $" · {d.BatteryPercentage}%";
-        if (isOverridden) statusText += " (已自定义)";
+        if (isOverridden) statusText += IsZh ? " (已自定义)" : " (Custom)";
 
         var subBlock = new TextBlock
         {
@@ -385,10 +419,11 @@ public partial class BatteriesSettings : UserControl
         Grid.SetColumn(stack, 1);
 
         // Type ComboBox selector
+        var kindOptions = GetKindOptions();
         var combo = new ComboBox
         {
-            ItemsSource = KindOptions,
-            SelectedItem = System.Array.Find(KindOptions, o => o.Kind == d.Kind) ?? KindOptions[0],
+            ItemsSource = kindOptions,
+            SelectedItem = System.Array.Find(kindOptions, o => o.Kind == d.Kind) ?? kindOptions[0],
             VerticalAlignment = VerticalAlignment.Center,
             FontSize = 11,
             Height = 26,
@@ -409,7 +444,7 @@ public partial class BatteriesSettings : UserControl
         {
             var resetBtn = new Button
             {
-                Content = "重置",
+                Content = IsZh ? "重置" : "Reset",
                 FontSize = 10,
                 Padding = new Thickness(6, 2),
                 VerticalAlignment = VerticalAlignment.Center

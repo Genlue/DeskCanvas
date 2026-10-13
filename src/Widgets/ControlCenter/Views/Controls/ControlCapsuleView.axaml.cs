@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
@@ -18,6 +19,9 @@ public partial class ControlCapsuleView : UserControl
     public int RowSpan { get; private set; } = 1;
     public int WheelStep { get; set; } = 2;
     public bool IsStandaloneTile { get; set; }
+
+    private static bool IsZh =>
+        CultureInfo.CurrentUICulture.TwoLetterISOLanguageName.Equals("zh", StringComparison.OrdinalIgnoreCase);
 
     private SystemControlSnapshot snapshot = new();
     private bool isDraggingSlider;
@@ -151,6 +155,10 @@ public partial class ControlCapsuleView : UserControl
     {
         snapshot = nextSnapshot;
 
+        ToolTip.SetTip(Action2x1Btn, IsZh ? "打开系统设置" : "Open System Settings");
+        Audio2x2HeaderTitle.Text = IsZh ? "音频输出设备" : "Audio Output";
+        ToolTip.SetTip(Audio2x2SettingsBtn, IsZh ? "打开系统声音设置" : "Open Sound Settings");
+
         if (!isDraggingSlider)
         {
             liveSliderPercent = ItemType switch
@@ -219,7 +227,7 @@ public partial class ControlCapsuleView : UserControl
             Title2x2.Foreground = highFgBrush;
             Subtitle2x2.Text = GetSubtitleText(snapshot);
             Subtitle2x2.Foreground = highFgBrush;
-            Value2x2.Text = IsSliderItem ? GetSliderValueText(isMuted) : (isActive ? "开启" : "关闭");
+            Value2x2.Text = IsSliderItem ? GetSliderValueText(isMuted) : (isActive ? (IsZh ? "开启" : "On") : (IsZh ? "关闭" : "Off"));
             Value2x2.Foreground = highFgBrush;
 
             if (IsSliderItem)
@@ -452,7 +460,7 @@ public partial class ControlCapsuleView : UserControl
         else if (ItemType is ControlItemType.Volume or ControlItemType.Microphone)
         {
             Presets2x2Grid.Columns = 4;
-            SetPresetBtn(PresetBtn0, isMuted ? "取消静音" : "静音", -1, isMuted);
+            SetPresetBtn(PresetBtn0, isMuted ? (IsZh ? "取消静音" : "Unmute") : (IsZh ? "静音" : "Mute"), -1, isMuted);
             SetPresetBtn(PresetBtn1, "25%", 25, !isMuted && Math.Abs(liveSliderPercent - 25) < 5);
             SetPresetBtn(PresetBtn2, "50%", 50, !isMuted && Math.Abs(liveSliderPercent - 50) < 5);
             SetPresetBtn(PresetBtn3, "100%", 100, !isMuted && Math.Abs(liveSliderPercent - 100) < 5);
@@ -460,8 +468,8 @@ public partial class ControlCapsuleView : UserControl
         else
         {
             Presets2x2Grid.Columns = 2;
-            SetPresetBtn(PresetBtn0, isActive ? "关闭" : "开启", -10, isActive);
-            SetPresetBtn(PresetBtn1, "系统设置 ↗", -20, false);
+            SetPresetBtn(PresetBtn0, isActive ? (IsZh ? "关闭" : "Off") : (IsZh ? "开启" : "On"), -10, isActive);
+            SetPresetBtn(PresetBtn1, IsZh ? "系统设置 ↗" : "System Settings ↗", -20, false);
             PresetBtn2.IsVisible = false;
             PresetBtn3.IsVisible = false;
         }
@@ -486,7 +494,7 @@ public partial class ControlCapsuleView : UserControl
         {
             AudioDeviceListPanel.Children.Add(new TextBlock
             {
-                Text = "未检测到活动音频输出设备",
+                Text = IsZh ? "未检测到活动音频输出设备" : "No active audio output device detected",
                 FontSize = 11,
                 Opacity = 0.6,
                 Margin = new Thickness(2, 6, 2, 0)
@@ -761,18 +769,18 @@ public partial class ControlCapsuleView : UserControl
     };
 
     private string GetSliderValueText(bool isMuted) =>
-        isMuted ? "静音" : $"{(int)Math.Round(liveSliderPercent)}%";
+        isMuted ? (IsZh ? "静音" : "Muted") : $"{(int)Math.Round(liveSliderPercent)}%";
 
     private string GetSubtitleText(SystemControlSnapshot s) => ItemType switch
     {
         ControlItemType.Brightness => $"{(int)Math.Round(s.Brightness)}%",
-        ControlItemType.Volume => s.IsMuted ? "已静音" : $"{(int)Math.Round(s.Volume)}%",
+        ControlItemType.Volume => s.IsMuted ? (IsZh ? "已静音" : "Muted") : $"{(int)Math.Round(s.Volume)}%",
         ControlItemType.AudioOutput => s.CurrentAudioName,
-        ControlItemType.Microphone => !s.HasMicrophone ? "无麦克风" : (s.IsMicMuted ? "已静音" : $"开启 · {(int)Math.Round(s.MicVolume)}%"),
+        ControlItemType.Microphone => !s.HasMicrophone ? (IsZh ? "无麦克风" : "No Mic") : (s.IsMicMuted ? (IsZh ? "已静音" : "Muted") : $"{(IsZh ? "开启" : "On")} · {(int)Math.Round(s.MicVolume)}%"),
         ControlItemType.WiFi => s.WifiSubtitle,
         ControlItemType.Bluetooth => s.BluetoothSubtitle,
-        ControlItemType.DarkMode => s.IsSystemDarkMode ? "系统深色" : "系统浅色",
-        ControlItemType.DesktopIcons => s.AreDesktopIconsVisible ? "已显示" : "已隐藏",
+        ControlItemType.DarkMode => s.IsSystemDarkMode ? (IsZh ? "系统深色" : "System Dark") : (IsZh ? "系统浅色" : "System Light"),
+        ControlItemType.DesktopIcons => s.AreDesktopIconsVisible ? (IsZh ? "已显示" : "Shown") : (IsZh ? "已隐藏" : "Hidden"),
         _ => string.Empty
     };
 

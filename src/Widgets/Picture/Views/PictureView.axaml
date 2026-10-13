@@ -1,6 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:controls="clr-namespace:Picture.Controls"
+             xmlns:locales="clr-namespace:Picture.Locales"
              xmlns:viewModels="clr-namespace:Picture.ViewModels"
              x:Class="Picture.Views.PictureView"
              x:DataType="viewModels:PictureViewModel"
@@ -37,7 +38,7 @@
                       Fill="{DynamicResource SystemControlForegroundBaseHighBrush}"
                       Width="28" Height="28" Stretch="Uniform" Opacity="0.5"
                       HorizontalAlignment="Center" />
-                <TextBlock Text="右键小组件以添加照片"
+                <TextBlock Text="{x:Static locales:Locale.Picture_EmptyHint}"
                            FontSize="12"
                            Opacity="0.6"
                            HorizontalAlignment="Center" />

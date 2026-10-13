@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <root>
   <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
     <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
@@ -81,5 +81,23 @@
   </data>
   <data name="Reminders_AllowInlineEdit" xml:space="preserve">
     <value>在组件卡片上直接编辑清单名与条目</value>
+  </data>
+  <data name="Reminders_DefaultListName" xml:space="preserve">
+    <value>待办清单</value>
+  </data>
+  <data name="Reminders_Empty" xml:space="preserve">
+    <value>暂无待办事项</value>
+  </data>
+  <data name="Reminders_Empty_Hint" xml:space="preserve">
+    <value>在下方快速输入添加新事项</value>
+  </data>
+  <data name="Reminders_Add_Placeholder" xml:space="preserve">
+    <value>添加新事项... (按 Enter 添加)</value>
+  </data>
+  <data name="Reminders_Add" xml:space="preserve">
+    <value>添加</value>
+  </data>
+  <data name="Reminders_ZeroItems" xml:space="preserve">
+    <value>0 项</value>
   </data>
 </root>

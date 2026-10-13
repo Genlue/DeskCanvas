@@ -106,7 +106,7 @@ public partial class Search4x2 : UserControl
         flyout.Items.Add(new Separator());
         var clearItem = new MenuItem
         {
-            Header = "清除所有搜索历史",
+            Header = Locales.Locale.Search_Clear_History,
             Icon = new PathIcon
             {
                 Data = Geometry.Parse(SearchIconProvider.TrashIcon),

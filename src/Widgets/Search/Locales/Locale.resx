@@ -93,4 +93,76 @@
     <data name="Search_Category_Community" xml:space="preserve">
         <value>Community</value>
     </data>
+    <data name="Search_Category_General" xml:space="preserve">
+        <value>General</value>
+    </data>
+    <data name="Search_Switch_Engine_Tooltip" xml:space="preserve">
+        <value>Click to switch search engine</value>
+    </data>
+    <data name="Search_Open_Homepage_Tooltip" xml:space="preserve">
+        <value>Open website in browser</value>
+    </data>
+    <data name="Search_History_Short" xml:space="preserve">
+        <value>History</value>
+    </data>
+    <data name="Search_General_Header" xml:space="preserve">
+        <value>General &amp; Search Behavior</value>
+    </data>
+    <data name="Search_Default_Engine" xml:space="preserve">
+        <value>Default Search Engine</value>
+    </data>
+    <data name="Search_Clear_History_Desc" xml:space="preserve">
+        <value>Clear all recent search history</value>
+    </data>
+    <data name="Search_Clear_Now" xml:space="preserve">
+        <value>Clear Now</value>
+    </data>
+    <data name="Search_Manage_Engines_Hint" xml:space="preserve">
+        <value>Check to enable/disable engines; engines higher in the list have higher priority.</value>
+    </data>
+    <data name="Search_Add_Custom_Engine" xml:space="preserve">
+        <value>+ Add Custom Engine</value>
+    </data>
+    <data name="Search_Add_Custom_Engine_Title" xml:space="preserve">
+        <value>Add Custom Search Engine</value>
+    </data>
+    <data name="Search_Engine_Name_Label" xml:space="preserve">
+        <value>Name:</value>
+    </data>
+    <data name="Search_Engine_Name_Watermark" xml:space="preserve">
+        <value>e.g. StackOverflow</value>
+    </data>
+    <data name="Search_Engine_Url_Label" xml:space="preserve">
+        <value>URL Template:</value>
+    </data>
+    <data name="Search_Engine_Url_Watermark" xml:space="preserve">
+        <value>e.g. https://stackoverflow.com/search?q={q}</value>
+    </data>
+    <data name="Search_Engine_Category_Label" xml:space="preserve">
+        <value>Category:</value>
+    </data>
+    <data name="Search_Engine_Icon_Label" xml:space="preserve">
+        <value>Icon:</value>
+    </data>
+    <data name="Search_Engine_Color_Label" xml:space="preserve">
+        <value>Brand Color:</value>
+    </data>
+    <data name="Search_Cancel" xml:space="preserve">
+        <value>Cancel</value>
+    </data>
+    <data name="Search_Save" xml:space="preserve">
+        <value>Save</value>
+    </data>
+    <data name="Search_MoveUp" xml:space="preserve">
+        <value>Move Up</value>
+    </data>
+    <data name="Search_MoveDown" xml:space="preserve">
+        <value>Move Down</value>
+    </data>
+    <data name="Search_Edit" xml:space="preserve">
+        <value>Edit</value>
+    </data>
+    <data name="Search_Delete" xml:space="preserve">
+        <value>Delete</value>
+    </data>
 </root>

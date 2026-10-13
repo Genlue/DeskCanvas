@@ -49,8 +49,8 @@ Weather forecast, reminders, big folders, clipboard and notes open in shared sec
 ### 4. 📐 Advanced Desktop Grid Management
 Custom square-cell grid (m×n cells stored as percentages, responsive across resolutions and DPI); widgets always snap to cells with customizable margins and corner radius, and stay pinned to the desktop bottom band.
 
-### 5. 🧩 Widget Ecosystem (17 built-in widgets)
-⏰ Clock (analog ×3 / digital / world clock / frameless) · 📅 Calendar · 🌤️ Weather (7-day forecast, 4-day square card, sun times, UV, AQI, proxy) · 📊 System Monitor · 📝 Notes (Markdown typography, secondary panel) · ✅ Reminders (interactive checklist with secondary panel) · 📁 Folders (desktop quick launcher with live file watching) · 🎵 Music controls · 🔍 Search · 📈 Progress · 🖼️ Picture · 🔋 Batteries · 🗺️ Map · 🍅 Pomodoro · 📚 Stack · 🧰 Tools (clipboard, translator, calculator) · 📌 Fixed (multi-widget aggregate cards)
+### 5. 🧩 Widget Ecosystem (20 built-in widgets)
+⏰ Clock (analog ×3 / digital / flip / frameless) · 📅 Calendar · 🌤️ Weather (7-day forecast, 4-day square card, sun times, UV, AQI, proxy) · 📊 System Monitor · 📝 Notes (Markdown typography, secondary panel) · ✅ Reminders (interactive checklist with secondary panel) · 📁 Folders (desktop quick launcher with live file watching) · 🎵 Music controls · 🔍 Search · 📈 Progress · 🖼️ Picture · 🔋 Batteries · 🗺️ Map · 🍅 Pomodoro · 📚 Stack · 🧰 Tools (clipboard, translator, calculator) · 🎛️ Control Center · 💽 Storage · 💬 Hitokoto Quotes (poetry / literature / anime quote card) · 📌 Fixed (multi-widget aggregate cards)
 
 ### 6. 🚀 Standalone Single-File Distribution
 Builds to a self-contained `DeskCanvas.exe` with a content-hash-verified embedded widget bundle; widgets are extracted to `%LocalAppData%\DeskCanvas` on first run and stay hot-updatable. An MSI installer (WiX v5) is also produced per release.

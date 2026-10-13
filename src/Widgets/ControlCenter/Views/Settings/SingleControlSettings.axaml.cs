@@ -1,4 +1,5 @@
 using System;
+using System.Globalization;
 using System.Text.Json;
 using Avalonia;
 using Avalonia.Controls;
@@ -17,6 +18,9 @@ public partial class SingleControlSettings : UserControl
     private SingleControlModel model;
     private bool isInitializing = true;
 
+    private static bool IsZh =>
+        CultureInfo.CurrentUICulture.TwoLetterISOLanguageName.Equals("zh", StringComparison.OrdinalIgnoreCase);
+
     public SingleControlSettings() : this(null) { }
 
     public SingleControlSettings(IWidgetLayoutProvider? widgetLayoutProvider)
@@ -25,6 +29,16 @@ public partial class SingleControlSettings : UserControl
         model = ReadModel(widgetLayoutProvider?.Get()) ?? new SingleControlModel();
 
         InitializeComponent();
+
+        HeaderLabel.Text = IsZh
+            ? "选择该快捷磁贴绑定的系统控制项："
+            : "Select the system control bound to this tile:";
+        WheelStepTitleLabel.Text = IsZh
+            ? "鼠标滚轮调节步进"
+            : "Mouse Wheel Step";
+        WheelStepSubtitleLabel.Text = IsZh
+            ? "当选择亮度、音量或麦克风时，滚轮单次增减百分比"
+            : "Increment per scroll notch for brightness, volume, or microphone";
 
         WheelStepCombo.SelectedIndex = model.WheelStep switch
         {

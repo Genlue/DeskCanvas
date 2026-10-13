@@ -215,8 +215,8 @@ public class CropPreviewControl : Control
         if (bitmap == null)
         {
             var text = new FormattedText(
-                "请选择或添加一张图片",
-                System.Globalization.CultureInfo.CurrentCulture,
+                Locales.Locale.Picture_SelectImageHint,
+                System.Globalization.CultureInfo.CurrentUICulture,
                 FlowDirection.LeftToRight,
                 new Typeface(FontFamily.Default, FontStyle.Normal, FontWeight.Normal),
                 12,

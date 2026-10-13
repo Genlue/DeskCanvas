@@ -112,13 +112,14 @@ public static class StorageService
                 string format = string.Empty;
                 try { format = drive.DriveFormat?.Trim() ?? string.Empty; } catch { }
 
+                var isZh = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName.Equals("zh", StringComparison.OrdinalIgnoreCase);
                 var fallbackLabel = isSystem
-                    ? "系统"
+                    ? (isZh ? "系统" : "System")
                     : type switch
                     {
-                        DriveType.Removable => "可移动磁盘",
-                        DriveType.Network => "网络磁盘",
-                        _ => "本地磁盘"
+                        DriveType.Removable => isZh ? "可移动磁盘" : "Removable Disk",
+                        DriveType.Network => isZh ? "网络磁盘" : "Network Drive",
+                        _ => isZh ? "本地磁盘" : "Local Disk"
                     };
 
                 var effectiveLabel = string.IsNullOrWhiteSpace(label) ? fallbackLabel : label;

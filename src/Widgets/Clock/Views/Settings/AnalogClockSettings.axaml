@@ -11,6 +11,37 @@
             <controls:Setting Title="{x:Static locales:Locale.Clock_ShowSeconds}">
                 <ToggleSwitch IsChecked="{Binding ShowSeconds} "/>
             </controls:Setting>
+            <controls:Setting IsVisible="{Binding ShowDialColorSetting}"
+                              Title="{x:Static locales:Locale.Clock_DialColor_Title}">
+                <StackPanel Orientation="Vertical" Spacing="8">
+                    <ComboBox MinWidth="130" HorizontalAlignment="Right"
+                              ItemsSource="{Binding DialColorModes}"
+                              SelectedItem="{Binding DialColorMode}">
+                        <ComboBox.ItemTemplate>
+                            <DataTemplate DataType="viewModels:DialColorModeOption">
+                                <TextBlock Text="{Binding Name}" Margin="0 4" />
+                            </DataTemplate>
+                        </ComboBox.ItemTemplate>
+                    </ComboBox>
+                    <StackPanel Orientation="Vertical" Spacing="8"
+                                IsVisible="{Binding ShowDialColorPickers}">
+                        <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Right">
+                            <TextBlock MinWidth="70" VerticalAlignment="Center"
+                                       Text="{x:Static locales:Locale.Clock_DialColor_Dark}" />
+                            <ColorPicker Height="36" Width="72"
+                                         Color="{Binding DialColorDark}" 
+                                         IsAlphaVisible="False" />
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Right">
+                            <TextBlock MinWidth="70" VerticalAlignment="Center"
+                                       Text="{x:Static locales:Locale.Clock_DialColor_Light}" />
+                            <ColorPicker Height="36" Width="72"
+                                         Color="{Binding DialColorLight}" 
+                                         IsAlphaVisible="False" />
+                        </StackPanel>
+                    </StackPanel>
+                </StackPanel>
+            </controls:Setting>
             <controls:Setting Title="{x:Static locales:Locale.Clock_LocalTimeZone}">
                 <ToggleSwitch IsChecked="{Binding UseLocalTimeZone} "/>
             </controls:Setting>

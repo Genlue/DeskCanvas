@@ -94,11 +94,11 @@
         <!-- Error State Buttons -->
         <StackPanel IsVisible="{Binding HasError}">
             <Separator />
-            <Button Classes="Action Primary" Content="重试" Click="DownloadUpdate" />
+            <Button Classes="Action Primary" Content="{Binding RetryButtonText}" Click="DownloadUpdate" />
             <Separator />
-            <Button Classes="Action" Content="在浏览器中打开" Click="OpenInBrowser" />
+            <Button Classes="Action" Content="{Binding OpenInBrowserButtonText}" Click="OpenInBrowser" />
             <Separator />
-            <Button Classes="Action" Content="关闭" Click="Later" />
+            <Button Classes="Action" Content="{x:Static locales:Locale.Settings_Appearance_Glass_Align_Close}" Click="Later" />
         </StackPanel>
       </StackPanel>
     </Border>

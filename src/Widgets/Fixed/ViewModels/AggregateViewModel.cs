@@ -21,6 +21,8 @@ public class AggregateViewModel : ReactiveObject, IDisposable
     /// read-only instance instead of building (and unifying) a new one per tick.
     /// </summary>
     private static readonly CultureInfo ChineseCulture = CultureInfo.GetCultureInfo("zh-CN");
+    private static bool IsChineseCulture =>
+        CultureInfo.CurrentUICulture.TwoLetterISOLanguageName.Equals("zh", StringComparison.OrdinalIgnoreCase);
 
     private readonly OpenMeteoWeatherService weatherService = new();
     private AggregateModel model;
@@ -28,15 +30,17 @@ public class AggregateViewModel : ReactiveObject, IDisposable
     /// <summary>Set once <see cref="Dispose"/> ran; keeps disposal (and late replies) harmless.</summary>
     private bool disposed;
 
-    private string cityName = "北京";
+    private string cityName = IsChineseCulture ? "北京" : "Beijing";
     private string temperatureText = "24°";
-    private string conditionText = "晴朗";
+    private string conditionText = IsChineseCulture ? "晴朗" : "Clear";
     private string highLowText = "↑26°  ↓18°";
     private StreamGeometry? weatherIcon = OpenMeteoWeatherService.GetWeatherIcon(0);
     private string timeText = "00:00";
     private string dateText = "";
     private string monthYearText = "";
-    private IReadOnlyList<string> weekHeaders = ["一", "二", "三", "四", "五", "六", "日"];
+    private IReadOnlyList<string> weekHeaders = IsChineseCulture
+        ? ["一", "二", "三", "四", "五", "六", "日"]
+        : ["M", "T", "W", "T", "F", "S", "S"];
     private IReadOnlyList<DayCellViewModel> dayCells = [];
     private IBrush? customAccentBrush;
 
@@ -247,7 +251,8 @@ public class AggregateViewModel : ReactiveObject, IDisposable
 
     private void ApplyModel(AggregateModel m)
     {
-        CityName = m.City;
+        bool isZh = IsChineseCulture;
+        CityName = !isZh && m.City == "北京" ? "Beijing" : m.City;
         Padding = m.Padding > 0 ? m.Padding : 14.0;
         HollowTodayNumber = m.HollowTodayNumber;
         UpdateTodayBrush();
@@ -263,11 +268,15 @@ public class AggregateViewModel : ReactiveObject, IDisposable
         // Set week headers according to FirstDayOfWeek
         if (m.FirstDayOfWeek == DayOfWeek.Sunday)
         {
-            WeekHeaders = ["日", "一", "二", "三", "四", "五", "六"];
+            WeekHeaders = isZh
+                ? ["日", "一", "二", "三", "四", "五", "六"]
+                : ["S", "M", "T", "W", "T", "F", "S"];
         }
         else
         {
-            WeekHeaders = ["一", "二", "三", "四", "五", "六", "日"];
+            WeekHeaders = isZh
+                ? ["一", "二", "三", "四", "五", "六", "日"]
+                : ["M", "T", "W", "T", "F", "S", "S"];
         }
     }
 
@@ -298,15 +307,24 @@ public class AggregateViewModel : ReactiveObject, IDisposable
             TimeText = model.ShowSeconds ? $"{tt}:{now:ss} {ampm}" : $"{tt} {ampm}";
         }
 
-        // Chinese Date & Weekday: e.g. "9月12日 星期六"
-        string weekday = now.ToString("dddd", ChineseCulture);
-        DateText = $"{now.Month}月{now.Day}日 {weekday}";
+        if (IsChineseCulture)
+        {
+            // Chinese Date & Weekday: e.g. "9月12日 星期六"
+            string weekday = now.ToString("dddd", ChineseCulture);
+            DateText = $"{now.Month}月{now.Day}日 {weekday}";
+        }
+        else
+        {
+            DateText = now.ToString("ddd, MMM d", CultureInfo.CurrentUICulture);
+        }
     }
 
     public void UpdateCalendar()
     {
         var now = DateTime.Now;
-        MonthYearText = $"{now.Year}年 {now.Month}月";
+        MonthYearText = IsChineseCulture
+            ? $"{now.Year}年 {now.Month}月"
+            : now.ToString("MMMM yyyy", CultureInfo.CurrentUICulture);
 
         var firstDayOfMonth = new DateTime(now.Year, now.Month, 1);
         int daysInMonth = DateTime.DaysInMonth(now.Year, now.Month);
@@ -373,7 +391,7 @@ public class AggregateViewModel : ReactiveObject, IDisposable
                 if (TemperatureText == "--°")
                 {
                     TemperatureText = "24°";
-                    ConditionText = "晴朗";
+                    ConditionText = IsChineseCulture ? "晴朗" : "Clear";
                     HighLowText = "↑26°  ↓18°";
                     WeatherIcon = OpenMeteoWeatherService.GetWeatherIcon(0);
                 }

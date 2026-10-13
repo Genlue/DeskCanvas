@@ -28,7 +28,7 @@
     <ScrollViewer VerticalScrollBarVisibility="Auto">
         <StackPanel Orientation="Vertical" Spacing="6" Margin="0,0,10,12">
             <!-- 外观与交互选项 -->
-            <TextBlock Classes="group-header" Text="外观与交互" Margin="0,4,0,4" />
+            <TextBlock x:Name="AppearanceSectionHeader" Classes="group-header" Text="外观与交互" Margin="0,4,0,4" />
 
             <!-- 显示样式 -->
             <controls:Setting Title="{x:Static locales:Locale.Storage_DisplayMode}">
@@ -56,7 +56,7 @@
             </controls:Setting>
 
             <!-- 驱动器类型过滤 -->
-            <TextBlock Classes="group-header" Text="驱动器过滤" Margin="0,12,0,4" />
+            <TextBlock x:Name="FilterSectionHeader" Classes="group-header" Text="驱动器过滤" Margin="0,12,0,4" />
 
             <controls:Setting Title="{x:Static locales:Locale.Storage_ShowRemovableDrives}">
                 <ToggleSwitch Name="ShowRemovableSwitch" IsCheckedChanged="OnOptionChanged" />
@@ -68,11 +68,11 @@
 
             <!-- 本机磁盘列表与单独显隐控制 -->
             <Grid Margin="0,14,0,2">
-                <TextBlock Classes="group-header" Text="本机磁盘详情与显隐管理" VerticalAlignment="Center" Margin="0" />
-                <Button Classes="action-btn" Content="刷新磁盘" HorizontalAlignment="Right"
+                <TextBlock x:Name="DrivesSectionHeader" Classes="group-header" Text="本机磁盘详情与显隐管理" VerticalAlignment="Center" Margin="0" />
+                <Button x:Name="RefreshDrivesButton" Classes="action-btn" Content="刷新磁盘" HorizontalAlignment="Right"
                         Click="OnRefreshDrivesClicked" />
             </Grid>
-            <TextBlock Text="可单独勾选或隐藏不想在小组件中展示的分区；超出会按盘符顺序自动截取适配卡片尺寸。"
+            <TextBlock x:Name="DrivesHintText" Text="可单独勾选或隐藏不想在小组件中展示的分区；超出会按盘符顺序自动截取适配卡片尺寸。"
                        FontSize="11" Opacity="0.6" Margin="0,0,0,6" TextWrapping="Wrap"
                        Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}" />
 

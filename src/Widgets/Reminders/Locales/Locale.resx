@@ -42,4 +42,22 @@
     <data name="Reminders_AllowInlineEdit" xml:space="preserve">
         <value>Edit list name and items on the widget card</value>
     </data>
+    <data name="Reminders_DefaultListName" xml:space="preserve">
+        <value>To-Do List</value>
+    </data>
+    <data name="Reminders_Empty" xml:space="preserve">
+        <value>No reminders yet</value>
+    </data>
+    <data name="Reminders_Empty_Hint" xml:space="preserve">
+        <value>Type below to quickly add a new item</value>
+    </data>
+    <data name="Reminders_Add_Placeholder" xml:space="preserve">
+        <value>Add a new item... (Press Enter)</value>
+    </data>
+    <data name="Reminders_Add" xml:space="preserve">
+        <value>Add</value>
+    </data>
+    <data name="Reminders_ZeroItems" xml:space="preserve">
+        <value>0 items</value>
+    </data>
 </root>

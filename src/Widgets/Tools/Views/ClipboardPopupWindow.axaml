@@ -1,4 +1,4 @@
-﻿<Window xmlns="https://github.com/avaloniaui"
+<Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:models="clr-namespace:Tools.Models"
         xmlns:locales="clr-namespace:Tools.Locales"
@@ -86,9 +86,9 @@
                     <!-- Top Header (Row 0) -->
                     <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="0,0,0,10">
                         <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                            <TextBlock Text="剪贴板历史管理器" FontSize="15" FontWeight="Bold" />
+                            <TextBlock Text="{x:Static locales:Locale.Tools_Clipboard_PopupTitle}" FontSize="15" FontWeight="Bold" />
                             <Border Background="#20808080" CornerRadius="8" Padding="6,2" VerticalAlignment="Center">
-                                <TextBlock x:Name="CountBadge" Text="0 项" FontSize="11" FontWeight="SemiBold"
+                                <TextBlock x:Name="CountBadge" Text="0" FontSize="11" FontWeight="SemiBold"
                                            Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}" />
                             </Border>
                         </StackPanel>
@@ -103,7 +103,7 @@
                             <TextBlock Grid.Column="0" Text="🔍" FontSize="12" Opacity="0.6" Margin="0,0,6,0" VerticalAlignment="Center" />
                             <TextBox Grid.Column="1" x:Name="SearchBox"
                                      Background="Transparent" BorderThickness="0"
-                                     Watermark="搜索剪贴板历史..." FontSize="12"
+                                     Watermark="{x:Static locales:Locale.Tools_Clipboard_SearchWatermark}" FontSize="12"
                                      Padding="0,2" VerticalAlignment="Center"
                                      TextChanged="OnSearchTextChanged" />
                         </Grid>
@@ -111,10 +111,10 @@
 
                     <!-- Filter Tabs (Row 2) -->
                     <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="4" Margin="0,0,0,10">
-                        <Button x:Name="TabAll" Classes="tab-pill active" Content="全部" Click="OnTabClicked" Tag="All" />
-                        <Button x:Name="TabText" Classes="tab-pill" Content="文本" Click="OnTabClicked" Tag="Text" />
-                        <Button x:Name="TabImage" Classes="tab-pill" Content="图片" Click="OnTabClicked" Tag="Image" />
-                        <Button x:Name="TabFiles" Classes="tab-pill" Content="文件" Click="OnTabClicked" Tag="Files" />
+                        <Button x:Name="TabAll" Classes="tab-pill active" Content="{x:Static locales:Locale.Tools_Clipboard_All}" Click="OnTabClicked" Tag="All" />
+                        <Button x:Name="TabText" Classes="tab-pill" Content="{x:Static locales:Locale.Tools_Clipboard_Text}" Click="OnTabClicked" Tag="Text" />
+                        <Button x:Name="TabImage" Classes="tab-pill" Content="{x:Static locales:Locale.Tools_Clipboard_Image}" Click="OnTabClicked" Tag="Image" />
+                        <Button x:Name="TabFiles" Classes="tab-pill" Content="{x:Static locales:Locale.Tools_Clipboard_Files}" Click="OnTabClicked" Tag="Files" />
                     </StackPanel>
 
                     <!-- History Items List (Row 3) -->
@@ -123,7 +123,7 @@
                             <!-- Empty state placeholder -->
                             <StackPanel x:Name="EmptyPanel" IsVisible="False" Margin="0,40,0,0" HorizontalAlignment="Center" Spacing="8">
                                 <TextBlock Text="📋" FontSize="36" HorizontalAlignment="Center" Opacity="0.5" />
-                                <TextBlock Text="暂无符合条件的剪贴记录" FontSize="13" HorizontalAlignment="Center" Opacity="0.5" />
+                                <TextBlock Text="{x:Static locales:Locale.Tools_Clipboard_NoMatches}" FontSize="13" HorizontalAlignment="Center" Opacity="0.5" />
                             </StackPanel>
 
                             <ItemsControl x:Name="ItemsControl">
@@ -156,11 +156,11 @@
                                                 <!-- Action Buttons: Pin & Delete -->
                                                 <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="2" VerticalAlignment="Center">
                                                     <Button Classes="icon-btn" Click="OnTogglePinClicked" DataContext="{Binding}"
-                                                            ToolTip.Tip="置顶/取消置顶">
+                                                            ToolTip.Tip="{x:Static locales:Locale.Tools_Clipboard_TogglePin}">
                                                         <TextBlock Text="📌" FontSize="11" Opacity="{Binding IsPinned, Converter={x:Static ObjectConverters.IsNotNull}}" />
                                                     </Button>
                                                     <Button Classes="icon-btn" Click="OnDeleteItemClicked" DataContext="{Binding}"
-                                                            ToolTip.Tip="删除记录">
+                                                            ToolTip.Tip="{x:Static locales:Locale.Tools_Clipboard_DeleteRecord}">
                                                         <TextBlock Text="✕" FontSize="10" Opacity="0.5" />
                                                     </Button>
                                                 </StackPanel>

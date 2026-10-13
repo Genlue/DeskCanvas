@@ -1,5 +1,6 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:locales="clr-namespace:Weather.Locales"
              xmlns:viewModels="clr-namespace:Weather.ViewModels"
              x:Class="Weather.Views.Controls.ForecastLarge"
              x:DataType="viewModels:ForecastViewModel">
@@ -29,7 +30,7 @@
             <PathIcon Foreground="{DynamicResource WeatherIconBrush}" 
                       Data="{Binding CurrentIcon}" />
             <Button Classes="detail-btn" Width="20" Height="20" CornerRadius="10"
-                    Click="OpenPopup" ToolTip.Tip="查看天气详情与7天预报">
+                    Click="OpenPopup" ToolTip.Tip="{x:Static locales:Locale.Weather_OpenPopupTip}">
                 <Path Data="M19 19H5V5h7V3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z"
                       Fill="{DynamicResource WeatherForegroundBrush}" Opacity="0.65"
                       Width="11" Height="11" Stretch="Uniform"

@@ -5,6 +5,7 @@
              xmlns:vm="using:Search.ViewModels"
              xmlns:services="using:Search.Services"
              xmlns:models="using:Search.Models"
+             xmlns:locales="clr-namespace:Search.Locales"
              mc:Ignorable="d" d:DesignWidth="152" d:DesignHeight="152"
              x:Class="Search.Views.Controls.Search2x2"
              x:DataType="vm:SearchViewModel">
@@ -58,7 +59,7 @@
                     Margin="0,0,4,0"
                     HorizontalAlignment="Left"
                     Click="OnEngineSelectorClicked"
-                    ToolTip.Tip="点击切换搜索引擎">
+                    ToolTip.Tip="{x:Static locales:Locale.Search_Switch_Engine_Tooltip}">
                 <StackPanel Orientation="Horizontal" Spacing="3" VerticalAlignment="Center">
                     <PathIcon Data="{Binding EngineIconPath}"
                               Foreground="{Binding EngineColor}"
@@ -84,7 +85,7 @@
                     CornerRadius="12"
                     Padding="0"
                     Click="OnOpenHomepageClicked"
-                    ToolTip.Tip="在浏览器打开官网">
+                    ToolTip.Tip="{x:Static locales:Locale.Search_Open_Homepage_Tooltip}">
                 <PathIcon Data="{x:Static services:SearchIconProvider.ExternalLinkIcon}"
                           Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"
                           Width="11" Height="11"
@@ -119,7 +120,7 @@
                         Margin="2,0"
                         IsVisible="{Binding HasQuery}"
                         Click="OnClearClicked"
-                        ToolTip.Tip="清空">
+                        ToolTip.Tip="{x:Static locales:Locale.Search_Clear}">
                     <PathIcon Data="{x:Static services:SearchIconProvider.ClearIcon}"
                               Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"
                               Width="10" Height="10"
@@ -134,7 +135,7 @@
                         Background="{Binding EngineColor}"
                         BorderThickness="0"
                         Click="OnSearchActionClicked"
-                        ToolTip.Tip="搜索">
+                        ToolTip.Tip="{x:Static locales:Locale.Search_Button}">
                     <PathIcon Data="{x:Static services:SearchIconProvider.DefaultSearchIcon}"
                               Foreground="#FFFFFF"
                               Width="12" Height="12"

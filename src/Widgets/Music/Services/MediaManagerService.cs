@@ -367,8 +367,8 @@ public class MediaManagerService : IDisposable
                 var props = await s.TryGetMediaPropertiesAsync();
                 result.Add((
                     s.SourceAppUserModelId,
-                    props?.Title ?? "无标题",
-                    props?.Artist ?? "未知艺术家",
+                    props?.Title ?? Music.Locales.Locale.Music_Untitled,
+                    props?.Artist ?? Music.Locales.Locale.Music_UnknownArtist,
                     playback?.PlaybackStatus == GlobalSystemMediaTransportControlsSessionPlaybackStatus.Playing
                 ));
             }
@@ -444,12 +444,13 @@ public class MediaManagerService : IDisposable
 
     private string ResolveAppFriendlyName(string appId)
     {
-        if (string.IsNullOrWhiteSpace(appId)) return "音乐";
-        if (appId.Contains("cloudmusic", StringComparison.OrdinalIgnoreCase)) return "网易云音乐";
-        if (appId.Contains("qqmusic", StringComparison.OrdinalIgnoreCase)) return "QQ音乐";
+        var isZh = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName.Equals("zh", StringComparison.OrdinalIgnoreCase);
+        if (string.IsNullOrWhiteSpace(appId)) return Music.Locales.Locale.Music_DefaultPlayer;
+        if (appId.Contains("cloudmusic", StringComparison.OrdinalIgnoreCase)) return isZh ? "网易云音乐" : "NetEase Cloud Music";
+        if (appId.Contains("qqmusic", StringComparison.OrdinalIgnoreCase)) return isZh ? "QQ音乐" : "QQ Music";
         if (appId.Contains("spotify", StringComparison.OrdinalIgnoreCase)) return "Spotify";
         if (appId.Contains("apple", StringComparison.OrdinalIgnoreCase)) return "Apple Music";
-        if (appId.Contains("kugou", StringComparison.OrdinalIgnoreCase)) return "酷狗音乐";
+        if (appId.Contains("kugou", StringComparison.OrdinalIgnoreCase)) return isZh ? "酷狗音乐" : "KuGou Music";
         if (appId.Contains("chrome", StringComparison.OrdinalIgnoreCase)) return "Chrome";
         if (appId.Contains("msedge", StringComparison.OrdinalIgnoreCase)) return "Edge";
         if (appId.Contains("firefox", StringComparison.OrdinalIgnoreCase)) return "Firefox";

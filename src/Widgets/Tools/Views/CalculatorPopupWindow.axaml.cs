@@ -325,10 +325,12 @@ public partial class CalculatorPopupWindow : SecondaryPanelWindow
         return double.TryParse(raw, NumberStyles.Float, CultureInfo.InvariantCulture, out value);
     }
 
+    private static bool IsZh => CultureInfo.CurrentUICulture.TwoLetterISOLanguageName.Equals("zh", StringComparison.OrdinalIgnoreCase);
+
     private void OnMemClearClicked(object? sender, RoutedEventArgs e)
     {
         CalculatorStore.Instance.MemoryClear();
-        ShowToast("已清空内存");
+        ShowToast(IsZh ? "已清空内存" : "Memory cleared");
     }
 
     private void OnMemRecallClicked(object? sender, RoutedEventArgs e)
@@ -340,7 +342,7 @@ public partial class CalculatorPopupWindow : SecondaryPanelWindow
         }
         else
         {
-            ShowToast("内存为空");
+            ShowToast(IsZh ? "内存为空" : "Memory is empty");
         }
     }
 
@@ -367,7 +369,7 @@ public partial class CalculatorPopupWindow : SecondaryPanelWindow
         if (TryGetCurrentSciDouble(out double v))
         {
             CalculatorStore.Instance.MemoryStore(v);
-            ShowToast($"已存入内存: {CalculatorEngine.FormatNumber(v, 4)}");
+            ShowToast(IsZh ? $"已存入内存: {CalculatorEngine.FormatNumber(v, 4)}" : $"Stored in memory: {CalculatorEngine.FormatNumber(v, 4)}");
         }
     }
 
@@ -676,12 +678,12 @@ public partial class CalculatorPopupWindow : SecondaryPanelWindow
         if (showingMemoryInSidebar)
         {
             CalculatorStore.Instance.MemoryClear();
-            ShowToast("已清空内存");
+            ShowToast(IsZh ? "已清空内存" : "Memory cleared");
         }
         else
         {
             CalculatorStore.Instance.ClearHistory();
-            ShowToast("已清空计算历史");
+            ShowToast(IsZh ? "已清空计算历史" : "Calculation history cleared");
         }
     }
 
@@ -708,7 +710,7 @@ public partial class CalculatorPopupWindow : SecondaryPanelWindow
         if (showingMemoryInSidebar)
         {
             var slots = CalculatorStore.Instance.GetMemorySlots();
-            SidebarEmptyText.Text = "暂无内存数据 (使用 MS / M+ 存入)";
+            SidebarEmptyText.Text = IsZh ? "暂无内存数据 (使用 MS / M+ 存入)" : "No memory values (use MS / M+ to store)";
             SidebarEmptyText.IsVisible = slots.Count == 0;
 
             for (int i = 0; i < slots.Count; i++)

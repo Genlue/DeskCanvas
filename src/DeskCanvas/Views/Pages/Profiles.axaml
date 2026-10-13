@@ -85,7 +85,7 @@
                                     </Border>
                                 </StackPanel>
                                 <TextBlock FontSize="{DynamicResource FontSizeCaption}" Opacity="0.6"
-                                           Text="{Binding LastModified, StringFormat='修改时间：{0}'}"
+                                           Text="{Binding LastModified}"
                                            IsVisible="{Binding LastModified, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
                             </StackPanel>
 

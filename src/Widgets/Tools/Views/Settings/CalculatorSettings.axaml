@@ -42,7 +42,7 @@
 
     <ScrollViewer VerticalScrollBarVisibility="Auto">
         <StackPanel Orientation="Vertical" Spacing="10" Margin="0,2,16,8">
-            <TextBlock Classes="group-header" Text="显示与精度设置" />
+            <TextBlock Classes="group-header" Text="{x:Static locales:Locale.Tools_Calculator_Group_Display}" />
 
             <!-- Decimal Places -->
             <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto">
@@ -60,7 +60,7 @@
                               IsCheckedChanged="OnToggleChanged" />
             </Grid>
 
-            <TextBlock Classes="group-header" Text="计算模式与二级面板" />
+            <TextBlock Classes="group-header" Text="{x:Static locales:Locale.Tools_Calculator_Group_Mode}" />
 
             <!-- Default Angle Mode -->
             <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto">
@@ -78,7 +78,7 @@
                           SelectionChanged="OnDefaultTabChanged" />
             </Grid>
 
-            <TextBlock Classes="group-header" Text="历史记录与交互" />
+            <TextBlock Classes="group-header" Text="{x:Static locales:Locale.Tools_Calculator_Group_History}" />
 
             <!-- Max History Items -->
             <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto">
@@ -102,10 +102,10 @@
             <!-- Clear History & Memory -->
             <Grid ColumnDefinitions="*,Auto" Margin="0,4,0,0">
                 <StackPanel VerticalAlignment="Center">
-                    <TextBlock Classes="setting-label" Text="清空计算历史记录与内存槽" />
-                    <TextBlock Classes="setting-desc" Text="清除所有已保存的历史算式记录及 M 内存数值" />
+                    <TextBlock Classes="setting-label" Text="{x:Static locales:Locale.Tools_Calculator_ClearAllTitle}" />
+                    <TextBlock Classes="setting-desc" Text="{x:Static locales:Locale.Tools_Calculator_ClearAllDesc}" />
                 </StackPanel>
-                <Button Grid.Column="1" Classes="action-btn" Content="立即清空" Click="OnClearAllClicked" />
+                <Button Grid.Column="1" Classes="action-btn" Content="{x:Static locales:Locale.Tools_Clipboard_ClearNow}" Click="OnClearAllClicked" />
             </Grid>
         </StackPanel>
     </ScrollViewer>

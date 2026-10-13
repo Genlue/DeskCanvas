@@ -258,4 +258,40 @@
   <data name="Weather_AirQuality_Subtitle" xml:space="preserve">
     <value>查看您所在位置的当前空气质量指数</value>
   </data>
+  <data name="Weather_OpenPopupTip" xml:space="preserve">
+    <value>查看天气详情与7天预报</value>
+  </data>
+  <data name="Weather_Popup_HourlyTitle" xml:space="preserve">
+    <value>逐时预报 (24小时)</value>
+  </data>
+  <data name="Weather_Popup_DailyTitle" xml:space="preserve">
+    <value>未来 7 天天气预报</value>
+  </data>
+  <data name="Weather_Popup_UVHeader" xml:space="preserve">
+    <value>紫外线指数 (UV)</value>
+  </data>
+  <data name="Weather_Popup_UVDefaultDesc" xml:space="preserve">
+    <value>全天适度</value>
+  </data>
+  <data name="Weather_Popup_PressureHeader" xml:space="preserve">
+    <value>大气压强 (Pressure)</value>
+  </data>
+  <data name="Weather_Popup_PressureDesc" xml:space="preserve">
+    <value>标准大气压正常</value>
+  </data>
+  <data name="Weather_Popup_SunHeader" xml:space="preserve">
+    <value>日出与日落</value>
+  </data>
+  <data name="Weather_Popup_SunDesc" xml:space="preserve">
+    <value>晨曦与黄昏</value>
+  </data>
+  <data name="Weather_Popup_AqiHeader" xml:space="preserve">
+    <value>空气质量与体感</value>
+  </data>
+  <data name="Weather_Popup_AqiDefault" xml:space="preserve">
+    <value>优良 (AQI 32)</value>
+  </data>
+  <data name="Weather_Popup_AqiDesc" xml:space="preserve">
+    <value>清新宜人</value>
+  </data>
 </root>

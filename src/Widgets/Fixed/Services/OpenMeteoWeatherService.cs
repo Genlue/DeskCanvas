@@ -32,8 +32,8 @@ public class OpenMeteoWeatherService : IDisposable
         if (string.IsNullOrWhiteSpace(query)) return null;
         try
         {
-            var language = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
-            if (string.IsNullOrEmpty(language)) language = "zh";
+            var isZh = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName.Equals("zh", StringComparison.OrdinalIgnoreCase);
+            var language = isZh ? "zh" : "en";
 
             var url = $"https://geocoding-api.open-meteo.com/v1/search?" +
                       $"name={Uri.EscapeDataString(query.Trim())}&" +
@@ -100,29 +100,57 @@ public class OpenMeteoWeatherService : IDisposable
         GC.SuppressFinalize(this);
     }
 
-    public static string GetConditionText(int code) => code switch
+    public static string GetConditionText(int code)
     {
-        0 => "晴朗",
-        1 => "晴间多云",
-        2 => "多云",
-        3 => "阴天",
-        45 or 48 => "有雾",
-        51 or 53 or 55 => "毛毛雨",
-        56 or 57 => "冻毛毛雨",
-        61 => "小雨",
-        63 => "中雨",
-        65 => "大雨",
-        66 or 67 => "冻雨",
-        71 => "小雪",
-        73 => "中雪",
-        75 => "大雪",
-        77 => "雪粒",
-        80 or 81 or 82 => "阵雨",
-        85 or 86 => "阵雪",
-        95 => "雷阵雨",
-        96 or 99 => "雷阵雨伴有冰雹",
-        _ => "晴"
-    };
+        bool isZh = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName.Equals("zh", StringComparison.OrdinalIgnoreCase);
+        return isZh
+            ? code switch
+            {
+                0 => "晴朗",
+                1 => "晴间多云",
+                2 => "多云",
+                3 => "阴天",
+                45 or 48 => "有雾",
+                51 or 53 or 55 => "毛毛雨",
+                56 or 57 => "冻毛毛雨",
+                61 => "小雨",
+                63 => "中雨",
+                65 => "大雨",
+                66 or 67 => "冻雨",
+                71 => "小雪",
+                73 => "中雪",
+                75 => "大雪",
+                77 => "雪粒",
+                80 or 81 or 82 => "阵雨",
+                85 or 86 => "阵雪",
+                95 => "雷阵雨",
+                96 or 99 => "雷阵雨伴有冰雹",
+                _ => "晴"
+            }
+            : code switch
+            {
+                0 => "Clear",
+                1 => "Mostly Clear",
+                2 => "Partly Cloudy",
+                3 => "Overcast",
+                45 or 48 => "Fog",
+                51 or 53 or 55 => "Drizzle",
+                56 or 57 => "Freezing Drizzle",
+                61 => "Light Rain",
+                63 => "Moderate Rain",
+                65 => "Heavy Rain",
+                66 or 67 => "Freezing Rain",
+                71 => "Light Snow",
+                73 => "Moderate Snow",
+                75 => "Heavy Snow",
+                77 => "Snow Grains",
+                80 or 81 or 82 => "Rain Showers",
+                85 or 86 => "Snow Showers",
+                95 => "Thunderstorm",
+                96 or 99 => "Thunderstorm with Hail",
+                _ => "Clear"
+            };
+    }
 
     public static StreamGeometry GetWeatherIcon(int code)
     {

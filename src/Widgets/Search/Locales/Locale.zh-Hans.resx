@@ -93,4 +93,76 @@
     <data name="Search_Category_Community" xml:space="preserve">
         <value>问答社区</value>
     </data>
+    <data name="Search_Category_General" xml:space="preserve">
+        <value>通用</value>
+    </data>
+    <data name="Search_Switch_Engine_Tooltip" xml:space="preserve">
+        <value>点击切换搜索引擎</value>
+    </data>
+    <data name="Search_Open_Homepage_Tooltip" xml:space="preserve">
+        <value>在浏览器打开官网</value>
+    </data>
+    <data name="Search_History_Short" xml:space="preserve">
+        <value>历史</value>
+    </data>
+    <data name="Search_General_Header" xml:space="preserve">
+        <value>常规与搜索行为</value>
+    </data>
+    <data name="Search_Default_Engine" xml:space="preserve">
+        <value>默认搜索引擎</value>
+    </data>
+    <data name="Search_Clear_History_Desc" xml:space="preserve">
+        <value>清除所有最近搜索历史</value>
+    </data>
+    <data name="Search_Clear_Now" xml:space="preserve">
+        <value>立即清空</value>
+    </data>
+    <data name="Search_Manage_Engines_Hint" xml:space="preserve">
+        <value>勾选可启用/禁用引擎；列表上方的引擎在界面中拥有更高优先级。</value>
+    </data>
+    <data name="Search_Add_Custom_Engine" xml:space="preserve">
+        <value>+ 新增自定义引擎</value>
+    </data>
+    <data name="Search_Add_Custom_Engine_Title" xml:space="preserve">
+        <value>添加自定义搜索引擎</value>
+    </data>
+    <data name="Search_Engine_Name_Label" xml:space="preserve">
+        <value>引擎名称：</value>
+    </data>
+    <data name="Search_Engine_Name_Watermark" xml:space="preserve">
+        <value>例如：StackOverflow</value>
+    </data>
+    <data name="Search_Engine_Url_Label" xml:space="preserve">
+        <value>URL 模板：</value>
+    </data>
+    <data name="Search_Engine_Url_Watermark" xml:space="preserve">
+        <value>例如：https://stackoverflow.com/search?q={q}</value>
+    </data>
+    <data name="Search_Engine_Category_Label" xml:space="preserve">
+        <value>所属分类：</value>
+    </data>
+    <data name="Search_Engine_Icon_Label" xml:space="preserve">
+        <value>内置图标：</value>
+    </data>
+    <data name="Search_Engine_Color_Label" xml:space="preserve">
+        <value>品牌颜色：</value>
+    </data>
+    <data name="Search_Cancel" xml:space="preserve">
+        <value>取消</value>
+    </data>
+    <data name="Search_Save" xml:space="preserve">
+        <value>保存</value>
+    </data>
+    <data name="Search_MoveUp" xml:space="preserve">
+        <value>上移</value>
+    </data>
+    <data name="Search_MoveDown" xml:space="preserve">
+        <value>下移</value>
+    </data>
+    <data name="Search_Edit" xml:space="preserve">
+        <value>编辑</value>
+    </data>
+    <data name="Search_Delete" xml:space="preserve">
+        <value>删除</value>
+    </data>
 </root>

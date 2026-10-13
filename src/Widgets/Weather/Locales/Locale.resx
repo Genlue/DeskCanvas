@@ -159,4 +159,40 @@
     <data name="Weather_AirQuality_Subtitle" xml:space="preserve">
         <value>See the current air quality index for your location</value>
     </data>
+    <data name="Weather_OpenPopupTip" xml:space="preserve">
+        <value>View weather details &amp; 7-day forecast</value>
+    </data>
+    <data name="Weather_Popup_HourlyTitle" xml:space="preserve">
+        <value>Hourly Forecast (24h)</value>
+    </data>
+    <data name="Weather_Popup_DailyTitle" xml:space="preserve">
+        <value>7-Day Forecast</value>
+    </data>
+    <data name="Weather_Popup_UVHeader" xml:space="preserve">
+        <value>UV Index</value>
+    </data>
+    <data name="Weather_Popup_UVDefaultDesc" xml:space="preserve">
+        <value>Moderate all day</value>
+    </data>
+    <data name="Weather_Popup_PressureHeader" xml:space="preserve">
+        <value>Atmospheric Pressure</value>
+    </data>
+    <data name="Weather_Popup_PressureDesc" xml:space="preserve">
+        <value>Normal atmospheric pressure</value>
+    </data>
+    <data name="Weather_Popup_SunHeader" xml:space="preserve">
+        <value>Sunrise &amp; Sunset</value>
+    </data>
+    <data name="Weather_Popup_SunDesc" xml:space="preserve">
+        <value>Dawn &amp; Dusk</value>
+    </data>
+    <data name="Weather_Popup_AqiHeader" xml:space="preserve">
+        <value>Air Quality &amp; Comfort</value>
+    </data>
+    <data name="Weather_Popup_AqiDefault" xml:space="preserve">
+        <value>Good (AQI 32)</value>
+    </data>
+    <data name="Weather_Popup_AqiDesc" xml:space="preserve">
+        <value>Fresh &amp; Pleasant</value>
+    </data>
 </root>

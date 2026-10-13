@@ -1,6 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:controls="clr-namespace:Map.Controls"
+             xmlns:locales="clr-namespace:Map.Locales"
              xmlns:viewModels="clr-namespace:Map.ViewModels"
              xmlns:views="clr-namespace:Map.Views"
              x:Class="Map.Views.MapView"
@@ -445,6 +446,7 @@
                 <Button Name="LayerBtn"
                         Classes="FloatingBtn"
                         IsVisible="{Binding !IsSmallSize}"
+                        ToolTip.Tip="{x:Static locales:Locale.Map_LayerTooltip}"
                         Click="OnCycleProviderClicked">
                     <Viewbox Width="14" Height="14" Stretch="Uniform">
                         <Canvas Width="24" Height="24">
@@ -457,6 +459,7 @@
                 <!-- 定位复位按钮 (对称直立 Apple 导航箭头) -->
                 <Button Name="RecenterBtn"
                         Classes="FloatingBtn"
+                        ToolTip.Tip="{x:Static locales:Locale.Map_RecenterTooltip}"
                         Click="OnRecenterClicked">
                     <Viewbox Width="14" Height="14" Stretch="Uniform">
                         <Canvas Width="24" Height="24">
@@ -469,6 +472,7 @@
                 <!-- 放大按钮 (+) -->
                 <Button Name="ZoomInBtn"
                         Classes="FloatingBtn"
+                        ToolTip.Tip="{x:Static locales:Locale.Map_ZoomInTooltip}"
                         Click="OnZoomInClicked">
                     <Viewbox Width="14" Height="14" Stretch="Uniform">
                         <Canvas Width="24" Height="24">
@@ -481,6 +485,7 @@
                 <!-- 缩小按钮 (-) 与放大按钮共享完全相同的 24x24 视口与居中笔画 -->
                 <Button Name="ZoomOutBtn"
                         Classes="FloatingBtn"
+                        ToolTip.Tip="{x:Static locales:Locale.Map_ZoomOutTooltip}"
                         Click="OnZoomOutClicked">
                     <Viewbox Width="14" Height="14" Stretch="Uniform">
                         <Canvas Width="24" Height="24">

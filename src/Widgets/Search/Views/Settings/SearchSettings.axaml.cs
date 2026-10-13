@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text.Json;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
+using Search.Locales;
 using Search.Models;
 using Search.Services;
 using DeskCanvas.Core.Interfaces;
@@ -37,7 +38,14 @@ public partial class SearchSettings : UserControl
 
     private void InitCombos()
     {
-        EditCategoryCombo.ItemsSource = new List<string> { "通用", "AI 智能", "开发者", "影音媒体", "问答社区" };
+        EditCategoryCombo.ItemsSource = new List<string>
+        {
+            Locale.Search_Category_General,
+            Locale.Search_Category_AI,
+            Locale.Search_Category_Dev,
+            Locale.Search_Category_Media,
+            Locale.Search_Category_Community
+        };
         EditCategoryCombo.SelectedIndex = 0;
 
         EditIconCombo.ItemsSource = SearchIconProvider.EngineIcons.Keys.ToList();
@@ -50,13 +58,21 @@ public partial class SearchSettings : UserControl
         SaveHistoryToggle.IsChecked = model.SaveHistory;
 
         engines.Clear();
+        var defaults = PresetEngines.GetDefaults();
+        var defaultById = defaults.ToDictionary(d => d.Id, StringComparer.OrdinalIgnoreCase);
         var list = model.CustomEngines != null && model.CustomEngines.Count > 0
             ? model.CustomEngines
-            : PresetEngines.GetDefaults();
+            : defaults;
 
         foreach (var eng in list.OrderBy(e => e.Priority))
         {
-            engines.Add(eng.Clone());
+            var clone = eng.Clone();
+            if (!clone.IsCustom && defaultById.TryGetValue(clone.Id, out var preset))
+            {
+                clone.Name = preset.Name;
+                clone.Category = preset.Category;
+            }
+            engines.Add(clone);
         }
 
         EnginesList.ItemsSource = engines;
@@ -105,7 +121,7 @@ public partial class SearchSettings : UserControl
     private void OnShowAddPanelClicked(object? sender, RoutedEventArgs e)
     {
         editingEngine = null;
-        EditPanelTitle.Text = "添加自定义搜索引擎";
+        EditPanelTitle.Text = Locale.Search_Add_Custom_Engine_Title;
         EditNameBox.Text = "";
         EditUrlBox.Text = "";
         EditCategoryCombo.SelectedIndex = 0;
@@ -126,7 +142,7 @@ public partial class SearchSettings : UserControl
         var url = EditUrlBox.Text?.Trim() ?? "";
         if (string.IsNullOrWhiteSpace(name) || string.IsNullOrWhiteSpace(url)) return;
 
-        var category = EditCategoryCombo.SelectedItem?.ToString() ?? "通用";
+        var category = EditCategoryCombo.SelectedItem?.ToString() ?? Locale.Search_Category_General;
         var iconKey = EditIconCombo.SelectedItem?.ToString() ?? "Google";
         var color = EditColorBox.Text?.Trim() ?? "#4285F4";
 
@@ -164,7 +180,7 @@ public partial class SearchSettings : UserControl
         if (sender is Button { Tag: SearchEngine eng })
         {
             editingEngine = eng;
-            EditPanelTitle.Text = $"编辑搜索引擎: {eng.Name}";
+            EditPanelTitle.Text = $"{Locale.Search_Edit_Engine}: {eng.Name}";
             EditNameBox.Text = eng.Name;
             EditUrlBox.Text = eng.UrlTemplate;
             EditCategoryCombo.SelectedItem = eng.Category;

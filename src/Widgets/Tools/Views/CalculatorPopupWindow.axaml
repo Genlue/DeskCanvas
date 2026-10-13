@@ -218,15 +218,15 @@
                                 BorderBrush="{DynamicResource WidgetCardBorderBrush}" BorderThickness="1"
                                 CornerRadius="10" Padding="2">
                             <StackPanel Orientation="Horizontal" Spacing="2">
-                                <Button x:Name="TabScientificBtn" Classes="tab-pill active" Content="科学计算" Click="OnTabScientificClicked" />
-                                <Button x:Name="TabProgrammerBtn" Classes="tab-pill" Content="程序员" Click="OnTabProgrammerClicked" />
-                                <Button x:Name="TabConverterBtn" Classes="tab-pill" Content="单位换算" Click="OnTabConverterClicked" />
+                                <Button x:Name="TabScientificBtn" Classes="tab-pill active" Content="{x:Static locales:Locale.Tools_Calculator_Tab_Scientific}" Click="OnTabScientificClicked" />
+                                <Button x:Name="TabProgrammerBtn" Classes="tab-pill" Content="{x:Static locales:Locale.Tools_Calculator_Tab_Programmer}" Click="OnTabProgrammerClicked" />
+                                <Button x:Name="TabConverterBtn" Classes="tab-pill" Content="{x:Static locales:Locale.Tools_Calculator_Tab_Converter}" Click="OnTabConverterClicked" />
                             </StackPanel>
                         </Border>
 
                         <!-- Angle Mode Toggle (Scientific) -->
                         <Button Grid.Column="2" x:Name="AngleModeBtn" Classes="cat-pill" Content="DEG"
-                                Margin="0,0,6,0" Click="OnAngleModeClicked" ToolTip.Tip="切换角度制 (DEG) / 弧度制 (RAD)" />
+                                Margin="0,0,6,0" Click="OnAngleModeClicked" ToolTip.Tip="{x:Static locales:Locale.Tools_Calculator_ToggleAngleTip}" />
 
                         <Button Grid.Column="3" x:Name="CloseButton" Classes="icon-btn" Content="✕"
                                 Click="OnCloseClicked" VerticalAlignment="Center" />
@@ -245,12 +245,12 @@
                                                    Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"
                                                    VerticalAlignment="Center" />
                                         <Button Grid.Column="1" Classes="icon-btn" Width="22" Height="22"
-                                                Click="OnClearSciClicked" ToolTip.Tip="清空算式">
+                                                Click="OnClearSciClicked" ToolTip.Tip="{x:Static locales:Locale.Tools_Calculator_ClearExprTip}">
                                             <PathIcon Data="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"
                                                       Width="10" Height="10" Opacity="0.65" />
                                         </Button>
                                         <Button Grid.Column="2" Classes="icon-btn" Width="22" Height="22"
-                                                Click="OnCopySciResultClicked" ToolTip.Tip="复制计算结果">
+                                                Click="OnCopySciResultClicked" ToolTip.Tip="{x:Static locales:Locale.Tools_Calculator_CopyResultTip}">
                                             <PathIcon Data="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"
                                                       Width="11" Height="11" Opacity="0.7" />
                                         </Button>
@@ -266,17 +266,17 @@
                                                TextTrimming="CharacterEllipsis" Cursor="Hand"
                                                Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}"
                                                PointerPressed="OnSciResultPointerPressed"
-                                               ToolTip.Tip="点击复制结果" />
+                                               ToolTip.Tip="{x:Static locales:Locale.Tools_Calculator_ClickToCopyTip}" />
                                 </Grid>
                             </Border>
 
                             <!-- Memory Toolbar -->
                             <Grid Grid.Row="1" ColumnDefinitions="*,*,*,*,*" Margin="0,0,0,6">
-                                <Button Grid.Column="0" Classes="calc-func" Height="26" Margin="0,0,2,0" FontSize="11" Content="MC" Click="OnMemClearClicked" ToolTip.Tip="清空内存 (Memory Clear)" />
-                                <Button Grid.Column="1" Classes="calc-func" Height="26" Margin="2,0" FontSize="11" Content="MR" Click="OnMemRecallClicked" ToolTip.Tip="读取内存 (Memory Recall)" />
-                                <Button Grid.Column="2" Classes="calc-func" Height="26" Margin="2,0" FontSize="11" Content="M+" Click="OnMemAddClicked" ToolTip.Tip="内存累加 (Memory Add)" />
-                                <Button Grid.Column="3" Classes="calc-func" Height="26" Margin="2,0" FontSize="11" Content="M−" Click="OnMemSubClicked" ToolTip.Tip="内存累减 (Memory Subtract)" />
-                                <Button Grid.Column="4" Classes="calc-func" Height="26" Margin="2,0,0,0" FontSize="11" Content="MS" Click="OnMemStoreClicked" ToolTip.Tip="存入内存 (Memory Store)" />
+                                <Button Grid.Column="0" Classes="calc-func" Height="26" Margin="0,0,2,0" FontSize="11" Content="MC" Click="OnMemClearClicked" ToolTip.Tip="{x:Static locales:Locale.Tools_Calculator_MemClearTip}" />
+                                <Button Grid.Column="1" Classes="calc-func" Height="26" Margin="2,0" FontSize="11" Content="MR" Click="OnMemRecallClicked" ToolTip.Tip="{x:Static locales:Locale.Tools_Calculator_MemRecallTip}" />
+                                <Button Grid.Column="2" Classes="calc-func" Height="26" Margin="2,0" FontSize="11" Content="M+" Click="OnMemAddClicked" ToolTip.Tip="{x:Static locales:Locale.Tools_Calculator_MemAddTip}" />
+                                <Button Grid.Column="3" Classes="calc-func" Height="26" Margin="2,0" FontSize="11" Content="M−" Click="OnMemSubClicked" ToolTip.Tip="{x:Static locales:Locale.Tools_Calculator_MemSubTip}" />
+                                <Button Grid.Column="4" Classes="calc-func" Height="26" Margin="2,0,0,0" FontSize="11" Content="MS" Click="OnMemStoreClicked" ToolTip.Tip="{x:Static locales:Locale.Tools_Calculator_MemStoreTip}" />
                             </Grid>
 
                             <!-- Scientific Function Keypad (5x2) -->
@@ -329,18 +329,18 @@
                                 <StackPanel Spacing="3">
                                     <Grid ColumnDefinitions="*,Auto">
                                         <TextBox x:Name="ProgExpressionBox" Classes="expr-box"
-                                                 Watermark="输入整数或位运算算式..."
+                                                 Watermark="{x:Static locales:Locale.Tools_Calculator_ProgWatermark}"
                                                  TextChanged="OnProgExpressionTextChanged"
                                                  KeyDown="OnProgExpressionKeyDown" />
                                         <Button Grid.Column="1" Classes="icon-btn" Width="22" Height="22"
-                                                Click="OnProgClearClicked" ToolTip.Tip="清空">
+                                                Click="OnProgClearClicked" ToolTip.Tip="{x:Static locales:Locale.Tools_Translator_Clear}">
                                             <PathIcon Data="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"
                                                       Width="10" Height="10" Opacity="0.65" />
                                         </Button>
                                     </Grid>
 
                                     <!-- HEX / DEC / OCT / BIN clickable rows -->
-                                    <Border x:Name="BaseHexRow" Classes="base-row" PointerPressed="OnBaseHexPressed" ToolTip.Tip="切换为 16 进制输入 (点击右侧复制)">
+                                    <Border x:Name="BaseHexRow" Classes="base-row" PointerPressed="OnBaseHexPressed" ToolTip.Tip="{x:Static locales:Locale.Tools_Calculator_BaseHexTip}">
                                         <Grid ColumnDefinitions="38,*,Auto">
                                             <TextBlock Text="HEX" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource CalculatorAccentBrush}" VerticalAlignment="Center" />
                                             <TextBlock Grid.Column="1" x:Name="ProgHexText" Text="0" FontSize="12.5" FontWeight="SemiBold" TextAlignment="Right" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
@@ -350,7 +350,7 @@
                                         </Grid>
                                     </Border>
 
-                                    <Border x:Name="BaseDecRow" Classes="base-row active" PointerPressed="OnBaseDecPressed" ToolTip.Tip="切换为 10 进制输入 (点击右侧复制)">
+                                    <Border x:Name="BaseDecRow" Classes="base-row active" PointerPressed="OnBaseDecPressed" ToolTip.Tip="{x:Static locales:Locale.Tools_Calculator_BaseDecTip}">
                                         <Grid ColumnDefinitions="38,*,Auto">
                                             <TextBlock Text="DEC" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource CalculatorAccentBrush}" VerticalAlignment="Center" />
                                             <TextBlock Grid.Column="1" x:Name="ProgDecText" Text="0" FontSize="13.5" FontWeight="Bold" TextAlignment="Right" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
@@ -360,7 +360,7 @@
                                         </Grid>
                                     </Border>
 
-                                    <Border x:Name="BaseOctRow" Classes="base-row" PointerPressed="OnBaseOctPressed" ToolTip.Tip="切换为 8 进制输入 (点击右侧复制)">
+                                    <Border x:Name="BaseOctRow" Classes="base-row" PointerPressed="OnBaseOctPressed" ToolTip.Tip="{x:Static locales:Locale.Tools_Calculator_BaseOctTip}">
                                         <Grid ColumnDefinitions="38,*,Auto">
                                             <TextBlock Text="OCT" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource CalculatorAccentBrush}" VerticalAlignment="Center" />
                                             <TextBlock Grid.Column="1" x:Name="ProgOctText" Text="0" FontSize="12" TextAlignment="Right" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
@@ -370,7 +370,7 @@
                                         </Grid>
                                     </Border>
 
-                                    <Border x:Name="BaseBinRow" Classes="base-row" PointerPressed="OnBaseBinPressed" ToolTip.Tip="切换为 2 进制输入 (点击右侧复制)">
+                                    <Border x:Name="BaseBinRow" Classes="base-row" PointerPressed="OnBaseBinPressed" ToolTip.Tip="{x:Static locales:Locale.Tools_Calculator_BaseBinTip}">
                                         <Grid ColumnDefinitions="38,*,Auto">
                                             <TextBlock Text="BIN" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource CalculatorAccentBrush}" VerticalAlignment="Center" />
                                             <TextBlock Grid.Column="1" x:Name="ProgBinText" Text="0" FontSize="11.5" TextAlignment="Right" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
@@ -431,7 +431,7 @@
                             <Border Grid.Row="1" Classes="calc-card" Padding="10,8" Margin="0,0,0,6">
                                 <Grid RowDefinitions="Auto,Auto">
                                     <Grid Grid.Row="0" ColumnDefinitions="Auto,*" Margin="0,0,0,4">
-                                        <TextBlock Text="从 (输入数值)" FontSize="11" Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}" VerticalAlignment="Center" />
+                                        <TextBlock Text="{x:Static locales:Locale.Tools_Calculator_ConvFrom}" FontSize="11" Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}" VerticalAlignment="Center" />
                                         <ComboBox Grid.Column="1" x:Name="ConvFromCombo" HorizontalAlignment="Right" MinWidth="150" Height="28" FontSize="12" CornerRadius="8"
                                                   SelectionChanged="OnConverterUnitChanged" />
                                     </Grid>
@@ -442,19 +442,19 @@
 
                             <!-- Swap & Quick Actions Row -->
                             <Grid Grid.Row="2" ColumnDefinitions="Auto,*,Auto,Auto" Margin="0,0,0,6">
-                                <Button Grid.Column="0" Classes="cat-pill" Content="⇅ 互换单位" Click="OnConverterSwapClicked" />
+                                <Button Grid.Column="0" Classes="cat-pill" Content="{x:Static locales:Locale.Tools_Calculator_ConvSwap}" Click="OnConverterSwapClicked" />
                                 <Button Grid.Column="2" Classes="cat-pill" Content="×10" Margin="0,0,4,0" Click="OnConverterMul10Clicked" />
-                                <Button Grid.Column="3" Classes="cat-pill" Content="重置为 1" Click="OnConverterResetClicked" />
+                                <Button Grid.Column="3" Classes="cat-pill" Content="{x:Static locales:Locale.Tools_Calculator_ConvReset}" Click="OnConverterResetClicked" />
                             </Grid>
 
                             <!-- To Unit Card -->
                             <Border Grid.Row="3" Classes="calc-card" Padding="10,8" Margin="0,0,0,8">
                                 <Grid RowDefinitions="Auto,Auto">
                                     <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto" Margin="0,0,0,4">
-                                        <TextBlock Text="转换结果" FontSize="11" Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}" VerticalAlignment="Center" />
+                                        <TextBlock Text="{x:Static locales:Locale.Tools_Calculator_ConvTo}" FontSize="11" Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}" VerticalAlignment="Center" />
                                         <ComboBox Grid.Column="1" x:Name="ConvToCombo" HorizontalAlignment="Right" MinWidth="150" Height="28" FontSize="12" CornerRadius="8"
                                                   Margin="0,0,6,0" SelectionChanged="OnConverterUnitChanged" />
-                                        <Button Grid.Column="2" Classes="icon-btn" Width="24" Height="24" Click="OnCopyConverterResultClicked" ToolTip.Tip="复制转换结果">
+                                        <Button Grid.Column="2" Classes="icon-btn" Width="24" Height="24" Click="OnCopyConverterResultClicked" ToolTip.Tip="{x:Static locales:Locale.Tools_Calculator_ConvCopyTip}">
                                             <PathIcon Data="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"
                                                       Width="11" Height="11" Opacity="0.7" />
                                         </Button>
@@ -469,7 +469,7 @@
                             <!-- All Units Live Overview Table -->
                             <Border Grid.Row="4" Classes="calc-card" Padding="10,8">
                                 <Grid RowDefinitions="Auto,*">
-                                    <TextBlock Grid.Row="0" Text="同类别全单位速览（点击任意行即可复制）" FontSize="11"
+                                    <TextBlock Grid.Row="0" Text="{x:Static locales:Locale.Tools_Calculator_ConvAllUnitsHint}" FontSize="11"
                                                Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}" Margin="0,0,0,6" />
                                     <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                                         <StackPanel x:Name="ConvAllUnitsList" Spacing="4" />
@@ -482,9 +482,9 @@
                         <Border Grid.Column="2" Classes="calc-card" Padding="10,8">
                             <Grid RowDefinitions="Auto,*">
                                 <Grid Grid.Row="0" ColumnDefinitions="Auto,Auto,*,Auto" Margin="0,0,0,8" VerticalAlignment="Center">
-                                    <Button Grid.Column="0" x:Name="SidebarHistoryTabBtn" Classes="cat-pill active" Content="历史记录"
+                                    <Button Grid.Column="0" x:Name="SidebarHistoryTabBtn" Classes="cat-pill active" Content="{x:Static locales:Locale.Tools_Calculator_SidebarHistory}"
                                             Margin="0,0,4,0" Click="OnSidebarHistoryTabClicked" />
-                                    <Button Grid.Column="1" x:Name="SidebarMemoryTabBtn" Classes="cat-pill" Content="内存 (M)"
+                                    <Button Grid.Column="1" x:Name="SidebarMemoryTabBtn" Classes="cat-pill" Content="{x:Static locales:Locale.Tools_Calculator_SidebarMemory}"
                                             Click="OnSidebarMemoryTabClicked" />
                                     <Button Grid.Column="3" x:Name="ClearSidebarBtn" Classes="icon-btn" Width="24" Height="24"
                                             Click="OnClearSidebarClicked" ToolTip.Tip="{x:Static locales:Locale.Tools_Calculator_ClearHistory}">
@@ -513,7 +513,7 @@
                 <Border x:Name="ToastBanner" IsVisible="False" HorizontalAlignment="Center" VerticalAlignment="Bottom"
                         Margin="0,0,0,18" Padding="12,5" CornerRadius="14"
                         Background="{DynamicResource CalculatorAccentBrush}">
-                    <TextBlock x:Name="ToastText" Text="已复制" FontSize="11.5" FontWeight="SemiBold"
+                    <TextBlock x:Name="ToastText" Text="{x:Static locales:Locale.Tools_Calculator_Copied}" FontSize="11.5" FontWeight="SemiBold"
                                Foreground="{DynamicResource AccentContrastForegroundBrush}" />
                 </Border>
             </Panel>

@@ -19,8 +19,8 @@
                 <Grid ColumnDefinitions="Auto,*" VerticalAlignment="Center">
                     <PathIcon Grid.Column="0" Data="{DynamicResource Appearance}" Width="24" Height="24" Margin="0,0,12,0" Foreground="{DynamicResource SystemAccentColor}" />
                     <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
-                        <TextBlock Text="📥 拖入桌面小组件" FontWeight="SemiBold" FontSize="13" />
-                        <TextBlock Text="直接在桌面上拖拽任意小组件并松开在此窗口中，即可将其收纳进重叠卡片" FontSize="11" Opacity="0.7" TextWrapping="Wrap" />
+                        <TextBlock Text="{x:Static locales:Locale.Setting_DropZone_Title}" FontWeight="SemiBold" FontSize="13" />
+                        <TextBlock Text="{x:Static locales:Locale.Setting_DropZone_Desc}" FontSize="11" Opacity="0.7" TextWrapping="Wrap" />
                     </StackPanel>
                 </Grid>
             </Border>
@@ -49,11 +49,11 @@
             </controls:Setting>
 
             <!-- Current Stacked Widgets List -->
-            <TextBlock Text="已叠放的小组件列表（支持单独设置、排序与移回桌面）" FontWeight="SemiBold" FontSize="13" Margin="4,6,0,2" />
+            <TextBlock Text="{x:Static locales:Locale.Setting_Stacked_List_Title}" FontWeight="SemiBold" FontSize="13" Margin="4,6,0,2" />
             <Border Background="#10808080" CornerRadius="8" Padding="6">
                 <StackPanel Orientation="Vertical">
                     <TextBlock Name="EmptyHintText"
-                               Text="当前暂无已叠放组件（桌面呈现为空白卡片）。&#x0a;请在桌面上直接拖动小组件至此窗口上方区域，或在下方选择添加。"
+                               Text="{x:Static locales:Locale.Setting_Stacked_Empty_Hint}"
                                FontSize="12" Opacity="0.6" TextWrapping="Wrap" Margin="10,16"
                                HorizontalAlignment="Center" TextAlignment="Center" IsVisible="False" />
                     <ItemsControl Name="ItemsList">
@@ -62,8 +62,8 @@
                                 <Border Margin="0,2" Padding="8,6" Background="#15808080" CornerRadius="6">
                                     <Grid ColumnDefinitions="*,Auto,Auto,Auto,Auto,Auto">
                                         <TextBlock Grid.Column="0" Text="{Binding DisplayTitle}" VerticalAlignment="Center" FontWeight="Medium" TextTrimming="CharacterEllipsis" />
-                                        <Button Grid.Column="1" Content="↖ 移至桌面" Margin="2,0" Padding="6,2" ToolTip.Tip="将此组件从重叠中移出并还原放回桌面" Click="OnExtractToDesktopClicked" Tag="{Binding}" />
-                                        <Button Grid.Column="2" Content="⚙ 设置" Margin="2,0" Padding="6,2" ToolTip.Tip="配置此组件" Click="OnEditChildClicked" Tag="{Binding}" IsVisible="{Binding HasSettings}" />
+                                        <Button Grid.Column="1" Content="{x:Static locales:Locale.Setting_Extract_To_Desktop}" Margin="2,0" Padding="6,2" ToolTip.Tip="{x:Static locales:Locale.Setting_Extract_To_Desktop_Tip}" Click="OnExtractToDesktopClicked" Tag="{Binding}" />
+                                        <Button Grid.Column="2" Content="{x:Static locales:Locale.Setting_Edit_Child}" Margin="2,0" Padding="6,2" ToolTip.Tip="{x:Static locales:Locale.Setting_Edit_Child_Tip}" Click="OnEditChildClicked" Tag="{Binding}" IsVisible="{Binding HasSettings}" />
                                         <Button Grid.Column="3" Content="↑" Margin="2,0" Padding="6,2" ToolTip.Tip="{x:Static locales:Locale.Setting_Move_Up}" Click="OnMoveUpClicked" Tag="{Binding}" />
                                         <Button Grid.Column="4" Content="↓" Margin="2,0" Padding="6,2" ToolTip.Tip="{x:Static locales:Locale.Setting_Move_Down}" Click="OnMoveDownClicked" Tag="{Binding}" />
                                         <Button Grid.Column="5" Content="✕" Margin="2,0" Padding="6,2" ToolTip.Tip="{x:Static locales:Locale.Setting_Remove_Widget}" Click="OnRemoveClicked" Tag="{Binding}" />

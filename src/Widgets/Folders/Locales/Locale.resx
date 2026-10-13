@@ -168,6 +168,9 @@
         <data name="Folders_WatchDesc" xml:space="preserve">
             <value>Descending</value>
         </data>
+        <data name="Folders_WatchHideSubfolders" xml:space="preserve">
+            <value>Hide subfolders</value>
+        </data>
         <data name="Folders_RowLayout" xml:space="preserve">
             <value>Row layout</value>
         </data>

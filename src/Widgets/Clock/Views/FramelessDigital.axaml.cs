@@ -64,20 +64,18 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
     private CancellationTokenSource? preRenderCts;
     private bool wallpaperStale;
 
-    /// <summary>Renders currently running on the pool (immediate ones included).</summary>
-    private int inFlightRenderCount;
+    /// <summary>Renders currently running on the pool across all frameless clock instances.</summary>
+    private static int inFlightRenderCount;
 
     /// <summary>
-    /// Ceiling on concurrent pre-renders. Five look-ahead seconds used to start up to five
-    /// <see cref="Task.Run"/> renders at once, each renting a full-size scratch workspace — the
-    /// pool's budget bounds what is parked, not what is in flight. Immediate renders (the frame
-    /// the clock is switching to right now) are never held back by this: only speculative future
-    /// frames wait for a slot, and the look-ahead loop retries them next tick, nearest second
-    /// first. Nothing about the visible timing changes.
+    /// Ceiling on concurrent pre-renders across all frameless clocks, aligned with
+    /// <see cref="GlyphLiquidGlassRenderer"/>'s 2-slot scratch pool so multiple clocks on multiple
+    /// screens reuse the pooled workspaces instead of burst-allocating on the LOH. Immediate
+    /// renders (the frame the clock is switching to right now) are never held back by this.
     /// </summary>
-    private const int MaxConcurrentPreRenders = 3;
+    private const int MaxConcurrentPreRenders = 2;
 
-    private const long CacheBudgetBytes = 48L * 1024 * 1024;
+    private const long CacheBudgetBytes = 24L * 1024 * 1024;
 
     private string? lastRegionKey;
     private bool hasRegionSet;

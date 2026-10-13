@@ -93,13 +93,15 @@ public class DriveItemViewModel : INotifyPropertyChanged
     public double UsageFraction => hasDrive ? usageFraction : 0.0;
     public int UsagePercent => hasDrive ? usagePercent : 0;
 
+    private static bool IsZh => System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName.Equals("zh", StringComparison.OrdinalIgnoreCase);
+
     public string RightStatusText => !hasDrive
         ? string.Empty
         : textFormat switch
         {
             StorageTextFormat.UsedAndTotal => $"{StorageService.FormatBytes(usedBytes, compact: true)} / {StorageService.FormatBytes(totalBytes, compact: true)}",
             StorageTextFormat.Percentage => $"{usagePercent}%",
-            _ => $"{StorageService.FormatBytes(freeBytes, compact: true)} 可用"
+            _ => IsZh ? $"{StorageService.FormatBytes(freeBytes, compact: true)} 可用" : $"{StorageService.FormatBytes(freeBytes, compact: true)} free"
         };
 
     public string UsedOverTotalText => !hasDrive
@@ -108,7 +110,7 @@ public class DriveItemViewModel : INotifyPropertyChanged
 
     public string FreeSpaceText => !hasDrive
         ? string.Empty
-        : $"剩余 {StorageService.FormatBytes(freeBytes, compact: true)}";
+        : (IsZh ? $"剩余 {StorageService.FormatBytes(freeBytes, compact: true)}" : $"{StorageService.FormatBytes(freeBytes, compact: true)} free");
 
     public string PercentText => hasDrive ? $"{usagePercent}%" : string.Empty;
 
@@ -127,7 +129,9 @@ public class DriveItemViewModel : INotifyPropertyChanged
 
     public string TooltipText => !hasDrive
         ? string.Empty
-        : $"{displayTitle} ({driveFormat})\n已用: {StorageService.FormatBytes(usedBytes)} ({usagePercent}%)\n可用: {StorageService.FormatBytes(freeBytes)}\n总计: {StorageService.FormatBytes(totalBytes)}";
+        : (IsZh
+            ? $"{displayTitle} ({driveFormat})\n已用: {StorageService.FormatBytes(usedBytes)} ({usagePercent}%)\n可用: {StorageService.FormatBytes(freeBytes)}\n总计: {StorageService.FormatBytes(totalBytes)}"
+            : $"{displayTitle} ({driveFormat})\nUsed: {StorageService.FormatBytes(usedBytes)} ({usagePercent}%)\nFree: {StorageService.FormatBytes(freeBytes)}\nTotal: {StorageService.FormatBytes(totalBytes)}");
 
     private const double FullCircleDash = 39.27;
     public double StrokeDashOffset => FullCircleDash * (1.0 - UsageFraction);
@@ -289,6 +293,8 @@ public class StorageViewModel : INotifyPropertyChanged, IDisposable
 
     public StorageModel Model => model;
 
+    private static bool IsZh => System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName.Equals("zh", StringComparison.OrdinalIgnoreCase);
+
     public string HeaderTitle => Locale.Storage_HeaderTitle;
 
     public string HeaderSummaryText => totalCapacityBytes <= 0
@@ -296,13 +302,15 @@ public class StorageViewModel : INotifyPropertyChanged, IDisposable
         : model.TextFormat switch
         {
             StorageTextFormat.UsedAndTotal => $"{StorageService.FormatBytes(totalUsedBytes, compact: true)} / {StorageService.FormatBytes(totalCapacityBytes, compact: true)}",
-            StorageTextFormat.Percentage => $"总计 {totalUsagePercent}%",
-            _ => $"可用 {StorageService.FormatBytes(totalFreeBytes, compact: true)}"
+            StorageTextFormat.Percentage => IsZh ? $"总计 {totalUsagePercent}%" : $"Total {totalUsagePercent}%",
+            _ => IsZh ? $"可用 {StorageService.FormatBytes(totalFreeBytes, compact: true)}" : $"{StorageService.FormatBytes(totalFreeBytes, compact: true)} free"
         };
 
     public string WideSummaryText => totalCapacityBytes <= 0
         ? string.Empty
-        : $"已用 {StorageService.FormatBytes(totalUsedBytes)} / {StorageService.FormatBytes(totalCapacityBytes)} ({totalUsagePercent}%) · 可用 {StorageService.FormatBytes(totalFreeBytes)}";
+        : (IsZh
+            ? $"已用 {StorageService.FormatBytes(totalUsedBytes)} / {StorageService.FormatBytes(totalCapacityBytes)} ({totalUsagePercent}%) · 可用 {StorageService.FormatBytes(totalFreeBytes)}"
+            : $"Used {StorageService.FormatBytes(totalUsedBytes)} / {StorageService.FormatBytes(totalCapacityBytes)} ({totalUsagePercent}%) · {StorageService.FormatBytes(totalFreeBytes)} free");
 
     public double TotalUsageFraction => totalUsageFraction;
     public int TotalUsagePercent => totalUsagePercent;

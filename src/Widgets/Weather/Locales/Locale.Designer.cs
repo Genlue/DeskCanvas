@@ -481,5 +481,18 @@ namespace Weather.Locales {
                 return ResourceManager.GetString("Weather_UVIndex_Title", resourceCulture);
             }
         }
+        
+        public static string Weather_OpenPopupTip => ResourceManager.GetString("Weather_OpenPopupTip", resourceCulture);
+        public static string Weather_Popup_HourlyTitle => ResourceManager.GetString("Weather_Popup_HourlyTitle", resourceCulture);
+        public static string Weather_Popup_DailyTitle => ResourceManager.GetString("Weather_Popup_DailyTitle", resourceCulture);
+        public static string Weather_Popup_UVHeader => ResourceManager.GetString("Weather_Popup_UVHeader", resourceCulture);
+        public static string Weather_Popup_UVDefaultDesc => ResourceManager.GetString("Weather_Popup_UVDefaultDesc", resourceCulture);
+        public static string Weather_Popup_PressureHeader => ResourceManager.GetString("Weather_Popup_PressureHeader", resourceCulture);
+        public static string Weather_Popup_PressureDesc => ResourceManager.GetString("Weather_Popup_PressureDesc", resourceCulture);
+        public static string Weather_Popup_SunHeader => ResourceManager.GetString("Weather_Popup_SunHeader", resourceCulture);
+        public static string Weather_Popup_SunDesc => ResourceManager.GetString("Weather_Popup_SunDesc", resourceCulture);
+        public static string Weather_Popup_AqiHeader => ResourceManager.GetString("Weather_Popup_AqiHeader", resourceCulture);
+        public static string Weather_Popup_AqiDefault => ResourceManager.GetString("Weather_Popup_AqiDefault", resourceCulture);
+        public static string Weather_Popup_AqiDesc => ResourceManager.GetString("Weather_Popup_AqiDesc", resourceCulture);
     }
 }

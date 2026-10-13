@@ -65,7 +65,14 @@ public static class LiquidGlassRenderer
         float DesktopX, float DesktopY, float DesktopWidth, float DesktopHeight,
         float ScreenX, float ScreenY, float ScreenWidth, float ScreenHeight,
         Theme Theme, bool Dark, bool SettingsSurface = false, float PixelScale = 1,
-        int Columns = 0, int Rows = 0, float GlyphOpacity = 1f);
+        int Columns = 0, int Rows = 0, float GlyphOpacity = 1f, float BackdropScale = 0f)
+    {
+        /// <summary>
+        /// Desktop-wide reference scale for shared backdrop blur and alignment, so monitors with
+        /// different DPIs (or widgets with different local scales) share a single <see cref="GlassSource"/>.
+        /// </summary>
+        public float EffectiveBackdropScale => BackdropScale > 0f ? BackdropScale : Scale;
+    }
 
     /// <summary>Rim displacement in DIPs at refraction = 100%. Prominent optical lens magnification.</summary>
     internal const float LensDips = 32f;
@@ -993,6 +1000,35 @@ public static class LiquidGlassRenderer
         {
             var rect = SKRect.Create(-frame.DesktopX - offX, -frame.DesktopY - offY,
                 image.Width * frame.PixelScale, image.Height * frame.PixelScale);
+            if (frame.PixelScale > 0f && (frame.DesktopX != 0f || frame.DesktopY != 0f)
+                && canvas.GetLocalClipBounds(out var clip) && !clip.IsEmpty)
+            {
+                // Local card/glyph render: only filter the sub-rect of the multi-monitor capture
+                // that can contribute to this canvas (clip + blur margin), rather than running
+                // Skia's blur image filter across the entire virtual-desktop bitmap.
+                var margin = Math.Max(96f, 24f * frame.Scale);
+                var wantedLeft = Math.Max(rect.Left, clip.Left - margin);
+                var wantedTop = Math.Max(rect.Top, clip.Top - margin);
+                var wantedRight = Math.Min(rect.Right, clip.Right + margin);
+                var wantedBottom = Math.Min(rect.Bottom, clip.Bottom + margin);
+                if (wantedRight > wantedLeft && wantedBottom > wantedTop
+                    && (wantedRight - wantedLeft < rect.Width * 0.75f || wantedBottom - wantedTop < rect.Height * 0.75f))
+                {
+                    var invScale = 1f / frame.PixelScale;
+                    var srcLeft = Math.Clamp((int)MathF.Floor((wantedLeft - rect.Left) * invScale), 0, image.Width - 1);
+                    var srcTop = Math.Clamp((int)MathF.Floor((wantedTop - rect.Top) * invScale), 0, image.Height - 1);
+                    var srcRight = Math.Clamp((int)MathF.Ceiling((wantedRight - rect.Left) * invScale), srcLeft + 1, image.Width);
+                    var srcBottom = Math.Clamp((int)MathF.Ceiling((wantedBottom - rect.Top) * invScale), srcTop + 1, image.Height);
+                    var srcRect = new SKRect(srcLeft, srcTop, srcRight, srcBottom);
+                    var dstRect = SKRect.Create(
+                        rect.Left + srcLeft * frame.PixelScale,
+                        rect.Top + srcTop * frame.PixelScale,
+                        (srcRight - srcLeft) * frame.PixelScale,
+                        (srcBottom - srcTop) * frame.PixelScale);
+                    canvas.DrawBitmap(image, srcRect, dstRect, paint);
+                    return;
+                }
+            }
             canvas.DrawBitmap(image, rect, paint);
             return;
         }

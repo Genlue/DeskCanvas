@@ -445,7 +445,10 @@
         <value>HTTP proxy</value>
     </data>
     <data name="Settings_Advanced_Proxy_Subtitle" xml:space="preserve">
-        <value>How weather and update requests reach the network. Direct bypasses a stale system proxy</value>
+        <value>How weather and update requests reach the network. Auto-detect probes system and local proxies and falls back to direct</value>
+    </data>
+    <data name="Settings_Advanced_Proxy_Auto" xml:space="preserve">
+        <value>Auto-detect (Recommended)</value>
     </data>
     <data name="Settings_Advanced_Proxy_Direct" xml:space="preserve">
         <value>Direct connection</value>
@@ -908,5 +911,86 @@
     </data>
     <data name="Update_WhatsNew" xml:space="preserve">
         <value>What's New</value>
+    </data>
+    <data name="Settings_General_Update_AutoProxy" xml:space="preserve">
+        <value>Auto-detect Proxy</value>
+    </data>
+    <data name="Settings_General_Update_AutoProxy_Subtitle_On" xml:space="preserve">
+        <value>Automatically detect system proxy, environment variables, and local proxy ports (7890/7897/10809, etc.); falls back to direct when inactive</value>
+    </data>
+    <data name="Settings_General_Update_AutoProxy_Subtitle_Direct" xml:space="preserve">
+        <value>Auto-detect is off; currently using direct connection (no proxy)</value>
+    </data>
+    <data name="Settings_General_Update_AutoProxy_Subtitle_System" xml:space="preserve">
+        <value>Currently set to System Proxy mode in Advanced → Network</value>
+    </data>
+    <data name="Settings_General_Update_AutoProxy_Subtitle_Custom" xml:space="preserve">
+        <value>Currently set to custom proxy in Advanced → Network: {0}</value>
+    </data>
+    <data name="Settings_General_Update_Connectivity" xml:space="preserve">
+        <value>GitHub Connectivity Test</value>
+    </data>
+    <data name="Settings_General_Update_Connectivity_Subtitle" xml:space="preserve">
+        <value>Test connection latency and active proxy status to GitHub update server</value>
+    </data>
+    <data name="Settings_General_Update_Connectivity_Action" xml:space="preserve">
+        <value>Test Connection</value>
+    </data>
+    <data name="Settings_General_Update_Connectivity_Testing" xml:space="preserve">
+        <value>Detecting proxy and testing GitHub connectivity...</value>
+    </data>
+    <data name="Settings_General_Update_Connectivity_Success" xml:space="preserve">
+        <value>Connected (HTTP {0}) · {1} ms · {2}</value>
+    </data>
+    <data name="Settings_General_Update_Connectivity_RateLimited" xml:space="preserve">
+        <value>Reached GitHub (API rate-limited HTTP 403) · {0} ms · {1}</value>
+    </data>
+    <data name="Settings_General_Update_Connectivity_Failed" xml:space="preserve">
+        <value>Connection failed ({0}) · {1} ms · {2}</value>
+    </data>
+    <data name="Settings_General_Update_Route_Direct" xml:space="preserve">
+        <value>Direct</value>
+    </data>
+    <data name="Settings_General_Update_Route_DirectNoProxy" xml:space="preserve">
+        <value>Direct (no active proxy detected)</value>
+    </data>
+    <data name="Settings_General_Update_Route_SystemProxy" xml:space="preserve">
+        <value>Proxy {0} (System proxy)</value>
+    </data>
+    <data name="Settings_General_Update_Route_EnvProxy" xml:space="preserve">
+        <value>Proxy {0} (Env var)</value>
+    </data>
+    <data name="Settings_General_Update_Route_LocalPort" xml:space="preserve">
+        <value>Proxy {0} (Auto-detected local port)</value>
+    </data>
+    <data name="Settings_General_Update_Route_CustomProxy" xml:space="preserve">
+        <value>Proxy {0} (Custom)</value>
+    </data>
+    <data name="Settings_General_Update_Record_UpToDate" xml:space="preserve">
+        <value>Last checked {0} · Up to date ({1}) · {2}</value>
+    </data>
+    <data name="Settings_General_Update_Record_FoundNew" xml:space="preserve">
+        <value>Last checked {0} · New version {1} available · {2}</value>
+    </data>
+    <data name="Settings_General_Update_Record_Failed" xml:space="preserve">
+        <value>Last checked {0} · Failed to reach GitHub ({1}) · {2}</value>
+    </data>
+    <data name="Settings_General_Update_Error_Timeout" xml:space="preserve">
+        <value>Connection timed out</value>
+    </data>
+    <data name="Settings_General_Update_Error_ProxyRefused" xml:space="preserve">
+        <value>Proxy connection refused</value>
+    </data>
+    <data name="Settings_General_Update_Error_Dns" xml:space="preserve">
+        <value>DNS resolution failed</value>
+    </data>
+    <data name="Settings_General_Update_Error_TlsOrReset" xml:space="preserve">
+        <value>Connection reset or TLS handshake blocked</value>
+    </data>
+    <data name="Settings_General_Update_Error_RateLimit" xml:space="preserve">
+        <value>HTTP 403 API rate limit</value>
+    </data>
+    <data name="Settings_General_Update_Error_Network" xml:space="preserve">
+        <value>Network request failed</value>
     </data>
 </root>

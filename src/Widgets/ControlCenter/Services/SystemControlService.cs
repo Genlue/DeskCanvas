@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.Linq;
 using System.Management;
 using System.Net.NetworkInformation;
@@ -17,6 +18,9 @@ public record AudioDeviceInfo(string Id, string FullName, string ShortName, bool
 
 public class SystemControlSnapshot
 {
+    private static bool IsZh =>
+        CultureInfo.CurrentUICulture.TwoLetterISOLanguageName.Equals("zh", StringComparison.OrdinalIgnoreCase);
+
     public double Brightness { get; init; } = 75;
     public bool BrightnessSupported { get; init; } = true;
     public double Volume { get; init; } = 50;
@@ -25,12 +29,12 @@ public class SystemControlSnapshot
     public bool IsMicMuted { get; init; }
     public bool HasMicrophone { get; init; } = true;
     public IReadOnlyList<AudioDeviceInfo> AudioDevices { get; init; } = [];
-    public string CurrentAudioName { get; init; } = "扬声器";
+    public string CurrentAudioName { get; init; } = IsZh ? "扬声器" : "Speakers";
     public bool IsWifiEnabled { get; init; } = true;
     public bool IsWifiConnected { get; init; } = true;
-    public string WifiSubtitle { get; init; } = "已连接";
+    public string WifiSubtitle { get; init; } = IsZh ? "已连接" : "Connected";
     public bool IsBluetoothEnabled { get; init; }
-    public string BluetoothSubtitle { get; init; } = "已关闭";
+    public string BluetoothSubtitle { get; init; } = IsZh ? "已关闭" : "Off";
     public bool IsSystemDarkMode { get; init; } = true;
     public bool AreDesktopIconsVisible { get; init; } = true;
 }
@@ -39,6 +43,9 @@ public sealed class SystemControlService : IDisposable
 {
     private static readonly Lazy<SystemControlService> SharedInstance = new(() => new SystemControlService());
     public static SystemControlService Shared => SharedInstance.Value;
+
+    private static bool IsZh =>
+        CultureInfo.CurrentUICulture.TwoLetterISOLanguageName.Equals("zh", StringComparison.OrdinalIgnoreCase);
 
     private double cachedBrightness = 80;
     private bool brightnessSupported = true;
@@ -50,7 +57,7 @@ public sealed class SystemControlService : IDisposable
     private bool cachedWifiConnected = true;
     private string cachedWifiSubtitle = "Wi-Fi";
     private bool cachedBluetoothEnabled;
-    private string cachedBluetoothSubtitle = "关闭";
+    private string cachedBluetoothSubtitle = IsZh ? "关闭" : "Off";
     private DateTime lastRadioPollUtc = DateTime.MinValue;
     private int radioPollRunning;
 
@@ -86,7 +93,7 @@ public sealed class SystemControlService : IDisposable
             IsMicMuted = micMuted,
             HasMicrophone = hasMic,
             AudioDevices = audioDevices,
-            CurrentAudioName = defaultAudio?.ShortName ?? "默认输出",
+            CurrentAudioName = defaultAudio?.ShortName ?? (IsZh ? "默认输出" : "Default Output"),
             IsWifiEnabled = cachedWifiEnabled,
             IsWifiConnected = cachedWifiConnected,
             WifiSubtitle = cachedWifiSubtitle,
@@ -287,7 +294,7 @@ public sealed class SystemControlService : IDisposable
                         try
                         {
                             dev.GetId(out string id);
-                            string fullName = "音频输出设备";
+                            string fullName = IsZh ? "音频输出设备" : "Audio Output";
                             if (dev.OpenPropertyStore(0, out var store) == 0 && store != null)
                             {
                                 try
@@ -370,7 +377,7 @@ public sealed class SystemControlService : IDisposable
     public string CycleNextAudioOutputDevice()
     {
         var devices = GetAudioOutputDevices();
-        if (devices.Count == 0) return "无设备";
+        if (devices.Count == 0) return IsZh ? "无设备" : "No Device";
         if (devices.Count == 1) return devices[0].ShortName;
 
         int currentIndex = -1;
@@ -632,24 +639,24 @@ public sealed class SystemControlService : IDisposable
                 cachedWifiEnabled = wifiUp || ethernetUp;
                 cachedWifiConnected = wifiUp || ethernetUp;
                 cachedWifiSubtitle = wifiUp
-                    ? (string.IsNullOrWhiteSpace(wifiName) ? "已连接" : wifiName)
-                    : (ethernetUp ? "以太网已连接" : "未连接");
+                    ? (string.IsNullOrWhiteSpace(wifiName) ? (IsZh ? "已连接" : "Connected") : wifiName)
+                    : (ethernetUp ? (IsZh ? "以太网已连接" : "Ethernet Connected") : (IsZh ? "未连接" : "Disconnected"));
             }
             else
             {
                 cachedWifiEnabled = wifiRadioOn;
                 cachedWifiConnected = wifiRadioOn && wifiUp;
                 cachedWifiSubtitle = !wifiRadioOn
-                    ? "已关闭"
+                    ? (IsZh ? "已关闭" : "Off")
                     : wifiUp
-                        ? (string.IsNullOrWhiteSpace(wifiName) ? "已连接" : wifiName)
-                        : (ethernetUp ? "以太网" : "未连接");
+                        ? (string.IsNullOrWhiteSpace(wifiName) ? (IsZh ? "已连接" : "Connected") : wifiName)
+                        : (ethernetUp ? (IsZh ? "以太网" : "Ethernet") : (IsZh ? "未连接" : "Disconnected"));
             }
 
             cachedBluetoothEnabled = foundBtRadio && btRadioOn;
             cachedBluetoothSubtitle = !foundBtRadio
-                ? "未检测到适配器"
-                : btRadioOn ? "已开启" : "已关闭";
+                ? (IsZh ? "未检测到适配器" : "No Adapter")
+                : btRadioOn ? (IsZh ? "已开启" : "On") : (IsZh ? "已关闭" : "Off");
         }
         finally
         {
@@ -676,7 +683,7 @@ public sealed class SystemControlService : IDisposable
             }
 
             cachedWifiEnabled = targetOn;
-            cachedWifiSubtitle = targetOn ? "正在开启…" : "已关闭";
+            cachedWifiSubtitle = targetOn ? (IsZh ? "正在开启…" : "Turning on…") : (IsZh ? "已关闭" : "Off");
             lastRadioPollUtc = DateTime.MinValue;
             return targetOn;
         }
@@ -706,7 +713,7 @@ public sealed class SystemControlService : IDisposable
             }
 
             cachedBluetoothEnabled = targetOn;
-            cachedBluetoothSubtitle = targetOn ? "已开启" : "已关闭";
+            cachedBluetoothSubtitle = targetOn ? (IsZh ? "已开启" : "On") : (IsZh ? "已关闭" : "Off");
             lastRadioPollUtc = DateTime.MinValue;
             return targetOn;
         }

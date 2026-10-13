@@ -137,21 +137,22 @@ public partial class MultiScreen : UserControl
         var panel = (StackPanel) card.Child!;
 
         // 1. Status + Primary badge + Display name + expand toggle
+        var isZh = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName.Equals("zh", StringComparison.OrdinalIgnoreCase);
         var headerLeft = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
         var isInternal = identity.PhysicalIdentity?.IsInternal == true;
         var physicalDeviceName = identity.FriendlyName.Length > 0
             ? identity.FriendlyName
             : (!string.IsNullOrEmpty(identity.HardwareId) ? identity.HardwareId : "Screen");
-        if (isInternal && !physicalDeviceName.Contains("内置"))
-            physicalDeviceName += " (内置屏幕)";
+        if (isInternal && !physicalDeviceName.Contains("内置") && !physicalDeviceName.Contains("Internal", StringComparison.OrdinalIgnoreCase))
+            physicalDeviceName += isZh ? " (内置屏幕)" : " (Internal)";
 
         var bindingBadge = identity.BindingStatus switch
         {
-            BindingStatus.Bound => ("已绑定", Color.FromArgb(0x2A, 0x2F, 0xC8, 0x40), Brushes.LightGreen),
-            BindingStatus.Unconfigured => ("未配置", Color.FromArgb(0x35, 0x0D, 0xA0, 0xE5), Brushes.LightBlue),
-            BindingStatus.Conflict => ("绑定冲突", Color.FromArgb(0x40, 0xE5, 0x20, 0x20), Brushes.Salmon),
-            BindingStatus.Unresolved => ("未解析", Color.FromArgb(0x30, 0x80, 0x80, 0x80), Brushes.LightGray),
-            _ => ("已连接", Color.FromArgb(0x2A, 0x2F, 0xC8, 0x40), Brushes.White)
+            BindingStatus.Bound => (isZh ? "已绑定" : "Bound", Color.FromArgb(0x2A, 0x2F, 0xC8, 0x40), Brushes.LightGreen),
+            BindingStatus.Unconfigured => (isZh ? "未配置" : "Unconfigured", Color.FromArgb(0x35, 0x0D, 0xA0, 0xE5), Brushes.LightBlue),
+            BindingStatus.Conflict => (isZh ? "绑定冲突" : "Conflict", Color.FromArgb(0x40, 0xE5, 0x20, 0x20), Brushes.Salmon),
+            BindingStatus.Unresolved => (isZh ? "未解析" : "Unresolved", Color.FromArgb(0x30, 0x80, 0x80, 0x80), Brushes.LightGray),
+            _ => (isZh ? "已连接" : "Connected", Color.FromArgb(0x2A, 0x2F, 0xC8, 0x40), Brushes.White)
         };
 
         headerLeft.Children.Add(new Border
@@ -178,7 +179,7 @@ public partial class MultiScreen : UserControl
                 VerticalAlignment = VerticalAlignment.Center,
                 Child = new TextBlock
                 {
-                    Text = "主屏幕",
+                    Text = isZh ? "主屏幕" : "Primary",
                     FontSize = 11,
                     Foreground = Brushes.Gold
                 }
@@ -231,21 +232,23 @@ public partial class MultiScreen : UserControl
         // 3. Everything below folds away; default is folded, expand per screen.
         var screenKey = config?.Id ?? $"new:{identity.DeviceName}:{identity.Key}";
         var expanded = expandedScreens.Contains(screenKey);
+        var collapseLabel = isZh ? "收起 ▴" : "Collapse ▴";
+        var expandLabel = isZh ? "展开 ▾" : "Expand ▾";
 
         var body = new StackPanel { Spacing = 10, IsVisible = expanded };
-        expandButton.Content = expanded ? "收起 ▴" : "展开 ▾";
+        expandButton.Content = expanded ? collapseLabel : expandLabel;
         expandButton.Click += (_, _) =>
         {
             var nowExpanded = !body.IsVisible;
             body.IsVisible = nowExpanded;
             if (nowExpanded) expandedScreens.Add(screenKey);
             else expandedScreens.Remove(screenKey);
-            expandButton.Content = nowExpanded ? "收起 ▴" : "展开 ▾";
+            expandButton.Content = nowExpanded ? collapseLabel : expandLabel;
         };
 
         // 4. Screen alias
         var aliasRow = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
-        aliasRow.Children.Add(new TextBlock { Text = "屏幕别名", FontSize = 12, VerticalAlignment = VerticalAlignment.Center, Opacity = 0.8 });
+        aliasRow.Children.Add(new TextBlock { Text = isZh ? "屏幕别名" : "Screen Alias", FontSize = 12, VerticalAlignment = VerticalAlignment.Center, Opacity = 0.8 });
         var alias = new TextBox
         {
             Text = config?.Alias ?? "",
@@ -276,16 +279,24 @@ public partial class MultiScreen : UserControl
 
         gridSection.Children.Add(new TextBlock
         {
-            Text = "📐 桌面网格 (本屏独立)",
+            Text = isZh ? "📐 桌面网格 (本屏独立)" : "📐 Desktop Grid (Per-Screen)",
             FontSize = 13,
             FontWeight = FontWeight.SemiBold
         });
 
+        string FormatCustomGridDesc(DeskCanvas.Core.Models.Settings.Grid g) =>
+            isZh
+                ? $"当前为本屏独立网格 · {g.Columns}列 × {g.Rows}行 · 格子 {g.CellPercent:0.##}%"
+                : $"Custom per-screen grid · {g.Columns} cols × {g.Rows} rows · Cell {g.CellPercent:0.##}%";
+
+        string FormatDefaultGridDesc(DeskCanvas.Core.Models.Settings.Grid g) =>
+            isZh
+                ? $"当前跟随全局默认 · {g.Columns}列 × {g.Rows}行 (在此修改将转为本屏专属网格)"
+                : $"Following global default · {g.Columns} cols × {g.Rows} rows (editing here creates a custom grid for this screen)";
+
         var gridDesc = new TextBlock
         {
-            Text = hasCustomGrid
-                ? $"当前为本屏独立网格 · {savedGrid.Columns}列 × {savedGrid.Rows}行 · 格子 {savedGrid.CellPercent:0.##}%"
-                : $"当前跟随全局默认 · {globalGrid.Columns}列 × {globalGrid.Rows}行 (在此修改将转为本屏专属网格)",
+            Text = hasCustomGrid ? FormatCustomGridDesc(savedGrid) : FormatDefaultGridDesc(globalGrid),
             FontSize = 11,
             Opacity = hasCustomGrid ? 0.9 : 0.6
         };
@@ -299,27 +310,27 @@ public partial class MultiScreen : UserControl
             Minimum = 1, Maximum = 60, Increment = 1, FormatString = "F0",
             Value = savedGrid.Columns, MinWidth = 100, Margin = new Thickness(0, 0, 10, 4)
         };
-        gridInputs.Children.Add(new StackPanel { Spacing = 2, Children = { new TextBlock { Text = "列数 (Columns)", FontSize = 11, Opacity = 0.7 }, colsBox } });
+        gridInputs.Children.Add(new StackPanel { Spacing = 2, Children = { new TextBlock { Text = Locale.Settings_Advanced_GridColumns_Title ?? (isZh ? "列数 (Columns)" : "Columns"), FontSize = 11, Opacity = 0.7 }, colsBox } });
 
         var rowsBox = new NumericUpDown
         {
             Minimum = 1, Maximum = 40, Increment = 1, FormatString = "F0",
             Value = savedGrid.Rows, MinWidth = 100, Margin = new Thickness(0, 0, 10, 4)
         };
-        gridInputs.Children.Add(new StackPanel { Spacing = 2, Children = { new TextBlock { Text = "行数 (Rows)", FontSize = 11, Opacity = 0.7 }, rowsBox } });
+        gridInputs.Children.Add(new StackPanel { Spacing = 2, Children = { new TextBlock { Text = Locale.Settings_Advanced_GridRows_Title ?? (isZh ? "行数 (Rows)" : "Rows"), FontSize = 11, Opacity = 0.7 }, rowsBox } });
 
         var cellBox = new NumericUpDown
         {
             Minimum = 0.1m, Maximum = 50m, Increment = 1, FormatString = "0.##",
             Value = (decimal) savedGrid.CellPercent, MinWidth = 110, Margin = new Thickness(0, 0, 10, 4)
         };
-        gridInputs.Children.Add(new StackPanel { Spacing = 2, Children = { new TextBlock { Text = "格子宽度 (%)", FontSize = 11, Opacity = 0.7 }, cellBox } });
+        gridInputs.Children.Add(new StackPanel { Spacing = 2, Children = { new TextBlock { Text = isZh ? "格子宽度 (%)" : $"{Locale.Settings_Advanced_GridCellSize_Title ?? "Cell Size"} (%)", FontSize = 11, Opacity = 0.7 }, cellBox } });
 
         gridSection.Children.Add(gridInputs);
 
         // Declared before the handlers below so they can show/hide it in place
         // (the real click handler is attached right after creation).
-        var resetGridBtn = Button(Locale.Settings_MultiScreen_ResetGrid ?? "重置为全局默认", (_, _) => { });
+        var resetGridBtn = Button(Locale.Settings_MultiScreen_ResetGrid ?? (isZh ? "重置为全局默认" : "Reset to Global Default"), (_, _) => { });
         resetGridBtn.IsVisible = hasCustomGrid;
 
         void SaveGridQuiet()
@@ -334,7 +345,7 @@ public partial class MultiScreen : UserControl
             savedGrid = savedGrid with { Columns = cols, Rows = rows, CellPercent = cell };
             var entry = currentConfig ??= displayMonitor.EnsureConfig(attached);
             SaveConfig(entry, e => e with { Grid = savedGrid });
-            gridDesc.Text = $"当前为本屏独立网格 · {savedGrid.Columns}列 × {savedGrid.Rows}行 · 格子 {savedGrid.CellPercent:0.##}%";
+            gridDesc.Text = FormatCustomGridDesc(savedGrid);
             gridDesc.Opacity = 0.9;
             resetGridBtn.IsVisible = true;
         }
@@ -348,13 +359,13 @@ public partial class MultiScreen : UserControl
             if (currentConfig == null) return;
             savedGrid = globalGrid;
             SaveConfig(currentConfig, entry => entry with { Grid = null });
-            gridDesc.Text = $"当前跟随全局默认 · {globalGrid.Columns}列 × {globalGrid.Rows}行 (在此修改将转为本屏专属网格)";
+            gridDesc.Text = FormatDefaultGridDesc(globalGrid);
             gridDesc.Opacity = 0.6;
             resetGridBtn.IsVisible = false;
         });
 
         var gridButtons = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, Margin = new Thickness(0, 2) };
-        gridButtons.Children.Add(Button("✏️ 全屏可视化网格编辑", (_, _) =>
+        gridButtons.Children.Add(Button(isZh ? "✏️ 全屏可视化网格编辑" : $"✏️ {Locale.Settings_Advanced_GridEdit ?? "Edit Grid Visually"}", (_, _) =>
         {
             var targetConfig = currentConfig ?? displayMonitor.EnsureConfig(attached);
             new GridEditor(appSettingsProvider, layoutProvider, displayMonitor, targetConfig.Id, attached.Screen).Show();
@@ -369,7 +380,7 @@ public partial class MultiScreen : UserControl
         var dimsSection = new StackPanel { Spacing = 6 };
         dimsSection.Children.Add(new TextBlock
         {
-            Text = "📏 边距、圆角与缩放 (本屏独立)",
+            Text = isZh ? "📏 边距、圆角与缩放 (本屏独立)" : "📏 Margin, Corner Radius & Scale (Per-Screen)",
             FontSize = 13,
             FontWeight = FontWeight.SemiBold
         });
@@ -385,9 +396,11 @@ public partial class MultiScreen : UserControl
             Value = (decimal)(config?.Margin ?? globalMargin),
             MinWidth = 110, Margin = new Thickness(0, 0, 10, 4)
         };
+        var customMarginText = isZh ? "组件内边距 Margin (专属)" : "Widget Margin (Custom)";
+        var defaultMarginText = isZh ? $"组件内边距 Margin (默认 {globalMargin:0}px)" : $"Widget Margin (Default {globalMargin:0}px)";
         var marginLabel = new TextBlock
         {
-            Text = hasCustomMargin ? "组件内边距 Margin (专属)" : $"组件内边距 Margin (默认 {globalMargin:0}px)",
+            Text = hasCustomMargin ? customMarginText : defaultMarginText,
             FontSize = 11,
             Opacity = hasCustomMargin ? 0.95 : 0.7
         };
@@ -404,9 +417,11 @@ public partial class MultiScreen : UserControl
             Value = (decimal)(config?.Radius ?? globalRadius),
             MinWidth = 110, Margin = new Thickness(0, 0, 10, 4)
         };
+        var customRadiusText = isZh ? "组件圆角 Radius (专属)" : "Corner Radius (Custom)";
+        var defaultRadiusText = isZh ? $"组件圆角 Radius (默认 {globalRadius:0}px)" : $"Corner Radius (Default {globalRadius:0}px)";
         var radiusLabel = new TextBlock
         {
-            Text = hasCustomRadius ? "组件圆角 Radius (专属)" : $"组件圆角 Radius (默认 {globalRadius:0}px)",
+            Text = hasCustomRadius ? customRadiusText : defaultRadiusText,
             FontSize = 11,
             Opacity = hasCustomRadius ? 0.95 : 0.7
         };
@@ -427,20 +442,20 @@ public partial class MultiScreen : UserControl
             Spacing = 2,
             Children =
             {
-                new TextBlock { Text = Locale.Settings_MultiScreen_ContentScale ?? "内容整体缩放", FontSize = 11, Opacity = 0.7 },
+                new TextBlock { Text = Locale.Settings_MultiScreen_ContentScale ?? (isZh ? "内容整体缩放" : "Content Scale"), FontSize = 11, Opacity = 0.7 },
                 scaleInput
             }
         });
 
         // Reset buttons are created before the value handlers so the handlers can
         // reveal them in place (real click handlers are attached right after).
-        var resetMarginBtn = Button("恢复默认边距", (_, _) => { });
+        var resetMarginBtn = Button(isZh ? "恢复默认边距" : "Reset Margin", (_, _) => { });
         resetMarginBtn.IsVisible = hasCustomMargin;
         resetMarginBtn.VerticalAlignment = VerticalAlignment.Bottom;
         resetMarginBtn.Margin = new Thickness(0, 0, 0, 4);
         dimsRow.Children.Add(resetMarginBtn);
 
-        var resetRadiusBtn = Button("恢复默认圆角", (_, _) => { });
+        var resetRadiusBtn = Button(isZh ? "恢复默认圆角" : "Reset Radius", (_, _) => { });
         resetRadiusBtn.IsVisible = hasCustomRadius;
         resetRadiusBtn.VerticalAlignment = VerticalAlignment.Bottom;
         resetRadiusBtn.Margin = new Thickness(0, 0, 0, 4);
@@ -454,7 +469,7 @@ public partial class MultiScreen : UserControl
             savedMargin = val;
             var entry = currentConfig ??= displayMonitor.EnsureConfig(attached);
             SaveConfig(entry, e => e with { Margin = val });
-            marginLabel.Text = "组件内边距 Margin (专属)";
+            marginLabel.Text = customMarginText;
             marginLabel.Opacity = 0.95;
             resetMarginBtn.IsVisible = true;
         });
@@ -467,7 +482,7 @@ public partial class MultiScreen : UserControl
             savedRadius = val;
             var entry = currentConfig ??= displayMonitor.EnsureConfig(attached);
             SaveConfig(entry, e => e with { Radius = val });
-            radiusLabel.Text = "组件圆角 Radius (专属)";
+            radiusLabel.Text = customRadiusText;
             radiusLabel.Opacity = 0.95;
             resetRadiusBtn.IsVisible = true;
         });
@@ -489,7 +504,7 @@ public partial class MultiScreen : UserControl
             syncingDimensions = true;
             try { marginBox.Value = (decimal) globalMargin; }
             finally { syncingDimensions = false; }
-            marginLabel.Text = $"组件内边距 Margin (默认 {globalMargin:0}px)";
+            marginLabel.Text = defaultMarginText;
             marginLabel.Opacity = 0.7;
             resetMarginBtn.IsVisible = false;
         });
@@ -502,7 +517,7 @@ public partial class MultiScreen : UserControl
             syncingDimensions = true;
             try { radiusBox.Value = (decimal) globalRadius; }
             finally { syncingDimensions = false; }
-            radiusLabel.Text = $"组件圆角 Radius (默认 {globalRadius:0}px)";
+            radiusLabel.Text = defaultRadiusText;
             radiusLabel.Opacity = 0.7;
             resetRadiusBtn.IsVisible = false;
         });
@@ -514,7 +529,7 @@ public partial class MultiScreen : UserControl
 
         // 7. Maintenance & Rebinding
         var maintSection = new StackPanel { Spacing = 6 };
-        maintSection.Children.Add(new TextBlock { Text = "⚙️ 布局维护与端口绑定", FontSize = 13, FontWeight = FontWeight.SemiBold });
+        maintSection.Children.Add(new TextBlock { Text = isZh ? "⚙️ 布局维护与端口绑定" : "⚙️ Layout Maintenance & Port Binding", FontSize = 13, FontWeight = FontWeight.SemiBold });
 
         var maintButtons = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
         maintButtons.Children.Add(Button(Locale.Settings_MultiScreen_Export, async (_, _) => await ExportScreen(currentConfig ?? displayMonitor.EnsureConfig(attached))));

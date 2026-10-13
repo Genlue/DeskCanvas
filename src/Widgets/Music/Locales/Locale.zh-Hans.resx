@@ -42,4 +42,28 @@
     <data name="Music_Prompt" xml:space="preserve">
         <value>启动音乐软件开始聆听</value>
     </data>
+    <data name="Music_OpenPlayerHint" xml:space="preserve">
+        <value>启动音乐软件开始聆听</value>
+    </data>
+    <data name="Music_DefaultPlayer" xml:space="preserve">
+        <value>音乐</value>
+    </data>
+    <data name="Music_UnknownArtist" xml:space="preserve">
+        <value>未知艺术家</value>
+    </data>
+    <data name="Music_Untitled" xml:space="preserve">
+        <value>无标题</value>
+    </data>
+    <data name="Music_QuickAdd" xml:space="preserve">
+        <value>一键添加</value>
+    </data>
+    <data name="Music_MoveUp" xml:space="preserve">
+        <value>上移优先级</value>
+    </data>
+    <data name="Music_MoveDown" xml:space="preserve">
+        <value>下移优先级</value>
+    </data>
+    <data name="Music_DeleteRule" xml:space="preserve">
+        <value>删除规则</value>
+    </data>
 </root>

@@ -130,10 +130,11 @@ public static class GlyphLiquidGlassRenderer
         var rimLineWidth = Math.Clamp(Math.Max(lensWidth, strokeRadius * 0.15f) * 0.22f * glyphRimScale, 0.70f * scale, 2.4f * scale);
 
         var pad = (int)Math.Ceiling(Math.Max(sigma * 3f, Math.Max(lensWidth + 8f, lensShift * 1.3f + 16f)));
-        var info = new SKImageInfo(width + 2 * pad, height + 2 * pad);
-        using var backdrop = SKSurface.Create(info);
-        var canvas = backdrop.Canvas;
-        canvas.Clear(wallpaper.Background);
+        var sourceW = width + 2 * pad;
+        var sourceH = height + 2 * pad;
+        var info = new SKImageInfo(sourceW, sourceH, SKColorType.Bgra8888, SKAlphaType.Premul);
+        scratch.EnsureSourceCapacity(sourceW * sourceH);
+        var sourcePixels = scratch.SourcePixels;
 
         // Sample the wallpaper from the decoded bitmap the snapshot already owns. Going
         // through WallpaperSnapshot.ImageBytes would PNG-encode (and then re-decode) the
@@ -155,80 +156,83 @@ public static class GlyphLiquidGlassRenderer
             }
         }
 
+        var pixels = scratch.Pixels;
+        using var source = new SKBitmap();
+        var sourceHandle = System.Runtime.InteropServices.GCHandle.Alloc(sourcePixels, System.Runtime.InteropServices.GCHandleType.Pinned);
         try
         {
-            if (image != null)
+            source.InstallPixels(info, sourceHandle.AddrOfPinnedObject());
+            using (var canvas = new SKCanvas(source))
             {
-                using var filter = sigma > 0 ? SKImageFilter.CreateBlur(sigma, sigma, SKShaderTileMode.Clamp) : null;
-                using var paint = new SKPaint { IsAntialias = true, FilterQuality = SKFilterQuality.High, ImageFilter = filter };
-                canvas.Save();
-                canvas.Translate(pad, pad);
-                LiquidGlassRenderer.DrawWallpaper(canvas, image, paint, frame, wallpaper);
-                canvas.Restore();
+                canvas.Clear(wallpaper.Background);
+                if (image != null)
+                {
+                    using var filter = sigma > 0 ? SKImageFilter.CreateBlur(sigma, sigma, SKShaderTileMode.Clamp) : null;
+                    using var paint = new SKPaint { IsAntialias = true, FilterQuality = SKFilterQuality.High, ImageFilter = filter };
+                    canvas.Save();
+                    canvas.Translate(pad, pad);
+                    LiquidGlassRenderer.DrawWallpaper(canvas, image, paint, frame, wallpaper);
+                    canvas.Restore();
+                }
+                canvas.Flush();
             }
-        }
-        finally
-        {
-            if (ownsBitmap)
+
+            var colorHex = frame.Dark ? frame.Theme.EffectiveSolidBackgroundDark : frame.Theme.EffectiveSolidBackgroundLight;
+            if (!SKColor.TryParse(colorHex, out var coating)) coating = frame.Dark ? new SKColor(46, 46, 46) : SKColors.White;
+            var opacity = double.IsFinite(frame.Theme.OpacityLevel) ? Math.Clamp(frame.Theme.OpacityLevel, 0, 1) : 0.18;
+            // A numeral is a narrow optical surface: the card's opaque coating would
+            // replace nearly all of its wallpaper with flat grey at common settings. The component
+            // opacity therefore scales the coating piecewise — 0% coats nothing, 100% keeps the V2
+            // baseline, 200% reaches the full card coating. A flat multiple of the baseline stays
+            // inside a few percent of mix and reads as a dead slider.
+            var coatingStrength = modern
+                ? (frame.GlyphOpacity <= 1f
+                    ? 0.22f * frame.GlyphOpacity
+                    : 0.22f + 0.78f * (frame.GlyphOpacity - 1f))
+                : 1f;
+            var tint = (float)opacity * Math.Clamp(coatingStrength, 0f, 1f);
+            var edgeTint = (float)(optics.EdgeTint / 100.0);
+            var highlightFactor = (float)(optics.Highlight / (modern ? LiquidGlassV2Settings.HighlightReference : HighlightReference));
+            var saturation = modern ? 1f + 0.12f * (float)(frame.Theme.EffectiveLiquidGlassV2.Vibrancy / 100f) : Saturation;
+
+            var angle = optics.LightAngle * Math.PI / 180.0;
+            var lx = (float)Math.Cos(angle);
+            var ly = (float)Math.Sin(angle);
+            var l3x = lx * 0.65f;
+            var l3y = ly * 0.65f;
+            var l3z = 0.76f;
+
+            // 柔光玻璃: the dye reads a bloomed colour field (see LiquidGlassRenderer.AuraField), so a
+            // coloured patch spreads along the strokes instead of dyeing the pixels right above it.
+            var aura = soft ? LiquidGlassRenderer.AuraField.Build(sourcePixels, sourceW, sourceH, pad, width, height) : null;
+            // Environment colour follows the unbent backdrop. Low-pass it separately
+            // from the lens so fine leaves cannot turn the rim into coloured dashes.
+            SKColor[]? environment = null;
+            var environmentStep = Math.Max(1f, 4f * scale);
+            var environmentWidth = Math.Max(1, (int)Math.Ceiling(sourceW / environmentStep));
+            var environmentHeight = Math.Max(1, (int)Math.Ceiling(sourceH / environmentStep));
+            if (modern && edgeTint > 0.001f)
             {
-                image?.Dispose();
+                environment = new SKColor[environmentWidth * environmentHeight];
+                var envHandle = System.Runtime.InteropServices.GCHandle.Alloc(environment, System.Runtime.InteropServices.GCHandleType.Pinned);
+                try
+                {
+                    using var envBitmap = new SKBitmap();
+                    envBitmap.InstallPixels(new SKImageInfo(environmentWidth, environmentHeight, SKColorType.Bgra8888, SKAlphaType.Premul), envHandle.AddrOfPinnedObject());
+                    using var envCanvas = new SKCanvas(envBitmap);
+                    var environmentSigma = Math.Max(3f * scale, strokeRadius * 0.65f) / environmentStep;
+                    using var environmentFilter = SKImageFilter.CreateBlur(environmentSigma, environmentSigma, SKShaderTileMode.Clamp);
+                    using var environmentPaint = new SKPaint { ImageFilter = environmentFilter, FilterQuality = SKFilterQuality.High };
+                    envCanvas.DrawBitmap(source, new SKRect(0, 0, environmentWidth, environmentHeight), environmentPaint);
+                    envCanvas.Flush();
+                }
+                finally
+                {
+                    envHandle.Free();
+                }
             }
-        }
 
-        using var background = backdrop.Snapshot();
-        var colorHex = frame.Dark ? frame.Theme.EffectiveSolidBackgroundDark : frame.Theme.EffectiveSolidBackgroundLight;
-        if (!SKColor.TryParse(colorHex, out var coating)) coating = frame.Dark ? new SKColor(46, 46, 46) : SKColors.White;
-        var opacity = double.IsFinite(frame.Theme.OpacityLevel) ? Math.Clamp(frame.Theme.OpacityLevel, 0, 1) : 0.18;
-        // A numeral is a narrow optical surface: the card's opaque coating would
-        // replace nearly all of its wallpaper with flat grey at common settings. The component
-        // opacity therefore scales the coating piecewise — 0% coats nothing, 100% keeps the V2
-        // baseline, 200% reaches the full card coating. A flat multiple of the baseline stays
-        // inside a few percent of mix and reads as a dead slider.
-        var coatingStrength = modern
-            ? (frame.GlyphOpacity <= 1f
-                ? 0.22f * frame.GlyphOpacity
-                : 0.22f + 0.78f * (frame.GlyphOpacity - 1f))
-            : 1f;
-        var tint = (float)opacity * Math.Clamp(coatingStrength, 0f, 1f);
-        var edgeTint = (float)(optics.EdgeTint / 100.0);
-        var highlightFactor = (float)(optics.Highlight / (modern ? LiquidGlassV2Settings.HighlightReference : HighlightReference));
-        var saturation = modern ? 1f + 0.12f * (float)(frame.Theme.EffectiveLiquidGlassV2.Vibrancy / 100f) : Saturation;
-
-        var angle = optics.LightAngle * Math.PI / 180.0;
-        var lx = (float)Math.Cos(angle);
-        var ly = (float)Math.Sin(angle);
-        var l3x = lx * 0.65f;
-        var l3y = ly * 0.65f;
-        var l3z = 0.76f;
-
-        using var source = SKBitmap.FromImage(background);
-        var sourcePixels = source.Pixels;
-        var sourceW = source.Width;
-        var sourceH = source.Height;
-
-        // 柔光玻璃: the dye reads a bloomed colour field (see LiquidGlassRenderer.AuraField), so a
-        // coloured patch spreads along the strokes instead of dyeing the pixels right above it.
-        var aura = soft ? LiquidGlassRenderer.AuraField.Build(sourcePixels, sourceW, sourceH, pad, width, height) : null;
-        // Environment colour follows the unbent backdrop. Low-pass it separately
-        // from the lens so fine leaves cannot turn the rim into coloured dashes.
-        SKColor[]? environment = null;
-        var environmentStep = Math.Max(1f, 4f * scale);
-        var environmentWidth = Math.Max(1, (int)Math.Ceiling(sourceW / environmentStep));
-        var environmentHeight = Math.Max(1, (int)Math.Ceiling(sourceH / environmentStep));
-        if (modern && edgeTint > 0.001f)
-        {
-            using var environmentSurface = SKSurface.Create(new SKImageInfo(environmentWidth, environmentHeight));
-            var environmentSigma = Math.Max(3f * scale, strokeRadius * 0.65f) / environmentStep;
-            using var environmentFilter = SKImageFilter.CreateBlur(environmentSigma, environmentSigma, SKShaderTileMode.Clamp);
-            using var environmentPaint = new SKPaint { ImageFilter = environmentFilter, FilterQuality = SKFilterQuality.High };
-            environmentSurface.Canvas.DrawBitmap(source, new SKRect(0, 0, environmentWidth, environmentHeight), environmentPaint);
-            using var environmentImage = environmentSurface.Snapshot();
-            using var environmentBitmap = SKBitmap.FromImage(environmentImage);
-            environment = environmentBitmap.Pixels;
-        }
-
-        var pixels = scratch.Pixels;
-        var parallel = new ParallelOptions { MaxDegreeOfParallelism = Math.Clamp(Environment.ProcessorCount / 2, 2, 8) };
+            var parallel = new ParallelOptions { MaxDegreeOfParallelism = Math.Clamp(Environment.ProcessorCount / 2, 2, 8) };
 
         Parallel.For(0, height, parallel, y =>
         {
@@ -467,6 +471,12 @@ public static class GlyphLiquidGlassRenderer
                 pixels[idx] = new SKColor(ClampByte(r), ClampByte(g), ClampByte(b), alpha);
             }
         });
+        }
+        finally
+        {
+            sourceHandle.Free();
+            if (ownsBitmap) image?.Dispose();
+        }
 
         using var resultSurface = SKSurface.Create(new SKImageInfo(width, height, SKColorType.Bgra8888, SKAlphaType.Premul));
         using var resultBitmap = new SKBitmap();
@@ -588,6 +598,7 @@ public static class GlyphLiquidGlassRenderer
         public const int BytesPerLineSlot = 4 * 4;
 
         public int Capacity;
+        public int SourceCapacity;
         public int LineCapacity;
         public long LastReturnedAt;
         public float[] Dist = [];
@@ -598,6 +609,7 @@ public static class GlyphLiquidGlassRenderer
         public float[] TempGx = [];
         public float[] TempGy = [];
         public SKColor[] Pixels = [];
+        public SKColor[] SourcePixels = [];
 
         /// <summary>Transform workspace: the seeds, the squared-distance result and the 1-D helpers.</summary>
         public float[] Seed = [];
@@ -608,7 +620,7 @@ public static class GlyphLiquidGlassRenderer
         public float[] Boundaries = [];
 
         /// <summary>Estimated resident bytes of the currently allocated arrays.</summary>
-        public long Bytes => (long)Capacity * BytesPerPixel + (long)LineCapacity * BytesPerLineSlot;
+        public long Bytes => (long)Capacity * BytesPerPixel + (long)SourceCapacity * 4 + (long)LineCapacity * BytesPerLineSlot;
 
         /// <summary>Grow the buffers to hold <paramref name="size"/> pixels and
         /// <paramref name="lineLength"/>-long transform lines.</summary>
@@ -639,6 +651,15 @@ public static class GlyphLiquidGlassRenderer
                 LineCapacity = lineLength;
             }
         }
+
+        public void EnsureSourceCapacity(int sourceSize)
+        {
+            if (SourceCapacity < sourceSize)
+            {
+                SourcePixels = new SKColor[sourceSize];
+                SourceCapacity = sourceSize;
+            }
+        }
     }
 
     private static readonly object scratchGate = new();
@@ -657,7 +678,7 @@ public static class GlyphLiquidGlassRenderer
     /// Workspaces whose return would push the pool over this are simply dropped — they were two
     /// frames' worth of use, not a resident requirement.
     /// </summary>
-    private const long ScratchPoolBudgetBytes = 32L * 1024 * 1024;
+    private const long ScratchPoolBudgetBytes = 48L * 1024 * 1024;
 
     /// <summary>Pooled workspaces that have not been used for this long are retired on the next rent.</summary>
     private static readonly TimeSpan ScratchIdleAge = TimeSpan.FromMinutes(10);

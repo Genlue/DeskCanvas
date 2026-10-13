@@ -126,6 +126,12 @@ internal class Program
             "Dark-variant AccentContrastForegroundBrush == black (readable on the white accent)");
         Assert(BrushOf("AccentContrastForegroundBrush", ThemeVariant.Light) == Colors.White,
             "Light-variant AccentContrastForegroundBrush == white (readable on the black accent)");
+        Assert(BrushOf("ClockOpaqueDialBackgroundBrush", ThemeVariant.Dark) == darkBgColor
+               && Math.Abs(OpacityOf("ClockOpaqueDialBackgroundBrush", ThemeVariant.Dark) - 1.0) < 0.001,
+            "Dark-variant ClockOpaqueDialBackgroundBrush == opaque dark background color");
+        Assert(BrushOf("ClockOpaqueDialBackgroundBrush", ThemeVariant.Light) == lightBgColor
+               && Math.Abs(OpacityOf("ClockOpaqueDialBackgroundBrush", ThemeVariant.Light) - 1.0) < 0.001,
+            "Light-variant ClockOpaqueDialBackgroundBrush == opaque light background color");
 
         Console.WriteLine("\n--- 黑白, light mode (explicit): accent = black, text = black ---");
         themeService.Apply(Monochrome(MonochromeStyle.BlackWhite, false, darkBg, lightBg));

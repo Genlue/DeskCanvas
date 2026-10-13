@@ -119,6 +119,11 @@ public class ThemeService : IThemeService
             var glass = theme.EffectiveGlass;
             LiquidGlassWallpaper.ConfigureLiveSampling(glass.LiveSampling, glass.LiveSamplingInterval);
         }
+        else
+        {
+            LiquidGlassWallpaper.ConfigureLiveSampling(false, LiquidGlassWallpaper.DefaultIntervalMs);
+            LiquidGlassSourceCache.Clear();
+        }
 
         // Accent source resolution happens further down, in ONE switch, right after the
         // monochrome variant is known — see the ramp contract there for why.

@@ -9,7 +9,7 @@
         <StackPanel Orientation="Vertical" Spacing="6" Margin="0 0 10 0">
 
             <!-- 图源选择 -->
-            <controls:Setting Title="地图图源" Subtitle="选择底图切片提供商与视觉风格">
+            <controls:Setting x:Name="ProviderSetting" Title="地图图源" Subtitle="选择底图切片提供商与视觉风格">
                 <ComboBox MinWidth="220"
                           ItemsSource="{Binding Providers}"
                           SelectedItem="{Binding SelectedProviderOption}">
@@ -22,7 +22,7 @@
             </controls:Setting>
 
             <!-- 预设城市 -->
-            <controls:Setting Title="预设知名地点" Subtitle="快速定位到国内与全球标志性城市或商圈">
+            <controls:Setting x:Name="PresetSetting" Title="预设知名地点" Subtitle="快速定位到国内与全球标志性城市或商圈">
                 <ComboBox MinWidth="220"
                           ItemsSource="{Binding Cities}"
                           SelectedItem="{Binding SelectedCity}">
@@ -35,11 +35,11 @@
             </controls:Setting>
 
             <!-- 网络自动定位 -->
-            <controls:Setting Title="网络自动定位" Subtitle="基于网络 IP 自动识别并定位到您当前所在的城市">
+            <controls:Setting x:Name="AutoLocateSetting" Title="网络自动定位" Subtitle="基于网络 IP 自动识别并定位到您当前所在的城市">
                 <StackPanel Orientation="Vertical" Spacing="6" HorizontalAlignment="Right">
                     <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Right">
-                        <Button Content="立即定位当前位置" Click="OnLocateNowClick" Padding="12,5" />
-                        <ToggleSwitch IsChecked="{Binding AutoLocate}" OnContent="启动时自动定位" OffContent="手动预设" />
+                        <Button x:Name="LocateNowBtn" Content="立即定位当前位置" Click="OnLocateNowClick" Padding="12,5" />
+                        <ToggleSwitch x:Name="AutoLocateToggle" IsChecked="{Binding AutoLocate}" OnContent="启动时自动定位" OffContent="手动预设" />
                     </StackPanel>
                     <TextBlock Text="{Binding LocationStatusText}"
                                IsVisible="{Binding LocationStatusText.Length}"
@@ -50,16 +50,16 @@
             </controls:Setting>
 
             <!-- 地点名称与描述 -->
-            <controls:Setting Title="地点标题" Subtitle="显示在 iPad 风格卡片上的大字标题">
+            <controls:Setting x:Name="LocationNameSetting" Title="地点标题" Subtitle="显示在 iPad 风格卡片上的大字标题">
                 <TextBox MinWidth="220" Text="{Binding LocationName}" />
             </controls:Setting>
 
-            <controls:Setting Title="详细地址 / 描述" Subtitle="显示在浮动卡片上的辅助副标题">
+            <controls:Setting x:Name="LocationDescSetting" Title="详细地址 / 描述" Subtitle="显示在浮动卡片上的辅助副标题">
                 <TextBox MinWidth="220" Text="{Binding LocationDescription}" />
             </controls:Setting>
 
             <!-- 经纬度输入 -->
-            <controls:Setting Title="纬度 (Latitude)" Subtitle="地图中心点纬度 (-85.0 ~ 85.0)">
+            <controls:Setting x:Name="LatitudeSetting" Title="纬度 (Latitude)" Subtitle="地图中心点纬度 (-85.0 ~ 85.0)">
                 <NumericUpDown Width="140"
                                Minimum="-85.0" Maximum="85.0"
                                Increment="0.005"
@@ -67,7 +67,7 @@
                                Value="{Binding Latitude}" />
             </controls:Setting>
 
-            <controls:Setting Title="经度 (Longitude)" Subtitle="地图中心点经度 (-180.0 ~ 180.0)">
+            <controls:Setting x:Name="LongitudeSetting" Title="经度 (Longitude)" Subtitle="地图中心点经度 (-180.0 ~ 180.0)">
                 <NumericUpDown Width="140"
                                Minimum="-180.0" Maximum="180.0"
                                Increment="0.005"
@@ -76,7 +76,7 @@
             </controls:Setting>
 
             <!-- 缩放级别 -->
-            <controls:Setting Title="默认缩放等级" Subtitle="级别 3 (全球) ~ 18 (高精度街区)">
+            <controls:Setting x:Name="ZoomSetting" Title="默认缩放等级" Subtitle="级别 3 (全球) ~ 18 (高精度街区)">
                 <Grid ColumnDefinitions="*,50" Width="220">
                     <Slider Minimum="3" Maximum="18" Value="{Binding Zoom}" />
                     <TextBlock Grid.Column="1" Text="{Binding Zoom, StringFormat='{}Z{0}'}"
@@ -85,29 +85,29 @@
             </controls:Setting>
 
             <!-- 交互开关 -->
-            <controls:Setting Title="桌面拖拽平移" Subtitle="开启后允许鼠标直接在桌面上拖拽平移地图视野">
+            <controls:Setting x:Name="AllowDragSetting" Title="桌面拖拽平移" Subtitle="开启后允许鼠标直接在桌面上拖拽平移地图视野">
                 <ToggleSwitch IsChecked="{Binding AllowMapDrag}" OnContent="" OffContent="" />
             </controls:Setting>
 
-            <controls:Setting Title="中心大头针" Subtitle="在地图中心显示 iPad 风格红色地标大头针">
+            <controls:Setting x:Name="ShowPinSetting" Title="中心大头针" Subtitle="在地图中心显示 iPad 风格红色地标大头针">
                 <ToggleSwitch IsChecked="{Binding ShowPin}" OnContent="" OffContent="" />
             </controls:Setting>
 
-            <controls:Setting Title="浮动信息卡片" Subtitle="在地图角落展示当前地点、坐标与缩放胶囊">
+            <controls:Setting x:Name="ShowInfoPillSetting" Title="浮动信息卡片" Subtitle="在地图角落展示当前地点、坐标与缩放胶囊">
                 <ToggleSwitch IsChecked="{Binding ShowInfoPill}" OnContent="" OffContent="" />
             </controls:Setting>
 
-            <controls:Setting Title="悬浮控制按钮组" Subtitle="在右侧展示复位、放大、缩小与图源切换按钮">
+            <controls:Setting x:Name="ShowControlsSetting" Title="悬浮控制按钮组" Subtitle="在右侧展示复位、放大、缩小与图源切换按钮">
                 <ToggleSwitch IsChecked="{Binding ShowControls}" OnContent="" OffContent="" />
             </controls:Setting>
 
-            <controls:Setting Title="地图比例尺" Subtitle="在中大号尺寸下展示 Apple 风格米/公里比例尺">
+            <controls:Setting x:Name="ShowScaleBarSetting" Title="地图比例尺" Subtitle="在中大号尺寸下展示 Apple 风格米/公里比例尺">
                 <ToggleSwitch IsChecked="{Binding ShowScaleBar}" OnContent="" OffContent="" />
             </controls:Setting>
 
             <!-- 百度地图 AK -->
-            <controls:Setting Title="百度地图 AK (可选)" Subtitle="填入开发者 API Key 以获取百度官方高清切片">
-                <TextBox MinWidth="220" Text="{Binding BaiduApiKey}" Watermark="留空使用高德/开源备用源" />
+            <controls:Setting x:Name="BaiduKeySetting" Title="百度地图 AK (可选)" Subtitle="填入开发者 API Key 以获取百度官方高清切片">
+                <TextBox x:Name="BaiduKeyBox" MinWidth="220" Text="{Binding BaiduApiKey}" Watermark="留空使用高德/开源备用源" />
             </controls:Setting>
 
         </StackPanel>

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Globalization;
 using System.Runtime.CompilerServices;
 using Avalonia;
 using Avalonia.Controls;
@@ -180,9 +181,16 @@ public class BatteryDeviceItem : INotifyPropertyChanged
         OnPropertyChanged(nameof(ChargingBadgeForeground));
     }
 
-    public string StatusText => !hasDevice ? string.Empty : (IsCharging ? "⚡ 充电中" : $"{Percentage}%");
+    private static bool IsZh =>
+        CultureInfo.CurrentUICulture.TwoLetterISOLanguageName.Equals("zh", StringComparison.OrdinalIgnoreCase);
 
-    public string TooltipText => !hasDevice ? string.Empty : $"{Name}: {(IsCharging ? "充电中 " : "")}{Percentage}%";
+    public string StatusText => !hasDevice
+        ? string.Empty
+        : (IsCharging ? (IsZh ? "⚡ 充电中" : "⚡ Charging") : $"{Percentage}%");
+
+    public string TooltipText => !hasDevice
+        ? string.Empty
+        : $"{Name}: {(IsCharging ? (IsZh ? "充电中 " : "Charging ") : "")}{Percentage}%";
 
     public string IconData => Kind switch
     {
@@ -281,10 +289,12 @@ public class BatteriesViewModel : INotifyPropertyChanged, IDisposable
         Items[0].IsCharging = info.IsCharging;
         Items[0].HasDevice = true;
 
+        bool isZh = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName.Equals("zh", StringComparison.OrdinalIgnoreCase);
+
         if (!info.HasBattery)
         {
             Items[0].Name = Locale.Batteries_AcPower;
-            SummaryText = "已连接交流电源";
+            SummaryText = isZh ? "已连接交流电源" : "Connected to AC power";
         }
         else if (info.IsCharging)
         {
@@ -294,9 +304,11 @@ public class BatteriesViewModel : INotifyPropertyChanged, IDisposable
         else
         {
             Items[0].Name = Locale.Batteries_MainDevice;
+            int hours = info.RemainingMinutes / 60;
+            int mins = info.RemainingMinutes % 60;
             SummaryText = info.RemainingMinutes > 0
-                ? $"预计剩余 {(info.RemainingMinutes / 60)}小时{(info.RemainingMinutes % 60)}分"
-                : $"剩余电量 {info.Percentage}%";
+                ? (isZh ? $"预计剩余 {hours}小时{mins}分" : $"~{hours}h {mins}m remaining")
+                : (isZh ? $"剩余电量 {info.Percentage}%" : $"{info.Percentage}% remaining");
         }
 
         if (model.ShowPeripherals)

@@ -1,0 +1,181 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:controls="clr-namespace:DeskCanvas.Views.Controls;assembly=DeskCanvas"
+        x:Class="Hitokoto.Views.HitokotoPopupWindow"
+        Title="一言 · 灵感收纳箱"
+        SystemDecorations="None"
+        Background="Transparent"
+        TransparencyLevelHint="Transparent"
+        ShowInTaskbar="False"
+        CanResize="False"
+        Width="480"
+        Height="560">
+
+    <Window.Styles>
+        <Style Selector="Button.icon-btn">
+            <Setter Property="Width" Value="28" />
+            <Setter Property="Height" Value="28" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="CornerRadius" Value="14" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="Cursor" Value="Hand" />
+        </Style>
+        <Style Selector="Button.icon-btn:pointerover">
+            <Setter Property="Background" Value="#25808080" />
+        </Style>
+        <Style Selector="Button.action-pill">
+            <Setter Property="Background" Value="#1C808080" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="10,4" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="CornerRadius" Value="12" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}" />
+        </Style>
+        <Style Selector="Button.action-pill:pointerover">
+            <Setter Property="Background" Value="#32808080" />
+        </Style>
+        <Style Selector="Button.tab-pill">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="12,5" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="CornerRadius" Value="12" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseMediumBrush}" />
+        </Style>
+        <Style Selector="Button.tab-pill:pointerover">
+            <Setter Property="Background" Value="#16808080" />
+        </Style>
+        <Style Selector="Button.tab-pill.active">
+            <Setter Property="Background" Value="#280078D4" />
+            <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundAccentBrush}" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+        </Style>
+        <Style Selector="Border.quote-item-card">
+            <Setter Property="Background" Value="#14808080" />
+            <Setter Property="BorderBrush" Value="#18ffffff" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="10" />
+            <Setter Property="Padding" Value="12,9" />
+            <Setter Property="Margin" Value="0,0,0,7" />
+        </Style>
+        <Style Selector="Border.quote-item-card:pointerover">
+            <Setter Property="Background" Value="#24808080" />
+        </Style>
+    </Window.Styles>
+
+    <Panel Background="Transparent" PointerPressed="OnRootPointerPressed">
+        <Border x:Name="CardBorder"
+                Margin="0"
+                CornerRadius="18"
+                BorderThickness="1"
+                RenderTransformOrigin="0.5,0.5"
+                ClipToBounds="True">
+            <Border.RenderTransform>
+                <ScaleTransform ScaleX="0.95" ScaleY="0.95" />
+            </Border.RenderTransform>
+
+            <Panel>
+                <controls:LiquidGlassSurface x:Name="LiquidGlassSurfaceControl" CornerRadius="18" Margin="0" IsVisible="False" />
+
+                <!-- Toast Banner -->
+                <Border x:Name="ToastBanner" VerticalAlignment="Bottom" HorizontalAlignment="Center"
+                        Background="{DynamicResource SystemControlHighlightAccentBrush}"
+                        CornerRadius="14" Padding="14,5" Margin="0,0,0,16"
+                        IsVisible="False" ZIndex="30">
+                    <TextBlock x:Name="ToastText" Text="已复制" FontSize="12" FontWeight="SemiBold"
+                               Foreground="{DynamicResource AccentContrastForegroundBrush}" />
+                </Border>
+
+                <Grid RowDefinitions="Auto,Auto,Auto,Auto,*" Margin="18,15,18,14">
+                    <!-- Row 0: Header -->
+                    <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="0,0,0,10">
+                        <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                            <TextBlock x:Name="HeaderTitleText" Text="一言 · 灵感收纳箱" FontSize="15" FontWeight="Bold" />
+                            <Border Background="#20808080" CornerRadius="8" Padding="7,2" VerticalAlignment="Center">
+                                <TextBlock x:Name="CurrentCategoryBadge" Text="一言" FontSize="11" FontWeight="SemiBold"
+                                           Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}" />
+                            </Border>
+                        </StackPanel>
+                        <Button Grid.Column="1" x:Name="CloseButton" Classes="icon-btn" Content="✕"
+                                Click="OnCloseClicked" VerticalAlignment="Center" />
+                    </Grid>
+
+                    <!-- Row 1: Current Quote Spotlight Card -->
+                    <Border Grid.Row="1" Background="#16808080" BorderBrush="#22ffffff" BorderThickness="1"
+                            CornerRadius="12" Padding="14,12" Margin="0,0,0,10">
+                        <StackPanel Spacing="8">
+                            <Grid ColumnDefinitions="*,Auto">
+                                <TextBlock x:Name="SpotlightMetaText" Text="hitokoto.cn" FontSize="11" Opacity="0.6"
+                                           TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                                <Button Grid.Column="1" x:Name="OpenWebBtn" Classes="action-pill" Padding="8,2" FontSize="11"
+                                        Content="🌐 网页详情" Click="OnOpenWebClicked" />
+                            </Grid>
+
+                            <TextBlock x:Name="SpotlightQuoteText" Text="往者不可谏，来者犹可追。"
+                                       FontSize="15" FontWeight="Medium" TextWrapping="Wrap" LineHeight="23" />
+
+                            <TextBlock x:Name="SpotlightFromText" Text="—— 孔子《论语·微子篇》"
+                                       FontSize="12" Opacity="0.75" HorizontalAlignment="Right" />
+
+                            <WrapPanel Orientation="Horizontal" Margin="0,2,0,0">
+                                <Button x:Name="SpotlightNextBtn" Classes="action-pill" Margin="0,0,6,4"
+                                        Content="🎲 换一句" Click="OnNextQuoteClicked" />
+                                <Button x:Name="SpotlightLikeBtn" Classes="action-pill" Margin="0,0,6,4"
+                                        Content="♡ 点赞 (0)" Click="OnLikeCurrentClicked" />
+                                <Button x:Name="SpotlightFavBtn" Classes="action-pill" Margin="0,0,6,4"
+                                        Content="☆ 收藏" Click="OnToggleFavCurrentClicked" />
+                                <Button x:Name="CopyPlainBtn" Classes="action-pill" Margin="0,0,6,4"
+                                        Content="📋 复制文本" Click="OnCopyPlainClicked" />
+                                <Button x:Name="CopyMarkdownBtn" Classes="action-pill" Margin="0,0,0,4"
+                                        Content="📝 复制 Markdown" Click="OnCopyMarkdownClicked" />
+                            </WrapPanel>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Row 2: Search Box -->
+                    <Border Grid.Row="2" Background="#14808080" CornerRadius="10" Padding="10,5" Margin="0,0,0,8">
+                        <Grid ColumnDefinitions="Auto,*">
+                            <TextBlock Grid.Column="0" Text="🔍" FontSize="12" Opacity="0.6" Margin="0,0,6,0" VerticalAlignment="Center" />
+                            <TextBox Grid.Column="1" x:Name="SearchBox"
+                                     Background="Transparent" BorderThickness="0"
+                                     Watermark="搜索收藏或偶遇过的句子、出处、作者..." FontSize="12"
+                                     Padding="0,2" VerticalAlignment="Center"
+                                     TextChanged="OnSearchTextChanged" />
+                        </Grid>
+                    </Border>
+
+                    <!-- Row 3: Tabs (Favorites / History) -->
+                    <Grid Grid.Row="3" ColumnDefinitions="*,Auto" Margin="0,0,0,8">
+                        <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="6">
+                            <Button x:Name="TabFavorites" Classes="tab-pill active" Content="⭐ 本地收藏 (0)"
+                                    Click="OnTabClicked" Tag="Favorites" />
+                            <Button x:Name="TabHistory" Classes="tab-pill" Content="🕒 最近偶遇 (0)"
+                                    Click="OnTabClicked" Tag="History" />
+                        </StackPanel>
+                        <Button Grid.Column="1" x:Name="ClearHistoryBtn" Classes="action-pill"
+                                Content="清空历史" FontSize="11" Padding="8,3"
+                                IsVisible="False" Click="OnClearHistoryClicked" />
+                    </Grid>
+
+                    <!-- Row 4: Items List -->
+                    <Grid Grid.Row="4">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                            <StackPanel x:Name="ItemsStack" Orientation="Vertical" />
+                        </ScrollViewer>
+                        <TextBlock x:Name="EmptyStateText"
+                                   Text="暂无收藏句子，点击上方「☆ 收藏」即可收入摘抄本"
+                                   FontSize="12" Opacity="0.5"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center"
+                                   IsVisible="False" />
+                    </Grid>
+                </Grid>
+            </Panel>
+        </Border>
+    </Panel>
+</Window>

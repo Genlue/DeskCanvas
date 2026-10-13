@@ -68,13 +68,13 @@
                     <!-- Folders: macOS Finder Sky Blue -->
                     <SolidColorBrush x:Key="FolderAccentBrush" Color="#29A3FF" />
 
-                    <!-- Translate: Apple Translate blue & soft gray card -->
+                    <!-- Translate: Apple Translate blue -->
                     <SolidColorBrush x:Key="TranslateAccentBrush" Color="#007AFF" />
-                    <SolidColorBrush x:Key="TranslateCardBackground" Color="#F2F2F7" />
+                    <SolidColorBrush x:Key="TranslateCardBackground" Color="Transparent" />
 
-                    <!-- Calculator: Apple Calculator Orange & crisp gray keys (Light) -->
+                    <!-- Calculator: Apple Calculator Orange & crisp keys (Light) -->
                     <SolidColorBrush x:Key="CalculatorAccentBrush" Color="#FF9500" />
-                    <SolidColorBrush x:Key="CalculatorCardBackground" Color="#F2F2F7" />
+                    <SolidColorBrush x:Key="CalculatorCardBackground" Color="Transparent" />
                     <SolidColorBrush x:Key="CalculatorNumButtonBackground" Color="#F2F2F7" />
                     <SolidColorBrush x:Key="CalculatorFuncButtonBackground" Color="#E5E5EA" />
                     <SolidColorBrush x:Key="CalculatorOpButtonBackground" Color="#22FF9500" />
@@ -105,7 +105,8 @@
 
                     <!-- Card Border & Clock Dial / Strokes (Light) -->
                     <SolidColorBrush x:Key="WidgetCardBorderBrush" Color="#15000000" />
-                    <SolidColorBrush x:Key="ClockDialBackgroundBrush" Color="#FFFFFF" />
+                    <SolidColorBrush x:Key="ClockDialBackgroundBrush" Color="#1C1C1E" Opacity="0.08" />
+                    <SolidColorBrush x:Key="ClockOpaqueDialBackgroundBrush" Color="#FFFFFF" Opacity="1.0" />
                     <SolidColorBrush x:Key="ClockStrokesBrush" Color="#8E8E93" />
                     <SolidColorBrush x:Key="FlipClockTopFlapBrush" Color="#F4F4F8" />
                     <SolidColorBrush x:Key="FlipClockBottomFlapBrush" Color="#EAEAF0" />
@@ -171,13 +172,13 @@
                     <!-- Folders: macOS Finder Sky Blue -->
                     <SolidColorBrush x:Key="FolderAccentBrush" Color="#29A3FF" />
 
-                    <!-- Translate: Apple Translate blue & soft gray card -->
+                    <!-- Translate: Apple Translate blue -->
                     <SolidColorBrush x:Key="TranslateAccentBrush" Color="#007AFF" />
-                    <SolidColorBrush x:Key="TranslateCardBackground" Color="#F2F2F7" />
+                    <SolidColorBrush x:Key="TranslateCardBackground" Color="Transparent" />
 
-                    <!-- Calculator: Apple Calculator Orange & crisp gray keys (Light) -->
+                    <!-- Calculator: Apple Calculator Orange & crisp keys (Light) -->
                     <SolidColorBrush x:Key="CalculatorAccentBrush" Color="#FF9500" />
-                    <SolidColorBrush x:Key="CalculatorCardBackground" Color="#F2F2F7" />
+                    <SolidColorBrush x:Key="CalculatorCardBackground" Color="Transparent" />
                     <SolidColorBrush x:Key="CalculatorNumButtonBackground" Color="#F2F2F7" />
                     <SolidColorBrush x:Key="CalculatorFuncButtonBackground" Color="#E5E5EA" />
                     <SolidColorBrush x:Key="CalculatorOpButtonBackground" Color="#22FF9500" />
@@ -208,7 +209,8 @@
 
                     <!-- Card Border & Clock Dial / Strokes (Light) -->
                     <SolidColorBrush x:Key="WidgetCardBorderBrush" Color="#15000000" />
-                    <SolidColorBrush x:Key="ClockDialBackgroundBrush" Color="#FFFFFF" />
+                    <SolidColorBrush x:Key="ClockDialBackgroundBrush" Color="#1C1C1E" Opacity="0.08" />
+                    <SolidColorBrush x:Key="ClockOpaqueDialBackgroundBrush" Color="#FFFFFF" Opacity="1.0" />
                     <SolidColorBrush x:Key="ClockStrokesBrush" Color="#8E8E93" />
                     <SolidColorBrush x:Key="FlipClockTopFlapBrush" Color="#F4F4F8" />
                     <SolidColorBrush x:Key="FlipClockBottomFlapBrush" Color="#EAEAF0" />
@@ -274,13 +276,13 @@
                     <!-- Folders: macOS Finder Sky Blue -->
                     <SolidColorBrush x:Key="FolderAccentBrush" Color="#33AAFF" />
 
-                    <!-- Translate: Apple Translate blue & dark card -->
+                    <!-- Translate: Apple Translate blue -->
                     <SolidColorBrush x:Key="TranslateAccentBrush" Color="#0A84FF" />
-                    <SolidColorBrush x:Key="TranslateCardBackground" Color="#2C2C2E" />
+                    <SolidColorBrush x:Key="TranslateCardBackground" Color="Transparent" />
 
                     <!-- Calculator: Apple Calculator Orange & dark charcoal keys (Dark) -->
                     <SolidColorBrush x:Key="CalculatorAccentBrush" Color="#FF9F0A" />
-                    <SolidColorBrush x:Key="CalculatorCardBackground" Color="#2C2C2E" />
+                    <SolidColorBrush x:Key="CalculatorCardBackground" Color="Transparent" />
                     <SolidColorBrush x:Key="CalculatorNumButtonBackground" Color="#2C2C2E" />
                     <SolidColorBrush x:Key="CalculatorFuncButtonBackground" Color="#3A3A3C" />
                     <SolidColorBrush x:Key="CalculatorOpButtonBackground" Color="#2EFF9F0A" />
@@ -311,7 +313,8 @@
 
                     <!-- Card Border & Clock Dial / Strokes (Dark) -->
                     <SolidColorBrush x:Key="WidgetCardBorderBrush" Color="#25FFFFFF" />
-                    <SolidColorBrush x:Key="ClockDialBackgroundBrush" Color="#2C2C2E" />
+                    <SolidColorBrush x:Key="ClockDialBackgroundBrush" Color="#FFFFFF" Opacity="0.12" />
+                    <SolidColorBrush x:Key="ClockOpaqueDialBackgroundBrush" Color="#2C2C2E" Opacity="1.0" />
                     <SolidColorBrush x:Key="ClockStrokesBrush" Color="#8E8E93" />
                     <SolidColorBrush x:Key="FlipClockTopFlapBrush" Color="#2C2C2E" />
                     <SolidColorBrush x:Key="FlipClockBottomFlapBrush" Color="#232325" />

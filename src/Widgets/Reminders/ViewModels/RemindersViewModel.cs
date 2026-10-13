@@ -107,7 +107,13 @@ public class RemindersViewModel : ReactiveObject
     /// </summary>
     public string? ListName
     {
-        get => model.ListName;
+        get
+        {
+            var isZh = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName.Equals("zh", System.StringComparison.OrdinalIgnoreCase);
+            if (!isZh && (model.ListName == "待办清单" || model.ListName == "清单"))
+                return Locales.Locale.Reminders_DefaultListName;
+            return model.ListName;
+        }
         set
         {
             if (value == model.ListName) return;

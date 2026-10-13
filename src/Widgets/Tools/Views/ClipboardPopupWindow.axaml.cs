@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -170,7 +170,8 @@ public partial class ClipboardPopupWindow : SecondaryPanelWindow
         var result = items.OrderByDescending(i => i.IsPinned).ThenByDescending(i => i.Timestamp).ToList();
         ItemsControl.ItemsSource = result;
 
-        CountBadge.Text = $"{result.Count} 项";
+        bool isZh = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName.Equals("zh", StringComparison.OrdinalIgnoreCase);
+        CountBadge.Text = isZh ? $"{result.Count} 项" : $"{result.Count} items";
         EmptyPanel.IsVisible = result.Count == 0;
     }
 

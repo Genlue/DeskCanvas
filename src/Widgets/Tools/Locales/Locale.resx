@@ -201,4 +201,196 @@
     <data name="Tools_Calculator_ClickToCopy_Desc" xml:space="preserve">
         <value>Copy result directly when clicking a history item instead of filling expression</value>
     </data>
+    <data name="Tools_Clipboard_PopupTitle" xml:space="preserve">
+        <value>Clipboard Manager</value>
+    </data>
+    <data name="Tools_Clipboard_SearchHint" xml:space="preserve">
+        <value>Search clipboard history...</value>
+    </data>
+    <data name="Tools_Clipboard_EmptyFiltered" xml:space="preserve">
+        <value>No matching clipboard items</value>
+    </data>
+    <data name="Tools_Clipboard_TogglePin" xml:space="preserve">
+        <value>Pin / Unpin</value>
+    </data>
+    <data name="Tools_Clipboard_DeleteItem" xml:space="preserve">
+        <value>Delete item</value>
+    </data>
+    <data name="Tools_Clipboard_OpenManagerTip" xml:space="preserve">
+        <value>Click to open Clipboard Manager</value>
+    </data>
+    <data name="Tools_Clipboard_FilterByTypeTip" xml:space="preserve">
+        <value>Filter by type</value>
+    </data>
+    <data name="Tools_Clipboard_ExpandTip" xml:space="preserve">
+        <value>Expand Manager</value>
+    </data>
+    <data name="Tools_Clipboard_CopyTip" xml:space="preserve">
+        <value>Copy</value>
+    </data>
+    <data name="Tools_Clipboard_DeleteTip" xml:space="preserve">
+        <value>Delete</value>
+    </data>
+    <data name="Tools_Clipboard_HistoryCleared" xml:space="preserve">
+        <value>Clipboard history cleared</value>
+    </data>
+    <data name="Tools_Clipboard_Group_History" xml:space="preserve">
+        <value>History Settings</value>
+    </data>
+    <data name="Tools_Clipboard_Group_Capture" xml:space="preserve">
+        <value>Capture Content Types</value>
+    </data>
+    <data name="Tools_Clipboard_CaptureText" xml:space="preserve">
+        <value>Capture Text</value>
+    </data>
+    <data name="Tools_Clipboard_CaptureImages" xml:space="preserve">
+        <value>Capture Images</value>
+    </data>
+    <data name="Tools_Clipboard_CaptureFiles" xml:space="preserve">
+        <value>Capture Files</value>
+    </data>
+    <data name="Tools_Clipboard_Group_Cache" xml:space="preserve">
+        <value>Cache &amp; Management</value>
+    </data>
+    <data name="Tools_Clipboard_ClearAllTitle" xml:space="preserve">
+        <value>Clear all clipboard history &amp; thumbnail cache</value>
+    </data>
+    <data name="Tools_Clipboard_ClearAllDesc" xml:space="preserve">
+        <value>Remove all saved history items and temporary image files</value>
+    </data>
+    <data name="Tools_Clipboard_ClearNow" xml:space="preserve">
+        <value>Clear Now</value>
+    </data>
+    <data name="Tools_Translator_CopySourceTip" xml:space="preserve">
+        <value>Copy source text</value>
+    </data>
+    <data name="Tools_Translator_ExpandTip" xml:space="preserve">
+        <value>Open Expanded Translator</value>
+    </data>
+    <data name="Tools_Translator_Group_General" xml:space="preserve">
+        <value>General Translation Settings</value>
+    </data>
+    <data name="Tools_Translator_Group_Baidu" xml:space="preserve">
+        <value>Baidu Translate Platform (Optional)</value>
+    </data>
+    <data name="Tools_Translator_BaiduAppId_Hint" xml:space="preserve">
+        <value>Enter Baidu Translate AppID</value>
+    </data>
+    <data name="Tools_Translator_BaiduSecret_Hint" xml:space="preserve">
+        <value>Enter SecretKey</value>
+    </data>
+    <data name="Tools_Translator_Group_Custom" xml:space="preserve">
+        <value>Custom / DeepLX Endpoint (Optional)</value>
+    </data>
+    <data name="Tools_Translator_CustomUrl_Hint" xml:space="preserve">
+        <value>e.g. http://127.0.0.1:1188/translate</value>
+    </data>
+    <data name="Tools_Calculator_Tab_Scientific" xml:space="preserve">
+        <value>Scientific</value>
+    </data>
+    <data name="Tools_Calculator_Tab_Programmer" xml:space="preserve">
+        <value>Programmer</value>
+    </data>
+    <data name="Tools_Calculator_Tab_Converter" xml:space="preserve">
+        <value>Unit Converter</value>
+    </data>
+    <data name="Tools_Calculator_ToggleAngleTip" xml:space="preserve">
+        <value>Toggle Degrees (DEG) / Radians (RAD)</value>
+    </data>
+    <data name="Tools_Calculator_ClearExprTip" xml:space="preserve">
+        <value>Clear expression</value>
+    </data>
+    <data name="Tools_Calculator_CopyResultTip" xml:space="preserve">
+        <value>Copy calculation result</value>
+    </data>
+    <data name="Tools_Calculator_ClickToCopyTip" xml:space="preserve">
+        <value>Click to copy result</value>
+    </data>
+    <data name="Tools_Calculator_SmallResultTip" xml:space="preserve">
+        <value>Click to copy result · Press Enter to save history</value>
+    </data>
+    <data name="Tools_Calculator_SmallWatermark" xml:space="preserve">
+        <value>Type expression and press Enter...</value>
+    </data>
+    <data name="Tools_Calculator_OpenPanelTip" xml:space="preserve">
+        <value>Click to open Calculator Panel</value>
+    </data>
+    <data name="Tools_Calculator_ExpandPanelTip" xml:space="preserve">
+        <value>Expand Scientific / Programmer / Unit Converter Panel</value>
+    </data>
+    <data name="Tools_Calculator_LargeKeypadTab" xml:space="preserve">
+        <value>Standard / Sci</value>
+    </data>
+    <data name="Tools_Calculator_LargeHistoryHint" xml:space="preserve">
+        <value>Click any item to fill expression or copy</value>
+    </data>
+    <data name="Tools_Calculator_ProgWatermark" xml:space="preserve">
+        <value>Enter integer or bitwise expression...</value>
+    </data>
+    <data name="Tools_Calculator_BaseHexTip" xml:space="preserve">
+        <value>Switch to Hexadecimal (click right icon to copy)</value>
+    </data>
+    <data name="Tools_Calculator_BaseDecTip" xml:space="preserve">
+        <value>Switch to Decimal (click right icon to copy)</value>
+    </data>
+    <data name="Tools_Calculator_BaseOctTip" xml:space="preserve">
+        <value>Switch to Octal (click right icon to copy)</value>
+    </data>
+    <data name="Tools_Calculator_BaseBinTip" xml:space="preserve">
+        <value>Switch to Binary (click right icon to copy)</value>
+    </data>
+    <data name="Tools_Calculator_ConvFrom" xml:space="preserve">
+        <value>From (Input Value)</value>
+    </data>
+    <data name="Tools_Calculator_ConvSwap" xml:space="preserve">
+        <value>⇅ Swap Units</value>
+    </data>
+    <data name="Tools_Calculator_ConvReset" xml:space="preserve">
+        <value>Reset to 1</value>
+    </data>
+    <data name="Tools_Calculator_ConvTo" xml:space="preserve">
+        <value>Converted Result</value>
+    </data>
+    <data name="Tools_Calculator_ConvCopyTip" xml:space="preserve">
+        <value>Copy converted result</value>
+    </data>
+    <data name="Tools_Calculator_ConvAllUnitsHint" xml:space="preserve">
+        <value>All units in category (click any row to copy)</value>
+    </data>
+    <data name="Tools_Calculator_SidebarHistory" xml:space="preserve">
+        <value>History</value>
+    </data>
+    <data name="Tools_Calculator_SidebarMemory" xml:space="preserve">
+        <value>Memory (M)</value>
+    </data>
+    <data name="Tools_Calculator_MemClearTip" xml:space="preserve">
+        <value>Memory Clear (MC)</value>
+    </data>
+    <data name="Tools_Calculator_MemRecallTip" xml:space="preserve">
+        <value>Memory Recall (MR)</value>
+    </data>
+    <data name="Tools_Calculator_MemAddTip" xml:space="preserve">
+        <value>Memory Add (M+)</value>
+    </data>
+    <data name="Tools_Calculator_MemSubTip" xml:space="preserve">
+        <value>Memory Subtract (M−)</value>
+    </data>
+    <data name="Tools_Calculator_MemStoreTip" xml:space="preserve">
+        <value>Memory Store (MS)</value>
+    </data>
+    <data name="Tools_Calculator_Group_Display" xml:space="preserve">
+        <value>Display &amp; Precision</value>
+    </data>
+    <data name="Tools_Calculator_Group_Mode" xml:space="preserve">
+        <value>Calculation Mode &amp; Secondary Panel</value>
+    </data>
+    <data name="Tools_Calculator_Group_History" xml:space="preserve">
+        <value>History &amp; Interaction</value>
+    </data>
+    <data name="Tools_Calculator_ClearAllTitle" xml:space="preserve">
+        <value>Clear Calculation History &amp; Memory Slots</value>
+    </data>
+    <data name="Tools_Calculator_ClearAllDesc" xml:space="preserve">
+        <value>Clear all saved calculation history items and M memory values</value>
+    </data>
 </root>

@@ -263,15 +263,15 @@ public partial class PictureSettings : UserControl
             AllowMultiple = true,
             FileTypeFilter =
             [
-                new FilePickerFileType("图片与动态图 (*.jpg, *.png, *.webp, *.gif, *.bmp, *.ico, *.tiff)")
+                new FilePickerFileType(Locale.Picture_Filter_Images)
                 {
                     Patterns = ["*.jpg", "*.jpeg", "*.png", "*.webp", "*.bmp", "*.gif", "*.ico", "*.tif", "*.tiff", "*.wbmp"]
                 },
-                new FilePickerFileType("动图 (*.gif, *.webp)")
+                new FilePickerFileType(Locale.Picture_Filter_Animations)
                 {
                     Patterns = ["*.gif", "*.webp"]
                 },
-                new FilePickerFileType("所有文件 (*.*)")
+                new FilePickerFileType(Locale.Picture_Filter_AllFiles)
                 {
                     Patterns = ["*.*"]
                 }

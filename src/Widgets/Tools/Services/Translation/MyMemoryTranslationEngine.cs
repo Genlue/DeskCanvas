@@ -44,7 +44,8 @@ public class MyMemoryTranslationEngine : ITranslationEngine
             }
         }
 
-        throw new InvalidOperationException("MyMemory 未返回有效翻译结果");
+        bool isZh = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName.Equals("zh", StringComparison.OrdinalIgnoreCase);
+        throw new InvalidOperationException(isZh ? "MyMemory 未返回有效翻译结果" : "MyMemory did not return a valid translation result");
     }
 
     private static string NormalizeLang(string lang, bool isSource) => lang.ToLowerInvariant() switch

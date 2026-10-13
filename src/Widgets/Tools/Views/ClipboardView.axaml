@@ -124,7 +124,7 @@
         <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,6" VerticalAlignment="Center">
             <!-- Title & Count (with ellipsis to give priority to right action buttons) -->
             <Grid Grid.Column="0" ColumnDefinitions="Auto,Auto" VerticalAlignment="Center" Margin="0,0,4,0" Cursor="Hand"
-                  PointerPressed="OnOpenBadgePointerPressed" ToolTip.Tip="点击打开剪贴板历史管理器">
+                  PointerPressed="OnOpenBadgePointerPressed" ToolTip.Tip="{x:Static locales:Locale.Tools_Clipboard_OpenPopupTip}">
                 <TextBlock Grid.Column="0" Text="{x:Static locales:Locale.Tools_Clipboard_Title}" FontWeight="SemiBold" FontSize="13"
                            TextTrimming="CharacterEllipsis"
                            Foreground="{DynamicResource SystemControlForegroundAccentBrush}" VerticalAlignment="Center" />
@@ -147,25 +147,25 @@
             <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="2" VerticalAlignment="Center" HorizontalAlignment="Right">
                 <!-- Compact Filter Menu Button (Visible in Small 2x2 tier; adapts between text pill and compact icon) -->
                 <Button x:Name="CompactFilterBtn" Classes="menu-pill" Padding="4,2" VerticalAlignment="Center"
-                        Click="OnCompactFilterBtnClicked" IsVisible="True" ToolTip.Tip="按类型过滤">
+                        Click="OnCompactFilterBtnClicked" IsVisible="True" ToolTip.Tip="{x:Static locales:Locale.Tools_Clipboard_FilterByType}">
                     <StackPanel Orientation="Horizontal" Spacing="1">
                         <PathIcon x:Name="CompactFilterIcon" Data="M10 18h4v-2h-4v2zM3 6v2h18V6H3zm3 7h12v-2H6v2z"
                                   Width="9" Height="9" Opacity="0.75" VerticalAlignment="Center" IsVisible="False" />
-                        <TextBlock x:Name="CompactFilterText" Text="全部" FontSize="9.5" />
+                        <TextBlock x:Name="CompactFilterText" Text="{x:Static locales:Locale.Tools_Clipboard_All}" FontSize="9.5" />
                         <TextBlock x:Name="CompactFilterArrow" Text="▾" FontSize="7.5" Opacity="0.6" VerticalAlignment="Center" />
                     </StackPanel>
                     <Button.ContextMenu>
                         <ContextMenu x:Name="FilterMenu">
-                            <MenuItem Header="全部" Click="OnSelectFilterMenuItem" Tag="All" />
-                            <MenuItem Header="文本" Click="OnSelectFilterMenuItem" Tag="Text" />
-                            <MenuItem Header="图片" Click="OnSelectFilterMenuItem" Tag="Image" />
-                            <MenuItem Header="文件" Click="OnSelectFilterMenuItem" Tag="Files" />
+                            <MenuItem Header="{x:Static locales:Locale.Tools_Clipboard_All}" Click="OnSelectFilterMenuItem" Tag="All" />
+                            <MenuItem Header="{x:Static locales:Locale.Tools_Clipboard_Text}" Click="OnSelectFilterMenuItem" Tag="Text" />
+                            <MenuItem Header="{x:Static locales:Locale.Tools_Clipboard_Image}" Click="OnSelectFilterMenuItem" Tag="Image" />
+                            <MenuItem Header="{x:Static locales:Locale.Tools_Clipboard_Files}" Click="OnSelectFilterMenuItem" Tag="Files" />
                         </ContextMenu>
                     </Button.ContextMenu>
                 </Button>
 
                 <!-- Expand Button -->
-                <Button Classes="icon-btn" Width="20" Height="20" Padding="3" VerticalAlignment="Center" Click="OnOpenPopupClicked" ToolTip.Tip="展开管理器">
+                <Button Classes="icon-btn" Width="20" Height="20" Padding="3" VerticalAlignment="Center" Click="OnOpenPopupClicked" ToolTip.Tip="{x:Static locales:Locale.Tools_Clipboard_ExpandManager}">
                     <PathIcon Data="M19 19H5V5h7V3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z" Width="10" Height="10" Opacity="0.75" />
                 </Button>
 
@@ -240,11 +240,11 @@
 
                                 <!-- Action Buttons -->
                                 <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="1" VerticalAlignment="Center">
-                                    <Button Classes="icon-btn copy-item-btn" Click="OnItemCopyClicked" Tag="{Binding}" ToolTip.Tip="复制">
+                                    <Button Classes="icon-btn copy-item-btn" Click="OnItemCopyClicked" Tag="{Binding}" ToolTip.Tip="{x:Static locales:Locale.Tools_Clipboard_CopyTip}">
                                         <PathIcon Data="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"
                                                   Width="11" Height="11" Opacity="0.6" />
                                     </Button>
-                                    <Button Classes="icon-btn delete-item-btn" Click="OnItemDeleteClicked" Tag="{Binding}" ToolTip.Tip="删除">
+                                    <Button Classes="icon-btn delete-item-btn" Click="OnItemDeleteClicked" Tag="{Binding}" ToolTip.Tip="{x:Static locales:Locale.Tools_Clipboard_Delete}">
                                         <PathIcon Data="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"
                                                   Width="10" Height="10" Opacity="0.4" />
                                     </Button>

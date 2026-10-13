@@ -58,7 +58,7 @@ public partial class WidgetStackView : UserControl, IWidgetSelfRefreshing, IStac
         {
             if (model?.Entries == null || model.Entries.Count == 0) return null;
             if (model.SelectedIndex < 0 || model.SelectedIndex >= model.Entries.Count) return null;
-            return model.Entries[model.SelectedIndex].DisplayTitle;
+            return model.Entries[model.SelectedIndex].GetLocalizedTitle();
         }
     }
 
@@ -73,7 +73,7 @@ public partial class WidgetStackView : UserControl, IWidgetSelfRefreshing, IStac
                 bool isActive = i == model.SelectedIndex;
                 list.Add(new StackWidgetIndicatorItem(
                     i,
-                    model.Entries[i].DisplayTitle,
+                    model.Entries[i].GetLocalizedTitle(),
                     isActive,
                     isActive ? 1.0 : 0.30
                 ));
@@ -418,7 +418,7 @@ public partial class WidgetStackView : UserControl, IWidgetSelfRefreshing, IStac
 
         var titleBlock = new TextBlock
         {
-            Text = "空白重叠卡片",
+            Text = Locales.Locale.EmptyCard_Title,
             FontSize = 12,
             FontWeight = FontWeight.SemiBold,
             HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center
@@ -426,7 +426,7 @@ public partial class WidgetStackView : UserControl, IWidgetSelfRefreshing, IStac
 
         var hintBlock = new TextBlock
         {
-            Text = "右键编辑以添加组件",
+            Text = Locales.Locale.EmptyCard_Hint,
             FontSize = 10,
             HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center,
             Opacity = 0.8
@@ -525,17 +525,6 @@ public partial class WidgetStackView : UserControl, IWidgetSelfRefreshing, IStac
 
         if (theme?.IsColorful == true)
         {
-            if (viewTypeName is "Note" or "MapView")
-            {
-                return Brushes.Transparent;
-            }
-
-            if (viewTypeName == "AnalogI")
-            {
-                // Clock Style 1 (AnalogI):
-                // Outer perimeter background is always authentic dark mode charcoal (#1C1C1E)
-                return new SolidColorBrush(Color.Parse("#1C1C1E"));
-            }
             if (viewTypeName is "Forecast" or "FourDayForecast")
             {
                 if (this.TryFindResource("WeatherCardBackground", variant, out var wcb) && wcb is IBrush wb)
@@ -588,16 +577,9 @@ public partial class WidgetStackView : UserControl, IWidgetSelfRefreshing, IStac
         var theme = appSettingsProvider?.Get()?.Theme;
         if (theme == null || theme.UseNativeFrame) return new Thickness(0);
 
-        bool isOutlined = (theme.IsGlass && theme.OutlineWidth > 0) || theme.IsColorful;
-        if (!isOutlined) return new Thickness(0);
-
-        if (theme.IsColorful && (viewTypeName is "Note" or "MapView"))
-            return new Thickness(0);
+        if (!theme.IsGlass || theme.OutlineWidth <= 0) return new Thickness(0);
 
         var width = Math.Clamp(theme.OutlineWidth, 0, 6);
-        if (width <= 0 && theme.IsColorful)
-            return new Thickness(1);
-
         return new Thickness(width);
     }
 
@@ -606,32 +588,13 @@ public partial class WidgetStackView : UserControl, IWidgetSelfRefreshing, IStac
         var theme = appSettingsProvider?.Get()?.Theme;
         if (theme == null || theme.UseNativeFrame) return null;
 
-        bool isOutlined = (theme.IsGlass && theme.OutlineWidth > 0) || theme.IsColorful;
-        if (!isOutlined) return null;
+        if (!theme.IsGlass || theme.OutlineWidth <= 0) return null;
 
-        if (theme.IsColorful && (viewTypeName is "Note" or "MapView"))
-            return null;
-
-        if (theme.OutlineWidth > 0)
-        {
-            var size = new Size(
-                Bounds.Width > 0 ? Bounds.Width : (widgetLayoutProvider?.Get()?.Width ?? 150),
-                Bounds.Height > 0 ? Bounds.Height : (widgetLayoutProvider?.Get()?.Height ?? 150)
-            );
-            return BuildConicOutlineBrush(theme, size);
-        }
-
-        if (theme.IsColorful)
-        {
-            // Variant-explicit: the variant-less overload would return the LIGHT border
-            // brush (#15000000) even for dark cards.
-            if (this.TryFindResource("WidgetCardBorderBrush", ActualThemeVariant, out var res) && res is IBrush b)
-                return b;
-            var isDark = ActualThemeVariant == ThemeVariant.Dark || (theme.DarkMode ?? false);
-            return isDark ? new SolidColorBrush(Color.Parse("#25FFFFFF")) : new SolidColorBrush(Color.Parse("#15000000"));
-        }
-
-        return null;
+        var size = new Size(
+            Bounds.Width > 0 ? Bounds.Width : (widgetLayoutProvider?.Get()?.Width ?? 150),
+            Bounds.Height > 0 ? Bounds.Height : (widgetLayoutProvider?.Get()?.Height ?? 150)
+        );
+        return BuildConicOutlineBrush(theme, size);
     }
 
     private static ConicGradientBrush BuildConicOutlineBrush(Theme theme, Size size)

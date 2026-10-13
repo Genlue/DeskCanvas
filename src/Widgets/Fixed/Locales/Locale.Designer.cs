@@ -34,10 +34,16 @@ namespace FixedWidgets.Locales {
             }
         }
         
-        public static string Fixed_Aggregate_Title => ResourceManager.GetString("Fixed_Aggregate_Title", resourceCulture) ?? "聚合信息";
-        public static string Fixed_Aggregate_Subtitle => ResourceManager.GetString("Fixed_Aggregate_Subtitle", resourceCulture) ?? "聚合城市天气、数字时钟与日历的4×2全景仪表小组件";
-        public static string Setting_City => ResourceManager.GetString("Setting_City", resourceCulture) ?? "所在城市";
-        public static string Setting_CustomCity => ResourceManager.GetString("Setting_CustomCity", resourceCulture) ?? "自定义城市名称";
+        public static string FixedWidgets => ResourceManager.GetString("FixedWidgets", resourceCulture) ?? "Panoramic Hub";
+        public static string Fixed_Aggregate_Title => ResourceManager.GetString("Fixed_Aggregate_Title", resourceCulture) ?? "Aggregate Info";
+        public static string Fixed_Aggregate_Subtitle => ResourceManager.GetString("Fixed_Aggregate_Subtitle", resourceCulture) ?? "4x2 dashboard widget aggregating city weather, digital clock, and calendar";
+        public static string Setting_City => ResourceManager.GetString("Setting_City", resourceCulture) ?? "Location / City";
+        public static string Setting_CustomCity => ResourceManager.GetString("Setting_CustomCity", resourceCulture) ?? "Custom City Name";
+        public static string Setting_SearchWatermark => ResourceManager.GetString("Setting_SearchWatermark", resourceCulture) ?? "Search city (English / Chinese)...";
+        public static string Setting_CoordFormat => ResourceManager.GetString("Setting_CoordFormat", resourceCulture) ?? "Coordinates: {0:F2}°, {1:F2}°";
+        public static string Setting_CityMatchedFormat => ResourceManager.GetString("Setting_CityMatchedFormat", resourceCulture) ?? "Matched: {0}";
+        public static string Setting_CitySearching => ResourceManager.GetString("Setting_CitySearching", resourceCulture) ?? "Searching weather source...";
+        public static string Setting_CityNotFound => ResourceManager.GetString("Setting_CityNotFound", resourceCulture) ?? "City not found in weather source";
         public static string Setting_TempUnit => ResourceManager.GetString("Setting_TempUnit", resourceCulture) ?? "温度单位";
         public static string Setting_Unit_Celsius => ResourceManager.GetString("Setting_Unit_Celsius", resourceCulture) ?? "摄氏度 (°C)";
         public static string Setting_Unit_Fahrenheit => ResourceManager.GetString("Setting_Unit_Fahrenheit", resourceCulture) ?? "华氏度 (°F)";

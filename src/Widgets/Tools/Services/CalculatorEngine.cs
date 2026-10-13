@@ -5,75 +5,85 @@ using System.Text;
 
 namespace Tools.Services;
 
-public record UnitDefinition(string Code, string Name, string Symbol, double ToBaseFactor, Func<double, double>? CustomToBase = null, Func<double, double>? CustomFromBase = null)
+public record UnitDefinition(string Code, string ZhName, string Symbol, double ToBaseFactor, Func<double, double>? CustomToBase = null, Func<double, double>? CustomFromBase = null, string? EnName = null)
 {
+    public string Name => CultureInfo.CurrentUICulture.TwoLetterISOLanguageName.Equals("zh", StringComparison.OrdinalIgnoreCase)
+        ? ZhName
+        : (EnName ?? ZhName);
+
     public override string ToString() => $"{Name} ({Symbol})";
 
     public double ToBase(double val) => CustomToBase != null ? CustomToBase(val) : val * ToBaseFactor;
     public double FromBase(double baseVal) => CustomFromBase != null ? CustomFromBase(baseVal) : baseVal / ToBaseFactor;
 }
 
-public record UnitCategory(string Code, string Name, IReadOnlyList<UnitDefinition> Units)
+public record UnitCategory(string Code, string ZhName, IReadOnlyList<UnitDefinition> Units, string? EnName = null)
 {
+    public string Name => CultureInfo.CurrentUICulture.TwoLetterISOLanguageName.Equals("zh", StringComparison.OrdinalIgnoreCase)
+        ? ZhName
+        : (EnName ?? ZhName);
+
     public override string ToString() => Name;
 }
 
 public static class CalculatorEngine
 {
+    private static bool IsZh => CultureInfo.CurrentUICulture.TwoLetterISOLanguageName.Equals("zh", StringComparison.OrdinalIgnoreCase);
+
     public static readonly IReadOnlyList<UnitCategory> UnitCategories =
     [
         new("Data", "数据存储",
         [
-            new("B", "字节", "B", 1d),
-            new("KB", "千字节", "KB", 1024d),
-            new("MB", "兆字节", "MB", 1024d * 1024d),
-            new("GB", "吉字节", "GB", 1024d * 1024d * 1024d),
-            new("TB", "太字节", "TB", 1024d * 1024d * 1024d * 1024d),
-            new("PB", "拍字节", "PB", 1024d * 1024d * 1024d * 1024d * 1024d),
-        ]),
+            new("B", "字节", "B", 1d, EnName: "Bytes"),
+            new("KB", "千字节", "KB", 1024d, EnName: "Kilobytes"),
+            new("MB", "兆字节", "MB", 1024d * 1024d, EnName: "Megabytes"),
+            new("GB", "吉字节", "GB", 1024d * 1024d * 1024d, EnName: "Gigabytes"),
+            new("TB", "太字节", "TB", 1024d * 1024d * 1024d * 1024d, EnName: "Terabytes"),
+            new("PB", "拍字节", "PB", 1024d * 1024d * 1024d * 1024d * 1024d, EnName: "Petabytes"),
+        ], "Data"),
         new("Length", "长度",
         [
-            new("mm", "毫米", "mm", 0.001d),
-            new("cm", "厘米", "cm", 0.01d),
-            new("m", "米", "m", 1d),
-            new("km", "千米", "km", 1000d),
-            new("in", "英寸", "in", 0.0254d),
-            new("ft", "英尺", "ft", 0.3048d),
-            new("mi", "英里", "mi", 1609.344d),
-        ]),
+            new("mm", "毫米", "mm", 0.001d, EnName: "Millimeters"),
+            new("cm", "厘米", "cm", 0.01d, EnName: "Centimeters"),
+            new("m", "米", "m", 1d, EnName: "Meters"),
+            new("km", "千米", "km", 1000d, EnName: "Kilometers"),
+            new("in", "英寸", "in", 0.0254d, EnName: "Inches"),
+            new("ft", "英尺", "ft", 0.3048d, EnName: "Feet"),
+            new("mi", "英里", "mi", 1609.344d, EnName: "Miles"),
+        ], "Length"),
         new("Mass", "重量",
         [
-            new("mg", "毫克", "mg", 0.000001d),
-            new("g", "克", "g", 0.001d),
-            new("kg", "千克", "kg", 1d),
-            new("jin", "市斤", "斤", 0.5d),
-            new("t", "吨", "t", 1000d),
-            new("oz", "盎司", "oz", 0.028349523125d),
-            new("lb", "磅", "lb", 0.45359237d),
-        ]),
+            new("mg", "毫克", "mg", 0.000001d, EnName: "Milligrams"),
+            new("g", "克", "g", 0.001d, EnName: "Grams"),
+            new("kg", "千克", "kg", 1d, EnName: "Kilograms"),
+            new("jin", "市斤", "斤", 0.5d, EnName: "Jin (0.5 kg)"),
+            new("t", "吨", "t", 1000d, EnName: "Metric Tons"),
+            new("oz", "盎司", "oz", 0.028349523125d, EnName: "Ounces"),
+            new("lb", "磅", "lb", 0.45359237d, EnName: "Pounds"),
+        ], "Mass"),
         new("Temp", "温度",
         [
-            new("C", "摄氏度", "°C", 1d, c => c, c => c),
-            new("F", "华氏度", "°F", 1d, f => (f - 32d) * 5d / 9d, c => c * 9d / 5d + 32d),
-            new("K", "开尔文", "K", 1d, k => k - 273.15d, c => c + 273.15d),
-        ]),
+            new("C", "摄氏度", "°C", 1d, c => c, c => c, "Celsius"),
+            new("F", "华氏度", "°F", 1d, f => (f - 32d) * 5d / 9d, c => c * 9d / 5d + 32d, "Fahrenheit"),
+            new("K", "开尔文", "K", 1d, k => k - 273.15d, c => c + 273.15d, "Kelvin"),
+        ], "Temp"),
         new("Area", "面积",
         [
-            new("cm2", "平方厘米", "cm²", 0.0001d),
-            new("m2", "平方米", "m²", 1d),
-            new("mu", "亩", "亩", 666.6666667d),
-            new("ha", "公顷", "ha", 10000d),
-            new("km2", "平方千米", "km²", 1_000_000d),
-        ]),
+            new("cm2", "平方厘米", "cm²", 0.0001d, EnName: "Sq. Centimeters"),
+            new("m2", "平方米", "m²", 1d, EnName: "Sq. Meters"),
+            new("mu", "亩", "亩", 666.6666667d, EnName: "Mu"),
+            new("ha", "公顷", "ha", 10000d, EnName: "Hectares"),
+            new("km2", "平方千米", "km²", 1_000_000d, EnName: "Sq. Kilometers"),
+        ], "Area"),
         new("Time", "时间",
         [
-            new("ms", "毫秒", "ms", 0.001d),
-            new("s", "秒", "s", 1d),
-            new("min", "分钟", "min", 60d),
-            new("h", "小时", "h", 3600d),
-            new("d", "天", "d", 86400d),
-            new("wk", "周", "wk", 604800d),
-        ]),
+            new("ms", "毫秒", "ms", 0.001d, EnName: "Milliseconds"),
+            new("s", "秒", "s", 1d, EnName: "Seconds"),
+            new("min", "分钟", "min", 60d, EnName: "Minutes"),
+            new("h", "小时", "h", 3600d, EnName: "Hours"),
+            new("d", "天", "d", 86400d, EnName: "Days"),
+            new("wk", "周", "wk", 604800d, EnName: "Weeks"),
+        ], "Time"),
     ];
 
     public static bool TryEvaluate(string? expression, bool degreesMode, double ans, out double result, out string? error)
@@ -94,7 +104,7 @@ public static class CalculatorEngine
             result = parser.Parse();
             if (double.IsNaN(result) || double.IsInfinity(result))
             {
-                error = "数值溢出或无效";
+                error = IsZh ? "数值溢出或无效" : "Numeric overflow or invalid";
                 return false;
             }
             return true;
@@ -244,7 +254,7 @@ public static class CalculatorEngine
             double val = ParseAddSub();
             SkipSpaces();
             if (pos < text.Length)
-                throw new FormatException("算式语法不完整");
+                throw new FormatException(IsZh ? "算式语法不完整" : "Incomplete expression syntax");
             return val;
         }
 
@@ -300,7 +310,7 @@ public static class CalculatorEngine
                     else
                     {
                         if (Math.Abs(right) < 1e-15)
-                            throw new DivideByZeroException("除数不能为 0");
+                            throw new DivideByZeroException(IsZh ? "除数不能为 0" : "Cannot divide by zero");
                         left /= right;
                     }
                 }
@@ -361,7 +371,7 @@ public static class CalculatorEngine
                 {
                     pos++;
                     double arg = ParseUnary(out _);
-                    if (arg < 0) throw new ArgumentException("负数无法开平方");
+                    if (arg < 0) throw new ArgumentException(IsZh ? "负数无法开平方" : "Cannot take square root of negative number");
                     return Math.Sqrt(arg);
                 }
             }
@@ -415,7 +425,7 @@ public static class CalculatorEngine
         {
             SkipSpaces();
             if (pos >= text.Length)
-                throw new FormatException("算式末尾缺少操作数");
+                throw new FormatException(IsZh ? "算式末尾缺少操作数" : "Missing operand at end of expression");
 
             char c = text[pos];
 
@@ -452,7 +462,7 @@ public static class CalculatorEngine
 
                 string numStr = text.Substring(start, pos - start);
                 if (!double.TryParse(numStr, NumberStyles.Float, CultureInfo.InvariantCulture, out double num))
-                    throw new FormatException($"无效数字: {numStr}");
+                    throw new FormatException(IsZh ? $"无效数字: {numStr}" : $"Invalid number: {numStr}");
                 return num;
             }
 
@@ -472,7 +482,7 @@ public static class CalculatorEngine
                 };
             }
 
-            throw new FormatException($"无法识别的字符: {c}");
+            throw new FormatException(IsZh ? $"无法识别的字符: {c}" : $"Unrecognized character: {c}");
         }
 
         private double ParseFunctionArgument()
@@ -501,23 +511,23 @@ public static class CalculatorEngine
                 "asin" => degrees ? Math.Asin(arg) * 180.0 / Math.PI : Math.Asin(arg),
                 "acos" => degrees ? Math.Acos(arg) * 180.0 / Math.PI : Math.Acos(arg),
                 "atan" => degrees ? Math.Atan(arg) * 180.0 / Math.PI : Math.Atan(arg),
-                "sqrt" => arg < 0 ? throw new ArgumentException("负数无法开平方") : Math.Sqrt(arg),
+                "sqrt" => arg < 0 ? throw new ArgumentException(IsZh ? "负数无法开平方" : "Cannot take square root of negative number") : Math.Sqrt(arg),
                 "cbrt" => Math.Cbrt(arg),
-                "ln" => arg <= 0 ? throw new ArgumentException("对数真数需大于 0") : Math.Log(arg),
-                "log" => arg <= 0 ? throw new ArgumentException("对数真数需大于 0") : Math.Log10(arg),
+                "ln" => arg <= 0 ? throw new ArgumentException(IsZh ? "对数真数需大于 0" : "Logarithm argument must be > 0") : Math.Log(arg),
+                "log" => arg <= 0 ? throw new ArgumentException(IsZh ? "对数真数需大于 0" : "Logarithm argument must be > 0") : Math.Log10(arg),
                 "abs" => Math.Abs(arg),
                 "exp" => Math.Exp(arg),
                 "fact" => Factorial(arg),
-                _ => throw new FormatException($"未知函数: {func}"),
+                _ => throw new FormatException(IsZh ? $"未知函数: {func}" : $"Unknown function: {func}"),
             };
         }
 
         private static double Factorial(double n)
         {
             if (n < 0 || Math.Abs(n - Math.Round(n)) > 1e-9)
-                throw new ArgumentException("阶乘仅支持非负整数");
+                throw new ArgumentException(IsZh ? "阶乘仅支持非负整数" : "Factorial requires a non-negative integer");
             int k = (int)Math.Round(n);
-            if (k > 170) throw new OverflowException("阶乘超出范围");
+            if (k > 170) throw new OverflowException(IsZh ? "阶乘超出范围" : "Factorial overflow");
             double res = 1;
             for (int i = 2; i <= k; i++) res *= i;
             return res;

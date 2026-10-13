@@ -43,6 +43,19 @@
                 </ComboBox.ItemTemplate>
             </ComboBox>
         </controls:Setting>
+        <controls:Setting Icon="{DynamicResource Language}" 
+                          Title="{x:Static locales:Locale.Settings_General_Update_AutoProxy}"
+                          Subtitle="{Binding AutoProxySubtitle}">
+            <ToggleSwitch IsChecked="{Binding AutoDetectProxy}" />
+        </controls:Setting>
+        <controls:Setting Icon="{DynamicResource GitHub}" 
+                          Title="{x:Static locales:Locale.Settings_General_Update_Connectivity}"
+                          Subtitle="{Binding ConnectivityStatusText}">
+            <Button MinWidth="130" HorizontalContentAlignment="Center" 
+                    Content="{x:Static locales:Locale.Settings_General_Update_Connectivity_Action}"
+                    IsEnabled="{Binding !IsTestingConnectivity}"
+                    Command="{Binding TestGitHubConnectivity}" />
+        </controls:Setting>
         <controls:Setting Icon="{DynamicResource Refresh}" 
                           Title="{x:Static locales:Locale.Settings_General_Update_CheckNow}"
                           Subtitle="{Binding UpdateStatusText}">

@@ -70,7 +70,8 @@
                     Padding="12">
                 <StackPanel Spacing="8">
                     <Grid ColumnDefinitions="*,Auto">
-                        <TextBlock Grid.Column="0"
+                        <TextBlock x:Name="ComposerHintText"
+                                   Grid.Column="0"
                                    Text="拖拽卡片调整格子位置；拖动卡片右下角 ◢ 或点击下方按钮切换横竖方向与大小"
                                    FontSize="11"
                                    Opacity="0.68"
@@ -129,7 +130,8 @@
                     CornerRadius="10"
                     Padding="10,8">
                 <StackPanel Spacing="6">
-                    <TextBlock Text="待选设置项池（点击或拖拽填入上方空格）："
+                    <TextBlock x:Name="DockHeaderText"
+                               Text="待选设置项池（点击或拖拽填入上方空格）："
                                FontSize="12"
                                FontWeight="SemiBold"
                                Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}" />
@@ -145,11 +147,13 @@
                     Padding="10,8">
                 <Grid ColumnDefinitions="*,Auto">
                     <StackPanel Grid.Column="0" Spacing="1" VerticalAlignment="Center">
-                        <TextBlock Text="鼠标滚轮调节步进"
+                        <TextBlock x:Name="WheelStepTitleText"
+                                   Text="鼠标滚轮调节步进"
                                    FontSize="12.5"
                                    FontWeight="SemiBold"
                                    Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}" />
-                        <TextBlock Text="悬停在亮度、音量或麦克风胶囊上滚动滚轮时的单次增减幅度"
+                        <TextBlock x:Name="WheelStepSubtitleText"
+                                   Text="悬停在亮度、音量或麦克风胶囊上滚动滚轮时的单次增减幅度"
                                    FontSize="11"
                                    Opacity="0.65"
                                    Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}" />

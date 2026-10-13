@@ -104,7 +104,7 @@ public static class LiquidGlassWallpaper
     // Consecutive probes that found the desktop unchanged; drives the idle backoff.
     private static int idleRounds;
 
-    private static bool liveSamplingEnabled = true;
+    private static bool liveSamplingEnabled = LiquidGlassSettings.DefaultLiveSampling;
     private static int liveIntervalMs = DefaultIntervalMs;
     private static bool suspended;
     private static DispatcherTimer? liveSamplingTimer;
@@ -119,6 +119,10 @@ public static class LiquidGlassWallpaper
         liveSamplingEnabled = enabled;
         liveIntervalMs = Math.Clamp(intervalMs, MinIntervalMs, MaxIntervalMs);
         Volatile.Write(ref idleRounds, 0);
+        if (!enabled)
+        {
+            Interlocked.Exchange(ref probeBuffer, null)?.Dispose();
+        }
 
         if (!OperatingSystem.IsWindows()) return;
         try
@@ -195,6 +199,7 @@ public static class LiquidGlassWallpaper
         else
         {
             liveSamplingTimer.Stop();
+            Interlocked.Exchange(ref probeBuffer, null)?.Dispose();
         }
     }
 
@@ -291,11 +296,39 @@ public static class LiquidGlassWallpaper
     /// <summary>Longest the sampler may go without capturing while widgets are still asking.</summary>
     private const int StallGuardMs = 1000;
 
+    // ---- idle capture release ------------------------------------------------------------------
+    // The desktop capture is the single largest allocation in the process — a full virtual desktop
+    // in physical pixels, tens of MB on a large desktop — and with live sampling off nothing needs
+    // it between renders: the blurred backdrops the glass actually samples are already built and
+    // cached. Handing the capture (with its stale mask and probe buffer) back after a quiet spell
+    // is what keeps a desktop that is merely *decorated* by widgets from paying for the sampling
+    // pipeline forever. The next render re-captures on demand — the same path a fullscreen resume
+    // already takes — and because the surface keeps drawing its previous material until the new
+    // one publishes, the recapture is never visible as a flash.
+    /// <summary>How long the capture is kept after the last render demand. Overridable for checks.</summary>
+    private static readonly int IdleReleaseGraceMs = ReadIdleReleaseGrace();
+
+    private static int ReadIdleReleaseGrace()
+    {
+        var raw = Environment.GetEnvironmentVariable("DESKCANVAS_GLASS_IDLE_RELEASE_MS");
+        return int.TryParse(raw, out var ms) && ms >= 0 ? ms : 3 * 60_000;
+    }
+
+    /// <summary>When the last render demand arrived; drives the idle release.</summary>
+    private static long lastFrameDemandAt = Environment.TickCount64;
+
+    /// <summary>0/1 latch: at most one idle-release check is waiting at any time.</summary>
+    private static int idleReleaseCheckArmed;
+
     /// <summary>Raised whenever the wallpaper is invalidated (system wallpaper change, display change, or manual refresh).</summary>
     public static event Action? WallpaperInvalidated;
 
     public static WallpaperSnapshot Get()
     {
+        // Every render — and the settings previews — passes through here, so this is the one place
+        // that needs to know the capture is still wanted.
+        NoteFrameDemand();
+
         // The cache owns one reference and the caller gets another; the caller releases it with
         // WallpaperSnapshot.Dispose. Nothing here is kept alive by a timer — a capture is a full
         // desktop bitmap and live sampling replaces it ten times a second.
@@ -307,6 +340,102 @@ public static class LiquidGlassWallpaper
             var snapshot = GetShared();
             snapshot.AddRef();
             return snapshot;
+        }
+    }
+
+    /// <summary>
+    /// Record that a render is about to sample the capture and make sure the idle check is armed.
+    /// Called from <see cref="Get"/> — the single entry every glass render goes through.
+    /// </summary>
+    private static void NoteFrameDemand()
+    {
+        Volatile.Write(ref lastFrameDemandAt, Environment.TickCount64);
+        ScheduleIdleReleaseCheck(IdleReleaseGraceMs + 500);
+    }
+
+    private static void ScheduleIdleReleaseCheck(int delayMs)
+    {
+        if (Interlocked.CompareExchange(ref idleReleaseCheckArmed, 1, 0) != 0) return;
+        var delay = Math.Clamp(delayMs, 1000, IdleReleaseGraceMs + 500);
+        _ = Task.Delay(delay).ContinueWith(_ => RunIdleReleaseCheck());
+    }
+
+    /// <summary>
+    /// Hand the desktop capture back once nothing has asked for a frame for
+    /// <see cref="IdleReleaseGraceMs"/>. Runs on the UI thread: the decision reads surface state
+    /// that only the UI thread may enumerate, and the release itself is thread-safe by design.
+    /// Live sampling (when the user enabled it) owns the capture lifecycle, and a demand that
+    /// arrives while the check waits simply re-arms it.
+    /// </summary>
+    private static void RunIdleReleaseCheck()
+    {
+        try
+        {
+            Interlocked.Exchange(ref idleReleaseCheckArmed, 0);
+            if (Dispatcher.UIThread.CheckAccess()) EvaluateIdleRelease();
+            else Dispatcher.UIThread.Post(EvaluateIdleRelease);
+        }
+        catch
+        {
+            // Idle maintenance must never surface as a widget failure.
+        }
+    }
+
+    private static void EvaluateIdleRelease()
+    {
+        try
+        {
+            // The live sampler drives its own capture cadence, and a fullscreen suspension has
+            // already released everything on purpose; releasing under either would only force an
+            // immediate re-capture.
+            if (liveSamplingEnabled || suspended)
+                return;
+
+            var idleFor = Environment.TickCount64 - Volatile.Read(ref lastFrameDemandAt);
+            if (idleFor < IdleReleaseGraceMs || LiquidGlassSurface.AnySurfaceRendering)
+            {
+                ScheduleIdleReleaseCheck((int)Math.Max(1000, IdleReleaseGraceMs - idleFor));
+                return;
+            }
+
+            if (!HasCachedCapture) return;
+
+            Release();
+            GlassDiagnostics.Event(
+                $"idle release: desktop capture handed back after {idleFor / 1000}s without a render");
+        }
+        catch
+        {
+            // See RunIdleReleaseCheck.
+        }
+    }
+
+    /// <summary>True while a capture (or its stale mask) is retained for rendering (diagnostics and checks).</summary>
+    public static bool HasCachedCapture
+    {
+        get
+        {
+            lock (Gate)
+            {
+                return cached != null || stale != null;
+            }
+        }
+    }
+
+    /// <summary>Real capture bytes retained right now (diagnostics and checks).</summary>
+    public static long RetainedCaptureBytes
+    {
+        get
+        {
+            lock (Gate)
+            {
+                long bytes = 0;
+                if (cached?.CachedBitmap is { } cachedBitmap)
+                    bytes += (long)cachedBitmap.RowBytes * cachedBitmap.Height;
+                if (stale?.CachedBitmap is { } staleBitmap)
+                    bytes += (long)staleBitmap.RowBytes * staleBitmap.Height;
+                return bytes;
+            }
         }
     }
 
@@ -455,10 +584,16 @@ public static class LiquidGlassWallpaper
                     // from (stale is exactly that frame — Invalidate parks the outgoing one
                     // there). Publishing would rebuild every card for zero visual change, and
                     // returning nothing would drop the caller to the static-file fallback —
-                    // different pixels entirely. Hand back the identical frame.
+                    // different pixels entirely. Promote stale back to cached so subsequent
+                    // Get() calls reuse it directly instead of re-capturing on every widget.
                     bmp.Dispose();
                     firstUnusableAt = 0;
-                    return stale;
+                    var restored = stale;
+                    cached = restored;
+                    stale = null;
+                    cachedKey = null;
+                    Interlocked.Exchange(ref lastCaptureAt, Environment.TickCount64);
+                    return restored;
                 }
 
                 var samples = DesktopCapturer.SampleGrid(bmp);
