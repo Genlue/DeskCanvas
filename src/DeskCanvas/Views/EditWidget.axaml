@@ -1,6 +1,7 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:views="clr-namespace:DeskCanvas.Views"
+        xmlns:controls="clr-namespace:DeskCanvas.Views.Controls"
         xmlns:locales="clr-namespace:DeskCanvas.Locales"
         x:Class="DeskCanvas.Views.EditWidget"
         Background="Transparent"
@@ -11,7 +12,7 @@
         ExtendClientAreaTitleBarHeightHint="60"
         ShowInTaskbar="True"
         WindowStartupLocation="CenterScreen"
-        Width="480" Height="520" MinWidth="440" MinHeight="460" CanResize="True"
+        Width="560" Height="640" MinWidth="440" MinHeight="360" CanResize="True"
         x:DataType="views:EditWidget">
     <Border Background="{DynamicResource MenuSurfaceBackground}"
             BorderBrush="{DynamicResource MenuSurfaceBorder}"
@@ -20,7 +21,11 @@
             Margin="0"
             ClipToBounds="True">
       <Grid RowDefinitions="Auto,*" Margin="16">
-        <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto" PointerPressed="OnHeaderPressed">
+        <!-- The header strip is the drag handle: Background=Transparent makes the whole
+             row hit-testable (without it only the glyphs/text caught pointer presses), and
+             PanelDragBehavior keeps the Save button / interactive content out of the drag. -->
+        <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto" Background="Transparent"
+              controls:PanelDragBehavior.IsDragHandle="True">
           <PathIcon Grid.Column="0" IsHitTestVisible="False" Margin="0,0,12,0" Data="{DynamicResource Appearance}" Height="32" />
           <StackPanel Grid.Column="1" IsHitTestVisible="False">
             <TextBlock Text="{Binding WidgetType}" FontSize="{DynamicResource FontSizeBody}" FontWeight="Bold" />
