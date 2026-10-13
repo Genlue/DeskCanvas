@@ -71,8 +71,10 @@ internal static class Program
         Console.WriteLine("=== Widget adaptive sizing checks ===");
         Console.WriteLine();
 
-        AppBuilder.Configure<Application>().UseHeadless(new AvaloniaHeadlessPlatformOptions()).SetupWithoutStarting();
-        Application.Current!.Styles.Add(new FluentTheme());
+        // Load the REAL application styles (App.axaml): migrated widget views now rely on the
+        // shared app-level rules (icon buttons, input selection, section headers), so a bare
+        // Fluent-only harness would test a style context that never ships.
+        AppBuilder.Configure<ProbeApp>().UseHeadless(new AvaloniaHeadlessPlatformOptions()).SetupWithoutStarting();
 
         CheckMinSizeMath();
         CheckControlBarDegradation();
@@ -569,4 +571,10 @@ internal static class WindowTopologyChecks
         public void UnloadAssembly(string name) { }
         public ResourceManager? GetLocaleResourceManager(Assembly assembly) => null;
     }
+}
+
+/// <summary>Runs the REAL App.axaml (styles + resources) without the host startup.</summary>
+internal sealed class ProbeApp : DeskCanvas.App
+{
+    public override void OnFrameworkInitializationCompleted() { }
 }
