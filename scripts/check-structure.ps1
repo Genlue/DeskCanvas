@@ -161,7 +161,9 @@ try {
         }
         $outputPath = (Get-Property $projectXml 'OutputPath').Replace('/', '\').TrimEnd('\')
         $expectedOutput = '..\..\DeskCanvas\bin\$(Configuration)\$(TargetFramework)\Widgets'
-        if ($name -eq 'Music') { $expectedOutput = '..\..\DeskCanvas\bin\$(Configuration)\net8.0\Widgets' }
+        # Platform-specific widgets (Windows APIs) keep a windows TFM but still output to the
+        # host's net8.0\Widgets directory.
+        if ($name -eq 'Music' -or $name -eq 'ControlCenter') { $expectedOutput = '..\..\DeskCanvas\bin\$(Configuration)\net8.0\Widgets' }
         if ($outputPath -ne $expectedOutput -or (Get-Property $projectXml 'AppendTargetFrameworkToOutputPath') -ne 'false') {
             $failures.Add("${name}: output must target the host Widgets directory without appending a framework.")
         }

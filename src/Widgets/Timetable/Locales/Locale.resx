@@ -1,0 +1,240 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Timetable" xml:space="preserve">
+    <value>Timetable</value>
+  </data>
+  <data name="Timetable_Title" xml:space="preserve">
+    <value>Timetable</value>
+  </data>
+  <data name="Timetable_Subtitle" xml:space="preserve">
+    <value>Weekly class schedule card, imported from JSON</value>
+  </data>
+  <data name="Timetable_Section_Data" xml:space="preserve">
+    <value>Schedule data</value>
+  </data>
+  <data name="Timetable_Section_Term" xml:space="preserve">
+    <value>Term and weeks</value>
+  </data>
+  <data name="Timetable_Section_Display" xml:space="preserve">
+    <value>Display</value>
+  </data>
+  <data name="Timetable_Section_Periods" xml:space="preserve">
+    <value>Period times</value>
+  </data>
+  <data name="Timetable_Periods_Hint" xml:space="preserve">
+    <value>Bell times per period — used by the current-lesson highlight and countdown. Filled automatically when the imported JSON contains them. Click a row to edit it.</value>
+  </data>
+  <data name="Timetable_Import" xml:space="preserve">
+    <value>Import JSON file</value>
+  </data>
+  <data name="Timetable_Import_Subtitle" xml:space="preserve">
+    <value>The parsed schedule is shown for review before anything is applied</value>
+  </data>
+  <data name="Timetable_ImportBtn" xml:space="preserve">
+    <value>Import</value>
+  </data>
+  <data name="Timetable_CopyPrompt" xml:space="preserve">
+    <value>Copy AI prompt</value>
+  </data>
+  <data name="Timetable_CopyPrompt_Subtitle" xml:space="preserve">
+    <value>Send the prompt together with a timetable photo to an AI, then import the JSON it returns</value>
+  </data>
+  <data name="Timetable_ViewGuide" xml:space="preserve">
+    <value>Format guide</value>
+  </data>
+  <data name="Timetable_Copy" xml:space="preserve">
+    <value>Copy</value>
+  </data>
+  <data name="Timetable_Close" xml:space="preserve">
+    <value>Close</value>
+  </data>
+  <data name="Timetable_Copied" xml:space="preserve">
+    <value>Copied to clipboard</value>
+  </data>
+  <data name="Timetable_Clear" xml:space="preserve">
+    <value>Clear schedule data</value>
+  </data>
+  <data name="Timetable_Clear_Subtitle" xml:space="preserve">
+    <value>Removes the imported courses from this widget</value>
+  </data>
+  <data name="Timetable_ClearConfirm" xml:space="preserve">
+    <value>Click again to confirm</value>
+  </data>
+  <data name="Timetable_NoData" xml:space="preserve">
+    <value>No schedule yet — import a JSON file first</value>
+  </data>
+  <data name="Timetable_DataStatus" xml:space="preserve">
+    <value>Imported: {0} courses · {1} slots</value>
+  </data>
+  <data name="Timetable_StartDate" xml:space="preserve">
+    <value>Term start date</value>
+  </data>
+  <data name="Timetable_StartDate_Subtitle" xml:space="preserve">
+    <value>Monday of week 1 — used to work out the current week</value>
+  </data>
+  <data name="Timetable_TotalWeeks" xml:space="preserve">
+    <value>Total weeks</value>
+  </data>
+  <data name="Timetable_TotalWeeks_Subtitle" xml:space="preserve">
+    <value>0 = not set</value>
+  </data>
+  <data name="Timetable_CurrentWeek" xml:space="preserve">
+    <value>Current week</value>
+  </data>
+  <data name="Timetable_CurrentWeek_Subtitle" xml:space="preserve">
+    <value>0 = auto from the term start date</value>
+  </data>
+  <data name="Timetable_ShowWeekend" xml:space="preserve">
+    <value>Show weekend</value>
+  </data>
+  <data name="Timetable_ShowWeekend_Subtitle" xml:space="preserve">
+    <value>Show Saturday and Sunday columns</value>
+  </data>
+  <data name="Timetable_ShowRoom" xml:space="preserve">
+    <value>Show room</value>
+  </data>
+  <data name="Timetable_ShowTeacher" xml:space="preserve">
+    <value>Show teacher</value>
+  </data>
+  <data name="Timetable_WorkflowHint" xml:space="preserve">
+    <value>Workflow: copy the AI prompt → send it with a timetable photo to an AI → save the returned JSON as a file → import it here and review.</value>
+  </data>
+  <data name="Timetable_Review_Title" xml:space="preserve">
+    <value>Review import</value>
+  </data>
+  <data name="Timetable_Review_Summary" xml:space="preserve">
+    <value>{0} courses · {1} slots</value>
+  </data>
+  <data name="Timetable_Review_Hint" xml:space="preserve">
+    <value>Nothing is applied until you confirm. If something is wrong, cancel and ask the AI (or edit the JSON) to fix it.</value>
+  </data>
+  <data name="Timetable_Review_StartDate" xml:space="preserve">
+    <value>Term start: {0}</value>
+  </data>
+  <data name="Timetable_Review_StartDateUnknown" xml:space="preserve">
+    <value>Term start: not provided</value>
+  </data>
+  <data name="Timetable_Review_PeriodsUnknown" xml:space="preserve">
+    <value>No bell times in the file — time-aware features will be limited</value>
+  </data>
+  <data name="Timetable_Review_NoIssues" xml:space="preserve">
+    <value>No problems found — the schedule looks consistent</value>
+  </data>
+  <data name="Timetable_Review_Notes" xml:space="preserve">
+    <value>Course notes</value>
+  </data>
+  <data name="Timetable_Review_Errors" xml:space="preserve">
+    <value>Errors — fix these before importing</value>
+  </data>
+  <data name="Timetable_Review_Warnings" xml:space="preserve">
+    <value>Warnings — please double-check these</value>
+  </data>
+  <data name="Timetable_Review_Confirm" xml:space="preserve">
+    <value>Apply</value>
+  </data>
+  <data name="Timetable_Cancel" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="Timetable_AllFiles" xml:space="preserve">
+    <value>All files</value>
+  </data>
+  <data name="Timetable_ImportFailed" xml:space="preserve">
+    <value>Import failed: {0}</value>
+  </data>
+  <data name="Timetable_Guide_Title" xml:space="preserve">
+    <value>JSON format guide</value>
+  </data>
+  <data name="Timetable_Guide_Hint" xml:space="preserve">
+    <value>Send the prompt together with your timetable screenshot to an AI, then import the JSON it returns.</value>
+  </data>
+  <data name="Timetable_Next" xml:space="preserve">
+    <value>Next</value>
+  </data>
+  <data name="Timetable_Ongoing" xml:space="preserve">
+    <value>Now</value>
+  </data>
+  <data name="Timetable_FinishedToday" xml:space="preserve">
+    <value>All done for today</value>
+  </data>
+  <data name="Timetable_NoClassToday" xml:space="preserve">
+    <value>No classes today</value>
+  </data>
+  <data name="Timetable_Tomorrow" xml:space="preserve">
+    <value>Tomorrow</value>
+  </data>
+  <data name="Timetable_Today" xml:space="preserve">
+    <value>Today</value>
+  </data>
+  <data name="Timetable_Week" xml:space="preserve">
+    <value>Week {0}</value>
+  </data>
+  <data name="Timetable_Period" xml:space="preserve">
+    <value>P{0}</value>
+  </data>
+  <data name="Timetable_PeriodFull" xml:space="preserve">
+    <value>Period {0}</value>
+  </data>
+  <data name="Timetable_UnknownWeek" xml:space="preserve">
+    <value>Term date not set</value>
+  </data>
+  <data name="Timetable_Until" xml:space="preserve">
+    <value>until {0}</value>
+  </data>
+  <data name="Timetable_MoreCourses" xml:space="preserve">
+    <value>+{0} more</value>
+  </data>
+  <data name="Timetable_MorePeriods" xml:space="preserve">
+    <value>+{0} periods</value>
+  </data>
+  <data name="Timetable_OpenPanelHint" xml:space="preserve">
+    <value>View full schedule</value>
+  </data>
+  <data name="Timetable_PeriodStart" xml:space="preserve">
+    <value>Start</value>
+  </data>
+  <data name="Timetable_PeriodEnd" xml:space="preserve">
+    <value>End</value>
+  </data>
+  <data name="Timetable_PeriodNotSet" xml:space="preserve">
+    <value>Not set</value>
+  </data>
+</root>

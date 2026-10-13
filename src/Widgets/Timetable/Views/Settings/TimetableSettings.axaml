@@ -1,0 +1,114 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="clr-namespace:DeskCanvas.Views.Controls;assembly=DeskCanvas"
+             xmlns:locales="clr-namespace:Timetable.Locales"
+             x:Class="Timetable.Views.Settings.TimetableSettings">
+    <UserControl.Styles>
+        <Style Selector="TextBlock.section-header">
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Margin" Value="2,10,0,4" />
+            <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundAccentBrush}" />
+        </Style>
+        <Style Selector="TextBlock.status-caption">
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="Opacity" Value="0.65" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+            <Setter Property="Margin" Value="4,0,4,0" />
+        </Style>
+        <!-- A period row: a compact summary line; the start/end editors unfold inside it
+             (see TimetableSettings.axaml.cs). Rows never clip — the editors wrap instead. -->
+        <Style Selector="Border.period-row">
+            <Setter Property="Background" Value="#0E808080" />
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="Padding" Value="10,4" />
+        </Style>
+        <Style Selector="Border.period-row:pointerover">
+            <Setter Property="Background" Value="#1A808080" />
+        </Style>
+    </UserControl.Styles>
+
+    <!-- Horizontal=Disabled explicitly (not just by default): the page must never be pushed
+         wider than the settings viewport by a long row — with a horizontally scrollable
+         (Hidden) presenter an over-wide row widens every sibling row and clips them all
+         at the right edge instead of degrading gracefully. -->
+    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <StackPanel Orientation="Vertical" Spacing="5" Margin="0,2,8,10">
+            <TextBlock Classes="section-header" Text="{x:Static locales:Locale.Timetable_Section_Data}" />
+
+            <controls:Setting Title="{x:Static locales:Locale.Timetable_Import}"
+                              Subtitle="{x:Static locales:Locale.Timetable_Import_Subtitle}">
+                <Button x:Name="ImportButton" Content="{x:Static locales:Locale.Timetable_ImportBtn}"
+                        Click="OnImportClicked" />
+            </controls:Setting>
+
+            <controls:Setting Title="{x:Static locales:Locale.Timetable_CopyPrompt}"
+                              Subtitle="{x:Static locales:Locale.Timetable_CopyPrompt_Subtitle}">
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                    <Button x:Name="CopyPromptButton" Content="{x:Static locales:Locale.Timetable_Copy}"
+                            Click="OnCopyPromptClicked" />
+                    <Button x:Name="ViewGuideButton" Content="{x:Static locales:Locale.Timetable_ViewGuide}"
+                            Click="OnViewGuideClicked" />
+                </StackPanel>
+            </controls:Setting>
+
+            <TextBlock x:Name="StatusText" Classes="status-caption" />
+
+            <controls:Setting Title="{x:Static locales:Locale.Timetable_Clear}"
+                              Subtitle="{x:Static locales:Locale.Timetable_Clear_Subtitle}">
+                <Button x:Name="ClearButton" Content="{x:Static locales:Locale.Timetable_Clear}"
+                        Click="OnClearClicked" />
+            </controls:Setting>
+
+            <TextBlock Classes="section-header" Text="{x:Static locales:Locale.Timetable_Section_Term}" />
+
+            <controls:Setting Title="{x:Static locales:Locale.Timetable_StartDate}"
+                              Subtitle="{x:Static locales:Locale.Timetable_StartDate_Subtitle}">
+                <!-- MinWidth, not Width: the Fluent date face lays out at ≈296 DIP
+                     ("2026 十月 13" — 150 clipped both ends, 210 to "26 十月 1"); the
+                     longest locale grows it naturally instead of clipping. -->
+                <DatePicker x:Name="StartDatePicker" MinWidth="296" SelectedDateChanged="OnStartDateChanged" />
+            </controls:Setting>
+
+            <controls:Setting Title="{x:Static locales:Locale.Timetable_TotalWeeks}"
+                              Subtitle="{x:Static locales:Locale.Timetable_TotalWeeks_Subtitle}">
+                <NumericUpDown x:Name="TotalWeeksBox" MinWidth="128" Minimum="0" Maximum="60"
+                               Increment="1" FormatString="F0" ParsingNumberStyle="Integer"
+                               ValueChanged="OnTotalWeeksChanged" />
+            </controls:Setting>
+
+            <controls:Setting Title="{x:Static locales:Locale.Timetable_CurrentWeek}"
+                              Subtitle="{x:Static locales:Locale.Timetable_CurrentWeek_Subtitle}">
+                <NumericUpDown x:Name="CurrentWeekBox" MinWidth="128" Minimum="0" Maximum="60"
+                               Increment="1" FormatString="F0" ParsingNumberStyle="Integer"
+                               ValueChanged="OnCurrentWeekChanged" />
+            </controls:Setting>
+
+            <TextBlock Classes="section-header" Text="{x:Static locales:Locale.Timetable_Section_Periods}" />
+            <TextBlock Classes="status-caption" Text="{x:Static locales:Locale.Timetable_Periods_Hint}"
+                       Margin="4,0,4,2" />
+            <StackPanel x:Name="PeriodsPanel" Orientation="Vertical" Spacing="4" Margin="0,2,0,2" />
+
+            <TextBlock Classes="section-header" Text="{x:Static locales:Locale.Timetable_Section_Display}" />
+
+            <controls:Setting Title="{x:Static locales:Locale.Timetable_ShowWeekend}"
+                              Subtitle="{x:Static locales:Locale.Timetable_ShowWeekend_Subtitle}">
+                <ToggleSwitch x:Name="ShowWeekendToggle" OnContent="" OffContent=""
+                              IsCheckedChanged="OnToggleChanged" />
+            </controls:Setting>
+
+            <controls:Setting Title="{x:Static locales:Locale.Timetable_ShowRoom}">
+                <ToggleSwitch x:Name="ShowRoomToggle" OnContent="" OffContent=""
+                              IsCheckedChanged="OnToggleChanged" />
+            </controls:Setting>
+
+            <controls:Setting Title="{x:Static locales:Locale.Timetable_ShowTeacher}">
+                <ToggleSwitch x:Name="ShowTeacherToggle" OnContent="" OffContent=""
+                              IsCheckedChanged="OnToggleChanged" />
+            </controls:Setting>
+
+            <TextBlock Text="{x:Static locales:Locale.Timetable_WorkflowHint}"
+                       Classes="status-caption" Margin="4,8,4,2" />
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

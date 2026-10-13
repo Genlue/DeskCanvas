@@ -1,0 +1,47 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="Timetable.Views.GuideWindow"
+        SystemDecorations="None"
+        Background="Transparent"
+        TransparencyLevelHint="AcrylicBlur, None"
+        TransparencyBackgroundFallback="{DynamicResource SettingsBackground}"
+        ExtendClientAreaToDecorationsHint="True"
+        ExtendClientAreaChromeHints="NoChrome"
+        ExtendClientAreaTitleBarHeightHint="48"
+        ShowInTaskbar="False"
+        WindowStartupLocation="CenterOwner"
+        CanResize="True"
+        Width="620"
+        Height="660"
+        MinWidth="460"
+        MinHeight="420"
+        KeyDown="OnKeyDown">
+
+    <Border Background="{DynamicResource MenuSurfaceBackground}"
+            BorderBrush="{DynamicResource MenuSurfaceBorder}"
+            BorderThickness="{DynamicResource HostSurfaceBorderThickness}"
+            CornerRadius="{DynamicResource HostSurfaceCornerRadius}"
+            ClipToBounds="True">
+        <Grid RowDefinitions="Auto,Auto,*,Auto" Margin="16">
+            <Grid Row="0" ColumnDefinitions="*" PointerPressed="OnHeaderPressed">
+                <TextBlock x:Name="TitleText" FontSize="{DynamicResource FontSizeBody}" FontWeight="Bold"
+                           VerticalAlignment="Center" IsHitTestVisible="False" />
+            </Grid>
+
+            <TextBlock x:Name="HintText" Grid.Row="1" FontSize="{DynamicResource FontSizeCaption}"
+                       Opacity="0.6" TextWrapping="Wrap" Margin="0,8,0,6" />
+
+            <Border Grid.Row="2" Background="#0E808080" CornerRadius="8" Padding="12,10">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <SelectableTextBlock x:Name="GuideText" TextWrapping="Wrap"
+                                         FontSize="12.5" LineHeight="19" />
+                </ScrollViewer>
+            </Border>
+
+            <Grid Grid.Row="3" ColumnDefinitions="*,Auto" Margin="0,12,0,0">
+                <Button x:Name="CopyPromptButton" HorizontalAlignment="Left" Click="OnCopyPromptClicked" />
+                <Button Grid.Column="1" x:Name="CloseButton" Click="OnCloseClicked" />
+            </Grid>
+        </Grid>
+    </Border>
+</Window>

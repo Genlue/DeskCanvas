@@ -38,6 +38,10 @@ public static class Const
     /// </summary>
     public static readonly string RemindersFile = Path.Combine(DataFolder, RemindersFileName);
     /// <summary>
+    /// The path to the unified timetable/schedule data file.
+    /// </summary>
+    public static readonly string TimetableFile = Path.Combine(DataFolder, TimetableFileName);
+    /// <summary>
     /// The folder for configuration profiles.
     /// </summary>
     public static readonly string ProfilesFolder = Path.Combine(DataFolder, ProfilesFolderName);
@@ -46,6 +50,7 @@ public static class Const
     private const string AppSettingsFileName = "appSettings.json";
     private const string LayoutFileName = "layout.json";
     private const string RemindersFileName = "reminders.json";
+    private const string TimetableFileName = "timetable.json";
     private const string ProfilesFolderName = "Profiles";
 
     private static string GetDataFolder()

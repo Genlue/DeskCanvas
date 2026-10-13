@@ -1,0 +1,82 @@
+{
+  "version": 1,
+  "name": "2026 秋季学期（示例课表）",
+  "startDate": "2026-09-07",
+  "totalWeeks": 20,
+  "periods": [
+    { "label": "第1节", "start": "08:00", "end": "08:45" },
+    { "label": "第2节", "start": "08:55", "end": "09:40" },
+    { "label": "第3节", "start": "10:00", "end": "10:45" },
+    { "label": "第4节", "start": "10:55", "end": "11:40" },
+    { "label": "第5节", "start": "14:00", "end": "14:45" },
+    { "label": "第6节", "start": "14:55", "end": "15:40" },
+    { "label": "第7节", "start": "16:00", "end": "16:45" },
+    { "label": "第8节", "start": "16:55", "end": "17:40" }
+  ],
+  "courses": [
+    {
+      "name": "高等数学",
+      "teacher": "张三",
+      "room": "A101",
+      "color": "#5B8FF9",
+      "entries": [
+        { "day": 1, "periods": [1, 2], "weeks": "1-16" },
+        { "day": 3, "periods": [3, 4], "weeks": "1-16" }
+      ]
+    },
+    {
+      "name": "大学英语",
+      "teacher": "李四",
+      "room": "B203",
+      "note": "第 3 周起听力课在语音室",
+      "entries": [
+        { "day": 2, "periods": [3, 4], "weeks": "2-16双" },
+        { "day": 4, "periods": [3, 4], "weeks": "1-15单" }
+      ]
+    },
+    {
+      "name": "数据结构",
+      "teacher": "王五",
+      "room": "C305",
+      "entries": [
+        { "day": 1, "periods": [3, 4], "weeks": "1-15单" },
+        { "day": 5, "periods": [3, 4], "weeks": "1-16" }
+      ]
+    },
+    {
+      "name": "大学物理",
+      "teacher": "赵六",
+      "room": "D201",
+      "entries": [
+        { "day": 2, "periods": [1, 2], "weeks": "1-16" },
+        { "day": 5, "periods": [1, 2], "weeks": "2-16双" }
+      ]
+    },
+    {
+      "name": "线性代数",
+      "teacher": "周九",
+      "room": "E102",
+      "entries": [
+        { "day": 3, "periods": [1, 2], "weeks": "1-16" }
+      ]
+    },
+    {
+      "name": "程序设计实验",
+      "teacher": "孙八",
+      "room": "机房 404",
+      "note": "每周提交实验报告",
+      "entries": [
+        { "day": 4, "periods": [7, 8], "weeks": "1-8" }
+      ]
+    },
+    {
+      "name": "体育",
+      "teacher": "钱七",
+      "room": "体育馆",
+      "color": "#61DDAA",
+      "entries": [
+        { "day": 3, "periods": [7, 8], "weeks": "1-16" }
+      ]
+    }
+  ]
+}

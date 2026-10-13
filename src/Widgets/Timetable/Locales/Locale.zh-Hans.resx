@@ -1,0 +1,240 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Timetable" xml:space="preserve">
+    <value>课程表</value>
+  </data>
+  <data name="Timetable_Title" xml:space="preserve">
+    <value>课程表</value>
+  </data>
+  <data name="Timetable_Subtitle" xml:space="preserve">
+    <value>支持 JSON 导入的周课程表卡片</value>
+  </data>
+  <data name="Timetable_Section_Data" xml:space="preserve">
+    <value>课表数据</value>
+  </data>
+  <data name="Timetable_Section_Term" xml:space="preserve">
+    <value>学期与周次</value>
+  </data>
+  <data name="Timetable_Section_Display" xml:space="preserve">
+    <value>显示与排版</value>
+  </data>
+  <data name="Timetable_Section_Periods" xml:space="preserve">
+    <value>节次时间</value>
+  </data>
+  <data name="Timetable_Periods_Hint" xml:space="preserve">
+    <value>每节课的上下课时间——用于当前课程高亮与倒计时；导入的 JSON 中包含时会自动填入。点击行可展开编辑。</value>
+  </data>
+  <data name="Timetable_Import" xml:space="preserve">
+    <value>导入 JSON 文件</value>
+  </data>
+  <data name="Timetable_Import_Subtitle" xml:space="preserve">
+    <value>导入前会先展示解析结果供审核，确认后才生效</value>
+  </data>
+  <data name="Timetable_ImportBtn" xml:space="preserve">
+    <value>导入</value>
+  </data>
+  <data name="Timetable_CopyPrompt" xml:space="preserve">
+    <value>复制 AI 提示词</value>
+  </data>
+  <data name="Timetable_CopyPrompt_Subtitle" xml:space="preserve">
+    <value>把提示词与课表照片一起发给 AI，保存返回的 JSON 后在此导入</value>
+  </data>
+  <data name="Timetable_ViewGuide" xml:space="preserve">
+    <value>查看写法文档</value>
+  </data>
+  <data name="Timetable_Copy" xml:space="preserve">
+    <value>复制</value>
+  </data>
+  <data name="Timetable_Close" xml:space="preserve">
+    <value>关闭</value>
+  </data>
+  <data name="Timetable_Copied" xml:space="preserve">
+    <value>已复制到剪贴板</value>
+  </data>
+  <data name="Timetable_Clear" xml:space="preserve">
+    <value>清除课表数据</value>
+  </data>
+  <data name="Timetable_Clear_Subtitle" xml:space="preserve">
+    <value>移除本组件中已导入的课程</value>
+  </data>
+  <data name="Timetable_ClearConfirm" xml:space="preserve">
+    <value>再次点击确认清除</value>
+  </data>
+  <data name="Timetable_NoData" xml:space="preserve">
+    <value>尚未导入课表——请先导入 JSON 文件</value>
+  </data>
+  <data name="Timetable_DataStatus" xml:space="preserve">
+    <value>已导入：{0} 门课程 · {1} 个时段</value>
+  </data>
+  <data name="Timetable_StartDate" xml:space="preserve">
+    <value>学期开始日期</value>
+  </data>
+  <data name="Timetable_StartDate_Subtitle" xml:space="preserve">
+    <value>第 1 周的周一，用于推算当前周次</value>
+  </data>
+  <data name="Timetable_TotalWeeks" xml:space="preserve">
+    <value>总周数</value>
+  </data>
+  <data name="Timetable_TotalWeeks_Subtitle" xml:space="preserve">
+    <value>0 表示未设置</value>
+  </data>
+  <data name="Timetable_CurrentWeek" xml:space="preserve">
+    <value>当前周</value>
+  </data>
+  <data name="Timetable_CurrentWeek_Subtitle" xml:space="preserve">
+    <value>0 = 按学期开始日期自动推算</value>
+  </data>
+  <data name="Timetable_ShowWeekend" xml:space="preserve">
+    <value>显示周末</value>
+  </data>
+  <data name="Timetable_ShowWeekend_Subtitle" xml:space="preserve">
+    <value>在课表中显示周六与周日列</value>
+  </data>
+  <data name="Timetable_ShowRoom" xml:space="preserve">
+    <value>显示教室</value>
+  </data>
+  <data name="Timetable_ShowTeacher" xml:space="preserve">
+    <value>显示教师</value>
+  </data>
+  <data name="Timetable_WorkflowHint" xml:space="preserve">
+    <value>使用流程：复制 AI 提示词 → 连同课表照片发给 AI → 把返回的 JSON 保存为文件 → 在此导入并审核。</value>
+  </data>
+  <data name="Timetable_Review_Title" xml:space="preserve">
+    <value>导入审核</value>
+  </data>
+  <data name="Timetable_Review_Summary" xml:space="preserve">
+    <value>{0} 门课程 · {1} 个时段</value>
+  </data>
+  <data name="Timetable_Review_Hint" xml:space="preserve">
+    <value>确认后才会写入课表；如有问题请取消，修改 JSON（或让 AI 重新输出）后再次导入。</value>
+  </data>
+  <data name="Timetable_Review_StartDate" xml:space="preserve">
+    <value>学期开始：{0}</value>
+  </data>
+  <data name="Timetable_Review_StartDateUnknown" xml:space="preserve">
+    <value>学期开始：未提供</value>
+  </data>
+  <data name="Timetable_Review_PeriodsUnknown" xml:space="preserve">
+    <value>未提供节次时间——时间感知功能将受限</value>
+  </data>
+  <data name="Timetable_Review_NoIssues" xml:space="preserve">
+    <value>未发现问题，课表数据看起来是完整的</value>
+  </data>
+  <data name="Timetable_Review_Notes" xml:space="preserve">
+    <value>课程备注</value>
+  </data>
+  <data name="Timetable_Review_Errors" xml:space="preserve">
+    <value>错误——需修正后才能导入</value>
+  </data>
+  <data name="Timetable_Review_Warnings" xml:space="preserve">
+    <value>警告——请重点核对以下内容</value>
+  </data>
+  <data name="Timetable_Review_Confirm" xml:space="preserve">
+    <value>确认导入</value>
+  </data>
+  <data name="Timetable_Cancel" xml:space="preserve">
+    <value>取消</value>
+  </data>
+  <data name="Timetable_AllFiles" xml:space="preserve">
+    <value>所有文件</value>
+  </data>
+  <data name="Timetable_ImportFailed" xml:space="preserve">
+    <value>导入失败：{0}</value>
+  </data>
+  <data name="Timetable_Guide_Title" xml:space="preserve">
+    <value>JSON 写法文档</value>
+  </data>
+  <data name="Timetable_Guide_Hint" xml:space="preserve">
+    <value>把提示词与课表截图一起发给 AI，即可得到可导入的 JSON 文件。</value>
+  </data>
+  <data name="Timetable_Next" xml:space="preserve">
+    <value>下一节</value>
+  </data>
+  <data name="Timetable_Ongoing" xml:space="preserve">
+    <value>进行中</value>
+  </data>
+  <data name="Timetable_FinishedToday" xml:space="preserve">
+    <value>今天的课程已结束</value>
+  </data>
+  <data name="Timetable_NoClassToday" xml:space="preserve">
+    <value>今天没有课</value>
+  </data>
+  <data name="Timetable_Tomorrow" xml:space="preserve">
+    <value>明天</value>
+  </data>
+  <data name="Timetable_Today" xml:space="preserve">
+    <value>今天</value>
+  </data>
+  <data name="Timetable_Week" xml:space="preserve">
+    <value>第 {0} 周</value>
+  </data>
+  <data name="Timetable_Period" xml:space="preserve">
+    <value>{0}</value>
+  </data>
+  <data name="Timetable_PeriodFull" xml:space="preserve">
+    <value>第 {0} 节</value>
+  </data>
+  <data name="Timetable_UnknownWeek" xml:space="preserve">
+    <value>未设置学期日期</value>
+  </data>
+  <data name="Timetable_Until" xml:space="preserve">
+    <value>至 {0}</value>
+  </data>
+  <data name="Timetable_MoreCourses" xml:space="preserve">
+    <value>还有 {0} 节</value>
+  </data>
+  <data name="Timetable_MorePeriods" xml:space="preserve">
+    <value>还有 {0} 节</value>
+  </data>
+  <data name="Timetable_OpenPanelHint" xml:space="preserve">
+    <value>查看完整课程表</value>
+  </data>
+  <data name="Timetable_PeriodStart" xml:space="preserve">
+    <value>开始</value>
+  </data>
+  <data name="Timetable_PeriodEnd" xml:space="preserve">
+    <value>结束</value>
+  </data>
+  <data name="Timetable_PeriodNotSet" xml:space="preserve">
+    <value>未设置</value>
+  </data>
+</root>

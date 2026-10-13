@@ -1,0 +1,132 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="Timetable.Views.Timetable">
+    <UserControl.Styles>
+        <!-- DynamicResource foregrounds keep every label theme-reactive; the course blocks
+             themselves set their own contrast colour in code (their fill IS the course colour). -->
+        <Style Selector="TextBlock.section-label">
+            <Setter Property="Opacity" Value="0.72" />
+        </Style>
+        <Style Selector="TextBlock.strong-label">
+            <Setter Property="FontWeight" Value="SemiBold" />
+        </Style>
+        <!-- The panel entry button: a quiet corner affordance that firms up on hover. -->
+        <Style Selector="Button.panel-open">
+            <Setter Property="Width" Value="26" />
+            <Setter Property="Height" Value="26" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="CornerRadius" Value="13" />
+            <Setter Property="Background" Value="#1C808080" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="Cursor" Value="Hand" />
+        </Style>
+        <Style Selector="Button.week-nav-btn">
+            <Setter Property="Width" Value="20" />
+            <Setter Property="Height" Value="20" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="CornerRadius" Value="10" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+        </Style>
+        <Style Selector="Button.week-nav-btn:pointerover">
+            <Setter Property="Background" Value="#25808080" />
+        </Style>
+        <Style Selector="Button.week-title-btn">
+            <Setter Property="Padding" Value="4,1" />
+            <Setter Property="CornerRadius" Value="6" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+        <Style Selector="Button.week-title-btn:pointerover">
+            <Setter Property="Background" Value="#1A808080" />
+        </Style>
+        <Style Selector="Button.week-reset-chip">
+            <Setter Property="Padding" Value="5,1" />
+            <Setter Property="CornerRadius" Value="9" />
+            <Setter Property="Background" Value="#22808080" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="FontSize" Value="10.5" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+        <Style Selector="Button.week-reset-chip:pointerover">
+            <Setter Property="Background" Value="#38808080" />
+        </Style>
+    </UserControl.Styles>
+
+    <Panel Name="RootPanel">
+        <!-- 1×1: the next / current lesson only. -->
+        <StackPanel Name="CellLayout" IsVisible="False" Spacing="2"
+                    HorizontalAlignment="Center" VerticalAlignment="Center" Margin="8,8,30,8">
+            <TextBlock Name="CellTag" Classes="section-label" TextAlignment="Center" TextWrapping="NoWrap" />
+            <TextBlock Name="CellTitle" Classes="strong-label" TextAlignment="Center" TextWrapping="Wrap" />
+            <TextBlock Name="CellSub" Classes="section-label" TextAlignment="Center" TextWrapping="NoWrap" />
+        </StackPanel>
+
+        <!-- 2×2: today's lessons as readable colour cards (scrollable — never squeezed).
+             The right inset keeps the overlay scroll bar off the cards.
+             HorizontalScrollBarVisibility=Disabled is load-bearing: the widget host's
+             global rule (Widget.axaml) forces card ScrollViewers to Horizontal=Hidden,
+             and Hidden measures the content with an UNCONSTRAINED width — long lesson
+             text then widens the colour card past the viewport and the clip shaves its
+             right edge into a square corner. Disabled constrains the measure to the
+             viewport so TextTrimming actually trims. (Local value > host style, so this
+             survives the pointerover/non-pointerover style swap.) -->
+        <Grid Name="TodayLayout" IsVisible="False" RowDefinitions="Auto,*" Margin="8,6,8,6">
+            <TextBlock Name="TodayHeader" Classes="strong-label" TextTrimming="CharacterEllipsis" Margin="0,0,28,0" />
+            <ScrollViewer Name="TodayScroll" Grid.Row="1" Margin="0,5,0,0" VerticalScrollBarVisibility="Auto"
+                          HorizontalScrollBarVisibility="Disabled">
+                <StackPanel Name="TodayListPanel" Spacing="4" Margin="0,0,12,0" />
+            </ScrollViewer>
+        </Grid>
+
+        <!-- 4×2 / 4×4: the week grid (compact period rows / all period rows), scrollable.
+             Same Horizontal=Disabled rationale as the today list above: the host's
+             Hidden horizontal policy would otherwise let one long lesson name widen the
+             whole grid past the viewport and clip the right-hand day column. -->
+        <Grid Name="WeekLayout" IsVisible="False" RowDefinitions="Auto,*" Margin="6,5,6,5">
+            <Grid ColumnDefinitions="Auto,*,Auto" Margin="0,0,28,0" VerticalAlignment="Center">
+                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="2" VerticalAlignment="Center">
+                    <Button Name="PrevWeekButton" Classes="week-nav-btn" Content="‹" Click="OnPrevWeekClicked"
+                            ToolTip.Tip="上一周" />
+                    <Button Name="WeekTitleButton" Classes="week-title-btn" Click="OnWeekTitleClicked"
+                            ToolTip.Tip="切换周数">
+                        <TextBlock Name="WeekTitle" Classes="strong-label" VerticalAlignment="Center" />
+                    </Button>
+                    <Button Name="NextWeekButton" Classes="week-nav-btn" Content="›" Click="OnNextWeekClicked"
+                            ToolTip.Tip="下一周" />
+                    <Button Name="ResetWeekButton" Classes="week-reset-chip" Content="本周" Margin="3,0,0,0"
+                            IsVisible="False" Click="OnResetWeekClicked" ToolTip.Tip="回到本周" />
+                </StackPanel>
+                <TextBlock Name="WeekSubtitle" Grid.Column="1" Classes="section-label" Margin="6,0,0,0"
+                           TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+            </Grid>
+            <ScrollViewer Name="WeekScroll" Grid.Row="1" Margin="0,4,0,0" VerticalScrollBarVisibility="Auto"
+                          HorizontalScrollBarVisibility="Disabled">
+                <Grid Name="WeekGridHost" Margin="0,0,2,0" />
+            </ScrollViewer>
+        </Grid>
+
+        <!-- Shared empty state. -->
+        <TextBlock Name="EmptyHint" IsVisible="False" TextAlignment="Center" TextWrapping="Wrap"
+                   HorizontalAlignment="Center" VerticalAlignment="Center" Margin="12" Opacity="0.72" />
+
+        <!-- Secondary-panel entry: the full-schedule view, always one click away. -->
+        <Button Name="OpenPanelButton" Classes="panel-open" IsVisible="False"
+                HorizontalAlignment="Right" VerticalAlignment="Top" Margin="4"
+                Click="OnOpenPanelClicked">
+            <PathIcon Width="12" Height="12"
+                      Data="M4,4 h5 v2 h-3 v3 h-2 Z M15,4 h5 v5 h-2 v-3 h-3 Z M4,15 h2 v3 h3 v2 h-5 Z M15,20 v-2 h3 v-3 h2 v5 Z" />
+        </Button>
+    </Panel>
+</UserControl>
