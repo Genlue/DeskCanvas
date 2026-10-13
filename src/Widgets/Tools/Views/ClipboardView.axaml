@@ -5,17 +5,6 @@
              xmlns:models="clr-namespace:Tools.Models"
              x:Class="Tools.Views.ClipboardView">
     <UserControl.Styles>
-        <Style Selector="Button.icon-btn">
-            <Setter Property="Background" Value="Transparent" />
-            <Setter Property="BorderThickness" Value="0" />
-            <Setter Property="Padding" Value="5" />
-            <Setter Property="CornerRadius" Value="6" />
-            <Setter Property="Cursor" Value="Hand" />
-            <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}" />
-        </Style>
-        <Style Selector="Button.icon-btn:pointerover">
-            <Setter Property="Background" Value="#25888888" />
-        </Style>
         <Style Selector="Button.filter-btn">
             <Setter Property="Background" Value="Transparent" />
             <Setter Property="BorderThickness" Value="0" />
@@ -165,12 +154,12 @@
                 </Button>
 
                 <!-- Expand Button -->
-                <Button Classes="icon-btn" Width="20" Height="20" Padding="3" VerticalAlignment="Center" Click="OnOpenPopupClicked" ToolTip.Tip="{x:Static locales:Locale.Tools_Clipboard_ExpandManager}">
+                <Button Classes="dc-toolbar-button" AutomationProperties.Name="{x:Static locales:Locale.Tools_Clipboard_ExpandManager}" Width="20" Height="20" Padding="3" VerticalAlignment="Center" Click="OnOpenPopupClicked" ToolTip.Tip="{x:Static locales:Locale.Tools_Clipboard_ExpandManager}">
                     <PathIcon Data="M19 19H5V5h7V3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z" Width="10" Height="10" Opacity="0.75" />
                 </Button>
 
                 <!-- Clear Button: Absolute right edge, guaranteed visible -->
-                <Button Classes="icon-btn" Width="20" Height="20" Padding="3" VerticalAlignment="Center" Click="OnClearClicked" ToolTip.Tip="{x:Static locales:Locale.Tools_Clipboard_Clear}">
+                <Button Classes="dc-toolbar-button" AutomationProperties.Name="{x:Static locales:Locale.Tools_Clipboard_Clear}" Width="20" Height="20" Padding="3" VerticalAlignment="Center" Click="OnClearClicked" ToolTip.Tip="{x:Static locales:Locale.Tools_Clipboard_Clear}">
                     <PathIcon Data="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" Width="11" Height="11" Opacity="0.75" />
                 </Button>
             </StackPanel>

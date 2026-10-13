@@ -14,12 +14,6 @@
             <Setter Property="Margin" Value="0,2,0,0" />
             <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}" />
         </Style>
-        <Style Selector="TextBlock.group-header">
-            <Setter Property="FontSize" Value="13" />
-            <Setter Property="FontWeight" Value="SemiBold" />
-            <Setter Property="Margin" Value="0,12,0,4" />
-            <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundAccentBrush}" />
-        </Style>
         <Style Selector="TextBox.setting-input">
             <Setter Property="Background" Value="#15808080" />
             <Setter Property="BorderThickness" Value="1" />

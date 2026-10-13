@@ -22,17 +22,6 @@
             <Setter Property="Background" Value="Transparent" />
             <Setter Property="BorderThickness" Value="0" />
         </Style>
-        <Style Selector="Button.icon-btn">
-            <Setter Property="Background" Value="Transparent" />
-            <Setter Property="BorderThickness" Value="0" />
-            <Setter Property="Padding" Value="4" />
-            <Setter Property="CornerRadius" Value="4" />
-            <Setter Property="Cursor" Value="Hand" />
-            <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}" />
-        </Style>
-        <Style Selector="Button.icon-btn:pointerover">
-            <Setter Property="Background" Value="#25888888" />
-        </Style>
         <Style Selector="Button.menu-btn">
             <Setter Property="Background" Value="#18808080" />
             <Setter Property="BorderThickness" Value="0" />
@@ -61,7 +50,7 @@
             <Setter Property="FontSize" Value="9" />
             <Setter Property="CornerRadius" Value="{DynamicResource WidgetPillCornerRadius}" />
         </Style>
-        <Style Selector=":is(UserControl).tier-small Button.icon-btn">
+        <Style Selector=":is(UserControl).tier-small Button.dc-toolbar-button">
             <Setter Property="Padding" Value="2" />
         </Style>
         <Style Selector=":is(UserControl).tier-small TextBox.trans-box">
@@ -191,11 +180,11 @@
                 <Grid Grid.Row="1" ColumnDefinitions="*,Auto,Auto" Margin="4,2,2,0">
                     <TextBlock x:Name="CharCountText" Text="0" FontSize="10" Opacity="0.4" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"
                                Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}" />
-                    <Button Grid.Column="1" Classes="icon-btn" Margin="0,0,2,0" Click="OnClearInputClicked" ToolTip.Tip="{x:Static locales:Locale.Tools_Translator_Clear}">
+                    <Button Grid.Column="1" Classes="dc-toolbar-button" AutomationProperties.Name="{x:Static locales:Locale.Tools_Translator_Clear}" Margin="0,0,2,0" Click="OnClearInputClicked" ToolTip.Tip="{x:Static locales:Locale.Tools_Translator_Clear}">
                         <PathIcon Data="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"
                                   Width="10" Height="10" Opacity="0.5" />
                     </Button>
-                    <Button x:Name="InputTranslateBtn" Grid.Column="2" Classes="icon-btn" Click="OnTranslateClicked" ToolTip.Tip="{x:Static locales:Locale.Tools_Translator_Translate}">
+                    <Button x:Name="InputTranslateBtn" Grid.Column="2" Classes="dc-toolbar-button" AutomationProperties.Name="{x:Static locales:Locale.Tools_Translator_Translate}" Click="OnTranslateClicked" ToolTip.Tip="{x:Static locales:Locale.Tools_Translator_Translate}">
                         <PathIcon Data="M12.87 15.07l-2.54-2.51.03-.03c1.74-1.94 2.98-4.17 3.71-6.53H17V4h-7V2H8v2H1v1.99h11.17C11.5 7.92 10.44 9.75 9 11.35 8.07 10.32 7.3 9.19 6.69 8h-2c.73 1.63 1.73 3.17 2.98 4.56l-5.09 5.02L4 19l5-5 3.11 3.11.76-2.04zM18.5 10h-2L12 22h2l1.12-3h4.75L21 22h2l-4.5-12zm-2.62 7l1.62-4.33L19.12 17h-3.24z"
                                   Width="10" Height="10" Foreground="{DynamicResource TranslateAccentBrush}" />
                     </Button>
@@ -217,7 +206,7 @@
             </Button>
 
             <!-- Swap Button ⇄ -->
-            <Button x:Name="SwapBtn" Grid.Column="1" Classes="icon-btn" Margin="1,0" Click="OnSwapClicked" ToolTip.Tip="{x:Static locales:Locale.Tools_Translator_Swap}">
+            <Button x:Name="SwapBtn" Grid.Column="1" Classes="dc-toolbar-button" AutomationProperties.Name="{x:Static locales:Locale.Tools_Translator_Swap}" Margin="1,0" Click="OnSwapClicked" ToolTip.Tip="{x:Static locales:Locale.Tools_Translator_Swap}">
                 <PathIcon Data="M6.99 11L3 15l3.99 4v-3H14v-2H6.99v-3zM21 9l-3.99-4v3H10v2h7.01v3L21 9z"
                           Width="10" Height="10" Foreground="{DynamicResource TranslateAccentBrush}" />
             </Button>
@@ -248,7 +237,7 @@
             </Button>
 
             <!-- Translate Action / Loading -->
-            <Button x:Name="TranslateBtn" Grid.Column="5" Classes="icon-btn" Margin="2,0,0,0" Click="OnTranslateClicked" ToolTip.Tip="{x:Static locales:Locale.Tools_Translator_Translate}">
+            <Button x:Name="TranslateBtn" Grid.Column="5" Classes="dc-toolbar-button" AutomationProperties.Name="{x:Static locales:Locale.Tools_Translator_Translate}" Margin="2,0,0,0" Click="OnTranslateClicked" ToolTip.Tip="{x:Static locales:Locale.Tools_Translator_Translate}">
                 <StackPanel Orientation="Horizontal" Spacing="3" VerticalAlignment="Center">
                     <PathIcon Data="M12.87 15.07l-2.54-2.51.03-.03c1.74-1.94 2.98-4.17 3.71-6.53H17V4h-7V2H8v2H1v1.99h11.17C11.5 7.92 10.44 9.75 9 11.35 8.07 10.32 7.3 9.19 6.69 8h-2c.73 1.63 1.73 3.17 2.98 4.56l-5.09 5.02L4 19l5-5 3.11 3.11.76-2.04zM18.5 10h-2L12 22h2l1.12-3h4.75L21 22h2l-4.5-12zm-2.62 7l1.62-4.33L19.12 17h-3.24z"
                               Width="12" Height="12" Foreground="{DynamicResource TranslateAccentBrush}" />
@@ -258,7 +247,7 @@
             </Button>
 
             <!-- Expand: open the secondary panel (large editing/reading window) -->
-            <Button x:Name="ExpandBtn" Grid.Column="6" Classes="icon-btn" Margin="3,0,0,0" Click="OnOpenPanelClicked" ToolTip.Tip="{x:Static locales:Locale.Tools_Translator_ExpandPanel}">
+            <Button x:Name="ExpandBtn" Grid.Column="6" Classes="dc-toolbar-button" AutomationProperties.Name="{x:Static locales:Locale.Tools_Translator_ExpandPanel}" Margin="3,0,0,0" Click="OnOpenPanelClicked" ToolTip.Tip="{x:Static locales:Locale.Tools_Translator_ExpandPanel}">
                 <PathIcon Data="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"
                           Width="11" Height="11" Foreground="{DynamicResource TranslateAccentBrush}" />
             </Button>
@@ -274,7 +263,7 @@
                 <Grid Grid.Row="1" ColumnDefinitions="*,Auto" Margin="4,2,2,0">
                     <TextBlock x:Name="StatusText" Text="" FontSize="10" Opacity="0.5" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"
                                Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}" />
-                    <Button Grid.Column="1" Classes="icon-btn" Click="OnCopyOutputClicked" ToolTip.Tip="{x:Static locales:Locale.Tools_Translator_Copy}">
+                    <Button Grid.Column="1" Classes="dc-toolbar-button" AutomationProperties.Name="{x:Static locales:Locale.Tools_Translator_Copy}" Click="OnCopyOutputClicked" ToolTip.Tip="{x:Static locales:Locale.Tools_Translator_Copy}">
                         <PathIcon Data="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"
                                   Width="11" Height="11" Opacity="0.6" />
                     </Button>

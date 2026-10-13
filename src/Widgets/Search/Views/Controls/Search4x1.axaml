@@ -21,15 +21,6 @@
         <Style Selector="Button.engine-btn:pointerover /template/ ContentPresenter">
             <Setter Property="Background" Value="#30808080" />
         </Style>
-        <Style Selector="Button.icon-btn">
-            <Setter Property="Background" Value="Transparent" />
-            <Setter Property="BorderThickness" Value="0" />
-            <Setter Property="Padding" Value="0" />
-            <Setter Property="Cursor" Value="Hand" />
-        </Style>
-        <Style Selector="Button.icon-btn:pointerover /template/ ContentPresenter">
-            <Setter Property="Background" Value="#25888888" />
-        </Style>
         <Style Selector="TextBox.search-input">
             <Setter Property="Background" Value="Transparent" />
             <Setter Property="BorderThickness" Value="0" />
@@ -99,7 +90,7 @@
                 VerticalAlignment="Center"
                 IsVisible="{Binding HasQuery}"
                 Click="OnClearClicked"
-                ToolTip.Tip="{x:Static locales:Locale.Search_Clear}">
+                ToolTip.Tip="{x:Static locales:Locale.Search_Clear}" AutomationProperties.Name="{x:Static locales:Locale.Search_Clear}">
             <PathIcon Data="{x:Static services:SearchIconProvider.ClearIcon}"
                       Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"
                       Width="12" Height="12"
@@ -116,7 +107,7 @@
                 VerticalAlignment="Center"
                 Background="{Binding EngineColor}"
                 Click="OnSearchActionClicked"
-                ToolTip.Tip="{x:Static locales:Locale.Search_Button}">
+                ToolTip.Tip="{x:Static locales:Locale.Search_Button}" AutomationProperties.Name="{x:Static locales:Locale.Search_Button}">
             <PathIcon Data="{x:Static services:SearchIconProvider.DefaultSearchIcon}"
                       Foreground="#FFFFFF"
                       Width="16" Height="16"

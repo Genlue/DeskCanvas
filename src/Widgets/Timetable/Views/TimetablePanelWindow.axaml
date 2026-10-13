@@ -11,23 +11,6 @@
         Width="580"
         Height="670">
 
-    <Window.Styles>
-        <Style Selector="Button.icon-btn">
-            <Setter Property="Width" Value="28" />
-            <Setter Property="Height" Value="28" />
-            <Setter Property="Padding" Value="0" />
-            <Setter Property="FontSize" Value="12" />
-            <Setter Property="CornerRadius" Value="14" />
-            <Setter Property="Background" Value="Transparent" />
-            <Setter Property="BorderThickness" Value="0" />
-            <Setter Property="HorizontalContentAlignment" Value="Center" />
-            <Setter Property="VerticalContentAlignment" Value="Center" />
-            <Setter Property="Cursor" Value="Hand" />
-        </Style>
-        <Style Selector="Button.icon-btn:pointerover">
-            <Setter Property="Background" Value="#25808080" />
-        </Style>
-    </Window.Styles>
 
     <Panel Background="Transparent" PointerPressed="OnRootPointerPressed">
         <Border x:Name="CardBorder"

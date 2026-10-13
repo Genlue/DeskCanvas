@@ -14,6 +14,10 @@
         <!-- Shared input rules (selection pair). Loaded after Fluent so the setters outrank
              the control themes; before the inline page-level styles below. -->
         <StyleInclude Source="avares://DeskCanvas/Styles/Controls/Input.axaml" />
+        <!-- Shared icon-button family (circle / toolbar / compact + transition aliases). -->
+        <StyleInclude Source="avares://DeskCanvas/Styles/Controls/IconButton.axaml" />
+        <!-- Shared settings section header (group-header / section-header aliases). -->
+        <StyleInclude Source="avares://DeskCanvas/Styles/Controls/SettingsSectionHeader.axaml" />
         <Style Selector="TextBox">
             <Setter Property="Background" Value="Transparent" />
             <Setter Property="BorderThickness" Value="0" />

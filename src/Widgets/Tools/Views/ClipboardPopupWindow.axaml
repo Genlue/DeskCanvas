@@ -14,21 +14,6 @@
         Height="540">
 
     <Window.Styles>
-        <Style Selector="Button.icon-btn">
-            <Setter Property="Width" Value="26" />
-            <Setter Property="Height" Value="26" />
-            <Setter Property="Padding" Value="0" />
-            <Setter Property="FontSize" Value="12" />
-            <Setter Property="CornerRadius" Value="13" />
-            <Setter Property="Background" Value="Transparent" />
-            <Setter Property="BorderThickness" Value="0" />
-            <Setter Property="HorizontalContentAlignment" Value="Center" />
-            <Setter Property="VerticalContentAlignment" Value="Center" />
-            <Setter Property="Cursor" Value="Hand" />
-        </Style>
-        <Style Selector="Button.icon-btn:pointerover">
-            <Setter Property="Background" Value="#22808080" />
-        </Style>
         <Style Selector="Button.tab-pill">
             <Setter Property="Background" Value="Transparent" />
             <Setter Property="BorderThickness" Value="0" />
@@ -156,11 +141,11 @@
                                                 <!-- Action Buttons: Pin & Delete -->
                                                 <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="2" VerticalAlignment="Center">
                                                     <Button Classes="icon-btn" Click="OnTogglePinClicked" DataContext="{Binding}"
-                                                            ToolTip.Tip="{x:Static locales:Locale.Tools_Clipboard_TogglePin}">
+                                                            ToolTip.Tip="{x:Static locales:Locale.Tools_Clipboard_TogglePin}" AutomationProperties.Name="{x:Static locales:Locale.Tools_Clipboard_TogglePin}">
                                                         <TextBlock Text="📌" FontSize="11" Opacity="{Binding IsPinned, Converter={x:Static ObjectConverters.IsNotNull}}" />
                                                     </Button>
                                                     <Button Classes="icon-btn" Click="OnDeleteItemClicked" DataContext="{Binding}"
-                                                            ToolTip.Tip="{x:Static locales:Locale.Tools_Clipboard_DeleteRecord}">
+                                                            ToolTip.Tip="{x:Static locales:Locale.Tools_Clipboard_DeleteRecord}" AutomationProperties.Name="{x:Static locales:Locale.Tools_Clipboard_DeleteRecord}">
                                                         <TextBlock Text="✕" FontSize="10" Opacity="0.5" />
                                                     </Button>
                                                 </StackPanel>

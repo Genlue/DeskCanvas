@@ -13,21 +13,6 @@
         Height="580">
 
     <Window.Styles>
-        <Style Selector="Button.icon-btn">
-            <Setter Property="Width" Value="26" />
-            <Setter Property="Height" Value="26" />
-            <Setter Property="Padding" Value="0" />
-            <Setter Property="FontSize" Value="12" />
-            <Setter Property="CornerRadius" Value="13" />
-            <Setter Property="Background" Value="Transparent" />
-            <Setter Property="BorderThickness" Value="0" />
-            <Setter Property="HorizontalContentAlignment" Value="Center" />
-            <Setter Property="VerticalContentAlignment" Value="Center" />
-            <Setter Property="Cursor" Value="Hand" />
-        </Style>
-        <Style Selector="Button.icon-btn:pointerover">
-            <Setter Property="Background" Value="#22808080" />
-        </Style>
         <Style Selector="ComboBox.panel-combo">
             <Setter Property="Height" Value="28" />
             <Setter Property="FontSize" Value="12" />
@@ -100,11 +85,11 @@
                             <Grid Grid.Row="1" ColumnDefinitions="*,Auto,Auto" Margin="4,2,2,0">
                                 <TextBlock x:Name="CharCountText" Text="0" FontSize="10" Opacity="0.4" VerticalAlignment="Center"
                                            Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}" />
-                                <Button Grid.Column="1" Classes="icon-btn" Margin="0,0,2,0" Click="OnClearInputClicked" ToolTip.Tip="{x:Static locales:Locale.Tools_Translator_Clear}">
+                                <Button Grid.Column="1" Classes="icon-btn" Margin="0,0,2,0" Click="OnClearInputClicked" ToolTip.Tip="{x:Static locales:Locale.Tools_Translator_Clear}" AutomationProperties.Name="{x:Static locales:Locale.Tools_Translator_Clear}">
                                     <PathIcon Data="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"
                                               Width="10" Height="10" Opacity="0.5" />
                                 </Button>
-                                <Button Grid.Column="2" Classes="icon-btn" Click="OnCopyInputClicked" ToolTip.Tip="{x:Static locales:Locale.Tools_Translator_CopyInputTip}">
+                                <Button Grid.Column="2" Classes="icon-btn" Click="OnCopyInputClicked" ToolTip.Tip="{x:Static locales:Locale.Tools_Translator_CopyInputTip}" AutomationProperties.Name="{x:Static locales:Locale.Tools_Translator_CopyInputTip}">
                                     <PathIcon Data="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"
                                               Width="11" Height="11" Opacity="0.6" />
                                 </Button>
@@ -116,7 +101,7 @@
                     <Grid Grid.Row="2" ColumnDefinitions="Auto,Auto,Auto,*,Auto" Margin="0,0,0,8" VerticalAlignment="Center">
                         <ComboBox x:Name="SourceCombo" Grid.Column="0" MinWidth="96" Classes="panel-combo"
                                   SelectionChanged="OnSourceChanged" />
-                        <Button Grid.Column="1" Classes="icon-btn" Margin="4,0" Click="OnSwapClicked" ToolTip.Tip="{x:Static locales:Locale.Tools_Translator_Swap}">
+                        <Button Grid.Column="1" Classes="icon-btn" Margin="4,0" Click="OnSwapClicked" ToolTip.Tip="{x:Static locales:Locale.Tools_Translator_Swap}" AutomationProperties.Name="{x:Static locales:Locale.Tools_Translator_Swap}">
                             <PathIcon Data="M6.99 11L3 15l3.99 4v-3H14v-2H6.99v-3zM21 9l-3.99-4v3H10v2h7.01v3L21 9z"
                                       Width="13" Height="13" Foreground="{DynamicResource TranslateAccentBrush}" />
                         </Button>

@@ -1,0 +1,16 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!-- Shared settings group header (W5): one definition for the text that separates groups
+         of setting rows. Size / weight / accent colour / group spacing come from the shared
+         tokens; pages only provide the text (and, for a first group that needs different
+         spacing, a local Margin — never a redefined Style).
+         Transition aliases (temporary): both historic class names resolve to the canonical
+         look so the migrated pages keep their markup. #2 of the report merges the two
+         statistics (10 × group-header + 2 × section-header) into this single entry. -->
+    <Style Selector="TextBlock.dc-section-header, TextBlock.group-header, TextBlock.section-header">
+        <Setter Property="FontSize" Value="13" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Margin" Value="{DynamicResource SettingsSectionHeaderMargin}" />
+        <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundAccentBrush}" />
+    </Style>
+</Styles>

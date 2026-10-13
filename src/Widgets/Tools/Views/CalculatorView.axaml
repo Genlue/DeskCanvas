@@ -3,19 +3,6 @@
              xmlns:locales="clr-namespace:Tools.Locales"
              x:Class="Tools.Views.CalculatorView">
     <UserControl.Styles>
-        <Style Selector="Button.icon-btn">
-            <Setter Property="Background" Value="Transparent" />
-            <Setter Property="BorderThickness" Value="0" />
-            <Setter Property="Padding" Value="4" />
-            <Setter Property="CornerRadius" Value="6" />
-            <Setter Property="Cursor" Value="Hand" />
-            <Setter Property="HorizontalContentAlignment" Value="Center" />
-            <Setter Property="VerticalContentAlignment" Value="Center" />
-            <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}" />
-        </Style>
-        <Style Selector="Button.icon-btn:pointerover">
-            <Setter Property="Background" Value="#25888888" />
-        </Style>
 
         <Style Selector="Button.pill-btn">
             <Setter Property="Background" Value="{DynamicResource CalculatorFuncButtonBackground}" />
@@ -164,18 +151,18 @@
                                Foreground="{DynamicResource CalculatorAccentBrush}" VerticalAlignment="Center" />
                 </StackPanel>
 
-                <Button Grid.Column="1" x:Name="SmallClearBtn" Classes="icon-btn" Padding="3" Margin="2,0,0,0"
-                        Click="OnClearClicked" ToolTip.Tip="{x:Static locales:Locale.Tools_Calculator_ClearExprTip}">
+                <Button Grid.Column="1" x:Name="SmallClearBtn" Classes="dc-toolbar-button" Padding="3" Margin="2,0,0,0"
+                        Click="OnClearClicked" ToolTip.Tip="{x:Static locales:Locale.Tools_Calculator_ClearExprTip}" AutomationProperties.Name="{x:Static locales:Locale.Tools_Calculator_ClearExprTip}">
                     <PathIcon Data="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"
                               Width="10" Height="10" Opacity="0.65" />
                 </Button>
-                <Button Grid.Column="2" x:Name="SmallCopyBtn" Classes="icon-btn" Padding="3" Margin="1,0,0,0"
-                        Click="OnCopyResultClicked" ToolTip.Tip="{x:Static locales:Locale.Tools_Calculator_CopyResultTip}">
+                <Button Grid.Column="2" x:Name="SmallCopyBtn" Classes="dc-toolbar-button" Padding="3" Margin="1,0,0,0"
+                        Click="OnCopyResultClicked" ToolTip.Tip="{x:Static locales:Locale.Tools_Calculator_CopyResultTip}" AutomationProperties.Name="{x:Static locales:Locale.Tools_Calculator_CopyResultTip}">
                     <PathIcon Data="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"
                               Width="11" Height="11" Opacity="0.7" />
                 </Button>
-                <Button Grid.Column="3" x:Name="SmallExpandBtn" Classes="icon-btn" Padding="3" Margin="1,0,0,0"
-                        Click="OnOpenPanelClicked" ToolTip.Tip="{x:Static locales:Locale.Tools_Calculator_ExpandPanelTip}">
+                <Button Grid.Column="3" x:Name="SmallExpandBtn" Classes="dc-toolbar-button" Padding="3" Margin="1,0,0,0"
+                        Click="OnOpenPanelClicked" ToolTip.Tip="{x:Static locales:Locale.Tools_Calculator_ExpandPanelTip}" AutomationProperties.Name="{x:Static locales:Locale.Tools_Calculator_ExpandPanelTip}">
                     <PathIcon Data="M15 3l2.3 2.3-2.89 2.87 1.42 1.42L18.7 6.7 21 9V3h-6zM3 9l2.3-2.3 2.87 2.89 1.42-1.42L6.7 5.3 9 3H3v6zm6 12l-2.3-2.3 2.89-2.87-1.42-1.42L5.3 17.3 3 15v6h6zm12-6l-2.3 2.3-2.87-2.89-1.42 1.42 2.89 2.87L15 21h6v-6z"
                               Width="11" Height="11" Opacity="0.75" />
                 </Button>
@@ -214,15 +201,15 @@
                     <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto,Auto,Auto" Margin="0,0,0,2" VerticalAlignment="Center">
                         <Button Grid.Column="0" x:Name="MedAngleBtn" Classes="pill-btn" Padding="5,1" FontSize="10"
                                 Content="DEG" Click="OnAngleToggleClicked" ToolTip.Tip="{x:Static locales:Locale.Tools_Calculator_ToggleAngleTip}" />
-                        <Button Grid.Column="2" Classes="icon-btn" Padding="3" Click="OnClearClicked" ToolTip.Tip="{x:Static locales:Locale.Tools_Translator_Clear}">
+                        <Button Grid.Column="2" Classes="dc-toolbar-button" AutomationProperties.Name="{x:Static locales:Locale.Tools_Translator_Clear}" Padding="3" Click="OnClearClicked" ToolTip.Tip="{x:Static locales:Locale.Tools_Translator_Clear}">
                             <PathIcon Data="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"
                                       Width="10" Height="10" Opacity="0.65" />
                         </Button>
-                        <Button Grid.Column="3" Classes="icon-btn" Padding="3" Click="OnCopyResultClicked" ToolTip.Tip="{x:Static locales:Locale.Tools_Calculator_CopyResultTip}">
+                        <Button Grid.Column="3" Classes="dc-toolbar-button" AutomationProperties.Name="{x:Static locales:Locale.Tools_Calculator_CopyResultTip}" Padding="3" Click="OnCopyResultClicked" ToolTip.Tip="{x:Static locales:Locale.Tools_Calculator_CopyResultTip}">
                             <PathIcon Data="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"
                                       Width="10.5" Height="10.5" Opacity="0.7" />
                         </Button>
-                        <Button Grid.Column="4" Classes="icon-btn" Padding="3" Click="OnOpenPanelClicked" ToolTip.Tip="{x:Static locales:Locale.Tools_Calculator_ExpandPanelTip}">
+                        <Button Grid.Column="4" Classes="dc-toolbar-button" AutomationProperties.Name="{x:Static locales:Locale.Tools_Calculator_ExpandPanelTip}" Padding="3" Click="OnOpenPanelClicked" ToolTip.Tip="{x:Static locales:Locale.Tools_Calculator_ExpandPanelTip}">
                             <PathIcon Data="M15 3l2.3 2.3-2.89 2.87 1.42 1.42L18.7 6.7 21 9V3h-6zM3 9l2.3-2.3 2.87 2.89 1.42-1.42L6.7 5.3 9 3H3v6zm6 12l-2.3-2.3 2.89-2.87-1.42-1.42L5.3 17.3 3 15v6h6zm12-6l-2.3 2.3-2.87-2.89-1.42 1.42 2.89 2.87L15 21h6v-6z"
                                       Width="10.5" Height="10.5" Opacity="0.75" />
                         </Button>
@@ -287,15 +274,15 @@
                 <Button Grid.Column="2" x:Name="LargeAngleBtn" Classes="pill-btn" Content="DEG"
                         Click="OnAngleToggleClicked" ToolTip.Tip="{x:Static locales:Locale.Tools_Calculator_ToggleAngleTip}" />
 
-                <Button Grid.Column="4" Classes="icon-btn" Padding="4" Click="OnClearClicked" ToolTip.Tip="{x:Static locales:Locale.Tools_Calculator_ClearExprTip}">
+                <Button Grid.Column="4" Classes="dc-toolbar-button" AutomationProperties.Name="{x:Static locales:Locale.Tools_Calculator_ClearExprTip}" Padding="4" Click="OnClearClicked" ToolTip.Tip="{x:Static locales:Locale.Tools_Calculator_ClearExprTip}">
                     <PathIcon Data="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"
                               Width="11" Height="11" Opacity="0.65" />
                 </Button>
-                <Button Grid.Column="5" Classes="icon-btn" Padding="4" Click="OnCopyResultClicked" ToolTip.Tip="{x:Static locales:Locale.Tools_Calculator_CopyResultTip}">
+                <Button Grid.Column="5" Classes="dc-toolbar-button" AutomationProperties.Name="{x:Static locales:Locale.Tools_Calculator_CopyResultTip}" Padding="4" Click="OnCopyResultClicked" ToolTip.Tip="{x:Static locales:Locale.Tools_Calculator_CopyResultTip}">
                     <PathIcon Data="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"
                               Width="11.5" Height="11.5" Opacity="0.7" />
                 </Button>
-                <Button Grid.Column="6" Classes="icon-btn" Padding="4" Click="OnOpenPanelClicked" ToolTip.Tip="{x:Static locales:Locale.Tools_Calculator_ExpandPanelTip}">
+                <Button Grid.Column="6" Classes="dc-toolbar-button" AutomationProperties.Name="{x:Static locales:Locale.Tools_Calculator_ExpandPanelTip}" Padding="4" Click="OnOpenPanelClicked" ToolTip.Tip="{x:Static locales:Locale.Tools_Calculator_ExpandPanelTip}">
                     <PathIcon Data="M15 3l2.3 2.3-2.89 2.87 1.42 1.42L18.7 6.7 21 9V3h-6zM3 9l2.3-2.3 2.87 2.89 1.42-1.42L6.7 5.3 9 3H3v6zm6 12l-2.3-2.3 2.89-2.87-1.42-1.42L5.3 17.3 3 15v6h6zm12-6l-2.3 2.3-2.87-2.89-1.42 1.42 2.89 2.87L15 21h6v-6z"
                               Width="11.5" Height="11.5" Opacity="0.75" />
                 </Button>

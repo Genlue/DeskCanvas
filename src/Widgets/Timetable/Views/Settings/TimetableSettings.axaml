@@ -5,12 +5,6 @@
              x:Class="Timetable.Views.Settings.TimetableSettings"
              controls:SettingsPage.ScrollOwnership="Host">
     <UserControl.Styles>
-        <Style Selector="TextBlock.section-header">
-            <Setter Property="FontSize" Value="13" />
-            <Setter Property="FontWeight" Value="SemiBold" />
-            <Setter Property="Margin" Value="2,10,0,4" />
-            <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundAccentBrush}" />
-        </Style>
         <Style Selector="TextBlock.status-caption">
             <Setter Property="FontSize" Value="12" />
             <Setter Property="Opacity" Value="0.65" />

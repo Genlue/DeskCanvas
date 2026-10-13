@@ -3,12 +3,6 @@
              xmlns:controls="clr-namespace:DeskCanvas.Views.Controls;assembly=DeskCanvas"
              x:Class="Hitokoto.Views.Settings.HitokotoSettings">
     <UserControl.Styles>
-        <Style Selector="TextBlock.section-header">
-            <Setter Property="FontSize" Value="13" />
-            <Setter Property="FontWeight" Value="SemiBold" />
-            <Setter Property="Margin" Value="2,10,0,4" />
-            <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundAccentBrush}" />
-        </Style>
         <Style Selector="CheckBox.cat-check">
             <Setter Property="Margin" Value="0,2,12,2" />
             <Setter Property="FontSize" Value="12" />

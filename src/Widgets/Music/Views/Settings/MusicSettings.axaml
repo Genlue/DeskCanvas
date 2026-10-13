@@ -17,28 +17,10 @@
         <Style Selector="Button.small-button:pointerover">
             <Setter Property="Background" Value="{DynamicResource SystemControlHighlightListLowBrush}" />
         </Style>
-        <Style Selector="Button.icon-button">
-            <Setter Property="Background" Value="Transparent" />
-            <Setter Property="BorderThickness" Value="0" />
-            <Setter Property="Padding" Value="4" />
-            <Setter Property="Width" Value="24" />
-            <Setter Property="Height" Value="24" />
-            <Setter Property="CornerRadius" Value="3" />
-            <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}" />
-        </Style>
-        <Style Selector="Button.icon-button:pointerover">
-            <Setter Property="Background" Value="{DynamicResource SystemControlHighlightListLowBrush}" />
-        </Style>
         <Style Selector="TextBlock.setting-label">
             <Setter Property="FontSize" Value="13" />
             <Setter Property="VerticalAlignment" Value="Center" />
             <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}" />
-        </Style>
-        <Style Selector="TextBlock.group-header">
-            <Setter Property="FontSize" Value="13" />
-            <Setter Property="FontWeight" Value="SemiBold" />
-            <Setter Property="Margin" Value="0,10,0,2" />
-            <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundAccentBrush}" />
         </Style>
     </UserControl.Styles>
 
@@ -140,11 +122,11 @@
 
                                     <!-- Priority & Delete Buttons -->
                                     <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="2" VerticalAlignment="Center">
-                                        <Button Classes="icon-button" Content="↑" ToolTip.Tip="{x:Static locales:Locale.Music_MoveUp}"
+                                        <Button Classes="icon-button" AutomationProperties.Name="{x:Static locales:Locale.Music_MoveUp}" Content="↑" ToolTip.Tip="{x:Static locales:Locale.Music_MoveUp}"
                                                 Click="OnMoveUpClicked" Tag="{Binding}"/>
-                                        <Button Classes="icon-button" Content="↓" ToolTip.Tip="{x:Static locales:Locale.Music_MoveDown}"
+                                        <Button Classes="icon-button" AutomationProperties.Name="{x:Static locales:Locale.Music_MoveDown}" Content="↓" ToolTip.Tip="{x:Static locales:Locale.Music_MoveDown}"
                                                 Click="OnMoveDownClicked" Tag="{Binding}"/>
-                                        <Button Classes="icon-button" Content="✕" ToolTip.Tip="{x:Static locales:Locale.Music_DeleteRule}"
+                                        <Button Classes="icon-button" AutomationProperties.Name="{x:Static locales:Locale.Music_DeleteRule}" Content="✕" ToolTip.Tip="{x:Static locales:Locale.Music_DeleteRule}"
                                                 Click="OnDeleteRuleClicked" Tag="{Binding}"/>
                                     </StackPanel>
                                 </Grid>
