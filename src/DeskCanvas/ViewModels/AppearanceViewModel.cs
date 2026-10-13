@@ -57,9 +57,9 @@ public class AppearanceViewModel : ReactiveObject
             this.RaisePropertyChanged(nameof(ShowMonochromeVariant));
             this.RaisePropertyChanged(nameof(ShowTitleBarSize));
             this.RaisePropertyChanged(nameof(TitleBarSize));
-            this.RaisePropertyChanged(nameof(SolidBackgroundDark));
-            this.RaisePropertyChanged(nameof(SolidBackgroundLight));
-            this.RaisePropertyChanged(nameof(OutlineColor));
+            this.RaisePropertyChanged(nameof(SolidBackgroundDarkHex));
+            this.RaisePropertyChanged(nameof(SolidBackgroundLightHex));
+            this.RaisePropertyChanged(nameof(OutlineColorHex));
             this.RaisePropertyChanged(nameof(OutlineWidth));
             this.RaisePropertyChanged(nameof(DarkMode));
             // The shadow row has a slider *and* a numeric box side by side, so both have to be
@@ -76,7 +76,7 @@ public class AppearanceViewModel : ReactiveObject
             this.RaisePropertyChanged(nameof(ShowOpacitySetting));
             this.RaisePropertyChanged(nameof(ShowMonochromeSetting));
             this.RaisePropertyChanged(nameof(ShowSolidBackgroundSetting));
-            this.RaisePropertyChanged(nameof(AccentColor));
+            this.RaisePropertyChanged(nameof(AccentColorHex));
             // Only re-resolve the combo when the manual/system choice itself changed: a plain
             // colour change must not touch the selection, or the closed combo would flicker on
             // every pointer move of the palette.
@@ -422,18 +422,21 @@ public class AppearanceViewModel : ReactiveObject
     }
 
     /// <summary>
-    /// The manual accent colour. Stored via <see cref="ToHex"/> ("#AARRGGBB") so it
-    /// round-trips through the settings JSON in a stable way and can be compared.
+    /// The manual accent colour, exactly as it is stored in the settings JSON ("#AARRGGBB").
+    /// <para>
+    /// The string is the model's own shape, and the editor owns parsing, alpha policy and
+    /// validation instead of this row: see <c>ColorInput</c>. <c>null</c> is a real state here
+    /// (跟随系统), not a parsing failure.
+    /// </para>
     /// </summary>
-    public Color AccentColor
+    public string? AccentColorHex
     {
-        get => Color.TryParse(appSettingsProvider.Get().Theme.AccentColor, out var color) ? color : Colors.DodgerBlue;
+        get => appSettingsProvider.Get().Theme.AccentColor;
         set
         {
             var settings = appSettingsProvider.Get();
-            var hex = ToHex(value);
-            if (settings.Theme.AccentColor == hex) return;
-            SaveTheme(settings.Theme with { AccentColor = hex });
+            if (settings.Theme.AccentColor == value) return;
+            SaveTheme(settings.Theme with { AccentColor = value });
         }
     }
 
@@ -476,20 +479,21 @@ public class AppearanceViewModel : ReactiveObject
     }
 
     /// <summary>
-    /// Highlight-ring color of the outlined-glass theme (RGBA HEX, alpha preserved).
+    /// Highlight-ring colour of the outlined-glass theme, "#AARRGGBB" — the ring's alpha is part
+    /// of the colour, so it is stored and edited here.
+    /// <para>
+    /// Reads the <i>effective</i> value so the row shows the default while nothing is stored,
+    /// and writing that same value back does not materialize it.
+    /// </para>
     /// </summary>
-    public Color OutlineColor
+    public string? OutlineColorHex
     {
-        get => Color.TryParse(
-            appSettingsProvider.Get().Theme.EffectiveOutlineColor, out var color) ? color : Colors.White;
+        get => appSettingsProvider.Get().Theme.EffectiveOutlineColor;
         set
         {
             var settings = appSettingsProvider.Get();
-            // Compare against the *effective* value: the picker renders the default while
-            // nothing is stored, and writing that back would materialize it.
-            var hex = ToHex(value);
-            if (settings.Theme.EffectiveOutlineColor == hex) return;
-            SaveTheme(settings.Theme with { OutlineColor = hex });
+            if (settings.Theme.EffectiveOutlineColor == value) return;
+            SaveTheme(settings.Theme with { OutlineColor = value });
         }
     }
 
@@ -583,20 +587,28 @@ public class AppearanceViewModel : ReactiveObject
     /// Widget card background color in dark mode (HEX, alpha is the global opacity slider's job).
     /// Applies to both 毛玻璃 and 纯色 surfaces.
     /// </summary>
-    public Color SolidBackgroundDark
+    public string? SolidBackgroundDarkHex
     {
-        get => ParseColor(appSettingsProvider.Get().Theme.EffectiveSolidBackgroundDark, Theme.DefaultSolidBackgroundDark);
-        set => SaveSolidBackground(SolidBackgroundDark: ToHex(value));
+        get => appSettingsProvider.Get().Theme.EffectiveSolidBackgroundDark;
+        set
+        {
+            if (appSettingsProvider.Get().Theme.EffectiveSolidBackgroundDark == value) return;
+            SaveSolidBackground(SolidBackgroundDark: value);
+        }
     }
 
     /// <summary>
     /// Widget card background color in light mode (HEX, alpha is the global opacity slider's job).
     /// Applies to both 毛玻璃 and 纯色 surfaces.
     /// </summary>
-    public Color SolidBackgroundLight
+    public string? SolidBackgroundLightHex
     {
-        get => ParseColor(appSettingsProvider.Get().Theme.EffectiveSolidBackgroundLight, Theme.DefaultSolidBackgroundLight);
-        set => SaveSolidBackground(SolidBackgroundLight: ToHex(value));
+        get => appSettingsProvider.Get().Theme.EffectiveSolidBackgroundLight;
+        set
+        {
+            if (appSettingsProvider.Get().Theme.EffectiveSolidBackgroundLight == value) return;
+            SaveSolidBackground(SolidBackgroundLight: value);
+        }
     }
 
     /// <summary>
@@ -604,8 +616,8 @@ public class AppearanceViewModel : ReactiveObject
     /// </summary>
     public void ApplySolidToLight()
     {
-        SaveSolidBackground(SolidBackgroundLight: ToHex(SolidBackgroundDark));
-        this.RaisePropertyChanged(nameof(SolidBackgroundLight));
+        SaveSolidBackground(SolidBackgroundLight: SolidBackgroundDarkHex);
+        this.RaisePropertyChanged(nameof(SolidBackgroundLightHex));
     }
 
     /// <summary>
@@ -613,17 +625,9 @@ public class AppearanceViewModel : ReactiveObject
     /// </summary>
     public void ApplySolidToDark()
     {
-        SaveSolidBackground(SolidBackgroundDark: ToHex(SolidBackgroundLight));
-        this.RaisePropertyChanged(nameof(SolidBackgroundDark));
+        SaveSolidBackground(SolidBackgroundDark: SolidBackgroundLightHex);
+        this.RaisePropertyChanged(nameof(SolidBackgroundDarkHex));
     }
-
-    /// <summary>
-    /// Store colors as a plain "#AARRGGBB" string — <see cref="Color.ToString"/>
-    /// may return a named color (e.g. "White") that doesn't round-trip through
-    /// the settings JSON in a stable way.
-    /// </summary>
-    private static string ToHex(Color color) =>
-        $"#{color.A:X2}{color.R:X2}{color.G:X2}{color.B:X2}";
 
     private void SaveSolidBackground(string? SolidBackgroundDark = null, string? SolidBackgroundLight = null)
     {
@@ -635,9 +639,6 @@ public class AppearanceViewModel : ReactiveObject
         };
         SaveTheme(theme);
     }
-
-    private static Color ParseColor(string hex, string fallbackHex) =>
-        Color.TryParse(hex, out var color) ? color : Color.Parse(fallbackHex);
     
     /// <summary>
     /// Every font available: all fonts installed on the system, plus the bundled Inter font.

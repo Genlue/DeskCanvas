@@ -20,6 +20,8 @@
     <ProjectReference Include="..\..\src\Widgets\Timetable\Timetable.csproj" />
     <ProjectReference Include="..\..\src\Widgets\Clock\Clock.csproj" />
     <ProjectReference Include="..\..\src\Widgets\Picture\Picture.csproj" />
+    <!-- The W6 compound-input checks instantiate the REAL migrated colour rows. -->
+    <ProjectReference Include="..\..\src\Widgets\Progress\Progress.csproj" />
     <!-- The W5 icon-button/header checks instantiate the REAL migrated views/pages. -->
     <ProjectReference Include="..\..\src\Widgets\Tools\Tools.csproj" />
     <ProjectReference Include="..\..\src\Widgets\Notes\Notes.csproj" />

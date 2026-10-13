@@ -33,10 +33,9 @@
 
         <controls:Setting IsVisible="{Binding ShowLiquidGlassOpacity}"
                           Title="{x:Static locales:Locale.Clock_LiquidGlassOpacity}">
-            <Grid ColumnDefinitions="*,Auto" Width="180">
-                <Slider Minimum="0" Maximum="100" Value="{Binding LiquidGlassOpacityPercent}" VerticalAlignment="Center"/>
-                <TextBlock Grid.Column="1" Text="{Binding LiquidGlassOpacityPercent, StringFormat='{}{0}%'}" Width="42" TextAlignment="Right" VerticalAlignment="Center" Margin="8 0 0 0"/>
-            </Grid>
+            <controls:LabeledSlider Width="180" Minimum="0" Maximum="100" Step="1" Unit="%"
+                                    Value="{Binding LiquidGlassOpacityPercent}"
+                                    AutomationProperties.Name="{x:Static locales:Locale.Clock_LiquidGlassOpacity}" />
         </controls:Setting>
 
         <!-- 字体分类（将精选锁屏艺术字体与系统自带字体分开选） -->
@@ -118,18 +117,15 @@
                 <ToggleSwitch IsChecked="{Binding FollowAccentColor}"/>
             </controls:Setting>
 
+            <!-- 覆盖层色调：alpha 由下方「覆盖层不透明度」独家决定，故本行恒写不透明 RGB -->
             <controls:Setting IsVisible="{Binding ShowCustomColor}" Title="{x:Static locales:Locale.Clock_OverlayColor}">
-                <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                    <ColorPicker Color="{Binding OverlayColorPickerValue}" Height="36" Width="72" IsAlphaVisible="False" />
-                    <TextBox Text="{Binding OverlayColor}" MinWidth="120" Watermark="#400078D4" VerticalAlignment="Center"/>
-                </StackPanel>
+                <controls:ColorInput Value="{Binding OverlayColor}" ColorFormat="Rgb" AlphaPolicy="ForceOpaque" />
             </controls:Setting>
 
             <controls:Setting Title="{x:Static locales:Locale.Clock_OverlayOpacity}">
-                <Grid ColumnDefinitions="*,Auto" Width="180">
-                    <Slider Minimum="5" Maximum="100" Value="{Binding OverlayOpacityPercent}" VerticalAlignment="Center"/>
-                    <TextBlock Grid.Column="1" Text="{Binding OverlayOpacityPercent, StringFormat='{}{0}%'}" Width="42" TextAlignment="Right" VerticalAlignment="Center" Margin="8 0 0 0"/>
-                </Grid>
+                <controls:LabeledSlider Width="180" Minimum="5" Maximum="100" Step="1" Unit="%"
+                                        Value="{Binding OverlayOpacityPercent}"
+                                        AutomationProperties.Name="{x:Static locales:Locale.Clock_OverlayOpacity}" />
             </controls:Setting>
         </StackPanel>
 

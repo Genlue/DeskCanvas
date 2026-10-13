@@ -28,26 +28,17 @@
 
             <!-- 已过圆点颜色 -->
             <controls:Setting Name="PassedColorSetting" Title="{x:Static locales:Locale.Progress_PassedColor}">
-                <StackPanel Orientation="Horizontal" Spacing="8">
-                    <TextBox Name="PassedColorHexBox" MinWidth="115" VerticalAlignment="Center" LostFocus="OnColorHexLostFocus" />
-                    <ColorPicker Name="PassedColorPicker" Height="36" Width="72" IsAlphaVisible="False" ColorChanged="OnColorPickerChanged" />
-                </StackPanel>
+                <controls:ColorInput Name="PassedColorInput" IsAlphaVisible="False" ValueCommitted="OnColorCommitted" />
             </controls:Setting>
 
             <!-- 当前圆点高亮颜色 -->
             <controls:Setting Title="{x:Static locales:Locale.Progress_CurrentColor}">
-                <StackPanel Orientation="Horizontal" Spacing="8">
-                    <TextBox Name="CurrentColorHexBox" MinWidth="115" VerticalAlignment="Center" LostFocus="OnColorHexLostFocus" />
-                    <ColorPicker Name="CurrentColorPicker" Height="36" Width="72" IsAlphaVisible="False" ColorChanged="OnColorPickerChanged" />
-                </StackPanel>
+                <controls:ColorInput Name="CurrentColorInput" IsAlphaVisible="False" ValueCommitted="OnColorCommitted" />
             </controls:Setting>
 
-            <!-- 未过圆点颜色 -->
+            <!-- 未过圆点颜色（带透明度） -->
             <controls:Setting Title="{x:Static locales:Locale.Progress_RemainingColor}">
-                <StackPanel Orientation="Horizontal" Spacing="8">
-                    <TextBox Name="RemainingColorHexBox" MinWidth="115" VerticalAlignment="Center" LostFocus="OnColorHexLostFocus" />
-                    <ColorPicker Name="RemainingColorPicker" Height="36" Width="72" IsAlphaVisible="True" ColorChanged="OnColorPickerChanged" />
-                </StackPanel>
+                <controls:ColorInput Name="RemainingColorInput" IsAlphaVisible="True" ValueCommitted="OnColorCommitted" />
             </controls:Setting>
 
             <!-- 顶部信息栏 -->

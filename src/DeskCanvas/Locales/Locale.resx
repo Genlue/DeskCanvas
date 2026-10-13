@@ -993,4 +993,7 @@
     <data name="Settings_General_Update_Error_Network" xml:space="preserve">
         <value>Network request failed</value>
     </data>
+    <data name="Settings_ColorInput_InvalidFormat" xml:space="preserve">
+        <value>Invalid color format — enter #RGB, #RRGGBB or #AARRGGBB</value>
+    </data>
 </root>

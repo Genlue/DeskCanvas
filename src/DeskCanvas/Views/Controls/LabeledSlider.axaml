@@ -1,0 +1,18 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="DeskCanvas.Views.Controls.LabeledSlider">
+    <!-- "Slider + current value" compound editor (W6). The static visual tree only; all
+         synchronisation lives in the code-behind (single source: the Value property). The
+         value column shows either a formatted text (default) or an editable NumericUpDown
+         (ShowEditableValue=true). Pages never reach into these parts. -->
+    <Grid ColumnDefinitions="*,Auto">
+        <Slider x:Name="SliderPart" Grid.Column="0" VerticalAlignment="Center" />
+        <TextBlock x:Name="ValueTextPart" Grid.Column="1"
+                   MinWidth="42" TextAlignment="Right" VerticalAlignment="Center"
+                   Margin="8 0 0 0" />
+        <NumericUpDown x:Name="NumericPart" Grid.Column="1"
+                       MinWidth="{DynamicResource ControlNumericMinWidth}"
+                       VerticalAlignment="Center" Margin="10 0 0 0"
+                       IsVisible="False" />
+    </Grid>
+</UserControl>

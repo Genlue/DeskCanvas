@@ -260,6 +260,15 @@ namespace DeskCanvas.Locales {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Invalid color format.
+        /// </summary>
+        public static string Settings_ColorInput_InvalidFormat {
+            get {
+                return ResourceManager.GetString("Settings_ColorInput_InvalidFormat", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Advanced.
         /// </summary>
         public static string Settings_Advanced {

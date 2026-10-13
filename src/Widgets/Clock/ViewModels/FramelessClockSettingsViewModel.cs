@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
 using Avalonia.Media;
-using Avalonia.Styling;
 using Clock.Locales;
 using Clock.Models;
 using Clock.Services;
@@ -432,6 +431,11 @@ public class FramelessClockSettingsViewModel : ReactiveObject
 
     public bool ShowCustomColor => !FollowAccentColor;
 
+    /// <summary>
+    /// 覆盖层色调，#RRGGBB。透明度是独立的 <see cref="OverlayOpacityPercent"/> 业务，
+    /// 颜色字符串里的 alpha 通道不参与渲染（见 FramelessDigital.ResolveOverlayColor），
+    /// 因此编辑后统一写成不透明 RGB。
+    /// </summary>
     public string OverlayColor
     {
         get => model.OverlayColor;
@@ -439,44 +443,7 @@ public class FramelessClockSettingsViewModel : ReactiveObject
         {
             UpdateModel(model with { OverlayColor = value });
             this.RaisePropertyChanged(nameof(OverlayColor));
-            this.RaisePropertyChanged(nameof(OverlayColorPickerValue));
         }
-    }
-
-    public Color OverlayColorPickerValue
-    {
-        get => ParseColor(model.OverlayColor) ?? AccentColor();
-        set
-        {
-            var hex = ToHex(value);
-            if (hex == model.OverlayColor) return;
-            UpdateModel(model with { OverlayColor = hex });
-            this.RaisePropertyChanged(nameof(OverlayColor));
-            this.RaisePropertyChanged(nameof(OverlayColorPickerValue));
-        }
-    }
-
-    private static Color? ParseColor(string? hex)
-    {
-        if (string.IsNullOrWhiteSpace(hex)) return null;
-        try { return Color.Parse(hex); }
-        catch (FormatException) { return null; }
-    }
-
-    private static string ToHex(Color color) =>
-        $"#{color.R:X2}{color.G:X2}{color.B:X2}";
-
-    private static Color AccentColor(bool dark = false)
-    {
-        if (Avalonia.Application.Current is { } app &&
-            ((Avalonia.Controls.IResourceHost)app).TryGetResource(
-                "SystemAccentColor",
-                dark ? ThemeVariant.Dark : ThemeVariant.Light,
-                out var value) &&
-            value is Color color)
-            return color;
-
-        return Color.Parse("#0078D7");
     }
 
     public double OverlayOpacityPercent

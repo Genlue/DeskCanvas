@@ -8,6 +8,7 @@ using Progress.Locales;
 using Progress.Models;
 using DeskCanvas.Core.Interfaces;
 using DeskCanvas.Core.Models;
+using DeskCanvas.Views.Controls;
 
 namespace Progress.Views.Settings;
 
@@ -71,14 +72,11 @@ public partial class ProgressSettings : UserControl
 
         CustomTitleBox.Text = model.CustomTitle ?? "";
 
-        PassedColorPicker.Color = Color.TryParse(model.PassedColor, out var passed) ? passed : Color.Parse("#7B61FF");
-        PassedColorHexBox.Text = PassedColorPicker.Color.ToString();
-
-        CurrentColorPicker.Color = Color.TryParse(model.CurrentColor, out var cur) ? cur : Color.Parse("#FF2A85");
-        CurrentColorHexBox.Text = CurrentColorPicker.Color.ToString();
-
-        RemainingColorPicker.Color = Color.TryParse(model.RemainingColor, out var rem) ? rem : Color.FromArgb(50, 255, 255, 255);
-        RemainingColorHexBox.Text = RemainingColorPicker.Color.ToString();
+        // Fallback on unreadable stored data only for display: the model keeps its value until
+        // the user actually edits the row (a load never commits).
+        PassedColorInput.Value = NormalizeColor(model.PassedColor, "#FF7B61FF");
+        CurrentColorInput.Value = NormalizeColor(model.CurrentColor, "#FFFF2A85");
+        RemainingColorInput.Value = NormalizeColor(model.RemainingColor, "#32FFFFFF");
 
         BirthDateBox.Text = model.BirthDate ?? "2000-01-01";
         LifeExpectancyInput.Value = model.LifeExpectancyYears;
@@ -148,52 +146,22 @@ public partial class ProgressSettings : UserControl
         Save();
     }
 
-    private void OnColorPickerChanged(object? sender, ColorChangedEventArgs e)
+    /// <summary>One handler for all three colour rows: the control already normalised and committed.</summary>
+    private void OnColorCommitted(object? sender, ColorInputValueCommittedEventArgs e)
     {
         if (isInitializing) return;
 
-        if (sender == PassedColorPicker)
-        {
-            PassedColorHexBox.Text = e.NewColor.ToString();
-            model = model with { PassedColor = e.NewColor.ToString() };
-        }
-        else if (sender == CurrentColorPicker)
-        {
-            CurrentColorHexBox.Text = e.NewColor.ToString();
-            model = model with { CurrentColor = e.NewColor.ToString() };
-        }
-        else if (sender == RemainingColorPicker)
-        {
-            RemainingColorHexBox.Text = e.NewColor.ToString();
-            model = model with { RemainingColor = e.NewColor.ToString() };
-        }
+        if (sender == PassedColorInput) model = model with { PassedColor = e.Value };
+        else if (sender == CurrentColorInput) model = model with { CurrentColor = e.Value };
+        else if (sender == RemainingColorInput) model = model with { RemainingColor = e.Value };
+        else return;
 
         Save();
     }
 
-    private void OnColorHexLostFocus(object? sender, RoutedEventArgs e)
-    {
-        if (isInitializing) return;
-
-        if (sender == PassedColorHexBox && Color.TryParse(PassedColorHexBox.Text, out var c1))
-        {
-            PassedColorPicker.Color = c1;
-            model = model with { PassedColor = c1.ToString() };
-            Save();
-        }
-        else if (sender == CurrentColorHexBox && Color.TryParse(CurrentColorHexBox.Text, out var c2))
-        {
-            CurrentColorPicker.Color = c2;
-            model = model with { CurrentColor = c2.ToString() };
-            Save();
-        }
-        else if (sender == RemainingColorHexBox && Color.TryParse(RemainingColorHexBox.Text, out var c3))
-        {
-            RemainingColorPicker.Color = c3;
-            model = model with { RemainingColor = c3.ToString() };
-            Save();
-        }
-    }
+    /// <summary>Display-only normalisation: an unreadable stored value shows the documented fallback.</summary>
+    private static string NormalizeColor(string? value, string fallback)
+        => !string.IsNullOrWhiteSpace(value) && Color.TryParse(value, out _) ? value : fallback;
 
     private void Save()
     {

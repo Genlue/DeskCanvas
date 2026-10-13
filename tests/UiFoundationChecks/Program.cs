@@ -85,6 +85,7 @@ internal static class Program
         CheckScrollOwnership();
         CheckWindowGeometry();
         CheckIconButtonsAndSectionHeaders();
+        CheckCompoundInputs();
 
         Console.WriteLine();
         Console.WriteLine(failures == 0 ? "ALL UI FOUNDATION CHECKS PASSED" : $"{failures} CHECK(S) FAILED");
@@ -826,6 +827,323 @@ internal static class Program
     private static bool HasLocalSelector(Avalonia.Styling.Styles styles, string fragment)
         => styles.OfType<Avalonia.Styling.Style>()
             .Any(s => s.Selector?.ToString().Contains(fragment, StringComparison.Ordinal) == true);
+
+    // ---- 11. Compound inputs (W6) ---------------------------------------------------------
+
+    private static void CheckCompoundInputs()
+    {
+        Console.WriteLine("--- compound inputs: LabeledSlider + ColorInput (W6) ---");
+
+        var window = new Window { Width = 520, Height = 360 };
+        var stack = new StackPanel();
+
+        var slider = new LabeledSlider();
+        var percent = new LabeledSlider { Minimum = 5, Maximum = 95, Step = 5, Unit = "%" };
+        var editable = new LabeledSlider { Minimum = 0, Maximum = 80, Step = 1, ShowEditableValue = true, DisplayFormat = "F0" };
+        var color = new ColorInput();
+        var rgbColor = new ColorInput { ColorFormat = ColorInputFormat.Rgb, AlphaPolicy = ColorInputAlphaPolicy.ForceOpaque };
+
+        foreach (var control in new Control[] { slider, percent, editable, color, rgbColor })
+            stack.Children.Add(control);
+        window.Content = stack;
+        window.Show();
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+
+        CheckLabeledSlider(slider, percent, editable);
+        CheckColorInput(color, rgbColor);
+
+        window.Close();
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+
+        CheckCompoundInputPages();
+    }
+
+    private static void CheckLabeledSlider(LabeledSlider slider, LabeledSlider percent, LabeledSlider editable)
+    {
+        var sliderPart = Part<Slider>(slider, "SliderPart");
+        var numericPart = Part<NumericUpDown>(slider, "NumericPart");
+        var textPart = Part<TextBlock>(slider, "ValueTextPart");
+
+        Check(slider.Minimum == 0 && slider.Maximum == 100 && slider.Step == 1,
+            "LabeledSlider defaults to 0–100 step 1");
+        Check(textPart.IsVisible && !numericPart.IsVisible,
+            "the default value column is the read-only formatted text");
+        Check(Part<NumericUpDown>(editable, "NumericPart").IsVisible
+              && !Part<TextBlock>(editable, "ValueTextPart").IsVisible,
+            "ShowEditableValue swaps the text for the numeric box");
+
+        // ---- load mirrors into every part, and never commits ----
+        var commits = 0;
+        slider.ValueCommitted += (_, _) => commits++;
+
+        slider.Value = 25;
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+        Check(textPart.Text == "25", $"the value column renders the current value (\"{textPart.Text}\")");
+        Check(Part<TextBlock>(percent, "ValueTextPart").Text?.EndsWith("%", StringComparison.Ordinal) == true,
+            "Unit is appended to the rendered value");
+        Check(commits == 0, "loading a value from the model raises no ValueCommitted");
+
+        // ---- user edit: snap + clamp, mirrored to the sibling part ----
+        Part<NumericUpDown>(percent, "NumericPart").Value = 33m;
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+        Check(Math.Abs(percent.Value - 35) < 1e-9,
+            $"a user edit snaps to the step grid anchored at Minimum (33 → {percent.Value})");
+
+        percent.Value = 200;                       // loaded as-is …
+        percent.Minimum = 10;                      // … and a range/step change re-snaps it
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+        Check(Math.Abs(percent.Value - 95) < 1e-9,
+            $"an out-of-range value is clamped to Maximum ({percent.Value})");
+
+        // ---- invalid configuration normalises instead of leaking ----
+        var broken = new LabeledSlider { Minimum = 100, Maximum = 0, Step = 0, Value = 40 };
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+        Check(Part<Slider>(broken, "SliderPart").Maximum == 100 && Part<Slider>(broken, "SliderPart").Minimum == 0,
+            "an inverted range falls back to 0–100");
+        Check(Part<Slider>(broken, "SliderPart").TickFrequency == 1,
+            "a non-positive step falls back to 1");
+
+        var nan = new LabeledSlider { Minimum = 20, Maximum = 60, Value = double.NaN };
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+        Check(Part<TextBlock>(nan, "ValueTextPart").Text == "20",
+            "a non-finite value renders as the range start instead of poisoning the slider");
+
+        // ---- commit: once per completed interaction, never on a no-op ----
+        slider.Value = 40;
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+        Check(commits == 0, "an external update (another editor / profile switch) raises no commit");
+
+        sliderPart.Value = 44;                     // the drag itself
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+        Check(Math.Abs(slider.Value - 44) < 1e-9, $"a slider drag moves Value ({slider.Value})");
+        Check(commits == 0, "the drag itself does not commit — only its completion does");
+
+        RaiseDragCompleted(sliderPart);
+        Check(commits == 1, "releasing the thumb commits once");
+        RaiseDragCompleted(sliderPart);
+        Check(commits == 1, "a release without a value change stays silent (no duplicate save)");
+
+        slider.Value = 44;                         // same value pushed back by the binding
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+        RaiseDragCompleted(sliderPart);
+        Check(commits == 1, "the binding echoing the committed value back raises no second commit");
+
+        sliderPart.Value = 50;
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+        RaiseDragCompleted(sliderPart);
+        Check(commits == 2 && Math.Abs(slider.Value - 50) < 1e-9,
+            $"the next completed drag commits again ({commits} commits, value {slider.Value})");
+
+        // ---- SetCurrentValue keeps a TwoWay binding alive ----
+        var host = new SliderBindingHost { Level = 30 };
+        var bound = new LabeledSlider { Minimum = 0, Maximum = 100, Step = 1 };
+        bound.Bind(LabeledSlider.ValueProperty, new Avalonia.Data.Binding(nameof(SliderBindingHost.Level))
+        {
+            Source = host,
+            Mode = Avalonia.Data.BindingMode.TwoWay,
+        });
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+        Check(Math.Abs(bound.Value - 30) < 1e-9, "the control picks up the bound source value");
+        Part<Slider>(bound, "SliderPart").Value = 72;
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+        Check(Math.Abs(host.Level - 72) < 1e-9,
+            $"a user edit writes through the binding instead of replacing it (source {host.Level})");
+        host.Level = 18;                           // source still drives the control
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+        Check(Math.Abs(bound.Value - 18) < 1e-9,
+            $"the binding survives the edit and still pushes source changes ({bound.Value})");
+
+        // ---- the accessible name reaches the interactive parts ----
+        AutomationProperties.SetName(slider, "模糊");
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+        Check(AutomationProperties.GetName(sliderPart) == "模糊"
+              && AutomationProperties.GetName(numericPart) == "模糊",
+            "the page-level accessible name is forwarded to the slider and the numeric box");
+    }
+
+    private static void CheckColorInput(ColorInput color, ColorInput rgbColor)
+    {
+        var picker = Part<ColorPicker>(color, "PickerPart");
+        var hexBox = Part<TextBox>(color, "HexBoxPart");
+        var error = Part<TextBlock>(color, "ErrorTextPart");
+
+        // ---- load ----
+        var commits = new System.Collections.Generic.List<string?>();
+        color.ValueCommitted += (_, e) => commits.Add(e.Value);
+
+        color.Value = "#400078D4";
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+        Check(hexBox.Text == "#400078D4", $"the draft renders the stored value (\"{hexBox.Text}\")");
+        Check(!color.HasValidationError && !error.IsVisible, "a valid stored value shows no error");
+        Check(commits.Count == 0, "loading a value from the model never commits");
+
+        // ---- intermediate states never reach the model ----
+        Type(hexBox, "#");
+        Blur(hexBox);
+        Check(color.Value == "#400078D4" && commits.Count == 0,
+            "an intermediate \"#\" is never written back");
+        Check(color.HasValidationError && error.IsVisible,
+            $"an invalid draft is reported in place ({color.ValidationMessage})");
+
+        Type(hexBox, "nonsense");
+        Blur(hexBox);
+        Check(color.Value == "#400078D4" && commits.Count == 0, "an invalid draft keeps the model value");
+
+        // ---- Escape restores the draft without committing ----
+        Type(hexBox, "#123456");
+        Press(hexBox, Key.Escape);
+        Check(hexBox.Text == "#400078D4" && color.Value == "#400078D4" && commits.Count == 0,
+            "Escape restores the last valid draft and commits nothing");
+
+        // ---- a valid Hex commit goes through the same normalisation as the picker ----
+        Type(hexBox, "#7B61FF");
+        Press(hexBox, Key.Enter);
+        Check(color.Value == "#407B61FF",
+            $"a 6-digit commit keeps the previous alpha (Preserve): {color.Value}");
+        Check(commits.Count == 1 && commits[0] == "#407B61FF", "exactly one commit per accepted edit");
+
+        Type(hexBox, "#80112233");
+        Blur(hexBox);
+        Check(color.Value == "#80112233" && commits.Count == 2,
+            $"an 8-digit commit edits alpha explicitly: {color.Value}");
+
+        // ---- IsAlphaVisible=false must not silently rewrite alpha to FF ----
+        Check(!picker.IsAlphaVisible, "the row declares alpha is not edited here");
+        picker.Color = Color.Parse("#FFABCDEF");
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+        Check(color.Value == "#80ABCDEF",
+            $"a picker move with hidden alpha preserves the stored alpha (#80…, got {color.Value})");
+
+        // ---- ForceOpaque + Rgb: the row that hands alpha to another field ----
+        var rgbCommits = 0;
+        rgbColor.ValueCommitted += (_, _) => rgbCommits++;
+        rgbColor.Value = "#400078D4";
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+        Check(Part<TextBox>(rgbColor, "HexBoxPart").Text == "#0078D4",
+            "Rgb renders #RRGGBB even while the model carries an alpha");
+        Type(Part<TextBox>(rgbColor, "HexBoxPart"), "#FF0000");
+        Blur(Part<TextBox>(rgbColor, "HexBoxPart"));
+        Check(rgbColor.Value == "#FF0000" && rgbCommits == 1,
+            $"ForceOpaque + Rgb writes a plain #RRGGBB ({rgbColor.Value})");
+
+        // ---- empty: legal only when the field says so ----
+        Type(hexBox, "");
+        Blur(hexBox);
+        Check(color.HasValidationError && color.Value == "#80ABCDEF",
+            "clearing a field that does not allow empty is rejected");
+
+        color.AllowEmpty = true;
+        Type(hexBox, "");
+        Blur(hexBox);
+        Check(color.Value is null && commits.Count == 4 && commits[3] is null,
+            $"AllowEmpty: clearing commits null, the business \"automatic\" state ({commits.Count} commits)");
+        Check(!color.HasValidationError, "the empty state is not an error");
+
+        // ---- read-only keeps the colour visible but not editable ----
+        color.AllowEmpty = false;
+        color.Value = "#FF7B61FF";
+        color.IsReadOnly = true;
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+        Check(!picker.IsEnabled && hexBox.IsReadOnly,
+            "IsReadOnly disables both the picker and the draft box");
+        color.IsReadOnly = false;
+    }
+
+    private static void CheckCompoundInputPages()
+    {
+        Console.WriteLine("--- migrated pages use the compound editors (W6) ---");
+
+        var progress = new Progress.Views.Settings.ProgressSettings(new StubWidgetLayoutProvider());
+        Check(progress.GetLogicalDescendants().OfType<ColorInput>().Count() == 3,
+            $"Progress settings: three colour rows on the shared ColorInput " +
+            $"({progress.GetLogicalDescendants().OfType<ColorInput>().Count()})");
+        Check(CountStray<ColorPicker, ColorInput>(progress) == 0,
+            "Progress settings: no bare ColorPicker left outside ColorInput");
+
+        var clock = new Clock.Views.Settings.FramelessClockSettings(new StubWidgetLayoutProvider());
+        Check(clock.GetLogicalDescendants().OfType<LabeledSlider>().Count() == 2,
+            "FramelessClock settings: the two opacity rows are shared LabeledSliders");
+        Check(clock.GetLogicalDescendants().OfType<ColorInput>().Count() == 1,
+            "FramelessClock settings: the overlay colour is a shared ColorInput");
+        Check(CountStray<ColorPicker, ColorInput>(clock) == 0,
+            "FramelessClock settings: no bare ColorPicker left");
+        // The font-weight row is a *labelled* slider (thin … thick), not a slider+box pair:
+        // it is the one row this work package deliberately leaves as it is.
+        Check(CountStray<Slider, LabeledSlider>(clock) == 1,
+            $"FramelessClock settings: only the labelled font-weight slider stays bare " +
+            $"({CountStray<Slider, LabeledSlider>(clock)})");
+
+        var appearance = new DeskCanvas.Views.Pages.Appearance(new StubSettings(
+            new AppSettings(new Theme(false, null, 1, false, false, "Inter", SurfaceStyle.LiquidGlassV2),
+                [], new Layout(GridMode.Manual, true, false, true, false),
+                new Dimensions(80, 12, 16), new Region("zh-Hans"), false, null)));
+        var sliders = appearance.GetLogicalDescendants().OfType<LabeledSlider>().Count();
+        var colors = appearance.GetLogicalDescendants().OfType<ColorInput>().Count();
+        Check(sliders == 18, $"Appearance: all 18 optics rows are LabeledSliders ({sliders})");
+        Check(colors == 4, $"Appearance: all 4 colour rows are ColorInputs ({colors})");
+        Check(CountStray<Slider, LabeledSlider>(appearance) == 0 && CountStray<ColorPicker, ColorInput>(appearance) == 0,
+            "Appearance: no bare Slider / ColorPicker left");
+        // The remaining numeric boxes are real single-value rows (interval / opacity / width),
+        // not the value column of a slider — they must not have been absorbed.
+        Check(appearance.GetLogicalDescendants().OfType<NumericUpDown>()
+                .Count(n => !n.GetLogicalAncestors().OfType<LabeledSlider>().Any()) == 4,
+            "Appearance: the four non-slider numeric rows are untouched");
+    }
+
+    // ---- W6 helpers ----------------------------------------------------------------------
+
+    private static T Part<T>(object owner, string name) where T : class
+    {
+        var type = owner.GetType();
+        var field = type.GetField(name, BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public)
+            ?? throw new InvalidOperationException($"{type.Name}.{name} not found");
+        return (T)field.GetValue(owner)!;
+    }
+
+    private static void RaiseDragCompleted(Slider slider) =>
+        slider.RaiseEvent(new VectorEventArgs { RoutedEvent = Thumb.DragCompletedEvent, Vector = default });
+
+    /// <summary>Simulate typing: the control must see this as a user edit.</summary>
+    private static void Type(TextBox box, string text)
+    {
+        box.Text = text;
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+    }
+
+    private static void Blur(TextBox box)
+    {
+        box.RaiseEvent(new RoutedEventArgs(InputElement.LostFocusEvent));
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+    }
+
+    private static void Press(TextBox box, Key key)
+    {
+        box.RaiseEvent(new KeyEventArgs { RoutedEvent = InputElement.KeyDownEvent, Key = key });
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+    }
+
+    /// <summary>Leaf controls on the page that are NOT wrapped in the shared compound editor.</summary>
+    private static int CountStray<TLeaf, TWrapper>(Control root)
+        where TLeaf : Control where TWrapper : Control
+        => root.GetLogicalDescendants().OfType<TLeaf>()
+            .Count(leaf => !leaf.GetLogicalAncestors().OfType<TWrapper>().Any());
+
+    private sealed class SliderBindingHost : System.ComponentModel.INotifyPropertyChanged
+    {
+        private double level;
+        public event System.ComponentModel.PropertyChangedEventHandler? PropertyChanged;
+
+        public double Level
+        {
+            get => level;
+            set
+            {
+                if (Math.Abs(level - value) < 1e-9) return;
+                level = value;
+                PropertyChanged?.Invoke(this, new System.ComponentModel.PropertyChangedEventArgs(nameof(Level)));
+            }
+        }
+    }
 
     // ---- helpers --------------------------------------------------------------------------
 

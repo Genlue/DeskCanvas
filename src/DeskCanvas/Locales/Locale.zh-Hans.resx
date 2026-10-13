@@ -1092,4 +1092,7 @@
     <data name="Settings_General_Update_Error_Network" xml:space="preserve">
         <value>网络请求失败</value>
     </data>
+    <data name="Settings_ColorInput_InvalidFormat" xml:space="preserve">
+        <value>颜色格式无效，请输入 #RGB、#RRGGBB 或 #AARRGGBB</value>
+    </data>
 </root>

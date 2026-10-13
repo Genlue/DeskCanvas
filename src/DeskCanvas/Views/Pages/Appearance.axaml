@@ -5,15 +5,6 @@
              xmlns:locales="clr-namespace:DeskCanvas.Locales"
              x:Class="DeskCanvas.Views.Pages.Appearance"
              x:DataType="viewModels:AppearanceViewModel">
-    <UserControl.Styles>
-        <Styles>
-            <Style Selector="ColorPicker /template/ DropDownButton">
-                <Setter Property="Background" Value="{DynamicResource SystemControlBackgroundAltHighBrush}" />
-                <Setter Property="BorderBrush" Value="{DynamicResource SystemControlBackgroundBaseMediumBrush}" />
-                <Setter Property="BorderThickness" Value="1" />
-            </Style>
-        </Styles>
-    </UserControl.Styles>
     <StackPanel Orientation="Vertical" Spacing="3">
         <TextBlock FontSize="14" FontWeight="SemiBold" Margin="0 0 0 10" 
                    Text="{x:Static locales:Locale.Settings_Appearance_ApplyTheme}"/>
@@ -62,77 +53,69 @@
                 </controls:Setting>
                 <controls:Setting Title="{x:Static locales:Locale.Settings_Appearance_Glass_Blur}"
                                   Subtitle="{x:Static locales:Locale.Settings_Appearance_Glass_BlurHint}">
-                    <Grid ColumnDefinitions="*,130" Width="264" Margin="14 0 0 0">
-                        <Slider Minimum="0" Maximum="100" TickFrequency="1" IsSnapToTickEnabled="True" Margin="0 0 10 0"
-                                Value="{Binding GlassBlur, Mode=TwoWay}" VerticalAlignment="Center" AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_Glass_Blur}" />
-                        <NumericUpDown Grid.Column="1" Minimum="0" Maximum="100" Increment="1" FormatString="F0"
-                                       Value="{Binding GlassBlur}" AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_Glass_Blur}" />
-                    </Grid>
+                    <controls:LabeledSlider Width="264" Margin="14 0 0 0"
+                                            Minimum="0" Maximum="100" Step="1"
+                                            ShowEditableValue="True" DisplayFormat="F0"
+                                            Value="{Binding GlassBlur}"
+                                            AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_Glass_Blur}" />
                 </controls:Setting>
                 <controls:Setting Title="{x:Static locales:Locale.Settings_Appearance_Glass_Refraction}"
                                   Subtitle="{x:Static locales:Locale.Settings_Appearance_Glass_RefractionHint}">
-                    <Grid ColumnDefinitions="*,130" Width="264" Margin="14 0 0 0">
-                        <Slider Minimum="0" Maximum="100" TickFrequency="1" IsSnapToTickEnabled="True" Margin="0 0 10 0"
-                                Value="{Binding GlassRefraction, Mode=TwoWay}" VerticalAlignment="Center" AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_Glass_Refraction}" />
-                        <NumericUpDown Grid.Column="1" Minimum="0" Maximum="100" Increment="1" FormatString="F0"
-                                       Value="{Binding GlassRefraction}" AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_Glass_Refraction}" />
-                    </Grid>
+                    <controls:LabeledSlider Width="264" Margin="14 0 0 0"
+                                            Minimum="0" Maximum="100" Step="1"
+                                            ShowEditableValue="True" DisplayFormat="F0"
+                                            Value="{Binding GlassRefraction}"
+                                            AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_Glass_Refraction}" />
                 </controls:Setting>
                 <controls:Setting Title="{x:Static locales:Locale.Settings_Appearance_Glass_EdgeWidth}"
                                   Subtitle="{x:Static locales:Locale.Settings_Appearance_Glass_EdgeWidthHint}">
-                    <Grid ColumnDefinitions="*,130" Width="264" Margin="14 0 0 0">
-                        <Slider Minimum="0" Maximum="80" TickFrequency="1" IsSnapToTickEnabled="True" Margin="0 0 10 0"
-                                Value="{Binding GlassEdgeWidth, Mode=TwoWay}" VerticalAlignment="Center" AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_Glass_EdgeWidth}" />
-                        <NumericUpDown Grid.Column="1" Minimum="0" Maximum="80" Increment="1" FormatString="F0"
-                                       Value="{Binding GlassEdgeWidth}" AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_Glass_EdgeWidth}" />
-                    </Grid>
+                    <controls:LabeledSlider Width="264" Margin="14 0 0 0"
+                                            Minimum="0" Maximum="80" Step="1"
+                                            ShowEditableValue="True" DisplayFormat="F0"
+                                            Value="{Binding GlassEdgeWidth}"
+                                            AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_Glass_EdgeWidth}" />
                 </controls:Setting>
                 <controls:Setting Title="{x:Static locales:Locale.Settings_Appearance_Glass_Highlight}"
                                   Subtitle="{x:Static locales:Locale.Settings_Appearance_Glass_HighlightHint}">
-                    <Grid ColumnDefinitions="*,130" Width="264" Margin="14 0 0 0">
-                        <Slider Minimum="0" Maximum="100" TickFrequency="1" IsSnapToTickEnabled="True" Margin="0 0 10 0"
-                                Value="{Binding GlassHighlight, Mode=TwoWay}" VerticalAlignment="Center" AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_Glass_Highlight}" />
-                        <NumericUpDown Grid.Column="1" Minimum="0" Maximum="100" Increment="1" FormatString="F0"
-                                       Value="{Binding GlassHighlight}" AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_Glass_Highlight}" />
-                    </Grid>
+                    <controls:LabeledSlider Width="264" Margin="14 0 0 0"
+                                            Minimum="0" Maximum="100" Step="1"
+                                            ShowEditableValue="True" DisplayFormat="F0"
+                                            Value="{Binding GlassHighlight}"
+                                            AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_Glass_Highlight}" />
                 </controls:Setting>
                 <controls:Setting Title="{x:Static locales:Locale.Settings_Appearance_Glass_Dispersion}"
                                   Subtitle="{x:Static locales:Locale.Settings_Appearance_Glass_DispersionHint}">
-                    <Grid ColumnDefinitions="*,130" Width="264" Margin="14 0 0 0">
-                        <Slider Minimum="0" Maximum="100" TickFrequency="1" IsSnapToTickEnabled="True" Margin="0 0 10 0"
-                                Value="{Binding GlassDispersion, Mode=TwoWay}" VerticalAlignment="Center" AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_Glass_Dispersion}" />
-                        <NumericUpDown Grid.Column="1" Minimum="0" Maximum="100" Increment="1" FormatString="F0"
-                                       Value="{Binding GlassDispersion}" AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_Glass_Dispersion}" />
-                    </Grid>
+                    <controls:LabeledSlider Width="264" Margin="14 0 0 0"
+                                            Minimum="0" Maximum="100" Step="1"
+                                            ShowEditableValue="True" DisplayFormat="F0"
+                                            Value="{Binding GlassDispersion}"
+                                            AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_Glass_Dispersion}" />
                 </controls:Setting>
                 <controls:Setting Title="{x:Static locales:Locale.Settings_Appearance_Glass_LightAngle}"
                                   Subtitle="{x:Static locales:Locale.Settings_Appearance_Glass_LightAngleHint}">
-                    <Grid ColumnDefinitions="*,130" Width="264" Margin="14 0 0 0">
-                        <Slider Minimum="0" Maximum="360" TickFrequency="5" IsSnapToTickEnabled="True" Margin="0 0 10 0"
-                                Value="{Binding GlassLightAngle, Mode=TwoWay}" VerticalAlignment="Center" AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_Glass_LightAngle}" />
-                        <NumericUpDown Grid.Column="1" Minimum="0" Maximum="360" Increment="5" FormatString="F0"
-                                       Value="{Binding GlassLightAngle}" AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_Glass_LightAngle}" />
-                    </Grid>
+                    <controls:LabeledSlider Width="264" Margin="14 0 0 0"
+                                            Minimum="0" Maximum="360" Step="5"
+                                            ShowEditableValue="True" DisplayFormat="F0"
+                                            Value="{Binding GlassLightAngle}"
+                                            AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_Glass_LightAngle}" />
                 </controls:Setting>
                 <controls:Setting Title="{x:Static locales:Locale.Settings_Appearance_Glass_EdgeTint}"
                                   Subtitle="{x:Static locales:Locale.Settings_Appearance_Glass_EdgeTintHint}">
-                    <Grid ColumnDefinitions="*,130" Width="264" Margin="14 0 0 0">
-                        <Slider Minimum="0" Maximum="100" TickFrequency="1" IsSnapToTickEnabled="True" Margin="0 0 10 0"
-                                Value="{Binding GlassEdgeTint, Mode=TwoWay}" VerticalAlignment="Center" AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_Glass_EdgeTint}" />
-                        <NumericUpDown Grid.Column="1" Minimum="0" Maximum="100" Increment="1" FormatString="F0"
-                                       Value="{Binding GlassEdgeTint}" AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_Glass_EdgeTint}" />
-                    </Grid>
+                    <controls:LabeledSlider Width="264" Margin="14 0 0 0"
+                                            Minimum="0" Maximum="100" Step="1"
+                                            ShowEditableValue="True" DisplayFormat="F0"
+                                            Value="{Binding GlassEdgeTint}"
+                                            AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_Glass_EdgeTint}" />
                 </controls:Setting>
                 <!-- 背景清晰度: the one setting that trades live-sampling *speed* against backdrop
                      detail. Everything else here is optics; this is the sampling round's cost. -->
                 <controls:Setting Title="{x:Static locales:Locale.Settings_Appearance_Glass_BackdropClarity}"
                                   Subtitle="{x:Static locales:Locale.Settings_Appearance_Glass_BackdropClarityHint}">
-                    <Grid ColumnDefinitions="*,130" Width="264" Margin="14 0 0 0">
-                        <Slider Minimum="25" Maximum="100" TickFrequency="5" IsSnapToTickEnabled="True" Margin="0 0 10 0"
-                                Value="{Binding GlassBackdropClarity, Mode=TwoWay}" VerticalAlignment="Center" AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_Glass_BackdropClarity}" />
-                        <NumericUpDown Grid.Column="1" Minimum="25" Maximum="100" Increment="5" FormatString="F0"
-                                       Value="{Binding GlassBackdropClarity}" AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_Glass_BackdropClarity}" />
-                    </Grid>
+                    <controls:LabeledSlider Width="264" Margin="14 0 0 0"
+                                            Minimum="25" Maximum="100" Step="5"
+                                            ShowEditableValue="True" DisplayFormat="F0"
+                                            Value="{Binding GlassBackdropClarity}"
+                                            AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_Glass_BackdropClarity}" />
                 </controls:Setting>
                 <!-- The soft recipe's ingredients. 柔光玻璃 was merged into this theme, so these rows
                      are always offered: turning 柔光晕 or 光谱弥散 up above 0 is what selects the soft
@@ -140,30 +123,27 @@
                 <StackPanel IsVisible="{Binding ShowSoftGlowSettings}" Spacing="3">
                     <controls:Setting Title="{x:Static locales:Locale.Settings_Appearance_SoftGlow_Glow}"
                                       Subtitle="{x:Static locales:Locale.Settings_Appearance_SoftGlow_GlowHint}">
-                        <Grid ColumnDefinitions="*,130" Width="264" Margin="14 0 0 0">
-                            <Slider Minimum="0" Maximum="100" TickFrequency="1" IsSnapToTickEnabled="True" Margin="0 0 10 0"
-                                    Value="{Binding GlassGlow, Mode=TwoWay}" VerticalAlignment="Center" AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_SoftGlow_Glow}" />
-                            <NumericUpDown Grid.Column="1" Minimum="0" Maximum="100" Increment="1" FormatString="F0"
-                                           Value="{Binding GlassGlow}" AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_SoftGlow_Glow}" />
-                        </Grid>
+                        <controls:LabeledSlider Width="264" Margin="14 0 0 0"
+                                                Minimum="0" Maximum="100" Step="1"
+                                                ShowEditableValue="True" DisplayFormat="F0"
+                                                Value="{Binding GlassGlow}"
+                                                AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_SoftGlow_Glow}" />
                     </controls:Setting>
                     <controls:Setting Title="{x:Static locales:Locale.Settings_Appearance_SoftGlow_Spectrum}"
                                       Subtitle="{x:Static locales:Locale.Settings_Appearance_SoftGlow_SpectrumHint}">
-                        <Grid ColumnDefinitions="*,130" Width="264" Margin="14 0 0 0">
-                            <Slider Minimum="0" Maximum="100" TickFrequency="1" IsSnapToTickEnabled="True" Margin="0 0 10 0"
-                                    Value="{Binding GlassSpectrum, Mode=TwoWay}" VerticalAlignment="Center" AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_SoftGlow_Spectrum}" />
-                            <NumericUpDown Grid.Column="1" Minimum="0" Maximum="100" Increment="1" FormatString="F0"
-                                           Value="{Binding GlassSpectrum}" AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_SoftGlow_Spectrum}" />
-                        </Grid>
+                        <controls:LabeledSlider Width="264" Margin="14 0 0 0"
+                                                Minimum="0" Maximum="100" Step="1"
+                                                ShowEditableValue="True" DisplayFormat="F0"
+                                                Value="{Binding GlassSpectrum}"
+                                                AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_SoftGlow_Spectrum}" />
                     </controls:Setting>
                     <controls:Setting Title="{x:Static locales:Locale.Settings_Appearance_SoftGlow_DyeSpread}"
                                       Subtitle="{x:Static locales:Locale.Settings_Appearance_SoftGlow_DyeSpreadHint}">
-                        <Grid ColumnDefinitions="*,130" Width="264" Margin="14 0 0 0">
-                            <Slider Minimum="0" Maximum="100" TickFrequency="1" IsSnapToTickEnabled="True" Margin="0 0 10 0"
-                                    Value="{Binding GlassDyeSpread, Mode=TwoWay}" VerticalAlignment="Center" AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_SoftGlow_DyeSpread}" />
-                            <NumericUpDown Grid.Column="1" Minimum="0" Maximum="100" Increment="1" FormatString="F0"
-                                           Value="{Binding GlassDyeSpread}" AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_SoftGlow_DyeSpread}" />
-                        </Grid>
+                        <controls:LabeledSlider Width="264" Margin="14 0 0 0"
+                                                Minimum="0" Maximum="100" Step="1"
+                                                ShowEditableValue="True" DisplayFormat="F0"
+                                                Value="{Binding GlassDyeSpread}"
+                                                AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_SoftGlow_DyeSpread}" />
                     </controls:Setting>
                 </StackPanel>
             </StackPanel>
@@ -184,57 +164,51 @@
                 </controls:Setting>
                 <controls:Setting Title="{x:Static locales:Locale.Settings_Appearance_V2_Blur}"
                                   Subtitle="{x:Static locales:Locale.Settings_Appearance_V2_BlurHint}">
-                    <Grid ColumnDefinitions="*,130" Width="264" Margin="14 0 0 0">
-                        <Slider Minimum="0" Maximum="100" TickFrequency="1" IsSnapToTickEnabled="True" Margin="0 0 10 0"
-                                Value="{Binding V2Blur, Mode=TwoWay}" VerticalAlignment="Center" AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_V2_Blur}" />
-                        <NumericUpDown Grid.Column="1" Minimum="0" Maximum="100" Increment="1" FormatString="F0"
-                                       Value="{Binding V2Blur}" AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_V2_Blur}" />
-                    </Grid>
+                    <controls:LabeledSlider Width="264" Margin="14 0 0 0"
+                                            Minimum="0" Maximum="100" Step="1"
+                                            ShowEditableValue="True" DisplayFormat="F0"
+                                            Value="{Binding V2Blur}"
+                                            AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_V2_Blur}" />
                 </controls:Setting>
                 <controls:Setting Title="{x:Static locales:Locale.Settings_Appearance_V2_Refraction}"
                                   Subtitle="{x:Static locales:Locale.Settings_Appearance_V2_RefractionHint}">
-                    <Grid ColumnDefinitions="*,130" Width="264" Margin="14 0 0 0">
-                        <Slider Minimum="0" Maximum="100" TickFrequency="1" IsSnapToTickEnabled="True" Margin="0 0 10 0"
-                                Value="{Binding V2Refraction, Mode=TwoWay}" VerticalAlignment="Center" AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_V2_Refraction}" />
-                        <NumericUpDown Grid.Column="1" Minimum="0" Maximum="100" Increment="1" FormatString="F0"
-                                       Value="{Binding V2Refraction}" AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_V2_Refraction}" />
-                    </Grid>
+                    <controls:LabeledSlider Width="264" Margin="14 0 0 0"
+                                            Minimum="0" Maximum="100" Step="1"
+                                            ShowEditableValue="True" DisplayFormat="F0"
+                                            Value="{Binding V2Refraction}"
+                                            AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_V2_Refraction}" />
                 </controls:Setting>
                 <controls:Setting Title="{x:Static locales:Locale.Settings_Appearance_V2_Dispersion}"
                                   Subtitle="{x:Static locales:Locale.Settings_Appearance_V2_DispersionHint}">
-                    <Grid ColumnDefinitions="*,130" Width="264" Margin="14 0 0 0">
-                        <Slider Minimum="0" Maximum="100" TickFrequency="1" IsSnapToTickEnabled="True" Margin="0 0 10 0"
-                                Value="{Binding V2Dispersion, Mode=TwoWay}" VerticalAlignment="Center" AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_V2_Dispersion}" />
-                        <NumericUpDown Grid.Column="1" Minimum="0" Maximum="100" Increment="1" FormatString="F0"
-                                       Value="{Binding V2Dispersion}" AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_V2_Dispersion}" />
-                    </Grid>
+                    <controls:LabeledSlider Width="264" Margin="14 0 0 0"
+                                            Minimum="0" Maximum="100" Step="1"
+                                            ShowEditableValue="True" DisplayFormat="F0"
+                                            Value="{Binding V2Dispersion}"
+                                            AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_V2_Dispersion}" />
                 </controls:Setting>
                 <controls:Setting Title="{x:Static locales:Locale.Settings_Appearance_V2_Highlight}"
                                   Subtitle="{x:Static locales:Locale.Settings_Appearance_V2_HighlightHint}">
-                    <Grid ColumnDefinitions="*,130" Width="264" Margin="14 0 0 0">
-                        <Slider Minimum="0" Maximum="100" TickFrequency="1" IsSnapToTickEnabled="True" Margin="0 0 10 0"
-                                Value="{Binding V2Highlight, Mode=TwoWay}" VerticalAlignment="Center" AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_V2_Highlight}" />
-                        <NumericUpDown Grid.Column="1" Minimum="0" Maximum="100" Increment="1" FormatString="F0"
-                                       Value="{Binding V2Highlight}" AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_V2_Highlight}" />
-                    </Grid>
+                    <controls:LabeledSlider Width="264" Margin="14 0 0 0"
+                                            Minimum="0" Maximum="100" Step="1"
+                                            ShowEditableValue="True" DisplayFormat="F0"
+                                            Value="{Binding V2Highlight}"
+                                            AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_V2_Highlight}" />
                 </controls:Setting>
                 <controls:Setting Title="{x:Static locales:Locale.Settings_Appearance_V2_Vibrancy}"
                                   Subtitle="{x:Static locales:Locale.Settings_Appearance_V2_VibrancyHint}">
-                    <Grid ColumnDefinitions="*,130" Width="264" Margin="14 0 0 0">
-                        <Slider Minimum="0" Maximum="100" TickFrequency="1" IsSnapToTickEnabled="True" Margin="0 0 10 0"
-                                Value="{Binding V2Vibrancy, Mode=TwoWay}" VerticalAlignment="Center" AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_V2_Vibrancy}" />
-                        <NumericUpDown Grid.Column="1" Minimum="0" Maximum="100" Increment="1" FormatString="F0"
-                                       Value="{Binding V2Vibrancy}" AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_V2_Vibrancy}" />
-                    </Grid>
+                    <controls:LabeledSlider Width="264" Margin="14 0 0 0"
+                                            Minimum="0" Maximum="100" Step="1"
+                                            ShowEditableValue="True" DisplayFormat="F0"
+                                            Value="{Binding V2Vibrancy}"
+                                            AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_V2_Vibrancy}" />
                 </controls:Setting>
                 <controls:Setting Title="{x:Static locales:Locale.Settings_Appearance_Glass_BackdropClarity}"
                                   Subtitle="{x:Static locales:Locale.Settings_Appearance_Glass_BackdropClarityHint}">
-                    <Grid ColumnDefinitions="*,130" Width="264" Margin="14 0 0 0">
-                        <Slider Minimum="25" Maximum="100" TickFrequency="5" IsSnapToTickEnabled="True" Margin="0 0 10 0"
-                                Value="{Binding V2BackdropClarity, Mode=TwoWay}" VerticalAlignment="Center" AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_Glass_BackdropClarity}" />
-                        <NumericUpDown Grid.Column="1" Minimum="25" Maximum="100" Increment="5" FormatString="F0"
-                                       Value="{Binding V2BackdropClarity}" AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_Glass_BackdropClarity}" />
-                    </Grid>
+                    <controls:LabeledSlider Width="264" Margin="14 0 0 0"
+                                            Minimum="25" Maximum="100" Step="5"
+                                            ShowEditableValue="True" DisplayFormat="F0"
+                                            Value="{Binding V2BackdropClarity}"
+                                            AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_Glass_BackdropClarity}" />
                 </controls:Setting>
             </StackPanel>
             </StackPanel>
@@ -268,9 +242,9 @@
             <controls:Setting Icon="{DynamicResource WidgetSize}"
                 Title="{x:Static locales:Locale.Settings_Appearance_OutlineColor_Title}"
                 Subtitle="{x:Static locales:Locale.Settings_Appearance_OutlineColor_Subtitle}">
-                <ColorPicker Height="36" Width="72"
-                             Color="{Binding OutlineColor}"
-                             IsAlphaVisible="True" />
+                <controls:ColorInput Value="{Binding OutlineColorHex}"
+                                     AllowEmpty="True" IsAlphaVisible="True"
+                                     ColorFormat="Argb" AlphaPolicy="Preserve" />
             </controls:Setting>
             <controls:Setting Icon="{DynamicResource WidgetSize}"
                 Title="{x:Static locales:Locale.Settings_Appearance_OutlineWidth_Title}"
@@ -283,25 +257,20 @@
             Subtitle="{x:Static locales:Locale.Settings_Appearance_TextShadow_Subtitle}">
             <StackPanel Orientation="Vertical" Spacing="6" HorizontalAlignment="Right">
                 <ToggleSwitch IsChecked="{Binding TextShadowEnabled}" HorizontalAlignment="Right" />
-                <Grid ColumnDefinitions="*,130" Width="264" Margin="14 0 0 0"
-                      IsVisible="{Binding ShowTextShadowStrength}">
-                    <Slider Minimum="0" Maximum="100" TickFrequency="5" IsSnapToTickEnabled="True" Margin="0 0 10 0"
-                            Value="{Binding TextShadowStrength, Mode=TwoWay}" VerticalAlignment="Center"
-                            AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_TextShadow_Strength}" />
-                    <NumericUpDown Grid.Column="1" Minimum="0" Maximum="100" Increment="5" FormatString="F0"
-                                   Value="{Binding TextShadowStrength}"
-                                   AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_TextShadow_Strength}" />
-                </Grid>
+                <controls:LabeledSlider Width="264" Margin="14 0 0 0"
+                                        Minimum="0" Maximum="100" Step="5"
+                                        ShowEditableValue="True" DisplayFormat="F0"
+                                        Value="{Binding TextShadowStrength}"
+                                        AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_TextShadow_Strength}" />
             </StackPanel>
         </controls:Setting>
         <controls:Setting Icon="{DynamicResource Color}" 
                           Title="{x:Static locales:Locale.Settings_Appearance_AccentColor_Title}"
                           IsVisible="{Binding ShowAccentSetting}">
             <StackPanel Orientation="Horizontal" Spacing="16">
-                <ColorPicker Height="36" Width="72"
-                             IsVisible="{Binding ShowColorPalette}" 
-                             Color="{Binding AccentColor}" 
-                             IsAlphaVisible="False" />
+                <controls:ColorInput IsVisible="{Binding ShowColorPalette}"
+                                     Value="{Binding AccentColorHex}"
+                                     AllowEmpty="True" ColorFormat="Argb" AlphaPolicy="Preserve" />
                 <ComboBox ItemsSource="{Binding AccentComboboxItems}" MinWidth="130" 
                           SelectedItem="{Binding AccentMode}">
                     <ComboBox.ItemTemplate>
@@ -337,18 +306,16 @@
                 <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Right">
                     <TextBlock MinWidth="70" VerticalAlignment="Center"
                                Text="{x:Static locales:Locale.Settings_Appearance_SolidBackground_Dark}" />
-                    <ColorPicker Height="36" Width="72"
-                                 Color="{Binding SolidBackgroundDark}" 
-                                 IsAlphaVisible="False" />
+                    <controls:ColorInput Value="{Binding SolidBackgroundDarkHex}"
+                                         AllowEmpty="True" ColorFormat="Rgb" AlphaPolicy="ForceOpaque" />
                     <Button Content="{x:Static locales:Locale.Settings_Appearance_SolidBackground_ApplyToLight}"
                             Click="ApplySolidToLight" />
                 </StackPanel>
                 <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Right">
                     <TextBlock MinWidth="70" VerticalAlignment="Center"
                                Text="{x:Static locales:Locale.Settings_Appearance_SolidBackground_Light}" />
-                    <ColorPicker Height="36" Width="72"
-                                 Color="{Binding SolidBackgroundLight}" 
-                                 IsAlphaVisible="False" />
+                    <controls:ColorInput Value="{Binding SolidBackgroundLightHex}"
+                                         AllowEmpty="True" ColorFormat="Rgb" AlphaPolicy="ForceOpaque" />
                     <Button Content="{x:Static locales:Locale.Settings_Appearance_SolidBackground_ApplyToDark}"
                             Click="ApplySolidToDark" />
                 </StackPanel>
