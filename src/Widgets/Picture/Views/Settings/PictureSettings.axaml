@@ -4,118 +4,117 @@
              xmlns:picControls="clr-namespace:Picture.Controls"
              xmlns:locales="clr-namespace:Picture.Locales"
              xmlns:models="clr-namespace:Picture.Models"
-             x:Class="Picture.Views.Settings.PictureSettings">
+             x:Class="Picture.Views.Settings.PictureSettings"
+             controls:SettingsPage.ScrollOwnership="Host">
 
-    <ScrollViewer>
-        <StackPanel Orientation="Vertical" Spacing="6" Margin="0 0 10 0">
-            <!-- 图片库操作栏 -->
-            <controls:Setting Title="{x:Static locales:Locale.Picture_LibraryTitle}" Subtitle="{x:Static locales:Locale.Picture_LibrarySubtitle}">
-                <StackPanel Orientation="Horizontal" Spacing="8">
-                    <Button Content="{x:Static locales:Locale.Picture_AddFiles}" Click="OnAddFilesClicked" />
-                    <Button Content="{x:Static locales:Locale.Picture_AddFolder}" Click="OnAddFolderClicked" />
-                    <Button Content="{x:Static locales:Locale.Picture_Clear}" Click="OnClearAllClicked" />
+    <StackPanel Orientation="Vertical" Spacing="6" Margin="0 0 10 0">
+        <!-- 图片库操作栏 -->
+        <controls:Setting Title="{x:Static locales:Locale.Picture_LibraryTitle}" Subtitle="{x:Static locales:Locale.Picture_LibrarySubtitle}">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+                <Button Content="{x:Static locales:Locale.Picture_AddFiles}" Click="OnAddFilesClicked" />
+                <Button Content="{x:Static locales:Locale.Picture_AddFolder}" Click="OnAddFolderClicked" />
+                <Button Content="{x:Static locales:Locale.Picture_Clear}" Click="OnClearAllClicked" />
+            </StackPanel>
+        </controls:Setting>
+
+        <!-- 图片列表 -->
+        <Border Background="#15FFFFFF" CornerRadius="8" Padding="6" Margin="0 4">
+            <Grid RowDefinitions="Auto,Auto">
+                <ListBox Name="PictureListBox" MaxHeight="160" SelectionChanged="OnPictureSelected">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate x:DataType="models:PictureItem">
+                            <Grid ColumnDefinitions="*,Auto" Margin="2">
+                                <StackPanel Orientation="Vertical" VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding Name}" FontWeight="SemiBold" FontSize="12" TextTrimming="CharacterEllipsis" />
+                                    <TextBlock Text="{Binding Path}" FontSize="10" Opacity="0.6" TextTrimming="CharacterEllipsis" />
+                                </StackPanel>
+                                <Button Grid.Column="1" Content="✕" Tag="{Binding}" Click="OnDeleteItemClicked"
+                                        Padding="6,2" VerticalAlignment="Center" Margin="8 0 0 0" />
+                            </Grid>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+
+                <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="8" Margin="4 6 0 2" HorizontalAlignment="Right">
+                    <Button Content="{x:Static locales:Locale.Picture_MoveUp}" Click="OnMoveUpClicked" />
+                    <Button Content="{x:Static locales:Locale.Picture_MoveDown}" Click="OnMoveDownClicked" />
                 </StackPanel>
-            </controls:Setting>
+            </Grid>
+        </Border>
 
-            <!-- 图片列表 -->
-            <Border Background="#15FFFFFF" CornerRadius="8" Padding="6" Margin="0 4">
-                <Grid RowDefinitions="Auto,Auto">
-                    <ListBox Name="PictureListBox" MaxHeight="160" SelectionChanged="OnPictureSelected">
-                        <ListBox.ItemTemplate>
-                            <DataTemplate x:DataType="models:PictureItem">
-                                <Grid ColumnDefinitions="*,Auto" Margin="2">
-                                    <StackPanel Orientation="Vertical" VerticalAlignment="Center">
-                                        <TextBlock Text="{Binding Name}" FontWeight="SemiBold" FontSize="12" TextTrimming="CharacterEllipsis" />
-                                        <TextBlock Text="{Binding Path}" FontSize="10" Opacity="0.6" TextTrimming="CharacterEllipsis" />
-                                    </StackPanel>
-                                    <Button Grid.Column="1" Content="✕" Tag="{Binding}" Click="OnDeleteItemClicked"
-                                            Padding="6,2" VerticalAlignment="Center" Margin="8 0 0 0" />
-                                </Grid>
-                            </DataTemplate>
-                        </ListBox.ItemTemplate>
-                    </ListBox>
+        <!-- 手动裁切与取景控制面板 -->
+        <Border Name="CropPanel" Background="#15FFFFFF" CornerRadius="8" Padding="10" Margin="0 4">
+            <StackPanel Orientation="Vertical" Spacing="6">
+                <TextBlock Text="{x:Static locales:Locale.Picture_CropSettings}" FontWeight="SemiBold" FontSize="13" Margin="0 0 0 4" />
 
-                    <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="8" Margin="4 6 0 2" HorizontalAlignment="Right">
-                        <Button Content="{x:Static locales:Locale.Picture_MoveUp}" Click="OnMoveUpClicked" />
-                        <Button Content="{x:Static locales:Locale.Picture_MoveDown}" Click="OnMoveDownClicked" />
-                    </StackPanel>
+                <!-- 实时裁切取景器预览 -->
+                <picControls:CropPreviewControl Name="CropPreview" Height="170" HorizontalAlignment="Stretch" Margin="0 2 0 4" />
+                <TextBlock Text="{x:Static locales:Locale.Picture_CropTip}" FontSize="11" Opacity="0.6" HorizontalAlignment="Center" Margin="0 0 0 6" />
+
+                <!-- 水平取景偏移 (CropX) -->
+                <Grid ColumnDefinitions="140,*,50">
+                    <TextBlock Text="{x:Static locales:Locale.Picture_CropX}" VerticalAlignment="Center" FontSize="12" />
+                    <Slider Grid.Column="1" Name="CropXSlider" Minimum="0" Maximum="100" ValueChanged="OnCropSliderChanged" VerticalAlignment="Center" />
+                    <TextBlock Grid.Column="2" Name="CropXText" VerticalAlignment="Center" TextAlignment="Right" FontSize="11" />
                 </Grid>
-            </Border>
 
-            <!-- 手动裁切与取景控制面板 -->
-            <Border Name="CropPanel" Background="#15FFFFFF" CornerRadius="8" Padding="10" Margin="0 4">
-                <StackPanel Orientation="Vertical" Spacing="6">
-                    <TextBlock Text="{x:Static locales:Locale.Picture_CropSettings}" FontWeight="SemiBold" FontSize="13" Margin="0 0 0 4" />
+                <!-- 垂直取景偏移 (CropY) -->
+                <Grid ColumnDefinitions="140,*,50">
+                    <TextBlock Text="{x:Static locales:Locale.Picture_CropY}" VerticalAlignment="Center" FontSize="12" />
+                    <Slider Grid.Column="1" Name="CropYSlider" Minimum="0" Maximum="100" ValueChanged="OnCropSliderChanged" VerticalAlignment="Center" />
+                    <TextBlock Grid.Column="2" Name="CropYText" VerticalAlignment="Center" TextAlignment="Right" FontSize="11" />
+                </Grid>
 
-                    <!-- 实时裁切取景器预览 -->
-                    <picControls:CropPreviewControl Name="CropPreview" Height="170" HorizontalAlignment="Stretch" Margin="0 2 0 4" />
-                    <TextBlock Text="{x:Static locales:Locale.Picture_CropTip}" FontSize="11" Opacity="0.6" HorizontalAlignment="Center" Margin="0 0 0 6" />
+                <!-- 画面缩放倍率 (Zoom) -->
+                <Grid ColumnDefinitions="140,*,50">
+                    <TextBlock Text="{x:Static locales:Locale.Picture_Zoom}" VerticalAlignment="Center" FontSize="12" />
+                    <Slider Grid.Column="1" Name="ZoomSlider" Minimum="100" Maximum="300" ValueChanged="OnCropSliderChanged" VerticalAlignment="Center" />
+                    <TextBlock Grid.Column="2" Name="ZoomText" VerticalAlignment="Center" TextAlignment="Right" FontSize="11" />
+                </Grid>
 
-                    <!-- 水平取景偏移 (CropX) -->
-                    <Grid ColumnDefinitions="140,*,50">
-                        <TextBlock Text="{x:Static locales:Locale.Picture_CropX}" VerticalAlignment="Center" FontSize="12" />
-                        <Slider Grid.Column="1" Name="CropXSlider" Minimum="0" Maximum="100" ValueChanged="OnCropSliderChanged" VerticalAlignment="Center" />
-                        <TextBlock Grid.Column="2" Name="CropXText" VerticalAlignment="Center" TextAlignment="Right" FontSize="11" />
-                    </Grid>
-
-                    <!-- 垂直取景偏移 (CropY) -->
-                    <Grid ColumnDefinitions="140,*,50">
-                        <TextBlock Text="{x:Static locales:Locale.Picture_CropY}" VerticalAlignment="Center" FontSize="12" />
-                        <Slider Grid.Column="1" Name="CropYSlider" Minimum="0" Maximum="100" ValueChanged="OnCropSliderChanged" VerticalAlignment="Center" />
-                        <TextBlock Grid.Column="2" Name="CropYText" VerticalAlignment="Center" TextAlignment="Right" FontSize="11" />
-                    </Grid>
-
-                    <!-- 画面缩放倍率 (Zoom) -->
-                    <Grid ColumnDefinitions="140,*,50">
-                        <TextBlock Text="{x:Static locales:Locale.Picture_Zoom}" VerticalAlignment="Center" FontSize="12" />
-                        <Slider Grid.Column="1" Name="ZoomSlider" Minimum="100" Maximum="300" ValueChanged="OnCropSliderChanged" VerticalAlignment="Center" />
-                        <TextBlock Grid.Column="2" Name="ZoomText" VerticalAlignment="Center" TextAlignment="Right" FontSize="11" />
-                    </Grid>
-
-                    <!-- 九宫格快捷对齐 -->
-                    <StackPanel Orientation="Horizontal" Spacing="8" Margin="0 4 0 0" HorizontalAlignment="Center">
-                        <TextBlock Text="{x:Static locales:Locale.Picture_QuickAlign}" VerticalAlignment="Center" FontSize="11" Opacity="0.7" Margin="0 0 6 0" />
-                        <Button Content="↖" Tag="0,0" Click="OnAlignPresetClicked" Padding="6,3" />
-                        <Button Content="⬆" Tag="0.5,0" Click="OnAlignPresetClicked" Padding="6,3" />
-                        <Button Content="↗" Tag="1,0" Click="OnAlignPresetClicked" Padding="6,3" />
-                        <Button Content="⬅" Tag="0,0.5" Click="OnAlignPresetClicked" Padding="6,3" />
-                        <Button Content="⏺" Tag="0.5,0.5" Click="OnAlignPresetClicked" Padding="6,3" />
-                        <Button Content="➡" Tag="1,0.5" Click="OnAlignPresetClicked" Padding="6,3" />
-                        <Button Content="↙" Tag="0,1" Click="OnAlignPresetClicked" Padding="6,3" />
-                        <Button Content="⬇" Tag="0.5,1" Click="OnAlignPresetClicked" Padding="6,3" />
-                        <Button Content="↘" Tag="1,1" Click="OnAlignPresetClicked" Padding="6,3" />
-                    </StackPanel>
+                <!-- 九宫格快捷对齐 -->
+                <StackPanel Orientation="Horizontal" Spacing="8" Margin="0 4 0 0" HorizontalAlignment="Center">
+                    <TextBlock Text="{x:Static locales:Locale.Picture_QuickAlign}" VerticalAlignment="Center" FontSize="11" Opacity="0.7" Margin="0 0 6 0" />
+                    <Button Content="↖" Tag="0,0" Click="OnAlignPresetClicked" Padding="6,3" />
+                    <Button Content="⬆" Tag="0.5,0" Click="OnAlignPresetClicked" Padding="6,3" />
+                    <Button Content="↗" Tag="1,0" Click="OnAlignPresetClicked" Padding="6,3" />
+                    <Button Content="⬅" Tag="0,0.5" Click="OnAlignPresetClicked" Padding="6,3" />
+                    <Button Content="⏺" Tag="0.5,0.5" Click="OnAlignPresetClicked" Padding="6,3" />
+                    <Button Content="➡" Tag="1,0.5" Click="OnAlignPresetClicked" Padding="6,3" />
+                    <Button Content="↙" Tag="0,1" Click="OnAlignPresetClicked" Padding="6,3" />
+                    <Button Content="⬇" Tag="0.5,1" Click="OnAlignPresetClicked" Padding="6,3" />
+                    <Button Content="↘" Tag="1,1" Click="OnAlignPresetClicked" Padding="6,3" />
                 </StackPanel>
-            </Border>
+            </StackPanel>
+        </Border>
 
-            <!-- 轮换与显示设置 -->
-            <controls:Setting Title="{x:Static locales:Locale.Picture_Interval}">
-                <ComboBox Name="IntervalCombo" Width="180" SelectionChanged="OnSettingChanged" />
-            </controls:Setting>
+        <!-- 轮换与显示设置 -->
+        <controls:Setting Title="{x:Static locales:Locale.Picture_Interval}">
+            <ComboBox Name="IntervalCombo" Width="180" SelectionChanged="OnSettingChanged" />
+        </controls:Setting>
 
-            <controls:Setting Title="{x:Static locales:Locale.Picture_Order}">
-                <ComboBox Name="OrderCombo" Width="180" SelectionChanged="OnSettingChanged" />
-            </controls:Setting>
+        <controls:Setting Title="{x:Static locales:Locale.Picture_Order}">
+            <ComboBox Name="OrderCombo" Width="180" SelectionChanged="OnSettingChanged" />
+        </controls:Setting>
 
-            <controls:Setting Title="{x:Static locales:Locale.Picture_FitMode}">
-                <ComboBox Name="FitModeCombo" Width="180" SelectionChanged="OnSettingChanged" />
-            </controls:Setting>
+        <controls:Setting Title="{x:Static locales:Locale.Picture_FitMode}">
+            <ComboBox Name="FitModeCombo" Width="180" SelectionChanged="OnSettingChanged" />
+        </controls:Setting>
 
-            <controls:Setting Title="{x:Static locales:Locale.Picture_IsFrameless}">
-                <ToggleSwitch Name="FramelessSwitch" IsCheckedChanged="OnToggleChanged" />
-            </controls:Setting>
+        <controls:Setting Title="{x:Static locales:Locale.Picture_IsFrameless}">
+            <ToggleSwitch Name="FramelessSwitch" IsCheckedChanged="OnToggleChanged" />
+        </controls:Setting>
 
-            <controls:Setting Title="{x:Static locales:Locale.Picture_ShowCaption}">
-                <ToggleSwitch Name="CaptionSwitch" IsCheckedChanged="OnToggleChanged" />
-            </controls:Setting>
+        <controls:Setting Title="{x:Static locales:Locale.Picture_ShowCaption}">
+            <ToggleSwitch Name="CaptionSwitch" IsCheckedChanged="OnToggleChanged" />
+        </controls:Setting>
 
-            <controls:Setting Title="{x:Static locales:Locale.Picture_ClickToNext}">
-                <ToggleSwitch Name="ClickToNextSwitch" IsCheckedChanged="OnToggleChanged" />
-            </controls:Setting>
+        <controls:Setting Title="{x:Static locales:Locale.Picture_ClickToNext}">
+            <ToggleSwitch Name="ClickToNextSwitch" IsCheckedChanged="OnToggleChanged" />
+        </controls:Setting>
 
-            <controls:Setting Title="{x:Static locales:Locale.Picture_DoubleClickToOpen}">
-                <ToggleSwitch Name="DoubleClickToOpenSwitch" IsCheckedChanged="OnToggleChanged" />
-            </controls:Setting>
-        </StackPanel>
-    </ScrollViewer>
+        <controls:Setting Title="{x:Static locales:Locale.Picture_DoubleClickToOpen}">
+            <ToggleSwitch Name="DoubleClickToOpenSwitch" IsCheckedChanged="OnToggleChanged" />
+        </controls:Setting>
+    </StackPanel>
 </UserControl>

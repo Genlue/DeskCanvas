@@ -33,7 +33,16 @@
           </StackPanel>
           <Button Grid.Column="2" Content="{x:Static locales:Locale.Widget_Save}" Click="Close" />
         </Grid>
-        <ContentPresenter Grid.Row="1" IsHitTestVisible="True" Margin="0,12,0,0" Content="{Binding Control}" />
+        <!-- Single content viewport. For pages that declare SettingsPage.ScrollOwnership=Host
+             this ScrollViewer is the ONLY vertical scroll owner (page keeps no outer scroller);
+             for LegacySelf pages both bars are Disabled, so the viewport merely supplies the
+             finite box and the page's own scroller keeps working. Horizontal scrolling is
+             always disabled — pages degrade vertically, never sideways. -->
+        <ScrollViewer x:Name="ContentViewport" Grid.Row="1" Margin="0,12,0,0"
+                      VerticalScrollBarVisibility="Disabled"
+                      HorizontalScrollBarVisibility="Disabled">
+          <ContentPresenter IsHitTestVisible="True" Content="{Binding Control}" />
+        </ScrollViewer>
       </Grid>
     </Border>
 </Window>
