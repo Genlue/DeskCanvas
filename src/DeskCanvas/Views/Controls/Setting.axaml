@@ -1,26 +1,53 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:controls="clr-namespace:DeskCanvas.Views.Controls"
+             xmlns:locales="clr-namespace:DeskCanvas.Locales"
              x:Class="DeskCanvas.Views.Controls.Setting">
     <UserControl.Template>
         <ControlTemplate>
-            <Border CornerRadius="{DynamicResource HostSurfaceCornerRadius}" BorderThickness="0" Padding="16,12"
+            <Border CornerRadius="{DynamicResource HostSurfaceCornerRadius}" BorderThickness="0"
+                    Padding="{DynamicResource SettingsRowPadding}"
                     Background="{DynamicResource SystemControlBackgroundAltHighBrush}">
-                <Grid ColumnDefinitions="Auto,*,Auto">
-                    <PathIcon Grid.RowSpan="2" Height="24" VerticalAlignment="Center" Margin="0 0 14 0"
-                              IsVisible="{Binding ShowIcon, RelativeSource={RelativeSource AncestorType=controls:Setting}}"
-                              Data="{Binding Icon, RelativeSource={RelativeSource AncestorType=controls:Setting}}" />
-                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,10,0">
+                <!-- One layout engine for the whole row: icon / label group / the SINGLE editor
+                     presenter. The panel decides horizontal vs stacked during measurement (see
+                     SettingLayoutPanel); the title wraps instead of truncating, and the
+                     requirement hints take real layout space below the subtitle. -->
+                <controls:SettingLayoutPanel
+                    LayoutMode="{TemplateBinding LayoutMode}"
+                    LabelMinWidth="{TemplateBinding LabelMinWidth}"
+                    EditorMinWidth="{TemplateBinding EditorMinWidth}"
+                    EditorAlignment="{TemplateBinding EditorHorizontalAlignment}"
+                    RowGap="{DynamicResource SettingsRowGap}">
+                    <PathIcon controls:SettingLayoutPanel.Slot="Icon"
+                              Height="24" VerticalAlignment="Center"
+                              IsVisible="{TemplateBinding Icon, Converter={x:Static ObjectConverters.IsNotNull}}"
+                              Data="{TemplateBinding Icon}" />
+                    <StackPanel controls:SettingLayoutPanel.Slot="Label" VerticalAlignment="Center" Spacing="3">
                         <TextBlock VerticalAlignment="Center"
-                                   TextTrimming="CharacterEllipsis"
-                                   Text="{Binding Title, RelativeSource={RelativeSource AncestorType=controls:Setting}}" />
-                        <TextBlock IsVisible="{Binding SubtitleVisible, RelativeSource={RelativeSource AncestorType=controls:Setting}}" Opacity="0.6" FontSize="{DynamicResource FontSizeCaption}" Margin="0 3 0 0"
                                    TextWrapping="Wrap"
-                                   Text="{Binding Subtitle, RelativeSource={RelativeSource AncestorType=controls:Setting}}" />
+                                   TextTrimming="None"
+                                   Text="{TemplateBinding Title}" />
+                        <TextBlock IsVisible="{TemplateBinding Subtitle, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                                   Opacity="0.6" FontSize="{DynamicResource FontSizeCaption}"
+                                   TextWrapping="Wrap"
+                                   Text="{TemplateBinding Subtitle}" />
+                        <!-- 生效条件提示（需要管理员权限 / 重启后生效）。占用真实布局空间，
+                             不悬浮覆盖输入；文案来自中英文 Locale 资源。 -->
+                        <TextBlock IsVisible="{TemplateBinding AdminRequired}"
+                                   FontSize="{DynamicResource FontSizeCaption}"
+                                   Foreground="{DynamicResource SecondaryTextBrush}"
+                                   TextWrapping="Wrap"
+                                   Text="{x:Static locales:Locale.Settings_AdminRequired}" />
+                        <TextBlock IsVisible="{TemplateBinding RestartRequired}"
+                                   FontSize="{DynamicResource FontSizeCaption}"
+                                   Foreground="{DynamicResource SecondaryTextBrush}"
+                                   TextWrapping="Wrap"
+                                   Text="{x:Static locales:Locale.Settings_RestartRequired}" />
                     </StackPanel>
-                    <ContentPresenter Grid.Row="0" Grid.Column="2" Content="{TemplateBinding Content}"
-                                      VerticalAlignment="Center"/>
-                </Grid>
+                    <ContentPresenter controls:SettingLayoutPanel.Slot="Editor"
+                                      Content="{TemplateBinding Content}"
+                                      VerticalAlignment="Center" />
+                </controls:SettingLayoutPanel>
             </Border>
         </ControlTemplate>
     </UserControl.Template>
