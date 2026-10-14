@@ -75,4 +75,124 @@
   <data name="Hitokoto_UnfavoritedToast" xml:space="preserve">
     <value>已从本地收藏夹移除</value>
   </data>
+  <data name="Hitokoto_SectionAppearance" xml:space="preserve">
+    <value>外观与排版</value>
+  </data>
+  <data name="Hitokoto_StyleMode" xml:space="preserve">
+    <value>排版风格</value>
+  </data>
+  <data name="Hitokoto_StyleMode_Subtitle" xml:space="preserve">
+    <value>切换现代引语、古典居中诗词或极简留白排版</value>
+  </data>
+  <data name="Hitokoto_Frameless" xml:space="preserve">
+    <value>无边框桌面水印模式</value>
+  </data>
+  <data name="Hitokoto_Frameless_Subtitle" xml:space="preserve">
+    <value>隐去卡片背景与边框，让文字带柔光阴影直接浮于桌面壁纸</value>
+  </data>
+  <data name="Hitokoto_AutoHideActions" xml:space="preserve">
+    <value>常态隐藏操作按钮</value>
+  </data>
+  <data name="Hitokoto_AutoHideActions_Subtitle" xml:space="preserve">
+    <value>仅在鼠标悬停到卡片上时浮现点赞、收藏、复制与展开按钮</value>
+  </data>
+  <data name="Hitokoto_ShowCategory" xml:space="preserve">
+    <value>显示句子分类角标</value>
+  </data>
+  <data name="Hitokoto_ShowCategory_Subtitle" xml:space="preserve">
+    <value>在左上角展示「诗词」「文学」「动画」等分类胶囊</value>
+  </data>
+  <data name="Hitokoto_ShowAttribution" xml:space="preserve">
+    <value>显示出处与作者</value>
+  </data>
+  <data name="Hitokoto_ShowAttribution_Subtitle" xml:space="preserve">
+    <value>在卡片底部展示句子的作品出处与人物署名</value>
+  </data>
+  <data name="Hitokoto_ShowLikes" xml:space="preserve">
+    <value>显示社区获赞数 (Core API)</value>
+  </data>
+  <data name="Hitokoto_ShowLikes_Subtitle" xml:space="preserve">
+    <value>通过一言核心接口实时读取获赞数并支持一键点赞</value>
+  </data>
+  <data name="Hitokoto_FontFamily" xml:space="preserve">
+    <value>正文字体</value>
+  </data>
+  <data name="Hitokoto_FontFamily_Subtitle" xml:space="preserve">
+    <value>选择一言展示字体（默认随排版风格自动优选）</value>
+  </data>
+  <data name="Hitokoto_FontSize" xml:space="preserve">
+    <value>正文字号 (0 为自适应)</value>
+  </data>
+  <data name="Hitokoto_FontSize_Subtitle" xml:space="preserve">
+    <value>设为 0 时随卡片大小自动缩放，也可固定为 12–28 px</value>
+  </data>
+  <data name="Hitokoto_SectionFilter" xml:space="preserve">
+    <value>自动切换与句子过滤</value>
+  </data>
+  <data name="Hitokoto_Interval" xml:space="preserve">
+    <value>自动切换间隔</value>
+  </data>
+  <data name="Hitokoto_Interval_Subtitle" xml:space="preserve">
+    <value>除定时切换外，随时可双击卡片立即换一句</value>
+  </data>
+  <data name="Hitokoto_Categories" xml:space="preserve">
+    <value>句子分类筛选</value>
+  </data>
+  <data name="Hitokoto_Categories_Subtitle" xml:space="preserve">
+    <value>全不选或全选均代表「全部分类随机」，可勾选特定风格</value>
+  </data>
+  <data name="Hitokoto_ResetCategories" xml:space="preserve">
+    <value>重置为全部</value>
+  </data>
+  <data name="Hitokoto_MinLength" xml:space="preserve">
+    <value>最小句子长度</value>
+  </data>
+  <data name="Hitokoto_MinLength_Subtitle" xml:space="preserve">
+    <value>过滤掉过短的句子（默认 0 字）</value>
+  </data>
+  <data name="Hitokoto_MaxLength" xml:space="preserve">
+    <value>最大句子长度</value>
+  </data>
+  <data name="Hitokoto_MaxLength_Subtitle" xml:space="preserve">
+    <value>避免超长句子在小卡片中拥挤（默认 45 字）</value>
+  </data>
+  <data name="Hitokoto_CustomApi" xml:space="preserve">
+    <value>自定义语句接口地址 (可选)</value>
+  </data>
+  <data name="Hitokoto_CustomApi_Subtitle" xml:space="preserve">
+    <value>留空默认使用官方 https://v1.hitokoto.cn/，支持自建实例</value>
+  </data>
+  <data name="Hitokoto_FontDefault" xml:space="preserve">
+    <value>跟随排版默认</value>
+  </data>
+  <data name="Hitokoto_Interval_Manual" xml:space="preserve">
+    <value>仅手动切换 (双击卡片/按钮)</value>
+  </data>
+  <data name="Hitokoto_Interval_5m" xml:space="preserve">
+    <value>每 5 分钟</value>
+  </data>
+  <data name="Hitokoto_Interval_15m" xml:space="preserve">
+    <value>每 15 分钟</value>
+  </data>
+  <data name="Hitokoto_Interval_30m" xml:space="preserve">
+    <value>每 30 分钟 (推荐)</value>
+  </data>
+  <data name="Hitokoto_Interval_1h" xml:space="preserve">
+    <value>每 1 小时</value>
+  </data>
+  <data name="Hitokoto_Interval_2h" xml:space="preserve">
+    <value>每 2 小时</value>
+  </data>
+  <data name="Hitokoto_Interval_Daily" xml:space="preserve">
+    <value>每日一句 (24 小时)</value>
+  </data>
+  <data name="Hitokoto_Style_ModernQuote" xml:space="preserve">
+    <value>现代引语 (左对齐 + 引号水印)</value>
+  </data>
+  <data name="Hitokoto_Style_PoeticCenter" xml:space="preserve">
+    <value>古典诗词 (居中衬线 + 留白)</value>
+  </data>
+  <data name="Hitokoto_Style_MinimalCard" xml:space="preserve">
+    <value>极简纯粹 (无装饰水印)</value>
+  </data>
 </root>

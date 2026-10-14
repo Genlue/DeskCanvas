@@ -1,7 +1,14 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:controls="clr-namespace:DeskCanvas.Views.Controls;assembly=DeskCanvas"
-             x:Class="Hitokoto.Views.Settings.HitokotoSettings">
+             xmlns:locales="clr-namespace:Hitokoto.Locales"
+             x:Class="Hitokoto.Views.Settings.HitokotoSettings"
+             controls:SettingsPage.ScrollOwnership="Host">
+
+    <!-- 滚动契约：Host —— 页面不再自带外层 ScrollViewer，唯一竖向滚动所有者是宿主 EditWidget
+         的内容视口。分组标题走共享 dc-section-header；cat-check 只约束分类复选框的间距与字号，
+         是本页业务布局而非通用基础样式，允许保留。 -->
+
     <UserControl.Styles>
         <Style Selector="CheckBox.cat-check">
             <Setter Property="Margin" Value="0,2,12,2" />
@@ -9,74 +16,74 @@
         </Style>
     </UserControl.Styles>
 
-    <ScrollViewer VerticalScrollBarVisibility="Auto">
-        <StackPanel Orientation="Vertical" Spacing="6" Margin="0,2,8,10">
-            <TextBlock x:Name="AppearanceHeader" Classes="section-header" Text="外观与排版" Margin="2,2,0,4" />
+    <StackPanel Orientation="Vertical" Spacing="6" Margin="0,2,8,10">
+        <TextBlock Classes="dc-section-header" Text="{x:Static locales:Locale.Hitokoto_SectionAppearance}" />
 
-            <controls:Setting x:Name="StyleModeSetting" Title="排版风格" Subtitle="切换现代引语、古典居中诗词或极简留白排版">
-                <ComboBox x:Name="StyleModeCombo" MinWidth="168" SelectionChanged="OnStyleModeChanged" />
-            </controls:Setting>
+        <controls:Setting x:Name="StyleModeSetting" Title="{x:Static locales:Locale.Hitokoto_StyleMode}" Subtitle="{x:Static locales:Locale.Hitokoto_StyleMode_Subtitle}">
+            <ComboBox x:Name="StyleModeCombo" MinWidth="168" SelectionChanged="OnStyleModeChanged" />
+        </controls:Setting>
 
-            <controls:Setting x:Name="FramelessSetting" Title="无边框桌面水印模式" Subtitle="隐去卡片背景与边框，让文字带柔光阴影直接浮于桌面壁纸">
-                <ToggleSwitch x:Name="FramelessToggle" IsCheckedChanged="OnToggleChanged" />
-            </controls:Setting>
+        <controls:Setting x:Name="FramelessSetting" Title="{x:Static locales:Locale.Hitokoto_Frameless}" Subtitle="{x:Static locales:Locale.Hitokoto_Frameless_Subtitle}">
+            <ToggleSwitch x:Name="FramelessToggle" IsCheckedChanged="OnToggleChanged" />
+        </controls:Setting>
 
-            <controls:Setting x:Name="AutoHideActionsSetting" Title="常态隐藏操作按钮" Subtitle="仅在鼠标悬停到卡片上时浮现点赞、收藏、复制与展开按钮">
-                <ToggleSwitch x:Name="AutoHideActionsToggle" IsCheckedChanged="OnToggleChanged" />
-            </controls:Setting>
+        <controls:Setting x:Name="AutoHideActionsSetting" Title="{x:Static locales:Locale.Hitokoto_AutoHideActions}" Subtitle="{x:Static locales:Locale.Hitokoto_AutoHideActions_Subtitle}">
+            <ToggleSwitch x:Name="AutoHideActionsToggle" IsCheckedChanged="OnToggleChanged" />
+        </controls:Setting>
 
-            <controls:Setting x:Name="ShowCategorySetting" Title="显示句子分类角标" Subtitle="在左上角展示「诗词」「文学」「动画」等分类胶囊">
-                <ToggleSwitch x:Name="ShowCategoryToggle" IsCheckedChanged="OnToggleChanged" />
-            </controls:Setting>
+        <controls:Setting x:Name="ShowCategorySetting" Title="{x:Static locales:Locale.Hitokoto_ShowCategory}" Subtitle="{x:Static locales:Locale.Hitokoto_ShowCategory_Subtitle}">
+            <ToggleSwitch x:Name="ShowCategoryToggle" IsCheckedChanged="OnToggleChanged" />
+        </controls:Setting>
 
-            <controls:Setting x:Name="ShowAttributionSetting" Title="显示出处与作者" Subtitle="在卡片底部展示句子的作品出处与人物署名">
-                <ToggleSwitch x:Name="ShowAttributionToggle" IsCheckedChanged="OnToggleChanged" />
-            </controls:Setting>
+        <controls:Setting x:Name="ShowAttributionSetting" Title="{x:Static locales:Locale.Hitokoto_ShowAttribution}" Subtitle="{x:Static locales:Locale.Hitokoto_ShowAttribution_Subtitle}">
+            <ToggleSwitch x:Name="ShowAttributionToggle" IsCheckedChanged="OnToggleChanged" />
+        </controls:Setting>
 
-            <controls:Setting x:Name="ShowLikesSetting" Title="显示社区获赞数 (Core API)" Subtitle="通过一言核心接口实时读取获赞数并支持一键点赞">
-                <ToggleSwitch x:Name="ShowLikesToggle" IsCheckedChanged="OnToggleChanged" />
-            </controls:Setting>
+        <controls:Setting x:Name="ShowLikesSetting" Title="{x:Static locales:Locale.Hitokoto_ShowLikes}" Subtitle="{x:Static locales:Locale.Hitokoto_ShowLikes_Subtitle}">
+            <ToggleSwitch x:Name="ShowLikesToggle" IsCheckedChanged="OnToggleChanged" />
+        </controls:Setting>
 
-            <controls:Setting x:Name="FontFamilySetting" Title="正文字体" Subtitle="选择一言展示字体（默认随排版风格自动优选）">
-                <ComboBox x:Name="FontFamilyCombo" MinWidth="168" SelectionChanged="OnFontFamilyChanged" />
-            </controls:Setting>
+        <controls:Setting x:Name="FontFamilySetting" Title="{x:Static locales:Locale.Hitokoto_FontFamily}" Subtitle="{x:Static locales:Locale.Hitokoto_FontFamily_Subtitle}">
+            <ComboBox x:Name="FontFamilyCombo" MinWidth="168" SelectionChanged="OnFontFamilyChanged" />
+        </controls:Setting>
 
-            <controls:Setting x:Name="FontSizeSetting" Title="正文字号 (0 为自适应)" Subtitle="设为 0 时随卡片大小自动缩放，也可固定为 12–28 px">
-                <NumericUpDown x:Name="FontSizeBox" MinWidth="128" Minimum="0" Maximum="28"
-                               Increment="1" FormatString="F0" ParsingNumberStyle="Integer"
-                               ValueChanged="OnNumericChanged" />
-            </controls:Setting>
+        <controls:Setting x:Name="FontSizeSetting" Title="{x:Static locales:Locale.Hitokoto_FontSize}" Subtitle="{x:Static locales:Locale.Hitokoto_FontSize_Subtitle}">
+            <NumericUpDown x:Name="FontSizeBox" MinWidth="128" Minimum="0" Maximum="28"
+                           Increment="1" FormatString="F0" ParsingNumberStyle="Integer"
+                           ValueChanged="OnNumericChanged" />
+        </controls:Setting>
 
-            <TextBlock x:Name="FilterHeader" Classes="section-header" Text="自动切换与句子过滤" />
+        <TextBlock Classes="dc-section-header" Text="{x:Static locales:Locale.Hitokoto_SectionFilter}" />
 
-            <controls:Setting x:Name="IntervalSetting" Title="自动切换间隔" Subtitle="除定时切换外，随时可双击卡片立即换一句">
-                <ComboBox x:Name="IntervalCombo" MinWidth="168" SelectionChanged="OnIntervalChanged" />
-            </controls:Setting>
+        <controls:Setting x:Name="IntervalSetting" Title="{x:Static locales:Locale.Hitokoto_Interval}" Subtitle="{x:Static locales:Locale.Hitokoto_Interval_Subtitle}">
+            <ComboBox x:Name="IntervalCombo" MinWidth="168" SelectionChanged="OnIntervalChanged" />
+        </controls:Setting>
 
-            <controls:Setting x:Name="CategoriesSetting" Title="句子分类筛选" Subtitle="全不选或全选均代表「全部分类随机」，可勾选特定风格">
-                <Button x:Name="ResetCategoriesBtn" Content="重置为全部" FontSize="11" Click="OnResetCategoriesClicked" />
-            </controls:Setting>
+        <controls:Setting x:Name="CategoriesSetting" Title="{x:Static locales:Locale.Hitokoto_Categories}" Subtitle="{x:Static locales:Locale.Hitokoto_Categories_Subtitle}">
+            <Button x:Name="ResetCategoriesBtn" Content="{x:Static locales:Locale.Hitokoto_ResetCategories}" FontSize="11" Click="OnResetCategoriesClicked" />
+        </controls:Setting>
 
-            <Border Background="#12808080" CornerRadius="8" Padding="12,8" Margin="2,0,2,4">
-                <WrapPanel x:Name="CategoriesWrap" Orientation="Horizontal" />
-            </Border>
+        <!-- 分类复选框容器：#12808080 是本页业务容器的浅色底（分类胶囊面板），非通用灰文本色 -->
+        <Border Background="#12808080" CornerRadius="{DynamicResource ControlCornerRadius}" Padding="12,8" Margin="2,0,2,4">
+            <WrapPanel x:Name="CategoriesWrap" Orientation="Horizontal" />
+        </Border>
 
-            <controls:Setting x:Name="MinLengthSetting" Title="最小句子长度" Subtitle="过滤掉过短的句子（默认 0 字）">
-                <NumericUpDown x:Name="MinLengthBox" MinWidth="128" Minimum="0" Maximum="80"
-                               Increment="5" FormatString="F0" ParsingNumberStyle="Integer"
-                               ValueChanged="OnNumericChanged" />
-            </controls:Setting>
+        <controls:Setting x:Name="MinLengthSetting" Title="{x:Static locales:Locale.Hitokoto_MinLength}" Subtitle="{x:Static locales:Locale.Hitokoto_MinLength_Subtitle}">
+            <NumericUpDown x:Name="MinLengthBox" MinWidth="128" Minimum="0" Maximum="80"
+                           Increment="5" FormatString="F0" ParsingNumberStyle="Integer"
+                           ValueChanged="OnNumericChanged" />
+        </controls:Setting>
 
-            <controls:Setting x:Name="MaxLengthSetting" Title="最大句子长度" Subtitle="避免超长句子在小卡片中拥挤（默认 45 字）">
-                <NumericUpDown x:Name="MaxLengthBox" MinWidth="128" Minimum="10" Maximum="120"
-                               Increment="5" FormatString="F0" ParsingNumberStyle="Integer"
-                               ValueChanged="OnNumericChanged" />
-            </controls:Setting>
+        <controls:Setting x:Name="MaxLengthSetting" Title="{x:Static locales:Locale.Hitokoto_MaxLength}" Subtitle="{x:Static locales:Locale.Hitokoto_MaxLength_Subtitle}">
+            <NumericUpDown x:Name="MaxLengthBox" MinWidth="128" Minimum="10" Maximum="120"
+                           Increment="5" FormatString="F0" ParsingNumberStyle="Integer"
+                           ValueChanged="OnNumericChanged" />
+        </controls:Setting>
 
-            <controls:Setting x:Name="CustomApiSetting" Title="自定义语句接口地址 (可选)" Subtitle="留空默认使用官方 https://v1.hitokoto.cn/，支持自建实例">
-                <TextBox x:Name="CustomApiBox" Width="210" Watermark="https://v1.hitokoto.cn/"
-                         LostFocus="OnCustomApiLostFocus" />
-            </controls:Setting>
-        </StackPanel>
-    </ScrollViewer>
+        <controls:Setting x:Name="CustomApiSetting" Title="{x:Static locales:Locale.Hitokoto_CustomApi}" Subtitle="{x:Static locales:Locale.Hitokoto_CustomApi_Subtitle}">
+            <!-- Watermark 是官方接口地址示例（示例数据，合法例外），不是界面文案 -->
+            <TextBox x:Name="CustomApiBox" MinWidth="210" Watermark="https://v1.hitokoto.cn/"
+                     LostFocus="OnCustomApiLostFocus" />
+        </controls:Setting>
+    </StackPanel>
 </UserControl>

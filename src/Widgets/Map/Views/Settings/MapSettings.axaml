@@ -1,115 +1,121 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:controls="clr-namespace:DeskCanvas.Views.Controls;assembly=DeskCanvas"
+             xmlns:locales="clr-namespace:Map.Locales"
              xmlns:viewModels="clr-namespace:Map.ViewModels.Settings"
              x:Class="Map.Views.Settings.MapSettings"
-             x:DataType="viewModels:MapSettingsViewModel">
+             x:DataType="viewModels:MapSettingsViewModel"
+             controls:SettingsPage.ScrollOwnership="Host">
 
-    <ScrollViewer>
-        <StackPanel Orientation="Vertical" Spacing="6" Margin="0 0 10 0">
+    <!-- 滚动契约：Host —— 页面不再自带外层 ScrollViewer，唯一竖向滚动所有者是宿主 EditWidget
+         的内容视口。下拉项（城市/图源）与定位状态文本是 ViewModel 业务数据，不在本页文案资源化范围。 -->
 
-            <!-- 图源选择 -->
-            <controls:Setting x:Name="ProviderSetting" Title="地图图源" Subtitle="选择底图切片提供商与视觉风格">
-                <ComboBox MinWidth="220"
-                          ItemsSource="{Binding Providers}"
-                          SelectedItem="{Binding SelectedProviderOption}">
-                    <ComboBox.ItemTemplate>
-                        <DataTemplate x:DataType="viewModels:ProviderOption">
-                            <TextBlock Text="{Binding DisplayName}" />
-                        </DataTemplate>
-                    </ComboBox.ItemTemplate>
-                </ComboBox>
-            </controls:Setting>
+    <StackPanel Orientation="Vertical" Spacing="6" Margin="0 0 10 0">
 
-            <!-- 预设城市 -->
-            <controls:Setting x:Name="PresetSetting" Title="预设知名地点" Subtitle="快速定位到国内与全球标志性城市或商圈">
-                <ComboBox MinWidth="220"
-                          ItemsSource="{Binding Cities}"
-                          SelectedItem="{Binding SelectedCity}">
-                    <ComboBox.ItemTemplate>
-                        <DataTemplate x:DataType="viewModels:PresetCity">
-                            <TextBlock Text="{Binding Name}" />
-                        </DataTemplate>
-                    </ComboBox.ItemTemplate>
-                </ComboBox>
-            </controls:Setting>
+        <!-- 图源选择 -->
+        <controls:Setting x:Name="ProviderSetting" Title="{x:Static locales:Locale.Map_Provider}" Subtitle="{x:Static locales:Locale.Map_Provider_Subtitle}">
+            <ComboBox MinWidth="220"
+                      ItemsSource="{Binding Providers}"
+                      SelectedItem="{Binding SelectedProviderOption}">
+                <ComboBox.ItemTemplate>
+                    <DataTemplate x:DataType="viewModels:ProviderOption">
+                        <TextBlock Text="{Binding DisplayName}" />
+                    </DataTemplate>
+                </ComboBox.ItemTemplate>
+            </ComboBox>
+        </controls:Setting>
 
-            <!-- 网络自动定位 -->
-            <controls:Setting x:Name="AutoLocateSetting" Title="网络自动定位" Subtitle="基于网络 IP 自动识别并定位到您当前所在的城市">
-                <StackPanel Orientation="Vertical" Spacing="6" HorizontalAlignment="Right">
-                    <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Right">
-                        <Button x:Name="LocateNowBtn" Content="立即定位当前位置" Click="OnLocateNowClick" Padding="12,5" />
-                        <ToggleSwitch x:Name="AutoLocateToggle" IsChecked="{Binding AutoLocate}" OnContent="启动时自动定位" OffContent="手动预设" />
-                    </StackPanel>
-                    <TextBlock Text="{Binding LocationStatusText}"
-                               IsVisible="{Binding LocationStatusText.Length}"
-                               FontSize="11"
-                               Foreground="{DynamicResource SystemAccentColor}"
-                               HorizontalAlignment="Right" />
+        <!-- 预设城市 -->
+        <controls:Setting x:Name="PresetSetting" Title="{x:Static locales:Locale.Map_PresetSetting}" Subtitle="{x:Static locales:Locale.Map_PresetSetting_Subtitle}">
+            <ComboBox MinWidth="220"
+                      ItemsSource="{Binding Cities}"
+                      SelectedItem="{Binding SelectedCity}">
+                <ComboBox.ItemTemplate>
+                    <DataTemplate x:DataType="viewModels:PresetCity">
+                        <TextBlock Text="{Binding Name}" />
+                    </DataTemplate>
+                </ComboBox.ItemTemplate>
+            </ComboBox>
+        </controls:Setting>
+
+        <!-- 网络自动定位 -->
+        <controls:Setting x:Name="AutoLocateSetting" Title="{x:Static locales:Locale.Map_AutoLocate}" Subtitle="{x:Static locales:Locale.Map_AutoLocate_Subtitle}">
+            <StackPanel Orientation="Vertical" Spacing="6" HorizontalAlignment="Right">
+                <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Right">
+                    <Button x:Name="LocateNowBtn" Content="{x:Static locales:Locale.Map_LocateNow}" Click="OnLocateNowClick" Padding="12,5" />
+                    <ToggleSwitch x:Name="AutoLocateToggle" IsChecked="{Binding AutoLocate}"
+                                  OnContent="{x:Static locales:Locale.Map_AutoLocateOn}"
+                                  OffContent="{x:Static locales:Locale.Map_AutoLocateOff}" />
                 </StackPanel>
-            </controls:Setting>
+                <TextBlock Text="{Binding LocationStatusText}"
+                           IsVisible="{Binding LocationStatusText.Length}"
+                           FontSize="11"
+                           Foreground="{DynamicResource SystemAccentColor}"
+                           HorizontalAlignment="Right" />
+            </StackPanel>
+        </controls:Setting>
 
-            <!-- 地点名称与描述 -->
-            <controls:Setting x:Name="LocationNameSetting" Title="地点标题" Subtitle="显示在 iPad 风格卡片上的大字标题">
-                <TextBox MinWidth="220" Text="{Binding LocationName}" />
-            </controls:Setting>
+        <!-- 地点名称与描述 -->
+        <controls:Setting x:Name="LocationNameSetting" Title="{x:Static locales:Locale.Map_LocationNameSetting}" Subtitle="{x:Static locales:Locale.Map_LocationNameSetting_Subtitle}">
+            <TextBox MinWidth="220" Text="{Binding LocationName}" />
+        </controls:Setting>
 
-            <controls:Setting x:Name="LocationDescSetting" Title="详细地址 / 描述" Subtitle="显示在浮动卡片上的辅助副标题">
-                <TextBox MinWidth="220" Text="{Binding LocationDescription}" />
-            </controls:Setting>
+        <controls:Setting x:Name="LocationDescSetting" Title="{x:Static locales:Locale.Map_LocationDescription}" Subtitle="{x:Static locales:Locale.Map_LocationDesc_Subtitle}">
+            <TextBox MinWidth="220" Text="{Binding LocationDescription}" />
+        </controls:Setting>
 
-            <!-- 经纬度输入 -->
-            <controls:Setting x:Name="LatitudeSetting" Title="纬度 (Latitude)" Subtitle="地图中心点纬度 (-85.0 ~ 85.0)">
-                <NumericUpDown Width="140"
-                               Minimum="-85.0" Maximum="85.0"
-                               Increment="0.005"
-                               FormatString="F4"
-                               Value="{Binding Latitude}" />
-            </controls:Setting>
+        <!-- 经纬度输入 -->
+        <controls:Setting x:Name="LatitudeSetting" Title="{x:Static locales:Locale.Map_LatitudeSetting}" Subtitle="{x:Static locales:Locale.Map_LatitudeSetting_Subtitle}">
+            <NumericUpDown MinWidth="140"
+                           Minimum="-85.0" Maximum="85.0"
+                           Increment="0.005"
+                           FormatString="F4"
+                           Value="{Binding Latitude}" />
+        </controls:Setting>
 
-            <controls:Setting x:Name="LongitudeSetting" Title="经度 (Longitude)" Subtitle="地图中心点经度 (-180.0 ~ 180.0)">
-                <NumericUpDown Width="140"
-                               Minimum="-180.0" Maximum="180.0"
-                               Increment="0.005"
-                               FormatString="F4"
-                               Value="{Binding Longitude}" />
-            </controls:Setting>
+        <controls:Setting x:Name="LongitudeSetting" Title="{x:Static locales:Locale.Map_LongitudeSetting}" Subtitle="{x:Static locales:Locale.Map_LongitudeSetting_Subtitle}">
+            <NumericUpDown MinWidth="140"
+                           Minimum="-180.0" Maximum="180.0"
+                           Increment="0.005"
+                           FormatString="F4"
+                           Value="{Binding Longitude}" />
+        </controls:Setting>
 
-            <!-- 缩放级别 -->
-            <controls:Setting x:Name="ZoomSetting" Title="默认缩放等级" Subtitle="级别 3 (全球) ~ 18 (高精度街区)">
-                <Grid ColumnDefinitions="*,50" Width="220">
-                    <Slider Minimum="3" Maximum="18" Value="{Binding Zoom}" />
-                    <TextBlock Grid.Column="1" Text="{Binding Zoom, StringFormat='{}Z{0}'}"
-                               VerticalAlignment="Center" HorizontalAlignment="Right" FontWeight="SemiBold" />
-                </Grid>
-            </controls:Setting>
+        <!-- 缩放级别：共享 LabeledSlider，DisplayFormat="'Z'0" 复现原 Z{级别} 文本；
+             Zoom 模型本就是 int（MapModel 3~18 夹取），整数吸附与业务一致 -->
+        <controls:Setting x:Name="ZoomSetting" Title="{x:Static locales:Locale.Map_ZoomSetting}" Subtitle="{x:Static locales:Locale.Map_ZoomSetting_Subtitle}">
+            <controls:LabeledSlider Width="220" Minimum="3" Maximum="18" Step="1"
+                                    DisplayFormat="'Z'0"
+                                    Value="{Binding Zoom}"
+                                    AutomationProperties.Name="{x:Static locales:Locale.Map_ZoomSetting}" />
+        </controls:Setting>
 
-            <!-- 交互开关 -->
-            <controls:Setting x:Name="AllowDragSetting" Title="桌面拖拽平移" Subtitle="开启后允许鼠标直接在桌面上拖拽平移地图视野">
-                <ToggleSwitch IsChecked="{Binding AllowMapDrag}" OnContent="" OffContent="" />
-            </controls:Setting>
+        <!-- 交互开关 -->
+        <controls:Setting x:Name="AllowDragSetting" Title="{x:Static locales:Locale.Map_AllowDragSetting}" Subtitle="{x:Static locales:Locale.Map_AllowDragSetting_Subtitle}">
+            <ToggleSwitch IsChecked="{Binding AllowMapDrag}" OnContent="" OffContent="" />
+        </controls:Setting>
 
-            <controls:Setting x:Name="ShowPinSetting" Title="中心大头针" Subtitle="在地图中心显示 iPad 风格红色地标大头针">
-                <ToggleSwitch IsChecked="{Binding ShowPin}" OnContent="" OffContent="" />
-            </controls:Setting>
+        <controls:Setting x:Name="ShowPinSetting" Title="{x:Static locales:Locale.Map_ShowPinSetting}" Subtitle="{x:Static locales:Locale.Map_ShowPinSetting_Subtitle}">
+            <ToggleSwitch IsChecked="{Binding ShowPin}" OnContent="" OffContent="" />
+        </controls:Setting>
 
-            <controls:Setting x:Name="ShowInfoPillSetting" Title="浮动信息卡片" Subtitle="在地图角落展示当前地点、坐标与缩放胶囊">
-                <ToggleSwitch IsChecked="{Binding ShowInfoPill}" OnContent="" OffContent="" />
-            </controls:Setting>
+        <controls:Setting x:Name="ShowInfoPillSetting" Title="{x:Static locales:Locale.Map_ShowInfoPillSetting}" Subtitle="{x:Static locales:Locale.Map_ShowInfoPillSetting_Subtitle}">
+            <ToggleSwitch IsChecked="{Binding ShowInfoPill}" OnContent="" OffContent="" />
+        </controls:Setting>
 
-            <controls:Setting x:Name="ShowControlsSetting" Title="悬浮控制按钮组" Subtitle="在右侧展示复位、放大、缩小与图源切换按钮">
-                <ToggleSwitch IsChecked="{Binding ShowControls}" OnContent="" OffContent="" />
-            </controls:Setting>
+        <controls:Setting x:Name="ShowControlsSetting" Title="{x:Static locales:Locale.Map_ShowControlsSetting}" Subtitle="{x:Static locales:Locale.Map_ShowControlsSetting_Subtitle}">
+            <ToggleSwitch IsChecked="{Binding ShowControls}" OnContent="" OffContent="" />
+        </controls:Setting>
 
-            <controls:Setting x:Name="ShowScaleBarSetting" Title="地图比例尺" Subtitle="在中大号尺寸下展示 Apple 风格米/公里比例尺">
-                <ToggleSwitch IsChecked="{Binding ShowScaleBar}" OnContent="" OffContent="" />
-            </controls:Setting>
+        <controls:Setting x:Name="ShowScaleBarSetting" Title="{x:Static locales:Locale.Map_ShowScaleBarSetting}" Subtitle="{x:Static locales:Locale.Map_ShowScaleBarSetting_Subtitle}">
+            <ToggleSwitch IsChecked="{Binding ShowScaleBar}" OnContent="" OffContent="" />
+        </controls:Setting>
 
-            <!-- 百度地图 AK -->
-            <controls:Setting x:Name="BaiduKeySetting" Title="百度地图 AK (可选)" Subtitle="填入开发者 API Key 以获取百度官方高清切片">
-                <TextBox x:Name="BaiduKeyBox" MinWidth="220" Text="{Binding BaiduApiKey}" Watermark="留空使用高德/开源备用源" />
-            </controls:Setting>
+        <!-- 百度地图 AK -->
+        <controls:Setting x:Name="BaiduKeySetting" Title="{x:Static locales:Locale.Map_BaiduKey}" Subtitle="{x:Static locales:Locale.Map_BaiduKey_Subtitle}">
+            <TextBox x:Name="BaiduKeyBox" MinWidth="220" Text="{Binding BaiduApiKey}"
+                     Watermark="{x:Static locales:Locale.Map_BaiduKeyWatermark}" />
+        </controls:Setting>
 
-        </StackPanel>
-    </ScrollViewer>
+    </StackPanel>
 </UserControl>

@@ -48,4 +48,61 @@
     <data name="Storage_ShowNetworkDrives" xml:space="preserve">
         <value>Show network drives</value>
     </data>
+    <data name="Storage_SectionAppearance" xml:space="preserve">
+        <value>Appearance &amp; Interaction</value>
+    </data>
+    <data name="Storage_SectionFilter" xml:space="preserve">
+        <value>Drive Filtering</value>
+    </data>
+    <data name="Storage_SectionDrives" xml:space="preserve">
+        <value>Local Drives &amp; Visibility</value>
+    </data>
+    <data name="Storage_RefreshDrives" xml:space="preserve">
+        <value>Refresh Drives</value>
+    </data>
+    <data name="Storage_DrivesHint" xml:space="preserve">
+        <value>Check or uncheck drives to show or hide them in the widget; extra drives are truncated by drive letter order to fit the card size.</value>
+    </data>
+    <data name="Storage_NoDrives" xml:space="preserve">
+        <value>No available disk drives detected</value>
+    </data>
+    <data name="Storage_ShowDriveTooltip" xml:space="preserve">
+        <value>Check to show this drive in widget</value>
+    </data>
+    <data name="Storage_EnableTypeFirstTooltip" xml:space="preserve">
+        <value>Please enable this drive type above first</value>
+    </data>
+    <data name="Storage_Open" xml:space="preserve">
+        <value>Open</value>
+    </data>
+    <data name="Storage_DriveTypeSystem" xml:space="preserve">
+        <value>System</value>
+    </data>
+    <data name="Storage_DriveTypeRemovable" xml:space="preserve">
+        <value>Removable</value>
+    </data>
+    <data name="Storage_DriveTypeNetwork" xml:space="preserve">
+        <value>Network</value>
+    </data>
+    <data name="Storage_DriveTypeLocal" xml:space="preserve">
+        <value>Local</value>
+    </data>
+    <data name="Storage_UsedFreeFormat" xml:space="preserve">
+        <value>Used {0} / {1} · {2} free</value>
+    </data>
+    <data name="Storage_Mode_ProgressBarList" xml:space="preserve">
+        <value>📊 Progress Bar List</value>
+    </data>
+    <data name="Storage_Mode_RingDashboard" xml:space="preserve">
+        <value>⭕ Ring Dashboard</value>
+    </data>
+    <data name="Storage_Format_FreeSpace" xml:space="preserve">
+        <value>Free Space (e.g. 138G free)</value>
+    </data>
+    <data name="Storage_Format_UsedAndTotal" xml:space="preserve">
+        <value>Used / Total (e.g. 374G / 512G)</value>
+    </data>
+    <data name="Storage_Format_Percentage" xml:space="preserve">
+        <value>Percentage (e.g. 73%)</value>
+    </data>
 </root>

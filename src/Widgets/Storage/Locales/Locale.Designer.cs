@@ -45,5 +45,24 @@ namespace Storage.Locales {
         public static string Storage_DoubleClickToOpen => ResourceManager.GetString("Storage_DoubleClickToOpen", resourceCulture) ?? "Double-click drive to open in Explorer";
         public static string Storage_ShowRemovableDrives => ResourceManager.GetString("Storage_ShowRemovableDrives", resourceCulture) ?? "Show removable drives (USB)";
         public static string Storage_ShowNetworkDrives => ResourceManager.GetString("Storage_ShowNetworkDrives", resourceCulture) ?? "Show network drives";
+        public static string Storage_SectionAppearance => ResourceManager.GetString("Storage_SectionAppearance", resourceCulture) ?? "Appearance & Interaction";
+        public static string Storage_SectionFilter => ResourceManager.GetString("Storage_SectionFilter", resourceCulture) ?? "Drive Filtering";
+        public static string Storage_SectionDrives => ResourceManager.GetString("Storage_SectionDrives", resourceCulture) ?? "Local Drives & Visibility";
+        public static string Storage_RefreshDrives => ResourceManager.GetString("Storage_RefreshDrives", resourceCulture) ?? "Refresh Drives";
+        public static string Storage_DrivesHint => ResourceManager.GetString("Storage_DrivesHint", resourceCulture) ?? "Check or uncheck drives to show or hide them in the widget; extra drives are truncated by drive letter order to fit the card size.";
+        public static string Storage_NoDrives => ResourceManager.GetString("Storage_NoDrives", resourceCulture) ?? "No available disk drives detected";
+        public static string Storage_ShowDriveTooltip => ResourceManager.GetString("Storage_ShowDriveTooltip", resourceCulture) ?? "Check to show this drive in widget";
+        public static string Storage_EnableTypeFirstTooltip => ResourceManager.GetString("Storage_EnableTypeFirstTooltip", resourceCulture) ?? "Please enable this drive type above first";
+        public static string Storage_Open => ResourceManager.GetString("Storage_Open", resourceCulture) ?? "Open";
+        public static string Storage_DriveTypeSystem => ResourceManager.GetString("Storage_DriveTypeSystem", resourceCulture) ?? "System";
+        public static string Storage_DriveTypeRemovable => ResourceManager.GetString("Storage_DriveTypeRemovable", resourceCulture) ?? "Removable";
+        public static string Storage_DriveTypeNetwork => ResourceManager.GetString("Storage_DriveTypeNetwork", resourceCulture) ?? "Network";
+        public static string Storage_DriveTypeLocal => ResourceManager.GetString("Storage_DriveTypeLocal", resourceCulture) ?? "Local";
+        public static string Storage_UsedFreeFormat => ResourceManager.GetString("Storage_UsedFreeFormat", resourceCulture) ?? "Used {0} / {1} · {2} free";
+        public static string Storage_Mode_ProgressBarList => ResourceManager.GetString("Storage_Mode_ProgressBarList", resourceCulture) ?? "📊 Progress Bar List";
+        public static string Storage_Mode_RingDashboard => ResourceManager.GetString("Storage_Mode_RingDashboard", resourceCulture) ?? "⭕ Ring Dashboard";
+        public static string Storage_Format_FreeSpace => ResourceManager.GetString("Storage_Format_FreeSpace", resourceCulture) ?? "Free Space (e.g. 138G free)";
+        public static string Storage_Format_UsedAndTotal => ResourceManager.GetString("Storage_Format_UsedAndTotal", resourceCulture) ?? "Used / Total (e.g. 374G / 512G)";
+        public static string Storage_Format_Percentage => ResourceManager.GetString("Storage_Format_Percentage", resourceCulture) ?? "Percentage (e.g. 73%)";
     }
 }

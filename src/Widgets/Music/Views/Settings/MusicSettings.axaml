@@ -1,140 +1,147 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="clr-namespace:DeskCanvas.Views.Controls;assembly=DeskCanvas"
              xmlns:locales="clr-namespace:Music.Locales"
              xmlns:models="clr-namespace:Music.Models"
-             x:Class="Music.Views.Settings.MusicSettings">
+             x:Class="Music.Views.Settings.MusicSettings"
+             controls:SettingsPage.ScrollOwnership="Host">
 
-    <UserControl.Styles>
-        <Style Selector="Button.small-button">
-            <Setter Property="Background" Value="Transparent" />
-            <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="BorderBrush" Value="{DynamicResource ToolTipBorderBrush}" />
-            <Setter Property="CornerRadius" Value="4" />
-            <Setter Property="Padding" Value="8,3" />
-            <Setter Property="FontSize" Value="12" />
-            <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}" />
-        </Style>
-        <Style Selector="Button.small-button:pointerover">
-            <Setter Property="Background" Value="{DynamicResource SystemControlHighlightListLowBrush}" />
-        </Style>
-        <Style Selector="TextBlock.setting-label">
-            <Setter Property="FontSize" Value="13" />
-            <Setter Property="VerticalAlignment" Value="Center" />
-            <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}" />
-        </Style>
-    </UserControl.Styles>
+    <!-- 滚动契约：Host —— 页面自身不带外层 ScrollViewer，唯一竖向滚动所有者是 EditWidget 的
+         内容视口，横向恒定 Disabled，所以下面的每一行都必须靠换行而不是加宽来退化。
+         本地不再保留任何通用基础样式：分组标题走共享 dc-section-header，设置行走共享 Setting，
+         列表里的图标按钮走共享 IconButton 契约。 -->
 
-    <ScrollViewer VerticalScrollBarVisibility="Auto">
-        <StackPanel Orientation="Vertical" Spacing="8" Margin="0,2,16,8">
-            <!-- Group 1: General Display -->
-            <TextBlock x:Name="GeneralHeader" Classes="group-header" Text="常规与显示" />
+    <StackPanel Orientation="Vertical" Spacing="6" Margin="0,2,8,10">
+        <!-- 分组一：常规与显示 -->
+        <TextBlock Classes="dc-section-header" Text="{x:Static locales:Locale.Music_SectionGeneral}" />
 
-            <CheckBox x:Name="AmbientGlowToggle" Content="启用专辑封面流光氛围 (Ambient Glow)"
-                      IsCheckedChanged="OnToggleChanged" FontSize="13" />
+        <controls:Setting Title="{x:Static locales:Locale.Music_AmbientGlow}">
+            <ToggleSwitch x:Name="AmbientGlowToggle" OnContent="" OffContent=""
+                          IsCheckedChanged="OnToggleChanged" />
+        </controls:Setting>
 
-            <CheckBox x:Name="ShowProgressToggle" Content="显示时间进度条与跳转"
-                      IsCheckedChanged="OnToggleChanged" FontSize="13" />
+        <controls:Setting Title="{x:Static locales:Locale.Music_ShowProgress}">
+            <ToggleSwitch x:Name="ShowProgressToggle" OnContent="" OffContent=""
+                          IsCheckedChanged="OnToggleChanged" />
+        </controls:Setting>
 
-            <!-- Group 2: Player Management -->
-            <TextBlock x:Name="PlayersHeader" Classes="group-header" Text="音乐软件列表与智能识别" />
+        <!-- 分组二：播放器列表与智能识别 -->
+        <TextBlock Classes="dc-section-header" Text="{x:Static locales:Locale.Music_SectionPlayers}" />
 
-            <TextBlock x:Name="PlayersHintText" Text="当多个软件均处于活动状态时，列表上方的软件具有优先识别权。"
-                       FontSize="11" Opacity="0.65" TextWrapping="Wrap"
-                       Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}" Margin="0,0,0,4"/>
+        <TextBlock Text="{x:Static locales:Locale.Music_PlayersHint}"
+                   FontSize="11" Opacity="0.65" TextWrapping="Wrap"
+                   Foreground="{DynamicResource SecondaryTextBrush}" Margin="4,0,4,4" />
 
-            <!-- Action Toolbar -->
-            <WrapPanel Orientation="Horizontal" Margin="0,0,0,6">
-                <Button x:Name="AddRunningBtn" Classes="small-button" Content="从运行中添加"
-                        Click="OnAddFromRunningClicked" Margin="0,0,6,4" />
-                <Button x:Name="BrowseExeBtn" Classes="small-button" Content="浏览程序 (.exe)"
-                        Click="OnBrowseExeClicked" Margin="0,0,6,4" />
-                <Button x:Name="AddManualBtn" Classes="small-button" Content="手动添加规则"
-                        Click="OnAddManualRuleClicked" Margin="0,0,6,4" />
-                <Button x:Name="ResetDefaultsBtn" Classes="small-button" Content="恢复默认预设"
-                        Click="OnResetDefaultsClicked" Margin="0,0,6,4" />
-            </WrapPanel>
+        <!-- 操作工具栏 -->
+        <WrapPanel Orientation="Horizontal" Margin="0,0,0,2">
+            <Button Content="{x:Static locales:Locale.Music_AddFromRunning}"
+                    Click="OnAddFromRunningClicked" Margin="0,0,6,4" />
+            <Button Content="{x:Static locales:Locale.Music_BrowseExe}"
+                    Click="OnBrowseExeClicked" Margin="0,0,6,4" />
+            <Button Content="{x:Static locales:Locale.Music_AddManualRule}"
+                    Click="OnAddManualRuleClicked" Margin="0,0,6,4" />
+            <Button Content="{x:Static locales:Locale.Music_RestoreDefaults}"
+                    Click="OnResetDefaultsClicked" Margin="0,0,6,4" />
+        </WrapPanel>
 
-            <!-- Manual Add Input Panel (hidden by default) -->
-            <Border x:Name="ManualAddPanel" Background="#15888888" CornerRadius="6" Padding="8" Margin="0,0,0,6" IsVisible="False">
-                <StackPanel Spacing="6">
-                    <TextBlock x:Name="ManualAddTitle" Text="添加自定义软件规则" FontSize="12" FontWeight="SemiBold"
-                               Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}" />
-                    <Grid ColumnDefinitions="Auto,*" Margin="0,2">
-                        <TextBlock x:Name="ManualNameLabel" Classes="setting-label" Text="软件名称：" FontSize="12" Width="70"/>
-                        <TextBox x:Name="ManualNameBox" Grid.Column="1" FontSize="12" Watermark="例如：YesPlayMusic" Height="26" Padding="4,2"/>
-                    </Grid>
-                    <Grid ColumnDefinitions="Auto,*" Margin="0,2">
-                        <TextBlock x:Name="ManualPatternLabel" Classes="setting-label" Text="匹配特征：" FontSize="12" Width="70"/>
-                        <TextBox x:Name="ManualPatternBox" Grid.Column="1" FontSize="12" Watermark="例如：yesplaymusic (进程或AUMID关键字)" Height="26" Padding="4,2"/>
-                    </Grid>
-                    <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right" Margin="0,4,0,0">
-                        <Button x:Name="CancelManualBtn" Classes="small-button" Content="取消" Click="OnCancelManualAdd" />
-                        <Button x:Name="ConfirmManualBtn" Classes="small-button" Content="确定添加" Click="OnConfirmManualAdd" />
-                    </StackPanel>
+        <!-- 手动添加规则表单（默认隐藏） -->
+        <!-- 局部容器只做一层浅色调底 + 共享圆角；里面两个输入行用 MinWidth 而不是定宽，
+             英文长标签（App Name: / Pattern:）不会被汉字字符数假设截断。 -->
+        <Border x:Name="ManualAddPanel" Background="#15888888"
+                CornerRadius="{DynamicResource ControlCornerRadius}" Padding="8" Margin="0,0,0,4"
+                IsVisible="False">
+            <StackPanel Spacing="6">
+                <TextBlock Text="{x:Static locales:Locale.Music_ManualRuleTitle}"
+                           FontSize="12" FontWeight="SemiBold"
+                           Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}" />
+                <Grid ColumnDefinitions="Auto,*" Margin="0,2">
+                    <TextBlock Text="{x:Static locales:Locale.Music_ManualNameLabel}"
+                               FontSize="12" VerticalAlignment="Center" MinWidth="70" />
+                    <TextBox x:Name="ManualNameBox" Grid.Column="1" FontSize="12"
+                             Watermark="{x:Static locales:Locale.Music_ManualNameWatermark}"
+                             Height="26" Padding="4,2" />
+                </Grid>
+                <Grid ColumnDefinitions="Auto,*" Margin="0,2">
+                    <TextBlock Text="{x:Static locales:Locale.Music_ManualPatternLabel}"
+                               FontSize="12" VerticalAlignment="Center" MinWidth="70" />
+                    <TextBox x:Name="ManualPatternBox" Grid.Column="1" FontSize="12"
+                             Watermark="{x:Static locales:Locale.Music_ManualPatternWatermark}"
+                             Height="26" Padding="4,2" />
+                </Grid>
+                <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right" Margin="0,4,0,0">
+                    <Button Content="{x:Static locales:Locale.Music_Cancel}" Click="OnCancelManualAdd" />
+                    <Button Content="{x:Static locales:Locale.Music_ConfirmAdd}" Click="OnConfirmManualAdd" />
                 </StackPanel>
-            </Border>
+            </StackPanel>
+        </Border>
 
-            <!-- Running Sessions Selector (hidden by default) -->
-            <Border x:Name="RunningSessionsPanel" Background="#15888888" CornerRadius="6" Padding="8" Margin="0,0,0,6" IsVisible="False">
-                <StackPanel Spacing="6">
-                    <TextBlock x:Name="RunningSessionsTitle" Text="系统当前运行的媒体会话（点击添加）：" FontSize="12" FontWeight="SemiBold"
-                               Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}" />
-                    <ListBox x:Name="RunningSessionsList" MaxHeight="120" Background="Transparent"
-                             SelectionChanged="OnRunningSessionSelected">
-                        <ListBox.ItemTemplate>
-                            <DataTemplate x:DataType="models:ActiveSessionItem">
-                                <Grid ColumnDefinitions="*,Auto" Margin="0,2">
-                                    <StackPanel Grid.Column="0">
-                                        <TextBlock Text="{Binding Title}" FontSize="12" FontWeight="SemiBold"
-                                                   Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}"/>
-                                        <TextBlock Text="{Binding AppId}" FontSize="10" Opacity="0.6"
-                                                   Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"/>
-                                    </StackPanel>
-                                    <TextBlock Grid.Column="1" Text="{x:Static locales:Locale.Music_QuickAdd}" FontSize="11" VerticalAlignment="Center"
-                                               Foreground="{DynamicResource SystemAccentColor}" Margin="8,0,0,0"/>
-                                </Grid>
-                            </DataTemplate>
-                        </ListBox.ItemTemplate>
-                    </ListBox>
-                    <Button x:Name="CloseRunningBtn" Classes="small-button" Content="关闭" HorizontalAlignment="Right" Click="OnCloseRunningSessions" />
-                </StackPanel>
-            </Border>
-
-            <!-- Rules List -->
-            <Border Background="#10888888" CornerRadius="6" Padding="4" BorderBrush="#15FFFFFF" BorderThickness="1">
-                <ItemsControl x:Name="RulesList">
-                    <ItemsControl.ItemTemplate>
-                        <DataTemplate x:DataType="models:PlayerRule">
-                            <Border CornerRadius="4" Padding="6,4" Margin="0,1" Background="#05FFFFFF">
-                                <Grid ColumnDefinitions="Auto,*,Auto">
-                                    <!-- Enable Checkbox -->
-                                    <CheckBox Grid.Column="0" IsChecked="{Binding IsEnabled}"
-                                              IsCheckedChanged="OnRuleCheckedChange"
-                                              VerticalAlignment="Center" Margin="0,0,8,0"/>
-
-                                    <!-- Name & Pattern -->
-                                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="1">
-                                        <TextBlock Text="{Binding Name}" FontSize="12" FontWeight="SemiBold"
-                                                   Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}"/>
-                                        <TextBlock Text="{Binding MatchPattern}" FontSize="10" Opacity="0.5"
-                                                   Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"/>
-                                    </StackPanel>
-
-                                    <!-- Priority & Delete Buttons -->
-                                    <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="2" VerticalAlignment="Center">
-                                        <Button Classes="icon-button" AutomationProperties.Name="{x:Static locales:Locale.Music_MoveUp}" Content="↑" ToolTip.Tip="{x:Static locales:Locale.Music_MoveUp}"
-                                                Click="OnMoveUpClicked" Tag="{Binding}"/>
-                                        <Button Classes="icon-button" AutomationProperties.Name="{x:Static locales:Locale.Music_MoveDown}" Content="↓" ToolTip.Tip="{x:Static locales:Locale.Music_MoveDown}"
-                                                Click="OnMoveDownClicked" Tag="{Binding}"/>
-                                        <Button Classes="icon-button" AutomationProperties.Name="{x:Static locales:Locale.Music_DeleteRule}" Content="✕" ToolTip.Tip="{x:Static locales:Locale.Music_DeleteRule}"
-                                                Click="OnDeleteRuleClicked" Tag="{Binding}"/>
-                                    </StackPanel>
-                                </Grid>
-                            </Border>
+        <!-- 运行中的媒体会话选择器（默认隐藏） -->
+        <Border x:Name="RunningSessionsPanel" Background="#15888888"
+                CornerRadius="{DynamicResource ControlCornerRadius}" Padding="8" Margin="0,0,0,4"
+                IsVisible="False">
+            <StackPanel Spacing="6">
+                <TextBlock Text="{x:Static locales:Locale.Music_RunningSessionsTitle}"
+                           FontSize="12" FontWeight="SemiBold"
+                           Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}" />
+                <ListBox x:Name="RunningSessionsList" MaxHeight="120" Background="Transparent"
+                         SelectionChanged="OnRunningSessionSelected">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate x:DataType="models:ActiveSessionItem">
+                            <Grid ColumnDefinitions="*,Auto" Margin="0,2">
+                                <StackPanel Grid.Column="0">
+                                    <TextBlock Text="{Binding Title}" FontSize="12" FontWeight="SemiBold"
+                                               Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}" />
+                                    <TextBlock Text="{Binding AppId}" FontSize="10" Opacity="0.6"
+                                               Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}" />
+                                </StackPanel>
+                                <TextBlock Grid.Column="1" Text="{x:Static locales:Locale.Music_QuickAdd}"
+                                           FontSize="11" VerticalAlignment="Center"
+                                           Foreground="{DynamicResource SystemAccentColor}" Margin="8,0,0,0" />
+                            </Grid>
                         </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>
-            </Border>
-        </StackPanel>
-    </ScrollViewer>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+                <Button Content="{x:Static locales:Locale.Music_Close}" HorizontalAlignment="Right"
+                        Click="OnCloseRunningSessions" />
+            </StackPanel>
+        </Border>
+
+        <!-- 规则列表 -->
+        <Border Background="#10888888" CornerRadius="{DynamicResource ControlCornerRadius}" Padding="4"
+                BorderBrush="#15FFFFFF" BorderThickness="1">
+            <ItemsControl x:Name="RulesList">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="models:PlayerRule">
+                        <Border CornerRadius="{DynamicResource ControlCornerRadius}" Padding="6,4" Margin="0,1"
+                                Background="#05FFFFFF">
+                            <Grid ColumnDefinitions="Auto,*,Auto">
+                                <!-- 启用开关 -->
+                                <CheckBox Grid.Column="0" IsChecked="{Binding IsEnabled}"
+                                          IsCheckedChanged="OnRuleCheckedChange"
+                                          VerticalAlignment="Center" Margin="0,0,8,0" />
+
+                                <!-- 名称与匹配特征（业务数据，原样显示） -->
+                                <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="1">
+                                    <TextBlock Text="{Binding Name}" FontSize="12" FontWeight="SemiBold"
+                                               Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}" />
+                                    <TextBlock Text="{Binding MatchPattern}" FontSize="10" Opacity="0.5"
+                                               Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}" />
+                                </StackPanel>
+
+                                <!-- 优先级与删除：共享紧凑工具条按钮族 -->
+                                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="2" VerticalAlignment="Center">
+                                    <Button Classes="icon-button" AutomationProperties.Name="{x:Static locales:Locale.Music_MoveUp}" Content="↑" ToolTip.Tip="{x:Static locales:Locale.Music_MoveUp}"
+                                            Click="OnMoveUpClicked" Tag="{Binding}" />
+                                    <Button Classes="icon-button" AutomationProperties.Name="{x:Static locales:Locale.Music_MoveDown}" Content="↓" ToolTip.Tip="{x:Static locales:Locale.Music_MoveDown}"
+                                            Click="OnMoveDownClicked" Tag="{Binding}" />
+                                    <Button Classes="icon-button" AutomationProperties.Name="{x:Static locales:Locale.Music_DeleteRule}" Content="✕" ToolTip.Tip="{x:Static locales:Locale.Music_DeleteRule}"
+                                            Click="OnDeleteRuleClicked" Tag="{Binding}" />
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </Border>
+    </StackPanel>
 </UserControl>

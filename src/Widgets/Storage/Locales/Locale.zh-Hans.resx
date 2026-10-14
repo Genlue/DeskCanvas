@@ -48,4 +48,61 @@
     <data name="Storage_ShowNetworkDrives" xml:space="preserve">
         <value>显示网络映射驱动器</value>
     </data>
+    <data name="Storage_SectionAppearance" xml:space="preserve">
+        <value>外观与交互</value>
+    </data>
+    <data name="Storage_SectionFilter" xml:space="preserve">
+        <value>驱动器过滤</value>
+    </data>
+    <data name="Storage_SectionDrives" xml:space="preserve">
+        <value>本机磁盘详情与显隐管理</value>
+    </data>
+    <data name="Storage_RefreshDrives" xml:space="preserve">
+        <value>刷新磁盘</value>
+    </data>
+    <data name="Storage_DrivesHint" xml:space="preserve">
+        <value>可单独勾选或隐藏不想在小组件中展示的分区；超出会按盘符顺序自动截取适配卡片尺寸。</value>
+    </data>
+    <data name="Storage_NoDrives" xml:space="preserve">
+        <value>未检测到可用的磁盘驱动器</value>
+    </data>
+    <data name="Storage_ShowDriveTooltip" xml:space="preserve">
+        <value>勾选在小组件中显示该分区</value>
+    </data>
+    <data name="Storage_EnableTypeFirstTooltip" xml:space="preserve">
+        <value>请先在上方开启对应驱动器类型</value>
+    </data>
+    <data name="Storage_Open" xml:space="preserve">
+        <value>打开</value>
+    </data>
+    <data name="Storage_DriveTypeSystem" xml:space="preserve">
+        <value>系统盘</value>
+    </data>
+    <data name="Storage_DriveTypeRemovable" xml:space="preserve">
+        <value>可移动盘</value>
+    </data>
+    <data name="Storage_DriveTypeNetwork" xml:space="preserve">
+        <value>网络盘</value>
+    </data>
+    <data name="Storage_DriveTypeLocal" xml:space="preserve">
+        <value>本地盘</value>
+    </data>
+    <data name="Storage_UsedFreeFormat" xml:space="preserve">
+        <value>已用 {0} / {1} · 剩余 {2}</value>
+    </data>
+    <data name="Storage_Mode_ProgressBarList" xml:space="preserve">
+        <value>📊 进度条列表</value>
+    </data>
+    <data name="Storage_Mode_RingDashboard" xml:space="preserve">
+        <value>⭕ 圆环仪表盘</value>
+    </data>
+    <data name="Storage_Format_FreeSpace" xml:space="preserve">
+        <value>剩余可用 (如 138G 可用)</value>
+    </data>
+    <data name="Storage_Format_UsedAndTotal" xml:space="preserve">
+        <value>已用 / 总计 (如 374G / 512G)</value>
+    </data>
+    <data name="Storage_Format_Percentage" xml:space="preserve">
+        <value>使用率百分比 (如 73%)</value>
+    </data>
 </root>

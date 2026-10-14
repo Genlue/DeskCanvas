@@ -7,6 +7,7 @@ using System.Text.Json;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
+using Music.Locales;
 using Music.Models;
 using Music.Services;
 using DeskCanvas.Core.Interfaces;
@@ -23,8 +24,39 @@ public partial class MusicSettings : UserControl
     private MusicModel model;
     private bool isInitializing = true;
 
-    private static bool IsZh =>
-        CultureInfo.CurrentUICulture.TwoLetterISOLanguageName.Equals("zh", StringComparison.OrdinalIgnoreCase);
+    /// <summary>The last "add from running" probe found no session, so the single row in the list is
+    /// the informational placeholder and must not be treated as a player to add.</summary>
+    private bool sessionsEmpty;
+
+    // 预设规则的显示名。这些名字历史上以中文落盘（既有设置文件里存的就是中文，不能改写），
+    // 所以在 zh-Hans 资源里读到的原值既是"模型里存的样子"，也是"中文环境下要显示的字"；
+    // 其它语言用同一资源键.CurrentUICulture 的值替换，用户自建的规则名则原样保留。
+    private static string[] PresetRuleNameKeys { get; } =
+    [
+        nameof(Locale.Music_Player_Netease),
+        nameof(Locale.Music_Player_QQMusic),
+        nameof(Locale.Music_Player_Soda),
+        nameof(Locale.Music_Player_Kugou),
+        nameof(Locale.Music_Player_Kuwo),
+        nameof(Locale.Music_Player_Wmp),
+        nameof(Locale.Music_Player_Browser),
+    ];
+
+    private static Dictionary<string, string> BuildPresetNameTranslations()
+    {
+        var zh = CultureInfo.GetCultureInfo("zh-Hans");
+        var map = new Dictionary<string, string>(StringComparer.Ordinal);
+        foreach (var key in PresetRuleNameKeys)
+        {
+            var stored = Locale.ResourceManager.GetString(key, zh);
+            var display = Locale.ResourceManager.GetString(key, Locale.Culture);
+            if (!string.IsNullOrEmpty(stored) && !string.IsNullOrEmpty(display))
+            {
+                map[stored] = display;
+            }
+        }
+        return map;
+    }
 
     public MusicSettings() : this(null!) { }
 
@@ -35,28 +67,6 @@ public partial class MusicSettings : UserControl
         model = widgetLayoutProvider != null ? (ReadModel(widgetLayoutProvider.Get()) ?? new MusicModel()) : new MusicModel();
 
         InitializeComponent();
-
-        if (!IsZh)
-        {
-            GeneralHeader.Text = "General & Display";
-            AmbientGlowToggle.Content = "Enable Album Cover Ambient Glow";
-            ShowProgressToggle.Content = "Show Timeline Progress Bar & Scrubber";
-            PlayersHeader.Text = "Music Players & Smart Detection";
-            PlayersHintText.Text = "When multiple apps are active, players higher in the list take priority.";
-            AddRunningBtn.Content = "Add from Running";
-            BrowseExeBtn.Content = "Browse App (.exe)";
-            AddManualBtn.Content = "Add Custom Rule";
-            ResetDefaultsBtn.Content = "Restore Defaults";
-            ManualAddTitle.Text = "Add Custom Player Rule";
-            ManualNameLabel.Text = "App Name:";
-            ManualNameBox.Watermark = "e.g. YesPlayMusic";
-            ManualPatternLabel.Text = "Pattern:";
-            ManualPatternBox.Watermark = "e.g. yesplaymusic (process or AUMID keyword)";
-            CancelManualBtn.Content = "Cancel";
-            ConfirmManualBtn.Content = "Add";
-            RunningSessionsTitle.Text = "Active Media Sessions (Click to Add):";
-            CloseRunningBtn.Content = "Close";
-        }
 
         AmbientGlowToggle.IsChecked = model.AmbientGlow;
         ShowProgressToggle.IsChecked = model.ShowProgressBar;
@@ -88,21 +98,15 @@ public partial class MusicSettings : UserControl
 
     private void RefreshList()
     {
-        if (!IsZh)
+        var translations = BuildPresetNameTranslations();
+        if (translations.Count > 0)
         {
             foreach (var r in model.PlayerRules)
             {
-                r.Name = r.Name switch
+                if (translations.TryGetValue(r.Name, out var display))
                 {
-                    "网易云音乐" => "NetEase Cloud Music",
-                    "QQ音乐" => "QQ Music",
-                    "汽水音乐" => "Soda Music",
-                    "酷狗音乐" => "KuGou Music",
-                    "酷我音乐" => "Kuwo Music",
-                    "Windows 媒体播放器" => "Windows Media Player",
-                    "浏览器 (Edge/Chrome/Firefox)" => "Browsers (Edge/Chrome/Firefox)",
-                    _ => r.Name
-                };
+                    r.Name = display;
+                }
             }
         }
         RulesList.ItemsSource = null;
@@ -180,11 +184,11 @@ public partial class MusicSettings : UserControl
 
         var files = await topLevel.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
         {
-            Title = IsZh ? "选择音乐播放器可执行文件" : "Select Music Player Executable",
+            Title = Locale.Music_BrowseExeTitle,
             AllowMultiple = false,
             FileTypeFilter =
             [
-                new FilePickerFileType(IsZh ? "应用程序" : "Applications") { Patterns = ["*.exe"] }
+                new FilePickerFileType(Locale.Music_BrowseExeFilter) { Patterns = ["*.exe"] }
             ]
         });
 
@@ -213,14 +217,15 @@ public partial class MusicSettings : UserControl
         // The page can be unloaded while the picker is open; a torn-down client cannot serve it.
         if (service.IsDisposed) return;
 
-        if (sessions.Count == 0)
+        // Remembering emptiness replaces the old "does the AppId contain 请先在?" sentinel string
+        // test — whether a list row is selectable must not depend on its localized caption.
+        sessionsEmpty = sessions.Count == 0;
+
+        if (sessionsEmpty)
         {
             RunningSessionsList.ItemsSource = new List<ActiveSessionItem>
             {
-                new(
-                    IsZh ? "未检测到正在运行的媒体软件" : "No running media sessions detected",
-                    IsZh ? "请先在任意音乐软件中播放音乐" : "Please start playing music in any audio player first"
-                )
+                new(Locale.Music_NoSessionsTitle, Locale.Music_NoSessionsHint)
             };
         }
         else
@@ -239,7 +244,7 @@ public partial class MusicSettings : UserControl
         if (RunningSessionsList.SelectedItem is ActiveSessionItem item)
         {
             var appId = item.AppId;
-            if (!string.IsNullOrWhiteSpace(appId) && !appId.Contains("请先在") && !appId.Contains("Please start"))
+            if (!sessionsEmpty && !string.IsNullOrWhiteSpace(appId))
             {
                 var friendlyName = Path.GetFileNameWithoutExtension(appId);
                 if (string.IsNullOrWhiteSpace(friendlyName)) friendlyName = appId;

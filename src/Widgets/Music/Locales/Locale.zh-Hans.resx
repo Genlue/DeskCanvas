@@ -66,4 +66,94 @@
     <data name="Music_DeleteRule" xml:space="preserve">
         <value>删除规则</value>
     </data>
+    <data name="Music_SectionGeneral" xml:space="preserve">
+        <value>常规与显示</value>
+    </data>
+    <data name="Music_AmbientGlow" xml:space="preserve">
+        <value>启用专辑封面流光氛围 (Ambient Glow)</value>
+    </data>
+    <data name="Music_ShowProgress" xml:space="preserve">
+        <value>显示时间进度条与跳转</value>
+    </data>
+    <data name="Music_SectionPlayers" xml:space="preserve">
+        <value>音乐软件列表与智能识别</value>
+    </data>
+    <data name="Music_PlayersHint" xml:space="preserve">
+        <value>当多个软件均处于活动状态时，列表上方的软件具有优先识别权。</value>
+    </data>
+    <data name="Music_AddFromRunning" xml:space="preserve">
+        <value>从运行中添加</value>
+    </data>
+    <data name="Music_BrowseExe" xml:space="preserve">
+        <value>浏览程序 (.exe)</value>
+    </data>
+    <data name="Music_AddManualRule" xml:space="preserve">
+        <value>手动添加规则</value>
+    </data>
+    <data name="Music_RestoreDefaults" xml:space="preserve">
+        <value>恢复默认预设</value>
+    </data>
+    <data name="Music_ManualRuleTitle" xml:space="preserve">
+        <value>添加自定义软件规则</value>
+    </data>
+    <data name="Music_ManualNameLabel" xml:space="preserve">
+        <value>软件名称：</value>
+    </data>
+    <data name="Music_ManualNameWatermark" xml:space="preserve">
+        <value>例如：YesPlayMusic</value>
+    </data>
+    <data name="Music_ManualPatternLabel" xml:space="preserve">
+        <value>匹配特征：</value>
+    </data>
+    <data name="Music_ManualPatternWatermark" xml:space="preserve">
+        <value>例如：yesplaymusic (进程或AUMID关键字)</value>
+    </data>
+    <data name="Music_Cancel" xml:space="preserve">
+        <value>取消</value>
+    </data>
+    <data name="Music_ConfirmAdd" xml:space="preserve">
+        <value>确定添加</value>
+    </data>
+    <data name="Music_RunningSessionsTitle" xml:space="preserve">
+        <value>系统当前运行的媒体会话（点击添加）：</value>
+    </data>
+    <data name="Music_Close" xml:space="preserve">
+        <value>关闭</value>
+    </data>
+    <data name="Music_BrowseExeTitle" xml:space="preserve">
+        <value>选择音乐播放器可执行文件</value>
+    </data>
+    <data name="Music_BrowseExeFilter" xml:space="preserve">
+        <value>应用程序</value>
+    </data>
+    <data name="Music_NoSessionsTitle" xml:space="preserve">
+        <value>未检测到正在运行的媒体软件</value>
+    </data>
+    <data name="Music_NoSessionsHint" xml:space="preserve">
+        <value>请先在任意音乐软件中播放音乐</value>
+    </data>
+    <!-- 预设规则名在模型里以中文存储（历史设置文件已落盘，不能改写）；下面三个跨语言映射
+         同时充当"模型存的值 → 当前语言显示值"的对照表，故 zh-Hans 侧必须与 PresetPlayers 里
+         落盘的中文逐字节一致。 -->
+    <data name="Music_Player_Netease" xml:space="preserve">
+        <value>网易云音乐</value>
+    </data>
+    <data name="Music_Player_QQMusic" xml:space="preserve">
+        <value>QQ音乐</value>
+    </data>
+    <data name="Music_Player_Soda" xml:space="preserve">
+        <value>汽水音乐</value>
+    </data>
+    <data name="Music_Player_Kugou" xml:space="preserve">
+        <value>酷狗音乐</value>
+    </data>
+    <data name="Music_Player_Kuwo" xml:space="preserve">
+        <value>酷我音乐</value>
+    </data>
+    <data name="Music_Player_Wmp" xml:space="preserve">
+        <value>Windows 媒体播放器</value>
+    </data>
+    <data name="Music_Player_Browser" xml:space="preserve">
+        <value>浏览器 (Edge/Chrome/Firefox)</value>
+    </data>
 </root>
