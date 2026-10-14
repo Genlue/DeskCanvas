@@ -49,115 +49,100 @@
         </Style>
     </Window.Styles>
 
-    <Panel Background="Transparent" PointerPressed="OnRootPointerPressed">
-        <!-- Main Card Border with Zoom Transform -->
-        <Border x:Name="CardBorder"
-                Margin="0"
-                CornerRadius="18"
-                BorderThickness="1"
-                RenderTransformOrigin="0.5,0.5"
-                ClipToBounds="True">
-            <Border.RenderTransform>
-                <ScaleTransform ScaleX="0.95" ScaleY="0.95" />
-            </Border.RenderTransform>
+    <!-- The shared secondary-panel shell (W7) owns the card, the glass, the header with the
+         drag area and the shared close button, and the backdrop-dismiss rule. This window
+         declares ONLY business content. The shell's default ContentPadding (16,14,16,12)
+         replaces the old content grid margin; the header strip replaces the old title row
+         (same 0,0,0,10 spacing) and the drag is confined to it — the list, the search box and
+         the tabs never move the window any more. -->
+    <controls:SecondaryPanelShell>
+        <controls:SecondaryPanelShell.HeaderContent>
+            <!-- Dynamic title: count badge next to the localized popup title. -->
+            <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                <TextBlock Text="{x:Static locales:Locale.Tools_Clipboard_PopupTitle}" FontSize="15" FontWeight="Bold" />
+                <Border Background="#20808080" CornerRadius="8" Padding="6,2" VerticalAlignment="Center">
+                    <TextBlock x:Name="CountBadge" Text="0" FontSize="11" FontWeight="SemiBold"
+                               Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}" />
+                </Border>
+            </StackPanel>
+        </controls:SecondaryPanelShell.HeaderContent>
 
-            <Panel>
-                <!-- LiquidGlass surface: the same material path the widget card uses —
-                     live wallpaper sampling when enabled, the frozen shared frame when not. -->
-                <controls:LiquidGlassSurface x:Name="LiquidGlassSurfaceControl" CornerRadius="18" Margin="0" IsVisible="False" />
+        <!-- Business content: search, category tabs, history items. -->
+        <Grid RowDefinitions="Auto,Auto,*">
+            <!-- Search Box -->
+            <Border Grid.Row="0" Background="#14808080" CornerRadius="10" Padding="8,4" Margin="0,0,0,8">
+                <Grid ColumnDefinitions="Auto,*">
+                    <TextBlock Grid.Column="0" Text="🔍" FontSize="12" Opacity="0.6" Margin="0,0,6,0" VerticalAlignment="Center" />
+                    <TextBox Grid.Column="1" x:Name="SearchBox"
+                             Background="Transparent" BorderThickness="0"
+                             Watermark="{x:Static locales:Locale.Tools_Clipboard_SearchWatermark}" FontSize="12"
+                             Padding="0,2" VerticalAlignment="Center"
+                             TextChanged="OnSearchTextChanged" />
+                </Grid>
+            </Border>
 
-                <!-- Content Grid -->
-                <Grid RowDefinitions="Auto,Auto,Auto,*" Margin="16,14,16,12">
-                    <!-- Top Header (Row 0) -->
-                    <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="0,0,0,10">
-                        <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                            <TextBlock Text="{x:Static locales:Locale.Tools_Clipboard_PopupTitle}" FontSize="15" FontWeight="Bold" />
-                            <Border Background="#20808080" CornerRadius="8" Padding="6,2" VerticalAlignment="Center">
-                                <TextBlock x:Name="CountBadge" Text="0" FontSize="11" FontWeight="SemiBold"
-                                           Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}" />
-                            </Border>
-                        </StackPanel>
+            <!-- Filter Tabs -->
+            <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="4" Margin="0,0,0,10">
+                <Button x:Name="TabAll" Classes="tab-pill active" Content="{x:Static locales:Locale.Tools_Clipboard_All}" Click="OnTabClicked" Tag="All" />
+                <Button x:Name="TabText" Classes="tab-pill" Content="{x:Static locales:Locale.Tools_Clipboard_Text}" Click="OnTabClicked" Tag="Text" />
+                <Button x:Name="TabImage" Classes="tab-pill" Content="{x:Static locales:Locale.Tools_Clipboard_Image}" Click="OnTabClicked" Tag="Image" />
+                <Button x:Name="TabFiles" Classes="tab-pill" Content="{x:Static locales:Locale.Tools_Clipboard_Files}" Click="OnTabClicked" Tag="Files" />
+            </StackPanel>
 
-                        <Button Grid.Column="1" x:Name="CloseButton" Classes="icon-btn" Content="✕"
-                                Click="OnCloseClicked" VerticalAlignment="Center" />
-                    </Grid>
-
-                    <!-- Search Box (Row 1) -->
-                    <Border Grid.Row="1" Background="#14808080" CornerRadius="10" Padding="8,4" Margin="0,0,0,8">
-                        <Grid ColumnDefinitions="Auto,*">
-                            <TextBlock Grid.Column="0" Text="🔍" FontSize="12" Opacity="0.6" Margin="0,0,6,0" VerticalAlignment="Center" />
-                            <TextBox Grid.Column="1" x:Name="SearchBox"
-                                     Background="Transparent" BorderThickness="0"
-                                     Watermark="{x:Static locales:Locale.Tools_Clipboard_SearchWatermark}" FontSize="12"
-                                     Padding="0,2" VerticalAlignment="Center"
-                                     TextChanged="OnSearchTextChanged" />
-                        </Grid>
-                    </Border>
-
-                    <!-- Filter Tabs (Row 2) -->
-                    <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="4" Margin="0,0,0,10">
-                        <Button x:Name="TabAll" Classes="tab-pill active" Content="{x:Static locales:Locale.Tools_Clipboard_All}" Click="OnTabClicked" Tag="All" />
-                        <Button x:Name="TabText" Classes="tab-pill" Content="{x:Static locales:Locale.Tools_Clipboard_Text}" Click="OnTabClicked" Tag="Text" />
-                        <Button x:Name="TabImage" Classes="tab-pill" Content="{x:Static locales:Locale.Tools_Clipboard_Image}" Click="OnTabClicked" Tag="Image" />
-                        <Button x:Name="TabFiles" Classes="tab-pill" Content="{x:Static locales:Locale.Tools_Clipboard_Files}" Click="OnTabClicked" Tag="Files" />
+            <!-- History Items List -->
+            <ScrollViewer Grid.Row="2" x:Name="ItemsScrollViewer">
+                <StackPanel>
+                    <!-- Empty state placeholder -->
+                    <StackPanel x:Name="EmptyPanel" IsVisible="False" Margin="0,40,0,0" HorizontalAlignment="Center" Spacing="8">
+                        <TextBlock Text="📋" FontSize="36" HorizontalAlignment="Center" Opacity="0.5" />
+                        <TextBlock Text="{x:Static locales:Locale.Tools_Clipboard_NoMatches}" FontSize="13" HorizontalAlignment="Center" Opacity="0.5" />
                     </StackPanel>
 
-                    <!-- History Items List (Row 3) -->
-                    <ScrollViewer Grid.Row="3" x:Name="ItemsScrollViewer">
-                        <StackPanel>
-                            <!-- Empty state placeholder -->
-                            <StackPanel x:Name="EmptyPanel" IsVisible="False" Margin="0,40,0,0" HorizontalAlignment="Center" Spacing="8">
-                                <TextBlock Text="📋" FontSize="36" HorizontalAlignment="Center" Opacity="0.5" />
-                                <TextBlock Text="{x:Static locales:Locale.Tools_Clipboard_NoMatches}" FontSize="13" HorizontalAlignment="Center" Opacity="0.5" />
-                            </StackPanel>
+                    <ItemsControl x:Name="ItemsControl">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate DataType="models:ClipboardItem">
+                                <Border Classes="clip-card" Classes.pinned="{Binding IsPinned}"
+                                        PointerPressed="OnItemCardPointerPressed" DataContext="{Binding}">
+                                    <Grid ColumnDefinitions="Auto,*,Auto" VerticalAlignment="Center">
+                                        <!-- Type Icon / Thumbnail -->
+                                        <Panel Grid.Column="0" Width="32" Height="32" Margin="0,0,10,0" VerticalAlignment="Center">
+                                            <Border Background="#20808080" CornerRadius="8" IsVisible="{Binding Thumbnail, Converter={x:Static ObjectConverters.IsNull}}">
+                                                <TextBlock Text="{Binding TypeGlyph}"
+                                                           FontSize="14" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                            </Border>
+                                            <Image Source="{Binding Thumbnail}" Stretch="UniformToFill"
+                                                   IsVisible="{Binding Thumbnail, Converter={x:Static ObjectConverters.IsNotNull}}" />
+                                        </Panel>
 
-                            <ItemsControl x:Name="ItemsControl">
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate DataType="models:ClipboardItem">
-                                        <Border Classes="clip-card" Classes.pinned="{Binding IsPinned}"
-                                                PointerPressed="OnItemCardPointerPressed" DataContext="{Binding}">
-                                            <Grid ColumnDefinitions="Auto,*,Auto" VerticalAlignment="Center">
-                                                <!-- Type Icon / Thumbnail -->
-                                                <Panel Grid.Column="0" Width="32" Height="32" Margin="0,0,10,0" VerticalAlignment="Center">
-                                                    <Border Background="#20808080" CornerRadius="8" IsVisible="{Binding Thumbnail, Converter={x:Static ObjectConverters.IsNull}}">
-                                                        <TextBlock Text="{Binding TypeGlyph}"
-                                                                   FontSize="14" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                                                    </Border>
-                                                    <Image Source="{Binding Thumbnail}" Stretch="UniformToFill"
-                                                           IsVisible="{Binding Thumbnail, Converter={x:Static ObjectConverters.IsNotNull}}" />
-                                                </Panel>
+                                        <!-- Content Info -->
+                                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+                                            <TextBlock Text="{Binding DisplayTitle}" FontSize="12" FontWeight="SemiBold"
+                                                       MaxLines="2" TextTrimming="CharacterEllipsis" TextWrapping="Wrap" />
+                                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                                <TextBlock Text="{Binding DisplaySubtitle}" FontSize="10" Opacity="0.5" />
+                                                <TextBlock Text="·" FontSize="10" Opacity="0.4" />
+                                                <TextBlock Text="{Binding RelativeTime}" FontSize="10" Opacity="0.5" />
+                                            </StackPanel>
+                                        </StackPanel>
 
-                                                <!-- Content Info -->
-                                                <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
-                                                    <TextBlock Text="{Binding DisplayTitle}" FontSize="12" FontWeight="SemiBold"
-                                                               MaxLines="2" TextTrimming="CharacterEllipsis" TextWrapping="Wrap" />
-                                                    <StackPanel Orientation="Horizontal" Spacing="8">
-                                                        <TextBlock Text="{Binding DisplaySubtitle}" FontSize="10" Opacity="0.5" />
-                                                        <TextBlock Text="·" FontSize="10" Opacity="0.4" />
-                                                        <TextBlock Text="{Binding RelativeTime}" FontSize="10" Opacity="0.5" />
-                                                    </StackPanel>
-                                                </StackPanel>
-
-                                                <!-- Action Buttons: Pin & Delete -->
-                                                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="2" VerticalAlignment="Center">
-                                                    <Button Classes="icon-btn" Click="OnTogglePinClicked" DataContext="{Binding}"
-                                                            ToolTip.Tip="{x:Static locales:Locale.Tools_Clipboard_TogglePin}" AutomationProperties.Name="{x:Static locales:Locale.Tools_Clipboard_TogglePin}">
-                                                        <TextBlock Text="📌" FontSize="11" Opacity="{Binding IsPinned, Converter={x:Static ObjectConverters.IsNotNull}}" />
-                                                    </Button>
-                                                    <Button Classes="icon-btn" Click="OnDeleteItemClicked" DataContext="{Binding}"
-                                                            ToolTip.Tip="{x:Static locales:Locale.Tools_Clipboard_DeleteRecord}" AutomationProperties.Name="{x:Static locales:Locale.Tools_Clipboard_DeleteRecord}">
-                                                        <TextBlock Text="✕" FontSize="10" Opacity="0.5" />
-                                                    </Button>
-                                                </StackPanel>
-                                            </Grid>
-                                        </Border>
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-                        </StackPanel>
-                    </ScrollViewer>
-                </Grid>
-            </Panel>
-        </Border>
-    </Panel>
+                                        <!-- Action Buttons: Pin & Delete -->
+                                        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="2" VerticalAlignment="Center">
+                                            <Button Classes="icon-btn" Click="OnTogglePinClicked" DataContext="{Binding}"
+                                                    ToolTip.Tip="{x:Static locales:Locale.Tools_Clipboard_TogglePin}" AutomationProperties.Name="{x:Static locales:Locale.Tools_Clipboard_TogglePin}">
+                                                <TextBlock Text="📌" FontSize="11" Opacity="{Binding IsPinned, Converter={x:Static ObjectConverters.IsNotNull}}" />
+                                            </Button>
+                                            <Button Classes="icon-btn" Click="OnDeleteItemClicked" DataContext="{Binding}"
+                                                    ToolTip.Tip="{x:Static locales:Locale.Tools_Clipboard_DeleteRecord}" AutomationProperties.Name="{x:Static locales:Locale.Tools_Clipboard_DeleteRecord}">
+                                                <TextBlock Text="✕" FontSize="10" Opacity="0.5" />
+                                            </Button>
+                                        </StackPanel>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </ScrollViewer>
+        </Grid>
+    </controls:SecondaryPanelShell>
 </Window>

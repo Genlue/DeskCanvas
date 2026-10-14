@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Avalonia;
@@ -7,7 +6,6 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Media;
-using Avalonia.Platform;
 using Avalonia.Styling;
 using Avalonia.Threading;
 using Tools.Models;
@@ -19,6 +17,14 @@ using DeskCanvas.Views;
 
 namespace Tools.Views;
 
+/// <summary>
+/// Clipboard history panel (W7 pilot for the shared <see cref="SecondaryPanelShell"/>).
+/// The window declares no card, glass surface, title chrome or close button of its own —
+/// the shell provides them, and <see cref="SecondaryPanelWindow"/> plus
+/// <see cref="PanelAppearanceResolver"/> own the material and the open/close transitions.
+/// This class keeps only the business behaviour: the clipboard-history subscription,
+/// category tabs, search filtering, the counter badge and the initial focus.
+/// </summary>
 public partial class ClipboardPopupWindow : SecondaryPanelWindow
 {
     private readonly ClipboardMonitorService monitor;
@@ -26,7 +32,6 @@ public partial class ClipboardPopupWindow : SecondaryPanelWindow
     private string activeCategory = "All";
     private string searchQuery = string.Empty;
 
-    protected override Visual? PanelCard => CardBorder;
     protected override Point? SpawnScreenCenter => spawnScreenCenter;
 
     public ClipboardPopupWindow() : this(null) { }
@@ -41,7 +46,6 @@ public partial class ClipboardPopupWindow : SecondaryPanelWindow
 
         monitor.HistoryChanged += OnHistoryChanged;
 
-        ApplyTheme();
         RefreshList();
 
         Closed += OnWindowClosed;
@@ -61,77 +65,9 @@ public partial class ClipboardPopupWindow : SecondaryPanelWindow
 
     protected override void OnPanelLoaded()
     {
-        if (LiquidGlassSurfaceControl.IsVisible)
-        {
-            LiquidGlassSurfaceControl.RequestRender(immediate: true);
-        }
+        // Initialization focus stays with the business window (the shell's drag area, the
+        // glass render request and the open animation are handled by the base class).
         SearchBox.Focus();
-    }
-
-    private void ApplyTheme()
-    {
-        Theme theme;
-        try
-        {
-            theme = new AppSettingsProvider().Get().Theme;
-        }
-        catch
-        {
-            theme = new Theme(DarkMode: true, AccentColor: null, OpacityLevel: 0.8, Monochrome: false, UseNativeFrame: false, FontFamily: "Inter");
-        }
-
-        // Colour mode "follow system" is DarkMode == null, which must resolve to the *live*
-        // variant — the same single source of truth the widget card and the theme preview use
-        // (see ThemeButton.IsDark). Treating null as dark painted every panel dark on a light
-        // system.
-        bool isDark = theme.DarkMode ?? ActualThemeVariant == ThemeVariant.Dark;
-
-        if (theme.UsesRenderedGlass)
-        {
-            // Rendered glass always goes through the live surface — the very same path the
-            // primary widget card uses. The surface re-parameterises its optics for the panel's
-            // open/close zoom (SetAnimationFrameScale), so the animation shows real glass per
-            // tick whether or not live sampling is on: with sampling off the shared wallpaper
-            // frame is merely frozen, which is still a full-quality backdrop.
-            // The old "sampling off → play a pre-rendered bitmap / frame strip" branch is gone:
-            // it lagged behind the surface, masked the animated glass with a static bitmap, and
-            // fell back to a flat translucent scrim whenever the pre-render had not finished.
-            TransparencyLevelHint = [WindowTransparencyLevel.Transparent];
-            LiquidGlassSurfaceControl.Material = theme;
-            LiquidGlassSurfaceControl.CornerRadius = CardBorder.CornerRadius;
-            LiquidGlassSurfaceControl.IsVisible = true;
-            CardBorder.Background = Brushes.Transparent;
-            CardBorder.BorderBrush = new SolidColorBrush(Color.FromArgb(90, 255, 255, 255));
-            LiquidGlassSurfaceControl.RequestRender(immediate: true);
-        }
-        else if (theme.IsColorful)
-        {
-            LiquidGlassSurfaceControl.IsVisible = false;
-            TransparencyLevelHint = [WindowTransparencyLevel.Transparent];
-            CardBorder.Background = new SolidColorBrush(isDark ? Color.Parse("#1C1C1E") : Color.Parse("#FFFFFF"));
-            CardBorder.BorderBrush = new SolidColorBrush(isDark ? Color.FromArgb(60, 255, 255, 255) : Color.FromArgb(40, 0, 0, 0));
-        }
-        else if (theme.EffectiveSurface == SurfaceStyle.Solid)
-        {
-            LiquidGlassSurfaceControl.IsVisible = false;
-            TransparencyLevelHint = [WindowTransparencyLevel.Transparent];
-            var hex = isDark ? theme.EffectiveSolidBackgroundDark : theme.EffectiveSolidBackgroundLight;
-            var baseColor = Color.TryParse(hex, out var parsed) ? parsed : (isDark ? Color.FromRgb(46, 46, 46) : Colors.White);
-            byte alpha = (byte)Math.Clamp(Math.Round(theme.OpacityLevel * 255), 40, 255);
-            CardBorder.Background = new SolidColorBrush(Color.FromArgb(alpha, baseColor.R, baseColor.G, baseColor.B));
-            CardBorder.BorderBrush = new SolidColorBrush(isDark ? Color.FromArgb(40, 255, 255, 255) : Color.FromArgb(30, 0, 0, 0));
-        }
-        else // Acrylic
-        {
-            LiquidGlassSurfaceControl.IsVisible = false;
-            TransparencyLevelHint = [WindowTransparencyLevel.AcrylicBlur];
-            byte alpha = (byte)Math.Clamp(Math.Round(theme.OpacityLevel * 220), 40, 240);
-            CardBorder.Background = new SolidColorBrush(isDark ? Color.FromArgb(alpha, 28, 28, 32) : Color.FromArgb(alpha, 245, 245, 248));
-            CardBorder.BorderBrush = new SolidColorBrush(isDark ? Color.FromArgb(55, 255, 255, 255) : Color.FromArgb(35, 0, 0, 0));
-        }
-
-        IBrush subTextBrush = isDark ? new SolidColorBrush(Color.FromArgb(200, 255, 255, 255)) : new SolidColorBrush(Color.FromArgb(180, 0, 0, 0));
-        CloseButton.Foreground = subTextBrush;
     }
 
     private void OnHistoryChanged()
@@ -225,22 +161,8 @@ public partial class ClipboardPopupWindow : SecondaryPanelWindow
         }
     }
 
-    private void OnRootPointerPressed(object? sender, PointerPressedEventArgs e)
-    {
-        if (e.GetCurrentPoint(this).Properties.IsLeftButtonPressed)
-        {
-            BeginMoveDrag(e);
-        }
-    }
-
-    private void OnCloseClicked(object? sender, RoutedEventArgs e)
-    {
-        Close();
-    }
-
     private void OnWindowClosed(object? sender, EventArgs e)
     {
-        LiquidGlassSurfaceControl.IsVisible = false;
         monitor.HistoryChanged -= OnHistoryChanged;
     }
 }
