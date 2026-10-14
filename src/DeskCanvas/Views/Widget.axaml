@@ -3,7 +3,6 @@
         xmlns:locales="clr-namespace:DeskCanvas.Locales"
         xmlns:views="clr-namespace:DeskCanvas.Views"
         xmlns:controls="clr-namespace:DeskCanvas.Views.Controls"
-        xmlns:interfaces="clr-namespace:DeskCanvas.Core.Interfaces;assembly=DeskCanvas.Core"
         x:Class="DeskCanvas.Views.Widget"
         Background="Transparent"
         ShowInTaskbar="False"
@@ -145,61 +144,17 @@
             </ContentPresenter>
         </Border>
 
-        <!-- Right-side vertical pagination indicator dots for Stack widget. Outside the card
-             (in the rightmost margin of the grid cell) on every surface, so the dots sit in the
-             same place whatever the theme is. On 毛玻璃 the card is clipped by the native window
-             region, and no backing for an out-of-card strip works there — a translucent one reads
-             as frosted glass, an opaque one as a foreign slab — so the dots move inside the card
-             instead; see StackIndicatorsMargin and ApplyWidgetRegion. -->
-        <Border Name="StackIndicatorsHost"
-                HorizontalAlignment="Right"
-                VerticalAlignment="Center"
-                Margin="{Binding StackIndicatorsMargin, RelativeSource={RelativeSource AncestorType=views:Widget}}"
-                IsVisible="{Binding HasStackIndicators, RelativeSource={RelativeSource AncestorType=views:Widget}}"
-                Opacity="0"
-                PointerWheelChanged="OnStackIndicatorsWheelChanged"
-                ZIndex="85">
-            <ItemsControl ItemsSource="{Binding StackIndicators, RelativeSource={RelativeSource AncestorType=views:Widget}}">
-                <ItemsControl.ItemsPanel>
-                    <ItemsPanelTemplate>
-                        <StackPanel Orientation="Vertical" Spacing="2" />
-                    </ItemsPanelTemplate>
-                </ItemsControl.ItemsPanel>
-                <ItemsControl.ItemTemplate>
-                    <DataTemplate x:DataType="interfaces:StackWidgetIndicatorItem">
-                        <Button Width="12" Height="12"
-                                CornerRadius="6"
-                                Padding="0"
-                                Margin="0,1"
-                                Background="Transparent"
-                                BorderThickness="0"
-                                Cursor="Hand"
-                                Click="OnStackIndicatorClicked"
-                                Tag="{Binding Index}"
-                                ToolTip.Tip="{Binding Title}">
-                            <Button.Styles>
-                                <Style Selector="Button:pointerover">
-                                    <Setter Property="RenderTransform" Value="scale(1.25)" />
-                                </Style>
-                            </Button.Styles>
-                            <Panel Width="12" Height="12">
-                                <!-- Subtle dark shadow outline for contrast on bright/dark backgrounds -->
-                                <Ellipse Width="6" Height="6"
-                                         Stroke="#40000000"
-                                         StrokeThickness="0.8"
-                                         HorizontalAlignment="Center"
-                                         VerticalAlignment="Center" />
-                                <!-- Pure white dot with active/inactive opacity -->
-                                <Ellipse Width="6" Height="6"
-                                         Fill="White"
-                                         Opacity="{Binding Opacity}"
-                                         HorizontalAlignment="Center"
-                                         VerticalAlignment="Center" />
-                            </Panel>
-                        </Button>
-                    </DataTemplate>
-                </ItemsControl.ItemTemplate>
-            </ItemsControl>
-        </Border>
+        <!-- Generic decoration overlay slot (W10): the hosted content may provide a decoration
+             control via IWidgetOverlayProvider (e.g. the Stack widget's pagination dots, which
+             moved into the Stack plugin). The host fills this presenter from the provider,
+             positions it per the provider's WidgetOverlayHints (outside/inside card, acrylic
+             inset, hit area) and keeps the window-region work here (ApplyWidgetRegion). Legacy
+             content that only implements IStackWidget reaches the same slot through
+             LegacyStackOverlayAdapter. Empty presenters render nothing. -->
+        <ContentPresenter Name="OverlayHost"
+                          HorizontalAlignment="Right"
+                          VerticalAlignment="Center"
+                          IsHitTestVisible="True"
+                          ZIndex="85" />
     </Grid>
 </Window>

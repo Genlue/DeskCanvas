@@ -155,10 +155,15 @@ internal static partial class Program
         }
 
         // The resolver never throws without a settings provider (headless / early startup).
+        // W10: the fallback theme is the NON-GLASS baseline (OpacityLevel 1.0 → derived Solid
+        // → UsesNativeBlur=false), aligned with the old plugins' catch branch that never
+        // enabled native blur; 0.8 used to derive Acrylic — the opposite semantics.
         Check(PanelAppearanceResolver.ReadTheme(null) == PanelAppearanceResolver.FallbackTheme,
-            "no provider → the historic fallback theme (dark, 0.8)");
+            "no provider → the fallback theme (dark, non-glass baseline)");
         Check(PanelAppearanceResolver.IsDark(PanelAppearanceResolver.FallbackTheme, ThemeVariant.Light),
             "the fallback theme is dark, like every popup's catch block");
+        Check(!PanelAppearanceResolver.FallbackTheme.UsesNativeBlur,
+            "the fallback theme never implies native blur (UsesNativeBlur=false, W10)");
     }
 
     private static Theme ThemeOf(SurfaceStyle surface, bool isDark) => new(
@@ -329,15 +334,19 @@ internal static partial class Program
 
         // Close-button click → CloseRequested → the base class's animated Close. Exactly one
         // request per click (the base marks the event handled, so count with handledEventsToo).
+        // W10: the click runs Button's REAL OnClick path via reflection — a synthetic MouseDown
+        // used to land on PART_Backdrop headlessly (the intro scale animation's clock does not
+        // advance, the card stays at 60% and the hit tester misses the button), a false positive
+        // for the wrong reason. Same approach as the W8 popup-migration checks.
         var closeRequests = 0;
         shell.AddHandler(
             SecondaryPanelShell.CloseRequestedEvent, (_, _) => closeRequests++,
             RoutingStrategies.Bubble, handledEventsToo: true);
-        var closeButton = shell.CloseButton!;
-        var center = closeButton.TranslatePoint(
-            new Point(closeButton.Bounds.Width / 2, closeButton.Bounds.Height / 2), panel)!.Value;
-        panel.MouseDown(center, MouseButton.Left);
-        panel.MouseUp(center, MouseButton.Left);
+        var onClick = typeof(Button).GetMethod("OnClick", BindingFlags.Instance | BindingFlags.NonPublic, null, Array.Empty<Type>(), null)
+                      ?? typeof(Button).GetMethod("OnClick", BindingFlags.Instance | BindingFlags.NonPublic, null, [typeof(RoutedEventArgs)], null)!;
+        onClick.Invoke(shell.CloseButton, onClick.GetParameters().Length == 0
+            ? Array.Empty<object?>()
+            : [new RoutedEventArgs(Button.ClickEvent)]);
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
 
         Check(closeRequests == 1, $"one close-button click raises exactly one CloseRequested ({closeRequests})");

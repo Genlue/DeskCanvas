@@ -1,0 +1,55 @@
+<Border xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:interfaces="clr-namespace:DeskCanvas.Core.Interfaces;assembly=DeskCanvas.Core"
+        x:Class="StackWidgets.Views.Controls.StackIndicatorStrip"
+        HorizontalAlignment="Right"
+        VerticalAlignment="Center"
+        Opacity="0">
+    <!--
+      Stack 分页圆点条（W10 §9.2 下沉）：视觉与交互逐项复刻迁移前宿主 Widget.axaml 的
+      StackIndicatorsHost（12px 透明圆按钮、暗色描边 + 纯白圆点、pointerover 放大、
+      点击切页、圆点上滚轮切页、常态隐藏用 Opacity 保持可命中）。数据来自既有
+      IStackWidget 协议，行为合同未动。
+    -->
+    <ItemsControl Name="DotsHost">
+        <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate>
+                <StackPanel Orientation="Vertical" Spacing="2" />
+            </ItemsPanelTemplate>
+        </ItemsControl.ItemsPanel>
+        <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="interfaces:StackWidgetIndicatorItem">
+                <Button Width="12" Height="12"
+                        CornerRadius="6"
+                        Padding="0"
+                        Margin="0,1"
+                        Background="Transparent"
+                        BorderThickness="0"
+                        Cursor="Hand"
+                        Click="OnDotClicked"
+                        Tag="{Binding Index}"
+                        ToolTip.Tip="{Binding Title}">
+                    <Button.Styles>
+                        <Style Selector="Button:pointerover">
+                            <Setter Property="RenderTransform" Value="scale(1.25)" />
+                        </Style>
+                    </Button.Styles>
+                    <Panel Width="12" Height="12">
+                        <!-- Subtle dark shadow outline for contrast on bright/dark backgrounds -->
+                        <Ellipse Width="6" Height="6"
+                                 Stroke="#40000000"
+                                 StrokeThickness="0.8"
+                                 HorizontalAlignment="Center"
+                                 VerticalAlignment="Center" />
+                        <!-- Pure white dot with active/inactive opacity -->
+                        <Ellipse Width="6" Height="6"
+                                 Fill="White"
+                                 Opacity="{Binding Opacity}"
+                                 HorizontalAlignment="Center"
+                                 VerticalAlignment="Center" />
+                    </Panel>
+                </Button>
+            </DataTemplate>
+        </ItemsControl.ItemTemplate>
+    </ItemsControl>
+</Border>

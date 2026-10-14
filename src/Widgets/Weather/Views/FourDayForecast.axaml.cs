@@ -10,8 +10,15 @@ using Weather.ViewModels;
 
 namespace Weather.Views;
 
-public partial class FourDayForecast : UserControl, IFixedSizeWidget, IWidgetSelfRefreshing, IDisposable
+/// <summary>
+/// 通过 <see cref="IWidgetSurfaceHints"/> 向宿主声明多彩模式下的专属卡片画刷
+/// （资源键按变体解析），宿主不再按视图类型名判断外观（W10 §9.1）。
+/// </summary>
+public partial class FourDayForecast : UserControl, IFixedSizeWidget, IWidgetSelfRefreshing, IDisposable, IWidgetSurfaceHints
 {
+    /// <inheritdoc />
+    public string? ColorfulBackgroundResourceKey => "WeatherCardBackground";
+
     private ForecastModel model;
     private ForecastViewModel? viewModel;
 

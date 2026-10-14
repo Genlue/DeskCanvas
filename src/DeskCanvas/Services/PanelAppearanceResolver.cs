@@ -74,10 +74,16 @@ public static class PanelAppearanceResolver
     /// What a popup used when <c>new AppSettingsProvider().Get()</c> threw — kept verbatim so a
     /// panel opened before the settings file is readable looks exactly as it did.
     /// </summary>
+    /// <remarks>
+    /// W10 修正：OpacityLevel 从 0.8 改为 1.0。旧插件弹窗 catch 分支在拿不到设置时按
+    /// “非玻璃”处理（从不启用原生模糊）；而 0.8 会让 <see cref="Theme.EffectiveSurface"/>
+    /// 推导出 Acrylic → UsesNativeBlur=true，语义正好相反。1.0（非玻璃基线，推导出
+    /// Solid）与旧 catch 分支对齐：无 provider 时不再给出毛玻璃观感。
+    /// </remarks>
     public static Theme FallbackTheme { get; } = new(
         DarkMode: true,
         AccentColor: null,
-        OpacityLevel: 0.8,
+        OpacityLevel: 1.0,
         Monochrome: false,
         UseNativeFrame: false,
         FontFamily: "Inter");

@@ -15,20 +15,31 @@ using Avalonia.Media;
 using Avalonia.Styling;
 using Avalonia.Threading;
 using StackWidgets.Models;
+using StackWidgets.Views.Controls;
 using DeskCanvas.Core.Interfaces;
 using DeskCanvas.Core.Models;
 using DeskCanvas.Core.Models.Attributes;
 using DeskCanvas.Core.Models.Settings;
+using DeskCanvas.Views.Controls;
 using AppTheme = DeskCanvas.Core.Models.Settings.Theme;
 using DeskCanvas.Views;
 
 namespace StackWidgets.Views;
 
-public partial class WidgetStackView : UserControl, IWidgetSelfRefreshing, IStackWidget, IWidgetSuspendable
+/// <summary>
+/// 重叠组件视图。除既有协议外，还实现 <see cref="IWidgetOverlayProvider"/>：
+/// 向宿主提供下沉到本插件的分页圆点装饰（StackIndicatorStrip）与布局提示，
+/// 宿主不再持有 Stack 专属 XAML 与放置逻辑（W10 §9.2）。
+/// </summary>
+public partial class WidgetStackView : UserControl, IWidgetSelfRefreshing, IStackWidget, IWidgetSuspendable, IWidgetOverlayProvider
 {
     private readonly IWidgetLayoutProvider widgetLayoutProvider;
     private readonly IAssemblyProvider assemblyProvider;
     private readonly IAppSettingsProvider? appSettingsProvider;
+
+    /// <summary>下沉后的分页圆点装饰。每个视图实例只创建一次（构造时），
+    /// 通过 Overlay 交给宿主；不允许多窗口共享同一 visual child。</summary>
+    private readonly StackIndicatorStrip indicatorStrip;
 
     /// <summary>Cached so Unloaded can unsubscribe: an anonymous lambda left on the
     /// process-lifetime appSettingsProvider rooted every instance forever (Gallery previews,
@@ -87,6 +98,31 @@ public partial class WidgetStackView : UserControl, IWidgetSelfRefreshing, IStac
     /// <summary>常态隐藏小圆点: the host reveals the dots only while switching or hovering.</summary>
     public bool AutoHideIndicators => model.AutoHideDots;
 
+    // ---- W10: 装饰下沉（IWidgetOverlayProvider） -------------------------------------------
+
+    /// <summary>分页圆点装饰；构造时创建一次，重复取用返回同一实例。</summary>
+    public Control? Overlay => indicatorStrip;
+
+    /// <summary>
+    /// 与迁移前 StackIndicatorsMargin 语义等价的放置提示：常态卡片外右缘，
+    /// 原生 Acrylic（UsesNativeBlur 且无原生窗框）时内移进卡片；Region 方案沿用
+    /// “内移后卡片矩形已覆盖圆点”，不需要把装饰矩形并进窗口区域。
+    /// </summary>
+    public WidgetOverlayHints OverlayHints { get; } = new()
+    {
+        Placement = WidgetOverlayPlacement.OutsideCardRight,
+        RightReservedWidth = 13,
+        InsetOnNativeBlur = true,
+        MergeBoundsIntoWindowRegion = false,
+        RelayoutOnBoundsChange = true,
+        HitTestableWhenHidden = true,
+    };
+
+    public void OnOverlayLayoutChanged(in WidgetOverlayLayoutContext context)
+    {
+        // 圆点条自适配（右对齐、垂直居中），无需按卡片几何额外重排。
+    }
+
     public WidgetStackView()
         : this(new WidgetStackModel(), null!, null!)
     {
@@ -103,6 +139,7 @@ public partial class WidgetStackView : UserControl, IWidgetSelfRefreshing, IStac
         this.widgetLayoutProvider = widgetLayoutProvider;
         this.assemblyProvider = assemblyProvider;
         this.appSettingsProvider = appSettingsProvider ?? (DeskCanvas.App.Services?.GetService(typeof(IAppSettingsProvider)) as IAppSettingsProvider) ?? new DeskCanvas.Core.Services.AppSettingsProvider();
+        indicatorStrip = new StackIndicatorStrip(this);
 
         InitializeComponent();
         Classes.Add("Flush");

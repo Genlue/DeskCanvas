@@ -18,6 +18,7 @@ using DeskCanvas.Core.Models;
 using DeskCanvas.Core.Models.Settings;
 using DeskCanvas.Locales;
 using DeskCanvas.Services;
+using DeskCanvas.Views.Controls;
 
 namespace DeskCanvas.Views;
 
@@ -332,7 +333,7 @@ public partial class Widget : Window, INotifyPropertyChanged
         Notify(nameof(EffectiveMargin));
         Notify(nameof(EffectiveBaseRadius));
         Notify(nameof(WidgetMargin));
-        Notify(nameof(StackIndicatorsMargin));
+        UpdateOverlayLayout();
         Notify(nameof(ScaleMenuTitle));
         Notify(nameof(SizeMenuTitle));
         Notify(nameof(SizeColumnsValue));
@@ -511,6 +512,20 @@ public partial class Widget : Window, INotifyPropertyChanged
 
     private DeskCanvas.Core.Interfaces.IStackWidget? activeStackWidget;
 
+    /// <summary>The decoration overlay provider for the current content (null = no overlay).</summary>
+    private IWidgetOverlayProvider? overlayProvider;
+
+    /// <summary>The overlay control handed over by the provider; one instance per host window.</summary>
+    private Control? overlayControl;
+
+    /// <summary>
+    /// The hosted content's stack contract (if any). Behavior query only — kept here so the
+    /// chord gesture, the edit path and the drop coordinator keep working unchanged for new
+    /// providers and legacy adapters alike.
+    /// </summary>
+    public DeskCanvas.Core.Interfaces.IStackWidget? StackWidget =>
+        activeStackWidget ?? (ContentPresenter?.Content as DeskCanvas.Core.Interfaces.IStackWidget);
+
     private void AttachStackWidget(object? content)
     {
         if (activeStackWidget != null)
@@ -525,25 +540,101 @@ public partial class Widget : Window, INotifyPropertyChanged
             activeStackWidget.IndicatorItemsChanged += OnStackIndicatorsChanged;
         }
 
-        Notify(nameof(HasStackIndicators));
-        Notify(nameof(StackIndicators));
+        AttachOverlay();
+
         Notify(nameof(IsStackWidget));
         Notify(nameof(ShowNormalEditButton));
         Notify(nameof(ShowStackEditButton));
         Notify(nameof(CanEditStackedWidgetChild));
         Notify(nameof(EditStackChildTitle));
-        UpdateStackIndicatorsReveal();
+    }
+
+    /// <summary>
+    /// Wire the generic decoration overlay (W10): the content may hand over a decoration
+    /// control through <see cref="IWidgetOverlayProvider"/> (the Stack widget does since its
+    /// dots moved into the plugin). Content that only implements the legacy
+    /// <c>IStackWidget</c> contract (deployed older DLLs) reaches the same slot through
+    /// <see cref="LegacyStackOverlayAdapter"/>, so its pagination dots survive the host-side
+    /// cleanup. The overlay control is created once by the provider per host instance —
+    /// never here, never per getter access.
+    /// </summary>
+    private void AttachOverlay()
+    {
+        OverlayHost.Content = null;
+        overlayControl = null;
+        overlayProvider = null;
+
+        var content = ContentPresenter?.Content;
+        if (content == null) return;
+
+        var provider = content switch
+        {
+            IWidgetOverlayProvider own => own,
+            DeskCanvas.Core.Interfaces.IStackWidget legacy => new LegacyStackOverlayAdapter(legacy),
+            _ => null,
+        };
+
+        if (provider?.Overlay is not { } overlay) return;
+
+        // One visual child per window: if the control is still rooted in another window,
+        // refuse to attach rather than throwing from the ContentPresenter or silently
+        // stealing the child.
+        if (overlay.GetVisualRoot() is Window { } other && !ReferenceEquals(other, this)) return;
+
+        overlayProvider = provider;
+        overlayControl = overlay;
+        OverlayHost.Content = overlay;
+        UpdateOverlayLayout();
+    }
+
+    /// <summary>
+    /// (Re-)apply the overlay placement from the provider's <see cref="WidgetOverlayHints"/>:
+    /// outside-card strips sit in the rightmost margin (1 DIP off the grid line);
+    /// inside-card strips (and out-of-card strips the provider refuses to relocate during
+    /// native-blur clipping) sit over the card's right edge. Native acrylic moves any
+    /// <see cref="WidgetOverlayHints.InsetOnNativeBlur"/> strip inside the card — the historic
+    /// StackIndicatorsMargin semantics, now expressed as a contract instead of a host-side
+    /// Stack branch. Region merging itself stays here (ApplyWidgetRegion / InteropService).
+    /// </summary>
+    private void UpdateOverlayLayout()
+    {
+        if (overlayControl == null) return;
+
+        var theme = appSettingsProvider.Get().Theme;
+        var hints = overlayProvider!.OverlayHints;
+
+        var nativeBlurClip = !isFrameless && theme.UsesNativeBlur && !theme.UseNativeFrame;
+        // An out-of-card strip would be clipped/flooded by the native blur region: honour the
+        // provider's inset hint, and fall back to the inset when the provider asks for a
+        // region merge the single-rect GDI region cannot express.
+        var inset = nativeBlurClip && (hints.InsetOnNativeBlur
+            || (hints.MergeBoundsIntoWindowRegion && hints.Placement == WidgetOverlayPlacement.OutsideCardRight));
+        var inside = inset || hints.Placement == WidgetOverlayPlacement.InsideCardRight;
+
+        OverlayHost.Margin = inside
+            ? new Thickness(0, 0, WidgetMargin.Right + 1, 0)
+            : new Thickness(0, 0, 1, 0);
+        if (!double.IsNaN(hints.HitAreaHeight))
+            OverlayHost.MinHeight = hints.HitAreaHeight;
+
+        var width = ClientSize.Width > 0 ? ClientSize.Width : Width;
+        var height = ClientSize.Height > 0 ? ClientSize.Height : Height;
+        overlayProvider.OnOverlayLayoutChanged(new WidgetOverlayLayoutContext(
+            Math.Max(0, width - 2 * WidgetMargin.Left),
+            Math.Max(0, height - 2 * WidgetMargin.Top),
+            WidgetMargin,
+            ScreenScaling,
+            NativeBlurActive: nativeBlurClip,
+            Frameless: isFrameless,
+            InsetApplied: inset));
     }
 
     private void OnStackIndicatorsChanged(object? sender, EventArgs e)
     {
         try
         {
-            Notify(nameof(HasStackIndicators));
-            Notify(nameof(StackIndicators));
             Notify(nameof(CanEditStackedWidgetChild));
             Notify(nameof(EditStackChildTitle));
-            UpdateStackIndicatorsReveal();
             ApplyWidgetRegion();
         }
         catch (Exception ex)
@@ -552,69 +643,10 @@ public partial class Widget : Window, INotifyPropertyChanged
         }
     }
 
-    public DeskCanvas.Core.Interfaces.IStackWidget? StackWidget =>
-        activeStackWidget ?? (ContentPresenter?.Content as DeskCanvas.Core.Interfaces.IStackWidget);
-
-    public bool HasStackIndicators => StackWidget != null && (StackWidget.IndicatorItems?.Count ?? 0) > 1;
-
-    public IReadOnlyList<DeskCanvas.Core.Interfaces.StackWidgetIndicatorItem>? StackIndicators =>
-        StackWidget?.IndicatorItems;
-
-    public void OnStackIndicatorClicked(object? sender, RoutedEventArgs e)
-    {
-        try
-        {
-            if (sender is Button btn && btn.Tag is int index && StackWidget != null)
-            {
-                StackWidget.SwitchToIndex(index);
-            }
-        }
-        catch (Exception ex)
-        {
-            System.Diagnostics.Debug.WriteLine($"[Widget] OnStackIndicatorClicked error: {ex.Message}");
-        }
-    }
-
-    public void OnStackIndicatorsWheelChanged(object? sender, PointerWheelEventArgs e)
-    {
-        try
-        {
-            if (StackWidget is { } stack && StackIndicators is { Count: > 1 } list)
-            {
-                if (stack.IsTransitionActive)
-                {
-                    e.Handled = true;
-                    return;
-                }
-
-                var currentIndex = list.FirstOrDefault(i => i.IsActive)?.Index ?? 0;
-                if (e.Delta.Y > 0)
-                {
-                    var nextIndex = (currentIndex - 1 + list.Count) % list.Count;
-                    stack.SwitchToIndex(nextIndex);
-                    e.Handled = true;
-                }
-                else if (e.Delta.Y < 0)
-                {
-                    var nextIndex = (currentIndex + 1) % list.Count;
-                    stack.SwitchToIndex(nextIndex);
-                    e.Handled = true;
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            System.Diagnostics.Debug.WriteLine($"[Widget] OnStackIndicatorsWheelChanged error: {ex.Message}");
-        }
-    }
-
-    // ---- 重叠组件的切页手势（中键 + 滚轮）与圆点常态隐藏 ----
+    // ---- 重叠组件的切页手势（中键 + 滚轮） ----
 
     /// <summary>True while the middle button is held over this widget (the switch chord's held state).</summary>
     private bool stackMiddleButtonChord;
-
-    /// <summary>Delayed hide for the auto-hidden stack dots (see <see cref="UpdateStackIndicatorsReveal"/>).</summary>
-    private DispatcherTimer? stackDotsHideTimer;
 
     private void OnStackChordPointerPressed(object? sender, PointerPressedEventArgs e)
     {
@@ -638,13 +670,13 @@ public partial class Widget : Window, INotifyPropertyChanged
     /// wheel to page through the stack — no aiming for the dots strip required. Runs on the
     /// tunnel route ahead of every inner control, and marks the wheel handled so neither the
     /// stacked children's ScrollViewers nor the dots strip react to the same tick (no double
-    /// switch). The dots strip's own wheel handler stays in charge when the middle button is
-    /// up, exactly as before.
+    /// switch). The dots strip's own wheel handler (inside the decoration overlay) stays in
+    /// charge when the middle button is up, exactly as before.
     /// </summary>
     private void OnStackChordWheelChanged(object? sender, PointerWheelEventArgs e)
     {
         if (!stackMiddleButtonChord) return;
-        if (StackWidget is not { } stack || StackIndicators is not { Count: > 1 } list) return;
+        if (StackWidget is not { } stack || stack.IndicatorItems is not { Count: > 1 } list) return;
 
         try
         {
@@ -667,67 +699,12 @@ public partial class Widget : Window, INotifyPropertyChanged
         }
     }
 
-    /// <summary>
-    /// 常态隐藏小圆点 (StackWidget.AutoHideIndicators): the dots only show while a switch
-    /// transition runs or the pointer is over the widget, then hide again after a short
-    /// linger. Opacity keeps the strip hit-testable, so the wheel-at-the-origin gesture and
-    /// clicking a dot keep working; the pointer-over reveal guarantees the dots are visible
-    /// whenever they could be interacted with.
-    /// </summary>
-    private void UpdateStackIndicatorsReveal()
-    {
-        var host = StackIndicatorsHost;
-        if (host == null) return;
-
-        if (StackWidget is not { } stack || !stack.AutoHideIndicators || !HasStackIndicators)
-        {
-            stackDotsHideTimer?.Stop();
-            host.Opacity = 1;
-            return;
-        }
-
-        if (stack.IsTransitionActive || IsPointerOver)
-        {
-            stackDotsHideTimer?.Stop();
-            host.Opacity = 1;
-            return;
-        }
-
-        // Idle: linger briefly before hiding, so a just-finished interaction doesn't flicker.
-        if (host.Opacity > 0 && stackDotsHideTimer is not { IsEnabled: true })
-        {
-            stackDotsHideTimer ??= new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(600) };
-            stackDotsHideTimer.Tick -= OnStackDotsHideTimerTick;
-            stackDotsHideTimer.Tick += OnStackDotsHideTimerTick;
-            stackDotsHideTimer.Start();
-        }
-    }
-
-    private void OnStackDotsHideTimerTick(object? sender, EventArgs e)
-    {
-        stackDotsHideTimer?.Stop();
-        if (StackIndicatorsHost == null) return;
-
-        StackIndicatorsHost.Opacity =
-            StackWidget is { } stack && stack.AutoHideIndicators && HasStackIndicators
-            && (stack.IsTransitionActive || IsPointerOver)
-                ? 1
-                : 0;
-    }
-
-    protected override void OnPointerEntered(PointerEventArgs e)
-    {
-        base.OnPointerEntered(e);
-        UpdateStackIndicatorsReveal();
-    }
-
     protected override void OnPointerExited(PointerEventArgs e)
     {
         base.OnPointerExited(e);
         // The chord is a press-and-scroll gesture inside the widget: leaving the window
         // ends it (a release outside would otherwise leave the flag stuck on).
         stackMiddleButtonChord = false;
-        UpdateStackIndicatorsReveal();
     }
 
     /// <summary>
@@ -812,27 +789,6 @@ public partial class Widget : Window, INotifyPropertyChanged
 
     public Thickness WidgetMargin => isFrameless ? new Thickness(0) : new Thickness(EffectiveMargin);
 
-    /// <summary>
-    /// Margin of the stack pagination dots host. Every surface keeps the dots floating in
-    /// the right margin outside the card — except 毛玻璃 (acrylic): DWM applies the OS blur
-    /// to the whole clipped window region, so an out-of-card strip holding the dots would
-    /// show as a frosted tab behind them (translucent fills there read as glass, and an opaque
-    /// one as a foreign slab — the strip's own backdrop is <i>blurred wallpaper</i>). There the
-    /// dots move inside the card (over its right edge), which also lets
-    /// <see cref="ApplyWidgetRegion"/> clip to the card alone.
-    /// </summary>
-    public Thickness StackIndicatorsMargin
-    {
-        get
-        {
-            if (isFrameless) return new Thickness(0, 0, 1, 0);
-            var theme = appSettingsProvider.Get().Theme;
-            return theme.UsesNativeBlur && !theme.UseNativeFrame
-                ? new Thickness(0, 0, WidgetMargin.Right + 1, 0)
-                : new Thickness(0, 0, 1, 0);
-        }
-    }
-
     public IBrush WidgetCardBackground
     {
         get
@@ -842,16 +798,17 @@ public partial class Widget : Window, INotifyPropertyChanged
             var variant = ActualThemeVariant;
             if (theme.IsColorful)
             {
-                var contentName = ContentPresenter?.Content?.GetType().Name;
-                if (contentName is "Forecast" or "FourDayForecast")
+                // 可选外观提示（W10 §9.1）：内容视图通过 IWidgetSurfaceHints 声明自己的
+                // Colorful 卡片画刷资源键，宿主从该组件自己的资源上下文按明暗变体解析；
+                // 不再按视图类型名（Forecast/ProgressView…）分支。键解析不到（或内容
+                // 未实现接口，包括旧版 DLL）自然退回下方 WidgetBackground 通用回退。
+                if (ContentPresenter?.Content is IWidgetSurfaceHints hints
+                    && hints.ColorfulBackgroundResourceKey is { Length: > 0 } key
+                    && ContentPresenter.Content is Control hintedHost
+                    && hintedHost.TryFindResource(key, variant, out var hinted)
+                    && hinted is IBrush hintedBrush)
                 {
-                    if (this.TryFindResource("WeatherCardBackground", variant, out var wcb) && wcb is IBrush wb)
-                        return wb;
-                }
-                else if (contentName is "Progress" or "ProgressView")
-                {
-                    if (this.TryFindResource("ProgressCardBackground", variant, out var pcb) && pcb is IBrush pb)
-                        return pb;
+                    return hintedBrush;
                 }
 
                 // Explicit fallback guarantee for Colorful theme to ensure pure white (light) or charcoal (dark)
@@ -1227,11 +1184,13 @@ public partial class Widget : Window, INotifyPropertyChanged
         var cardHeight = Math.Max(1, height - 2 * margin);
         var cardRadius = (int) Math.Round(ResolveEffectiveRadius(appSettingsProvider.Get().Dimensions.Radius));
 
-        // The stack pagination dots are placed inside the card on this surface
-        // (see StackIndicatorsMargin) — exactly because an out-of-card strip in the native
-        // region would flood with the OS blur, and no fill for it works there: a translucent one
-        // reads as frosted glass, an opaque one as a slab of a different material. The card
-        // rectangle alone therefore also covers the dots; no extra strip is ever OR-ed in.
+        // The decoration overlay (IWidgetOverlayProvider, e.g. the Stack pagination dots that
+        // moved into the plugin) is placed inside the card on this surface per its
+        // InsetOnNativeBlur hint — exactly because an out-of-card strip in the native region
+        // would flood with the OS blur, and no fill for it works there: a translucent one
+        // reads as frosted glass, an opaque one as a slab of a different material (see
+        // UpdateOverlayLayout). The card rectangle alone therefore also covers the dots;
+        // no extra strip is ever OR-ed in, and the region work stays entirely host-side.
         var key = (margin, cardWidth, cardHeight, cardRadius);
         if (lastAppliedRegion == key) return;
         lastAppliedRegion = key;
@@ -1283,7 +1242,7 @@ public partial class Widget : Window, INotifyPropertyChanged
             Notify(nameof(GlassMaterial));
             Notify(nameof(ShowsGlassMaterial));
             Notify(nameof(WidgetMargin));
-            Notify(nameof(StackIndicatorsMargin));
+            UpdateOverlayLayout();
             Notify(nameof(WidgetCardBackground));
             Notify(nameof(Radius));
             Notify(nameof(InnerRadius));
@@ -1405,7 +1364,6 @@ public partial class Widget : Window, INotifyPropertyChanged
         RemoveHandler(PointerPressedEvent, OnStackChordPointerPressed);
         RemoveHandler(PointerReleasedEvent, OnStackChordPointerReleased);
         RemoveHandler(PointerWheelChangedEvent, OnStackChordWheelChanged);
-        stackDotsHideTimer?.Stop();
         Resized -= OnResized;
         Activated -= OnActivated;
         Opened -= OnOpened;
@@ -1497,7 +1455,7 @@ public partial class Widget : Window, INotifyPropertyChanged
         Notify(nameof(IsFrameless));
         Notify(nameof(ShowsGlassMaterial));
         Notify(nameof(WidgetMargin));
-        Notify(nameof(StackIndicatorsMargin));
+        UpdateOverlayLayout();
         Notify(nameof(WidgetCardBackground));
         Notify(nameof(Radius));
         Notify(nameof(InnerRadius));
@@ -1931,7 +1889,7 @@ public partial class Widget : Window, INotifyPropertyChanged
         if (oldConfig?.Margin != config.Margin || oldConfig?.Radius != config.Radius)
         {
             Notify(nameof(WidgetMargin));
-            Notify(nameof(StackIndicatorsMargin));
+            UpdateOverlayLayout();
             Notify(nameof(Radius));
             Notify(nameof(InnerRadius));
             Notify(nameof(PillRadius));
