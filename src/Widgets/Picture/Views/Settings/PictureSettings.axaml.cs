@@ -39,6 +39,19 @@ public partial class PictureSettings : UserControl
         CropPreview.WidgetAspect = GetWidgetAspect();
         CropPreview.CropChanged += OnCropPreviewChanged;
 
+        // The crop rows are shared LabeledSliders; the compound control has no ValueChanged
+        // event, so the Value property change is the same signal. Programmatic loads (model
+        // load / preview drag below) run inside the isInitializing guard, exactly like the
+        // old Slider.ValueChanged path.
+        foreach (var slider in new[] { CropXSlider, CropYSlider, ZoomSlider })
+        {
+            slider.PropertyChanged += (_, e) =>
+            {
+                if (e.Property == DeskCanvas.Views.Controls.LabeledSlider.ValueProperty)
+                    OnCropSliderChanged();
+            };
+        }
+
         InitCombos();
         LoadFromModel();
         isInitializing = false;
@@ -168,13 +181,9 @@ public partial class PictureSettings : UserControl
             CropPreview.PreviewBitmap = null;
         }
 
-        CropXSlider.Value = item.CropX * 100.0;
-        CropYSlider.Value = item.CropY * 100.0;
-        ZoomSlider.Value = item.Zoom * 100.0;
-
-        CropXText.Text = $"{(int)CropXSlider.Value}%";
-        CropYText.Text = $"{(int)CropYSlider.Value}%";
-        ZoomText.Text = $"{(ZoomSlider.Value / 100.0):F2}x";
+        CropXSlider.Value = item.CropX;
+        CropYSlider.Value = item.CropY;
+        ZoomSlider.Value = item.Zoom;
 
         CropPreview.WidgetAspect = GetWidgetAspect();
         CropPreview.CropX = item.CropX;
@@ -201,13 +210,9 @@ public partial class PictureSettings : UserControl
         if (selectedItem == null) return;
 
         isInitializing = true;
-        CropXSlider.Value = cropX * 100.0;
-        CropYSlider.Value = cropY * 100.0;
-        ZoomSlider.Value = zoom * 100.0;
-
-        CropXText.Text = $"{(int)(cropX * 100.0)}%";
-        CropYText.Text = $"{(int)(cropY * 100.0)}%";
-        ZoomText.Text = $"{zoom:F2}x";
+        CropXSlider.Value = cropX;
+        CropYSlider.Value = cropY;
+        ZoomSlider.Value = zoom;
         isInitializing = false;
 
         selectedItem.CropX = cropX;
@@ -217,21 +222,17 @@ public partial class PictureSettings : UserControl
         SaveItems();
     }
 
-    private void OnCropSliderChanged(object? sender, Avalonia.Controls.Primitives.RangeBaseValueChangedEventArgs e)
+    private void OnCropSliderChanged()
     {
         if (isInitializing || selectedItem == null) return;
 
-        double cropX = CropXSlider.Value / 100.0;
-        double cropY = CropYSlider.Value / 100.0;
-        double zoom = ZoomSlider.Value / 100.0;
+        double cropX = CropXSlider.Value;
+        double cropY = CropYSlider.Value;
+        double zoom = ZoomSlider.Value;
 
         selectedItem.CropX = cropX;
         selectedItem.CropY = cropY;
         selectedItem.Zoom = zoom;
-
-        CropXText.Text = $"{(int)CropXSlider.Value}%";
-        CropYText.Text = $"{(int)CropYSlider.Value}%";
-        ZoomText.Text = $"{zoom:F2}x";
 
         CropPreview.CropX = cropX;
         CropPreview.CropY = cropY;
@@ -247,8 +248,8 @@ public partial class PictureSettings : UserControl
         var parts = tag.Split(',');
         if (parts.Length == 2 && double.TryParse(parts[0], out var x) && double.TryParse(parts[1], out var y))
         {
-            CropXSlider.Value = x * 100.0;
-            CropYSlider.Value = y * 100.0;
+            CropXSlider.Value = x;
+            CropYSlider.Value = y;
         }
     }
 

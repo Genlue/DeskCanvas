@@ -1,7 +1,6 @@
 using System;
 using System.Text.Json;
 using Avalonia.Controls;
-using Avalonia.Controls.Primitives;
 using Avalonia.Interactivity;
 using Tools.Models;
 using Tools.Services;
@@ -26,7 +25,13 @@ public partial class ClipboardSettings : UserControl
         InitializeComponent();
 
         MaxCountSlider.Value = model.MaxHistoryCount;
-        MaxCountValueText.Text = $"{model.MaxHistoryCount}";
+        MaxCountSlider.PropertyChanged += (_, e) =>
+        {
+            // LabeledSlider exposes no ValueChanged event; the Value property change is the
+            // same signal. External loads (the line above) are guarded by isInitializing.
+            if (e.Property == DeskCanvas.Views.Controls.LabeledSlider.ValueProperty)
+                OnMaxCountChanged();
+        };
         AutoCopyToggle.IsChecked = model.AutoCopyOnClick;
         CaptureTextToggle.IsChecked = model.CaptureText;
         CaptureImagesToggle.IsChecked = model.CaptureImages;
@@ -35,11 +40,10 @@ public partial class ClipboardSettings : UserControl
         isInitializing = false;
     }
 
-    private void OnMaxCountChanged(object? sender, RangeBaseValueChangedEventArgs e)
+    private void OnMaxCountChanged()
     {
         if (isInitializing) return;
-        int val = (int)Math.Round(e.NewValue);
-        MaxCountValueText.Text = $"{val}";
+        int val = (int)Math.Round(MaxCountSlider.Value);
         model = model with { MaxHistoryCount = val };
         Save();
         ClipboardMonitorService.Instance.UpdateSettings(model);

@@ -1,106 +1,66 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="clr-namespace:DeskCanvas.Views.Controls;assembly=DeskCanvas"
              xmlns:locales="clr-namespace:Tools.Locales"
-             x:Class="Tools.Views.Settings.CalculatorSettings">
-    <UserControl.Styles>
-        <Style Selector="TextBlock.setting-label">
-            <Setter Property="FontSize" Value="13" />
-            <Setter Property="VerticalAlignment" Value="Center" />
-            <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}" />
-        </Style>
-        <Style Selector="TextBlock.setting-desc">
-            <Setter Property="FontSize" Value="11" />
-            <Setter Property="Opacity" Value="0.6" />
-            <Setter Property="Margin" Value="0,2,0,0" />
-            <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}" />
-        </Style>
-        <Style Selector="ComboBox.setting-combo">
-            <Setter Property="Width" Value="160" />
-            <Setter Property="HorizontalAlignment" Value="Right" />
-            <Setter Property="FontSize" Value="12" />
-        </Style>
-        <Style Selector="Button.action-btn">
-            <Setter Property="Background" Value="Transparent" />
-            <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="BorderBrush" Value="{DynamicResource ToolTipBorderBrush}" />
-            <Setter Property="CornerRadius" Value="4" />
-            <Setter Property="Padding" Value="10,4" />
-            <Setter Property="FontSize" Value="12" />
-            <Setter Property="Cursor" Value="Hand" />
-            <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}" />
-        </Style>
-        <Style Selector="Button.action-btn:pointerover">
-            <Setter Property="Background" Value="{DynamicResource SystemControlHighlightListLowBrush}" />
-        </Style>
-    </UserControl.Styles>
+             x:Class="Tools.Views.Settings.CalculatorSettings"
+             controls:SettingsPage.ScrollOwnership="Host">
+    <!-- Scroll ownership: Host — no outer ScrollViewer of its own; the EditWidget content
+         viewport is the single vertical scroll owner. All rows are shared Setting rows, the
+         group headers use dc-section-header, the slider+value row is a shared LabeledSlider. -->
+    <StackPanel Orientation="Vertical" Spacing="6" Margin="0,2,10,8">
+        <TextBlock Classes="dc-section-header" Text="{x:Static locales:Locale.Tools_Calculator_Group_Display}" />
 
-    <ScrollViewer VerticalScrollBarVisibility="Auto">
-        <StackPanel Orientation="Vertical" Spacing="10" Margin="0,2,16,8">
-            <TextBlock Classes="group-header" Text="{x:Static locales:Locale.Tools_Calculator_Group_Display}" />
+        <!-- Decimal Places -->
+        <controls:Setting Title="{x:Static locales:Locale.Tools_Calculator_DecimalPlaces}"
+                          Subtitle="{x:Static locales:Locale.Tools_Calculator_DecimalPlaces_Desc}">
+            <!-- MinWidth, not Width: the option list grows with the locale instead of clipping. -->
+            <ComboBox x:Name="DecimalPlacesCombo" MinWidth="160" HorizontalAlignment="Right"
+                      SelectionChanged="OnDecimalPlacesChanged" />
+        </controls:Setting>
 
-            <!-- Decimal Places -->
-            <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto">
-                <TextBlock Classes="setting-label" Text="{x:Static locales:Locale.Tools_Calculator_DecimalPlaces}" />
-                <TextBlock Grid.Row="1" Classes="setting-desc" Text="{x:Static locales:Locale.Tools_Calculator_DecimalPlaces_Desc}" />
-                <ComboBox x:Name="DecimalPlacesCombo" Grid.Column="1" Grid.RowSpan="2" Classes="setting-combo"
-                          SelectionChanged="OnDecimalPlacesChanged" />
-            </Grid>
+        <!-- Thousands Separator -->
+        <controls:Setting Title="{x:Static locales:Locale.Tools_Calculator_ThousandsSep}"
+                          Subtitle="{x:Static locales:Locale.Tools_Calculator_ThousandsSep_Desc}">
+            <ToggleSwitch x:Name="ThousandsSepToggle" OnContent="" OffContent=""
+                          IsCheckedChanged="OnToggleChanged" />
+        </controls:Setting>
 
-            <!-- Thousands Separator -->
-            <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto">
-                <TextBlock Classes="setting-label" Text="{x:Static locales:Locale.Tools_Calculator_ThousandsSep}" />
-                <TextBlock Grid.Row="1" Classes="setting-desc" Text="{x:Static locales:Locale.Tools_Calculator_ThousandsSep_Desc}" />
-                <ToggleSwitch x:Name="ThousandsSepToggle" Grid.Column="1" Grid.RowSpan="2" OnContent="" OffContent=""
-                              IsCheckedChanged="OnToggleChanged" />
-            </Grid>
+        <TextBlock Classes="dc-section-header" Text="{x:Static locales:Locale.Tools_Calculator_Group_Mode}" />
 
-            <TextBlock Classes="group-header" Text="{x:Static locales:Locale.Tools_Calculator_Group_Mode}" />
+        <!-- Default Angle Mode -->
+        <controls:Setting Title="{x:Static locales:Locale.Tools_Calculator_AngleMode}"
+                          Subtitle="{x:Static locales:Locale.Tools_Calculator_AngleMode_Desc}">
+            <ComboBox x:Name="AngleModeCombo" MinWidth="160" HorizontalAlignment="Right"
+                      SelectionChanged="OnAngleModeChanged" />
+        </controls:Setting>
 
-            <!-- Default Angle Mode -->
-            <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto">
-                <TextBlock Classes="setting-label" Text="{x:Static locales:Locale.Tools_Calculator_AngleMode}" />
-                <TextBlock Grid.Row="1" Classes="setting-desc" Text="{x:Static locales:Locale.Tools_Calculator_AngleMode_Desc}" />
-                <ComboBox x:Name="AngleModeCombo" Grid.Column="1" Grid.RowSpan="2" Classes="setting-combo"
-                          SelectionChanged="OnAngleModeChanged" />
-            </Grid>
+        <!-- Default Panel Tab -->
+        <controls:Setting Title="{x:Static locales:Locale.Tools_Calculator_DefaultTab}"
+                          Subtitle="{x:Static locales:Locale.Tools_Calculator_DefaultTab_Desc}">
+            <ComboBox x:Name="DefaultTabCombo" MinWidth="160" HorizontalAlignment="Right"
+                      SelectionChanged="OnDefaultTabChanged" />
+        </controls:Setting>
 
-            <!-- Default Panel Tab -->
-            <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto">
-                <TextBlock Classes="setting-label" Text="{x:Static locales:Locale.Tools_Calculator_DefaultTab}" />
-                <TextBlock Grid.Row="1" Classes="setting-desc" Text="{x:Static locales:Locale.Tools_Calculator_DefaultTab_Desc}" />
-                <ComboBox x:Name="DefaultTabCombo" Grid.Column="1" Grid.RowSpan="2" Classes="setting-combo"
-                          SelectionChanged="OnDefaultTabChanged" />
-            </Grid>
+        <TextBlock Classes="dc-section-header" Text="{x:Static locales:Locale.Tools_Calculator_Group_History}" />
 
-            <TextBlock Classes="group-header" Text="{x:Static locales:Locale.Tools_Calculator_Group_History}" />
+        <!-- Max History Items -->
+        <controls:Setting Title="{x:Static locales:Locale.Tools_Calculator_MaxHistory}"
+                          Subtitle="{x:Static locales:Locale.Tools_Calculator_MaxHistory_Desc}">
+            <controls:LabeledSlider x:Name="MaxHistorySlider" Width="180" Minimum="10" Maximum="100" Step="5"
+                                    AutomationProperties.Name="{x:Static locales:Locale.Tools_Calculator_MaxHistory}" />
+        </controls:Setting>
 
-            <!-- Max History Items -->
-            <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto">
-                <TextBlock Classes="setting-label" Text="{x:Static locales:Locale.Tools_Calculator_MaxHistory}" />
-                <TextBlock Grid.Row="1" Classes="setting-desc" Text="{x:Static locales:Locale.Tools_Calculator_MaxHistory_Desc}" />
-                <StackPanel Grid.Column="1" Grid.RowSpan="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                    <Slider x:Name="MaxHistorySlider" Minimum="10" Maximum="100" Width="130"
-                            TickFrequency="5" IsSnapToTickEnabled="True" ValueChanged="OnMaxHistoryChanged" />
-                    <TextBlock x:Name="MaxHistoryValueText" VerticalAlignment="Center" Width="32" TextAlignment="Right" FontSize="13" />
-                </StackPanel>
-            </Grid>
+        <!-- Click History to Copy -->
+        <controls:Setting Title="{x:Static locales:Locale.Tools_Calculator_ClickToCopy}"
+                          Subtitle="{x:Static locales:Locale.Tools_Calculator_ClickToCopy_Desc}">
+            <ToggleSwitch x:Name="ClickToCopyToggle" OnContent="" OffContent=""
+                          IsCheckedChanged="OnToggleChanged" />
+        </controls:Setting>
 
-            <!-- Click History to Copy -->
-            <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto">
-                <TextBlock Classes="setting-label" Text="{x:Static locales:Locale.Tools_Calculator_ClickToCopy}" />
-                <TextBlock Grid.Row="1" Classes="setting-desc" Text="{x:Static locales:Locale.Tools_Calculator_ClickToCopy_Desc}" />
-                <ToggleSwitch x:Name="ClickToCopyToggle" Grid.Column="1" Grid.RowSpan="2" OnContent="" OffContent=""
-                              IsCheckedChanged="OnToggleChanged" />
-            </Grid>
-
-            <!-- Clear History & Memory -->
-            <Grid ColumnDefinitions="*,Auto" Margin="0,4,0,0">
-                <StackPanel VerticalAlignment="Center">
-                    <TextBlock Classes="setting-label" Text="{x:Static locales:Locale.Tools_Calculator_ClearAllTitle}" />
-                    <TextBlock Classes="setting-desc" Text="{x:Static locales:Locale.Tools_Calculator_ClearAllDesc}" />
-                </StackPanel>
-                <Button Grid.Column="1" Classes="action-btn" Content="{x:Static locales:Locale.Tools_Clipboard_ClearNow}" Click="OnClearAllClicked" />
-            </Grid>
-        </StackPanel>
-    </ScrollViewer>
+        <!-- Clear History & Memory -->
+        <controls:Setting Title="{x:Static locales:Locale.Tools_Calculator_ClearAllTitle}"
+                          Subtitle="{x:Static locales:Locale.Tools_Calculator_ClearAllDesc}">
+            <Button Classes="dc-toolbar-button" Content="{x:Static locales:Locale.Tools_Clipboard_ClearNow}" Click="OnClearAllClicked" />
+        </controls:Setting>
+    </StackPanel>
 </UserControl>

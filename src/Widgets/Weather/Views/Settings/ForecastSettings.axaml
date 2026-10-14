@@ -5,31 +5,32 @@
              xmlns:viewModels="clr-namespace:Weather.ViewModels"
              xmlns:geocoding="clr-namespace:Weather.Models.Geocoding"
              x:Class="Weather.Views.Settings.ForecastSettings"
-             x:DataType="viewModels:ForecastSettingsViewModel">
-    <ScrollViewer>
-        <StackPanel Orientation="Vertical" Spacing="5">
-            <controls:Setting Title="{x:Static locales:Locale.Weather_Location}">
-                <AutoCompleteBox MinWidth="150" Name="Search" FilterMode="None" 
-                                 ValueMemberBinding="{Binding Name, x:DataType=geocoding:City}" 
-                                 SelectedItem="{Binding Location, Mode=OneWay}"
-                                 LostFocus="Search_OnLostFocus">
-                    <AutoCompleteBox.ItemTemplate>
-                        <DataTemplate x:DataType="geocoding:City">
-                            <TextBlock Text="{Binding SearchName}" Margin="0 4" />
-                        </DataTemplate>
-                    </AutoCompleteBox.ItemTemplate>
-                </AutoCompleteBox>
-            </controls:Setting>
-            <controls:Setting Title="{x:Static locales:Locale.Weather_Units}">
-                <ComboBox ItemsSource="{Binding TemperatureUnits}" MinWidth="150" 
-                          SelectedItem="{Binding TemperatureUnit}">
-                    <ComboBox.ItemTemplate>
-                        <DataTemplate DataType="viewModels:TemperatureUnitViewModel">
-                            <TextBlock Text="{Binding DisplayName}" Margin="0 4" />
-                        </DataTemplate>
-                    </ComboBox.ItemTemplate>
-                </ComboBox>
-            </controls:Setting>
-        </StackPanel>
-    </ScrollViewer>
+             x:DataType="viewModels:ForecastSettingsViewModel"
+             controls:SettingsPage.ScrollOwnership="Host">
+    <!-- Scroll ownership: Host — no outer ScrollViewer of its own; the EditWidget content
+         viewport is the single vertical scroll owner. -->
+    <StackPanel Orientation="Vertical" Spacing="5">
+        <controls:Setting Title="{x:Static locales:Locale.Weather_Location}">
+            <AutoCompleteBox MinWidth="150" Name="Search" FilterMode="None" 
+                             ValueMemberBinding="{Binding Name, x:DataType=geocoding:City}" 
+                             SelectedItem="{Binding Location, Mode=OneWay}"
+                             LostFocus="Search_OnLostFocus">
+                <AutoCompleteBox.ItemTemplate>
+                    <DataTemplate x:DataType="geocoding:City">
+                        <TextBlock Text="{Binding SearchName}" Margin="0 4" />
+                    </DataTemplate>
+                </AutoCompleteBox.ItemTemplate>
+            </AutoCompleteBox>
+        </controls:Setting>
+        <controls:Setting Title="{x:Static locales:Locale.Weather_Units}">
+            <ComboBox ItemsSource="{Binding TemperatureUnits}" MinWidth="150" 
+                      SelectedItem="{Binding TemperatureUnit}">
+                <ComboBox.ItemTemplate>
+                    <DataTemplate DataType="viewModels:TemperatureUnitViewModel">
+                        <TextBlock Text="{Binding DisplayName}" Margin="0 4" />
+                    </DataTemplate>
+                </ComboBox.ItemTemplate>
+            </ComboBox>
+        </controls:Setting>
+    </StackPanel>
 </UserControl>

@@ -4,10 +4,12 @@
              xmlns:locales="clr-namespace:Clock.Locales"
              xmlns:system="clr-namespace:System;assembly=System.Runtime"
              xmlns:viewModels="clr-namespace:Clock.ViewModels"
-             x:Class="Clock.Views.Settings.FlipClockSettings"
-             x:DataType="viewModels:FlipClockSettingsViewModel">
-    <ScrollViewer>
-        <StackPanel Orientation="Vertical" Spacing="6" Margin="0 0 10 0">
+        x:Class="Clock.Views.Settings.FlipClockSettings"
+        x:DataType="viewModels:FlipClockSettingsViewModel"
+        controls:SettingsPage.ScrollOwnership="Host">
+    <!-- Scroll ownership: Host — no outer ScrollViewer of its own; the EditWidget content
+         viewport is the single vertical scroll owner. -->
+    <StackPanel Orientation="Vertical" Spacing="6" Margin="0 0 10 0">
             <!-- 24 小时制 -->
             <controls:Setting Title="{x:Static locales:Locale.Clock_Use24Hours}">
                 <ToggleSwitch IsChecked="{Binding Use24Hours}" />
@@ -22,7 +24,7 @@
                               Title="{x:Static locales:Locale.Clock_SecondsStyle}">
                 <ComboBox ItemsSource="{Binding SecondsStyleOptions}"
                           SelectedItem="{Binding SelectedSecondsStyleOption}"
-                          Width="195">
+                          MinWidth="195">
                     <ComboBox.ItemTemplate>
                         <DataTemplate x:DataType="viewModels:FlipSecondsStyleOption">
                             <TextBlock Text="{Binding DisplayName}" Margin="0 3" />
@@ -40,7 +42,7 @@
                               Title="{x:Static locales:Locale.Clock_DatePosition}">
                 <ComboBox ItemsSource="{Binding DatePositionOptions}"
                           SelectedItem="{Binding SelectedDatePositionOption}"
-                          Width="195">
+                          MinWidth="195">
                     <ComboBox.ItemTemplate>
                         <DataTemplate x:DataType="viewModels:FlipDatePositionOption">
                             <TextBlock Text="{Binding DisplayName}" Margin="0 3" />
@@ -57,7 +59,7 @@
             <controls:Setting IsVisible="{Binding ShowTimeZones}"
                               Title="{x:Static locales:Locale.Clock_TimeZone}">
                 <ComboBox ItemsSource="{Binding TimeZones}"
-                          Width="195"
+                          MinWidth="195"
                           SelectedItem="{Binding TimeZone}">
                     <ComboBox.ItemTemplate>
                         <DataTemplate DataType="system:TimeZoneInfo">
@@ -67,5 +69,4 @@
                 </ComboBox>
             </controls:Setting>
         </StackPanel>
-    </ScrollViewer>
 </UserControl>

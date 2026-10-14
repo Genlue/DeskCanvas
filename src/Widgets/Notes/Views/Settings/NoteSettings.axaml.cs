@@ -11,6 +11,7 @@ using Notes.Models;
 using Notes.Services;
 using DeskCanvas.Core.Interfaces;
 using DeskCanvas.Services;
+using DeskCanvas.Views.Controls;
 
 namespace Notes.Views.Settings;
 
@@ -36,7 +37,7 @@ public partial class NoteSettings : UserControl
     private readonly List<string> fontNames;
 
     /// <summary>The eight color rows, wired generically.</summary>
-    private readonly List<(MdFormat Format, ColorPicker Picker, Button Reset)> styleRows = [];
+    private readonly List<(MdFormat Format, ColorInput Input, Button Reset)> styleRows = [];
 
     /// <summary>Rows whose next pure-Black event is the flyout's init push, not a user pick.</summary>
     private readonly HashSet<MdFormat> armedSwallow = [];
@@ -114,13 +115,13 @@ public partial class NoteSettings : UserControl
             });
         };
 
-        foreach (var (format, picker, reset) in styleRows)
+        // The shared ColorInput never commits on load, but the wrapped picker flyout still
+        // pushes its uninitialized Black once on the very first open (template applies
+        // lazily) — the swallow guard below keeps that from becoming a user pick.
+        foreach (var (format, input, reset) in styleRows)
         {
-            // The flyout pushes its uninitialized Black once on the very first
-            // open (template applies lazily) — disarm after that first event,
-            // whatever it was, so genuine later picks always land.
             armedSwallow.Add(format);
-            picker.ColorChanged += (_, _) =>
+            input.ValueCommitted += (_, e) =>
             {
                 if (syncing) return;
                 // A picker flyout initializes its spectrum at pure Black and pushes
@@ -129,8 +130,8 @@ public partial class NoteSettings : UserControl
                 // saving it would turn e.g. dark-mode body text invisible. Swallow
                 // it and re-assert the prefill instead.
                 if (armedSwallow.Contains(format) &&
-                    picker.Color == Colors.Black && StoredColor(format) == null &&
-                    DefaultColor(format) != Colors.Black)
+                    Color.TryParse(e.Value, out var committed) && committed == Colors.Black &&
+                    StoredColor(format) == null && DefaultColor(format) != Colors.Black)
                 {
                     armedSwallow.Remove(format);
                     SyncColorRows();
@@ -138,7 +139,7 @@ public partial class NoteSettings : UserControl
                 }
 
                 armedSwallow.Remove(format);
-                SaveColor(format, picker.Color.ToString());
+                SaveColor(format, e.Value);
                 reset.IsVisible = true;
             };
             reset.Click += (_, _) =>
@@ -158,23 +159,24 @@ public partial class NoteSettings : UserControl
                 FollowAccentHeader = follow,
                 HeaderColor = follow ? m.HeaderColor : m.HeaderColor ?? "#FF3376CD",
             });
-            HeaderColorPicker.IsVisible = !follow;
+            HeaderColorInput.IsVisible = !follow;
         };
-        HeaderColorPicker.ColorChanged += (_, _) =>
+        HeaderColorInput.ValueCommitted += (_, e) =>
         {
             // First-open init push of the flyout (see the style rows): a lone
             // pure Black while no custom header color exists is not a user pick.
-            if (headerSwallowArmed && HeaderColorPicker.Color == Colors.Black && CurrentModel.HeaderColor == null)
+            if (headerSwallowArmed && Color.TryParse(e.Value, out var committed) &&
+                committed == Colors.Black && CurrentModel.HeaderColor == null)
             {
                 headerSwallowArmed = false;
                 syncing = true;
-                HeaderColorPicker.Color = Color.Parse("#3376CD");
+                HeaderColorInput.Value = "#FF3376CD";
                 syncing = false;
                 return;
             }
 
             headerSwallowArmed = false;
-            UpdateModel(m => m with { HeaderColor = HeaderColorPicker.Color.ToString() });
+            UpdateModel(m => m with { HeaderColor = e.Value });
         };
         HeaderOpacityBox.ValueChanged += (_, _) =>
             UpdateModel(m => m with { HeaderOpacity = (double)(HeaderOpacityBox.Value ?? 1.0m) });
@@ -227,19 +229,21 @@ public partial class NoteSettings : UserControl
         if (isColorful)
         {
             HeaderModeBox.IsEnabled = false;
-            HeaderColorPicker.IsEnabled = false;
-            HeaderColorPicker.IsVisible = true;
-            HeaderColorPicker.Color = actualDark ? Color.Parse("#FFD60A") : Color.Parse("#FFCC00");
+            HeaderColorInput.IsEnabled = false;
+            HeaderColorInput.IsVisible = true;
+            HeaderColorInput.Value = actualDark ? "#FFD60A" : "#FFCC00";
             HeaderOpacityBox.IsEnabled = false;
             HeaderOpacityBox.Value = 1.00m;
         }
         else
         {
             HeaderModeBox.IsEnabled = true;
-            HeaderColorPicker.IsEnabled = true;
+            HeaderColorInput.IsEnabled = true;
             HeaderModeBox.SelectedIndex = model.FollowAccentHeader ? 0 : 1;
-            HeaderColorPicker.IsVisible = !model.FollowAccentHeader;
-            HeaderColorPicker.Color = Color.TryParse(model.HeaderColor, out var color) ? color : Color.Parse("#3376CD");
+            HeaderColorInput.IsVisible = !model.FollowAccentHeader;
+            HeaderColorInput.Value = Color.TryParse(model.HeaderColor, out var color)
+                ? model.HeaderColor
+                : "#FF3376CD";
             HeaderOpacityBox.IsEnabled = true;
             HeaderOpacityBox.Value = (decimal)Math.Round(model.HeaderOpacity, 2);
         }
@@ -269,11 +273,16 @@ public partial class NoteSettings : UserControl
         syncing = true;
         try
         {
-            foreach (var (format, picker, reset) in styleRows)
+            foreach (var (format, input, reset) in styleRows)
             {
                 var custom = GetColor(palette, format);
                 reset.IsVisible = custom != null;
-                picker.Color = Color.TryParse(custom, out var color) ? color : DefaultColor(format);
+                // No custom colour: show the theme default the row falls back to (the
+                // "Default" reset button is hidden for it). ColorInput mirrors the value
+                // without committing — exactly the old programmatic picker prefill.
+                input.Value = Color.TryParse(custom, out var parsed)
+                    ? parsed.ToString()
+                    : DefaultColor(format).ToString();
             }
         }
         finally

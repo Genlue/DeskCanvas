@@ -1,89 +1,54 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="clr-namespace:DeskCanvas.Views.Controls;assembly=DeskCanvas"
              xmlns:locales="clr-namespace:Tools.Locales"
-             x:Class="Tools.Views.Settings.ClipboardSettings">
-    <UserControl.Styles>
-        <Style Selector="TextBlock.setting-label">
-            <Setter Property="FontSize" Value="13" />
-            <Setter Property="VerticalAlignment" Value="Center" />
-            <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}" />
-        </Style>
-        <Style Selector="TextBlock.setting-desc">
-            <Setter Property="FontSize" Value="11" />
-            <Setter Property="Opacity" Value="0.6" />
-            <Setter Property="Margin" Value="0,2,0,0" />
-            <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}" />
-        </Style>
-        <Style Selector="Button.action-btn">
-            <Setter Property="Background" Value="Transparent" />
-            <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="BorderBrush" Value="{DynamicResource ToolTipBorderBrush}" />
-            <Setter Property="CornerRadius" Value="4" />
-            <Setter Property="Padding" Value="10,4" />
-            <Setter Property="FontSize" Value="12" />
-            <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}" />
-        </Style>
-        <Style Selector="Button.action-btn:pointerover">
-            <Setter Property="Background" Value="{DynamicResource SystemControlHighlightListLowBrush}" />
-        </Style>
-    </UserControl.Styles>
+             x:Class="Tools.Views.Settings.ClipboardSettings"
+             controls:SettingsPage.ScrollOwnership="Host">
+    <!-- Scroll ownership: Host — no outer ScrollViewer of its own; the EditWidget content
+         viewport is the single vertical scroll owner. -->
+    <StackPanel Orientation="Vertical" Spacing="6" Margin="0,2,10,8">
+        <TextBlock Classes="dc-section-header" Text="{x:Static locales:Locale.Tools_Clipboard_Settings_HistoryGroup}" />
 
-    <ScrollViewer VerticalScrollBarVisibility="Auto">
-        <StackPanel Orientation="Vertical" Spacing="10" Margin="0,2,16,8">
-            <TextBlock Classes="group-header" Text="{x:Static locales:Locale.Tools_Clipboard_Settings_HistoryGroup}" />
+        <!-- Max History Count -->
+        <controls:Setting Title="{x:Static locales:Locale.Tools_Clipboard_MaxHistory}"
+                          Subtitle="{x:Static locales:Locale.Tools_Clipboard_MaxHistory_Desc}">
+            <controls:LabeledSlider x:Name="MaxCountSlider" Width="180" Minimum="5" Maximum="100" Step="5"
+                                    AutomationProperties.Name="{x:Static locales:Locale.Tools_Clipboard_MaxHistory}" />
+        </controls:Setting>
 
-            <!-- Max History Count -->
-            <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto">
-                <TextBlock Classes="setting-label" Text="{x:Static locales:Locale.Tools_Clipboard_MaxHistory}" />
-                <TextBlock Grid.Row="1" Classes="setting-desc" Text="{x:Static locales:Locale.Tools_Clipboard_MaxHistory_Desc}" />
-                <StackPanel Grid.Column="1" Grid.RowSpan="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                    <Slider x:Name="MaxCountSlider" Minimum="5" Maximum="100" Width="130"
-                            TickFrequency="5" IsSnapToTickEnabled="True" ValueChanged="OnMaxCountChanged" />
-                    <TextBlock x:Name="MaxCountValueText" VerticalAlignment="Center" Width="32" TextAlignment="Right" FontSize="13" />
-                </StackPanel>
-            </Grid>
+        <!-- Auto Copy On Click -->
+        <controls:Setting Title="{x:Static locales:Locale.Tools_Clipboard_AutoCopy}"
+                          Subtitle="{x:Static locales:Locale.Tools_Clipboard_AutoCopy_Desc}">
+            <ToggleSwitch x:Name="AutoCopyToggle" OnContent="" OffContent=""
+                          IsCheckedChanged="OnToggleChanged" />
+        </controls:Setting>
 
-            <!-- Auto Copy On Click -->
-            <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto">
-                <TextBlock Classes="setting-label" Text="{x:Static locales:Locale.Tools_Clipboard_AutoCopy}" />
-                <TextBlock Grid.Row="1" Classes="setting-desc" Text="{x:Static locales:Locale.Tools_Clipboard_AutoCopy_Desc}" />
-                <ToggleSwitch x:Name="AutoCopyToggle" Grid.Column="1" Grid.RowSpan="2" OnContent="" OffContent=""
-                              IsCheckedChanged="OnToggleChanged" />
-            </Grid>
+        <TextBlock Classes="dc-section-header" Text="{x:Static locales:Locale.Tools_Clipboard_Settings_FormatGroup}" />
 
-            <TextBlock Classes="group-header" Text="{x:Static locales:Locale.Tools_Clipboard_Settings_FormatGroup}" />
+        <!-- Capture Text -->
+        <controls:Setting Title="{x:Static locales:Locale.Tools_Clipboard_CaptureText}">
+            <ToggleSwitch x:Name="CaptureTextToggle" OnContent="" OffContent=""
+                          IsCheckedChanged="OnToggleChanged" />
+        </controls:Setting>
 
-            <!-- Capture Text -->
-            <Grid ColumnDefinitions="*,Auto">
-                <TextBlock Classes="setting-label" Text="{x:Static locales:Locale.Tools_Clipboard_CaptureText}" />
-                <ToggleSwitch x:Name="CaptureTextToggle" Grid.Column="1" OnContent="" OffContent=""
-                              IsCheckedChanged="OnToggleChanged" />
-            </Grid>
+        <!-- Capture Images -->
+        <controls:Setting Title="{x:Static locales:Locale.Tools_Clipboard_CaptureImages}">
+            <ToggleSwitch x:Name="CaptureImagesToggle" OnContent="" OffContent=""
+                          IsCheckedChanged="OnToggleChanged" />
+        </controls:Setting>
 
-            <!-- Capture Images -->
-            <Grid ColumnDefinitions="*,Auto">
-                <TextBlock Classes="setting-label" Text="{x:Static locales:Locale.Tools_Clipboard_CaptureImages}" />
-                <ToggleSwitch x:Name="CaptureImagesToggle" Grid.Column="1" OnContent="" OffContent=""
-                              IsCheckedChanged="OnToggleChanged" />
-            </Grid>
+        <!-- Capture Files -->
+        <controls:Setting Title="{x:Static locales:Locale.Tools_Clipboard_CaptureFiles}">
+            <ToggleSwitch x:Name="CaptureFilesToggle" OnContent="" OffContent=""
+                          IsCheckedChanged="OnToggleChanged" />
+        </controls:Setting>
 
-            <!-- Capture Files -->
-            <Grid ColumnDefinitions="*,Auto">
-                <TextBlock Classes="setting-label" Text="{x:Static locales:Locale.Tools_Clipboard_CaptureFiles}" />
-                <ToggleSwitch x:Name="CaptureFilesToggle" Grid.Column="1" OnContent="" OffContent=""
-                              IsCheckedChanged="OnToggleChanged" />
-            </Grid>
+        <TextBlock Classes="dc-section-header" Text="{x:Static locales:Locale.Tools_Clipboard_Settings_CacheGroup}" />
 
-            <TextBlock Classes="group-header" Text="{x:Static locales:Locale.Tools_Clipboard_Settings_CacheGroup}" />
-
-            <!-- Clear Cache -->
-            <Grid ColumnDefinitions="*,Auto">
-                <StackPanel VerticalAlignment="Center">
-                    <TextBlock Classes="setting-label" Text="{x:Static locales:Locale.Tools_Clipboard_Settings_ClearCache}" />
-                    <TextBlock Classes="setting-desc" Text="{x:Static locales:Locale.Tools_Clipboard_Settings_ClearCacheDesc}" />
-                </StackPanel>
-                <Button Grid.Column="1" Classes="action-btn" Content="{x:Static locales:Locale.Tools_Clipboard_Settings_ClearNow}" Click="OnClearAllClicked" />
-            </Grid>
-        </StackPanel>
-    </ScrollViewer>
+        <!-- Clear Cache -->
+        <controls:Setting Title="{x:Static locales:Locale.Tools_Clipboard_Settings_ClearCache}"
+                          Subtitle="{x:Static locales:Locale.Tools_Clipboard_Settings_ClearCacheDesc}">
+            <Button Classes="dc-toolbar-button" Content="{x:Static locales:Locale.Tools_Clipboard_Settings_ClearNow}" Click="OnClearAllClicked" />
+        </controls:Setting>
+    </StackPanel>
 </UserControl>

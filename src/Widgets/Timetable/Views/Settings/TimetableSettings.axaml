@@ -27,7 +27,7 @@
          content viewport is the single vertical scroll owner and it disables horizontal
          scrolling, so a long row can never widen the page (rows must degrade by wrapping). -->
     <StackPanel Orientation="Vertical" Spacing="5" Margin="0,2,8,10">
-        <TextBlock Classes="section-header" Text="{x:Static locales:Locale.Timetable_Section_Data}" />
+        <TextBlock Classes="dc-section-header" Text="{x:Static locales:Locale.Timetable_Section_Data}" />
 
         <controls:Setting Title="{x:Static locales:Locale.Timetable_Import}"
                           Subtitle="{x:Static locales:Locale.Timetable_Import_Subtitle}">
@@ -53,7 +53,7 @@
                     Click="OnClearClicked" />
         </controls:Setting>
 
-        <TextBlock Classes="section-header" Text="{x:Static locales:Locale.Timetable_Section_Term}" />
+        <TextBlock Classes="dc-section-header" Text="{x:Static locales:Locale.Timetable_Section_Term}" />
 
         <controls:Setting Title="{x:Static locales:Locale.Timetable_StartDate}"
                           Subtitle="{x:Static locales:Locale.Timetable_StartDate_Subtitle}">
@@ -77,12 +77,12 @@
                            ValueChanged="OnCurrentWeekChanged" />
         </controls:Setting>
 
-        <TextBlock Classes="section-header" Text="{x:Static locales:Locale.Timetable_Section_Periods}" />
+        <TextBlock Classes="dc-section-header" Text="{x:Static locales:Locale.Timetable_Section_Periods}" />
         <TextBlock Classes="status-caption" Text="{x:Static locales:Locale.Timetable_Periods_Hint}"
                    Margin="4,0,4,2" />
         <StackPanel x:Name="PeriodsPanel" Orientation="Vertical" Spacing="4" Margin="0,2,0,2" />
 
-        <TextBlock Classes="section-header" Text="{x:Static locales:Locale.Timetable_Section_Display}" />
+        <TextBlock Classes="dc-section-header" Text="{x:Static locales:Locale.Timetable_Section_Display}" />
 
         <controls:Setting Title="{x:Static locales:Locale.Timetable_ShowWeekend}"
                           Subtitle="{x:Static locales:Locale.Timetable_ShowWeekend_Subtitle}">
