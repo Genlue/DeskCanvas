@@ -18,6 +18,8 @@
         <StyleInclude Source="avares://DeskCanvas/Styles/Controls/IconButton.axaml" />
         <!-- Shared settings section header (group-header / section-header aliases). -->
         <StyleInclude Source="avares://DeskCanvas/Styles/Controls/SettingsSectionHeader.axaml" />
+        <!-- Shared secondary-panel shell (W7): the one ControlTheme the nine popups reuse. -->
+        <StyleInclude Source="avares://DeskCanvas/Styles/Controls/SecondaryPanelShell.axaml" />
         <Style Selector="TextBox">
             <Setter Property="Background" Value="Transparent" />
             <Setter Property="BorderThickness" Value="0" />

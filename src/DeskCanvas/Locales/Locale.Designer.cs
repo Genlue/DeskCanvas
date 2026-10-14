@@ -2029,5 +2029,14 @@ namespace DeskCanvas.Locales {
                 return ResourceManager.GetString("Settings_Advanced_TrayIcon_Subtitle", resourceCulture);
             }
         }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Close panel.
+        /// </summary>
+        public static string SecondaryPanel_Close {
+            get {
+                return ResourceManager.GetString("SecondaryPanel_Close", resourceCulture);
+            }
+        }
     }
 }

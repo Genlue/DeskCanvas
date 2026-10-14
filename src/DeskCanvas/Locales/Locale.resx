@@ -996,4 +996,7 @@
     <data name="Settings_ColorInput_InvalidFormat" xml:space="preserve">
         <value>Invalid color format — enter #RGB, #RRGGBB or #AARRGGBB</value>
     </data>
+    <data name="SecondaryPanel_Close" xml:space="preserve">
+        <value>Close panel</value>
+    </data>
 </root>

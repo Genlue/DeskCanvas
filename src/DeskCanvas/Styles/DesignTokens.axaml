@@ -21,6 +21,12 @@
     <x:Double x:Key="ControlMinHeight">32</x:Double>
     <Thickness x:Key="SettingsPagePadding">0,2,8,10</Thickness>
 
+    <!-- Secondary panel shell (W7): one card geometry for all nine popups. Panels inherit the
+         opening widget's radius at runtime (SpawnCornerRadius); this is the shell's own default
+         and matches every popup AXAML that declared its card locally. -->
+    <CornerRadius x:Key="SecondaryPanelCornerRadius">18</CornerRadius>
+    <Thickness x:Key="SecondaryPanelContentPadding">16,14,16,12</Thickness>
+
     <!-- Typography scale used by host controls and settings surfaces. These
          are intentionally small, stable steps so individual views can opt in
          without inventing another font-size literal. -->

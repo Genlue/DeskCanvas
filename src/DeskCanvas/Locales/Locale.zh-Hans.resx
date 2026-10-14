@@ -1095,4 +1095,7 @@
     <data name="Settings_ColorInput_InvalidFormat" xml:space="preserve">
         <value>颜色格式无效，请输入 #RGB、#RRGGBB 或 #AARRGGBB</value>
     </data>
+    <data name="SecondaryPanel_Close" xml:space="preserve">
+        <value>关闭面板</value>
+    </data>
 </root>

@@ -10,6 +10,7 @@ using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using Avalonia.LogicalTree;
 using Avalonia.Media;
 using Avalonia.Platform;
 using Avalonia.Threading;
@@ -145,8 +146,22 @@ public abstract class SecondaryPanelWindow : Window
     private RelativePoint? spawnAnchor;
     private LiquidGlassSurface? glassSurface;
 
-    /// <summary>The card visual that carries the open/close transition (the panel's root border).</summary>
-    protected abstract Visual? PanelCard { get; }
+    // ---- W7: the shared shell -----------------------------------------------------------
+    // A migrated panel declares no card/glass/title/close-button of its own: its AXAML root is a
+    // SecondaryPanelShell and this window drives that shell's parts. Old panels keep overriding
+    // PanelCard, so the default below only kicks in when a shell is actually present.
+    private SecondaryPanelShell? panelShell;
+    private SecondaryPanelShell? connectedShell;
+    private PanelAppearanceBinder? appearanceBinder;
+    private bool panelInitialised;
+    private bool visualCardConnected;
+
+    /// <summary>The connected shell, or null for a panel that still declares its own chrome.</summary>
+    protected SecondaryPanelShell? PanelShell => panelShell ??= FindPanelShell();
+
+    /// <summary>The card visual that carries the open/close transition: the connected shell's card
+    /// border, or whatever a not-yet-migrated panel overrides it with.</summary>
+    protected virtual Visual? PanelCard => connectedShell?.CardBorder;
 
     /// <summary>Physical-pixel center of the widget the panel spawns from; null centers on the primary work area.</summary>
     protected abstract Point? SpawnScreenCenter { get; }
@@ -182,38 +197,36 @@ public abstract class SecondaryPanelWindow : Window
     protected virtual bool OnPanelEscape() => false;
 
     /// <summary>
-    /// Called by derived constructors right after InitializeComponent: applies the spawn
-    /// corner radius (before theming runs, so glass surfaces inherit it), hides the card,
-    /// wires the panel behavior, and registers the window as its type's active panel.
+    /// Called by derived constructors right after InitializeComponent. Two steps, because a
+    /// ControlTheme's parts do not exist yet at this point:
+    /// <list type="number">
+    /// <item>registration (idempotent): spawn radius, active-instance bookkeeping, window events;</item>
+    /// <item>connecting the visual shell — deferred to the shell's template application for a
+    /// migrated panel, immediate for one that still declares its own card.</item>
+    /// </list>
     /// </summary>
     protected void InitializePanel(double? cornerRadius = null)
     {
-        SpawnCornerRadius = cornerRadius ?? 0;
+        InitializePanelCore(cornerRadius);
 
-        var card = PanelCard;
-        if (card != null)
+        // A shell's parts only exist after its template is applied, which happens when the window
+        // is realized — hence the re-connection on TemplateApplied (and once more from Loaded as
+        // a safety net, which is why connecting is idempotent).
+        if (PanelShell is { } shell)
         {
-            if (SpawnCornerRadius > 0 && card is Border cardBorder)
-                cardBorder.CornerRadius = new CornerRadius(SpawnCornerRadius);
-
-            card.Opacity = 0.0;
-            if (TransformAnimationEnabled)
-            {
-                cardScale = card.RenderTransform as ScaleTransform ?? new ScaleTransform();
-                card.RenderTransform = cardScale;
-                cardScale.ScaleX = OpenScaleFrom;
-                cardScale.ScaleY = OpenScaleFrom;
-                // Every interpolated tick drives the glass with the scale it covers.
-                cardScale.PropertyChanged += OnCardScalePropertyChanged;
-            }
-            else if (card.RenderTransform is ScaleTransform staleScale)
-            {
-                // Panels that clip themselves with a native window region must not carry
-                // the AXAML's decorative zoom transform — it would shrink the card forever.
-                staleScale.ScaleX = 1.0;
-                staleScale.ScaleY = 1.0;
-            }
+            shell.TemplateConnected -= OnShellTemplateApplied;
+            shell.TemplateConnected += OnShellTemplateApplied;
         }
+
+        ConnectPanelShell();
+    }
+
+    private void InitializePanelCore(double? cornerRadius)
+    {
+        if (panelInitialised) return;
+        panelInitialised = true;
+
+        SpawnCornerRadius = cornerRadius ?? 0;
 
         ActivePanels[GetType()] = this;
 
@@ -223,6 +236,119 @@ public abstract class SecondaryPanelWindow : Window
         Closing += OnPanelWindowClosing;
         Closed += OnPanelWindowClosed;
         KeyDown += OnPanelKeyDown;
+    }
+
+    private SecondaryPanelShell? FindPanelShell()
+        => Content as SecondaryPanelShell
+           ?? this.GetLogicalDescendants().OfType<SecondaryPanelShell>().FirstOrDefault();
+
+    private void OnShellTemplateApplied(object? sender, EventArgs e) => ConnectPanelShell();
+
+    /// <summary>
+    /// Take the card/glass/close plumbing of the shell that is currently realized. Runs again
+    /// on every template application: a re-applied template rebuilds the card visual, so the
+    /// transform and the reveal state must be (re)connected. Idempotency comes from the
+    /// <c>-=/+=</c> event pairs and <see cref="DisconnectCardScale"/> — subscriptions are
+    /// never stacked.
+    /// </summary>
+    private void ConnectPanelShell()
+    {
+        if (PanelShell is { IsTemplateApplied: true } shell)
+        {
+            connectedShell = shell;
+            shell.CloseRequested -= OnShellCloseRequested;
+            shell.CloseRequested += OnShellCloseRequested;
+
+            // The card must inherit the opening widget's radius before the glass reads it.
+            if (SpawnCornerRadius > 0)
+                shell.CornerRadius = new CornerRadius(SpawnCornerRadius);
+
+            InitializeVisualCard();
+
+            appearanceBinder ??= new PanelAppearanceBinder(this, shell, PanelAppearanceResolver.TryResolveSettingsProvider());
+            appearanceBinder.Attach();
+            return;
+        }
+
+        // No (realized) shell: a panel that still declares its own card in AXAML.
+        if (!visualCardConnected && PanelCard != null)
+            InitializeVisualCard();
+    }
+
+    /// <summary>
+    /// Hide the card and attach the zoom transform. Called both from InitializePanel (legacy
+    /// panels, whose card exists immediately) and from every shell (re)connection.
+    /// </summary>
+    private void InitializeVisualCard()
+    {
+        DisconnectCardScale();
+
+        var card = PanelCard;
+        if (card == null)
+        {
+            visualCardConnected = false;
+            return;
+        }
+
+        if (SpawnCornerRadius > 0 && card is Border cardBorder)
+            cardBorder.CornerRadius = new CornerRadius(SpawnCornerRadius);
+
+        card.Opacity = 0.0;
+        if (TransformAnimationEnabled)
+        {
+            cardScale = card.RenderTransform as ScaleTransform ?? new ScaleTransform();
+            card.RenderTransform = cardScale;
+            cardScale.ScaleX = OpenScaleFrom;
+            cardScale.ScaleY = OpenScaleFrom;
+            // Every interpolated tick drives the glass with the scale it covers.
+            cardScale.PropertyChanged += OnCardScalePropertyChanged;
+        }
+        else if (card.RenderTransform is ScaleTransform staleScale)
+        {
+            // Panels that clip themselves with a native window region must not carry
+            // the AXAML's decorative zoom transform — it would shrink the card forever.
+            staleScale.ScaleX = 1.0;
+            staleScale.ScaleY = 1.0;
+        }
+
+        ResolveGlassAnimationTargets();
+        visualCardConnected = true;
+
+        // A re-applied template rebuilds the card at the template's initial Opacity=0. When
+        // the open transition has already played, reveal the new card immediately instead of
+        // leaving a live panel invisible.
+        if (panelLoaded)
+        {
+            card.Opacity = 1.0;
+            if (TransformAnimationEnabled && cardScale != null)
+            {
+                cardScale.ScaleX = 1.0;
+                cardScale.ScaleY = 1.0;
+            }
+            RequestGlassRender();
+        }
+    }
+
+    /// <summary>Release the previous card's transform subscription before (re)attaching one.</summary>
+    private void DisconnectCardScale()
+    {
+        if (cardScale == null) return;
+        cardScale.PropertyChanged -= OnCardScalePropertyChanged;
+        cardScale = null;
+    }
+
+    private void OnShellCloseRequested(object? sender, RoutedEventArgs e)
+    {
+        e.Handled = true;
+        // The single animated close path — never a cast to Window and never a second path.
+        Close();
+    }
+
+    /// <summary>Ask the rendered glass for a frame now that the surface is really mounted/laid out.</summary>
+    private void RequestGlassRender()
+    {
+        if (glassSurface is { IsVisible: true })
+            glassSurface.RequestRender(immediate: true);
     }
 
     /// <summary>Show + pin above the widget band + activate — the standard way every panel appears.</summary>
@@ -274,8 +400,16 @@ public abstract class SecondaryPanelWindow : Window
     {
         panelLoaded = true;
         LoadedAtUtc = DateTime.UtcNow;
+
+        // The shell's parts (and therefore the animatable card) must exist before the open
+        // transition plays — ConnectPanelShell is idempotent, so this is also the safety net for
+        // a panel whose template was applied without the TemplateApplied hook being in place yet.
+        ConnectPanelShell();
+
         PositionPanel();
         OnPanelLoaded();
+        // The surface is mounted and laid out now: ask it for a real frame before the zoom starts.
+        RequestGlassRender();
         if (FocusManager?.GetFocusedElement() == null)
         {
             Focus();
@@ -315,6 +449,25 @@ public abstract class SecondaryPanelWindow : Window
     private void OnPanelWindowClosed(object? sender, EventArgs e)
     {
         UninstallOutsideClickHook();
+
+        // Let go of everything that could keep this window alive: the settings/theme
+        // subscriptions, the shell events and the rendered glass. The surface's own detach
+        // releases the GPU resources; hiding it here matches what each popup used to do in its
+        // Closed handler and guarantees nothing paints after the window is gone.
+        appearanceBinder?.Detach();
+        appearanceBinder = null;
+
+        if (connectedShell != null)
+        {
+            connectedShell.CloseRequested -= OnShellCloseRequested;
+            if (connectedShell.GlassSurface != null)
+                connectedShell.GlassSurface.IsVisible = false;
+            connectedShell = null;
+        }
+        DisconnectCardScale();
+        visualCardConnected = false;
+        panelShell = null;
+
         var type = GetType();
         if (ActivePanels.TryGetValue(type, out var current) && ReferenceEquals(current, this))
             ActivePanels.Remove(type);
@@ -457,12 +610,15 @@ public abstract class SecondaryPanelWindow : Window
     // ---- Glass transition playback ----
 
     /// <summary>
-    /// Resolve the glass visual once, at Loaded: any panel has exactly one glass surface, and
-    /// the zoom feeds it the scale it currently covers.
+    /// Resolve the glass visual the zoom feeds: the shell's explicit <c>PART_GlassSurface</c>
+    /// when the panel has one, so a glass control inside the business content is never mistaken
+    /// for the shell's surface. Falls back to the first surface for panels that still declare
+    /// their own chrome.
     /// </summary>
     private void ResolveGlassAnimationTargets()
     {
-        glassSurface = this.GetVisualDescendants().OfType<LiquidGlassSurface>().FirstOrDefault();
+        glassSurface = connectedShell?.GlassSurface
+                       ?? this.GetVisualDescendants().OfType<LiquidGlassSurface>().FirstOrDefault();
     }
 
     private void OnCardScalePropertyChanged(object? sender, AvaloniaPropertyChangedEventArgs e)
