@@ -1,162 +1,148 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="clr-namespace:DeskCanvas.Views.Controls;assembly=DeskCanvas"
              xmlns:locales="clr-namespace:Search.Locales"
              xmlns:models="clr-namespace:Search.Models"
              xmlns:services="clr-namespace:Search.Services"
-             x:Class="Search.Views.Settings.SearchSettings">
+             x:Class="Search.Views.Settings.SearchSettings"
+             controls:SettingsPage.ScrollOwnership="Host">
+    <!-- Scroll ownership: Host — no outer ScrollViewer of its own; the EditWidget content
+         viewport is the single vertical scroll owner. The general rows are shared Setting
+         rows; the engine management area below (toolbar, inline editor, list) stays a
+         dedicated region per §10.2 (list management keeps its own layout but shares the
+         button/input conventions). -->
+    <StackPanel Orientation="Vertical" Spacing="6" Margin="0,2,10,8">
+        <!-- Group 1: General & Behavior -->
+        <TextBlock Classes="dc-section-header" Text="{x:Static locales:Locale.Search_General_Header}" />
 
-    <UserControl.Styles>
-        <Style Selector="Button.small-button">
-            <Setter Property="Background" Value="Transparent" />
-            <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="BorderBrush" Value="{DynamicResource ToolTipBorderBrush}" />
-            <Setter Property="CornerRadius" Value="4" />
-            <Setter Property="Padding" Value="8,3" />
-            <Setter Property="FontSize" Value="12" />
-            <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}" />
-            <Setter Property="Cursor" Value="Hand" />
-        </Style>
-        <Style Selector="Button.small-button:pointerover">
-            <Setter Property="Background" Value="{DynamicResource SystemControlHighlightListLowBrush}" />
-        </Style>
-        <Style Selector="TextBlock.setting-label">
-            <Setter Property="FontSize" Value="13" />
-            <Setter Property="VerticalAlignment" Value="Center" />
-            <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}" />
-        </Style>
-    </UserControl.Styles>
+        <!-- Default Search Engine -->
+        <controls:Setting Title="{x:Static locales:Locale.Search_Default_Engine}">
+            <!-- MinWidth, not Width: the engine name list grows with the locale instead of
+                 clipping; MinWidth only guarantees the row's usable floor. -->
+            <ComboBox x:Name="DefaultEngineCombo" MinWidth="150" HorizontalAlignment="Right"
+                      SelectionChanged="OnDefaultEngineChanged" />
+        </controls:Setting>
 
-    <ScrollViewer VerticalScrollBarVisibility="Auto">
-        <StackPanel Orientation="Vertical" Spacing="8" Margin="0,2,16,8">
-            <!-- Group 1: General & Behavior -->
-            <TextBlock Classes="group-header" Text="{x:Static locales:Locale.Search_General_Header}" />
+        <!-- Toggles -->
+        <controls:Setting Title="{x:Static locales:Locale.Search_Clear_On_Search}">
+            <ToggleSwitch x:Name="ClearOnSearchToggle" IsCheckedChanged="OnToggleChanged" />
+        </controls:Setting>
 
-            <!-- Default Search Engine -->
-            <Grid ColumnDefinitions="*,Auto" Margin="0,2">
-                <TextBlock Classes="setting-label" Text="{x:Static locales:Locale.Search_Default_Engine}" />
-                <ComboBox x:Name="DefaultEngineCombo" Grid.Column="1" Width="150" SelectionChanged="OnDefaultEngineChanged" />
-            </Grid>
+        <controls:Setting Title="{x:Static locales:Locale.Search_Save_History}">
+            <ToggleSwitch x:Name="SaveHistoryToggle" IsCheckedChanged="OnToggleChanged" />
+        </controls:Setting>
 
-            <!-- Toggles -->
-            <CheckBox x:Name="ClearOnSearchToggle" Content="{x:Static locales:Locale.Search_Clear_On_Search}"
-                      IsCheckedChanged="OnToggleChanged" FontSize="13" />
+        <controls:Setting Title="{x:Static locales:Locale.Search_Clear_History_Desc}">
+            <Button Classes="dc-toolbar-button" Content="{x:Static locales:Locale.Search_Clear_Now}" Click="OnClearHistoryClicked" />
+        </controls:Setting>
 
-            <CheckBox x:Name="SaveHistoryToggle" Content="{x:Static locales:Locale.Search_Save_History}"
-                      IsCheckedChanged="OnToggleChanged" FontSize="13" />
+        <!-- Group 2: Engine Management (dedicated area) -->
+        <TextBlock Classes="dc-section-header" Text="{x:Static locales:Locale.Search_Manage_Engines}" />
+        <TextBlock Text="{x:Static locales:Locale.Search_Manage_Engines_Hint}"
+                   FontSize="11" Opacity="0.65" TextWrapping="Wrap" Margin="4,0,4,4"/>
 
-            <Grid ColumnDefinitions="*,Auto" Margin="0,2">
-                <TextBlock Classes="setting-label" Text="{x:Static locales:Locale.Search_Clear_History_Desc}" FontSize="12" Opacity="0.7"/>
-                <Button Grid.Column="1" Classes="small-button" Content="{x:Static locales:Locale.Search_Clear_Now}" Click="OnClearHistoryClicked" />
-            </Grid>
+        <!-- Toolbar -->
+        <WrapPanel Orientation="Horizontal" Margin="0,0,0,6">
+            <Button Classes="dc-toolbar-button" Content="{x:Static locales:Locale.Search_Add_Custom_Engine}"
+                    Click="OnShowAddPanelClicked" Margin="0,0,6,4" />
+            <Button Classes="dc-toolbar-button" Content="{x:Static locales:Locale.Search_Restore_Defaults}"
+                    Click="OnResetDefaultsClicked" Margin="0,0,6,4" />
+        </WrapPanel>
 
-            <!-- Group 2: Engine Management -->
-            <TextBlock Classes="group-header" Text="{x:Static locales:Locale.Search_Manage_Engines}" />
-            <TextBlock Text="{x:Static locales:Locale.Search_Manage_Engines_Hint}"
-                       FontSize="11" Opacity="0.65" TextWrapping="Wrap"
-                       Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}" Margin="0,0,0,4"/>
+        <!-- Inline Add / Edit Panel -->
+        <Border x:Name="EditPanel" Background="#15888888" CornerRadius="6" Padding="10" Margin="0,0,0,6" IsVisible="False">
+            <StackPanel Spacing="6">
+                <TextBlock x:Name="EditPanelTitle" Text="{x:Static locales:Locale.Search_Add_Custom_Engine_Title}" FontSize="12" FontWeight="SemiBold" />
 
-            <!-- Toolbar -->
-            <WrapPanel Orientation="Horizontal" Margin="0,0,0,6">
-                <Button Classes="small-button" Content="{x:Static locales:Locale.Search_Add_Custom_Engine}"
-                        Click="OnShowAddPanelClicked" Margin="0,0,6,4" />
-                <Button Classes="small-button" Content="{x:Static locales:Locale.Search_Restore_Defaults}"
-                        Click="OnResetDefaultsClicked" Margin="0,0,6,4" />
-            </WrapPanel>
+                <Grid ColumnDefinitions="Auto,*" Margin="0,2">
+                    <TextBlock Text="{x:Static locales:Locale.Search_Engine_Name_Label}" FontSize="12" MinWidth="90" VerticalAlignment="Center"/>
+                    <TextBox x:Name="EditNameBox" Grid.Column="1" FontSize="12" Watermark="{x:Static locales:Locale.Search_Engine_Name_Watermark}" Height="26" Padding="4,2"/>
+                </Grid>
 
-            <!-- Inline Add / Edit Panel -->
-            <Border x:Name="EditPanel" Background="#15888888" CornerRadius="6" Padding="10" Margin="0,0,0,6" IsVisible="False">
-                <StackPanel Spacing="6">
-                    <TextBlock x:Name="EditPanelTitle" Text="{x:Static locales:Locale.Search_Add_Custom_Engine_Title}" FontSize="12" FontWeight="SemiBold"
-                               Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}" />
-                    
-                    <Grid ColumnDefinitions="Auto,*" Margin="0,2">
-                        <TextBlock Classes="setting-label" Text="{x:Static locales:Locale.Search_Engine_Name_Label}" FontSize="12" Width="90"/>
-                        <TextBox x:Name="EditNameBox" Grid.Column="1" FontSize="12" Watermark="{x:Static locales:Locale.Search_Engine_Name_Watermark}" Height="26" Padding="4,2"/>
-                    </Grid>
+                <Grid ColumnDefinitions="Auto,*" Margin="0,2">
+                    <TextBlock Text="{x:Static locales:Locale.Search_Engine_Url_Label}" FontSize="12" MinWidth="90" VerticalAlignment="Center"/>
+                    <TextBox x:Name="EditUrlBox" Grid.Column="1" FontSize="12" Watermark="{x:Static locales:Locale.Search_Engine_Url_Watermark}" Height="26" Padding="4,2"/>
+                </Grid>
 
-                    <Grid ColumnDefinitions="Auto,*" Margin="0,2">
-                        <TextBlock Classes="setting-label" Text="{x:Static locales:Locale.Search_Engine_Url_Label}" FontSize="12" Width="90"/>
-                        <TextBox x:Name="EditUrlBox" Grid.Column="1" FontSize="12" Watermark="{x:Static locales:Locale.Search_Engine_Url_Watermark}" Height="26" Padding="4,2"/>
-                    </Grid>
+                <Grid ColumnDefinitions="Auto,*" Margin="0,2">
+                    <TextBlock Text="{x:Static locales:Locale.Search_Engine_Category_Label}" FontSize="12" MinWidth="90" VerticalAlignment="Center"/>
+                    <ComboBox x:Name="EditCategoryCombo" Grid.Column="1" HorizontalAlignment="Stretch"/>
+                </Grid>
 
-                    <Grid ColumnDefinitions="Auto,*" Margin="0,2">
-                        <TextBlock Classes="setting-label" Text="{x:Static locales:Locale.Search_Engine_Category_Label}" FontSize="12" Width="90"/>
-                        <ComboBox x:Name="EditCategoryCombo" Grid.Column="1" HorizontalAlignment="Stretch"/>
-                    </Grid>
+                <Grid ColumnDefinitions="Auto,*" Margin="0,2">
+                    <TextBlock Text="{x:Static locales:Locale.Search_Engine_Icon_Label}" FontSize="12" MinWidth="90" VerticalAlignment="Center"/>
+                    <ComboBox x:Name="EditIconCombo" Grid.Column="1" HorizontalAlignment="Stretch"/>
+                </Grid>
 
-                    <Grid ColumnDefinitions="Auto,*" Margin="0,2">
-                        <TextBlock Classes="setting-label" Text="{x:Static locales:Locale.Search_Engine_Icon_Label}" FontSize="12" Width="90"/>
-                        <ComboBox x:Name="EditIconCombo" Grid.Column="1" HorizontalAlignment="Stretch"/>
-                    </Grid>
+                <Grid ColumnDefinitions="Auto,*" Margin="0,2">
+                    <TextBlock Text="{x:Static locales:Locale.Search_Engine_Color_Label}" FontSize="12" MinWidth="90" VerticalAlignment="Center"/>
+                    <!-- Icon colour row on the shared compound editor: #RRGGBB only, alpha is
+                         not part of an engine icon colour. -->
+                    <controls:ColorInput x:Name="EditColorInput" Grid.Column="1" ColorFormat="Rgb" AlphaPolicy="ForceOpaque" />
+                </Grid>
 
-                    <Grid ColumnDefinitions="Auto,*" Margin="0,2">
-                        <TextBlock Classes="setting-label" Text="{x:Static locales:Locale.Search_Engine_Color_Label}" FontSize="12" Width="90"/>
-                        <TextBox x:Name="EditColorBox" Grid.Column="1" FontSize="12" Watermark="#4285F4" Height="26" Padding="4,2"/>
-                    </Grid>
-
-                    <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right" Margin="0,4,0,0">
-                        <Button Classes="small-button" Content="{x:Static locales:Locale.Search_Cancel}" Click="OnCancelEdit" />
-                        <Button Classes="small-button" Content="{x:Static locales:Locale.Search_Save}" Click="OnConfirmEdit" />
-                    </StackPanel>
+                <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right" Margin="0,4,0,0">
+                    <Button Classes="dc-toolbar-button" Content="{x:Static locales:Locale.Search_Cancel}" Click="OnCancelEdit" />
+                    <Button Classes="dc-toolbar-button" Content="{x:Static locales:Locale.Search_Save}" Click="OnConfirmEdit" />
                 </StackPanel>
-            </Border>
+            </StackPanel>
+        </Border>
 
-            <!-- Engines List -->
-            <ItemsControl x:Name="EnginesList">
-                <ItemsControl.ItemTemplate>
-                    <DataTemplate x:DataType="models:SearchEngine">
-                        <Border Background="#0C888888" CornerRadius="6" Padding="6,4" Margin="0,2">
-                            <Grid ColumnDefinitions="Auto, Auto, *, Auto">
-                                <!-- Enable Checkbox -->
-                                <CheckBox Grid.Column="0" IsChecked="{Binding IsEnabled, Mode=TwoWay}"
-                                          Click="OnEngineCheckboxClicked"
-                                          VerticalAlignment="Center" Margin="0,0,4,0"/>
+        <!-- Engines List -->
+        <ItemsControl x:Name="EnginesList">
+            <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="models:SearchEngine">
+                    <Border Background="#0C888888" CornerRadius="6" Padding="6,4" Margin="0,2">
+                        <Grid ColumnDefinitions="Auto, Auto, *, Auto">
+                            <!-- Enable Checkbox -->
+                            <CheckBox Grid.Column="0" IsChecked="{Binding IsEnabled, Mode=TwoWay}"
+                                      Click="OnEngineCheckboxClicked"
+                                      VerticalAlignment="Center" Margin="0,0,4,0"/>
 
-                                <!-- Icon & Name -->
-                                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                                    <PathIcon Data="{Binding SvgPath}"
-                                              Foreground="{Binding IconColor}"
-                                              Width="16" Height="16"
-                                              VerticalAlignment="Center"/>
-                                    <TextBlock Text="{Binding Name}"
-                                               FontSize="12"
-                                               FontWeight="SemiBold"
-                                               VerticalAlignment="Center"/>
-                                    <!-- Category badge -->
-                                    <Border Background="#18808080" CornerRadius="4" Padding="4,1" VerticalAlignment="Center">
-                                        <TextBlock Text="{Binding Category}" FontSize="10" Opacity="0.7"/>
-                                    </Border>
-                                </StackPanel>
+                            <!-- Icon & Name -->
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                <PathIcon Data="{Binding SvgPath}"
+                                          Foreground="{Binding IconColor}"
+                                          Width="16" Height="16"
+                                          VerticalAlignment="Center"/>
+                                <TextBlock Text="{Binding Name}"
+                                           FontSize="12"
+                                           FontWeight="SemiBold"
+                                           VerticalAlignment="Center"/>
+                                <!-- Category badge -->
+                                <Border Background="#18808080" CornerRadius="4" Padding="4,1" VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding Category}" FontSize="10" Opacity="0.7"/>
+                                </Border>
+                            </StackPanel>
 
-                                <!-- URL template snippet -->
-                                <TextBlock Grid.Column="2"
-                                           Text="{Binding UrlTemplate}"
-                                           FontSize="10"
-                                           Opacity="0.5"
-                                           TextTrimming="CharacterEllipsis"
-                                           VerticalAlignment="Center"
-                                           Margin="10,0,6,0"/>
+                            <!-- URL template snippet -->
+                            <TextBlock Grid.Column="2"
+                                       Text="{Binding UrlTemplate}"
+                                       FontSize="10"
+                                       Opacity="0.5"
+                                       TextTrimming="CharacterEllipsis"
+                                       VerticalAlignment="Center"
+                                       Margin="10,0,6,0"/>
 
-                                <!-- Action Buttons: Up, Down, Edit, Delete -->
-                                <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="2" VerticalAlignment="Center">
-                                    <Button Classes="icon-button" AutomationProperties.Name="{x:Static locales:Locale.Search_MoveUp}" Click="OnMoveUpClicked" Tag="{Binding}" ToolTip.Tip="{x:Static locales:Locale.Search_MoveUp}">
-                                        <TextBlock Text="▲" FontSize="9" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                    </Button>
-                                    <Button Classes="icon-button" AutomationProperties.Name="{x:Static locales:Locale.Search_MoveDown}" Click="OnMoveDownClicked" Tag="{Binding}" ToolTip.Tip="{x:Static locales:Locale.Search_MoveDown}">
-                                        <TextBlock Text="▼" FontSize="9" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                    </Button>
-                                    <Button Classes="icon-button" AutomationProperties.Name="{x:Static locales:Locale.Search_Edit}" Click="OnEditEngineClicked" Tag="{Binding}" ToolTip.Tip="{x:Static locales:Locale.Search_Edit}">
-                                        <TextBlock Text="✎" FontSize="11" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                    </Button>
-                                    <Button Classes="icon-button" AutomationProperties.Name="{x:Static locales:Locale.Search_Delete}" Click="OnDeleteEngineClicked" Tag="{Binding}" ToolTip.Tip="{x:Static locales:Locale.Search_Delete}">
-                                        <TextBlock Text="✕" FontSize="11" Foreground="#E05555" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                    </Button>
-                                </StackPanel>
-                            </Grid>
-                        </Border>
-                    </DataTemplate>
-                </ItemsControl.ItemTemplate>
-            </ItemsControl>
-        </StackPanel>
-    </ScrollViewer>
+                            <!-- Action Buttons: Up, Down, Edit, Delete -->
+                            <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="2" VerticalAlignment="Center">
+                                <Button Classes="icon-button" AutomationProperties.Name="{x:Static locales:Locale.Search_MoveUp}" Click="OnMoveUpClicked" Tag="{Binding}" ToolTip.Tip="{x:Static locales:Locale.Search_MoveUp}">
+                                    <TextBlock Text="▲" FontSize="9" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Button>
+                                <Button Classes="icon-button" AutomationProperties.Name="{x:Static locales:Locale.Search_MoveDown}" Click="OnMoveDownClicked" Tag="{Binding}" ToolTip.Tip="{x:Static locales:Locale.Search_MoveDown}">
+                                    <TextBlock Text="▼" FontSize="9" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Button>
+                                <Button Classes="icon-button" AutomationProperties.Name="{x:Static locales:Locale.Search_Edit}" Click="OnEditEngineClicked" Tag="{Binding}" ToolTip.Tip="{x:Static locales:Locale.Search_Edit}">
+                                    <TextBlock Text="✎" FontSize="11" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Button>
+                                <Button Classes="icon-button" AutomationProperties.Name="{x:Static locales:Locale.Search_Delete}" Click="OnDeleteEngineClicked" Tag="{Binding}" ToolTip.Tip="{x:Static locales:Locale.Search_Delete}">
+                                    <TextBlock Text="✕" FontSize="11" Foreground="#E05555" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Button>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
+    </StackPanel>
 </UserControl>

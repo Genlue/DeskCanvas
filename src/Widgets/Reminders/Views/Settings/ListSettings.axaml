@@ -2,9 +2,11 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:controls="clr-namespace:DeskCanvas.Views.Controls;assembly=DeskCanvas"
              xmlns:locales="clr-namespace:Reminders.Locales"
-             x:Class="Reminders.Views.Settings.ListSettings">
-    <ScrollViewer>
-        <StackPanel Orientation="Vertical" Spacing="5">
+             x:Class="Reminders.Views.Settings.ListSettings"
+        controls:SettingsPage.ScrollOwnership="Host">
+    <!-- Scroll ownership: Host — no outer ScrollViewer of its own; the EditWidget content
+         viewport is the single vertical scroll owner. -->
+    <StackPanel Orientation="Vertical" Spacing="5" Margin="0 0 10 0">
             <controls:Setting Title="{x:Static locales:Locale.Reminders_AllowInlineEdit}">
                 <ToggleSwitch Name="AllowInlineEditToggle" Checked="AllowInlineEditChanged" Unchecked="AllowInlineEditChanged" />
             </controls:Setting>
@@ -18,5 +20,4 @@
                 <Button Content="{x:Static locales:Locale.Reminders_Delete}" Click="DeleteAll"/>
             </controls:Setting>
         </StackPanel>
-    </ScrollViewer>
 </UserControl>

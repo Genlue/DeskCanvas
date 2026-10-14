@@ -2,10 +2,11 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:controls="clr-namespace:DeskCanvas.Views.Controls;assembly=DeskCanvas"
              xmlns:locales="clr-namespace:Pomodoro.Locales"
-             x:Class="Pomodoro.Views.Settings.PomodoroSettings">
-
-    <ScrollViewer>
-        <StackPanel Orientation="Vertical" Spacing="6" Margin="0,0,10,0">
+             x:Class="Pomodoro.Views.Settings.PomodoroSettings"
+        controls:SettingsPage.ScrollOwnership="Host">
+    <!-- Scroll ownership: Host — no outer ScrollViewer of its own; the EditWidget content
+         viewport is the single vertical scroll owner. -->
+    <StackPanel Orientation="Vertical" Spacing="6" Margin="0,0,10,0">
             <!-- 专注时长 -->
             <controls:Setting Title="{x:Static locales:Locale.Pomodoro_FocusMinutes}">
                 <NumericUpDown Name="FocusMinutesInput" Minimum="1" Maximum="120" Increment="5" FormatString="0"
@@ -40,5 +41,4 @@
                 <ToggleSwitch Name="AutoStartFocusSwitch" IsCheckedChanged="OnToggleChanged" />
             </controls:Setting>
         </StackPanel>
-    </ScrollViewer>
 </UserControl>

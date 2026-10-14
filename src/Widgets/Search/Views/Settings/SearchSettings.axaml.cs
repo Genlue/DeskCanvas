@@ -126,7 +126,7 @@ public partial class SearchSettings : UserControl
         EditUrlBox.Text = "";
         EditCategoryCombo.SelectedIndex = 0;
         EditIconCombo.SelectedIndex = 0;
-        EditColorBox.Text = "#4285F4";
+        EditColorInput.Value = "#4285F4";
         EditPanel.IsVisible = true;
     }
 
@@ -144,7 +144,7 @@ public partial class SearchSettings : UserControl
 
         var category = EditCategoryCombo.SelectedItem?.ToString() ?? Locale.Search_Category_General;
         var iconKey = EditIconCombo.SelectedItem?.ToString() ?? "Google";
-        var color = EditColorBox.Text?.Trim() ?? "#4285F4";
+        var color = EditColorInput.Value?.Trim() ?? "#4285F4";
 
         if (editingEngine != null)
         {
@@ -185,7 +185,7 @@ public partial class SearchSettings : UserControl
             EditUrlBox.Text = eng.UrlTemplate;
             EditCategoryCombo.SelectedItem = eng.Category;
             EditIconCombo.SelectedItem = eng.IconKey;
-            EditColorBox.Text = eng.IconColor;
+            EditColorInput.Value = eng.IconColor;
             EditPanel.IsVisible = true;
         }
     }

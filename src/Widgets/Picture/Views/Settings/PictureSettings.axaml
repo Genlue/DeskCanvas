@@ -45,32 +45,29 @@
         <!-- 手动裁切与取景控制面板 -->
         <Border Name="CropPanel" Background="#15FFFFFF" CornerRadius="8" Padding="10" Margin="0 4">
             <StackPanel Orientation="Vertical" Spacing="6">
-                <TextBlock Text="{x:Static locales:Locale.Picture_CropSettings}" FontWeight="SemiBold" FontSize="13" Margin="0 0 0 4" />
+                <TextBlock Classes="dc-section-header" Text="{x:Static locales:Locale.Picture_CropSettings}" Margin="0,0,0,4" />
 
                 <!-- 实时裁切取景器预览 -->
                 <picControls:CropPreviewControl Name="CropPreview" Height="170" HorizontalAlignment="Stretch" Margin="0 2 0 4" />
                 <TextBlock Text="{x:Static locales:Locale.Picture_CropTip}" FontSize="11" Opacity="0.6" HorizontalAlignment="Center" Margin="0 0 0 6" />
 
-                <!-- 水平取景偏移 (CropX) -->
-                <Grid ColumnDefinitions="140,*,50">
-                    <TextBlock Text="{x:Static locales:Locale.Picture_CropX}" VerticalAlignment="Center" FontSize="12" />
-                    <Slider Grid.Column="1" Name="CropXSlider" Minimum="0" Maximum="100" ValueChanged="OnCropSliderChanged" VerticalAlignment="Center" />
-                    <TextBlock Grid.Column="2" Name="CropXText" VerticalAlignment="Center" TextAlignment="Right" FontSize="11" />
-                </Grid>
+                <!-- 水平取景偏移 (CropX, 0–1 显示为百分比) -->
+                <controls:Setting Title="{x:Static locales:Locale.Picture_CropX}">
+                    <controls:LabeledSlider Name="CropXSlider" Width="200" Minimum="0" Maximum="1" Step="0.01" DisplayFormat="0%"
+                                            AutomationProperties.Name="{x:Static locales:Locale.Picture_CropX}" />
+                </controls:Setting>
 
-                <!-- 垂直取景偏移 (CropY) -->
-                <Grid ColumnDefinitions="140,*,50">
-                    <TextBlock Text="{x:Static locales:Locale.Picture_CropY}" VerticalAlignment="Center" FontSize="12" />
-                    <Slider Grid.Column="1" Name="CropYSlider" Minimum="0" Maximum="100" ValueChanged="OnCropSliderChanged" VerticalAlignment="Center" />
-                    <TextBlock Grid.Column="2" Name="CropYText" VerticalAlignment="Center" TextAlignment="Right" FontSize="11" />
-                </Grid>
+                <!-- 垂直取景偏移 (CropY, 0–1 显示为百分比) -->
+                <controls:Setting Title="{x:Static locales:Locale.Picture_CropY}">
+                    <controls:LabeledSlider Name="CropYSlider" Width="200" Minimum="0" Maximum="1" Step="0.01" DisplayFormat="0%"
+                                            AutomationProperties.Name="{x:Static locales:Locale.Picture_CropY}" />
+                </controls:Setting>
 
-                <!-- 画面缩放倍率 (Zoom) -->
-                <Grid ColumnDefinitions="140,*,50">
-                    <TextBlock Text="{x:Static locales:Locale.Picture_Zoom}" VerticalAlignment="Center" FontSize="12" />
-                    <Slider Grid.Column="1" Name="ZoomSlider" Minimum="100" Maximum="300" ValueChanged="OnCropSliderChanged" VerticalAlignment="Center" />
-                    <TextBlock Grid.Column="2" Name="ZoomText" VerticalAlignment="Center" TextAlignment="Right" FontSize="11" />
-                </Grid>
+                <!-- 画面缩放倍率 (Zoom, 1–3 显示为倍数) -->
+                <controls:Setting Title="{x:Static locales:Locale.Picture_Zoom}">
+                    <controls:LabeledSlider Name="ZoomSlider" Width="200" Minimum="1" Maximum="3" Step="0.01" DisplayFormat="0.00" Unit="x"
+                                            AutomationProperties.Name="{x:Static locales:Locale.Picture_Zoom}" />
+                </controls:Setting>
 
                 <!-- 九宫格快捷对齐 -->
                 <StackPanel Orientation="Horizontal" Spacing="8" Margin="0 4 0 0" HorizontalAlignment="Center">
@@ -90,15 +87,15 @@
 
         <!-- 轮换与显示设置 -->
         <controls:Setting Title="{x:Static locales:Locale.Picture_Interval}">
-            <ComboBox Name="IntervalCombo" Width="180" SelectionChanged="OnSettingChanged" />
+            <ComboBox Name="IntervalCombo" MinWidth="180" SelectionChanged="OnSettingChanged" />
         </controls:Setting>
 
         <controls:Setting Title="{x:Static locales:Locale.Picture_Order}">
-            <ComboBox Name="OrderCombo" Width="180" SelectionChanged="OnSettingChanged" />
+            <ComboBox Name="OrderCombo" MinWidth="180" SelectionChanged="OnSettingChanged" />
         </controls:Setting>
 
         <controls:Setting Title="{x:Static locales:Locale.Picture_FitMode}">
-            <ComboBox Name="FitModeCombo" Width="180" SelectionChanged="OnSettingChanged" />
+            <ComboBox Name="FitModeCombo" MinWidth="180" SelectionChanged="OnSettingChanged" />
         </controls:Setting>
 
         <controls:Setting Title="{x:Static locales:Locale.Picture_IsFrameless}">

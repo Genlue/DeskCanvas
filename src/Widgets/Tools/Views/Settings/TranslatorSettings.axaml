@@ -1,79 +1,49 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="clr-namespace:DeskCanvas.Views.Controls;assembly=DeskCanvas"
              xmlns:locales="clr-namespace:Tools.Locales"
-             x:Class="Tools.Views.Settings.TranslatorSettings">
-    <UserControl.Styles>
-        <Style Selector="TextBlock.setting-label">
-            <Setter Property="FontSize" Value="13" />
-            <Setter Property="VerticalAlignment" Value="Center" />
-            <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}" />
-        </Style>
-        <Style Selector="TextBlock.setting-desc">
-            <Setter Property="FontSize" Value="11" />
-            <Setter Property="Opacity" Value="0.6" />
-            <Setter Property="Margin" Value="0,2,0,0" />
-            <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}" />
-        </Style>
-        <Style Selector="TextBox.setting-input">
-            <Setter Property="Background" Value="#15808080" />
-            <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="BorderBrush" Value="#25ffffff" />
-            <Setter Property="CornerRadius" Value="4" />
-            <Setter Property="Padding" Value="8,4" />
-            <Setter Property="FontSize" Value="12" />
-            <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}" />
-        </Style>
-        <Style Selector="ComboBox.setting-combo">
-            <Setter Property="Width" Value="160" />
-            <Setter Property="HorizontalAlignment" Value="Right" />
-            <Setter Property="FontSize" Value="12" />
-        </Style>
-    </UserControl.Styles>
+             x:Class="Tools.Views.Settings.TranslatorSettings"
+             controls:SettingsPage.ScrollOwnership="Host">
+    <!-- Scroll ownership: Host — no outer ScrollViewer of its own; the EditWidget content
+         viewport is the single vertical scroll owner. The credential text boxes use the
+         shared input styling from Styles/Controls/Input.axaml (no local chrome overrides). -->
+    <StackPanel Orientation="Vertical" Spacing="6" Margin="0,2,10,8">
+        <TextBlock Classes="dc-section-header" Text="{x:Static locales:Locale.Tools_Translator_Settings_GeneralGroup}" />
 
-    <ScrollViewer VerticalScrollBarVisibility="Auto">
-        <StackPanel Orientation="Vertical" Spacing="10" Margin="0,2,16,8">
-            <TextBlock Classes="group-header" Text="{x:Static locales:Locale.Tools_Translator_Settings_GeneralGroup}" />
+        <!-- Default Engine -->
+        <controls:Setting Title="{x:Static locales:Locale.Tools_Translator_Engine}"
+                          Subtitle="{x:Static locales:Locale.Tools_Translator_Engine_Desc}">
+            <ComboBox x:Name="DefaultEngineCombo" MinWidth="160" HorizontalAlignment="Right"
+                      SelectionChanged="OnEngineSelectionChanged" />
+        </controls:Setting>
 
-            <!-- Default Engine -->
-            <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto">
-                <TextBlock Classes="setting-label" Text="{x:Static locales:Locale.Tools_Translator_Engine}" />
-                <TextBlock Grid.Row="1" Classes="setting-desc" Text="{x:Static locales:Locale.Tools_Translator_Engine_Desc}" />
-                <ComboBox x:Name="DefaultEngineCombo" Grid.Column="1" Grid.RowSpan="2" Classes="setting-combo"
-                          SelectionChanged="OnEngineSelectionChanged" />
-            </Grid>
+        <!-- Auto Translate As You Type -->
+        <controls:Setting Title="{x:Static locales:Locale.Tools_Translator_AutoTranslate}"
+                          Subtitle="{x:Static locales:Locale.Tools_Translator_AutoTranslate_Desc}">
+            <ToggleSwitch x:Name="AutoTranslateToggle" OnContent="" OffContent=""
+                          IsCheckedChanged="OnToggleChanged" />
+        </controls:Setting>
 
-            <!-- Auto Translate As You Type -->
-            <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto">
-                <TextBlock Classes="setting-label" Text="{x:Static locales:Locale.Tools_Translator_AutoTranslate}" />
-                <TextBlock Grid.Row="1" Classes="setting-desc" Text="{x:Static locales:Locale.Tools_Translator_AutoTranslate_Desc}" />
-                <ToggleSwitch x:Name="AutoTranslateToggle" Grid.Column="1" Grid.RowSpan="2" OnContent="" OffContent=""
-                              IsCheckedChanged="OnToggleChanged" />
-            </Grid>
+        <TextBlock Classes="dc-section-header" Text="{x:Static locales:Locale.Tools_Translator_Settings_BaiduGroup}" />
 
-            <TextBlock Classes="group-header" Text="{x:Static locales:Locale.Tools_Translator_Settings_BaiduGroup}" />
+        <!-- Baidu AppId -->
+        <controls:Setting Title="{x:Static locales:Locale.Tools_Translator_BaiduAppId}">
+            <TextBox x:Name="BaiduAppIdBox" Watermark="{x:Static locales:Locale.Tools_Translator_Settings_BaiduAppIdWatermark}"
+                     TextChanged="OnBaiduCredentialsChanged" />
+        </controls:Setting>
 
-            <!-- Baidu AppId -->
-            <Grid ColumnDefinitions="Auto,*" Margin="0,2">
-                <TextBlock Classes="setting-label" Text="{x:Static locales:Locale.Tools_Translator_BaiduAppId}" Width="130" />
-                <TextBox x:Name="BaiduAppIdBox" Grid.Column="1" Classes="setting-input" Watermark="{x:Static locales:Locale.Tools_Translator_Settings_BaiduAppIdWatermark}"
-                         TextChanged="OnBaiduCredentialsChanged" />
-            </Grid>
+        <!-- Baidu Secret -->
+        <controls:Setting Title="{x:Static locales:Locale.Tools_Translator_BaiduSecret}">
+            <TextBox x:Name="BaiduSecretBox" PasswordChar="•" Watermark="{x:Static locales:Locale.Tools_Translator_Settings_BaiduSecretWatermark}"
+                     TextChanged="OnBaiduCredentialsChanged" />
+        </controls:Setting>
 
-            <!-- Baidu Secret -->
-            <Grid ColumnDefinitions="Auto,*" Margin="0,2">
-                <TextBlock Classes="setting-label" Text="{x:Static locales:Locale.Tools_Translator_BaiduSecret}" Width="130" />
-                <TextBox x:Name="BaiduSecretBox" Grid.Column="1" Classes="setting-input" PasswordChar="•" Watermark="{x:Static locales:Locale.Tools_Translator_Settings_BaiduSecretWatermark}"
-                         TextChanged="OnBaiduCredentialsChanged" />
-            </Grid>
+        <TextBlock Classes="dc-section-header" Text="{x:Static locales:Locale.Tools_Translator_Settings_CustomGroup}" />
 
-            <TextBlock Classes="group-header" Text="{x:Static locales:Locale.Tools_Translator_Settings_CustomGroup}" />
-
-            <!-- Custom URL -->
-            <Grid ColumnDefinitions="Auto,*" Margin="0,2">
-                <TextBlock Classes="setting-label" Text="{x:Static locales:Locale.Tools_Translator_CustomUrl}" Width="130" />
-                <TextBox x:Name="CustomUrlBox" Grid.Column="1" Classes="setting-input" Watermark="{x:Static locales:Locale.Tools_Translator_Settings_CustomUrlWatermark}"
-                         TextChanged="OnCustomUrlChanged" />
-            </Grid>
-        </StackPanel>
-    </ScrollViewer>
+        <!-- Custom URL -->
+        <controls:Setting Title="{x:Static locales:Locale.Tools_Translator_CustomUrl}">
+            <TextBox x:Name="CustomUrlBox" Watermark="{x:Static locales:Locale.Tools_Translator_Settings_CustomUrlWatermark}"
+                     TextChanged="OnCustomUrlChanged" />
+        </controls:Setting>
+    </StackPanel>
 </UserControl>

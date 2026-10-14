@@ -2,135 +2,142 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:controls="clr-namespace:DeskCanvas.Views.Controls;assembly=DeskCanvas"
              xmlns:locales="clr-namespace:Notes.Locales"
-             x:Class="Notes.Views.Settings.NoteSettings">
-    <ScrollViewer>
-        <StackPanel Orientation="Vertical" Spacing="5">
-            <controls:Setting Title="{x:Static locales:Locale.Notes_Markdown}">
-                <ToggleSwitch Name="MarkdownToggle" />
+             x:Class="Notes.Views.Settings.NoteSettings"
+             controls:SettingsPage.ScrollOwnership="Host">
+    <!-- Scroll ownership: Host — no outer ScrollViewer of its own; the EditWidget content
+         viewport is the single vertical scroll owner. The bounded file list below keeps its
+         own MaxHeight scroller (a bounded list area, not a page scroller). Every colour row
+         is the shared ColorInput; the model stores "#AARRGGBB" strings, so the compound
+         editor keeps the Argb format and the previous alpha (Preserve). -->
+    <StackPanel Orientation="Vertical" Spacing="5">
+        <controls:Setting Title="{x:Static locales:Locale.Notes_Markdown}">
+            <ToggleSwitch Name="MarkdownToggle" />
+        </controls:Setting>
+        <controls:Setting Title="{x:Static locales:Locale.Notes_AllowInlineEdit}">
+            <ToggleSwitch Name="AllowInlineEditToggle" />
+        </controls:Setting>
+        <controls:Setting Title="{x:Static locales:Locale.Notes_Markdown_Style}"
+                          Subtitle="{x:Static locales:Locale.Notes_Markdown_Style_Subtitle}">
+            <ToggleSwitch Name="StyleToggle" />
+        </controls:Setting>
+        <StackPanel Name="StyleSection" Orientation="Vertical" Spacing="5" IsVisible="False">
+            <controls:Setting Title="{x:Static locales:Locale.Notes_Style_Font}">
+                <ComboBox Name="FontBox" MinWidth="168" />
             </controls:Setting>
-            <controls:Setting Title="{x:Static locales:Locale.Notes_AllowInlineEdit}">
-                <ToggleSwitch Name="AllowInlineEditToggle" />
+            <controls:Setting Title="{x:Static locales:Locale.Notes_Style_Mode}">
+                <ComboBox Name="ModeBox" MinWidth="168" />
             </controls:Setting>
-            <controls:Setting Title="{x:Static locales:Locale.Notes_Markdown_Style}"
-                              Subtitle="{x:Static locales:Locale.Notes_Markdown_Style_Subtitle}">
-                <ToggleSwitch Name="StyleToggle" />
-            </controls:Setting>
-            <StackPanel Name="StyleSection" Orientation="Vertical" Spacing="5" IsVisible="False">
-                <controls:Setting Title="{x:Static locales:Locale.Notes_Style_Font}">
-                    <ComboBox Name="FontBox" MinWidth="168" />
-                </controls:Setting>
-                <controls:Setting Title="{x:Static locales:Locale.Notes_Style_Mode}">
-                    <ComboBox Name="ModeBox" MinWidth="168" />
-                </controls:Setting>
-                <controls:Setting Title="{x:Static locales:Locale.Notes_Style_Preset}">
-                    <StackPanel Orientation="Horizontal" Spacing="8">
-                        <Button Name="PresetImportButton" Content="{x:Static locales:Locale.Notes_Preset_Import}"
-                                Click="ImportPreset" />
-                        <Button Name="PresetExportButton" Content="{x:Static locales:Locale.Notes_Preset_Export}"
-                                Click="ExportPreset" />
-                    </StackPanel>
-                </controls:Setting>
-                <TextBlock Name="PresetStatus" FontSize="11" Opacity="0.55" Margin="4,0,4,0" />
-                <controls:Setting Title="{x:Static locales:Locale.Notes_Style_Text}">
-                    <StackPanel Orientation="Horizontal" Spacing="8">
-                        <ColorPicker Name="StyleTextColor" Height="36" Width="72" IsAlphaVisible="False" />
-                        <Button Name="StyleTextReset" FontSize="11"
-                                Content="{x:Static locales:Locale.Notes_Style_Reset}" />
-                    </StackPanel>
-                </controls:Setting>
-                <controls:Setting Title="{x:Static locales:Locale.Notes_Style_Heading}">
-                    <StackPanel Orientation="Horizontal" Spacing="8">
-                        <ColorPicker Name="StyleHeadingColor" Height="36" Width="72" IsAlphaVisible="False" />
-                        <Button Name="StyleHeadingReset" FontSize="11"
-                                Content="{x:Static locales:Locale.Notes_Style_Reset}" />
-                    </StackPanel>
-                </controls:Setting>
-                <controls:Setting Title="{x:Static locales:Locale.Notes_Style_Bold}">
-                    <StackPanel Orientation="Horizontal" Spacing="8">
-                        <ColorPicker Name="StyleBoldColor" Height="36" Width="72" IsAlphaVisible="False" />
-                        <Button Name="StyleBoldReset" FontSize="11"
-                                Content="{x:Static locales:Locale.Notes_Style_Reset}" />
-                    </StackPanel>
-                </controls:Setting>
-                <controls:Setting Title="{x:Static locales:Locale.Notes_Style_Italic}">
-                    <StackPanel Orientation="Horizontal" Spacing="8">
-                        <ColorPicker Name="StyleItalicColor" Height="36" Width="72" IsAlphaVisible="False" />
-                        <Button Name="StyleItalicReset" FontSize="11"
-                                Content="{x:Static locales:Locale.Notes_Style_Reset}" />
-                    </StackPanel>
-                </controls:Setting>
-                <controls:Setting Title="{x:Static locales:Locale.Notes_Style_Strike}">
-                    <StackPanel Orientation="Horizontal" Spacing="8">
-                        <ColorPicker Name="StyleStrikeColor" Height="36" Width="72" IsAlphaVisible="False" />
-                        <Button Name="StyleStrikeReset" FontSize="11"
-                                Content="{x:Static locales:Locale.Notes_Style_Reset}" />
-                    </StackPanel>
-                </controls:Setting>
-                <controls:Setting Title="{x:Static locales:Locale.Notes_Style_Link}"
-                                  Subtitle="{x:Static locales:Locale.Notes_Style_Link_Subtitle}">
-                    <StackPanel Orientation="Horizontal" Spacing="8">
-                        <ColorPicker Name="StyleLinkColor" Height="36" Width="72" IsAlphaVisible="False" />
-                        <Button Name="StyleLinkReset" FontSize="11"
-                                Content="{x:Static locales:Locale.Notes_Style_Reset}" />
-                    </StackPanel>
-                </controls:Setting>
-                <controls:Setting Title="{x:Static locales:Locale.Notes_Style_Code}"
-                                  Subtitle="{x:Static locales:Locale.Notes_Style_Code_Subtitle}">
-                    <StackPanel Orientation="Horizontal" Spacing="8">
-                        <ColorPicker Name="StyleCodeColor" Height="36" Width="72" IsAlphaVisible="False" />
-                        <Button Name="StyleCodeReset" FontSize="11"
-                                Content="{x:Static locales:Locale.Notes_Style_Reset}" />
-                    </StackPanel>
-                </controls:Setting>
-                <controls:Setting Title="{x:Static locales:Locale.Notes_Style_Quote}">
-                    <StackPanel Orientation="Horizontal" Spacing="8">
-                        <ColorPicker Name="StyleQuoteColor" Height="36" Width="72" IsAlphaVisible="False" />
-                        <Button Name="StyleQuoteReset" FontSize="11"
-                                Content="{x:Static locales:Locale.Notes_Style_Reset}" />
-                    </StackPanel>
-                </controls:Setting>
-            </StackPanel>
-            <controls:Setting Title="{x:Static locales:Locale.Notes_Body_Padding}">
-                <NumericUpDown Name="BodyPaddingBox" MinWidth="128" Minimum="0" Maximum="64"
-                               Increment="2" FormatString="F0" ParsingNumberStyle="Integer" />
-            </controls:Setting>
-            <controls:Setting Title="{x:Static locales:Locale.Notes_TitleBar_Mode}">
-                <ComboBox Name="TitleBarBox" MinWidth="168" />
-            </controls:Setting>
-            <controls:Setting Title="{x:Static locales:Locale.Notes_Header_Color}">
+            <controls:Setting Title="{x:Static locales:Locale.Notes_Style_Preset}">
                 <StackPanel Orientation="Horizontal" Spacing="8">
-                    <ColorPicker Name="HeaderColorPicker" Height="36" Width="72" IsAlphaVisible="False" />
-                    <ComboBox Name="HeaderModeBox" MinWidth="128" />
+                    <Button Name="PresetImportButton" Content="{x:Static locales:Locale.Notes_Preset_Import}"
+                            Click="ImportPreset" />
+                    <Button Name="PresetExportButton" Content="{x:Static locales:Locale.Notes_Preset_Export}"
+                            Click="ExportPreset" />
                 </StackPanel>
             </controls:Setting>
-            <controls:Setting Title="{x:Static locales:Locale.Notes_Header_Opacity}">
-                <NumericUpDown Name="HeaderOpacityBox" MinWidth="128" Minimum="0" Maximum="1"
-                               Increment="0.05" FormatString="{}{0:0.##}" />
-            </controls:Setting>
-            <controls:Setting Title="{x:Static locales:Locale.Notes_Source}">
+            <TextBlock Name="PresetStatus" FontSize="11" Opacity="0.55" Margin="4,0,4,0" />
+            <controls:Setting Title="{x:Static locales:Locale.Notes_Style_Text}">
                 <StackPanel Orientation="Horizontal" Spacing="8">
-                    <ComboBox Name="SourceBox" MinWidth="128" />
-                    <Button Name="BrowseButton" Content="{x:Static locales:Locale.Notes_Browse}"
-                            IsVisible="False" Click="Browse" />
+                    <controls:ColorInput Name="StyleTextColor" IsAlphaVisible="False" />
+                    <Button Name="StyleTextReset" FontSize="11" VerticalAlignment="Center"
+                            Content="{x:Static locales:Locale.Notes_Style_Reset}" />
                 </StackPanel>
             </controls:Setting>
-            <TextBlock Name="PathText" FontSize="11" Opacity="0.55" Margin="4,0,4,4"
-                       TextTrimming="CharacterEllipsis" IsVisible="False" />
-            <StackPanel Name="FolderSection" Orientation="Vertical" Spacing="5" IsVisible="False">
-                <controls:Setting Title="{x:Static locales:Locale.Notes_Documents_Count}">
-                    <NumericUpDown Name="DocumentCountBox" MinWidth="128" Minimum="1" Maximum="8"
-                                   Increment="1" FormatString="F0" ParsingNumberStyle="Integer" />
-                </controls:Setting>
-                <controls:Setting Title="{x:Static locales:Locale.Notes_Documents_Order}">
-                    <ComboBox Name="OrderBox" MinWidth="128" />
-                </controls:Setting>
-                <controls:Setting Title="{x:Static locales:Locale.Notes_Selected_Files}"
-                                  IsVisible="False" Name="FilesSetting">
-                    <ScrollViewer MaxHeight="200">
-                        <StackPanel Name="FilesPanel" Orientation="Vertical" Spacing="2" />
-                    </ScrollViewer>
-                </controls:Setting>
-            </StackPanel>
+            <controls:Setting Title="{x:Static locales:Locale.Notes_Style_Heading}">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <controls:ColorInput Name="StyleHeadingColor" IsAlphaVisible="False" />
+                    <Button Name="StyleHeadingReset" FontSize="11" VerticalAlignment="Center"
+                            Content="{x:Static locales:Locale.Notes_Style_Reset}" />
+                </StackPanel>
+            </controls:Setting>
+            <controls:Setting Title="{x:Static locales:Locale.Notes_Style_Bold}">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <controls:ColorInput Name="StyleBoldColor" IsAlphaVisible="False" />
+                    <Button Name="StyleBoldReset" FontSize="11" VerticalAlignment="Center"
+                            Content="{x:Static locales:Locale.Notes_Style_Reset}" />
+                </StackPanel>
+            </controls:Setting>
+            <controls:Setting Title="{x:Static locales:Locale.Notes_Style_Italic}">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <controls:ColorInput Name="StyleItalicColor" IsAlphaVisible="False" />
+                    <Button Name="StyleItalicReset" FontSize="11" VerticalAlignment="Center"
+                            Content="{x:Static locales:Locale.Notes_Style_Reset}" />
+                </StackPanel>
+            </controls:Setting>
+            <controls:Setting Title="{x:Static locales:Locale.Notes_Style_Strike}">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <controls:ColorInput Name="StyleStrikeColor" IsAlphaVisible="False" />
+                    <Button Name="StyleStrikeReset" FontSize="11" VerticalAlignment="Center"
+                            Content="{x:Static locales:Locale.Notes_Style_Reset}" />
+                </StackPanel>
+            </controls:Setting>
+            <controls:Setting Title="{x:Static locales:Locale.Notes_Style_Link}"
+                              Subtitle="{x:Static locales:Locale.Notes_Style_Link_Subtitle}">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <controls:ColorInput Name="StyleLinkColor" IsAlphaVisible="False" />
+                    <Button Name="StyleLinkReset" FontSize="11" VerticalAlignment="Center"
+                            Content="{x:Static locales:Locale.Notes_Style_Reset}" />
+                </StackPanel>
+            </controls:Setting>
+            <controls:Setting Title="{x:Static locales:Locale.Notes_Style_Code}"
+                              Subtitle="{x:Static locales:Locale.Notes_Style_Code_Subtitle}">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <controls:ColorInput Name="StyleCodeColor" IsAlphaVisible="False" />
+                    <Button Name="StyleCodeReset" FontSize="11" VerticalAlignment="Center"
+                            Content="{x:Static locales:Locale.Notes_Style_Reset}" />
+                </StackPanel>
+            </controls:Setting>
+            <controls:Setting Title="{x:Static locales:Locale.Notes_Style_Quote}">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <controls:ColorInput Name="StyleQuoteColor" IsAlphaVisible="False" />
+                    <Button Name="StyleQuoteReset" FontSize="11" VerticalAlignment="Center"
+                            Content="{x:Static locales:Locale.Notes_Style_Reset}" />
+                </StackPanel>
+            </controls:Setting>
         </StackPanel>
-    </ScrollViewer>
+        <controls:Setting Title="{x:Static locales:Locale.Notes_Body_Padding}">
+            <NumericUpDown Name="BodyPaddingBox" MinWidth="128" Minimum="0" Maximum="64"
+                           Increment="2" FormatString="F0" ParsingNumberStyle="Integer" />
+        </controls:Setting>
+        <controls:Setting Title="{x:Static locales:Locale.Notes_TitleBar_Mode}">
+            <ComboBox Name="TitleBarBox" MinWidth="168" />
+        </controls:Setting>
+        <controls:Setting Title="{x:Static locales:Locale.Notes_Header_Color}">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+                <controls:ColorInput Name="HeaderColorInput" IsAlphaVisible="False" />
+                <ComboBox Name="HeaderModeBox" MinWidth="128" VerticalAlignment="Center" />
+            </StackPanel>
+        </controls:Setting>
+        <controls:Setting Title="{x:Static locales:Locale.Notes_Header_Opacity}">
+            <NumericUpDown Name="HeaderOpacityBox" MinWidth="128" Minimum="0" Maximum="1"
+                           Increment="0.05" FormatString="{}{0:0.##}" />
+        </controls:Setting>
+        <controls:Setting Title="{x:Static locales:Locale.Notes_Source}">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+                <ComboBox Name="SourceBox" MinWidth="128" />
+                <Button Name="BrowseButton" Content="{x:Static locales:Locale.Notes_Browse}"
+                        IsVisible="False" Click="Browse" />
+            </StackPanel>
+        </controls:Setting>
+        <TextBlock Name="PathText" FontSize="11" Opacity="0.55" Margin="4,0,4,4"
+                   TextTrimming="CharacterEllipsis" IsVisible="False" />
+        <StackPanel Name="FolderSection" Orientation="Vertical" Spacing="5" IsVisible="False">
+            <controls:Setting Title="{x:Static locales:Locale.Notes_Documents_Count}">
+                <NumericUpDown Name="DocumentCountBox" MinWidth="128" Minimum="1" Maximum="8"
+                               Increment="1" FormatString="F0" ParsingNumberStyle="Integer" />
+            </controls:Setting>
+            <controls:Setting Title="{x:Static locales:Locale.Notes_Documents_Order}">
+                <ComboBox Name="OrderBox" MinWidth="128" />
+            </controls:Setting>
+            <controls:Setting Title="{x:Static locales:Locale.Notes_Selected_Files}"
+                              IsVisible="False" Name="FilesSetting">
+                <!-- Bounded list area: the file collection can grow freely, the row itself
+                     must not stretch the page — MaxHeight is the business reason for the
+                     only inner ScrollViewer on this page. -->
+                <ScrollViewer MaxHeight="200">
+                    <StackPanel Name="FilesPanel" Orientation="Vertical" Spacing="2" />
+                </ScrollViewer>
+            </controls:Setting>
+        </StackPanel>
+    </StackPanel>
 </UserControl>

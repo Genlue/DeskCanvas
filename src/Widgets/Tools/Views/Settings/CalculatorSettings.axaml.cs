@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
 using Avalonia.Controls;
-using Avalonia.Controls.Primitives;
 using Avalonia.Interactivity;
 using DeskCanvas.Core.Interfaces;
 using DeskCanvas.Core.Models;
@@ -74,7 +73,13 @@ public partial class CalculatorSettings : UserControl
         ClickToCopyToggle.IsChecked = model.ClickHistoryToCopy;
 
         MaxHistorySlider.Value = Math.Clamp(model.MaxHistoryItems, 10, 100);
-        MaxHistoryValueText.Text = $"{model.MaxHistoryItems}";
+        MaxHistorySlider.PropertyChanged += (_, e) =>
+        {
+            // LabeledSlider exposes no ValueChanged event; the Value property change is the
+            // same signal. External loads (the line above) are guarded by isInitializing.
+            if (e.Property == DeskCanvas.Views.Controls.LabeledSlider.ValueProperty)
+                OnMaxHistoryChanged();
+        };
 
         isInitializing = false;
     }
@@ -109,11 +114,10 @@ public partial class CalculatorSettings : UserControl
         }
     }
 
-    private void OnMaxHistoryChanged(object? sender, RangeBaseValueChangedEventArgs e)
+    private void OnMaxHistoryChanged()
     {
         if (isInitializing) return;
-        int val = (int)Math.Round(e.NewValue);
-        MaxHistoryValueText.Text = $"{val}";
+        int val = (int)Math.Round(MaxHistorySlider.Value);
         model = model with { MaxHistoryItems = val };
         SaveAndApply();
     }

@@ -5,55 +5,56 @@
         xmlns:system="clr-namespace:System;assembly=System.Runtime"
         xmlns:viewModels="clr-namespace:Clock.ViewModels"
         x:Class="Clock.Views.Settings.AnalogClockSettings"
-        x:DataType="viewModels:AnalogClockSettingsViewModel">
-    <ScrollViewer>
-        <StackPanel Orientation="Vertical" Spacing="5">
-            <controls:Setting Title="{x:Static locales:Locale.Clock_ShowSeconds}">
-                <ToggleSwitch IsChecked="{Binding ShowSeconds} "/>
-            </controls:Setting>
-            <controls:Setting IsVisible="{Binding ShowDialColorSetting}"
-                              Title="{x:Static locales:Locale.Clock_DialColor_Title}">
-                <StackPanel Orientation="Vertical" Spacing="8">
-                    <ComboBox MinWidth="130" HorizontalAlignment="Right"
-                              ItemsSource="{Binding DialColorModes}"
-                              SelectedItem="{Binding DialColorMode}">
-                        <ComboBox.ItemTemplate>
-                            <DataTemplate DataType="viewModels:DialColorModeOption">
-                                <TextBlock Text="{Binding Name}" Margin="0 4" />
-                            </DataTemplate>
-                        </ComboBox.ItemTemplate>
-                    </ComboBox>
-                    <StackPanel Orientation="Vertical" Spacing="8"
-                                IsVisible="{Binding ShowDialColorPickers}">
-                        <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Right">
-                            <TextBlock MinWidth="70" VerticalAlignment="Center"
-                                       Text="{x:Static locales:Locale.Clock_DialColor_Dark}" />
-                            <ColorPicker Height="36" Width="72"
-                                         Color="{Binding DialColorDark}" 
-                                         IsAlphaVisible="False" />
-                        </StackPanel>
-                        <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Right">
-                            <TextBlock MinWidth="70" VerticalAlignment="Center"
-                                       Text="{x:Static locales:Locale.Clock_DialColor_Light}" />
-                            <ColorPicker Height="36" Width="72"
-                                         Color="{Binding DialColorLight}" 
-                                         IsAlphaVisible="False" />
-                        </StackPanel>
-                    </StackPanel>
-                </StackPanel>
-            </controls:Setting>
-            <controls:Setting Title="{x:Static locales:Locale.Clock_LocalTimeZone}">
-                <ToggleSwitch IsChecked="{Binding UseLocalTimeZone} "/>
-            </controls:Setting>
-            <controls:Setting IsVisible="{Binding ShowTimeZones}" Title="{x:Static locales:Locale.Clock_TimeZone}">
-                <ComboBox ItemsSource="{Binding TimeZones}" Width="130" SelectedValue="{Binding TimeZone}">
+        x:DataType="viewModels:AnalogClockSettingsViewModel"
+        controls:SettingsPage.ScrollOwnership="Host">
+    <!-- Scroll ownership: Host — the page has no outer ScrollViewer of its own, the EditWidget
+         content viewport is the single vertical scroll owner. -->
+    <StackPanel Orientation="Vertical" Spacing="5" Margin="0 0 10 0">
+        <controls:Setting Title="{x:Static locales:Locale.Clock_ShowSeconds}">
+            <ToggleSwitch IsChecked="{Binding ShowSeconds}"/>
+        </controls:Setting>
+
+        <StackPanel Orientation="Vertical" Spacing="5" IsVisible="{Binding ShowDialColorSetting}">
+            <!-- 表盘颜色模式：跟随背景 / 黑白 / 自定义 -->
+            <controls:Setting Title="{x:Static locales:Locale.Clock_DialColor_Title}">
+                <!-- MinWidth, not Width: the option list grows with the locale instead of
+                     clipping; MinWidth only guarantees the row's usable floor. -->
+                <ComboBox MinWidth="130" HorizontalAlignment="Right"
+                          ItemsSource="{Binding DialColorModes}"
+                          SelectedItem="{Binding DialColorMode}">
                     <ComboBox.ItemTemplate>
-                        <DataTemplate DataType="system:TimeZoneInfo">
-                            <TextBlock Text="{Binding  DisplayName}" Margin="0 4" />
+                        <DataTemplate DataType="viewModels:DialColorModeOption">
+                            <TextBlock Text="{Binding Name}" Margin="0 4" />
                         </DataTemplate>
                     </ComboBox.ItemTemplate>
                 </ComboBox>
             </controls:Setting>
+
+            <!-- 自定义模式下的明暗双色：alpha 不参与表盘着色，故两行恒写不透明 RGB -->
+            <controls:Setting IsVisible="{Binding ShowDialColorPickers}"
+                              Title="{x:Static locales:Locale.Clock_DialColor_Dark}">
+                <controls:ColorInput Name="DialColorDarkInput" ColorFormat="Rgb" AlphaPolicy="ForceOpaque"
+                                     AutomationProperties.Name="{x:Static locales:Locale.Clock_DialColor_Dark}" />
+            </controls:Setting>
+
+            <controls:Setting IsVisible="{Binding ShowDialColorPickers}"
+                              Title="{x:Static locales:Locale.Clock_DialColor_Light}">
+                <controls:ColorInput Name="DialColorLightInput" ColorFormat="Rgb" AlphaPolicy="ForceOpaque"
+                                     AutomationProperties.Name="{x:Static locales:Locale.Clock_DialColor_Light}" />
+            </controls:Setting>
         </StackPanel>
-    </ScrollViewer>
+
+        <controls:Setting Title="{x:Static locales:Locale.Clock_LocalTimeZone}">
+            <ToggleSwitch IsChecked="{Binding UseLocalTimeZone}"/>
+        </controls:Setting>
+        <controls:Setting IsVisible="{Binding ShowTimeZones}" Title="{x:Static locales:Locale.Clock_TimeZone}">
+            <ComboBox ItemsSource="{Binding TimeZones}" MinWidth="130" SelectedValue="{Binding TimeZone}">
+                <ComboBox.ItemTemplate>
+                    <DataTemplate DataType="system:TimeZoneInfo">
+                        <TextBlock Text="{Binding  DisplayName}" Margin="0 4" />
+                    </DataTemplate>
+                </ComboBox.ItemTemplate>
+            </ComboBox>
+        </controls:Setting>
+    </StackPanel>
 </UserControl>
