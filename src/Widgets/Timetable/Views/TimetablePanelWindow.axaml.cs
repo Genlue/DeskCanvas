@@ -1,17 +1,14 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using Avalonia;
 using Avalonia.Controls;
-using Avalonia.Input;
-using Avalonia.Interactivity;
 using Avalonia.Layout;
 using Avalonia.Media;
-using Avalonia.Styling;
-using DeskCanvas.Core.Models.Settings;
-using DeskCanvas.Core.Services;
 using DeskCanvas.Views;
 using Timetable.Locales;
 using Timetable.Models;
 using Timetable.Services;
-using Grid = Avalonia.Controls.Grid;
 
 namespace Timetable.Views;
 
@@ -24,13 +21,19 @@ namespace Timetable.Views;
 /// the controls it builds (bounded by the import limits) and installs no timers — the current
 /// lesson outline is computed once when the panel opens.
 /// </para>
+/// <para>
+/// W8 migration: the card, the glass surface, the title chrome and the close button all live in
+/// the shared <see cref="SecondaryPanelShell"/> now — the window declares only business content
+/// (the week grid and the notes). The five-branch material ApplyTheme, the root drag handler and
+/// the per-open AppSettingsProvider are gone: <see cref="SecondaryPanelWindow"/> plus
+/// <see cref="DeskCanvas.Services.PanelAppearanceResolver"/> own the material and the transitions.
+/// </para>
 /// </summary>
 public partial class TimetablePanelWindow : SecondaryPanelWindow
 {
     private readonly Point? spawnScreenCenter;
     private readonly TimetableModel model;
 
-    protected override Visual? PanelCard => CardBorder;
     protected override Point? SpawnScreenCenter => spawnScreenCenter;
 
     public TimetablePanelWindow()
@@ -49,7 +52,6 @@ public partial class TimetablePanelWindow : SecondaryPanelWindow
         try
         {
             ApplyLocalization();
-            ApplyTheme();
             BuildContent();
         }
         catch
@@ -71,74 +73,11 @@ public partial class TimetablePanelWindow : SecondaryPanelWindow
         panel.ShowAsSecondaryPanel(owner);
     }
 
-    protected override void OnPanelLoaded()
-    {
-        if (LiquidGlassSurfaceControl.IsVisible)
-        {
-            LiquidGlassSurfaceControl.RequestRender(immediate: true);
-        }
-    }
-
     private void ApplyLocalization()
     {
         Title = Locale.Timetable_Title;
         HeaderTitleText.Text = model.Name ?? Locale.Timetable_Title;
         NotesHeaderText.Text = Locale.Timetable_Review_Notes;
-    }
-
-    private void ApplyTheme()
-    {
-        Theme theme;
-        try
-        {
-            theme = new AppSettingsProvider().Get().Theme;
-        }
-        catch
-        {
-            theme = new Theme(DarkMode: true, AccentColor: null, OpacityLevel: 0.8, Monochrome: false, UseNativeFrame: false, FontFamily: "Inter");
-        }
-
-        bool isDark = theme.DarkMode ?? ActualThemeVariant == ThemeVariant.Dark;
-
-        if (theme.UsesRenderedGlass)
-        {
-            TransparencyLevelHint = [WindowTransparencyLevel.Transparent];
-            LiquidGlassSurfaceControl.Material = theme;
-            LiquidGlassSurfaceControl.CornerRadius = CardBorder.CornerRadius;
-            LiquidGlassSurfaceControl.IsVisible = true;
-            CardBorder.Background = Brushes.Transparent;
-            CardBorder.BorderBrush = new SolidColorBrush(Color.FromArgb(90, 255, 255, 255));
-            LiquidGlassSurfaceControl.RequestRender(immediate: true);
-        }
-        else if (theme.IsColorful)
-        {
-            LiquidGlassSurfaceControl.IsVisible = false;
-            TransparencyLevelHint = [WindowTransparencyLevel.Transparent];
-            CardBorder.Background = new SolidColorBrush(isDark ? Color.Parse("#1C1C1E") : Color.Parse("#FFFFFF"));
-            CardBorder.BorderBrush = new SolidColorBrush(isDark ? Color.FromArgb(60, 255, 255, 255) : Color.FromArgb(40, 0, 0, 0));
-        }
-        else if (theme.EffectiveSurface == SurfaceStyle.Solid)
-        {
-            LiquidGlassSurfaceControl.IsVisible = false;
-            TransparencyLevelHint = [WindowTransparencyLevel.Transparent];
-            var hex = isDark ? theme.EffectiveSolidBackgroundDark : theme.EffectiveSolidBackgroundLight;
-            var baseColor = Color.TryParse(hex, out var parsed) ? parsed : (isDark ? Color.FromRgb(46, 46, 46) : Colors.White);
-            byte alpha = (byte)Math.Clamp(Math.Round(theme.OpacityLevel * 255), 40, 255);
-            CardBorder.Background = new SolidColorBrush(Color.FromArgb(alpha, baseColor.R, baseColor.G, baseColor.B));
-            CardBorder.BorderBrush = new SolidColorBrush(isDark ? Color.FromArgb(40, 255, 255, 255) : Color.FromArgb(30, 0, 0, 0));
-        }
-        else
-        {
-            LiquidGlassSurfaceControl.IsVisible = false;
-            TransparencyLevelHint = [WindowTransparencyLevel.AcrylicBlur];
-            byte alpha = (byte)Math.Clamp(Math.Round(theme.OpacityLevel * 220), 40, 240);
-            CardBorder.Background = new SolidColorBrush(isDark ? Color.FromArgb(alpha, 28, 28, 32) : Color.FromArgb(alpha, 245, 245, 248));
-            CardBorder.BorderBrush = new SolidColorBrush(isDark ? Color.FromArgb(55, 255, 255, 255) : Color.FromArgb(35, 0, 0, 0));
-        }
-
-        CloseButton.Foreground = isDark
-            ? new SolidColorBrush(Color.FromArgb(200, 255, 255, 255))
-            : new SolidColorBrush(Color.FromArgb(180, 0, 0, 0));
     }
 
     // ---------- Content ----------
@@ -323,13 +262,9 @@ public partial class TimetablePanelWindow : SecondaryPanelWindow
     }
 
     // ---------- Interaction ----------
-
-    private void OnCloseClicked(object? sender, RoutedEventArgs e) => Close();
-
-    private void OnRootPointerPressed(object? sender, PointerPressedEventArgs e)
-    {
-        if (e.Source == sender) Close();
-    }
+    // The window declares no close button and no root drag/dismiss handler of its own any
+    // more: the shared shell's close button, the backdrop press, Escape and the outside-click
+    // hook all collapse into the base class's single animated close.
 
     private static int DayIndex(DayOfWeek day) => day == DayOfWeek.Sunday ? 7 : (int)day;
 }
