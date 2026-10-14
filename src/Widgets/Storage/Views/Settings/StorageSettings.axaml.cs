@@ -11,6 +11,7 @@ using Avalonia.Markup.Xaml.MarkupExtensions;
 using Avalonia.Media;
 using DeskCanvas.Core.Interfaces;
 using DeskCanvas.Core.Models;
+using Storage.Locales;
 using Storage.Models;
 using Storage.Services;
 
@@ -21,8 +22,6 @@ public partial class StorageSettings : UserControl
     private readonly IWidgetLayoutProvider? widgetLayoutProvider;
     private StorageModel model;
     private bool isInitializing = true;
-
-    private static bool IsZh => System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName.Equals("zh", StringComparison.OrdinalIgnoreCase);
 
     private record OptionItem<T>(string Label, T Value)
     {
@@ -43,27 +42,18 @@ public partial class StorageSettings : UserControl
 
         displayModeOptions =
         [
-            new(IsZh ? "📊 进度条列表" : "📊 Progress Bar List", StorageDisplayMode.ProgressBarList),
-            new(IsZh ? "⭕ 圆环仪表盘" : "⭕ Ring Dashboard", StorageDisplayMode.RingDashboard)
+            new(Locale.Storage_Mode_ProgressBarList, StorageDisplayMode.ProgressBarList),
+            new(Locale.Storage_Mode_RingDashboard, StorageDisplayMode.RingDashboard)
         ];
 
         textFormatOptions =
         [
-            new(IsZh ? "剩余可用 (如 138G 可用)" : "Free Space (e.g. 138G free)", StorageTextFormat.FreeSpace),
-            new(IsZh ? "已用 / 总计 (如 374G / 512G)" : "Used / Total (e.g. 374G / 512G)", StorageTextFormat.UsedAndTotal),
-            new(IsZh ? "使用率百分比 (如 73%)" : "Percentage (e.g. 73%)", StorageTextFormat.Percentage)
+            new(Locale.Storage_Format_FreeSpace, StorageTextFormat.FreeSpace),
+            new(Locale.Storage_Format_UsedAndTotal, StorageTextFormat.UsedAndTotal),
+            new(Locale.Storage_Format_Percentage, StorageTextFormat.Percentage)
         ];
 
         InitializeComponent();
-
-        if (!IsZh)
-        {
-            AppearanceSectionHeader.Text = "Appearance & Interaction";
-            FilterSectionHeader.Text = "Drive Filtering";
-            DrivesSectionHeader.Text = "Local Drives & Visibility";
-            RefreshDrivesButton.Content = "Refresh Drives";
-            DrivesHintText.Text = "Check or uncheck drives to show or hide them in the widget; extra drives are truncated by drive letter order to fit the card size.";
-        }
 
         DisplayModeCombo.ItemsSource = displayModeOptions;
         TextFormatCombo.ItemsSource = textFormatOptions;
@@ -130,7 +120,7 @@ public partial class StorageSettings : UserControl
         {
             var emptyText = new TextBlock
             {
-                Text = IsZh ? "未检测到可用的磁盘驱动器" : "No available disk drives detected",
+                Text = Locale.Storage_NoDrives,
                 FontSize = 12,
                 Opacity = 0.6,
                 Margin = new Thickness(4, 8)
@@ -186,8 +176,8 @@ public partial class StorageSettings : UserControl
             MinWidth = 24
         };
         ToolTip.SetTip(checkBox, isTypeEnabled
-            ? (IsZh ? "勾选在小组件中显示该分区" : "Check to show this drive in widget")
-            : (IsZh ? "请先在上方开启对应驱动器类型" : "Please enable this drive type above first"));
+            ? Locale.Storage_ShowDriveTooltip
+            : Locale.Storage_EnableTypeFirstTooltip);
         checkBox.IsCheckedChanged += (_, _) =>
         {
             if (isInitializing) return;
@@ -203,12 +193,12 @@ public partial class StorageSettings : UserControl
         };
 
         var typeTag = d.IsSystemDrive
-            ? (IsZh ? "系统盘" : "System")
+            ? Locale.Storage_DriveTypeSystem
             : d.DriveType switch
             {
-                DriveType.Removable => IsZh ? "可移动盘" : "Removable",
-                DriveType.Network => IsZh ? "网络盘" : "Network",
-                _ => IsZh ? "本地盘" : "Local"
+                DriveType.Removable => Locale.Storage_DriveTypeRemovable,
+                DriveType.Network => Locale.Storage_DriveTypeNetwork,
+                _ => Locale.Storage_DriveTypeLocal
             };
 
         var titleBlock = new TextBlock
@@ -222,9 +212,11 @@ public partial class StorageSettings : UserControl
 
         var subBlock = new TextBlock
         {
-            Text = IsZh
-                ? $"已用 {StorageService.FormatBytes(d.UsedBytes)} / {StorageService.FormatBytes(d.TotalBytes)} · 剩余 {StorageService.FormatBytes(d.FreeBytes)}"
-                : $"Used {StorageService.FormatBytes(d.UsedBytes)} / {StorageService.FormatBytes(d.TotalBytes)} · {StorageService.FormatBytes(d.FreeBytes)} free",
+            Text = string.Format(
+                Locale.Storage_UsedFreeFormat,
+                StorageService.FormatBytes(d.UsedBytes),
+                StorageService.FormatBytes(d.TotalBytes),
+                StorageService.FormatBytes(d.FreeBytes)),
             FontSize = 11,
             Opacity = 0.7,
             Margin = new Thickness(0, 3, 0, 0)
@@ -238,8 +230,8 @@ public partial class StorageSettings : UserControl
         // 2. Open in Explorer button
         var openBtn = new Button
         {
-            Content = IsZh ? "打开" : "Open",
-            Classes = { "action-btn" },
+            Content = Locale.Storage_Open,
+            Classes = { "dc-toolbar-button" },
             VerticalAlignment = VerticalAlignment.Center,
             Margin = new Thickness(0, 0, 8, 0),
             Padding = new Thickness(8, 3),
@@ -249,6 +241,8 @@ public partial class StorageSettings : UserControl
         Grid.SetColumn(openBtn, 2);
 
         // 3. Usage Percentage Badge
+        // 业务数据色：按使用率映射的告警/健康色（红/橙/绿/蓝），属于业务语义而非通用 UI 灰，
+        // 是 §12.4 允许的例外。
         var hex = d.UsagePercent >= 90
             ? "#FF3B30"
             : d.UsagePercent >= 75

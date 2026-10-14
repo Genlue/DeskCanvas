@@ -112,4 +112,91 @@
   <data name="Map_LayerTooltip" xml:space="preserve">
     <value>切换图源</value>
   </data>
+  <data name="Map_Provider_Subtitle" xml:space="preserve">
+    <value>选择底图切片提供商与视觉风格</value>
+  </data>
+  <data name="Map_PresetSetting" xml:space="preserve">
+    <value>预设知名地点</value>
+  </data>
+  <data name="Map_PresetSetting_Subtitle" xml:space="preserve">
+    <value>快速定位到国内与全球标志性城市或商圈</value>
+  </data>
+  <data name="Map_AutoLocate" xml:space="preserve">
+    <value>网络自动定位</value>
+  </data>
+  <data name="Map_AutoLocate_Subtitle" xml:space="preserve">
+    <value>基于网络 IP 自动识别并定位到您当前所在的城市</value>
+  </data>
+  <data name="Map_LocateNow" xml:space="preserve">
+    <value>立即定位当前位置</value>
+  </data>
+  <data name="Map_AutoLocateOn" xml:space="preserve">
+    <value>启动时自动定位</value>
+  </data>
+  <data name="Map_AutoLocateOff" xml:space="preserve">
+    <value>手动预设</value>
+  </data>
+  <data name="Map_LocationNameSetting" xml:space="preserve">
+    <value>地点标题</value>
+  </data>
+  <data name="Map_LocationNameSetting_Subtitle" xml:space="preserve">
+    <value>显示在 iPad 风格卡片上的大字标题</value>
+  </data>
+  <data name="Map_LocationDesc_Subtitle" xml:space="preserve">
+    <value>显示在浮动卡片上的辅助副标题</value>
+  </data>
+  <data name="Map_LatitudeSetting" xml:space="preserve">
+    <value>纬度 (Latitude)</value>
+  </data>
+  <data name="Map_LatitudeSetting_Subtitle" xml:space="preserve">
+    <value>地图中心点纬度 (-85.0 ~ 85.0)</value>
+  </data>
+  <data name="Map_LongitudeSetting" xml:space="preserve">
+    <value>经度 (Longitude)</value>
+  </data>
+  <data name="Map_LongitudeSetting_Subtitle" xml:space="preserve">
+    <value>地图中心点经度 (-180.0 ~ 180.0)</value>
+  </data>
+  <data name="Map_ZoomSetting" xml:space="preserve">
+    <value>默认缩放等级</value>
+  </data>
+  <data name="Map_ZoomSetting_Subtitle" xml:space="preserve">
+    <value>级别 3 (全球) ~ 18 (高精度街区)</value>
+  </data>
+  <data name="Map_AllowDragSetting" xml:space="preserve">
+    <value>桌面拖拽平移</value>
+  </data>
+  <data name="Map_AllowDragSetting_Subtitle" xml:space="preserve">
+    <value>开启后允许鼠标直接在桌面上拖拽平移地图视野</value>
+  </data>
+  <data name="Map_ShowPinSetting" xml:space="preserve">
+    <value>中心大头针</value>
+  </data>
+  <data name="Map_ShowPinSetting_Subtitle" xml:space="preserve">
+    <value>在地图中心显示 iPad 风格红色地标大头针</value>
+  </data>
+  <data name="Map_ShowInfoPillSetting" xml:space="preserve">
+    <value>浮动信息卡片</value>
+  </data>
+  <data name="Map_ShowInfoPillSetting_Subtitle" xml:space="preserve">
+    <value>在地图角落展示当前地点、坐标与缩放胶囊</value>
+  </data>
+  <data name="Map_ShowControlsSetting" xml:space="preserve">
+    <value>悬浮控制按钮组</value>
+  </data>
+  <data name="Map_ShowControlsSetting_Subtitle" xml:space="preserve">
+    <value>在右侧展示复位、放大、缩小与图源切换按钮</value>
+  </data>
+  <data name="Map_ShowScaleBarSetting" xml:space="preserve">
+    <value>地图比例尺</value>
+  </data>
+  <data name="Map_ShowScaleBarSetting_Subtitle" xml:space="preserve">
+    <value>在中大号尺寸下展示 Apple 风格米/公里比例尺</value>
+  </data>
+  <data name="Map_BaiduKey_Subtitle" xml:space="preserve">
+    <value>填入开发者 API Key 以获取百度官方高清切片</value>
+  </data>
+  <data name="Map_BaiduKeyWatermark" xml:space="preserve">
+    <value>留空使用高德/开源备用源</value>
+  </data>
 </root>

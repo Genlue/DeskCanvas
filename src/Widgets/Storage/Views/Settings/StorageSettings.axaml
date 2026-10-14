@@ -2,75 +2,63 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:controls="clr-namespace:DeskCanvas.Views.Controls;assembly=DeskCanvas"
              xmlns:locales="clr-namespace:Storage.Locales"
-             x:Class="Storage.Views.Settings.StorageSettings">
+             x:Class="Storage.Views.Settings.StorageSettings"
+             controls:SettingsPage.ScrollOwnership="Host">
 
-    <UserControl.Styles>
-        <Style Selector="Button.action-btn">
-            <Setter Property="Background" Value="Transparent" />
-            <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="BorderBrush" Value="{DynamicResource ToolTipBorderBrush}" />
-            <Setter Property="CornerRadius" Value="4" />
-            <Setter Property="Padding" Value="10,4" />
-            <Setter Property="FontSize" Value="12" />
-            <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}" />
-        </Style>
-        <Style Selector="Button.action-btn:pointerover">
-            <Setter Property="Background" Value="{DynamicResource SystemControlHighlightListLowBrush}" />
-        </Style>
-    </UserControl.Styles>
+    <!-- 滚动契约：Host —— 页面不再自带外层 ScrollViewer，唯一竖向滚动所有者是宿主 EditWidget
+         的内容视口。本地不再保留任何通用基础样式：分组标题走共享 dc-section-header，
+         列表里的文字按钮走共享 dc-toolbar-button。 -->
 
-    <ScrollViewer VerticalScrollBarVisibility="Auto">
-        <StackPanel Orientation="Vertical" Spacing="6" Margin="0,0,10,12">
-            <!-- 外观与交互选项 -->
-            <TextBlock x:Name="AppearanceSectionHeader" Classes="group-header" Text="外观与交互" Margin="0,4,0,4" />
+    <StackPanel Orientation="Vertical" Spacing="6" Margin="0,0,10,12">
+        <!-- 外观与交互选项 -->
+        <TextBlock Classes="dc-section-header" Text="{x:Static locales:Locale.Storage_SectionAppearance}" />
 
-            <!-- 显示样式 -->
-            <controls:Setting Title="{x:Static locales:Locale.Storage_DisplayMode}">
-                <ComboBox Name="DisplayModeCombo" MinWidth="165" SelectionChanged="OnSelectionChanged" />
-            </controls:Setting>
+        <!-- 显示样式 -->
+        <controls:Setting Title="{x:Static locales:Locale.Storage_DisplayMode}">
+            <ComboBox Name="DisplayModeCombo" MinWidth="165" SelectionChanged="OnSelectionChanged" />
+        </controls:Setting>
 
-            <!-- 容量数值格式 -->
-            <controls:Setting Title="{x:Static locales:Locale.Storage_TextFormat}">
-                <ComboBox Name="TextFormatCombo" MinWidth="165" SelectionChanged="OnSelectionChanged" />
-            </controls:Setting>
+        <!-- 容量数值格式 -->
+        <controls:Setting Title="{x:Static locales:Locale.Storage_TextFormat}">
+            <ComboBox Name="TextFormatCombo" MinWidth="165" SelectionChanged="OnSelectionChanged" />
+        </controls:Setting>
 
-            <!-- 显示顶部总览栏 -->
-            <controls:Setting Title="{x:Static locales:Locale.Storage_ShowHeader}">
-                <ToggleSwitch Name="ShowHeaderSwitch" IsCheckedChanged="OnOptionChanged" />
-            </controls:Setting>
+        <!-- 显示顶部总览栏 -->
+        <controls:Setting Title="{x:Static locales:Locale.Storage_ShowHeader}">
+            <ToggleSwitch Name="ShowHeaderSwitch" IsCheckedChanged="OnOptionChanged" />
+        </controls:Setting>
 
-            <!-- 空间不足变色预警 -->
-            <controls:Setting Title="{x:Static locales:Locale.Storage_UseWarningColors}">
-                <ToggleSwitch Name="UseWarningColorsSwitch" IsCheckedChanged="OnOptionChanged" />
-            </controls:Setting>
+        <!-- 空间不足变色预警 -->
+        <controls:Setting Title="{x:Static locales:Locale.Storage_UseWarningColors}">
+            <ToggleSwitch Name="UseWarningColorsSwitch" IsCheckedChanged="OnOptionChanged" />
+        </controls:Setting>
 
-            <!-- 双击打开磁盘文件夹 -->
-            <controls:Setting Title="{x:Static locales:Locale.Storage_DoubleClickToOpen}">
-                <ToggleSwitch Name="DoubleClickToOpenSwitch" IsCheckedChanged="OnOptionChanged" />
-            </controls:Setting>
+        <!-- 双击打开磁盘文件夹 -->
+        <controls:Setting Title="{x:Static locales:Locale.Storage_DoubleClickToOpen}">
+            <ToggleSwitch Name="DoubleClickToOpenSwitch" IsCheckedChanged="OnOptionChanged" />
+        </controls:Setting>
 
-            <!-- 驱动器类型过滤 -->
-            <TextBlock x:Name="FilterSectionHeader" Classes="group-header" Text="驱动器过滤" Margin="0,12,0,4" />
+        <!-- 驱动器类型过滤 -->
+        <TextBlock Classes="dc-section-header" Text="{x:Static locales:Locale.Storage_SectionFilter}" />
 
-            <controls:Setting Title="{x:Static locales:Locale.Storage_ShowRemovableDrives}">
-                <ToggleSwitch Name="ShowRemovableSwitch" IsCheckedChanged="OnOptionChanged" />
-            </controls:Setting>
+        <controls:Setting Title="{x:Static locales:Locale.Storage_ShowRemovableDrives}">
+            <ToggleSwitch Name="ShowRemovableSwitch" IsCheckedChanged="OnOptionChanged" />
+        </controls:Setting>
 
-            <controls:Setting Title="{x:Static locales:Locale.Storage_ShowNetworkDrives}">
-                <ToggleSwitch Name="ShowNetworkSwitch" IsCheckedChanged="OnOptionChanged" />
-            </controls:Setting>
+        <controls:Setting Title="{x:Static locales:Locale.Storage_ShowNetworkDrives}">
+            <ToggleSwitch Name="ShowNetworkSwitch" IsCheckedChanged="OnOptionChanged" />
+        </controls:Setting>
 
-            <!-- 本机磁盘列表与单独显隐控制 -->
-            <Grid Margin="0,14,0,2">
-                <TextBlock x:Name="DrivesSectionHeader" Classes="group-header" Text="本机磁盘详情与显隐管理" VerticalAlignment="Center" Margin="0" />
-                <Button x:Name="RefreshDrivesButton" Classes="action-btn" Content="刷新磁盘" HorizontalAlignment="Right"
-                        Click="OnRefreshDrivesClicked" />
-            </Grid>
-            <TextBlock x:Name="DrivesHintText" Text="可单独勾选或隐藏不想在小组件中展示的分区；超出会按盘符顺序自动截取适配卡片尺寸。"
-                       FontSize="11" Opacity="0.6" Margin="0,0,0,6" TextWrapping="Wrap"
-                       Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}" />
+        <!-- 本机磁盘列表与单独显隐控制 -->
+        <Grid Margin="0,2,0,2">
+            <TextBlock Classes="dc-section-header" Text="{x:Static locales:Locale.Storage_SectionDrives}" VerticalAlignment="Center" />
+            <Button Name="RefreshDrivesButton" Classes="dc-toolbar-button" Content="{x:Static locales:Locale.Storage_RefreshDrives}"
+                    HorizontalAlignment="Right" Click="OnRefreshDrivesClicked" />
+        </Grid>
+        <TextBlock Name="DrivesHintText" Text="{x:Static locales:Locale.Storage_DrivesHint}"
+                   FontSize="11" Opacity="0.6" Margin="0,0,0,6" TextWrapping="Wrap"
+                   Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}" />
 
-            <StackPanel Name="DrivesPanel" Orientation="Vertical" Spacing="6" />
-        </StackPanel>
-    </ScrollViewer>
+        <StackPanel Name="DrivesPanel" Orientation="Vertical" Spacing="6" />
+    </StackPanel>
 </UserControl>

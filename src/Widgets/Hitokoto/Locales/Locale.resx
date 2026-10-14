@@ -75,4 +75,124 @@
   <data name="Hitokoto_UnfavoritedToast" xml:space="preserve">
     <value>Removed from collection</value>
   </data>
+  <data name="Hitokoto_SectionAppearance" xml:space="preserve">
+    <value>Appearance &amp; Typography</value>
+  </data>
+  <data name="Hitokoto_StyleMode" xml:space="preserve">
+    <value>Layout Style</value>
+  </data>
+  <data name="Hitokoto_StyleMode_Subtitle" xml:space="preserve">
+    <value>Switch between Modern Quote, Poetic Center, or Minimal layout</value>
+  </data>
+  <data name="Hitokoto_Frameless" xml:space="preserve">
+    <value>Frameless Desktop Watermark Mode</value>
+  </data>
+  <data name="Hitokoto_Frameless_Subtitle" xml:space="preserve">
+    <value>Hide card background and border so text floats directly over wallpaper</value>
+  </data>
+  <data name="Hitokoto_AutoHideActions" xml:space="preserve">
+    <value>Auto-Hide Action Buttons</value>
+  </data>
+  <data name="Hitokoto_AutoHideActions_Subtitle" xml:space="preserve">
+    <value>Show like, bookmark, copy, and expand buttons only on mouse hover</value>
+  </data>
+  <data name="Hitokoto_ShowCategory" xml:space="preserve">
+    <value>Show Category Badge</value>
+  </data>
+  <data name="Hitokoto_ShowCategory_Subtitle" xml:space="preserve">
+    <value>Display category pill (Poetry, Literature, Anime, etc.) at top-left</value>
+  </data>
+  <data name="Hitokoto_ShowAttribution" xml:space="preserve">
+    <value>Show Attribution &amp; Author</value>
+  </data>
+  <data name="Hitokoto_ShowAttribution_Subtitle" xml:space="preserve">
+    <value>Display source work and author attribution at the bottom of the card</value>
+  </data>
+  <data name="Hitokoto_ShowLikes" xml:space="preserve">
+    <value>Show Community Likes (Core API)</value>
+  </data>
+  <data name="Hitokoto_ShowLikes_Subtitle" xml:space="preserve">
+    <value>Fetch live like count from Hitokoto Core API and support one-click liking</value>
+  </data>
+  <data name="Hitokoto_FontFamily" xml:space="preserve">
+    <value>Quote Font</value>
+  </data>
+  <data name="Hitokoto_FontFamily_Subtitle" xml:space="preserve">
+    <value>Choose display font for quotes (defaults to layout style recommendation)</value>
+  </data>
+  <data name="Hitokoto_FontSize" xml:space="preserve">
+    <value>Font Size (0 = Auto)</value>
+  </data>
+  <data name="Hitokoto_FontSize_Subtitle" xml:space="preserve">
+    <value>Set to 0 for automatic responsive scaling, or fix between 12–28 px</value>
+  </data>
+  <data name="Hitokoto_SectionFilter" xml:space="preserve">
+    <value>Auto Refresh &amp; Filtering</value>
+  </data>
+  <data name="Hitokoto_Interval" xml:space="preserve">
+    <value>Auto Refresh Interval</value>
+  </data>
+  <data name="Hitokoto_Interval_Subtitle" xml:space="preserve">
+    <value>Besides scheduled refresh, double-click the card anytime for a new quote</value>
+  </data>
+  <data name="Hitokoto_Categories" xml:space="preserve">
+    <value>Category Filter</value>
+  </data>
+  <data name="Hitokoto_Categories_Subtitle" xml:space="preserve">
+    <value>Selecting all or none means all categories; or pick specific genres</value>
+  </data>
+  <data name="Hitokoto_ResetCategories" xml:space="preserve">
+    <value>Reset to All</value>
+  </data>
+  <data name="Hitokoto_MinLength" xml:space="preserve">
+    <value>Minimum Quote Length</value>
+  </data>
+  <data name="Hitokoto_MinLength_Subtitle" xml:space="preserve">
+    <value>Filter out very short quotes (default: 0 chars)</value>
+  </data>
+  <data name="Hitokoto_MaxLength" xml:space="preserve">
+    <value>Maximum Quote Length</value>
+  </data>
+  <data name="Hitokoto_MaxLength_Subtitle" xml:space="preserve">
+    <value>Prevent overly long quotes from crowding compact cards (default: 45 chars)</value>
+  </data>
+  <data name="Hitokoto_CustomApi" xml:space="preserve">
+    <value>Custom API Endpoint (Optional)</value>
+  </data>
+  <data name="Hitokoto_CustomApi_Subtitle" xml:space="preserve">
+    <value>Leave blank to use official https://v1.hitokoto.cn/, or enter a self-hosted URL</value>
+  </data>
+  <data name="Hitokoto_FontDefault" xml:space="preserve">
+    <value>Default for layout style</value>
+  </data>
+  <data name="Hitokoto_Interval_Manual" xml:space="preserve">
+    <value>Manual only (double-click / button)</value>
+  </data>
+  <data name="Hitokoto_Interval_5m" xml:space="preserve">
+    <value>Every 5 minutes</value>
+  </data>
+  <data name="Hitokoto_Interval_15m" xml:space="preserve">
+    <value>Every 15 minutes</value>
+  </data>
+  <data name="Hitokoto_Interval_30m" xml:space="preserve">
+    <value>Every 30 minutes (Recommended)</value>
+  </data>
+  <data name="Hitokoto_Interval_1h" xml:space="preserve">
+    <value>Every 1 hour</value>
+  </data>
+  <data name="Hitokoto_Interval_2h" xml:space="preserve">
+    <value>Every 2 hours</value>
+  </data>
+  <data name="Hitokoto_Interval_Daily" xml:space="preserve">
+    <value>Daily quote (24 hours)</value>
+  </data>
+  <data name="Hitokoto_Style_ModernQuote" xml:space="preserve">
+    <value>Modern Quote (Left-aligned + Watermark)</value>
+  </data>
+  <data name="Hitokoto_Style_PoeticCenter" xml:space="preserve">
+    <value>Poetic Center (Centered Serif)</value>
+  </data>
+  <data name="Hitokoto_Style_MinimalCard" xml:space="preserve">
+    <value>Minimal Card (No Watermark)</value>
+  </data>
 </root>

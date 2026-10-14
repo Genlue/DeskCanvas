@@ -66,4 +66,91 @@
     <data name="Music_DeleteRule" xml:space="preserve">
         <value>Delete Rule</value>
     </data>
+    <data name="Music_SectionGeneral" xml:space="preserve">
+        <value>General &amp; Display</value>
+    </data>
+    <data name="Music_AmbientGlow" xml:space="preserve">
+        <value>Enable Album Cover Ambient Glow</value>
+    </data>
+    <data name="Music_ShowProgress" xml:space="preserve">
+        <value>Show Timeline Progress Bar &amp; Scrubber</value>
+    </data>
+    <data name="Music_SectionPlayers" xml:space="preserve">
+        <value>Music Players &amp; Smart Detection</value>
+    </data>
+    <data name="Music_PlayersHint" xml:space="preserve">
+        <value>When multiple apps are active, players higher in the list take priority.</value>
+    </data>
+    <data name="Music_AddFromRunning" xml:space="preserve">
+        <value>Add from Running</value>
+    </data>
+    <data name="Music_BrowseExe" xml:space="preserve">
+        <value>Browse App (.exe)</value>
+    </data>
+    <data name="Music_AddManualRule" xml:space="preserve">
+        <value>Add Custom Rule</value>
+    </data>
+    <data name="Music_RestoreDefaults" xml:space="preserve">
+        <value>Restore Defaults</value>
+    </data>
+    <data name="Music_ManualRuleTitle" xml:space="preserve">
+        <value>Add Custom Player Rule</value>
+    </data>
+    <data name="Music_ManualNameLabel" xml:space="preserve">
+        <value>App Name:</value>
+    </data>
+    <data name="Music_ManualNameWatermark" xml:space="preserve">
+        <value>e.g. YesPlayMusic</value>
+    </data>
+    <data name="Music_ManualPatternLabel" xml:space="preserve">
+        <value>Pattern:</value>
+    </data>
+    <data name="Music_ManualPatternWatermark" xml:space="preserve">
+        <value>e.g. yesplaymusic (process or AUMID keyword)</value>
+    </data>
+    <data name="Music_Cancel" xml:space="preserve">
+        <value>Cancel</value>
+    </data>
+    <data name="Music_ConfirmAdd" xml:space="preserve">
+        <value>Add</value>
+    </data>
+    <data name="Music_RunningSessionsTitle" xml:space="preserve">
+        <value>Active Media Sessions (Click to Add):</value>
+    </data>
+    <data name="Music_Close" xml:space="preserve">
+        <value>Close</value>
+    </data>
+    <data name="Music_BrowseExeTitle" xml:space="preserve">
+        <value>Select Music Player Executable</value>
+    </data>
+    <data name="Music_BrowseExeFilter" xml:space="preserve">
+        <value>Applications</value>
+    </data>
+    <data name="Music_NoSessionsTitle" xml:space="preserve">
+        <value>No running media sessions detected</value>
+    </data>
+    <data name="Music_NoSessionsHint" xml:space="preserve">
+        <value>Please start playing music in any audio player first</value>
+    </data>
+    <data name="Music_Player_Netease" xml:space="preserve">
+        <value>NetEase Cloud Music</value>
+    </data>
+    <data name="Music_Player_QQMusic" xml:space="preserve">
+        <value>QQ Music</value>
+    </data>
+    <data name="Music_Player_Soda" xml:space="preserve">
+        <value>Soda Music</value>
+    </data>
+    <data name="Music_Player_Kugou" xml:space="preserve">
+        <value>KuGou Music</value>
+    </data>
+    <data name="Music_Player_Kuwo" xml:space="preserve">
+        <value>Kuwo Music</value>
+    </data>
+    <data name="Music_Player_Wmp" xml:space="preserve">
+        <value>Windows Media Player</value>
+    </data>
+    <data name="Music_Player_Browser" xml:space="preserve">
+        <value>Browsers (Edge/Chrome/Firefox)</value>
+    </data>
 </root>

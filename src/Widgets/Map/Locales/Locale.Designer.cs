@@ -54,5 +54,34 @@ namespace Map.Locales {
         public static string Map_ZoomInTooltip => ResourceManager.GetString("Map_ZoomInTooltip", resourceCulture) ?? "放大";
         public static string Map_ZoomOutTooltip => ResourceManager.GetString("Map_ZoomOutTooltip", resourceCulture) ?? "缩小";
         public static string Map_LayerTooltip => ResourceManager.GetString("Map_LayerTooltip", resourceCulture) ?? "切换图源";
+        public static string Map_Provider_Subtitle => ResourceManager.GetString("Map_Provider_Subtitle", resourceCulture) ?? "Choose base map tile provider and visual style";
+        public static string Map_PresetSetting => ResourceManager.GetString("Map_PresetSetting", resourceCulture) ?? "Preset Landmarks";
+        public static string Map_PresetSetting_Subtitle => ResourceManager.GetString("Map_PresetSetting_Subtitle", resourceCulture) ?? "Quickly jump to iconic cities or landmarks worldwide";
+        public static string Map_AutoLocate => ResourceManager.GetString("Map_AutoLocate", resourceCulture) ?? "Auto Network Location";
+        public static string Map_AutoLocate_Subtitle => ResourceManager.GetString("Map_AutoLocate_Subtitle", resourceCulture) ?? "Automatically detect and locate your current city via network IP";
+        public static string Map_LocateNow => ResourceManager.GetString("Map_LocateNow", resourceCulture) ?? "Locate Now";
+        public static string Map_AutoLocateOn => ResourceManager.GetString("Map_AutoLocateOn", resourceCulture) ?? "Auto-locate on startup";
+        public static string Map_AutoLocateOff => ResourceManager.GetString("Map_AutoLocateOff", resourceCulture) ?? "Manual preset";
+        public static string Map_LocationNameSetting => ResourceManager.GetString("Map_LocationNameSetting", resourceCulture) ?? "Location Title";
+        public static string Map_LocationNameSetting_Subtitle => ResourceManager.GetString("Map_LocationNameSetting_Subtitle", resourceCulture) ?? "Main title displayed on the iPad-style card";
+        public static string Map_LocationDesc_Subtitle => ResourceManager.GetString("Map_LocationDesc_Subtitle", resourceCulture) ?? "Subtitle displayed on the floating info card";
+        public static string Map_LatitudeSetting => ResourceManager.GetString("Map_LatitudeSetting", resourceCulture) ?? "Latitude";
+        public static string Map_LatitudeSetting_Subtitle => ResourceManager.GetString("Map_LatitudeSetting_Subtitle", resourceCulture) ?? "Map center latitude (-85.0 ~ 85.0)";
+        public static string Map_LongitudeSetting => ResourceManager.GetString("Map_LongitudeSetting", resourceCulture) ?? "Longitude";
+        public static string Map_LongitudeSetting_Subtitle => ResourceManager.GetString("Map_LongitudeSetting_Subtitle", resourceCulture) ?? "Map center longitude (-180.0 ~ 180.0)";
+        public static string Map_ZoomSetting => ResourceManager.GetString("Map_ZoomSetting", resourceCulture) ?? "Default Zoom Level";
+        public static string Map_ZoomSetting_Subtitle => ResourceManager.GetString("Map_ZoomSetting_Subtitle", resourceCulture) ?? "Level 3 (Global) ~ 18 (Street detail)";
+        public static string Map_AllowDragSetting => ResourceManager.GetString("Map_AllowDragSetting", resourceCulture) ?? "Drag to Pan on Desktop";
+        public static string Map_AllowDragSetting_Subtitle => ResourceManager.GetString("Map_AllowDragSetting_Subtitle", resourceCulture) ?? "Allow panning the map view directly by dragging with the mouse on the desktop";
+        public static string Map_ShowPinSetting => ResourceManager.GetString("Map_ShowPinSetting", resourceCulture) ?? "Center Pin";
+        public static string Map_ShowPinSetting_Subtitle => ResourceManager.GetString("Map_ShowPinSetting_Subtitle", resourceCulture) ?? "Display an iPad-style red landmark pin at the center of the map";
+        public static string Map_ShowInfoPillSetting => ResourceManager.GetString("Map_ShowInfoPillSetting", resourceCulture) ?? "Floating Info Card";
+        public static string Map_ShowInfoPillSetting_Subtitle => ResourceManager.GetString("Map_ShowInfoPillSetting_Subtitle", resourceCulture) ?? "Show current place, coordinates, and zoom badge in the corner";
+        public static string Map_ShowControlsSetting => ResourceManager.GetString("Map_ShowControlsSetting", resourceCulture) ?? "Floating Controls";
+        public static string Map_ShowControlsSetting_Subtitle => ResourceManager.GetString("Map_ShowControlsSetting_Subtitle", resourceCulture) ?? "Show recenter, zoom in/out, and layer switch buttons on the right";
+        public static string Map_ShowScaleBarSetting => ResourceManager.GetString("Map_ShowScaleBarSetting", resourceCulture) ?? "Map Scale Bar";
+        public static string Map_ShowScaleBarSetting_Subtitle => ResourceManager.GetString("Map_ShowScaleBarSetting_Subtitle", resourceCulture) ?? "Show Apple-style metric scale bar on medium and large widgets";
+        public static string Map_BaiduKey_Subtitle => ResourceManager.GetString("Map_BaiduKey_Subtitle", resourceCulture) ?? "Enter a developer API Key for official high-DPI Baidu tiles";
+        public static string Map_BaiduKeyWatermark => ResourceManager.GetString("Map_BaiduKeyWatermark", resourceCulture) ?? "Leave blank to use Amap/open-source fallback";
     }
 }

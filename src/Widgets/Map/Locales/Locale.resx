@@ -112,4 +112,91 @@
   <data name="Map_LayerTooltip" xml:space="preserve">
     <value>Switch Map Source</value>
   </data>
+  <data name="Map_Provider_Subtitle" xml:space="preserve">
+    <value>Choose base map tile provider and visual style</value>
+  </data>
+  <data name="Map_PresetSetting" xml:space="preserve">
+    <value>Preset Landmarks</value>
+  </data>
+  <data name="Map_PresetSetting_Subtitle" xml:space="preserve">
+    <value>Quickly jump to iconic cities or landmarks worldwide</value>
+  </data>
+  <data name="Map_AutoLocate" xml:space="preserve">
+    <value>Auto Network Location</value>
+  </data>
+  <data name="Map_AutoLocate_Subtitle" xml:space="preserve">
+    <value>Automatically detect and locate your current city via network IP</value>
+  </data>
+  <data name="Map_LocateNow" xml:space="preserve">
+    <value>Locate Now</value>
+  </data>
+  <data name="Map_AutoLocateOn" xml:space="preserve">
+    <value>Auto-locate on startup</value>
+  </data>
+  <data name="Map_AutoLocateOff" xml:space="preserve">
+    <value>Manual preset</value>
+  </data>
+  <data name="Map_LocationNameSetting" xml:space="preserve">
+    <value>Location Title</value>
+  </data>
+  <data name="Map_LocationNameSetting_Subtitle" xml:space="preserve">
+    <value>Main title displayed on the iPad-style card</value>
+  </data>
+  <data name="Map_LocationDesc_Subtitle" xml:space="preserve">
+    <value>Subtitle displayed on the floating info card</value>
+  </data>
+  <data name="Map_LatitudeSetting" xml:space="preserve">
+    <value>Latitude</value>
+  </data>
+  <data name="Map_LatitudeSetting_Subtitle" xml:space="preserve">
+    <value>Map center latitude (-85.0 ~ 85.0)</value>
+  </data>
+  <data name="Map_LongitudeSetting" xml:space="preserve">
+    <value>Longitude</value>
+  </data>
+  <data name="Map_LongitudeSetting_Subtitle" xml:space="preserve">
+    <value>Map center longitude (-180.0 ~ 180.0)</value>
+  </data>
+  <data name="Map_ZoomSetting" xml:space="preserve">
+    <value>Default Zoom Level</value>
+  </data>
+  <data name="Map_ZoomSetting_Subtitle" xml:space="preserve">
+    <value>Level 3 (Global) ~ 18 (Street detail)</value>
+  </data>
+  <data name="Map_AllowDragSetting" xml:space="preserve">
+    <value>Drag to Pan on Desktop</value>
+  </data>
+  <data name="Map_AllowDragSetting_Subtitle" xml:space="preserve">
+    <value>Allow panning the map view directly by dragging with the mouse on the desktop</value>
+  </data>
+  <data name="Map_ShowPinSetting" xml:space="preserve">
+    <value>Center Pin</value>
+  </data>
+  <data name="Map_ShowPinSetting_Subtitle" xml:space="preserve">
+    <value>Display an iPad-style red landmark pin at the center of the map</value>
+  </data>
+  <data name="Map_ShowInfoPillSetting" xml:space="preserve">
+    <value>Floating Info Card</value>
+  </data>
+  <data name="Map_ShowInfoPillSetting_Subtitle" xml:space="preserve">
+    <value>Show current place, coordinates, and zoom badge in the corner</value>
+  </data>
+  <data name="Map_ShowControlsSetting" xml:space="preserve">
+    <value>Floating Controls</value>
+  </data>
+  <data name="Map_ShowControlsSetting_Subtitle" xml:space="preserve">
+    <value>Show recenter, zoom in/out, and layer switch buttons on the right</value>
+  </data>
+  <data name="Map_ShowScaleBarSetting" xml:space="preserve">
+    <value>Map Scale Bar</value>
+  </data>
+  <data name="Map_ShowScaleBarSetting_Subtitle" xml:space="preserve">
+    <value>Show Apple-style metric scale bar on medium and large widgets</value>
+  </data>
+  <data name="Map_BaiduKey_Subtitle" xml:space="preserve">
+    <value>Enter a developer API Key for official high-DPI Baidu tiles</value>
+  </data>
+  <data name="Map_BaiduKeyWatermark" xml:space="preserve">
+    <value>Leave blank to use Amap/open-source fallback</value>
+  </data>
 </root>
