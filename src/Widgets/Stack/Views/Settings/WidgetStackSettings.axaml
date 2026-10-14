@@ -3,78 +3,96 @@
              xmlns:controls="clr-namespace:DeskCanvas.Views.Controls;assembly=DeskCanvas"
              xmlns:locales="clr-namespace:StackWidgets.Locales"
              xmlns:models="clr-namespace:StackWidgets.Models"
-             x:Class="StackWidgets.Views.Settings.WidgetStackSettings">
+             x:Class="StackWidgets.Views.Settings.WidgetStackSettings"
+             controls:SettingsPage.ScrollOwnership="Host">
+    <!-- W9: no outer ScrollViewer (the EditWidget viewport is the single scroll owner), the group
+         header is the shared dc-section-header, the row buttons are the shared icon/toolbar
+         buttons and the surfaces come from the shared interaction tokens instead of local
+         "#10808080" literals. The stacked-child management (extract / edit child / reorder /
+         remove) is the business of this page and stays exactly as it was. -->
+    <StackPanel Orientation="Vertical" Spacing="6" Margin="{DynamicResource SettingsPagePadding}">
 
-    <ScrollViewer Margin="0,4">
-        <StackPanel Orientation="Vertical" Spacing="10" Margin="10,0">
-
-            <!-- Desktop widget drag-and-drop landing area -->
-            <Border Name="DropZoneBorder"
-                    Background="#140078D4"
-                    BorderBrush="#350078D4"
-                    BorderThickness="1.5"
-                    CornerRadius="10"
-                    Padding="14,12"
-                    Margin="0,2,0,4">
-                <Grid ColumnDefinitions="Auto,*" VerticalAlignment="Center">
-                    <PathIcon Grid.Column="0" Data="{DynamicResource Appearance}" Width="24" Height="24" Margin="0,0,12,0" Foreground="{DynamicResource SystemAccentColor}" />
-                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
-                        <TextBlock Text="{x:Static locales:Locale.Setting_DropZone_Title}" FontWeight="SemiBold" FontSize="13" />
-                        <TextBlock Text="{x:Static locales:Locale.Setting_DropZone_Desc}" FontSize="11" Opacity="0.7" TextWrapping="Wrap" />
-                    </StackPanel>
-                </Grid>
-            </Border>
-
-            <!-- Enable wheel switching toggle -->
-            <controls:Setting Title="{x:Static locales:Locale.Setting_Allow_Wheel}">
-                <ToggleSwitch Name="AllowWheelSwitch" IsCheckedChanged="OnToggleChanged" />
-            </controls:Setting>
-
-            <!-- Wheel switching only at the indicator dots (keeps the wheel for the stacked child's own scrolling) -->
-            <controls:Setting Title="{x:Static locales:Locale.Setting_Wheel_Only_On_Dots}">
-                <ToggleSwitch Name="WheelOnlyOnDotsSwitch" IsCheckedChanged="OnToggleChanged" />
-            </controls:Setting>
-
-            <!-- Hide the pagination dots while idle; they only show while switching or hovering -->
-            <controls:Setting Title="{x:Static locales:Locale.Setting_Auto_Hide_Dots}">
-                <ToggleSwitch Name="AutoHideDotsSwitch" IsCheckedChanged="OnToggleChanged" />
-            </controls:Setting>
-
-            <!-- Add new widget to stack -->
-            <controls:Setting Title="{x:Static locales:Locale.Setting_Add_Widget}">
-                <Grid ColumnDefinitions="*,Auto" Width="260">
-                    <ComboBox Name="AvailableWidgetsCombo" Grid.Column="0" Margin="0,0,6,0" HorizontalAlignment="Stretch" />
-                    <Button Grid.Column="1" Content="{x:Static locales:Locale.Setting_Add_Widget}" Click="OnAddWidgetClicked" />
-                </Grid>
-            </controls:Setting>
-
-            <!-- Current Stacked Widgets List -->
-            <TextBlock Text="{x:Static locales:Locale.Setting_Stacked_List_Title}" FontWeight="SemiBold" FontSize="13" Margin="4,6,0,2" />
-            <Border Background="#10808080" CornerRadius="8" Padding="6">
-                <StackPanel Orientation="Vertical">
-                    <TextBlock Name="EmptyHintText"
-                               Text="{x:Static locales:Locale.Setting_Stacked_Empty_Hint}"
-                               FontSize="12" Opacity="0.6" TextWrapping="Wrap" Margin="10,16"
-                               HorizontalAlignment="Center" TextAlignment="Center" IsVisible="False" />
-                    <ItemsControl Name="ItemsList">
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate x:DataType="models:StackedWidgetSettingItem">
-                                <Border Margin="0,2" Padding="8,6" Background="#15808080" CornerRadius="6">
-                                    <Grid ColumnDefinitions="*,Auto,Auto,Auto,Auto,Auto">
-                                        <TextBlock Grid.Column="0" Text="{Binding DisplayTitle}" VerticalAlignment="Center" FontWeight="Medium" TextTrimming="CharacterEllipsis" />
-                                        <Button Grid.Column="1" Content="{x:Static locales:Locale.Setting_Extract_To_Desktop}" Margin="2,0" Padding="6,2" ToolTip.Tip="{x:Static locales:Locale.Setting_Extract_To_Desktop_Tip}" Click="OnExtractToDesktopClicked" Tag="{Binding}" />
-                                        <Button Grid.Column="2" Content="{x:Static locales:Locale.Setting_Edit_Child}" Margin="2,0" Padding="6,2" ToolTip.Tip="{x:Static locales:Locale.Setting_Edit_Child_Tip}" Click="OnEditChildClicked" Tag="{Binding}" IsVisible="{Binding HasSettings}" />
-                                        <Button Grid.Column="3" Content="↑" Margin="2,0" Padding="6,2" ToolTip.Tip="{x:Static locales:Locale.Setting_Move_Up}" Click="OnMoveUpClicked" Tag="{Binding}" />
-                                        <Button Grid.Column="4" Content="↓" Margin="2,0" Padding="6,2" ToolTip.Tip="{x:Static locales:Locale.Setting_Move_Down}" Click="OnMoveDownClicked" Tag="{Binding}" />
-                                        <Button Grid.Column="5" Content="✕" Margin="2,0" Padding="6,2" ToolTip.Tip="{x:Static locales:Locale.Setting_Remove_Widget}" Click="OnRemoveClicked" Tag="{Binding}" />
-                                    </Grid>
-                                </Border>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
+        <!-- Desktop widget drag-and-drop landing area -->
+        <Border Name="DropZoneBorder"
+                Background="{DynamicResource ControlSurfaceBrush}"
+                BorderBrush="{DynamicResource ControlBorderBrush}"
+                BorderThickness="{DynamicResource HostSurfaceBorderThickness}"
+                CornerRadius="{DynamicResource HostSurfaceCornerRadius}"
+                Padding="14,12">
+            <Grid ColumnDefinitions="Auto,*" VerticalAlignment="Center">
+                <PathIcon Grid.Column="0" Data="{DynamicResource Appearance}" Width="24" Height="24" Margin="0,0,12,0" Foreground="{DynamicResource SystemAccentColor}" />
+                <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+                    <TextBlock Text="{x:Static locales:Locale.Setting_DropZone_Title}" FontWeight="SemiBold" FontSize="13" TextWrapping="Wrap" />
+                    <TextBlock Text="{x:Static locales:Locale.Setting_DropZone_Desc}" FontSize="11" TextWrapping="Wrap"
+                               Foreground="{DynamicResource SecondaryTextBrush}" />
                 </StackPanel>
-            </Border>
+            </Grid>
+        </Border>
 
-        </StackPanel>
-    </ScrollViewer>
+        <!-- Enable wheel switching toggle -->
+        <controls:Setting Title="{x:Static locales:Locale.Setting_Allow_Wheel}">
+            <ToggleSwitch Name="AllowWheelSwitch" IsCheckedChanged="OnToggleChanged" />
+        </controls:Setting>
+
+        <!-- Wheel switching only at the indicator dots (keeps the wheel for the stacked child's own scrolling) -->
+        <controls:Setting Title="{x:Static locales:Locale.Setting_Wheel_Only_On_Dots}">
+            <ToggleSwitch Name="WheelOnlyOnDotsSwitch" IsCheckedChanged="OnToggleChanged" />
+        </controls:Setting>
+
+        <!-- Hide the pagination dots while idle; they only show while switching or hovering -->
+        <controls:Setting Title="{x:Static locales:Locale.Setting_Auto_Hide_Dots}">
+            <ToggleSwitch Name="AutoHideDotsSwitch" IsCheckedChanged="OnToggleChanged" />
+        </controls:Setting>
+
+        <!-- Add new widget to stack -->
+        <controls:Setting Title="{x:Static locales:Locale.Setting_Add_Widget}" EditorHorizontalAlignment="Stretch">
+            <Grid ColumnDefinitions="*,Auto" HorizontalAlignment="Stretch">
+                <ComboBox Name="AvailableWidgetsCombo" Grid.Column="0" Margin="0,0,6,0" HorizontalAlignment="Stretch" />
+                <Button Grid.Column="1" Classes="dc-toolbar-button"
+                        Content="{x:Static locales:Locale.Setting_Add_Widget}" Click="OnAddWidgetClicked" />
+            </Grid>
+        </controls:Setting>
+
+        <!-- Current Stacked Widgets List -->
+        <TextBlock Classes="dc-section-header" Text="{x:Static locales:Locale.Setting_Stacked_List_Title}" />
+        <Border Background="{DynamicResource SubtleSurfaceBrush}"
+                CornerRadius="{DynamicResource ControlCornerRadius}" Padding="6">
+            <StackPanel Orientation="Vertical">
+                <TextBlock Name="EmptyHintText"
+                           Text="{x:Static locales:Locale.Setting_Stacked_Empty_Hint}"
+                           FontSize="12" TextWrapping="Wrap" Margin="10,16"
+                           HorizontalAlignment="Center" TextAlignment="Center" IsVisible="False"
+                           Foreground="{DynamicResource SecondaryTextBrush}" />
+                <ItemsControl Name="ItemsList">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="models:StackedWidgetSettingItem">
+                            <Border Margin="0,2" Padding="8,6" Background="{DynamicResource SubtleSurfaceBrush}"
+                                    CornerRadius="{DynamicResource ControlCornerRadius}">
+                                <Grid ColumnDefinitions="*,Auto,Auto,Auto,Auto,Auto">
+                                    <TextBlock Grid.Column="0" Text="{Binding DisplayTitle}" VerticalAlignment="Center" FontWeight="Medium" TextWrapping="Wrap" />
+                                    <!-- Icon-only rows keep a localized accessible name; the tooltip is an addition. -->
+                                    <Button Grid.Column="1" Classes="dc-toolbar-button" Margin="2,0"
+                                            Content="{x:Static locales:Locale.Setting_Extract_To_Desktop}" ToolTip.Tip="{x:Static locales:Locale.Setting_Extract_To_Desktop_Tip}" Click="OnExtractToDesktopClicked" Tag="{Binding}"
+                                            AutomationProperties.Name="{x:Static locales:Locale.Setting_Extract_To_Desktop_Tip}" />
+                                    <Button Grid.Column="2" Classes="dc-toolbar-button" Margin="2,0"
+                                            Content="{x:Static locales:Locale.Setting_Edit_Child}" ToolTip.Tip="{x:Static locales:Locale.Setting_Edit_Child_Tip}" Click="OnEditChildClicked" Tag="{Binding}" IsVisible="{Binding HasSettings}"
+                                            AutomationProperties.Name="{x:Static locales:Locale.Setting_Edit_Child_Tip}" />
+                                    <Button Grid.Column="3" Classes="dc-icon-button compact" Margin="2,0"
+                                            Content="↑" ToolTip.Tip="{x:Static locales:Locale.Setting_Move_Up}" Click="OnMoveUpClicked" Tag="{Binding}"
+                                            AutomationProperties.Name="{x:Static locales:Locale.Setting_Move_Up}" />
+                                    <Button Grid.Column="4" Classes="dc-icon-button compact" Margin="2,0"
+                                            Content="↓" ToolTip.Tip="{x:Static locales:Locale.Setting_Move_Down}" Click="OnMoveDownClicked" Tag="{Binding}"
+                                            AutomationProperties.Name="{x:Static locales:Locale.Setting_Move_Down}" />
+                                    <Button Grid.Column="5" Classes="dc-icon-button compact" Margin="2,0"
+                                            Content="✕" ToolTip.Tip="{x:Static locales:Locale.Setting_Remove_Widget}" Click="OnRemoveClicked" Tag="{Binding}"
+                                            AutomationProperties.Name="{x:Static locales:Locale.Setting_Remove_Widget}" />
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </StackPanel>
+        </Border>
+
+    </StackPanel>
 </UserControl>

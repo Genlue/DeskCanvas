@@ -96,6 +96,8 @@ internal static partial class Program
         CheckPopupMigrationInfo();
         CheckPopupMigrationHeavy();
         CheckSettingsPagesAndLocale();
+        CheckSettingsPagesBatchOne();
+        CheckSettingsPagesBatchTwo();
         CheckHostDecoupling();
         CheckRedundancyGuard();
 

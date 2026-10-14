@@ -3,10 +3,10 @@
              xmlns:controls="clr-namespace:DeskCanvas.Views.Controls;assembly=DeskCanvas"
              xmlns:locales="clr-namespace:FixedWidgets.Locales"
              xmlns:models="clr-namespace:FixedWidgets.Models"
-             x:Class="FixedWidgets.Views.Settings.AggregateSettings">
-
-    <ScrollViewer Margin="0 4">
-        <StackPanel Orientation="Vertical" Spacing="6">
+             x:Class="FixedWidgets.Views.Settings.AggregateSettings"
+             controls:SettingsPage.ScrollOwnership="Host">
+    <!-- W9: no outer ScrollViewer — the EditWidget viewport is the single scroll owner. -->
+    <StackPanel Orientation="Vertical" Spacing="6" Margin="{DynamicResource SettingsPagePadding}">
 
             <!-- 城市搜索与识别（基于天气源地理编码动态匹配） -->
             <controls:Setting Title="{x:Static locales:Locale.Setting_City}">
@@ -29,10 +29,10 @@
                         </AutoCompleteBox.ItemTemplate>
                     </AutoCompleteBox>
                     <TextBlock Name="CityStatusText"
-                               FontSize="10"
-                               Opacity="0.75"
+                               FontSize="{DynamicResource FontSizeCaption}"
+                               Foreground="{DynamicResource SecondaryTextBrush}"
                                HorizontalAlignment="Right"
-                               TextTrimming="CharacterEllipsis"
+                               TextWrapping="Wrap"
                                MaxWidth="240" />
                 </StackPanel>
             </controls:Setting>
@@ -82,13 +82,12 @@
                 </ComboBox>
             </controls:Setting>
             <controls:Setting Name="TodayColorLightSetting" Title="{x:Static locales:Locale.Setting_TodayColor_Light}">
-                <ColorPicker Name="TodayColorLightPicker" Height="36" Width="72" IsAlphaVisible="False" ColorChanged="OnColorPickerChanged" />
+                <controls:ColorInput Name="TodayColorLightInput" ColorFormat="Rgb" AlphaPolicy="ForceOpaque"
+                                     ValueCommitted="OnColorCommitted" />
             </controls:Setting>
             <controls:Setting Name="TodayColorDarkSetting" Title="{x:Static locales:Locale.Setting_TodayColor_Dark}">
-                <ColorPicker Name="TodayColorDarkPicker" Height="36" Width="72" IsAlphaVisible="False" ColorChanged="OnColorPickerChanged" />
+                <controls:ColorInput Name="TodayColorDarkInput" ColorFormat="Rgb" AlphaPolicy="ForceOpaque"
+                                     ValueCommitted="OnColorCommitted" />
             </controls:Setting>
-
-        </StackPanel>
-    </ScrollViewer>
-
+    </StackPanel>
 </UserControl>

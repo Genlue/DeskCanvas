@@ -8,6 +8,7 @@ using Folders.Models;
 using Folders.Services;
 using DeskCanvas.Core.Interfaces;
 using DeskCanvas.Core.Models;
+using DeskCanvas.Views.Controls;
 
 #pragma warning disable CA1416
 
@@ -31,7 +32,6 @@ public partial class SingleFileSettings : UserControl
         syncing = true;
         PathBox.Text = model.Path ?? "";
         IconPercentSlider.Value = model.IconPercent;
-        IconPercentValue.Text = $"{model.IconPercent:0}%";
         syncing = false;
     }
 
@@ -57,11 +57,15 @@ public partial class SingleFileSettings : UserControl
         widgetLayoutProvider.Save(layout);
     }
 
-    private void OnIconPercentChanged(object? sender, RangeBaseValueChangedEventArgs e)
+    /// <summary>
+    /// The shared LabeledSlider publishes a value only when a user interaction completes, so the
+    /// model is written once per drag instead of on every pixel (the value column is rendered by
+    /// the control itself, the page no longer keeps a mirror TextBlock).
+    /// </summary>
+    private void OnIconPercentCommitted(object? sender, LabeledSliderValueCommittedEventArgs e)
     {
         if (syncing) return;
-        var value = Math.Round(e.NewValue);
-        IconPercentValue.Text = $"{value:0}%";
+        var value = Math.Round(e.Value);
         Save(model with { IconPercent = value });
     }
 

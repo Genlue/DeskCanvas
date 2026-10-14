@@ -3,38 +3,52 @@
              xmlns:controls="clr-namespace:DeskCanvas.Views.Controls;assembly=DeskCanvas"
              xmlns:system="clr-namespace:System;assembly=System.Runtime"
              xmlns:locales="clr-namespace:Calendar.Locales"
+             xmlns:settings="clr-namespace:Calendar.Views.Settings"
              xmlns:viewModels="clr-namespace:Calendar.ViewModels"
              x:Class="Calendar.Views.Settings.MonthCalendarSettings"
-             x:DataType="viewModels:MonthCalendarSettingsViewModel">
-    <ScrollViewer>
-        <StackPanel Orientation="Vertical" Spacing="5">
-            <controls:Setting Title="{x:Static locales:Locale.Calendar_FirstDayOfWeek}">
-                <ComboBox ItemsSource="{Binding Days}" Width="130" SelectedItem="{Binding FirstDayOfWeek}">
-                    <ComboBox.ItemTemplate>
-                        <DataTemplate DataType="system:DayOfWeek">
-                            <TextBlock Text="{Binding }" Margin="0 4" />
-                        </DataTemplate>
-                    </ComboBox.ItemTemplate>
-                </ComboBox>
-            </controls:Setting>
-            <controls:Setting Title="{x:Static locales:Locale.Calendar_HollowToday}"
-                              Subtitle="{x:Static locales:Locale.Calendar_HollowToday_Subtitle}">
-                <ToggleSwitch IsChecked="{Binding HollowTodayNumber}" OnContent="" OffContent="" />
-            </controls:Setting>
-            <controls:Setting Title="{x:Static locales:Locale.Calendar_TodayColor}">
-                <ComboBox Width="130" SelectedIndex="{Binding TodayColorModeIndex}">
-                    <ComboBoxItem Content="{x:Static locales:Locale.Calendar_TodayColor_Accent}" />
-                    <ComboBoxItem Content="{x:Static locales:Locale.Calendar_TodayColor_Custom}" />
-                </ComboBox>
-            </controls:Setting>
-            <controls:Setting Title="{x:Static locales:Locale.Calendar_TodayColor_Light}"
-                              IsVisible="{Binding IsCustomTodayColor}">
-                <ColorPicker Color="{Binding TodayColorLight}" Height="36" Width="72" IsAlphaVisible="False" />
-            </controls:Setting>
-            <controls:Setting Title="{x:Static locales:Locale.Calendar_TodayColor_Dark}"
-                              IsVisible="{Binding IsCustomTodayColor}">
-                <ColorPicker Color="{Binding TodayColorDark}" Height="36" Width="72" IsAlphaVisible="False" />
-            </controls:Setting>
-        </StackPanel>
-    </ScrollViewer>
+             x:DataType="viewModels:MonthCalendarSettingsViewModel"
+             controls:SettingsPage.ScrollOwnership="Host">
+    <UserControl.Resources>
+        <!-- The model stores the two custom today colours as "#RRGGBB" while the view model
+             exposes them as Color; the shared ColorInput speaks the persisted string form, so
+             the adapter lives here instead of in the compound control. -->
+        <settings:ColorHexConverter x:Key="ColorHex" />
+    </UserControl.Resources>
+
+    <!-- W9: no outer ScrollViewer — the EditWidget viewport is the single scroll owner. -->
+    <StackPanel Orientation="Vertical" Spacing="6" Margin="{DynamicResource SettingsPagePadding}">
+        <controls:Setting Title="{x:Static locales:Locale.Calendar_FirstDayOfWeek}">
+            <ComboBox ItemsSource="{Binding Days}" MinWidth="130" SelectedItem="{Binding FirstDayOfWeek}">
+                <ComboBox.ItemTemplate>
+                    <DataTemplate DataType="system:DayOfWeek">
+                        <TextBlock Text="{Binding }" Margin="0 4" />
+                    </DataTemplate>
+                </ComboBox.ItemTemplate>
+            </ComboBox>
+        </controls:Setting>
+        <controls:Setting Title="{x:Static locales:Locale.Calendar_HollowToday}"
+                          Subtitle="{x:Static locales:Locale.Calendar_HollowToday_Subtitle}">
+            <ToggleSwitch IsChecked="{Binding HollowTodayNumber}" OnContent="" OffContent="" />
+        </controls:Setting>
+        <controls:Setting Title="{x:Static locales:Locale.Calendar_TodayColor}">
+            <ComboBox MinWidth="130" SelectedIndex="{Binding TodayColorModeIndex}">
+                <ComboBoxItem Content="{x:Static locales:Locale.Calendar_TodayColor_Accent}" />
+                <ComboBoxItem Content="{x:Static locales:Locale.Calendar_TodayColor_Custom}" />
+            </ComboBox>
+        </controls:Setting>
+        <!-- The persisted value is an opaque "#RRGGBB" (no alpha channel in this model), so the
+             row is pinned to the RGB format instead of the Avalonia AARRGGBB default. -->
+        <controls:Setting Title="{x:Static locales:Locale.Calendar_TodayColor_Light}"
+                          IsVisible="{Binding IsCustomTodayColor}">
+            <controls:ColorInput ColorFormat="Rgb" AlphaPolicy="ForceOpaque"
+                                 Value="{Binding TodayColorLight, Converter={StaticResource ColorHex}}"
+                                 AutomationProperties.Name="{x:Static locales:Locale.Calendar_TodayColor_Light}" />
+        </controls:Setting>
+        <controls:Setting Title="{x:Static locales:Locale.Calendar_TodayColor_Dark}"
+                          IsVisible="{Binding IsCustomTodayColor}">
+            <controls:ColorInput ColorFormat="Rgb" AlphaPolicy="ForceOpaque"
+                                 Value="{Binding TodayColorDark, Converter={StaticResource ColorHex}}"
+                                 AutomationProperties.Name="{x:Static locales:Locale.Calendar_TodayColor_Dark}" />
+        </controls:Setting>
+    </StackPanel>
 </UserControl>

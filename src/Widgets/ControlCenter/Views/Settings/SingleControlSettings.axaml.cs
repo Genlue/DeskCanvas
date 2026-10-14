@@ -1,5 +1,4 @@
 using System;
-using System.Globalization;
 using System.Text.Json;
 using Avalonia;
 using Avalonia.Controls;
@@ -18,9 +17,6 @@ public partial class SingleControlSettings : UserControl
     private SingleControlModel model;
     private bool isInitializing = true;
 
-    private static bool IsZh =>
-        CultureInfo.CurrentUICulture.TwoLetterISOLanguageName.Equals("zh", StringComparison.OrdinalIgnoreCase);
-
     public SingleControlSettings() : this(null) { }
 
     public SingleControlSettings(IWidgetLayoutProvider? widgetLayoutProvider)
@@ -29,16 +25,6 @@ public partial class SingleControlSettings : UserControl
         model = ReadModel(widgetLayoutProvider?.Get()) ?? new SingleControlModel();
 
         InitializeComponent();
-
-        HeaderLabel.Text = IsZh
-            ? "选择该快捷磁贴绑定的系统控制项："
-            : "Select the system control bound to this tile:";
-        WheelStepTitleLabel.Text = IsZh
-            ? "鼠标滚轮调节步进"
-            : "Mouse Wheel Step";
-        WheelStepSubtitleLabel.Text = IsZh
-            ? "当选择亮度、音量或麦克风时，滚轮单次增减百分比"
-            : "Increment per scroll notch for brightness, volume, or microphone";
 
         WheelStepCombo.SelectedIndex = model.WheelStep switch
         {
@@ -65,8 +51,13 @@ public partial class SingleControlSettings : UserControl
             var card = new Border
             {
                 CornerRadius = new CornerRadius(9),
-                Background = new SolidColorBrush(selected ? Color.Parse("#2A007AFF") : Color.Parse("#14808080")),
-                BorderBrush = selected ? accentBrush : new SolidColorBrush(Color.Parse("#28808080")),
+                // The accent-tinted selection state is the business signal of this grid (which
+                // tile is bound); the idle card uses the shared subtle surface instead of a
+                // hard-coded grey.
+                Background = selected
+                    ? new SolidColorBrush(Color.Parse("#2A007AFF"))
+                    : GetBrush("SubtleSurfaceBrush", Color.Parse("#14808080")),
+                BorderBrush = selected ? accentBrush : GetBrush("ControlBorderBrush", Color.Parse("#28808080")),
                 BorderThickness = new Thickness(selected ? 1.8 : 1),
                 Padding = new Thickness(10, 9),
                 Margin = new Thickness(4),

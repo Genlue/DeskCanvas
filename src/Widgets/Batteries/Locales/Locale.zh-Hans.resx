@@ -51,4 +51,25 @@
     <data name="Batteries_Headphones" xml:space="preserve">
         <value>耳机</value>
     </data>
+    <data name="Batteries_Group_DisplayOptions" xml:space="preserve">
+        <value>显示选项</value>
+    </data>
+    <data name="Batteries_Group_DeviceDetails" xml:space="preserve">
+        <value>设备详情</value>
+    </data>
+    <data name="Batteries_Group_PairedDevices" xml:space="preserve">
+        <value>蓝牙设备管理与类型记忆</value>
+    </data>
+    <data name="Batteries_RefreshDevices" xml:space="preserve">
+        <value>刷新设备</value>
+    </data>
+    <data name="Batteries_PairedDevicesHint" xml:space="preserve">
+        <value>支持手动指定设备类型（鼠标/手柄/耳机等）。设置后将自动保存，下次连接时将自动识别。</value>
+    </data>
+    <data name="Batteries_NoPeripheralsTitle" xml:space="preserve">
+        <value>未检测到已连接的蓝牙外设电量</value>
+    </data>
+    <data name="Batteries_NoPeripheralsSubtitle" xml:space="preserve">
+        <value>支持低功耗蓝牙 (BLE) 及音频外设电量协议的耳机、手柄、鼠标或键盘等设备</value>
+    </data>
 </root>

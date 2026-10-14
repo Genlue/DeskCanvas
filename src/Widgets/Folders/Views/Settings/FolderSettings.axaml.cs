@@ -11,6 +11,7 @@ using Folders.Services;
 using DeskCanvas.Core;
 using DeskCanvas.Core.Interfaces;
 using DeskCanvas.Core.Models;
+using DeskCanvas.Views.Controls;
 
 #pragma warning disable CA1416
 
@@ -51,7 +52,6 @@ public partial class FolderSettings : UserControl
             ? "Folder"
             : model.Title;
         TitleOffsetSlider.Value = model.TitleOffsetX;
-        TitleOffsetValue.Text = $"{model.TitleOffsetX:0}%";
         LayoutModeBox.SelectedItem = model.LayoutMode;
         UpdateWatchFolderState();
         RefreshList();
@@ -62,12 +62,14 @@ public partial class FolderSettings : UserControl
         var watching = !string.IsNullOrWhiteSpace(model.WatchFolder);
         WatchFolderText.Text = model.WatchFolder ?? "—";
         WatchFolderHint.IsVisible = watching;
-        WatchSortRow.IsVisible = watching;
-        DirsFirstToggle.IsVisible = watching;
-        ShowHiddenToggle.IsVisible = watching;
-        HideExtToggle.IsVisible = watching;
-        SortDescToggle.IsVisible = watching;
-        HideSubfoldersToggle.IsVisible = watching;
+        WatchSortSetting.IsVisible = watching;
+        // The five watch toggles each live inside their own Setting row: the row shell must
+        // collapse with the checkbox, otherwise "not watching" would leave five title-only rows.
+        DirsFirstSetting.IsVisible = watching;
+        ShowHiddenSetting.IsVisible = watching;
+        HideExtSetting.IsVisible = watching;
+        SortDescSetting.IsVisible = watching;
+        HideSubfoldersSetting.IsVisible = watching;
         DirsFirstToggle.IsChecked = model.DirectoriesFirst;
         ShowHiddenToggle.IsChecked = model.ShowHiddenFiles;
         HideExtToggle.IsChecked = model.HideExtensions;
@@ -104,7 +106,6 @@ public partial class FolderSettings : UserControl
             ? "Folder"
             : model.Title;
         TitleOffsetSlider.Value = model.TitleOffsetX;
-        TitleOffsetValue.Text = $"{model.TitleOffsetX:0}%";
         ColumnsBox.SelectedItem = model.Columns;
         RowLayoutBox.SelectedIndex = RowLayoutIndex(model.RowLayout);
         RowSpacingInput.Value = model.RowSpacing;
@@ -186,16 +187,16 @@ public partial class FolderSettings : UserControl
 
     private void UpdateColumnState()
     {
-        if (ColumnsBox != null && ColumnsLabel != null)
+        if (ColumnsBox != null && ColumnsSetting != null)
         {
             var enabled = model.LayoutMode != "List";
             ColumnsBox.IsEnabled = enabled;
-            ColumnsLabel.IsEnabled = enabled;
+            ColumnsSetting.IsEnabled = enabled;
         }
 
         // Row layout only affects the grid (list rows already have fixed height).
-        if (RowLayoutRow != null)
-            RowLayoutRow.IsVisible = model.LayoutMode != "List";
+        if (RowLayoutSetting != null)
+            RowLayoutSetting.IsVisible = model.LayoutMode != "List";
     }
 
     private void OnItemPointerPressed(object? sender, PointerPressedEventArgs e)
@@ -446,11 +447,15 @@ public partial class FolderSettings : UserControl
         Save(model with { HideSubfolders = HideSubfoldersToggle.IsChecked == true });
     }
 
-    private void OnTitleOffsetChanged(object? sender, RangeBaseValueChangedEventArgs e)
+    /// <summary>
+    /// The shared LabeledSlider commits once per completed drag/key edit, so the model sees a
+    /// single rounded write instead of one per pixel; the value column is rendered by the
+    /// control itself (the page no longer keeps a mirror TextBlock).
+    /// </summary>
+    private void OnTitleOffsetCommitted(object? sender, LabeledSliderValueCommittedEventArgs e)
     {
         if (syncing) return;
-        var value = Math.Round(TitleOffsetSlider.Value);
-        TitleOffsetValue.Text = $"{value:0}%";
+        var value = Math.Round(e.Value);
         if (Math.Abs(value - model.TitleOffsetX) > 0.001)
             Save(model with { TitleOffsetX = value });
     }

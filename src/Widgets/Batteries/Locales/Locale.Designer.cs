@@ -46,5 +46,12 @@ namespace Batteries.Locales {
         public static string Batteries_Mouse => ResourceManager.GetString("Batteries_Mouse", resourceCulture) ?? "Mouse";
         public static string Batteries_Keyboard => ResourceManager.GetString("Batteries_Keyboard", resourceCulture) ?? "Keyboard";
         public static string Batteries_Headphones => ResourceManager.GetString("Batteries_Headphones", resourceCulture) ?? "Headphones";
+        public static string Batteries_Group_DisplayOptions => ResourceManager.GetString("Batteries_Group_DisplayOptions", resourceCulture) ?? "Display Options";
+        public static string Batteries_Group_DeviceDetails => ResourceManager.GetString("Batteries_Group_DeviceDetails", resourceCulture) ?? "Device Details";
+        public static string Batteries_Group_PairedDevices => ResourceManager.GetString("Batteries_Group_PairedDevices", resourceCulture) ?? "Bluetooth Devices & Type Overrides";
+        public static string Batteries_RefreshDevices => ResourceManager.GetString("Batteries_RefreshDevices", resourceCulture) ?? "Refresh";
+        public static string Batteries_PairedDevicesHint => ResourceManager.GetString("Batteries_PairedDevicesHint", resourceCulture) ?? "Manually assign a device category (mouse, controller, headphones, etc.). Saved automatically for future connections.";
+        public static string Batteries_NoPeripheralsTitle => ResourceManager.GetString("Batteries_NoPeripheralsTitle", resourceCulture) ?? "No connected Bluetooth peripheral batteries detected";
+        public static string Batteries_NoPeripheralsSubtitle => ResourceManager.GetString("Batteries_NoPeripheralsSubtitle", resourceCulture) ?? "Supports headphones, controllers, mice, and keyboards with BLE or Bluetooth battery reporting";
     }
 }
