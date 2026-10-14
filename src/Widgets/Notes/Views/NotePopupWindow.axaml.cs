@@ -5,12 +5,10 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Media;
-using Avalonia.Styling;
 using Notes.Locales;
 using Notes.Models;
 using Notes.Services;
-using DeskCanvas.Core.Models.Settings;
-using DeskCanvas.Core.Services;
+using DeskCanvas.Services;
 using DeskCanvas.Views;
 
 namespace Notes.Views;
@@ -25,9 +23,10 @@ namespace Notes.Views;
 /// <item>Folder source — read-only rendered preview of the stacked documents
 /// (they are edited on disk, not here).</item>
 /// </list>
-/// The surface (liquid glass / colorful / solid / acrylic) mirrors the primary
-/// widget card exactly — same <see cref="SecondaryPanelWindow"/> plumbing as the
-/// other popups.
+/// The shell (W7) plus <see cref="SecondaryPanelWindow"/> and
+/// <see cref="PanelAppearanceResolver"/> own the material, the chrome and the open/close
+/// transitions; this class keeps only the business behaviour: editing, the markdown preview
+/// and the auto-save commits, plus the content text colours that stay plugin-owned.
 /// </summary>
 public partial class NotePopupWindow : SecondaryPanelWindow
 {
@@ -41,7 +40,6 @@ public partial class NotePopupWindow : SecondaryPanelWindow
     /// guard keeps the intent explicit.</summary>
     private bool suppressCommit;
 
-    protected override Visual? PanelCard => CardBorder;
     protected override Point? SpawnScreenCenter => spawnScreenCenter;
 
     public NotePopupWindow() : this(new NoteModel(Locale.Notes_Title), null, null) { }
@@ -59,7 +57,7 @@ public partial class NotePopupWindow : SecondaryPanelWindow
         InitializeComponent();
         InitializePanel(cornerRadius);
 
-        ApplyTheme();
+        ApplyContentTheme();
         Populate();
 
         Closed += OnWindowClosed;
@@ -84,10 +82,6 @@ public partial class NotePopupWindow : SecondaryPanelWindow
 
     protected override void OnPanelLoaded()
     {
-        if (LiquidGlassSurfaceControl.IsVisible)
-        {
-            LiquidGlassSurfaceControl.RequestRender(immediate: true);
-        }
         if (BodyEditor.IsVisible)
         {
             BodyEditor.Focus();
@@ -197,63 +191,18 @@ public partial class NotePopupWindow : SecondaryPanelWindow
 
     // ---------- theme ----------
 
-    private void ApplyTheme()
+    /// <summary>Content text colours stay plugin-owned: the shared shell never paints the
+    /// editor's TextBoxes, so they follow the same light/dark rule as before. The card, the
+    /// glass and the header chrome are the appearance binder's job.</summary>
+    private void ApplyContentTheme()
     {
-        Theme theme;
-        try
-        {
-            theme = new AppSettingsProvider().Get().Theme;
-        }
-        catch
-        {
-            theme = new Theme(DarkMode: true, AccentColor: null, OpacityLevel: 0.8, Monochrome: false, UseNativeFrame: false, FontFamily: "Inter");
-        }
-
-        // Colour mode "follow system" is DarkMode == null, which must resolve to the *live*
-        // variant — the same single source of truth the widget card uses (DarkMode ?? ActualThemeVariant).
-        bool isDark = theme.DarkMode ?? ActualThemeVariant == ThemeVariant.Dark;
-
-        if (theme.UsesRenderedGlass)
-        {
-            TransparencyLevelHint = [WindowTransparencyLevel.Transparent];
-            LiquidGlassSurfaceControl.Material = theme;
-            LiquidGlassSurfaceControl.CornerRadius = CardBorder.CornerRadius;
-            LiquidGlassSurfaceControl.IsVisible = true;
-            CardBorder.Background = Brushes.Transparent;
-            CardBorder.BorderBrush = new SolidColorBrush(Color.FromArgb(90, 255, 255, 255));
-            LiquidGlassSurfaceControl.RequestRender(immediate: true);
-        }
-        else if (theme.IsColorful)
-        {
-            LiquidGlassSurfaceControl.IsVisible = false;
-            TransparencyLevelHint = [WindowTransparencyLevel.Transparent];
-            CardBorder.Background = new SolidColorBrush(isDark ? Color.Parse("#1C1C1E") : Color.Parse("#FFFFFF"));
-            CardBorder.BorderBrush = new SolidColorBrush(isDark ? Color.FromArgb(60, 255, 255, 255) : Color.FromArgb(40, 0, 0, 0));
-        }
-        else if (theme.EffectiveSurface == SurfaceStyle.Solid)
-        {
-            LiquidGlassSurfaceControl.IsVisible = false;
-            TransparencyLevelHint = [WindowTransparencyLevel.Transparent];
-            var hex = isDark ? theme.EffectiveSolidBackgroundDark : theme.EffectiveSolidBackgroundLight;
-            var baseColor = Color.TryParse(hex, out var parsed) ? parsed : (isDark ? Color.FromRgb(46, 46, 46) : Colors.White);
-            byte alpha = (byte)Math.Clamp(Math.Round(theme.OpacityLevel * 255), 40, 255);
-            CardBorder.Background = new SolidColorBrush(Color.FromArgb(alpha, baseColor.R, baseColor.G, baseColor.B));
-            CardBorder.BorderBrush = new SolidColorBrush(isDark ? Color.FromArgb(40, 255, 255, 255) : Color.FromArgb(30, 0, 0, 0));
-        }
-        else // Acrylic (毛玻璃)
-        {
-            LiquidGlassSurfaceControl.IsVisible = false;
-            TransparencyLevelHint = [WindowTransparencyLevel.AcrylicBlur];
-            byte alpha = (byte)Math.Clamp(Math.Round(theme.OpacityLevel * 220), 40, 240);
-            CardBorder.Background = new SolidColorBrush(isDark ? Color.FromArgb(alpha, 28, 28, 32) : Color.FromArgb(alpha, 245, 245, 248));
-            CardBorder.BorderBrush = new SolidColorBrush(isDark ? Color.FromArgb(55, 255, 255, 255) : Color.FromArgb(35, 0, 0, 0));
-        }
+        var theme = PanelAppearanceResolver.ReadTheme(PanelAppearanceResolver.TryResolveSettingsProvider());
+        bool isDark = PanelAppearanceResolver.IsDark(theme, ActualThemeVariant);
 
         IBrush textBrush = isDark ? Brushes.White : new SolidColorBrush(Color.FromRgb(30, 30, 30));
         IBrush subTextBrush = isDark ? new SolidColorBrush(Color.FromArgb(200, 255, 255, 255)) : new SolidColorBrush(Color.FromArgb(180, 0, 0, 0));
         TitleBox.Foreground = textBrush;
         BodyEditor.Foreground = textBrush;
-        CloseButton.Foreground = subTextBrush;
         SubtitleText.Foreground = subTextBrush;
         FooterText.Foreground = subTextBrush;
     }
@@ -307,17 +256,10 @@ public partial class NotePopupWindow : SecondaryPanelWindow
 
     // ---------- window lifecycle ----------
 
-    private void OnCloseClicked(object? sender, RoutedEventArgs e)
-    {
-        Close();
-    }
-
     private void OnWindowClosed(object? sender, EventArgs e)
     {
         // Flush a pending edit (e.g. the user typed and hit ✕ without focusing away).
         suppressCommit = false;
         Commit();
-
-        LiquidGlassSurfaceControl.IsVisible = false;
     }
 }
