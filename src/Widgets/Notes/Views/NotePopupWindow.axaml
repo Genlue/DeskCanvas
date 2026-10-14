@@ -12,90 +12,62 @@
         Width="460"
         Height="540">
 
+    <!-- The shared secondary-panel shell (W7) owns the card, the glass, the header chrome with
+         the drag area and the shared close button, and the backdrop-dismiss rule. This window
+         declares ONLY the note editor: the editable title block lives in HeaderContent (the
+         interactive TextBox there is auto-excluded from the header drag), the body editor and
+         the markdown preview are the shell Content, and the footer keeps its full-width divider
+         by compensating the shell's 16 DIP side padding with negative margins (the shell's
+         default ContentPadding otherwise matches the old card grid's spacing). -->
+    <controls:SecondaryPanelShell>
+        <controls:SecondaryPanelShell.HeaderContent>
+            <StackPanel VerticalAlignment="Center" Spacing="2">
+                <TextBox x:Name="TitleBox"
+                         FontSize="16"
+                         FontWeight="Bold"
+                         BorderThickness="0"
+                         Background="Transparent"
+                         Padding="0"
+                         MinHeight="22"
+                         Watermark="{x:Static locales:Locale.Notes_Title}"
+                         LostFocus="OnTitleLostFocus"
+                         KeyDown="OnTitleKeyDown"
+                         ScrollViewer.HorizontalScrollBarVisibility="Disabled" />
+                <TextBlock x:Name="SubtitleText"
+                           FontSize="11"
+                           Opacity="0.6" />
+            </StackPanel>
+        </controls:SecondaryPanelShell.HeaderContent>
 
-    <Panel Background="Transparent">
-        <!-- Main Card Border with Zoom Transform -->
-        <Border x:Name="CardBorder"
-                Margin="0"
-                CornerRadius="18"
-                BorderThickness="1"
-                RenderTransformOrigin="0.5,0.5"
-                ClipToBounds="True">
-            <Border.RenderTransform>
-                <ScaleTransform ScaleX="0.95" ScaleY="0.95" />
-            </Border.RenderTransform>
-
+        <!-- Center: body editor / read-only preview -->
+        <ScrollViewer Padding="0,10,0,10" HorizontalScrollBarVisibility="Disabled">
             <Panel>
-                <!-- LiquidGlass surface: the same material path the widget card uses -->
-                <controls:LiquidGlassSurface x:Name="LiquidGlassSurfaceControl" CornerRadius="18" Margin="0" IsVisible="False" />
-
-                <Grid RowDefinitions="Auto,*,Auto">
-                    <!-- Header (Row 0): title + subtitle line + close -->
-                    <Grid Grid.Row="0" Margin="18,14,14,10" ColumnDefinitions="*,Auto">
-                        <StackPanel Grid.Column="0" VerticalAlignment="Center" Spacing="2">
-                            <TextBox x:Name="TitleBox"
-                                     FontSize="16"
-                                     FontWeight="Bold"
-                                     BorderThickness="0"
-                                     Background="Transparent"
-                                     Padding="0"
-                                     MinHeight="22"
-                                     Watermark="{x:Static locales:Locale.Notes_Title}"
-                                     LostFocus="OnTitleLostFocus"
-                                     KeyDown="OnTitleKeyDown"
-                                     ScrollViewer.HorizontalScrollBarVisibility="Disabled" />
-                            <TextBlock x:Name="SubtitleText"
-                                       FontSize="11"
-                                       Opacity="0.6" />
-                        </StackPanel>
-
-                        <!-- Close Button ✕ -->
-                        <Button Grid.Column="1"
-                                x:Name="CloseButton"
-                                Classes="icon-btn"
-                                Content="✕"
-                                Click="OnCloseClicked"
-                                VerticalAlignment="Center" />
-                    </Grid>
-
-                    <!-- Divider -->
-                    <Path Grid.Row="0" VerticalAlignment="Bottom" Height="1" Stretch="Fill" Opacity="0.15"
-                          StrokeThickness="1" Stroke="{DynamicResource SystemControlForegroundBaseHighBrush}">
-                        <Path.Data>
-                            <LineGeometry StartPoint="0,0" EndPoint="1,0"/>
-                        </Path.Data>
-                    </Path>
-
-                    <!-- Center: body editor / read-only preview -->
-                    <ScrollViewer Grid.Row="1" Padding="16,10,16,10" HorizontalScrollBarVisibility="Disabled">
-                        <Panel>
-                            <TextBox x:Name="BodyEditor"
-                                     IsVisible="False"
-                                     AcceptsReturn="True"
-                                     TextWrapping="Wrap"
-                                     Background="Transparent"
-                                     BorderThickness="0"
-                                     Padding="0"
-                                     MinHeight="280"
-                                     FontSize="13"
-                                     LostFocus="OnBodyLostFocus"
-                                     ScrollViewer.HorizontalScrollBarVisibility="Disabled" />
-                            <StackPanel x:Name="PreviewHost" IsVisible="False" Spacing="4" />
-                        </Panel>
-                    </ScrollViewer>
-
-                    <!-- Footer: updated stamp / source path / read-only hint -->
-                    <Border Grid.Row="2"
-                            BorderThickness="0,1,0,0"
-                            BorderBrush="#20808080"
-                            Padding="16,8,16,10">
-                        <TextBlock x:Name="FooterText"
-                                   FontSize="11"
-                                   Opacity="0.5"
-                                   TextTrimming="CharacterEllipsis" />
-                    </Border>
-                </Grid>
+                <TextBox x:Name="BodyEditor"
+                         IsVisible="False"
+                         AcceptsReturn="True"
+                         TextWrapping="Wrap"
+                         Background="Transparent"
+                         BorderThickness="0"
+                         Padding="0"
+                         MinHeight="280"
+                         FontSize="13"
+                         LostFocus="OnBodyLostFocus"
+                         ScrollViewer.HorizontalScrollBarVisibility="Disabled" />
+                <StackPanel x:Name="PreviewHost" IsVisible="False" Spacing="4" />
             </Panel>
-        </Border>
-    </Panel>
+        </ScrollViewer>
+
+        <!-- Footer: updated stamp / source path / read-only hint. Negative margins restore the
+             historic full-card-width divider (the shell's ContentPadding is 16 DIP on the sides). -->
+        <controls:SecondaryPanelShell.FooterContent>
+            <Border Margin="-16,0,-16,-6" Padding="16,8,16,4"
+                    BorderThickness="0,1,0,0"
+                    BorderBrush="#20808080">
+                <TextBlock x:Name="FooterText"
+                           FontSize="11"
+                           Opacity="0.5"
+                           TextTrimming="CharacterEllipsis" />
+            </Border>
+        </controls:SecondaryPanelShell.FooterContent>
+    </controls:SecondaryPanelShell>
 </Window>

@@ -2,25 +2,36 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using Avalonia;
 using Avalonia.Controls;
-using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
-using Avalonia.Platform;
 using Avalonia.Styling;
-using Avalonia.Threading;
 using Folders.Locales;
 using Folders.Models;
 using Folders.Services;
 using DeskCanvas.Core.Models.Settings;
-using DeskCanvas.Core.Services;
 using DeskCanvas.Services;
 using DeskCanvas.Views;
-using Grid = Avalonia.Controls.Grid;
 
 namespace Folders.Views;
 
+/// <summary>
+/// The big folder widget's secondary panel: the grid of contained files with an inline
+/// settings drawer. The shell (W7) plus <see cref="SecondaryPanelWindow"/> and
+/// <see cref="PanelAppearanceResolver"/> own the card material, the chrome and the open/close
+/// transitions. This window keeps its business behaviour and its three risk-carrying
+/// specialisations:
+/// <list type="bullet">
+/// <item><see cref="TransformAnimationEnabled"/> stays conditional on the native-blur theme:
+/// the native window region (SetWindowRgn) cannot follow a render transform, so the base
+/// falls back to the opacity-only animation.</item>
+/// <item><see cref="DeactivateCloseGraceMs"/> keeps the 150 ms focus-loss grace.</item>
+/// <item><see cref="OnPanelEscape"/> closes the settings drawer first; the second Escape
+/// closes the panel.</item>
+/// </list>
+/// File drag-drop onto the widget, icon loading and the file-grid interactions stay here too.
+/// </summary>
 public partial class BigFolderPopupWindow : SecondaryPanelWindow
 {
     [DllImport("gdi32.dll")]
@@ -49,7 +60,6 @@ public partial class BigFolderPopupWindow : SecondaryPanelWindow
     private readonly bool transformAnimationEnabled;
     private bool suppressSettingsEvents = false;
 
-    protected override Visual? PanelCard => CardBorder;
     protected override Point? SpawnScreenCenter => spawnScreenCenter;
     protected override bool TransformAnimationEnabled => transformAnimationEnabled;
     protected override int DeactivateCloseGraceMs => 150;
@@ -73,80 +83,30 @@ public partial class BigFolderPopupWindow : SecondaryPanelWindow
         InitializePanel(cornerRadius);
 
         SyncSettingsControls();
-        ApplyTheme();
+        ApplyContentTheme();
         PopulateItems();
-
-        Closed += OnWindowClosed;
     }
 
     private static bool UsesNativeBlurTheme()
     {
-        try { return new AppSettingsProvider().Get().Theme.UsesNativeBlur; }
+        // Historic semantics kept: any failure to read the settings (no provider, headless,
+        // early start-up) leaves the transform animation ON — only a real native-blur theme
+        // turns it off.
+        try { return PanelAppearanceResolver.TryResolveSettingsProvider()!.Get().Theme.UsesNativeBlur; }
         catch { return false; }
     }
 
-    private void ApplyTheme()
+    /// <summary>Content-only tint: the header action button keeps the popup's historic
+    /// secondary chrome colour. The shell's title and the shared close button are painted by
+    /// the appearance binder; the card, the glass and the transparency level too.</summary>
+    private void ApplyContentTheme()
     {
-        Theme theme;
-        try
-        {
-            theme = new AppSettingsProvider().Get().Theme;
-        }
-        catch
-        {
-            theme = new Theme(DarkMode: true, AccentColor: null, OpacityLevel: 0.8, Monochrome: false, UseNativeFrame: false, FontFamily: "Inter");
-        }
+        var theme = PanelAppearanceResolver.ReadTheme(PanelAppearanceResolver.TryResolveSettingsProvider());
+        bool isDark = PanelAppearanceResolver.IsDark(theme, ActualThemeVariant);
 
-        // Colour mode "follow system" is DarkMode == null, which must resolve to the *live*
-        // variant — the same single source of truth the widget card and the theme preview use
-        // (see ThemeButton.IsDark). Treating null as dark painted every panel dark on a light
-        // system.
-        bool isDark = theme.DarkMode ?? ActualThemeVariant == ThemeVariant.Dark;
-
-        if (theme.UsesRenderedGlass)
-        {
-            // Rendered glass always goes through the live surface — the very same path the
-            // primary widget card uses. The surface re-parameterises its optics for the panel's
-            // open/close zoom (SetAnimationFrameScale), so the animation shows real glass per
-            // tick whether or not live sampling is on: with sampling off the shared wallpaper
-            // frame is merely frozen, which is still a full-quality backdrop.
-            // The old "sampling off → play a pre-rendered bitmap / frame strip" branch is gone:
-            // it lagged behind the surface, masked the animated glass with a static bitmap, and
-            // fell back to a flat translucent scrim whenever the pre-render had not finished.
-            TransparencyLevelHint = [WindowTransparencyLevel.Transparent];
-            LiquidGlassSurfaceControl.Material = theme;
-            LiquidGlassSurfaceControl.CornerRadius = CardBorder.CornerRadius;
-            LiquidGlassSurfaceControl.IsVisible = true;
-            CardBorder.Background = Brushes.Transparent;
-            CardBorder.BorderBrush = new SolidColorBrush(Color.FromArgb(90, 255, 255, 255));
-            LiquidGlassSurfaceControl.RequestRender(immediate: true);
-        }
-        else if (theme.EffectiveSurface == SurfaceStyle.Solid)
-        {
-            LiquidGlassSurfaceControl.IsVisible = false;
-            TransparencyLevelHint = [WindowTransparencyLevel.Transparent];
-
-            var hex = isDark ? theme.EffectiveSolidBackgroundDark : theme.EffectiveSolidBackgroundLight;
-            var baseColor = Color.TryParse(hex, out var parsed) ? parsed : (isDark ? Color.FromRgb(46, 46, 46) : Colors.White);
-            byte alpha = (byte)Math.Clamp(Math.Round(theme.OpacityLevel * 255), 40, 255);
-            CardBorder.Background = new SolidColorBrush(Color.FromArgb(alpha, baseColor.R, baseColor.G, baseColor.B));
-            CardBorder.BorderBrush = new SolidColorBrush(isDark ? Color.FromArgb(40, 255, 255, 255) : Color.FromArgb(30, 0, 0, 0));
-        }
-        else // Acrylic (毛玻璃)
-        {
-            LiquidGlassSurfaceControl.IsVisible = false;
-            TransparencyLevelHint = [WindowTransparencyLevel.AcrylicBlur];
-
-            byte alpha = (byte)Math.Clamp(Math.Round(theme.OpacityLevel * 220), 40, 240);
-            CardBorder.Background = new SolidColorBrush(isDark ? Color.FromArgb(alpha, 28, 28, 32) : Color.FromArgb(alpha, 245, 245, 248));
-            CardBorder.BorderBrush = new SolidColorBrush(isDark ? Color.FromArgb(55, 255, 255, 255) : Color.FromArgb(35, 0, 0, 0));
-        }
-
-        IBrush textBrush = isDark ? Brushes.White : new SolidColorBrush(Color.FromRgb(30, 30, 30));
-        IBrush subTextBrush = isDark ? new SolidColorBrush(Color.FromArgb(200, 255, 255, 255)) : new SolidColorBrush(Color.FromArgb(180, 0, 0, 0));
-        TitleText.Foreground = textBrush;
-        CloseButton.Foreground = subTextBrush;
-        SettingsButton.Foreground = subTextBrush;
+        SettingsButton.Foreground = isDark
+            ? new SolidColorBrush(Color.FromArgb(200, 255, 255, 255))
+            : new SolidColorBrush(Color.FromArgb(180, 0, 0, 0));
     }
 
     private void SyncSettingsControls()
@@ -178,7 +138,7 @@ public partial class BigFolderPopupWindow : SecondaryPanelWindow
         string titleBase = !string.IsNullOrWhiteSpace(currentModel.FolderName)
             ? currentModel.FolderName
             : Locale.Folders_BigFolder_AllFiles;
-        TitleText.Text = $"{titleBase} ({validPaths.Count})";
+        PanelShell!.Title = $"{titleBase} ({validPaths.Count})";
 
         int cols = Math.Clamp(currentModel.PopupColumns, 2, 8);
         int iconSize = Math.Clamp(currentModel.PopupIconSize, 24, 80);
@@ -288,11 +248,6 @@ public partial class BigFolderPopupWindow : SecondaryPanelWindow
         }
     }
 
-    private void OnWindowClosed(object? sender, EventArgs e)
-    {
-        LiquidGlassSurfaceControl.IsVisible = false;
-    }
-
     public static void ShowPopup(
         BigFolderModel model,
         Point? screenCenter,
@@ -315,15 +270,7 @@ public partial class BigFolderPopupWindow : SecondaryPanelWindow
         var handle = TryGetPlatformHandle()?.Handle;
         if (handle == null) return;
 
-        Theme theme;
-        try
-        {
-            theme = new AppSettingsProvider().Get().Theme;
-        }
-        catch
-        {
-            theme = new Theme(DarkMode: true, AccentColor: null, OpacityLevel: 0.8, Monochrome: false, UseNativeFrame: false, FontFamily: "Inter");
-        }
+        var theme = PanelAppearanceResolver.ReadTheme(PanelAppearanceResolver.TryResolveSettingsProvider());
 
         if (theme.UsesNativeBlur)
         {
@@ -355,23 +302,6 @@ public partial class BigFolderPopupWindow : SecondaryPanelWindow
     protected override void OnPanelLoaded()
     {
         ApplyWindowRegion();
-        if (LiquidGlassSurfaceControl.IsVisible)
-        {
-            LiquidGlassSurfaceControl.RequestRender(immediate: true);
-        }
-    }
-
-    private void OnCloseClicked(object? sender, RoutedEventArgs e)
-    {
-        Close();
-    }
-
-    private void OnRootPointerPressed(object? sender, PointerPressedEventArgs e)
-    {
-        if (e.Source is Panel or Grid)
-        {
-            Close();
-        }
     }
 
     protected override bool OnPanelEscape()

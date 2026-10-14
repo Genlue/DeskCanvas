@@ -1,28 +1,32 @@
 using System;
-using System.Diagnostics;
-using System.Linq;
-using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Media;
-using Avalonia.Platform;
-using Avalonia.Styling;
-using DeskCanvas.Core.Models.Settings;
-using DeskCanvas.Core.Services;
+using DeskCanvas.Core.Interfaces;
 using DeskCanvas.Services;
 using DeskCanvas.Views;
+using DeskCanvas.Views.Controls;
 using Weather.ViewModels;
 
 namespace Weather.Views;
 
+/// <summary>
+/// The weather widget's secondary panel (hourly strip, 7-day forecast, environment metrics).
+/// The shell (W7) plus <see cref="SecondaryPanelWindow"/> and
+/// <see cref="PanelAppearanceResolver"/> own the card material, the chrome and the open/close
+/// transitions. This class keeps the data binding, the horizontal wheel scrolling of the hourly
+/// strip, and the plugin-owned palette: the weather text brushes — and, in the 多彩 theme, the
+/// weather-blue card colour that differs from the shared macOS baseline — are asserted on top of
+/// every shell paint refresh, never computed by the shared resolver.
+/// </summary>
 public partial class WeatherPopupWindow : SecondaryPanelWindow
 {
     private readonly ForecastViewModel viewModel;
     private readonly Point? spawnScreenCenter;
+    private IAppSettingsProvider? settingsProvider;
 
-    protected override Visual? PanelCard => CardBorder;
     protected override Point? SpawnScreenCenter => spawnScreenCenter;
 
     private static bool IsZh => System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName.Equals("zh", StringComparison.OrdinalIgnoreCase);
@@ -40,7 +44,15 @@ public partial class WeatherPopupWindow : SecondaryPanelWindow
         HourlyScroll.AddHandler(PointerWheelChangedEvent, OnHourlyWheel, RoutingStrategies.Bubble, true);
 
         BindData();
-        ApplyTheme();
+
+        // Business theming. The shell's card paint is written by the appearance binder — which
+        // also refreshes live on settings/variant changes — so the plugin-owned palette
+        // re-asserts itself on every shell paint change instead of only once at construction.
+        if (PanelShell is { } shell)
+        {
+            shell.PropertyChanged += OnShellPaintChanged;
+            ApplyContentTheme(shell);
+        }
 
         Closed += OnWindowClosed;
     }
@@ -81,83 +93,48 @@ public partial class WeatherPopupWindow : SecondaryPanelWindow
         SunText.Text = viewModel.SunsetSunrise.Time;
     }
 
-    protected override void OnPanelLoaded()
+    // ---------- theme ----------
+
+    private void OnShellPaintChanged(object? sender, AvaloniaPropertyChangedEventArgs e)
     {
-        if (LiquidGlassSurfaceControl.IsVisible)
+        if (e.Property == SecondaryPanelShell.CardBackgroundProperty
+            || e.Property == SecondaryPanelShell.CardBorderBrushProperty)
         {
-            LiquidGlassSurfaceControl.RequestRender(immediate: true);
+            ApplyContentTheme(PanelShell);
         }
     }
 
-    private void ApplyTheme()
+    /// <summary>The plugin-owned palette. Content text follows the historic weather rule
+    /// (多彩 keeps white-on-blue regardless of the variant); in the 多彩 theme the card's
+    /// weather blue is asserted over the shell baseline. The compare-before-write guard keeps
+    /// the PropertyChanged feedback from looping.</summary>
+    private void ApplyContentTheme(SecondaryPanelShell? shell)
     {
-        Theme theme;
-        try
-        {
-            theme = new AppSettingsProvider().Get().Theme;
-        }
-        catch
-        {
-            theme = new Theme(DarkMode: true, AccentColor: null, OpacityLevel: 0.8, Monochrome: false, UseNativeFrame: false, FontFamily: "Inter");
-        }
-
-        // Colour mode "follow system" is DarkMode == null, which must resolve to the *live*
-        // variant — the same single source of truth the widget card and the theme preview use
-        // (see ThemeButton.IsDark). Treating null as dark painted every panel dark on a light
-        // system.
-        bool isDark = theme.DarkMode ?? ActualThemeVariant == ThemeVariant.Dark;
-
-        if (theme.UsesRenderedGlass)
-        {
-            // Rendered glass always goes through the live surface — the very same path the
-            // primary widget card uses. The surface re-parameterises its optics for the panel's
-            // open/close zoom (SetAnimationFrameScale), so the animation shows real glass per
-            // tick whether or not live sampling is on: with sampling off the shared wallpaper
-            // frame is merely frozen, which is still a full-quality backdrop.
-            // The old "sampling off → play a pre-rendered bitmap / frame strip" branch is gone:
-            // it lagged behind the surface, masked the animated glass with a static bitmap, and
-            // fell back to a flat translucent scrim whenever the pre-render had not finished.
-            TransparencyLevelHint = [WindowTransparencyLevel.Transparent];
-            LiquidGlassSurfaceControl.Material = theme;
-            LiquidGlassSurfaceControl.CornerRadius = CardBorder.CornerRadius;
-            LiquidGlassSurfaceControl.IsVisible = true;
-            CardBorder.Background = Brushes.Transparent;
-            CardBorder.BorderBrush = new SolidColorBrush(Color.FromArgb(90, 255, 255, 255));
-            LiquidGlassSurfaceControl.RequestRender(immediate: true);
-        }
-        else if (theme.IsColorful)
-        {
-            LiquidGlassSurfaceControl.IsVisible = false;
-            TransparencyLevelHint = [WindowTransparencyLevel.Transparent];
-            CardBorder.Background = new SolidColorBrush(isDark ? Color.Parse("#1A2B42") : Color.Parse("#2B6CB0"));
-            CardBorder.BorderBrush = new SolidColorBrush(isDark ? Color.FromArgb(60, 255, 255, 255) : Color.FromArgb(40, 255, 255, 255));
-        }
-        else if (theme.EffectiveSurface == SurfaceStyle.Solid)
-        {
-            LiquidGlassSurfaceControl.IsVisible = false;
-            TransparencyLevelHint = [WindowTransparencyLevel.Transparent];
-            var hex = isDark ? theme.EffectiveSolidBackgroundDark : theme.EffectiveSolidBackgroundLight;
-            var baseColor = Color.TryParse(hex, out var parsed) ? parsed : (isDark ? Color.FromRgb(46, 46, 46) : Colors.White);
-            byte alpha = (byte)Math.Clamp(Math.Round(theme.OpacityLevel * 255), 40, 255);
-            CardBorder.Background = new SolidColorBrush(Color.FromArgb(alpha, baseColor.R, baseColor.G, baseColor.B));
-            CardBorder.BorderBrush = new SolidColorBrush(isDark ? Color.FromArgb(40, 255, 255, 255) : Color.FromArgb(30, 0, 0, 0));
-        }
-        else // Acrylic
-        {
-            LiquidGlassSurfaceControl.IsVisible = false;
-            TransparencyLevelHint = [WindowTransparencyLevel.AcrylicBlur];
-            byte alpha = (byte)Math.Clamp(Math.Round(theme.OpacityLevel * 220), 40, 240);
-            CardBorder.Background = new SolidColorBrush(isDark ? Color.FromArgb(alpha, 28, 28, 32) : Color.FromArgb(alpha, 245, 245, 248));
-            CardBorder.BorderBrush = new SolidColorBrush(isDark ? Color.FromArgb(55, 255, 255, 255) : Color.FromArgb(35, 0, 0, 0));
-        }
+        var theme = PanelAppearanceResolver.ReadTheme(settingsProvider ??= PanelAppearanceResolver.TryResolveSettingsProvider());
+        bool isDark = PanelAppearanceResolver.IsDark(theme, ActualThemeVariant);
 
         IBrush textBrush = (theme.IsColorful || isDark) ? Brushes.White : new SolidColorBrush(Color.FromRgb(30, 30, 30));
         IBrush subTextBrush = (theme.IsColorful || isDark) ? new SolidColorBrush(Color.FromArgb(200, 255, 255, 255)) : new SolidColorBrush(Color.FromArgb(180, 0, 0, 0));
         Resources["WeatherForegroundBrush"] = textBrush;
         CityText.Foreground = textBrush;
         TempText.Foreground = textBrush;
-        CloseButton.Foreground = subTextBrush;
+
+        if (theme.IsColorful && shell != null)
+        {
+            SetShellBrush(shell, SecondaryPanelShell.CardBackgroundProperty,
+                isDark ? Color.Parse("#1A2B42") : Color.Parse("#2B6CB0"));
+            SetShellBrush(shell, SecondaryPanelShell.CardBorderBrushProperty,
+                Color.FromArgb((byte)(isDark ? 60 : 40), 255, 255, 255));
+        }
     }
+
+    private static void SetShellBrush(SecondaryPanelShell shell, StyledProperty<IBrush?> property, Color color)
+    {
+        if (shell.GetValue(property) is ISolidColorBrush current && current.Color == color) return;
+        shell.SetValue(property, new SolidColorBrush(color));
+    }
+
+    // ---------- interaction ----------
 
     private void OnHourlyWheel(object? sender, PointerWheelEventArgs e)
     {
@@ -169,13 +146,9 @@ public partial class WeatherPopupWindow : SecondaryPanelWindow
         e.Handled = true;
     }
 
-    private void OnCloseClicked(object? sender, RoutedEventArgs e)
-    {
-        Close();
-    }
-
     private void OnWindowClosed(object? sender, EventArgs e)
     {
-        LiquidGlassSurfaceControl.IsVisible = false;
+        if (PanelShell is { } shell)
+            shell.PropertyChanged -= OnShellPaintChanged;
     }
 }
