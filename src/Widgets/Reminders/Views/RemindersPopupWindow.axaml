@@ -52,219 +52,194 @@
         </Style>
     </Window.Styles>
 
-    <Panel Background="Transparent">
-        <!-- Main Card Border with Zoom Transform -->
-        <Border x:Name="CardBorder"
-                Margin="0"
-                CornerRadius="18"
-                BorderThickness="1"
-                RenderTransformOrigin="0.5,0.5"
-                ClipToBounds="True">
-            <Border.RenderTransform>
-                <ScaleTransform ScaleX="0.95" ScaleY="0.95" />
-            </Border.RenderTransform>
+    <!-- The shared secondary-panel shell (W7) owns the card, the glass, the header with the
+         drag area and the shared close button, and the backdrop-dismiss rule. This window
+         declares ONLY business content:
+           - HeaderContent: the editable list title + the live item-count subtitle (the old
+             header's text block; the divider under the old header was local chrome and is gone);
+           - HeaderActions: the clear-completed pill, next to the shared close button;
+           - Content: the reminders scroll list;
+           - FooterContent: the bottom add bar.
+         The shell's default ContentPadding (16,14,16,12) replaces the old 18/14 grid margins
+         and the old 14 DIP header/footer insets (the deliberate convergence); drag is confined
+         to the header strip — the title box, the list and the input never move the window. -->
+    <controls:SecondaryPanelShell>
+        <controls:SecondaryPanelShell.HeaderContent>
+            <StackPanel VerticalAlignment="Center" Spacing="2">
+                <TextBox x:Name="TitleBox"
+                         FontSize="16"
+                         FontWeight="Bold"
+                         BorderThickness="0"
+                         Background="Transparent"
+                         Padding="0"
+                         MinHeight="22"
+                         Watermark="{x:Static locales:Locale.Reminders_List_Title}"
+                         LostFocus="OnTitleLostFocus"
+                         KeyDown="OnTitleKeyDown" />
+                <TextBlock x:Name="SubtitleText"
+                           FontSize="11"
+                           Opacity="0.6"
+                           Text="{x:Static locales:Locale.Reminders_ZeroItems}" />
+            </StackPanel>
+        </controls:SecondaryPanelShell.HeaderContent>
 
+        <!-- Clear Completed Button 🧹 (business header action, next to the shared close button) -->
+        <controls:SecondaryPanelShell.HeaderActions>
+            <Button x:Name="ClearCompletedButton"
+                    Classes="pill-btn"
+                    Content="{x:Static locales:Locale.Reminders_DeleteCompleted}"
+                    Click="OnClearCompletedClicked"
+                    VerticalAlignment="Center" />
+        </controls:SecondaryPanelShell.HeaderActions>
+
+        <!-- Center: Reminders Scroll List -->
+        <ScrollViewer Padding="0,8,0,8" HorizontalScrollBarVisibility="Disabled">
             <Panel>
-                <!-- LiquidGlass surface: the same material path the widget card uses —
-                     live wallpaper sampling when enabled, the frozen shared frame when not. -->
-                <controls:LiquidGlassSurface x:Name="LiquidGlassSurfaceControl" CornerRadius="18" Margin="0" IsVisible="False" />
+                <!-- Empty State Notice -->
+                <StackPanel x:Name="EmptyPanel"
+                            IsVisible="False"
+                            VerticalAlignment="Center"
+                            HorizontalAlignment="Center"
+                            Spacing="8"
+                            Margin="0,40">
+                    <Canvas Width="32" Height="32" HorizontalAlignment="Center">
+                        <Ellipse Width="32" Height="32" StrokeThickness="2" StrokeDashArray="3,3"
+                                 Stroke="{DynamicResource RemindersBadgeBrush}" Opacity="0.4" />
+                        <Path Data="M10,16 L14,20 L22,12" Stroke="{DynamicResource RemindersBadgeBrush}"
+                              StrokeThickness="2" StrokeLineCap="Round" StrokeJoin="Round" Opacity="0.4" />
+                    </Canvas>
+                    <TextBlock Text="{x:Static locales:Locale.Reminders_Empty}"
+                               FontSize="13"
+                               Opacity="0.5"
+                               HorizontalAlignment="Center" />
+                    <TextBlock Text="{x:Static locales:Locale.Reminders_Empty_Hint}"
+                               FontSize="11"
+                               Opacity="0.35"
+                               HorizontalAlignment="Center" />
+                </StackPanel>
 
-                <Grid RowDefinitions="Auto,*,Auto">
-                <!-- Header (Row 0) -->
-                <Grid Grid.Row="0" Margin="18,14,14,10" ColumnDefinitions="*,Auto,Auto">
-                    <StackPanel Grid.Column="0" VerticalAlignment="Center" Spacing="2">
-                        <TextBox x:Name="TitleBox"
-                                 FontSize="16"
-                                 FontWeight="Bold"
-                                 BorderThickness="0"
-                                 Background="Transparent"
-                                 Padding="0"
-                                 MinHeight="22"
-                                 Watermark="{x:Static locales:Locale.Reminders_List_Title}"
-                                 LostFocus="OnTitleLostFocus"
-                                 KeyDown="OnTitleKeyDown" />
-                        <TextBlock x:Name="SubtitleText"
-                                   FontSize="11"
-                                   Opacity="0.6"
-                                   Text="{x:Static locales:Locale.Reminders_ZeroItems}" />
-                    </StackPanel>
-
-                    <!-- Clear Completed Button 🧹 -->
-                    <Button Grid.Column="1"
-                            x:Name="ClearCompletedButton"
-                            Classes="pill-btn"
-                            Content="{x:Static locales:Locale.Reminders_DeleteCompleted}"
-                            Click="OnClearCompletedClicked"
-                            Margin="0,0,6,0"
-                            VerticalAlignment="Center" />
-
-                    <!-- Close Button ✕ -->
-                    <Button Grid.Column="2"
-                            x:Name="CloseButton"
-                            Classes="icon-btn"
-                            Content="✕"
-                            Click="OnCloseClicked"
-                            VerticalAlignment="Center" />
-                </Grid>
-
-                <!-- Divider -->
-                <Path Grid.Row="0" VerticalAlignment="Bottom" Height="1" Stretch="Fill" Opacity="0.15"
-                      StrokeThickness="1" Stroke="{DynamicResource SystemControlForegroundBaseHighBrush}">
-                    <Path.Data>
-                        <LineGeometry StartPoint="0,0" EndPoint="1,0"/>
-                    </Path.Data>
-                </Path>
-
-                <!-- Center: Reminders Scroll List (Row 1) -->
-                <ScrollViewer Grid.Row="1" Padding="14,8,18,8" HorizontalScrollBarVisibility="Disabled">
-                    <Panel>
-                        <!-- Empty State Notice -->
-                        <StackPanel x:Name="EmptyPanel"
-                                    IsVisible="False"
-                                    VerticalAlignment="Center"
-                                    HorizontalAlignment="Center"
-                                    Spacing="8"
-                                    Margin="0,40">
-                            <Canvas Width="32" Height="32" HorizontalAlignment="Center">
-                                <Ellipse Width="32" Height="32" StrokeThickness="2" StrokeDashArray="3,3"
-                                         Stroke="{DynamicResource RemindersBadgeBrush}" Opacity="0.4" />
-                                <Path Data="M10,16 L14,20 L22,12" Stroke="{DynamicResource RemindersBadgeBrush}"
-                                      StrokeThickness="2" StrokeLineCap="Round" StrokeJoin="Round" Opacity="0.4" />
-                            </Canvas>
-                            <TextBlock Text="{x:Static locales:Locale.Reminders_Empty}"
-                                       FontSize="13"
-                                       Opacity="0.5"
-                                       HorizontalAlignment="Center" />
-                            <TextBlock Text="{x:Static locales:Locale.Reminders_Empty_Hint}"
-                                       FontSize="11"
-                                       Opacity="0.35"
-                                       HorizontalAlignment="Center" />
-                        </StackPanel>
-
-                        <!-- Items List -->
-                        <ItemsControl x:Name="ItemsList" HorizontalAlignment="Stretch">
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate DataType="local:ReminderItemViewModel">
-                                    <Border Margin="0,2,0,2"
-                                            Padding="6,4,4,4"
-                                            CornerRadius="8"
+                <!-- Items List -->
+                <ItemsControl x:Name="ItemsList" HorizontalAlignment="Stretch">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate DataType="local:ReminderItemViewModel">
+                            <Border Margin="0,2,0,2"
+                                    Padding="6,4,4,4"
+                                    CornerRadius="8"
+                                    Background="Transparent"
+                                    Width="356"
+                                    HorizontalAlignment="Left"
+                                    ClipToBounds="True">
+                                <Border.Styles>
+                                    <Style Selector="Border:pointerover">
+                                        <Setter Property="Background" Value="#12808080" />
+                                    </Style>
+                                </Border.Styles>
+                                <Grid ColumnDefinitions="28,*,30" VerticalAlignment="Center" HorizontalAlignment="Stretch">
+                                    <!-- Checkbox Button: Col 0 (固定最左侧) -->
+                                    <Button Grid.Column="0"
+                                            Width="20" Height="20"
+                                            Padding="0" Margin="0,0,8,0"
                                             Background="Transparent"
-                                            Width="356"
+                                            BorderThickness="0"
+                                            CornerRadius="10"
                                             HorizontalAlignment="Left"
-                                            ClipToBounds="True">
-                                        <Border.Styles>
-                                            <Style Selector="Border:pointerover">
-                                                <Setter Property="Background" Value="#12808080" />
-                                            </Style>
-                                        </Border.Styles>
-                                        <Grid ColumnDefinitions="28,*,30" VerticalAlignment="Center" HorizontalAlignment="Stretch">
-                                            <!-- Checkbox Button: Col 0 (固定最左侧) -->
-                                            <Button Grid.Column="0"
-                                                    Width="20" Height="20"
-                                                    Padding="0" Margin="0,0,8,0"
-                                                    Background="Transparent"
-                                                    BorderThickness="0"
-                                                    CornerRadius="10"
-                                                    HorizontalAlignment="Left"
-                                                    VerticalAlignment="Center"
-                                                    Click="OnItemCheckClicked"
-                                                    DataContext="{Binding}"
-                                                    Cursor="Hand">
-                                                <Canvas Width="18" Height="18">
-                                                    <Ellipse Width="18" Height="18" StrokeThickness="1.5"
-                                                             Stroke="{DynamicResource RemindersCheckBrush}" />
-                                                    <Path Canvas.Left="3" Canvas.Top="4" Width="12" Height="10" Stretch="Fill"
-                                                          IsVisible="{Binding Completed}" Data="M0,5 L4,9 L12,0"
-                                                          StrokeThickness="2" StrokeLineCap="Round" StrokeJoin="Round"
-                                                          Stroke="{DynamicResource RemindersCheckBrush}" />
-                                                </Canvas>
-                                            </Button>
+                                            VerticalAlignment="Center"
+                                            Click="OnItemCheckClicked"
+                                            DataContext="{Binding}"
+                                            Cursor="Hand">
+                                        <Canvas Width="18" Height="18">
+                                            <Ellipse Width="18" Height="18" StrokeThickness="1.5"
+                                                     Stroke="{DynamicResource RemindersCheckBrush}" />
+                                            <Path Canvas.Left="3" Canvas.Top="4" Width="12" Height="10" Stretch="Fill"
+                                                  IsVisible="{Binding Completed}" Data="M0,5 L4,9 L12,0"
+                                                  StrokeThickness="2" StrokeLineCap="Round" StrokeJoin="Round"
+                                                  Stroke="{DynamicResource RemindersCheckBrush}" />
+                                        </Canvas>
+                                    </Button>
 
-                                            <!-- Reminder Title TextBox with strikethrough overlay: Col 1 (弹性填充，硬性锁定最大宽度并自动换行) -->
-                                            <Grid Grid.Column="1" MinWidth="0" VerticalAlignment="Center" Margin="0,0,4,0" HorizontalAlignment="Stretch">
-                                                <TextBox Text="{Binding Title}"
-                                                         DataContext="{Binding}"
-                                                         Background="Transparent"
-                                                         BorderThickness="0"
-                                                         Padding="0,2,4,2"
-                                                         FontSize="13"
-                                                         TextWrapping="Wrap"
-                                                         AcceptsReturn="False"
-                                                         MinWidth="0"
-                                                         MaxWidth="275"
-                                                         ScrollViewer.HorizontalScrollBarVisibility="Disabled"
-                                                         VerticalAlignment="Center"
-                                                         Opacity="{Binding TextOpacity}"
-                                                         LostFocus="OnItemTextLostFocus"
-                                                         KeyDown="OnItemTextKeyDown" />
-                                                <Rectangle Height="1.5"
-                                                           Fill="{DynamicResource SystemControlForegroundBaseMediumBrush}"
-                                                           VerticalAlignment="Center"
-                                                           Margin="0,1,8,0"
-                                                           IsHitTestVisible="False"
-                                                           IsVisible="{Binding Completed}"
-                                                           Opacity="0.6" />
-                                            </Grid>
+                                    <!-- Reminder Title TextBox with strikethrough overlay: Col 1 (弹性填充，硬性锁定最大宽度并自动换行) -->
+                                    <Grid Grid.Column="1" MinWidth="0" VerticalAlignment="Center" Margin="0,0,4,0" HorizontalAlignment="Stretch">
+                                        <TextBox Text="{Binding Title}"
+                                                 DataContext="{Binding}"
+                                                 Background="Transparent"
+                                                 BorderThickness="0"
+                                                 Padding="0,2,4,2"
+                                                 FontSize="13"
+                                                 TextWrapping="Wrap"
+                                                 AcceptsReturn="False"
+                                                 MinWidth="0"
+                                                 MaxWidth="275"
+                                                 ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                                                 VerticalAlignment="Center"
+                                                 Opacity="{Binding TextOpacity}"
+                                                 LostFocus="OnItemTextLostFocus"
+                                                 KeyDown="OnItemTextKeyDown" />
+                                        <Rectangle Height="1.5"
+                                                   Fill="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                                                   VerticalAlignment="Center"
+                                                   Margin="0,1,8,0"
+                                                   IsHitTestVisible="False"
+                                                   IsVisible="{Binding Completed}"
+                                                   Opacity="0.6" />
+                                    </Grid>
 
-                                            <!-- Delete Button ✕: Col 2 (严格固定在最右列，绝对不可能被挤出) -->
-                                            <Button Grid.Column="2"
-                                                    Classes="delete-btn"
-                                                    Content="✕"
-                                                    Width="22" Height="22"
-                                                    Margin="0"
-                                                    HorizontalAlignment="Right"
-                                                    VerticalAlignment="Center"
-                                                    DataContext="{Binding}"
-                                                    Click="OnItemDeleteClicked"
-                                                    ToolTip.Tip="{x:Static locales:Locale.Reminders_Delete}" />
-                                        </Grid>
-                                    </Border>
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
-                    </Panel>
-                </ScrollViewer>
-
-                <!-- Bottom Add Bar (Row 2) -->
-                <Border Grid.Row="2"
-                        BorderThickness="0,1,0,0"
-                        BorderBrush="#20808080"
-                        Padding="14,10,14,12">
-                    <Grid ColumnDefinitions="Auto,*,Auto" VerticalAlignment="Center">
-                        <!-- Plus Symbol Icon -->
-                        <Canvas Grid.Column="0" Width="18" Height="18" Margin="0,0,8,0" VerticalAlignment="Center">
-                            <Ellipse Width="18" Height="18" StrokeThickness="1.5" StrokeDashArray="2,2"
-                                     Stroke="{DynamicResource RemindersBadgeBrush}" Opacity="0.7" />
-                            <Path Data="M5,9 L13,9 M9,5 L9,13"
-                                  Stroke="{DynamicResource RemindersBadgeBrush}"
-                                  StrokeThickness="1.5" StrokeLineCap="Round" />
-                        </Canvas>
-
-                        <!-- Input TextBox -->
-                        <TextBox Grid.Column="1"
-                                 x:Name="NewItemTextBox"
-                                 Height="32"
-                                 FontSize="13"
-                                 CornerRadius="8"
-                                 Padding="10,6"
-                                 Watermark="{x:Static locales:Locale.Reminders_Add_Placeholder}"
-                                 KeyDown="OnNewItemKeyDown" />
-
-                        <!-- Add Button -->
-                        <Button Grid.Column="2"
-                                x:Name="AddButton"
-                                Classes="pill-btn"
-                                Height="32"
-                                CornerRadius="8"
-                                Padding="12,0"
-                                Margin="8,0,0,0"
-                                Content="{x:Static locales:Locale.Reminders_Add}"
-                                FontWeight="SemiBold"
-                                Click="OnAddClicked" />
-                    </Grid>
-                </Border>
-            </Grid>
+                                    <!-- Delete Button ✕: Col 2 (严格固定在最右列，绝对不可能被挤出) -->
+                                    <Button Grid.Column="2"
+                                            Classes="delete-btn"
+                                            Content="✕"
+                                            Width="22" Height="22"
+                                            Margin="0"
+                                            HorizontalAlignment="Right"
+                                            VerticalAlignment="Center"
+                                            DataContext="{Binding}"
+                                            Click="OnItemDeleteClicked"
+                                            ToolTip.Tip="{x:Static locales:Locale.Reminders_Delete}" />
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
             </Panel>
-        </Border>
-    </Panel>
+        </ScrollViewer>
+
+        <!-- Bottom Add Bar (footer): the horizontal inset comes from the shell's ContentPadding. -->
+        <controls:SecondaryPanelShell.FooterContent>
+            <Border BorderThickness="0,1,0,0"
+                    BorderBrush="#20808080"
+                    Padding="0,10,0,12">
+                <Grid ColumnDefinitions="Auto,*,Auto" VerticalAlignment="Center">
+                    <!-- Plus Symbol Icon -->
+                    <Canvas Grid.Column="0" Width="18" Height="18" Margin="0,0,8,0" VerticalAlignment="Center">
+                        <Ellipse Width="18" Height="18" StrokeThickness="1.5" StrokeDashArray="2,2"
+                                 Stroke="{DynamicResource RemindersBadgeBrush}" Opacity="0.7" />
+                        <Path Data="M5,9 L13,9 M9,5 L9,13"
+                              Stroke="{DynamicResource RemindersBadgeBrush}"
+                              StrokeThickness="1.5" StrokeLineCap="Round" />
+                    </Canvas>
+
+                    <!-- Input TextBox -->
+                    <TextBox Grid.Column="1"
+                             x:Name="NewItemTextBox"
+                             Height="32"
+                             FontSize="13"
+                             CornerRadius="8"
+                             Padding="10,6"
+                             Watermark="{x:Static locales:Locale.Reminders_Add_Placeholder}"
+                             KeyDown="OnNewItemKeyDown" />
+
+                    <!-- Add Button -->
+                    <Button Grid.Column="2"
+                            x:Name="AddButton"
+                            Classes="pill-btn"
+                            Height="32"
+                            CornerRadius="8"
+                            Padding="12,0"
+                            Margin="8,0,0,0"
+                            Content="{x:Static locales:Locale.Reminders_Add}"
+                            FontWeight="SemiBold"
+                            Click="OnAddClicked" />
+                </Grid>
+            </Border>
+        </controls:SecondaryPanelShell.FooterContent>
+    </controls:SecondaryPanelShell>
 </Window>

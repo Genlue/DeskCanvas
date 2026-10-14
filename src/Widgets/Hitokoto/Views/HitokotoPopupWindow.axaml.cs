@@ -6,25 +6,28 @@ using System.Text;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
-using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Layout;
 using Avalonia.Media;
-using Avalonia.Styling;
 using Avalonia.Threading;
-using DeskCanvas.Core.Models.Settings;
-using DeskCanvas.Core.Services;
 using DeskCanvas.Views;
 using Hitokoto.Locales;
 using Hitokoto.Models;
 using Hitokoto.Services;
-using Grid = Avalonia.Controls.Grid;
 
 namespace Hitokoto.Views;
 
 /// <summary>
 /// Secondary panel for the Hitokoto widget: displays full quote details, Core API like actions,
 /// local favorites, and recent quote history so users never lose a quote they accidentally skipped.
+/// <para>
+/// W8 migration: the card, the glass surface, the title chrome and the close button all live in
+/// the shared <see cref="SecondaryPanelShell"/> now — the window declares only business content
+/// and keeps only business behaviour (the store subscription, favorites/tabs/search, the toast
+/// and the dynamic category badge). The five-branch material ApplyTheme, the root drag handler
+/// and the per-open AppSettingsProvider are gone: <see cref="SecondaryPanelWindow"/> plus
+/// <see cref="DeskCanvas.Services.PanelAppearanceResolver"/> own the material and the transitions.
+/// </para>
 /// </summary>
 public partial class HitokotoPopupWindow : SecondaryPanelWindow
 {
@@ -37,7 +40,6 @@ public partial class HitokotoPopupWindow : SecondaryPanelWindow
     private string lastListSignature = string.Empty;
     private DispatcherTimer? toastTimer;
 
-    protected override Visual? PanelCard => CardBorder;
     protected override Point? SpawnScreenCenter => spawnScreenCenter;
 
     public HitokotoPopupWindow()
@@ -71,7 +73,6 @@ public partial class HitokotoPopupWindow : SecondaryPanelWindow
         try
         {
             ApplyLocalization();
-            ApplyTheme();
             PopulateSpotlight();
             RefreshList();
 
@@ -116,69 +117,6 @@ public partial class HitokotoPopupWindow : SecondaryPanelWindow
 
         var popup = new HitokotoPopupWindow(model, currentItem, screenCenter, onRequestNextQuote, cornerRadius);
         popup.ShowAsSecondaryPanel(owner);
-    }
-
-    protected override void OnPanelLoaded()
-    {
-        if (LiquidGlassSurfaceControl.IsVisible)
-        {
-            LiquidGlassSurfaceControl.RequestRender(immediate: true);
-        }
-    }
-
-    private void ApplyTheme()
-    {
-        Theme theme;
-        try
-        {
-            theme = new AppSettingsProvider().Get().Theme;
-        }
-        catch
-        {
-            theme = new Theme(DarkMode: true, AccentColor: null, OpacityLevel: 0.8, Monochrome: false, UseNativeFrame: false, FontFamily: "Inter");
-        }
-
-        bool isDark = theme.DarkMode ?? ActualThemeVariant == ThemeVariant.Dark;
-
-        if (theme.UsesRenderedGlass)
-        {
-            TransparencyLevelHint = [WindowTransparencyLevel.Transparent];
-            LiquidGlassSurfaceControl.Material = theme;
-            LiquidGlassSurfaceControl.CornerRadius = CardBorder.CornerRadius;
-            LiquidGlassSurfaceControl.IsVisible = true;
-            CardBorder.Background = Brushes.Transparent;
-            CardBorder.BorderBrush = new SolidColorBrush(Color.FromArgb(90, 255, 255, 255));
-            LiquidGlassSurfaceControl.RequestRender(immediate: true);
-        }
-        else if (theme.IsColorful)
-        {
-            LiquidGlassSurfaceControl.IsVisible = false;
-            TransparencyLevelHint = [WindowTransparencyLevel.Transparent];
-            CardBorder.Background = new SolidColorBrush(isDark ? Color.Parse("#1C1C1E") : Color.Parse("#FFFFFF"));
-            CardBorder.BorderBrush = new SolidColorBrush(isDark ? Color.FromArgb(60, 255, 255, 255) : Color.FromArgb(40, 0, 0, 0));
-        }
-        else if (theme.EffectiveSurface == SurfaceStyle.Solid)
-        {
-            LiquidGlassSurfaceControl.IsVisible = false;
-            TransparencyLevelHint = [WindowTransparencyLevel.Transparent];
-            var hex = isDark ? theme.EffectiveSolidBackgroundDark : theme.EffectiveSolidBackgroundLight;
-            var baseColor = Color.TryParse(hex, out var parsed) ? parsed : (isDark ? Color.FromRgb(46, 46, 46) : Colors.White);
-            byte alpha = (byte)Math.Clamp(Math.Round(theme.OpacityLevel * 255), 40, 255);
-            CardBorder.Background = new SolidColorBrush(Color.FromArgb(alpha, baseColor.R, baseColor.G, baseColor.B));
-            CardBorder.BorderBrush = new SolidColorBrush(isDark ? Color.FromArgb(40, 255, 255, 255) : Color.FromArgb(30, 0, 0, 0));
-        }
-        else
-        {
-            LiquidGlassSurfaceControl.IsVisible = false;
-            TransparencyLevelHint = [WindowTransparencyLevel.AcrylicBlur];
-            byte alpha = (byte)Math.Clamp(Math.Round(theme.OpacityLevel * 220), 40, 240);
-            CardBorder.Background = new SolidColorBrush(isDark ? Color.FromArgb(alpha, 28, 28, 32) : Color.FromArgb(alpha, 245, 245, 248));
-            CardBorder.BorderBrush = new SolidColorBrush(isDark ? Color.FromArgb(55, 255, 255, 255) : Color.FromArgb(35, 0, 0, 0));
-        }
-
-        CloseButton.Foreground = isDark
-            ? new SolidColorBrush(Color.FromArgb(200, 255, 255, 255))
-            : new SolidColorBrush(Color.FromArgb(180, 0, 0, 0));
     }
 
     private void OnStoreChanged(object? sender, EventArgs e)
@@ -507,16 +445,6 @@ public partial class HitokotoPopupWindow : SecondaryPanelWindow
     {
         toastTimer?.Stop();
         ToastBanner.IsVisible = false;
-    }
-
-    private void OnCloseClicked(object? sender, RoutedEventArgs e) => Close();
-
-    private void OnRootPointerPressed(object? sender, PointerPressedEventArgs e)
-    {
-        if (e.Source == sender)
-        {
-            Close();
-        }
     }
 
     private void OnWindowClosed(object? sender, EventArgs e)
