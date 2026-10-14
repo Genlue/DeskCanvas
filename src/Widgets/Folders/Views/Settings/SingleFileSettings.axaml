@@ -1,66 +1,47 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="clr-namespace:DeskCanvas.Views.Controls;assembly=DeskCanvas"
              xmlns:locales="clr-namespace:Folders.Locales"
-             x:Class="Folders.Views.Settings.SingleFileSettings">
-    <UserControl.Styles>
-        <Style Selector="Button.small-button">
-            <Setter Property="Background" Value="Transparent" />
-            <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="BorderBrush" Value="{DynamicResource ToolTipBorderBrush}" />
-            <Setter Property="CornerRadius" Value="4" />
-            <Setter Property="Padding" Value="8,3" />
-            <Setter Property="FontSize" Value="12" />
-            <Setter Property="MinWidth" Value="24" />
-            <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}" />
-        </Style>
-        <Style Selector="Button.small-button:pointerover">
-            <Setter Property="Background" Value="{DynamicResource SystemControlHighlightListLowBrush}" />
-        </Style>
-        <Style Selector="TextBlock.setting-label">
-            <Setter Property="FontSize" Value="13" />
-            <Setter Property="VerticalAlignment" Value="Center" />
-            <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}" />
-        </Style>
-    </UserControl.Styles>
+             x:Class="Folders.Views.Settings.SingleFileSettings"
+             controls:SettingsPage.ScrollOwnership="Host">
+    <!-- W9: the outer ScrollViewer is gone (the EditWidget viewport is the single scroll owner),
+         the group headers are the shared dc-section-header, the label/number rows became Setting
+         rows, the "icon size" slider+value pair is the shared LabeledSlider and the pick/clear
+         buttons use the shared toolbar/icon button families. Business kept: the file-or-folder
+         target picker and the icon-percent semantics. -->
+    <StackPanel Orientation="Vertical" Spacing="6" Margin="{DynamicResource SettingsPagePadding}">
 
-    <ScrollViewer VerticalScrollBarVisibility="Auto">
-        <StackPanel Orientation="Vertical" Spacing="10" Margin="0,2,16,10">
+        <TextBlock Classes="dc-section-header" Text="{x:Static locales:Locale.Folders_Group_Content}" />
 
-            <TextBlock Classes="group-header" Text="{x:Static locales:Locale.Folders_Group_Content}" />
-
-            <!-- Path Display and Selection -->
-            <Grid ColumnDefinitions="Auto,*">
-                <TextBlock Classes="setting-label" Text="{x:Static locales:Locale.Folders_SingleFile_Target}" />
-                <Grid Grid.Column="1" ColumnDefinitions="*,Auto,Auto,Auto" Margin="8,0,0,0">
-                    <TextBox x:Name="PathBox" Grid.Column="0" FontSize="12"
-                             VerticalContentAlignment="Center"
-                             IsReadOnly="True"
-                             Watermark="{x:Static locales:Locale.Folders_SingleFile_EmptyHint}"/>
-                    <Button Grid.Column="1" Classes="small-button" Margin="6,0,0,0"
-                            Content="{x:Static locales:Locale.Folders_PickFile}" Click="OnPickFile" />
-                    <Button Grid.Column="2" Classes="small-button" Margin="4,0,0,0"
-                            Content="{x:Static locales:Locale.Folders_PickFolder}" Click="OnPickFolder" />
-                    <Button Grid.Column="3" Classes="small-button" Margin="4,0,0,0"
-                            Content="✕" Click="OnClearPath"
-                            ToolTip.Tip="{x:Static locales:Locale.Folders_Clear}" />
-                </Grid>
+        <!-- Path Display and Selection -->
+        <controls:Setting Title="{x:Static locales:Locale.Folders_SingleFile_Target}" EditorHorizontalAlignment="Stretch">
+            <Grid ColumnDefinitions="*,Auto,Auto,Auto">
+                <TextBox x:Name="PathBox" Grid.Column="0" FontSize="12"
+                         VerticalContentAlignment="Center"
+                         IsReadOnly="True"
+                         Watermark="{x:Static locales:Locale.Folders_SingleFile_EmptyHint}" />
+                <Button Grid.Column="1" Classes="dc-toolbar-button" Margin="6,0,0,0"
+                        Content="{x:Static locales:Locale.Folders_PickFile}" Click="OnPickFile" />
+                <Button Grid.Column="2" Classes="dc-toolbar-button" Margin="4,0,0,0"
+                        Content="{x:Static locales:Locale.Folders_PickFolder}" Click="OnPickFolder" />
+                <Button Grid.Column="3" Classes="dc-icon-button compact" Margin="4,0,0,0"
+                        Content="✕" Click="OnClearPath"
+                        ToolTip.Tip="{x:Static locales:Locale.Folders_Clear}"
+                        AutomationProperties.Name="{x:Static locales:Locale.Folders_Clear}" />
             </Grid>
+        </controls:Setting>
 
-            <TextBlock Classes="group-header" Text="{x:Static locales:Locale.Folders_Group_Appearance}" />
+        <TextBlock Classes="dc-section-header" Text="{x:Static locales:Locale.Folders_Group_Appearance}" />
 
-            <!-- Icon Size Percentage Slider -->
-            <Grid ColumnDefinitions="Auto,*,Auto">
-                <TextBlock Classes="setting-label" Text="{x:Static locales:Locale.Folders_SingleFile_IconPercent}" />
-                <Slider x:Name="IconPercentSlider" Grid.Column="1" Minimum="20" Maximum="100"
-                        TickFrequency="1" IsSnapToTickEnabled="True"
-                        Margin="12,0,10,0" ValueChanged="OnIconPercentChanged" />
-                <TextBlock x:Name="IconPercentValue" Grid.Column="2" Classes="setting-label"
-                           Width="42" TextAlignment="Right" Text="70%" />
-            </Grid>
+        <!-- Icon Size Percentage Slider -->
+        <controls:Setting Title="{x:Static locales:Locale.Folders_SingleFile_IconPercent}">
+            <controls:LabeledSlider x:Name="IconPercentSlider" Width="200" Minimum="20" Maximum="100" Step="1" Unit="%"
+                                    ValueCommitted="OnIconPercentCommitted"
+                                    AutomationProperties.Name="{x:Static locales:Locale.Folders_SingleFile_IconPercent}" />
+        </controls:Setting>
 
-            <TextBlock Text="{x:Static locales:Locale.Folders_Help}"
-                       FontSize="11.5" Opacity="0.5" TextWrapping="Wrap" Margin="0,6,0,0"
-                       Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}" />
-        </StackPanel>
-    </ScrollViewer>
+        <TextBlock Text="{x:Static locales:Locale.Folders_Help}"
+                   FontSize="{DynamicResource FontSizeCaption}" TextWrapping="Wrap" Margin="0,2,0,0"
+                   Foreground="{DynamicResource SecondaryTextBrush}" />
+    </StackPanel>
 </UserControl>

@@ -30,4 +30,67 @@
     <data name="SingleControl_Subtitle" xml:space="preserve">
         <value>独立放置的单项系统开关或音量/亮度滑块磁贴</value>
     </data>
+    <data name="ControlCenter_Tier2x2" xml:space="preserve">
+        <value>2×2 画布</value>
+    </data>
+    <data name="ControlCenter_Tier4x2" xml:space="preserve">
+        <value>4×2 画布</value>
+    </data>
+    <data name="ControlCenter_Tier4x4" xml:space="preserve">
+        <value>4×4 画布</value>
+    </data>
+    <data name="ControlCenter_PresetVertical" xml:space="preserve">
+        <value>iOS 竖条预设</value>
+    </data>
+    <data name="ControlCenter_PresetVertical_Tip" xml:space="preserve">
+        <value>将右侧亮度与音量切换为 1×2 竖向胶囊滑块</value>
+    </data>
+    <data name="ControlCenter_ResetDefault" xml:space="preserve">
+        <value>恢复默认</value>
+    </data>
+    <data name="ControlCenter_ComposerHint" xml:space="preserve">
+        <value>拖拽卡片调整格子位置；拖动卡片右下角 ◢ 或点击下方按钮切换横竖方向与大小</value>
+    </data>
+    <data name="ControlCenter_Span1x1" xml:space="preserve">
+        <value>1×1 单格</value>
+    </data>
+    <data name="ControlCenter_Span2x1" xml:space="preserve">
+        <value>2×1 横向</value>
+    </data>
+    <data name="ControlCenter_Span1x2" xml:space="preserve">
+        <value>1×2 竖向</value>
+    </data>
+    <data name="ControlCenter_Span2x2" xml:space="preserve">
+        <value>2×2 大卡</value>
+    </data>
+    <data name="ControlCenter_DockHeader" xml:space="preserve">
+        <value>待选设置项池（点击或拖拽填入上方空格）：</value>
+    </data>
+    <data name="ControlCenter_WheelStepTitle" xml:space="preserve">
+        <value>鼠标滚轮调节步进</value>
+    </data>
+    <data name="ControlCenter_WheelStepSubtitle" xml:space="preserve">
+        <value>悬停在亮度、音量或麦克风胶囊上滚动滚轮时的单次增减幅度</value>
+    </data>
+    <data name="ControlCenter_TileRemoveTip" xml:space="preserve">
+        <value>移出画布</value>
+    </data>
+    <data name="ControlCenter_TileResizeTip" xml:space="preserve">
+        <value>拖拽改变横竖跨度 (1×1 / 2×1 / 1×2 / 2×2)</value>
+    </data>
+    <data name="ControlCenter_DockEmpty" xml:space="preserve">
+        <value>所有控制项均已放入画布（点击卡片右上角 ✕ 可移回此处）</value>
+    </data>
+    <data name="ControlCenter_SelectionNone" xml:space="preserve">
+        <value>点击画布中的模块可快速切换横竖与尺寸</value>
+    </data>
+    <data name="ControlCenter_SelectionFormat" xml:space="preserve">
+        <value>已选：{0} ({1})</value>
+    </data>
+    <data name="SingleControl_BindHeader" xml:space="preserve">
+        <value>选择该快捷磁贴绑定的系统控制项：</value>
+    </data>
+    <data name="SingleControl_WheelStepSubtitle" xml:space="preserve">
+        <value>当选择亮度、音量或麦克风时，滚轮单次增减百分比</value>
+    </data>
 </root>

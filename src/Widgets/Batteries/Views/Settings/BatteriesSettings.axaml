@@ -2,100 +2,94 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:controls="clr-namespace:DeskCanvas.Views.Controls;assembly=DeskCanvas"
              xmlns:locales="clr-namespace:Batteries.Locales"
-             x:Class="Batteries.Views.Settings.BatteriesSettings">
+             x:Class="Batteries.Views.Settings.BatteriesSettings"
+             controls:SettingsPage.ScrollOwnership="Host">
+    <!-- W9: no outer ScrollViewer (the EditWidget viewport is the single scroll owner), the
+         group headers are the shared dc-section-header and the local action-button style is
+         gone — the refresh button uses the shared rectangular toolbar button. -->
+    <StackPanel Orientation="Vertical" Spacing="6" Margin="{DynamicResource SettingsPagePadding}">
+        <!-- 显示选项 -->
+        <TextBlock Classes="dc-section-header" Text="{x:Static locales:Locale.Batteries_Group_DisplayOptions}" />
 
-    <UserControl.Styles>
-        <Style Selector="Button.action-btn">
-            <Setter Property="Background" Value="Transparent" />
-            <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="BorderBrush" Value="{DynamicResource ToolTipBorderBrush}" />
-            <Setter Property="CornerRadius" Value="4" />
-            <Setter Property="Padding" Value="10,4" />
-            <Setter Property="FontSize" Value="12" />
-            <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}" />
-        </Style>
-        <Style Selector="Button.action-btn:pointerover">
-            <Setter Property="Background" Value="{DynamicResource SystemControlHighlightListLowBrush}" />
-        </Style>
-    </UserControl.Styles>
+        <!-- 显示蓝牙外设电量 -->
+        <controls:Setting Title="{x:Static locales:Locale.Batteries_ShowPeripherals}">
+            <ToggleSwitch Name="ShowPeripheralsSwitch" IsCheckedChanged="OnToggleChanged" />
+        </controls:Setting>
 
-    <ScrollViewer VerticalScrollBarVisibility="Auto">
-        <StackPanel Orientation="Vertical" Spacing="6" Margin="0,0,10,12">
-            <!-- 选项设置 -->
-            <TextBlock Name="DisplayOptionsHeader" Classes="group-header" Text="显示选项" Margin="0,4,0,4" />
+        <!-- 显示百分比数字 -->
+        <controls:Setting Title="{x:Static locales:Locale.Batteries_ShowPercentage}">
+            <ToggleSwitch Name="ShowPercentageSwitch" IsCheckedChanged="OnToggleChanged" />
+        </controls:Setting>
 
-            <!-- 显示蓝牙外设电量 -->
-            <controls:Setting Title="{x:Static locales:Locale.Batteries_ShowPeripherals}">
-                <ToggleSwitch Name="ShowPeripheralsSwitch" IsCheckedChanged="OnToggleChanged" />
-            </controls:Setting>
+        <!-- 显示预计剩余时间 -->
+        <controls:Setting Title="{x:Static locales:Locale.Batteries_ShowRemainingTime}">
+            <ToggleSwitch Name="ShowRemainingTimeSwitch" IsCheckedChanged="OnToggleChanged" />
+        </controls:Setting>
 
-            <!-- 显示百分比数字 -->
-            <controls:Setting Title="{x:Static locales:Locale.Batteries_ShowPercentage}">
-                <ToggleSwitch Name="ShowPercentageSwitch" IsCheckedChanged="OnToggleChanged" />
-            </controls:Setting>
+        <!-- 设备详情 Header with Refresh Button -->
+        <Grid Margin="0,4,0,0">
+            <TextBlock Classes="dc-section-header" Text="{x:Static locales:Locale.Batteries_Group_DeviceDetails}"
+                       VerticalAlignment="Center" Margin="0" />
+            <Button Name="RefreshDevicesBtn" Classes="dc-toolbar-button"
+                    BorderThickness="1" BorderBrush="{DynamicResource ControlBorderBrush}"
+                    Content="{x:Static locales:Locale.Batteries_RefreshDevices}" HorizontalAlignment="Right"
+                    Click="OnRefreshDevicesClicked" />
+        </Grid>
 
-            <!-- 显示预计剩余时间 -->
-            <controls:Setting Title="{x:Static locales:Locale.Batteries_ShowRemainingTime}">
-                <ToggleSwitch Name="ShowRemainingTimeSwitch" IsCheckedChanged="OnToggleChanged" />
-            </controls:Setting>
-
-            <!-- 设备详情 Header with Refresh Button -->
-            <Grid Margin="0,14,0,2">
-                <TextBlock Name="DeviceDetailsHeader" Classes="group-header" Text="设备详情" VerticalAlignment="Center" Margin="0" />
-                <Button Name="RefreshDevicesBtn" Classes="action-btn" Content="刷新设备" HorizontalAlignment="Right"
-                        Click="OnRefreshDevicesClicked" />
-            </Grid>
-
-            <!-- Main Host Device Details -->
-            <Border CornerRadius="6" BorderThickness="1" Padding="14,10"
-                    BorderBrush="{DynamicResource ToolTipBorderBrush}"
-                    Background="{DynamicResource SystemControlBackgroundAltHighBrush}">
-                <Grid ColumnDefinitions="Auto,*,Auto">
-                    <PathIcon Name="MainDeviceIcon" Grid.Column="0" Height="24" Width="24"
-                              VerticalAlignment="Center" Margin="0,0,14,0"
-                              Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}"
-                              Data="M20 18c1.1 0 1.99-.9 1.99-2L22 6c0-1.1-.9-2-2-2H4c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2H0v2h24v-2h-4zM4 6h16v10H4V6z" />
-                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,10,0">
-                        <TextBlock Name="MainDeviceTitle" FontSize="13" FontWeight="Medium"
-                                   Text="{x:Static locales:Locale.Batteries_AcPower}"
-                                   Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}" />
-                        <TextBlock Name="MainDeviceSubtitle" FontSize="11" Opacity="0.7" Margin="0,3,0,0"
-                                   Text="正在使用电池 · 剩余 99%"
-                                   Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}" />
-                    </StackPanel>
-                    <Border Grid.Column="2" Name="MainDeviceBadge"
-                            CornerRadius="12" Padding="8,3" VerticalAlignment="Center"
-                            Background="#2034C759">
-                        <TextBlock Name="MainDevicePercent" FontSize="12" FontWeight="SemiBold"
-                                   Foreground="#34C759" Text="99%" />
-                    </Border>
-                </Grid>
-            </Border>
-
-            <!-- Peripherals Container -->
-            <StackPanel Name="PeripheralsPanel" Orientation="Vertical" Spacing="6" />
-
-            <!-- Empty Peripherals Placeholder -->
-            <Border Name="NoPeripheralsBorder" CornerRadius="6" BorderThickness="1" Padding="14,14"
-                    BorderBrush="{DynamicResource ToolTipBorderBrush}"
-                    Background="{DynamicResource SystemControlBackgroundAltHighBrush}"
-                    IsVisible="False">
-                <StackPanel Orientation="Vertical" HorizontalAlignment="Center" Spacing="4">
-                    <TextBlock Name="NoPeripheralsTitle" Text="未检测到已连接的蓝牙外设电量" FontSize="12" Opacity="0.8"
-                               HorizontalAlignment="Center"
+        <!-- Main Host Device Details -->
+        <Border CornerRadius="{DynamicResource ControlCornerRadius}" BorderThickness="1" Padding="14,10"
+                BorderBrush="{DynamicResource ControlBorderBrush}"
+                Background="{DynamicResource SystemControlBackgroundAltHighBrush}">
+            <Grid ColumnDefinitions="Auto,*,Auto">
+                <PathIcon Name="MainDeviceIcon" Grid.Column="0" Height="24" Width="24"
+                          VerticalAlignment="Center" Margin="0,0,14,0"
+                          Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}"
+                          Data="M20 18c1.1 0 1.99-.9 1.99-2L22 6c0-1.1-.9-2-2-2H4c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2H0v2h24v-2h-4zM4 6h16v10H4V6z" />
+                <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,10,0">
+                    <TextBlock Name="MainDeviceTitle" FontSize="13" FontWeight="Medium"
+                               TextWrapping="Wrap" TextTrimming="None"
+                               Text="{x:Static locales:Locale.Batteries_AcPower}"
                                Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}" />
-                    <TextBlock Name="NoPeripheralsSubtitle" Text="支持低功耗蓝牙 (BLE) 及音频外设电量协议的耳机、手柄、鼠标或键盘等设备" FontSize="11" Opacity="0.5"
-                               HorizontalAlignment="Center"
-                               Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}" />
+                    <!-- Filled by RefreshDevices() on load. -->
+                    <TextBlock Name="MainDeviceSubtitle" FontSize="11" Margin="0,3,0,0"
+                               TextWrapping="Wrap"
+                               Foreground="{DynamicResource SecondaryTextBrush}" />
                 </StackPanel>
-            </Border>
+                <!-- The badge ring / text colours are battery-level data colours (green / amber /
+                     red), which is an allowed exception; they are re-written on every refresh. -->
+                <Border Grid.Column="2" Name="MainDeviceBadge"
+                        CornerRadius="{DynamicResource ControlCornerRadius}" Padding="8,3" VerticalAlignment="Center"
+                        Background="#2034C759">
+                    <TextBlock Name="MainDevicePercent" FontSize="12" FontWeight="SemiBold"
+                               Foreground="#34C759" Text="99%" />
+                </Border>
+            </Grid>
+        </Border>
 
-            <!-- 已配对蓝牙设备与类型记忆 -->
-            <TextBlock Name="PairedDevicesHeader" Classes="group-header" Text="蓝牙设备管理与类型记忆" Margin="0,14,0,2" />
-            <TextBlock Name="PairedDevicesHint" Text="支持手动指定设备类型（鼠标/手柄/耳机等）。设置后将自动保存，下次连接时将自动识别。"
-                       FontSize="11" Opacity="0.6" Margin="0,0,0,6" TextWrapping="Wrap"
-                       Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}" />
-            <StackPanel Name="PairedDevicesPanel" Orientation="Vertical" Spacing="6" />
-        </StackPanel>
-    </ScrollViewer>
+        <!-- Peripherals Container -->
+        <StackPanel Name="PeripheralsPanel" Orientation="Vertical" Spacing="6" />
+
+        <!-- Empty Peripherals Placeholder -->
+        <Border Name="NoPeripheralsBorder" CornerRadius="{DynamicResource ControlCornerRadius}"
+                BorderThickness="1" Padding="14,14"
+                BorderBrush="{DynamicResource ControlBorderBrush}"
+                Background="{DynamicResource SystemControlBackgroundAltHighBrush}"
+                IsVisible="False">
+            <StackPanel Orientation="Vertical" HorizontalAlignment="Center" Spacing="4">
+                <TextBlock Text="{x:Static locales:Locale.Batteries_NoPeripheralsTitle}" FontSize="12"
+                           HorizontalAlignment="Center" TextWrapping="Wrap"
+                           Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}" />
+                <TextBlock Text="{x:Static locales:Locale.Batteries_NoPeripheralsSubtitle}" FontSize="11"
+                           HorizontalAlignment="Center" TextWrapping="Wrap"
+                           Foreground="{DynamicResource SecondaryTextBrush}" />
+            </StackPanel>
+        </Border>
+
+        <!-- 已配对蓝牙设备与类型记忆 -->
+        <TextBlock Classes="dc-section-header" Text="{x:Static locales:Locale.Batteries_Group_PairedDevices}" />
+        <TextBlock Text="{x:Static locales:Locale.Batteries_PairedDevicesHint}"
+                   FontSize="{DynamicResource FontSizeCaption}" Margin="0,0,0,6" TextWrapping="Wrap"
+                   Foreground="{DynamicResource SecondaryTextBrush}" />
+        <StackPanel Name="PairedDevicesPanel" Orientation="Vertical" Spacing="6" />
+    </StackPanel>
 </UserControl>

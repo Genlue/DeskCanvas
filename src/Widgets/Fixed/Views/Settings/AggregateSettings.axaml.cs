@@ -13,6 +13,7 @@ using FixedWidgets.Models;
 using FixedWidgets.Services;
 using DeskCanvas.Core.Interfaces;
 using DeskCanvas.Core.Models;
+using DeskCanvas.Views.Controls;
 
 namespace FixedWidgets.Views.Settings;
 
@@ -94,15 +95,10 @@ public partial class AggregateSettings : UserControl
         TodayColorModeCombo.SelectedIndex = model.TodayColorMode == "Custom" ? 1 : 0;
         UpdateTodayColorVisibility();
 
-        if (!string.IsNullOrWhiteSpace(model.TodayColorLight) && Color.TryParse(model.TodayColorLight, out var lightColor))
-            TodayColorLightPicker.Color = lightColor;
-        else
-            TodayColorLightPicker.Color = ResolveAccentColor();
-
-        if (!string.IsNullOrWhiteSpace(model.TodayColorDark) && Color.TryParse(model.TodayColorDark, out var darkColor))
-            TodayColorDarkPicker.Color = darkColor;
-        else
-            TodayColorDarkPicker.Color = ResolveAccentColor();
+        // The shared ColorInput holds the persisted "#RRGGBB" string; an unset model value
+        // falls back to the accent so both rows start on something sensible.
+        TodayColorLightInput.Value = NormalizeHex(model.TodayColorLight) ?? ToHex(ResolveAccentColor());
+        TodayColorDarkInput.Value = NormalizeHex(model.TodayColorDark) ?? ToHex(ResolveAccentColor());
     }
 
     private async Task<IEnumerable<object>> SearchCity(string? query, CancellationToken token)
@@ -216,23 +212,37 @@ public partial class AggregateSettings : UserControl
         model = model with
         {
             TodayColorMode = isCustom ? "Custom" : "Accent",
-            TodayColorLight = isCustom ? (model.TodayColorLight ?? TodayColorLightPicker.Color.ToString()) : model.TodayColorLight,
-            TodayColorDark = isCustom ? (model.TodayColorDark ?? TodayColorDarkPicker.Color.ToString()) : model.TodayColorDark
+            TodayColorLight = isCustom ? (model.TodayColorLight ?? TodayColorLightInput.Value) : model.TodayColorLight,
+            TodayColorDark = isCustom ? (model.TodayColorDark ?? TodayColorDarkInput.Value) : model.TodayColorDark
         };
         UpdateTodayColorVisibility();
         Save();
     }
 
-    private void OnColorPickerChanged(object? sender, ColorChangedEventArgs e)
+    /// <summary>
+    /// Fires once per accepted user edit of either colour row (W9). Reading both rows keeps the
+    /// old picker behaviour — the model always stores the pair — while the shared control
+    /// guarantees the value is a valid, normalised "#RRGGBB" by the time it gets here.
+    /// </summary>
+    private void OnColorCommitted(object? sender, ColorInputValueCommittedEventArgs e)
     {
         if (isInitializing) return;
         model = model with
         {
-            TodayColorLight = TodayColorLightPicker.Color.ToString(),
-            TodayColorDark = TodayColorDarkPicker.Color.ToString()
+            TodayColorLight = TodayColorLightInput.Value,
+            TodayColorDark = TodayColorDarkInput.Value
         };
         Save();
     }
+
+    private static string? NormalizeHex(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value)) return null;
+        if (!Color.TryParse(value, out var color)) return null;
+        return ToHex(color);
+    }
+
+    private static string ToHex(Color color) => $"#{color.R:X2}{color.G:X2}{color.B:X2}";
 
     private void UpdateTodayColorVisibility()
     {

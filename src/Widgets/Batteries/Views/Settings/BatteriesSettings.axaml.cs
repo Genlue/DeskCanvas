@@ -31,25 +31,9 @@ public partial class BatteriesSettings : UserControl
         model = widgetLayoutProvider != null ? (ReadModel(widgetLayoutProvider.Get()) ?? new BatteriesModel()) : new BatteriesModel();
 
         InitializeComponent();
-        ApplyLocalization();
         LoadFromModel();
         RefreshDevices();
         isInitializing = false;
-    }
-
-    private void ApplyLocalization()
-    {
-        DisplayOptionsHeader.Text = IsZh ? "显示选项" : "Display Options";
-        DeviceDetailsHeader.Text = IsZh ? "设备详情" : "Device Details";
-        RefreshDevicesBtn.Content = IsZh ? "刷新设备" : "Refresh";
-        NoPeripheralsTitle.Text = IsZh ? "未检测到已连接的蓝牙外设电量" : "No connected Bluetooth peripheral batteries detected";
-        NoPeripheralsSubtitle.Text = IsZh
-            ? "支持低功耗蓝牙 (BLE) 及音频外设电量协议的耳机、手柄、鼠标或键盘等设备"
-            : "Supports headphones, controllers, mice, and keyboards with BLE or Bluetooth battery reporting";
-        PairedDevicesHeader.Text = IsZh ? "蓝牙设备管理与类型记忆" : "Bluetooth Devices & Type Overrides";
-        PairedDevicesHint.Text = IsZh
-            ? "支持手动指定设备类型（鼠标/手柄/耳机等）。设置后将自动保存，下次连接时将自动识别。"
-            : "Manually assign a device category (mouse, controller, headphones, etc.). Saved automatically for future connections.";
     }
 
     private void LoadFromModel()
@@ -166,10 +150,9 @@ public partial class BatteriesSettings : UserControl
             {
                 Text = IsZh ? "未扫描到其他已配对的蓝牙设备" : "No other paired Bluetooth devices found",
                 FontSize = 12,
-                Opacity = 0.6,
                 Margin = new Thickness(4, 6, 0, 6)
             };
-            emptyLabel.Bind(TextBlock.ForegroundProperty, new Avalonia.Markup.Xaml.MarkupExtensions.DynamicResourceExtension("SystemControlForegroundBaseHighBrush"));
+            emptyLabel.Bind(TextBlock.ForegroundProperty, new Avalonia.Markup.Xaml.MarkupExtensions.DynamicResourceExtension("SecondaryTextBrush"));
             PairedDevicesPanel.Children.Add(emptyLabel);
         }
         else
@@ -281,7 +264,9 @@ public partial class BatteriesSettings : UserControl
             Text = p.Name,
             FontSize = 13,
             FontWeight = FontWeight.Medium,
-            TextTrimming = TextTrimming.CharacterEllipsis
+            // No fixed height here: a long device name wraps instead of being ellipsed away.
+            TextWrapping = TextWrapping.Wrap,
+            TextTrimming = TextTrimming.None
         };
         titleBlock.Bind(TextBlock.ForegroundProperty, new Avalonia.Markup.Xaml.MarkupExtensions.DynamicResourceExtension("SystemControlForegroundBaseHighBrush"));
 
@@ -323,10 +308,10 @@ public partial class BatteriesSettings : UserControl
         };
         Grid.SetColumn(combo, 2);
 
-        // Percentage Badge
+        // Percentage Badge (the ring / text colours are battery-level data colours)
         var badge = new Border
         {
-            CornerRadius = new CornerRadius(12),
+            CornerRadius = new CornerRadius(6),
             Padding = new Thickness(8, 3),
             VerticalAlignment = VerticalAlignment.Center
         };
@@ -392,7 +377,8 @@ public partial class BatteriesSettings : UserControl
             Text = d.CleanName,
             FontSize = 12,
             FontWeight = FontWeight.Medium,
-            TextTrimming = TextTrimming.CharacterEllipsis
+            TextWrapping = TextWrapping.Wrap,
+            TextTrimming = TextTrimming.None
         };
         titleBlock.Bind(TextBlock.ForegroundProperty, new Avalonia.Markup.Xaml.MarkupExtensions.DynamicResourceExtension("SystemControlForegroundBaseHighBrush"));
 

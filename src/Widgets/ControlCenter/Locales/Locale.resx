@@ -30,4 +30,67 @@
     <data name="SingleControl_Subtitle" xml:space="preserve">
         <value>Standalone system toggle or volume/brightness slider tile</value>
     </data>
+    <data name="ControlCenter_Tier2x2" xml:space="preserve">
+        <value>2×2 Grid</value>
+    </data>
+    <data name="ControlCenter_Tier4x2" xml:space="preserve">
+        <value>4×2 Grid</value>
+    </data>
+    <data name="ControlCenter_Tier4x4" xml:space="preserve">
+        <value>4×4 Grid</value>
+    </data>
+    <data name="ControlCenter_PresetVertical" xml:space="preserve">
+        <value>iOS Vertical Preset</value>
+    </data>
+    <data name="ControlCenter_PresetVertical_Tip" xml:space="preserve">
+        <value>Switch right-side brightness &amp; volume to 1×2 vertical sliders</value>
+    </data>
+    <data name="ControlCenter_ResetDefault" xml:space="preserve">
+        <value>Reset Default</value>
+    </data>
+    <data name="ControlCenter_ComposerHint" xml:space="preserve">
+        <value>Drag tiles to rearrange; drag bottom-right ◢ or click buttons below to change size &amp; orientation</value>
+    </data>
+    <data name="ControlCenter_Span1x1" xml:space="preserve">
+        <value>1×1 Single</value>
+    </data>
+    <data name="ControlCenter_Span2x1" xml:space="preserve">
+        <value>2×1 Wide</value>
+    </data>
+    <data name="ControlCenter_Span1x2" xml:space="preserve">
+        <value>1×2 Tall</value>
+    </data>
+    <data name="ControlCenter_Span2x2" xml:space="preserve">
+        <value>2×2 Large</value>
+    </data>
+    <data name="ControlCenter_DockHeader" xml:space="preserve">
+        <value>Available Controls (Click or drag into grid above):</value>
+    </data>
+    <data name="ControlCenter_WheelStepTitle" xml:space="preserve">
+        <value>Mouse Wheel Step</value>
+    </data>
+    <data name="ControlCenter_WheelStepSubtitle" xml:space="preserve">
+        <value>Increment per scroll notch when hovering over brightness, volume, or mic sliders</value>
+    </data>
+    <data name="ControlCenter_TileRemoveTip" xml:space="preserve">
+        <value>Remove from grid</value>
+    </data>
+    <data name="ControlCenter_TileResizeTip" xml:space="preserve">
+        <value>Drag to resize span (1×1 / 2×1 / 1×2 / 2×2)</value>
+    </data>
+    <data name="ControlCenter_DockEmpty" xml:space="preserve">
+        <value>All controls are placed on the grid (click ✕ on a tile to remove it)</value>
+    </data>
+    <data name="ControlCenter_SelectionNone" xml:space="preserve">
+        <value>Click a tile on the grid to change its size and orientation</value>
+    </data>
+    <data name="ControlCenter_SelectionFormat" xml:space="preserve">
+        <value>Selected: {0} ({1})</value>
+    </data>
+    <data name="SingleControl_BindHeader" xml:space="preserve">
+        <value>Select the system control bound to this tile:</value>
+    </data>
+    <data name="SingleControl_WheelStepSubtitle" xml:space="preserve">
+        <value>Increment per scroll notch for brightness, volume, or microphone</value>
+    </data>
 </root>

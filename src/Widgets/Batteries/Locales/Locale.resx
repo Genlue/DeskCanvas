@@ -51,4 +51,25 @@
     <data name="Batteries_Headphones" xml:space="preserve">
         <value>Headphones</value>
     </data>
+    <data name="Batteries_Group_DisplayOptions" xml:space="preserve">
+        <value>Display Options</value>
+    </data>
+    <data name="Batteries_Group_DeviceDetails" xml:space="preserve">
+        <value>Device Details</value>
+    </data>
+    <data name="Batteries_Group_PairedDevices" xml:space="preserve">
+        <value>Bluetooth Devices &amp; Type Overrides</value>
+    </data>
+    <data name="Batteries_RefreshDevices" xml:space="preserve">
+        <value>Refresh</value>
+    </data>
+    <data name="Batteries_PairedDevicesHint" xml:space="preserve">
+        <value>Manually assign a device category (mouse, controller, headphones, etc.). Saved automatically for future connections.</value>
+    </data>
+    <data name="Batteries_NoPeripheralsTitle" xml:space="preserve">
+        <value>No connected Bluetooth peripheral batteries detected</value>
+    </data>
+    <data name="Batteries_NoPeripheralsSubtitle" xml:space="preserve">
+        <value>Supports headphones, controllers, mice, and keyboards with BLE or Bluetooth battery reporting</value>
+    </data>
 </root>

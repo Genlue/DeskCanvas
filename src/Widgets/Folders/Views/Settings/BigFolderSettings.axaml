@@ -1,188 +1,150 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="clr-namespace:DeskCanvas.Views.Controls;assembly=DeskCanvas"
              xmlns:locales="clr-namespace:Folders.Locales"
              xmlns:local="clr-namespace:Folders.Views.Settings"
-             x:Class="Folders.Views.Settings.BigFolderSettings">
-    <UserControl.Styles>
-        <Style Selector="Button.small-button">
-            <Setter Property="Background" Value="Transparent" />
-            <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="BorderBrush" Value="{DynamicResource ToolTipBorderBrush}" />
-            <Setter Property="CornerRadius" Value="4" />
-            <Setter Property="Padding" Value="6,2" />
-            <Setter Property="FontSize" Value="12" />
-            <Setter Property="MinWidth" Value="24" />
-            <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}" />
-        </Style>
-        <Style Selector="Button.small-button:pointerover">
-            <Setter Property="Background" Value="{DynamicResource SystemControlHighlightListLowBrush}" />
-        </Style>
-        <Style Selector="TextBlock.setting-label">
-            <Setter Property="FontSize" Value="13" />
-            <Setter Property="VerticalAlignment" Value="Center" />
-            <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}" />
-        </Style>
-        <Style Selector="ComboBox.setting-combo">
-            <Setter Property="MinWidth" Value="120" />
-            <Setter Property="HorizontalAlignment" Value="Right" />
-            <Setter Property="FontSize" Value="13" />
-        </Style>
-        <Style Selector="NumericUpDown.setting-num">
-            <Setter Property="MinWidth" Value="120" />
-            <Setter Property="HorizontalAlignment" Value="Right" />
-            <Setter Property="FontSize" Value="13" />
-            <Setter Property="VerticalAlignment" Value="Center" />
-            <Setter Property="VerticalContentAlignment" Value="Center" />
-            <Setter Property="HorizontalContentAlignment" Value="Center" />
-            <Setter Property="ShowButtonSpinner" Value="True" />
-            <Setter Property="AllowSpin" Value="True" />
-            <Setter Property="Padding" Value="8,5,8,5" />
-        </Style>
-    </UserControl.Styles>
+             x:Class="Folders.Views.Settings.BigFolderSettings"
+             controls:SettingsPage.ScrollOwnership="Host">
+    <!-- W9: the outer ScrollViewer is gone (the EditWidget viewport is the single scroll owner),
+         the group headers are the shared dc-section-header and every label/editor pair became a
+         Setting row; the local setting-label / setting-combo / setting-num / small-button style
+         blocks are deleted. Business kept as-is: the density modes with their custom
+         columns/rows, the popup (view-all) grid geometry and the drag-reorderable item list. -->
+    <StackPanel Orientation="Vertical" Spacing="6" Margin="{DynamicResource SettingsPagePadding}">
 
-    <ScrollViewer VerticalScrollBarVisibility="Auto">
-        <StackPanel Orientation="Vertical" Spacing="8" Margin="0,2,16,4">
+        <TextBlock Classes="dc-section-header" Text="{x:Static locales:Locale.Folders_Group_Appearance}" />
 
-            <TextBlock Classes="group-header" Text="{x:Static locales:Locale.Folders_Group_Appearance}" />
+        <!-- Density Mode -->
+        <controls:Setting Title="{x:Static locales:Locale.Folders_BigFolder_Density}">
+            <ComboBox x:Name="DensityBox" MinWidth="{DynamicResource ControlNumericMinWidth}"
+                      SelectionChanged="OnDensityChanged" />
+        </controls:Setting>
 
-            <!-- Density Mode -->
-            <Grid ColumnDefinitions="Auto,*">
-                <TextBlock Classes="setting-label" Text="{x:Static locales:Locale.Folders_BigFolder_Density}" />
-                <ComboBox x:Name="DensityBox" Classes="setting-combo" Grid.Column="1"
-                          SelectionChanged="OnDensityChanged" />
-            </Grid>
-
-            <!-- Custom Columns & Rows (Visible when Custom Mode is selected) -->
-            <StackPanel x:Name="CustomDimensionsPanel" Orientation="Vertical" Spacing="8" IsVisible="False">
-                <Grid ColumnDefinitions="Auto,*">
-                    <TextBlock Classes="setting-label" Text="{x:Static locales:Locale.Folders_BigFolder_CustomColumns}" />
-                    <NumericUpDown x:Name="CustomColumnsInput" Classes="setting-num" Grid.Column="1"
-                                   Minimum="1" Maximum="12" Increment="1" FormatString="F0"
-                                   ValueChanged="OnCustomColumnsChanged" />
-                </Grid>
-                <Grid ColumnDefinitions="Auto,*">
-                    <TextBlock Classes="setting-label" Text="{x:Static locales:Locale.Folders_BigFolder_CustomRows}" />
-                    <NumericUpDown x:Name="CustomRowsInput" Classes="setting-num" Grid.Column="1"
-                                   Minimum="1" Maximum="12" Increment="1" FormatString="F0"
-                                   ValueChanged="OnCustomRowsChanged" />
-                </Grid>
-            </StackPanel>
-
-            <!-- Spacing -->
-            <Grid ColumnDefinitions="Auto,*">
-                <TextBlock Classes="setting-label" Text="{x:Static locales:Locale.Folders_BigFolder_Spacing}" />
-                <NumericUpDown x:Name="SpacingInput" Classes="setting-num" Grid.Column="1"
-                               Minimum="0" Maximum="50" Increment="1" FormatString="F0"
-                               ValueChanged="OnSpacingChanged" />
-            </Grid>
-
-            <!-- Padding -->
-            <Grid ColumnDefinitions="Auto,*">
-                <TextBlock Classes="setting-label" Text="{x:Static locales:Locale.Folders_Padding}" />
-                <NumericUpDown x:Name="PaddingInput" Classes="setting-num" Grid.Column="1"
-                               Minimum="0" Maximum="100" Increment="1" FormatString="F0"
-                               ValueChanged="OnPaddingChanged" />
-            </Grid>
-
-            <TextBlock Classes="group-header" Text="{x:Static locales:Locale.Folders_BigFolder_PopupGroup}" />
-
-            <!-- Folder Name -->
-            <Grid ColumnDefinitions="Auto,*">
-                <TextBlock Classes="setting-label" Text="{x:Static locales:Locale.Folders_BigFolder_FolderName}" />
-                <TextBox x:Name="FolderNameBox" Grid.Column="1" MinHeight="30" Margin="12,0,0,0"
-                         Watermark="{x:Static locales:Locale.Folders_BigFolder_FolderName_Hint}"
-                         FontSize="13" VerticalContentAlignment="Center"
-                         LostFocus="OnPopupFolderNameChanged" KeyDown="OnPopupFolderNameKeyDown" />
-            </Grid>
-
-            <!-- Popup Columns -->
-            <Grid ColumnDefinitions="Auto,*">
-                <TextBlock Classes="setting-label" Text="{x:Static locales:Locale.Folders_BigFolder_PopupColumns}" />
-                <NumericUpDown x:Name="PopupColumnsInput" Classes="setting-num" Grid.Column="1"
-                               Minimum="2" Maximum="8" Increment="1" FormatString="F0"
-                               ValueChanged="OnPopupColumnsChanged" />
-            </Grid>
-
-            <!-- Popup Icon Size -->
-            <Grid ColumnDefinitions="Auto,*">
-                <TextBlock Classes="setting-label" Text="{x:Static locales:Locale.Folders_BigFolder_PopupIconSize}" />
-                <NumericUpDown x:Name="PopupIconSizeInput" Classes="setting-num" Grid.Column="1"
-                               Minimum="24" Maximum="80" Increment="4" FormatString="F0"
-                               ValueChanged="OnPopupIconSizeChanged" />
-            </Grid>
-
-            <!-- Popup Spacing -->
-            <Grid ColumnDefinitions="Auto,*">
-                <TextBlock Classes="setting-label" Text="{x:Static locales:Locale.Folders_BigFolder_PopupSpacing}" />
-                <NumericUpDown x:Name="PopupSpacingInput" Classes="setting-num" Grid.Column="1"
-                               Minimum="0" Maximum="32" Increment="2" FormatString="F0"
-                               ValueChanged="OnPopupSpacingChanged" />
-            </Grid>
-
-            <!-- Popup Padding -->
-            <Grid ColumnDefinitions="Auto,*">
-                <TextBlock Classes="setting-label" Text="{x:Static locales:Locale.Folders_BigFolder_PopupPadding}" />
-                <NumericUpDown x:Name="PopupPaddingInput" Classes="setting-num" Grid.Column="1"
-                               Minimum="6" Maximum="36" Increment="2" FormatString="F0"
-                               ValueChanged="OnPopupPaddingChanged" />
-            </Grid>
-
-            <!-- Popup Show Names -->
-            <CheckBox x:Name="PopupShowNamesToggle" Content="{x:Static locales:Locale.Folders_BigFolder_PopupShowNames}"
-                      IsCheckedChanged="OnPopupShowNamesChanged" FontSize="13" />
-
-            <!-- Popup Show Extensions -->
-            <CheckBox x:Name="PopupShowExtensionsToggle" Content="{x:Static locales:Locale.Folders_BigFolder_PopupShowExtensions}"
-                      IsCheckedChanged="OnPopupShowExtensionsChanged" FontSize="13" />
-
-            <TextBlock Classes="group-header" Text="{x:Static locales:Locale.Folders_Group_Items}" />
-
-            <!-- Items Editor -->
-            <StackPanel x:Name="ItemsEditor" Orientation="Vertical" Spacing="8">
-                <TextBox x:Name="PathBox" MinHeight="30" Watermark="{x:Static locales:Locale.Folders_Add_Hint}"
-                         FontSize="13" VerticalContentAlignment="Center" />
-
-                <Grid ColumnDefinitions="*,Auto,Auto">
-                    <Button Content="{x:Static locales:Locale.Folders_PickFolder}" Click="OnPickFolder" MinHeight="30" />
-                    <Button Grid.Column="1" Content="{x:Static locales:Locale.Folders_PickFile}" Click="OnPickFile" MinHeight="30" Margin="6,0,0,0" />
-                    <Button Grid.Column="2" Content="{x:Static locales:Locale.Folders_Add}" Click="OnAdd" MinHeight="30" Margin="6,0,0,0" />
-                </Grid>
-
-                <ItemsControl x:Name="ItemList">
-                    <ItemsControl.ItemsPanel>
-                        <ItemsPanelTemplate>
-                            <StackPanel />
-                        </ItemsPanelTemplate>
-                    </ItemsControl.ItemsPanel>
-                    <ItemsControl.ItemTemplate>
-                        <DataTemplate DataType="local:BigFolderSettingRow">
-                            <Grid ColumnDefinitions="Auto,*,Auto" Margin="0,1" MinHeight="26"
-                                  DragDrop.AllowDrop="True"
-                                  PointerPressed="OnItemPointerPressed" PointerMoved="OnItemPointerMoved">
-                                <Grid.Styles>
-                                    <Style Selector="Grid:pointerover">
-                                        <Setter Property="Background" Value="{DynamicResource SystemControlHighlightListLowBrush}" />
-                                    </Style>
-                                </Grid.Styles>
-                                <Image Width="18" Height="18" Source="{Binding Icon}" Stretch="Uniform"
-                                       RenderOptions.BitmapInterpolationMode="HighQuality"
-                                       HorizontalAlignment="Left" VerticalAlignment="Center" />
-                                <TextBlock Grid.Column="1" Margin="8,0" VerticalAlignment="Center"
-                                           Text="{Binding Name}" TextTrimming="CharacterEllipsis"
-                                           ToolTip.Tip="{Binding Path}" FontSize="13"
-                                           Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}" />
-                                <Button Grid.Column="2" Classes="small-button" Content="✕" Click="OnRemove"
-                                        VerticalAlignment="Center" Margin="0,0,8,0" />
-                            </Grid>
-                        </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>
-
-                <TextBlock x:Name="EmptyHint" Text="{x:Static locales:Locale.Folders_Empty}" FontSize="12"
-                           Opacity="0.5" HorizontalAlignment="Center" IsVisible="False"
-                           Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}" />
-            </StackPanel>
-
+        <!-- Custom Columns & Rows (Visible when Custom Mode is selected) -->
+        <StackPanel x:Name="CustomDimensionsPanel" Orientation="Vertical" Spacing="6" IsVisible="False">
+            <controls:Setting Title="{x:Static locales:Locale.Folders_BigFolder_CustomColumns}">
+                <NumericUpDown x:Name="CustomColumnsInput" MinWidth="{DynamicResource ControlNumericMinWidth}"
+                               Minimum="1" Maximum="12" Increment="1" FormatString="F0"
+                               ValueChanged="OnCustomColumnsChanged" />
+            </controls:Setting>
+            <controls:Setting Title="{x:Static locales:Locale.Folders_BigFolder_CustomRows}">
+                <NumericUpDown x:Name="CustomRowsInput" MinWidth="{DynamicResource ControlNumericMinWidth}"
+                               Minimum="1" Maximum="12" Increment="1" FormatString="F0"
+                               ValueChanged="OnCustomRowsChanged" />
+            </controls:Setting>
         </StackPanel>
-    </ScrollViewer>
+
+        <!-- Spacing -->
+        <controls:Setting Title="{x:Static locales:Locale.Folders_BigFolder_Spacing}">
+            <NumericUpDown x:Name="SpacingInput" MinWidth="{DynamicResource ControlNumericMinWidth}"
+                           Minimum="0" Maximum="50" Increment="1" FormatString="F0"
+                           ValueChanged="OnSpacingChanged" />
+        </controls:Setting>
+
+        <!-- Padding -->
+        <controls:Setting Title="{x:Static locales:Locale.Folders_Padding}">
+            <NumericUpDown x:Name="PaddingInput" MinWidth="{DynamicResource ControlNumericMinWidth}"
+                           Minimum="0" Maximum="100" Increment="1" FormatString="F0"
+                           ValueChanged="OnPaddingChanged" />
+        </controls:Setting>
+
+        <TextBlock Classes="dc-section-header" Text="{x:Static locales:Locale.Folders_BigFolder_PopupGroup}" />
+
+        <!-- Folder Name -->
+        <controls:Setting Title="{x:Static locales:Locale.Folders_BigFolder_FolderName}"
+                          EditorHorizontalAlignment="Stretch">
+            <TextBox x:Name="FolderNameBox" MinHeight="{DynamicResource ControlMinHeight}"
+                     Watermark="{x:Static locales:Locale.Folders_BigFolder_FolderName_Hint}"
+                     FontSize="13" VerticalContentAlignment="Center"
+                     LostFocus="OnPopupFolderNameChanged" KeyDown="OnPopupFolderNameKeyDown" />
+        </controls:Setting>
+
+        <!-- Popup Columns -->
+        <controls:Setting Title="{x:Static locales:Locale.Folders_BigFolder_PopupColumns}">
+            <NumericUpDown x:Name="PopupColumnsInput" MinWidth="{DynamicResource ControlNumericMinWidth}"
+                           Minimum="2" Maximum="8" Increment="1" FormatString="F0"
+                           ValueChanged="OnPopupColumnsChanged" />
+        </controls:Setting>
+
+        <!-- Popup Icon Size -->
+        <controls:Setting Title="{x:Static locales:Locale.Folders_BigFolder_PopupIconSize}">
+            <NumericUpDown x:Name="PopupIconSizeInput" MinWidth="{DynamicResource ControlNumericMinWidth}"
+                           Minimum="24" Maximum="80" Increment="4" FormatString="F0"
+                           ValueChanged="OnPopupIconSizeChanged" />
+        </controls:Setting>
+
+        <!-- Popup Spacing -->
+        <controls:Setting Title="{x:Static locales:Locale.Folders_BigFolder_PopupSpacing}">
+            <NumericUpDown x:Name="PopupSpacingInput" MinWidth="{DynamicResource ControlNumericMinWidth}"
+                           Minimum="0" Maximum="32" Increment="2" FormatString="F0"
+                           ValueChanged="OnPopupSpacingChanged" />
+        </controls:Setting>
+
+        <!-- Popup Padding -->
+        <controls:Setting Title="{x:Static locales:Locale.Folders_BigFolder_PopupPadding}">
+            <NumericUpDown x:Name="PopupPaddingInput" MinWidth="{DynamicResource ControlNumericMinWidth}"
+                           Minimum="6" Maximum="36" Increment="2" FormatString="F0"
+                           ValueChanged="OnPopupPaddingChanged" />
+        </controls:Setting>
+
+        <!-- Popup Show Names -->
+        <controls:Setting Title="{x:Static locales:Locale.Folders_BigFolder_PopupShowNames}">
+            <CheckBox x:Name="PopupShowNamesToggle" IsCheckedChanged="OnPopupShowNamesChanged" />
+        </controls:Setting>
+
+        <!-- Popup Show Extensions -->
+        <controls:Setting Title="{x:Static locales:Locale.Folders_BigFolder_PopupShowExtensions}">
+            <CheckBox x:Name="PopupShowExtensionsToggle" IsCheckedChanged="OnPopupShowExtensionsChanged" />
+        </controls:Setting>
+
+        <TextBlock Classes="dc-section-header" Text="{x:Static locales:Locale.Folders_Group_Items}" />
+
+        <!-- Items Editor: its own region (path entry, pickers, reorderable rows). -->
+        <StackPanel x:Name="ItemsEditor" Orientation="Vertical" Spacing="6">
+            <TextBox x:Name="PathBox" MinHeight="{DynamicResource ControlMinHeight}" Watermark="{x:Static locales:Locale.Folders_Add_Hint}"
+                     FontSize="13" VerticalContentAlignment="Center" />
+
+            <Grid ColumnDefinitions="*,Auto,Auto">
+                <Button Content="{x:Static locales:Locale.Folders_PickFolder}" Click="OnPickFolder" MinHeight="{DynamicResource ControlMinHeight}" />
+                <Button Grid.Column="1" Content="{x:Static locales:Locale.Folders_PickFile}" Click="OnPickFile" MinHeight="{DynamicResource ControlMinHeight}" Margin="6,0,0,0" />
+                <Button Grid.Column="2" Content="{x:Static locales:Locale.Folders_Add}" Click="OnAdd" MinHeight="{DynamicResource ControlMinHeight}" Margin="6,0,0,0" />
+            </Grid>
+
+            <ItemsControl x:Name="ItemList">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <StackPanel />
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate DataType="local:BigFolderSettingRow">
+                        <Grid ColumnDefinitions="Auto,*,Auto" Margin="0,1" MinHeight="26"
+                              DragDrop.AllowDrop="True"
+                              PointerPressed="OnItemPointerPressed" PointerMoved="OnItemPointerMoved">
+                            <Grid.Styles>
+                                <Style Selector="Grid:pointerover">
+                                    <Setter Property="Background" Value="{DynamicResource ControlHoverBrush}" />
+                                </Style>
+                            </Grid.Styles>
+                            <Image Width="18" Height="18" Source="{Binding Icon}" Stretch="Uniform"
+                                   RenderOptions.BitmapInterpolationMode="HighQuality"
+                                   HorizontalAlignment="Left" VerticalAlignment="Center" />
+                            <TextBlock Grid.Column="1" Margin="8,0" VerticalAlignment="Center"
+                                       Text="{Binding Name}" TextWrapping="Wrap"
+                                       ToolTip.Tip="{Binding Path}" FontSize="13" />
+                            <Button Grid.Column="2" Classes="dc-icon-button compact" Content="✕" Click="OnRemove"
+                                    VerticalAlignment="Center" Margin="0,0,8,0"
+                                    ToolTip.Tip="{x:Static locales:Locale.Folders_Remove}"
+                                    AutomationProperties.Name="{x:Static locales:Locale.Folders_Remove}" />
+                        </Grid>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+
+            <TextBlock x:Name="EmptyHint" Text="{x:Static locales:Locale.Folders_Empty}" FontSize="12"
+                       HorizontalAlignment="Center" TextWrapping="Wrap" IsVisible="False"
+                       Foreground="{DynamicResource SecondaryTextBrush}" />
+        </StackPanel>
+
+    </StackPanel>
 </UserControl>

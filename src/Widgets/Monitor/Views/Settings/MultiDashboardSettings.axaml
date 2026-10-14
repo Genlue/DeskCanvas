@@ -4,49 +4,50 @@
              xmlns:locales="clr-namespace:Monitor.Locales"
              xmlns:viewModels="clr-namespace:Monitor.ViewModels"
              x:DataType="viewModels:MultiDashboardSettingsViewModel"
-             x:Class="Monitor.Views.Settings.MultiDashboardSettings">
-    <ScrollViewer>
-        <StackPanel Orientation="Vertical" Spacing="5">
-            <controls:Setting Title="{x:Static locales:Locale.Monitor_MultiDashboard_Item1}">
-                <ComboBox ItemsSource="{Binding AllTypes}" MinWidth="130"
-                          SelectedItem="{Binding Item0}">
-                    <ComboBox.ItemTemplate>
-                        <DataTemplate DataType="viewModels:MetricTypeViewModel">
-                            <TextBlock Text="{Binding Title}" Margin="0 4" />
-                        </DataTemplate>
-                    </ComboBox.ItemTemplate>
-                </ComboBox>
-            </controls:Setting>
-            <controls:Setting Title="{x:Static locales:Locale.Monitor_MultiDashboard_Item2}">
-                <ComboBox ItemsSource="{Binding AllTypes}" MinWidth="130"
-                          SelectedItem="{Binding Item1}">
-                    <ComboBox.ItemTemplate>
-                        <DataTemplate DataType="viewModels:MetricTypeViewModel">
-                            <TextBlock Text="{Binding Title}" Margin="0 4" />
-                        </DataTemplate>
-                    </ComboBox.ItemTemplate>
-                </ComboBox>
-            </controls:Setting>
-            <controls:Setting Title="{x:Static locales:Locale.Monitor_MultiDashboard_Item3}">
-                <ComboBox ItemsSource="{Binding AllTypes}" MinWidth="130"
-                          SelectedItem="{Binding Item2}">
-                    <ComboBox.ItemTemplate>
-                        <DataTemplate DataType="viewModels:MetricTypeViewModel">
-                            <TextBlock Text="{Binding Title}" Margin="0 4" />
-                        </DataTemplate>
-                    </ComboBox.ItemTemplate>
-                </ComboBox>
-            </controls:Setting>
-            <controls:Setting Title="{x:Static locales:Locale.Monitor_MultiDashboard_Item4}">
-                <ComboBox ItemsSource="{Binding AllTypes}" MinWidth="130"
-                          SelectedItem="{Binding Item3}">
-                    <ComboBox.ItemTemplate>
-                        <DataTemplate DataType="viewModels:MetricTypeViewModel">
-                            <TextBlock Text="{Binding Title}" Margin="0 4" />
-                        </DataTemplate>
-                    </ComboBox.ItemTemplate>
-                </ComboBox>
-            </controls:Setting>
-        </StackPanel>
-    </ScrollViewer>
+             x:Class="Monitor.Views.Settings.MultiDashboardSettings"
+             controls:SettingsPage.ScrollOwnership="Host">
+    <!-- W9: the outer ScrollViewer is gone, the EditWidget viewport is the single scroll owner.
+         Row spacing comes from the shared page token. -->
+    <StackPanel Orientation="Vertical" Spacing="6" Margin="{DynamicResource SettingsPagePadding}">
+        <controls:Setting Title="{x:Static locales:Locale.Monitor_MultiDashboard_Item1}">
+            <ComboBox ItemsSource="{Binding AllTypes}" MinWidth="130"
+                      SelectedItem="{Binding Item0}">
+                <ComboBox.ItemTemplate>
+                    <DataTemplate DataType="viewModels:MetricTypeViewModel">
+                        <TextBlock Text="{Binding Title}" Margin="0 4" />
+                    </DataTemplate>
+                </ComboBox.ItemTemplate>
+            </ComboBox>
+        </controls:Setting>
+        <controls:Setting Title="{x:Static locales:Locale.Monitor_MultiDashboard_Item2}">
+            <ComboBox ItemsSource="{Binding AllTypes}" MinWidth="130"
+                      SelectedItem="{Binding Item1}">
+                <ComboBox.ItemTemplate>
+                    <DataTemplate DataType="viewModels:MetricTypeViewModel">
+                        <TextBlock Text="{Binding Title}" Margin="0 4" />
+                    </DataTemplate>
+                </ComboBox.ItemTemplate>
+            </ComboBox>
+        </controls:Setting>
+        <controls:Setting Title="{x:Static locales:Locale.Monitor_MultiDashboard_Item3}">
+            <ComboBox ItemsSource="{Binding AllTypes}" MinWidth="130"
+                      SelectedItem="{Binding Item2}">
+                <ComboBox.ItemTemplate>
+                    <DataTemplate DataType="viewModels:MetricTypeViewModel">
+                        <TextBlock Text="{Binding Title}" Margin="0 4" />
+                    </DataTemplate>
+                </ComboBox.ItemTemplate>
+            </ComboBox>
+        </controls:Setting>
+        <controls:Setting Title="{x:Static locales:Locale.Monitor_MultiDashboard_Item4}">
+            <ComboBox ItemsSource="{Binding AllTypes}" MinWidth="130"
+                      SelectedItem="{Binding Item3}">
+                <ComboBox.ItemTemplate>
+                    <DataTemplate DataType="viewModels:MetricTypeViewModel">
+                        <TextBlock Text="{Binding Title}" Margin="0 4" />
+                    </DataTemplate>
+                </ComboBox.ItemTemplate>
+            </ComboBox>
+        </controls:Setting>
+    </StackPanel>
 </UserControl>
