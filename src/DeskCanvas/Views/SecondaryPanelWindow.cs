@@ -128,6 +128,7 @@ public abstract class SecondaryPanelWindow : Window
 
     private ScaleTransform? cardScale;
     private bool panelLoaded;
+    private bool openAnimationPlayed;
     private bool closeAnimationRunning;
     private bool wasActivated;
     private DateTime activatedAtUtc;
@@ -242,7 +243,21 @@ public abstract class SecondaryPanelWindow : Window
         => Content as SecondaryPanelShell
            ?? this.GetLogicalDescendants().OfType<SecondaryPanelShell>().FirstOrDefault();
 
-    private void OnShellTemplateApplied(object? sender, EventArgs e) => ConnectPanelShell();
+    private void OnShellTemplateApplied(object? sender, EventArgs e)
+    {
+        ConnectPanelShell();
+
+        // Late template application: the shell's card did not exist yet when Loaded ran the
+        // open transition (PlayOpenAnimation early-returned with no card to animate). The card
+        // is connected hidden at the spawn scale now — play the transition for real. The call
+        // is idempotent, so the normal ordering (template applied before Loaded, where Loaded
+        // plays the transition itself) is unaffected.
+        if (panelLoaded)
+        {
+            RequestGlassRender();
+            PlayOpenAnimation();
+        }
+    }
 
     /// <summary>
     /// Take the card/glass/close plumbing of the shell that is currently realized. Runs again
@@ -314,10 +329,12 @@ public abstract class SecondaryPanelWindow : Window
         ResolveGlassAnimationTargets();
         visualCardConnected = true;
 
-        // A re-applied template rebuilds the card at the template's initial Opacity=0. When
-        // the open transition has already played, reveal the new card immediately instead of
-        // leaving a live panel invisible.
-        if (panelLoaded)
+        // A re-applied template rebuilds the card at the template's initial Opacity=0. When the
+        // open transition has ALREADY played, reveal the new card immediately instead of leaving
+        // a live panel invisible. The guard must be "transition played", not "panel loaded":
+        // ConnectPanelShell also runs from OnPanelWindowLoaded, where the card must stay hidden
+        // at the spawn scale so the open transition that follows still has something to animate.
+        if (openAnimationPlayed)
         {
             card.Opacity = 1.0;
             if (TransformAnimationEnabled && cardScale != null)
@@ -466,6 +483,7 @@ public abstract class SecondaryPanelWindow : Window
         }
         DisconnectCardScale();
         visualCardConnected = false;
+        openAnimationPlayed = false;
         panelShell = null;
 
         var type = GetType();
@@ -575,6 +593,10 @@ public abstract class SecondaryPanelWindow : Window
 
     private void PlayOpenAnimation()
     {
+        // One open transition per panel: a second call (Loaded plus a late TemplateConnected)
+        // would find every value already at its target and animate nothing.
+        if (openAnimationPlayed || closeAnimationRunning) return;
+
         var card = PanelCard;
         if (card == null) return;
 
@@ -605,6 +627,7 @@ public abstract class SecondaryPanelWindow : Window
         }
 
         card.Opacity = 1.0;
+        openAnimationPlayed = true;
     }
 
     // ---- Glass transition playback ----

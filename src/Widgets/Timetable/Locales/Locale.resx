@@ -180,6 +180,9 @@
   <data name="Timetable_ImportFailed" xml:space="preserve">
     <value>Import failed: {0}</value>
   </data>
+  <data name="Timetable_SaveFailed" xml:space="preserve">
+    <value>Save failed: {0}</value>
+  </data>
   <data name="Timetable_Guide_Title" xml:space="preserve">
     <value>JSON format guide</value>
   </data>

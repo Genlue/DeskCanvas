@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Globalization;
 using System.Text.RegularExpressions;
 
@@ -90,6 +91,10 @@ public record TimetableModel(
     /// Repairs a model loaded from disk (or built by the importer): clamps counts,
     /// drops unusable items and returns fresh lists, so no caller-visible aliasing
     /// survives and every consumer can assume the invariants.
+    /// <para>
+    /// Every drop is logged — normalization is the one place where persisted data can
+    /// silently vanish, and a silent drop is indistinguishable from data loss to the user.
+    /// </para>
     /// </summary>
     public TimetableModel Normalize()
     {
@@ -98,7 +103,12 @@ public record TimetableModel(
         {
             foreach (var period in Periods)
             {
-                if (periods.Count >= TimetableLimits.MaxPeriods) break;
+                if (periods.Count >= TimetableLimits.MaxPeriods)
+                {
+                    LogDrop($"periods beyond the limit of {TimetableLimits.MaxPeriods} ignored " +
+                            $"({Periods.Count} declared)");
+                    break;
+                }
                 periods.Add(new TimetablePeriod(
                     Clip(period.Label, TimetableLimits.MaxShortTextLength),
                     NormalizeTime(period.Start),
@@ -112,35 +122,64 @@ public record TimetableModel(
         {
             foreach (var course in Courses)
             {
-                if (courses.Count >= TimetableLimits.MaxCourses) break;
+                if (courses.Count >= TimetableLimits.MaxCourses)
+                {
+                    LogDrop($"courses beyond the limit of {TimetableLimits.MaxCourses} ignored " +
+                            $"({Courses.Count} declared)");
+                    break;
+                }
                 var name = Clip(course.Name, TimetableLimits.MaxNameLength);
-                if (string.IsNullOrEmpty(name)) continue;
+                if (string.IsNullOrEmpty(name))
+                {
+                    LogDrop("course without a usable name dropped");
+                    continue;
+                }
 
                 var entries = new List<TimetableEntry>();
                 if (course.Entries != null)
                 {
                     foreach (var entry in course.Entries)
                     {
-                        if (slotTotal >= TimetableLimits.MaxSlots) break;
-                        if (entry.Day is < 1 or > 7) continue;
+                        if (slotTotal >= TimetableLimits.MaxSlots)
+                        {
+                            LogDrop($"《{name}》slots beyond the limit of {TimetableLimits.MaxSlots} ignored");
+                            break;
+                        }
+                        if (entry.Day is < 1 or > 7)
+                        {
+                            LogDrop($"《{name}》entry with invalid day {entry.Day} dropped");
+                            continue;
+                        }
 
                         var ps = new List<int>();
                         if (entry.Periods != null)
                         {
                             foreach (var p in entry.Periods)
                             {
-                                if (p is < 1 or > TimetableLimits.MaxPeriods) continue;
+                                if (p is < 1 or > TimetableLimits.MaxPeriods)
+                                {
+                                    LogDrop($"《{name}》entry day {entry.Day}: invalid period {p} ignored");
+                                    continue;
+                                }
                                 if (!ps.Contains(p)) ps.Add(p);
                             }
                         }
-                        if (ps.Count == 0) continue;
+                        if (ps.Count == 0)
+                        {
+                            LogDrop($"《{name}》entry day {entry.Day} without usable periods dropped");
+                            continue;
+                        }
                         ps.Sort();
 
                         entries.Add(new TimetableEntry(entry.Day, ps, Clip(entry.Weeks, TimetableLimits.MaxShortTextLength)));
                         slotTotal++;
                     }
                 }
-                if (entries.Count == 0) continue;
+                if (entries.Count == 0)
+                {
+                    LogDrop($"《{name}》dropped: no usable time slots remain");
+                    continue;
+                }
 
                 courses.Add(new TimetableCourse(
                     name,
@@ -164,6 +203,10 @@ public record TimetableModel(
             ShowRoom,
             ShowTeacher);
     }
+
+    /// <summary>Normalization drops are data-maintenance events, not noise — always leave a trace.</summary>
+    private static void LogDrop(string message) =>
+        Debug.WriteLine($"[TimetableModel.Normalize] {message}");
 
     private static string? Clip(string? value, int maxLength)
     {

@@ -236,6 +236,15 @@ namespace Timetable.Locales {
         }
 
         /// <summary>
+        ///   Looks up a localized string similar to Timetable_SaveFailed.
+        /// </summary>
+        public static string Timetable_SaveFailed {
+            get {
+                return ResourceManager.GetString("Timetable_SaveFailed", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   Looks up a localized string similar to Timetable_Import_Subtitle.
         /// </summary>
         public static string Timetable_Import_Subtitle {

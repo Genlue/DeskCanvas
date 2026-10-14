@@ -1,5 +1,4 @@
 using System.Globalization;
-using System.Text.Json;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
@@ -18,12 +17,11 @@ namespace Timetable.Views.Settings;
 /// <summary>
 /// Settings page: JSON import (with the review step), the copyable AI prompt / format guide,
 /// term configuration, per-period bell times and display toggles. Every change saves
-/// immediately through the widget layout provider; the review window is the only path
-/// that writes course data.
+/// immediately to the unified store (<see cref="TimetableStore"/> — the single source of
+/// truth); the review window is the only path that writes course data.
 /// </summary>
 public partial class TimetableSettings : UserControl
 {
-    private readonly IWidgetLayoutProvider? widgetLayoutProvider;
     private TimetableModel model;
     private bool initializing = true;
 
@@ -35,9 +33,14 @@ public partial class TimetableSettings : UserControl
     {
     }
 
+    /// <summary>
+    /// The <paramref name="widgetLayoutProvider"/> parameter exists only for the host activation
+    /// contract (<c>WidgetFactory.CreateEditWidgetWindow</c> resolves it by type). The page never
+    /// reads or writes the per-widget Settings copy: doing both (store + layout) is how the two
+    /// copies diverged and user course data got lost on update.
+    /// </summary>
     public TimetableSettings(IWidgetLayoutProvider? widgetLayoutProvider)
     {
-        this.widgetLayoutProvider = widgetLayoutProvider;
         model = ReadModel();
 
         InitializeComponent();
@@ -55,6 +58,7 @@ public partial class TimetableSettings : UserControl
     private void OnLoaded(object? sender, RoutedEventArgs e)
     {
         TimetableStore.ModelChanged += OnStoreModelChanged;
+        TimetableStore.SaveFailed += OnStoreSaveFailed;
         // The page can be re-shown later; always reflect the current stored model.
         model = ReadModel();
         ApplyModelToControls();
@@ -65,6 +69,7 @@ public partial class TimetableSettings : UserControl
     private void OnUnloaded(object? sender, RoutedEventArgs e)
     {
         TimetableStore.ModelChanged -= OnStoreModelChanged;
+        TimetableStore.SaveFailed -= OnStoreSaveFailed;
         clearTimer?.Stop();
         copiedTimer?.Stop();
     }
@@ -77,41 +82,25 @@ public partial class TimetableSettings : UserControl
         UpdateStatusText();
     }
 
+    private void OnStoreSaveFailed(string message)
+    {
+        StatusText.Text = Locale.Timetable_SaveFailed.Replace("{0}", message);
+    }
+
     // ---------- Model plumbing ----------
 
-    private TimetableModel ReadModel()
+    /// <summary>The unified store is the only model source (legacy layout copies are migrated by the store itself).</summary>
+    private TimetableModel ReadModel() => TimetableStore.Get();
+
+    /// <summary>
+    /// Persists to the unified store; all widgets and settings pages follow via
+    /// <see cref="TimetableStore.ModelChanged"/>. The model is no longer duplicated into the
+    /// widget layout's Settings — that second copy was the corruption vector.
+    /// </summary>
+    private void Save()
     {
-        if (widgetLayoutProvider == null)
-        {
-            return new TimetableModel();
-        }
-
-        if (widgetLayoutProvider.GetType().Name != "WidgetLayoutProvider")
-        {
-            try
-            {
-                var layout = widgetLayoutProvider.Get();
-                var modelFromLayout = layout?.GetModel<TimetableModel>();
-                if (modelFromLayout != null)
-                    return modelFromLayout.Normalize();
-            }
-            catch { }
-        }
-
-        var storeModel = TimetableStore.Get();
-        if (storeModel.HasData)
-            return storeModel;
-
-        try
-        {
-            var layout = widgetLayoutProvider.Get();
-            var modelFromLayout = layout?.GetModel<TimetableModel>();
-            if (modelFromLayout != null && modelFromLayout.HasData)
-                return modelFromLayout.Normalize();
-        }
-        catch { }
-
-        return storeModel;
+        if (initializing) return;
+        TimetableStore.Save(model, sender: this);
     }
 
     private void ApplyModelToControls()
@@ -133,23 +122,6 @@ public partial class TimetableSettings : UserControl
         finally
         {
             initializing = false;
-        }
-    }
-
-    private void Save()
-    {
-        if (initializing) return;
-        TimetableStore.Save(model, sender: this);
-        if (widgetLayoutProvider == null) return;
-        try
-        {
-            var layout = widgetLayoutProvider.Get();
-            if (layout == null) return;
-            widgetLayoutProvider.Save(layout with { Settings = JsonSerializer.SerializeToElement(model) });
-        }
-        catch
-        {
-            // Saving must never crash the settings page.
         }
     }
 

@@ -20,8 +20,10 @@ namespace Timetable.Views;
 /// <para>
 /// Memory contract (matching the repository's widget audit): the view keeps references only
 /// to the controls it builds (bounded by the import limits), never caches bitmaps, subscribes
-/// exactly one shared timer in <see cref="OnLoaded"/> and releases it in <see cref="OnUnloaded"/>,
-/// and implements <see cref="IWidgetSelfRefreshing"/> so settings changes rebind in place
+/// exactly one shared timer <b>and</b> the store event symmetrically in <see cref="OnLoaded"/>
+/// and releases both in <see cref="OnUnloaded"/> (so an instance detached before its first
+/// load is never rooted by a process-lifetime static), and implements
+/// <see cref="IWidgetSelfRefreshing"/> so settings changes rebind in place
 /// instead of recreating the whole view.
 /// </para>
 /// </summary>
@@ -45,6 +47,36 @@ public partial class Timetable : UserControl, IWidgetSelfRefreshing
     private int todayListDay = -1;
     private bool todayListIsToday;
 
+    /// <summary>
+    /// Reusable lane-background cells for the week grid (up to MaxPeriods × 7 — a fixed,
+    /// small ceiling). Each rebuild used to allocate that many fresh Borders only to show
+    /// the subtle slot background; the pool holds them across rebuilds so a rebuild
+    /// re-positions instead of re-allocating.
+    /// </summary>
+    private readonly List<Border> laneCellPool = [];
+
+    /// <summary>
+    /// Pooled week-grid chrome and blocks. Every rebuild used to Clear the host and build a
+    /// fresh tree (headers, period labels, lane cells, course blocks); the discarded controls
+    /// release their native side (compositor visuals, shaped text) lazily, so a resize drag
+    /// or week flip retained tens of MB that GC could not attribute or reclaim. The pools
+    /// cap the tree at its steady-state size: a rebuild rebinds texts, sizes and positions
+    /// in place instead of allocating. Surplus entries stay detached after the host Clear.
+    /// </summary>
+    private readonly List<Border> headerPool = [];
+    private readonly List<TextBlock> periodLabelPool = [];
+    private readonly List<Border> blockPool = [];
+    private readonly List<Border> todayRowPool = [];
+
+    /// <summary>One parallel-lane group: its Grid stays attached to the host, its blocks stay attached to it.</summary>
+    private sealed class LaneContainer
+    {
+        public required Grid Grid { get; init; }
+        public List<Border> Blocks { get; } = [];
+    }
+
+    private readonly List<LaneContainer> laneContainerPool = [];
+
     private IBrush? accentBrush;
     private Color accentColor;
 
@@ -67,9 +99,20 @@ public partial class Timetable : UserControl, IWidgetSelfRefreshing
     {
     }
 
+    /// <summary>
+    /// The <paramref name="model"/> parameter exists only for the host activation contract
+    /// (<c>WidgetFactory.CreateWidgetControl</c> passes the legacy per-widget Settings copy or a
+    /// default instance). It is deliberately <b>ignored</b>: the unified store
+    /// (<c>timetable.json</c>) is the single source of truth. Preferring the layout copy here is
+    /// what let a stale Settings snapshot mask — or get masked by — the store after an update,
+    /// which surfaced as "时间设置还在，课程全丢".
+    /// </summary>
     public Timetable(TimetableModel? model)
     {
-        this.model = (model != null && model.HasData ? model : TimetableStore.Get()).Normalize();
+        // Get() already returns a normalized model on every path into the cache
+        // (Save / LoadFromFile / migration / test reset all Normalize) — a second
+        // Normalize here only deep-copied the whole model per widget construction.
+        this.model = TimetableStore.Get();
         runtime = TimetableRuntime.Build(this.model);
         liveTick = OnLiveTick;
 
@@ -80,7 +123,11 @@ public partial class Timetable : UserControl, IWidgetSelfRefreshing
         SizeChanged += OnSizeChanged;
         ToolTip.SetTip(this, Locale.Timetable_OpenPanelHint);
 
-        TimetableStore.ModelChanged += OnStoreModelChanged;
+        // No static-event subscription here (the store event is subscribed in OnLoaded):
+        // an instance removed before ever loading — a Gallery thumbnail replaced mid-show,
+        // a preview detached before layout — would otherwise stay rooted by the store's
+        // process-lifetime event forever, and every save would keep rebuilding an
+        // invisible full grid on the zombie.
 
         RebuildAll();
     }
@@ -90,7 +137,13 @@ public partial class Timetable : UserControl, IWidgetSelfRefreshing
     private void OnLoaded(object? sender, RoutedEventArgs e)
     {
         attached = true;
+        // Defensive unsubscribe first: Loaded can fire again after a detach/attach cycle
+        // (widget moved between screens, host re-attach), and a double subscription would
+        // double every tick.
+        TimerService.Timer1Minute.Unsubscribe(liveTick);
         TimerService.Timer1Minute.Subscribe(liveTick);
+        TimetableStore.ModelChanged -= OnStoreModelChanged;
+        TimetableStore.ModelChanged += OnStoreModelChanged;
         UpdateLiveState();
     }
 
@@ -133,6 +186,12 @@ public partial class Timetable : UserControl, IWidgetSelfRefreshing
         var bucketChanged = Math.Abs(size.Width - builtWidth) > 5 || Math.Abs(size.Height - builtHeight) > 5;
         if (tierChanged || bucketChanged || builtWidth < 0)
         {
+            // Rebuild immediately — deliberately NOT debounced. A deferred rebuild leaves the
+            // old tree rendering at the new size for the debounce window: the fixed-pixel row
+            // metrics and old font sizes meet the new column widths, so text visibly re-wraps
+            // and then snaps — reported as 抖动/闪烁. A same-frame rebuild never paints the
+            // intermediate state. The allocation cost that motivated deferring is already gone
+            // (pooled lane cells + shared immutable brushes + the startup-rebuild fixes).
             builtWidth = size.Width;
             builtHeight = size.Height;
             RebuildAll();
@@ -154,6 +213,11 @@ public partial class Timetable : UserControl, IWidgetSelfRefreshing
 
     private void RebuildAll()
     {
+        // The tree now reflects "today" as of this build: stamp the key so the first
+        // UpdateLiveState after a construction-time build does not rebuild everything
+        // again (the build itself is the update).
+        builtDayKey = DayIndex(DateTime.Now.DayOfWeek);
+
         var width = Bounds.Width;
         var height = Bounds.Height;
         if (width <= 0 || height <= 0)
@@ -173,7 +237,7 @@ public partial class Timetable : UserControl, IWidgetSelfRefreshing
         {
             EmptyHint.IsVisible = true;
             EmptyHint.Text = Locale.Timetable_NoData;
-            EmptyHint.FontSize = Math.Clamp(Math.Min(width, height) * 0.11, 10, 15);
+            EmptyHint.FontSize = TextMetrics.Quantize(Math.Clamp(Math.Min(width, height) * 0.11, 10, 15));
             UpdateLiveState();
             return;
         }
@@ -203,16 +267,15 @@ public partial class Timetable : UserControl, IWidgetSelfRefreshing
     private void ApplyCellFonts(double width, double height)
     {
         var min = Math.Min(width, height);
-        CellTag.FontSize = Math.Clamp(min * 0.13, 10, 14);
-        CellTitle.FontSize = Math.Clamp(min * 0.19, 12.5, 22);
-        CellSub.FontSize = Math.Clamp(min * 0.12, 9.5, 13);
+        CellTag.FontSize = TextMetrics.Quantize(Math.Clamp(min * 0.13, 10, 14));
+        CellTitle.FontSize = TextMetrics.Quantize(Math.Clamp(min * 0.19, 12.5, 22));
+        CellSub.FontSize = TextMetrics.Quantize(Math.Clamp(min * 0.12, 9.5, 13));
         CellTitle.MaxWidth = Math.Max(40, width - 14);
         CellSub.MaxWidth = Math.Max(40, width - 14);
     }
 
     private void BuildTodayList(double width, double height)
     {
-        TodayListPanel.Children.Clear();
         todayRows.Clear();
 
         var now = DateTime.Now;
@@ -237,16 +300,17 @@ public partial class Timetable : UserControl, IWidgetSelfRefreshing
         TodayHeader.Text = isToday || targetDay == ((today) % 7) + 1
             ? $"{prefix} · {TimetableClock.DayName(targetDay)}"
             : TimetableClock.DayName(targetDay);
-        TodayHeader.FontSize = Math.Clamp(Math.Min(width, height) * 0.10, 10.5, 14);
+        TodayHeader.FontSize = TextMetrics.Quantize(Math.Clamp(Math.Min(width, height) * 0.10, 10.5, 14));
 
         var slots = ActiveSlotsForDay(targetDay, week);
         if (slots.Count == 0)
         {
+            HidePoolSurplus(todayRowPool, 0);
             TodayListPanel.Children.Add(new TextBlock
             {
                 Text = Locale.Timetable_NoClassToday,
                 Opacity = 0.72,
-                FontSize = Math.Clamp(Math.Min(width, height) * 0.10, 10.5, 14),
+                FontSize = TextMetrics.Quantize(Math.Clamp(Math.Min(width, height) * 0.10, 10.5, 14)),
                 TextWrapping = TextWrapping.Wrap,
                 Margin = new Thickness(2, 2, 2, 0),
             });
@@ -255,34 +319,54 @@ public partial class Timetable : UserControl, IWidgetSelfRefreshing
 
         // Readability first: one comfortable colour card per lesson; the list scrolls when it
         // does not fit instead of shrinking the type to cram every lesson into the card.
-        var titleFont = Math.Clamp(width * 0.088, 11.5, 15);
-        var subFont = Math.Clamp(titleFont * 0.8, 9.5, 12);
+        var titleFont = TextMetrics.Quantize(Math.Clamp(width * 0.088, 11.5, 15));
+        var subFont = TextMetrics.Quantize(Math.Clamp(titleFont * 0.8, 9.5, 12));
 
+        var rowIndex = 0;
         foreach (var slot in slots)
-            TodayListPanel.Children.Add(BuildTodayRow(slot, titleFont, subFont));
+        {
+            var row = TakeAttachedFromPool(todayRowPool, rowIndex++, TodayListPanel, static () => new Border
+            {
+                CornerRadius = new CornerRadius(7),
+                Padding = new Thickness(9, 6, 9, 6),
+                Child = new StackPanel
+                {
+                    Spacing = 1,
+                    Children =
+                    {
+                        new TextBlock
+                        {
+                            FontWeight = FontWeight.SemiBold,
+                            TextTrimming = TextTrimming.CharacterEllipsis,
+                        },
+                        new TextBlock
+                        {
+                            Opacity = 0.9,
+                            TextTrimming = TextTrimming.CharacterEllipsis,
+                        },
+                    },
+                },
+            });
+            RebindTodayRowInPlace(row, slot, titleFont, subFont);
+            row.IsVisible = true;
+        }
+        HidePoolSurplus(todayRowPool, rowIndex);
     }
 
-    /// <summary>
-    /// One lesson as a solid colour card: the course name leads and is never sacrificed to
-    /// secondary info; the time/room line follows at a readable size on the same contrast
-    /// colour (not a grey caption). Current-lesson highlighting is applied by
-    /// <see cref="UpdateLiveState"/> as an accent outline.
-    /// </summary>
-    private Border BuildTodayRow(TimetableRuntime.Slot slot, double titleFont, double subFont)
+    /// <summary>Rebind a pooled today-list row in place (same contract as the week grid's blocks).</summary>
+    private void RebindTodayRowInPlace(Border row, TimetableRuntime.Slot slot, double titleFont, double subFont)
     {
+        var panel = (StackPanel)row.Child!;
+        var title = (TextBlock)panel.Children[0];
+        var sub = (TextBlock)panel.Children[1];
+
         var color = CoursePalette.ResolveColor(slot.Course);
         var foreground = CoursePalette.ForegroundFor(color);
         var (start, end) = SlotBounds(slot);
 
-        var stack = new StackPanel { Spacing = 1 };
-        stack.Children.Add(new TextBlock
-        {
-            Text = slot.Course.Name ?? "",
-            FontSize = titleFont,
-            FontWeight = FontWeight.SemiBold,
-            Foreground = foreground,
-            TextTrimming = TextTrimming.CharacterEllipsis,
-        });
+        title.Text = slot.Course.Name ?? "";
+        title.FontSize = titleFont;
+        title.Foreground = foreground;
 
         var infoParts = new List<string>(3);
         if (start != null && end != null) infoParts.Add($"{start:HH:mm}–{end:HH:mm}");
@@ -290,29 +374,14 @@ public partial class Timetable : UserControl, IWidgetSelfRefreshing
         if (model.ShowRoom && slot.Course.Room is { Length: > 0 } room) infoParts.Add(room);
         if (model.ShowTeacher && slot.Course.Teacher is { Length: > 0 } teacher) infoParts.Add(teacher);
 
-        if (infoParts.Count > 0)
-        {
-            stack.Children.Add(new TextBlock
-            {
-                Text = string.Join(" · ", infoParts),
-                FontSize = subFont,
-                Foreground = foreground,
-                Opacity = 0.9,
-                TextTrimming = TextTrimming.CharacterEllipsis,
-            });
-        }
+        sub.Text = infoParts.Count > 0 ? string.Join(" · ", infoParts) : "";
+        sub.FontSize = subFont;
+        sub.Foreground = foreground;
+        sub.IsVisible = infoParts.Count > 0;
 
-        var row = new Border
-        {
-            Background = new SolidColorBrush(color),
-            CornerRadius = new CornerRadius(7),
-            Padding = new Thickness(9, 6, 9, 6),
-            Child = stack,
-        };
-
+        row.Background = CoursePalette.BrushFor(color);
         ToolTip.SetTip(row, ScheduleBlocks.BuildTooltip(slot));
         todayRows.Add(new RowHandle { Row = row, Start = start, End = end });
-        return row;
     }
 
     // ---------- Week switching ----------
@@ -388,9 +457,12 @@ public partial class Timetable : UserControl, IWidgetSelfRefreshing
 
     private void BuildWeekGrid(double width, double height, bool compact)
     {
-        WeekGridHost.Children.Clear();
-        WeekGridHost.ColumnDefinitions.Clear();
-        WeekGridHost.RowDefinitions.Clear();
+        // Sync, don't Clear-and-rebuild. Pulling pooled controls out of the visual tree and
+        // re-adding them resets every inherited property (FontFamily/FontSize/Foreground),
+        // which rebuilds each TextLayout — ~4 KB of native shaped text per TextBlock that
+        // the GC cannot attribute — on every resize step and week flip. The pooled controls
+        // therefore stay attached to the host for their whole life: a rebuild rebinds
+        // properties in place (equal values never invalidate) and surplus slots are hidden.
         weekBlocks.Clear();
         periodLabels.Clear();
 
@@ -444,98 +516,108 @@ public partial class Timetable : UserControl, IWidgetSelfRefreshing
 
         var minRowH = compact ? 22.0 : 26.0;
         var rowH = Math.Max(minRowH, (viewportHeight - 2) / usedPeriods.Count);
-        var titleFont = Math.Clamp(Math.Min(colW * 0.28, rowH * 0.34), 9.5, 13.0);
-        var subFont = Math.Max(8.0, titleFont * 0.82);
-        var headFont = Math.Clamp(Math.Min(colW * 0.32, headerH * 0.68), 10.0, 12.5);
-        var labelFont = Math.Clamp(rowH * 0.30, 8.5, 11.0);
+        var titleFont = TextMetrics.Quantize(Math.Clamp(Math.Min(colW * 0.28, rowH * 0.34), 9.5, 13.0));
+        var subFont = TextMetrics.Quantize(Math.Max(8.0, titleFont * 0.82));
+        var headFont = TextMetrics.Quantize(Math.Clamp(Math.Min(colW * 0.32, headerH * 0.68), 10.0, 12.5));
+        var labelFont = TextMetrics.Quantize(Math.Clamp(rowH * 0.30, 8.5, 11.0));
 
         // Definitions: label column + one column per day; header row + one fixed-height row per period.
-        WeekGridHost.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(labelW, GridUnitType.Pixel) });
-        for (var i = 0; i < dayCount; i++)
-            WeekGridHost.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-        WeekGridHost.RowDefinitions.Add(new RowDefinition { Height = new GridLength(headerH, GridUnitType.Pixel) });
-        for (var i = 0; i < usedPeriods.Count; i++)
-            WeekGridHost.RowDefinitions.Add(new RowDefinition { Height = new GridLength(rowH, GridUnitType.Pixel) });
+        SyncGridDefinitions(labelW, dayCount, headerH, rowH, usedPeriods.Count);
 
         var accent = EnsureAccentBrush();
 
-        // Day header.
+        // Day header pills (one per day column; the today column carries the tinted pill).
+        var headerIndex = 0;
         for (var dayIdx = 0; dayIdx < dayCount; dayIdx++)
         {
             var day = dayIdx + 1;
             var isTodayColumn = isThisWeek && (day == today);
             var headText = colW >= 56 ? TimetableClock.DayName(day) : TimetableClock.DayShortName(day);
 
-            var head = new TextBlock
+            var pill = TakeAttachedFromPool(headerPool, headerIndex++, WeekGridHost, static () => new Border
             {
-                Text = headText,
-                FontSize = headFont,
-                TextAlignment = TextAlignment.Center,
+                Padding = new Thickness(4, 1),
                 HorizontalAlignment = HorizontalAlignment.Center,
                 VerticalAlignment = VerticalAlignment.Center,
-            };
+                Child = new TextBlock
+                {
+                    TextAlignment = TextAlignment.Center,
+                    HorizontalAlignment = HorizontalAlignment.Center,
+                    VerticalAlignment = VerticalAlignment.Center,
+                },
+            });
+            var head = (TextBlock)pill.Child!;
 
-            Control headerControl = head;
+            head.Text = headText;
+            head.FontSize = headFont;
             if (isTodayColumn)
             {
                 head.Foreground = accent;
                 head.FontWeight = FontWeight.Bold;
-
-                var pill = new Border
-                {
-                    Background = new SolidColorBrush(Color.FromArgb(0x28, accentColor.R, accentColor.G, accentColor.B)),
-                    CornerRadius = new CornerRadius(headerH / 2),
-                    Padding = new Thickness(Math.Max(4, colW * 0.08), 1),
-                    HorizontalAlignment = HorizontalAlignment.Center,
-                    VerticalAlignment = VerticalAlignment.Center,
-                    Child = head,
-                };
-                headerControl = pill;
+                head.Opacity = 1.0;
+                pill.Background = new SolidColorBrush(Color.FromArgb(0x28, accentColor.R, accentColor.G, accentColor.B));
             }
             else
             {
+                head.ClearValue(TextBlock.ForegroundProperty);
+                head.FontWeight = FontWeight.Normal;
                 head.Opacity = 0.72;
+                pill.Background = null;
             }
+            pill.CornerRadius = new CornerRadius(headerH / 2);
+            pill.Padding = new Thickness(Math.Max(4, colW * 0.08), 1);
+            pill.IsVisible = true;
 
-            Grid.SetRow(headerControl, 0);
-            Grid.SetColumn(headerControl, dayIdx + 1);
-            WeekGridHost.Children.Add(headerControl);
+            Grid.SetRow(pill, 0);
+            Grid.SetColumn(pill, dayIdx + 1);
         }
+        HidePoolSurplus(headerPool, headerIndex);
 
         // Period labels + empty cell backgrounds.
+        var laneIndex = 0;
+        var labelIndex = 0;
         for (var r = 0; r < usedPeriods.Count; r++)
         {
             var period = usedPeriods[r];
             var labelText = labelW <= 22 ? period.ToString() : TimetableClock.PeriodShortLabel(model, period);
-            var label = new TextBlock
+            var label = TakeAttachedFromPool(periodLabelPool, labelIndex++, WeekGridHost, static () => new TextBlock
             {
-                Text = labelText,
-                FontSize = labelFont,
-                Opacity = 0.65,
                 TextAlignment = TextAlignment.Center,
                 HorizontalAlignment = HorizontalAlignment.Stretch,
                 VerticalAlignment = VerticalAlignment.Center,
-            };
+            });
+            label.Text = labelText;
+            label.FontSize = labelFont;
+            label.Opacity = 0.65;
+            label.ClearValue(TextBlock.ForegroundProperty);
+            label.IsVisible = true;
             Grid.SetRow(label, r + 1);
             Grid.SetColumn(label, 0);
-            WeekGridHost.Children.Add(label);
             periodLabels.Add((label, period));
 
             for (var dayIdx = 0; dayIdx < dayCount; dayIdx++)
             {
-                var cell = new Border
+                // The lane background is the biggest control count in the grid (periods × days):
+                // identical every rebuild, so the pooled Borders are only ever moved in place.
+                var cell = TakeAttachedFromPool(laneCellPool, laneIndex++, WeekGridHost, static () => new Border
                 {
                     Background = ScheduleBlocks.LaneBrush,
                     CornerRadius = new CornerRadius(5),
                     Margin = new Thickness(1),
-                };
+                });
                 Grid.SetRow(cell, r + 1);
                 Grid.SetColumn(cell, dayIdx + 1);
-                WeekGridHost.Children.Add(cell);
+                cell.IsVisible = true;
             }
         }
+        HidePoolSurplus(periodLabelPool, labelIndex);
+        HidePoolSurplus(laneCellPool, laneIndex);
 
         // Course blocks (placement maths live in ScheduleGridRenderer, shared with the other surfaces).
+        // Host-level blocks and per-container blocks both stay attached where they are; a
+        // rebuild rebinds and re-positions in place, and surplus slots are hidden.
+        var blockIndex = 0;
+        var containerIndex = 0;
         for (var dayIdx = 0; dayIdx < dayCount; dayIdx++)
         {
             var placements = ScheduleGridRenderer.LayoutDay(runtime, dayIdx + 1, week, usedPeriods);
@@ -549,44 +631,203 @@ public partial class Timetable : UserControl, IWidgetSelfRefreshing
 
                 if (first.LaneCount == 1)
                 {
-                    var block = ScheduleBlocks.Create(first.Slot, titleFont, subFont, showSub: regionH >= 24,
-                        model.ShowRoom, model.ShowTeacher);
+                    var block = TakeAttachedFromPool(blockPool, blockIndex++, WeekGridHost, CreateBlockControl);
+                    RebindBlockInPlace(block, first.Slot, titleFont, subFont,
+                        showSub: regionH >= 24, model.ShowRoom, model.ShowTeacher);
                     Grid.SetRow(block, row);
                     Grid.SetRowSpan(block, span);
                     Grid.SetColumn(block, dayIdx + 1);
-                    WeekGridHost.Children.Add(block);
+                    block.IsVisible = true;
                     AddBlockHandle(block, first.Slot, dayIdx);
                 }
                 else
                 {
-                    var container = new Grid();
-                    for (var i = 0; i < first.LaneCount; i++)
-                        container.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+                    LaneContainer lane;
+                    if (containerIndex < laneContainerPool.Count)
+                    {
+                        lane = laneContainerPool[containerIndex];
+                    }
+                    else
+                    {
+                        lane = new LaneContainer { Grid = new Grid() };
+                        laneContainerPool.Add(lane);
+                        WeekGridHost.Children.Add(lane.Grid);
+                    }
+                    containerIndex++;
+                    var container = lane.Grid;
 
+                    if (container.ColumnDefinitions.Count != first.LaneCount)
+                    {
+                        container.ColumnDefinitions.Clear();
+                        for (var i = 0; i < first.LaneCount; i++)
+                            container.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+                    }
+
+                    var laneBlock = 0;
                     foreach (var item in items)
                     {
-                        var block = ScheduleBlocks.Create(item.Slot, Math.Max(9.0, titleFont * 0.9), Math.Max(8.0, subFont * 0.88),
+                        if (lane.Blocks.Count <= laneBlock)
+                        {
+                            var created = CreateBlockControl();
+                            lane.Grid.Children.Add(created);
+                            lane.Blocks.Add(created);
+                        }
+                        var block = lane.Blocks[laneBlock++];
+                        RebindBlockInPlace(block, item.Slot,
+                            TextMetrics.Quantize(Math.Max(9.0, titleFont * 0.9)),
+                            TextMetrics.Quantize(Math.Max(8.0, subFont * 0.88)),
                             showSub: regionH >= 28, model.ShowRoom, model.ShowTeacher);
                         Grid.SetColumn(block, item.Lane);
-                        container.Children.Add(block);
+                        block.IsVisible = true;
                         AddBlockHandle(block, item.Slot, dayIdx);
                     }
+                    for (; laneBlock < lane.Blocks.Count; laneBlock++)
+                        lane.Blocks[laneBlock].IsVisible = false;
 
                     Grid.SetRow(container, row);
                     Grid.SetRowSpan(container, span);
                     Grid.SetColumn(container, dayIdx + 1);
-                    WeekGridHost.Children.Add(container);
+                    container.IsVisible = true;
                 }
             }
         }
+        HidePoolSurplus(blockPool, blockIndex);
+        for (var i = containerIndex; i < laneContainerPool.Count; i++)
+            laneContainerPool[i].Grid.IsVisible = false;
 
-        WeekTitle.FontSize = Math.Clamp(Math.Min(width, height) * 0.075, 11.0, 14.5);
-        WeekSubtitle.FontSize = Math.Clamp(Math.Min(width, height) * 0.062, 9.5, 12.0);
+        WeekTitle.FontSize = TextMetrics.Quantize(Math.Clamp(Math.Min(width, height) * 0.075, 11.0, 14.5));
+        WeekSubtitle.FontSize = TextMetrics.Quantize(Math.Clamp(Math.Min(width, height) * 0.062, 9.5, 12.0));
 
         WeekTitle.Text = Locale.Timetable_Week.Replace("{0}", week.ToString());
         WeekSubtitle.Text = currentWeek < 1 ? Locale.Timetable_UnknownWeek : "";
 
         ResetWeekButton.IsVisible = (currentWeek >= 1 && week != currentWeek);
+    }
+
+    /// <summary>
+    /// Pool accessor for controls that stay attached to <paramref name="parent"/> for their
+    /// whole life: grow with the factory as needed, then hand out slot <paramref name="index"/>.
+    /// Rebinds never remove and re-add controls — re-parenting resets inherited properties and
+    /// forces a full TextLayout rebuild per TextBlock (native memory the GC cannot reclaim).
+    /// </summary>
+    private static T TakeAttachedFromPool<T>(List<T> pool, int index, Panel parent, Func<T> factory)
+        where T : Control
+    {
+        while (pool.Count <= index)
+        {
+            var control = factory();
+            pool.Add(control);
+            parent.Children.Add(control);
+        }
+        return pool[index];
+    }
+
+    /// <summary>Hide pool slots beyond the currently bound count; they stay attached.</summary>
+    private static void HidePoolSurplus<T>(List<T> pool, int needed) where T : Control
+    {
+        for (var i = needed; i < pool.Count; i++) pool[i].IsVisible = false;
+    }
+
+    /// <summary>
+    /// Align the host's grid definitions with the current shape. Definitions carry no native
+    /// state, so they are rebuilt when the shape changes and mutated in place (row heights)
+    /// when only the metrics moved.
+    /// </summary>
+    private void SyncGridDefinitions(double labelW, int dayCount, double headerH, double rowH, int periodRows)
+    {
+        var cols = WeekGridHost.ColumnDefinitions;
+        if (cols.Count != dayCount + 1)
+        {
+            cols.Clear();
+            cols.Add(new ColumnDefinition { Width = new GridLength(labelW, GridUnitType.Pixel) });
+            for (var i = 0; i < dayCount; i++)
+                cols.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        }
+        else
+        {
+            cols[0].Width = new GridLength(labelW, GridUnitType.Pixel);
+        }
+
+        var rows = WeekGridHost.RowDefinitions;
+        if (rows.Count != periodRows + 1)
+        {
+            rows.Clear();
+            rows.Add(new RowDefinition { Height = new GridLength(headerH, GridUnitType.Pixel) });
+            for (var i = 0; i < periodRows; i++)
+                rows.Add(new RowDefinition { Height = new GridLength(rowH, GridUnitType.Pixel) });
+        }
+        else
+        {
+            rows[0].Height = new GridLength(headerH, GridUnitType.Pixel);
+            for (var i = 1; i < rows.Count; i++)
+                rows[i].Height = new GridLength(rowH, GridUnitType.Pixel);
+        }
+    }
+
+    /// <summary>Build a fresh course-block control (Border → StackPanel → title + info line).</summary>
+    private static Border CreateBlockControl()
+    {
+        var stack = new StackPanel
+        {
+            VerticalAlignment = VerticalAlignment.Center,
+            HorizontalAlignment = HorizontalAlignment.Stretch,
+            Spacing = 1,
+        };
+        stack.Children.Add(new TextBlock
+        {
+            FontWeight = FontWeight.SemiBold,
+            TextWrapping = TextWrapping.Wrap,
+            TextTrimming = TextTrimming.CharacterEllipsis,
+            TextAlignment = TextAlignment.Center,
+            HorizontalAlignment = HorizontalAlignment.Stretch,
+        });
+        stack.Children.Add(new TextBlock
+        {
+            Opacity = 0.88,
+            TextWrapping = TextWrapping.Wrap,
+            TextTrimming = TextTrimming.CharacterEllipsis,
+            TextAlignment = TextAlignment.Center,
+            HorizontalAlignment = HorizontalAlignment.Stretch,
+            Margin = new Thickness(0, 1, 0, 0),
+        });
+        return new Border
+        {
+            CornerRadius = new CornerRadius(6),
+            Margin = new Thickness(1),
+            Padding = new Thickness(2, 2, 2, 2),
+            ClipToBounds = true,
+            HorizontalAlignment = HorizontalAlignment.Stretch,
+            VerticalAlignment = VerticalAlignment.Stretch,
+            Child = stack,
+        };
+    }
+
+    /// <summary>
+    /// Rebind a pooled course block in place to <paramref name="slot"/>. The block's tree
+    /// (Border → StackPanel → title + optional info line) is fixed; a rebuild only changes
+    /// texts, fonts, colours and the info line's visibility. Equal assignments never
+    /// invalidate, so an unchanged slot costs no TextLayout rebuild at all.
+    /// </summary>
+    private static void RebindBlockInPlace(Border border, TimetableRuntime.Slot slot, double titleFont, double subFont,
+        bool showSub, bool showRoom, bool showTeacher)
+    {
+        var panel = (StackPanel)border.Child!;
+        var titleBlock = (TextBlock)panel.Children[0];
+        var subBlock = (TextBlock)panel.Children[1];
+
+        var color = CoursePalette.ResolveColor(slot.Course);
+        var foreground = CoursePalette.ForegroundFor(color);
+        var info = showSub ? ScheduleBlocks.ComposeInfoLine(slot.Course, showRoom, showTeacher) : null;
+
+        border.Background = CoursePalette.BrushFor(color);
+        titleBlock.Text = slot.Course.Name ?? "";
+        titleBlock.FontSize = titleFont;
+        titleBlock.Foreground = foreground;
+        subBlock.Text = info ?? "";
+        subBlock.FontSize = subFont;
+        subBlock.Foreground = foreground;
+        subBlock.IsVisible = info != null;
+        ToolTip.SetTip(border, ScheduleBlocks.BuildTooltip(slot));
     }
 
     private void AddBlockHandle(Border block, TimetableRuntime.Slot slot, int column)

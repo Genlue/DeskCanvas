@@ -97,7 +97,7 @@ public static class LiquidGlassWallpaper
     // a buffer is never both pooled and reachable by a render.
     private static SKBitmap? probeBuffer;
 
-    // Single-flight flag for the probe: the sampler tick is async and the timer fires again
+    // Single-flight flag for the probe: the sampler tick is async and the next pulse can arrive
     // while a capture is still running.
     private static int probing;
 
@@ -107,7 +107,35 @@ public static class LiquidGlassWallpaper
     private static bool liveSamplingEnabled = LiquidGlassSettings.DefaultLiveSampling;
     private static int liveIntervalMs = DefaultIntervalMs;
     private static bool suspended;
-    private static DispatcherTimer? liveSamplingTimer;
+
+    // ---- live sampler pacing --------------------------------------------------------------------
+    // The sampling cadence used to be a DispatcherTimer, which on Windows is a USER timer
+    // (SetTimer): ~15.6 ms granularity and lowest-priority delivery, so any requested interval
+    // below one system tick was silently rounded up to it and a busy UI thread stretched it
+    // further. A requested 3–10 ms never reached the pipeline — the ceiling half of the "5 ms is
+    // set but the frame rate is nowhere near it" report. The pacer is a dedicated background
+    // thread waiting on a high-resolution waitable timer (CREATE_WAITABLE_TIMER_HIGH_RESOLUTION,
+    // Windows 10 1803+; a plain waitable timer or Thread.Sleep where that is unavailable). It
+    // only SCHEDULES: every pulse posts the ordinary tick to the UI thread, where all the gates
+    // (active surfaces, backoff, render state) already live and must stay. Posts are coalesced
+    // through a latch so a busy UI thread never accumulates a backlog — one pending tick is the
+    // most that can queue, the old timer's at-most-one-pending semantics without its granularity.
+    private static Thread? pacerThread;
+
+    /// <summary>Whether ticks are currently wanted; the pacer parks itself when they are not.</summary>
+    private static bool pacerWanted;
+
+    /// <summary>Wakes the parked pacer when the wanted state flips back on.</summary>
+    private static readonly AutoResetEvent pacerKick = new(false);
+
+    /// <summary>0/1 latch: at most one tick may be queued to the UI thread at a time.</summary>
+    private static int tickQueued;
+
+    /// <summary>
+    /// Waitable timer handle backing the pacer's waits; IntPtr.Zero once (or always, on
+    /// non-Windows) pacing degrades to Thread.Sleep.
+    /// </summary>
+    private static IntPtr waitableTimer;
 
     /// <summary>
     /// Turn continuous desktop sampling on or off. Switching it off is the static-wallpaper
@@ -127,8 +155,6 @@ public static class LiquidGlassWallpaper
         if (!OperatingSystem.IsWindows()) return;
         try
         {
-            var timer = EnsureTimer();
-            timer.Interval = TimeSpan.FromMilliseconds(liveIntervalMs);
             UpdateTimerState();
         }
         catch (Exception ex)
@@ -162,7 +188,7 @@ public static class LiquidGlassWallpaper
 
     /// <summary>True when the sampler is actually ticking (switch on, glass on screen, not covered).</summary>
     public static bool LiveSamplingActive =>
-        liveSamplingEnabled && !suspended && liveSamplingTimer is { IsEnabled: true };
+        liveSamplingEnabled && !suspended && pacerWanted;
 
     /// <summary>The effective sampling interval in milliseconds.</summary>
     public static int LiveSamplingIntervalMs => liveIntervalMs;
@@ -174,18 +200,11 @@ public static class LiquidGlassWallpaper
     /// </summary>
     internal static void RefreshSamplerState() => UpdateTimerState();
 
-    private static DispatcherTimer EnsureTimer()
-    {
-        if (liveSamplingTimer != null) return liveSamplingTimer;
-        liveSamplingTimer = new DispatcherTimer();
-        liveSamplingTimer.Tick += OnLiveSamplingTick;
-        return liveSamplingTimer;
-    }
-
     private static void UpdateTimerState()
     {
-        if (liveSamplingTimer == null) return;
-        // DispatcherTimer must be started and stopped from the UI thread.
+        // Live sampling samples the Windows desktop; elsewhere there is nothing to capture.
+        if (!OperatingSystem.IsWindows()) return;
+        // Active-surface state is UI-thread-bound and must be read there.
         if (!Dispatcher.UIThread.CheckAccess())
         {
             Dispatcher.UIThread.Post(UpdateTimerState);
@@ -194,14 +213,104 @@ public static class LiquidGlassWallpaper
         var shouldRun = liveSamplingEnabled && !suspended && LiquidGlassSurface.HasActiveSurfaces;
         if (shouldRun)
         {
-            if (!liveSamplingTimer.IsEnabled) liveSamplingTimer.Start();
+            EnsurePacer();
+            Volatile.Write(ref pacerWanted, true);
+            pacerKick.Set();
         }
         else
         {
-            liveSamplingTimer.Stop();
+            Volatile.Write(ref pacerWanted, false);
+            Interlocked.Exchange(ref tickQueued, 0);
             Interlocked.Exchange(ref probeBuffer, null)?.Dispose();
         }
     }
+
+    private static void EnsurePacer()
+    {
+        if (pacerThread != null) return;
+        waitableTimer = TryCreateWaitableTimer();
+        pacerThread = new Thread(PacerLoop)
+        {
+            IsBackground = true,
+            Name = "DeskCanvas.GlassSamplingPacer",
+        };
+        pacerThread.Start();
+    }
+
+    private static IntPtr TryCreateWaitableTimer()
+    {
+        // CREATE_WAITABLE_TIMER_HIGH_RESOLUTION (Windows 10 1803+): wakes are not rounded to the
+        // system tick, which is the whole point — the sampler's 3–10 ms requests must be real.
+        // A plain waitable timer keeps the old ~15.6 ms behaviour rather than failing outright.
+        var timer = CreateWaitableTimerEx(IntPtr.Zero, null, 0x00000002, TimerAllAccess);
+        if (timer == IntPtr.Zero)
+            timer = CreateWaitableTimerEx(IntPtr.Zero, null, 0, TimerAllAccess);
+        return timer;
+    }
+
+    private static void PacerLoop()
+    {
+        while (true)
+        {
+            if (!Volatile.Read(ref pacerWanted))
+            {
+                pacerKick.WaitOne();
+                continue;
+            }
+
+            var intervalMs = EffectiveIntervalMs;
+            if (waitableTimer != IntPtr.Zero)
+            {
+                // One-shot relative wait, re-armed per pulse: the effective interval moves with
+                // the idle backoff, and re-reading it every round keeps the pacer in step without
+                // cancelling and re-programming a periodic timer.
+                var due = -(intervalMs * 10_000L); // 100 ns units; negative = relative to now
+                if (!SetWaitableTimer(waitableTimer, ref due, 0, IntPtr.Zero, IntPtr.Zero, false)
+                    || WaitForSingleObject(waitableTimer, WaitInfinite) != WaitObject0)
+                {
+                    // The timer died (handle invalid, session teardown): degrade quietly.
+                    waitableTimer = IntPtr.Zero;
+                    Thread.Sleep(intervalMs);
+                }
+            }
+            else
+            {
+                Thread.Sleep(intervalMs);
+            }
+
+            if (Volatile.Read(ref pacerWanted)) QueueTick();
+        }
+    }
+
+    private static void QueueTick()
+    {
+        // Coalesce: while the UI thread is busy, pulses keep arriving but the pending one has not
+        // run yet — posting more of them would only queue identical ticks behind it.
+        if (Interlocked.CompareExchange(ref tickQueued, 1, 0) != 0) return;
+        try
+        {
+            Dispatcher.UIThread.Post(OnLiveSamplingTick);
+        }
+        catch
+        {
+            // The dispatcher is gone (shutdown): park the pacer instead of spinning on failures.
+            Volatile.Write(ref pacerWanted, false);
+            Interlocked.Exchange(ref tickQueued, 0);
+        }
+    }
+
+    private const uint TimerAllAccess = 0x1F0003;
+    private const uint WaitObject0 = 0x00000000;
+    private const uint WaitInfinite = 0xFFFFFFFF;
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    private static extern IntPtr CreateWaitableTimerEx(IntPtr lpTimerAttributes, string? lpTimerName, uint dwFlags, uint dwDesiredAccess);
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    private static extern bool SetWaitableTimer(IntPtr hTimer, ref long liDueTime, int lPeriod, IntPtr pfnCompletionRoutine, IntPtr lpArgToCompletionRoutine, bool fResume);
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    private static extern uint WaitForSingleObject(IntPtr hHandle, uint dwMilliseconds);
 
     /// <summary>
     /// One sampling tick: capture one probe frame off the UI thread and refresh the glass surfaces
@@ -228,8 +337,12 @@ public static class LiquidGlassWallpaper
     /// reports itself idle cannot stall live sampling permanently.
     /// </para>
     /// </summary>
-    private static async void OnLiveSamplingTick(object? sender, EventArgs e)
+    private static async void OnLiveSamplingTick()
     {
+        // The pacer coalesces pulses through this latch; consuming it here lets the next pulse
+        // queue a fresh tick even while this one is still probing on a worker.
+        Interlocked.Exchange(ref tickQueued, 0);
+
         if (!liveSamplingEnabled || suspended) { UpdateTimerState(); return; }
         if (!LiquidGlassSurface.HasActiveSurfaces) { UpdateTimerState(); return; }
 
@@ -246,22 +359,27 @@ public static class LiquidGlassWallpaper
         if (Interlocked.Exchange(ref probing, 1) == 1) return;
         try
         {
-            var published = await Task.Run(ProbeCapture);
-            if (published)
+            var outcome = await Task.Run(ProbeCapture);
+            if (outcome == ProbeOutcome.Published)
             {
                 Volatile.Write(ref idleRounds, 0);
                 // Immediate: the interval can be shorter than the surface's move/resize debounce,
                 // and a debounce restarted on every tick would never elapse — freezing the glass.
                 LiquidGlassSurface.RefreshAllImmediate();
             }
-            else
+            else if (outcome == ProbeOutcome.Unchanged)
             {
+                // Only a verified-identical frame may stretch the interval. A failed, flat or
+                // wild-jumped capture says nothing about whether the desktop moved; counting it
+                // as idle walked the interval toward its 500 ms ceiling on hosts with transient
+                // capture hiccups (MPO overlay transitions, a busy shell), so the glass
+                // stuttered even though the wallpaper never stopped animating.
                 Interlocked.Increment(ref idleRounds);
             }
         }
         catch (Exception ex)
         {
-            // A failing capture must not kill the timer's async tick; the next one retries.
+            // A failing capture must not kill the sampler's async tick; the next one retries.
             GlassDiagnostics.Failure(ex);
         }
         finally
@@ -293,8 +411,18 @@ public static class LiquidGlassWallpaper
     /// <summary>Total desktop captures; the achieved sharing is the publish rate divided by this.</summary>
     internal static int CaptureCount => Volatile.Read(ref captureCount);
 
-    /// <summary>Longest the sampler may go without capturing while widgets are still asking.</summary>
-    private const int StallGuardMs = 1000;
+    /// <summary>
+    /// Longest a new round may be held off by busy surfaces before the tick forces through anyway,
+    /// measured from the last capture. Scaled to the requested interval: the old flat 1000 ms let
+    /// one mid-prepare card hold the whole sampler hostage for a full second — an invisible
+    /// ceiling on the achieved frame rate that grew with every widget on screen, so a 5 ms
+    /// request landed far below one publish per 150 ms even on an animated wallpaper. The 150 ms
+    /// floor keeps tiny intervals from forcing captures faster than the pipeline digests them
+    /// (the pre-probe 3 ms pathology: more captures than the surfaces can consume, each reaching
+    /// whoever happens to be free and latching the rest); the 1000 ms cap keeps slow intervals'
+    /// behaviour unchanged.
+    /// </summary>
+    private static int StallGuardMs => Math.Min(1000, Math.Max(150, 4 * EffectiveIntervalMs));
 
     // ---- idle capture release ------------------------------------------------------------------
     // The desktop capture is the single largest allocation in the process — a full virtual desktop
@@ -330,7 +458,7 @@ public static class LiquidGlassWallpaper
         NoteFrameDemand();
 
         // The cache owns one reference and the caller gets another; the caller releases it with
-        // WallpaperSnapshot.Dispose. Nothing here is kept alive by a timer — a capture is a full
+        // WallpaperSnapshot.Dispose. Nothing here is kept alive by the sampler — a capture is a full
         // desktop bitmap and live sampling replaces it ten times a second.
         // The AddRef happens under the Gate on purpose: Invalidate / DropStale run on other
         // threads and free the snapshot the moment the cache lets go, so between GetShared's
@@ -662,22 +790,39 @@ public static class LiquidGlassWallpaper
     }
 
     /// <summary>
+    /// What one probe round established. Drives the idle backoff in the tick: only
+    /// <see cref="Unchanged"/> is evidence that the desktop is standing still — the other
+    /// non-publishing outcome observed nothing and must not stretch the interval.
+    /// </summary>
+    private enum ProbeOutcome
+    {
+        /// <summary>New wallpaper content was published; the surfaces were refreshed.</summary>
+        Published,
+        /// <summary>The desktop was captured and is pixel-identical to the published frame.</summary>
+        Unchanged,
+        /// <summary>Nothing was observed: the capture failed, was flat or was an overlay transition.</summary>
+        Unusable,
+    }
+
+    /// <summary>
     /// One live-sampling probe: capture the wallpaper host and publish the frame only when its
-    /// pixels differ from the one every glass surface is already showing. Returns true when a new
-    /// frame was published (the caller refreshes the surfaces); false when the desktop is
-    /// unchanged (nothing to refresh — the capture buffer is parked for the next probe) or the
-    /// capture was unusable (masked by the previous frame as before).
+    /// pixels differ from the one every glass surface is already showing. Returns
+    /// <see cref="ProbeOutcome.Published"/> when a new frame went out (the caller refreshes the
+    /// surfaces), <see cref="ProbeOutcome.Unchanged"/> when the desktop is pixel-identical to what
+    /// is already showing (nothing to refresh — the capture buffer is parked for the next probe),
+    /// and <see cref="ProbeOutcome.Unusable"/> when the capture produced nothing usable (masked by
+    /// the previous frame as before).
     /// <para>
     /// Runs on a worker outside the wallpaper Gate and single-flighted by the tick; the only
     /// shared mutable state it touches is swap-under-lock (the published snapshot, the sample
     /// grids) and the atomics the rest of the class already uses.
     /// </para>
     /// </summary>
-    private static bool ProbeCapture()
+    private static ProbeOutcome ProbeCapture()
     {
         // The enabled/suspended state is re-checked here: the tick queued this probe a moment ago
         // and a fullscreen transition may have landed in between.
-        if (!liveSamplingEnabled || suspended) return false;
+        if (!liveSamplingEnabled || suspended) return ProbeOutcome.Unusable;
 
         var pooled = Interlocked.Exchange(ref probeBuffer, null);
         SKBitmap? bmp = null;
@@ -697,7 +842,7 @@ public static class LiquidGlassWallpaper
                 // probe (the size is still the desktop's).
                 Volatile.Write(ref probeBuffer, pooled);
                 NoteUnusableCapture(flat: false, jumped: false);
-                return false;
+                return ProbeOutcome.Unusable;
             }
             if (flat)
             {
@@ -705,7 +850,7 @@ public static class LiquidGlassWallpaper
                 // probe allocates a fresh one.
                 bmp.Dispose();
                 NoteUnusableCapture(flat: true, jumped: false);
-                return false;
+                return ProbeOutcome.Unusable;
             }
 
             var identity = DesktopCapturer.SampleGrid(bmp, IdentityColumns, IdentityRows);
@@ -715,7 +860,7 @@ public static class LiquidGlassWallpaper
                 // as the next probe's buffer so an idle desktop costs no allocation at all.
                 firstUnusableAt = 0;
                 Volatile.Write(ref probeBuffer, bmp);
-                return false;
+                return ProbeOutcome.Unchanged;
             }
 
             var samples = DesktopCapturer.SampleGrid(bmp);
@@ -730,7 +875,7 @@ public static class LiquidGlassWallpaper
             {
                 bmp.Dispose();
                 NoteUnusableCapture(flat: false, jumped: true);
-                return false;
+                return ProbeOutcome.Unusable;
             }
 
             // Genuinely new content: publish it exactly as CaptureOnce would.
@@ -760,7 +905,7 @@ public static class LiquidGlassWallpaper
             NotifyInvalidated();
             // The buffer's pixels now belong to the snapshot — the next probe captures fresh.
             published = true;
-            return true;
+            return ProbeOutcome.Published;
         }
         catch
         {

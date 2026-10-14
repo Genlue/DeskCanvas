@@ -79,7 +79,7 @@ public class SettingsViewModel : ReactiveObject
         var timeAssemblies = GetAssemblies("Clock", "Calendar", "Progress", "Pomodoro");
         var weatherAssemblies = GetAssemblies("Weather");
         var mapAssemblies = GetAssemblies("Map");
-        var memoAssemblies = GetAssemblies("Notes", "Reminders", "Hitokoto");
+        var memoAssemblies = GetAssemblies("Notes", "Reminders", "Hitokoto", "Timetable");
         var desktopAssemblies = GetAssemblies("Folders");
         var monitorAssemblies = GetAssemblies("Monitor", "Batteries", "Storage", "ControlCenter");
         var mediaAssemblies = GetAssemblies("Music", "Picture");
@@ -89,7 +89,7 @@ public class SettingsViewModel : ReactiveObject
 
         var knownNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
         {
-            "Clock", "Calendar", "Progress", "Pomodoro", "Weather", "Map", "Notes", "Reminders", "Hitokoto", "Folders", "Monitor", "Batteries", "Storage", "Music", "Picture", "Tools", "Search", "ControlCenter", "FixedWidgets", "StackWidgets"
+            "Clock", "Calendar", "Progress", "Pomodoro", "Weather", "Map", "Notes", "Reminders", "Hitokoto", "Timetable", "Folders", "Monitor", "Batteries", "Storage", "Music", "Picture", "Tools", "Search", "ControlCenter", "FixedWidgets", "StackWidgets"
         };
         var otherAssemblies = loadedAssemblies.Values
             .Where(a => !knownNames.Contains(a.AssemblyName))

@@ -1,4 +1,5 @@
 using Avalonia.Media;
+using Avalonia.Media.Immutable;
 using Timetable.Models;
 
 namespace Timetable.Services;
@@ -18,6 +19,24 @@ public static class CoursePalette
 
     private static readonly IBrush DarkForeground = new SolidColorBrush(Color.FromRgb(0x21, 0x23, 0x27));
     private static readonly IBrush LightForeground = Brushes.White;
+
+    /// <summary>
+    /// Shared immutable fill brushes, one per distinct course colour. Blocks used to
+    /// allocate a fresh mutable SolidColorBrush per block per rebuild (and a rebuild
+    /// happens on every resize step / week switch / settings change); the palette is
+    /// tiny, so one bounded cache serves every surface (widget, panel, review preview)
+    /// allocation-free. Immutable brushes also skip the mutable-object change tracking.
+    /// Bounded by the distinct course colours (≤ MaxCourses user colours + 10 defaults).
+    /// </summary>
+    private static readonly Dictionary<Color, IBrush> BrushCache = [];
+
+    public static IBrush BrushFor(Color color)
+    {
+        if (BrushCache.TryGetValue(color, out var cached)) return cached;
+        var brush = new ImmutableSolidColorBrush(color);
+        BrushCache.Add(color, brush);
+        return brush;
+    }
 
     /// <summary>Stable colour for a name (FNV-1a), so the same course always gets the same default colour.</summary>
     public static string DefaultColorFor(string name)

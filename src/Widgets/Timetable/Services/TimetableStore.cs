@@ -19,11 +19,22 @@ public static class TimetableStore
     private static FileSystemWatcher? fileWatcher;
     private static DateTime lastWriteTime = DateTime.MinValue;
 
+    // JsonSerializerOptions builds an expensive metadata cache — never allocate one per save/load.
+    private static readonly JsonSerializerOptions SaveOptions = new() { WriteIndented = true };
+    private static readonly JsonSerializerOptions LoadOptions = new() { PropertyNameCaseInsensitive = true };
+
     /// <summary>
     /// Raised whenever the unified timetable data changes (by any widget or external file edit).
     /// <c>sender</c> is the widget instance or source that triggered the change.
     /// </summary>
     public static event Action<TimetableModel, object?>? ModelChanged;
+
+    /// <summary>
+    /// Raised when persisting the model to disk fails (disk full, lock, ACL, …).
+    /// The message is human-readable; surfaces belong in UI (e.g. the settings page status line),
+    /// because a silent save failure is exactly how the two historical data copies diverged.
+    /// </summary>
+    public static event Action<string>? SaveFailed;
 
     /// <summary>
     /// The file path where unified timetable data is stored.
@@ -46,6 +57,12 @@ public static class TimetableStore
     /// <summary>
     /// Gets the current unified timetable model.
     /// If not loaded, loads from <c>timetable.json</c> (migrating from legacy <c>layout.json</c> if needed).
+    /// <para>
+    /// Failure policy: when the file exists but cannot be parsed, the in-memory default is used
+    /// and the file is <b>not</b> rewritten — overwriting it with defaults here destroyed the
+    /// user's last recoverable copy once a file went bad. The file is only (re)written when it
+    /// was missing (fresh install / first run) or when a legacy migration contributed data.
+    /// </para>
     /// </summary>
     public static TimetableModel Get()
     {
@@ -55,8 +72,16 @@ public static class TimetableStore
         {
             if (cachedModel != null) return cachedModel;
 
-            cachedModel = LoadFromFile() ?? MigrateFromLayout() ?? CreateDefault();
-            SaveInternal(cachedModel);
+            cachedModel = LoadFromFile();
+            if (cachedModel != null) return cachedModel;
+
+            var fileExists = File.Exists(FilePath);
+            var migrated = MigrateFromLayout();
+            cachedModel = migrated ?? CreateDefault();
+
+            // Adopted legacy data (or a fresh install): persist it. An existing but
+            // unreadable file with nothing to migrate is left untouched on purpose.
+            if (!fileExists || migrated != null) SaveInternal(cachedModel);
             return cachedModel;
         }
     }
@@ -107,14 +132,40 @@ public static class TimetableStore
                 Directory.CreateDirectory(dir);
             }
 
-            var options = new JsonSerializerOptions { WriteIndented = true };
+            var options = SaveOptions;
             var json = JsonSerializer.Serialize(model, options);
+
+            // Atomic replace: write beside the target, then move. A plain WriteAllText
+            // truncates first — a crash (or a watcher reload) mid-write used to leave a
+            // torn file behind, and the next load silently fell back to defaults.
+            var tmp = path + ".tmp";
             lastWriteTime = DateTime.UtcNow;
-            File.WriteAllText(path, json);
+            File.WriteAllText(tmp, json);
+            File.Move(tmp, path, overwrite: true);
         }
         catch (Exception ex)
         {
             System.Diagnostics.Debug.WriteLine($"[TimetableStore] Failed to save {FilePath}: {ex.Message}");
+            RaiseSaveFailed(ex.Message);
+        }
+    }
+
+    private static void RaiseSaveFailed(string message)
+    {
+        try
+        {
+            if (Dispatcher.UIThread.CheckAccess())
+            {
+                SaveFailed?.Invoke(message);
+            }
+            else
+            {
+                Dispatcher.UIThread.Post(() => SaveFailed?.Invoke(message));
+            }
+        }
+        catch
+        {
+            SaveFailed?.Invoke(message);
         }
     }
 
@@ -128,10 +179,7 @@ public static class TimetableStore
             var json = File.ReadAllText(path);
             if (string.IsNullOrWhiteSpace(json)) return null;
 
-            var model = JsonSerializer.Deserialize<TimetableModel>(json, new JsonSerializerOptions
-            {
-                PropertyNameCaseInsensitive = true
-            });
+            var model = JsonSerializer.Deserialize<TimetableModel>(json, LoadOptions);
             return model?.Normalize();
         }
         catch (Exception ex)

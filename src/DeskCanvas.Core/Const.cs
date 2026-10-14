@@ -24,7 +24,7 @@ public static class Const
     /// <summary>
     /// The folder with the widgets.
     /// </summary>
-    public static readonly string WidgetsFolder = Path.Combine(DataFolder, WidgetsFolderName);
+    public static readonly string WidgetsFolder = GetWidgetsFolder();
     /// <summary>
     /// The path to the application settings file.
     /// </summary>
@@ -55,9 +55,44 @@ public static class Const
 
     private static string GetDataFolder()
     {
+        // Test/tool isolation: a process may redirect the whole data folder (settings, layout,
+        // timetable, reminders) away from the live user folder. The check/repro projects set
+        // DESCANVAS_DATA_FOLDER first thing in Main — without it, a process that is not the
+        // packaged app resolves DataFolder to %LocalAppData%\DeskCanvas anyway and its store
+        // saves stomp the user's real data (a check run overwrote timetable.json with the
+        // "测试学期" sample twice this way).
+        var overrideFolder = Environment.GetEnvironmentVariable("DESCANVAS_DATA_FOLDER");
+        if (!string.IsNullOrWhiteSpace(overrideFolder)) return overrideFolder;
+
+        // Structural sandbox: every check/repro harness builds into tests\<Name>\bin\..., so
+        // any process whose exe path carries a "tests" segment is a harness — give it its own
+        // disposable data folder instead of the packaged app's live %LocalAppData%\DeskCanvas.
+        // (Without this, a harness that constructs real widget views saves its stores straight
+        // into the user's data — a TimetableChecks run overwrote timetable.json with the
+        // "测试学期" sample twice.) The explicit override above wins when a check wants to
+        // pin the folder itself.
+        var harness = TestHarnessSandboxName();
+        if (harness != null)
+            return Path.Combine(Path.GetTempPath(), "DeskCanvas-TestHarnesses", harness);
+
         // Portable mode: a Widgets folder next to the exe (official layout / dev output).
         if (Directory.Exists(Path.Combine(CurrentFolder, WidgetsFolderName)))
+        {
+#if DEBUG
+            // Dev builds keep the classic portable layout for the widget DLLs (they hot-load
+            // from the exe-adjacent Widgets folder — see GetWidgetsFolder), but user data must
+            // NOT live inside the build output: a Clean/rebuild wipes it, and the copied
+            // layout/appSettings templates stomp whatever survived. Redirect dev data to a
+            // sibling of the packaged folder so Debug runs, Release runs and the packaged app
+            // never touch each other's data. (Release keeps the classic behaviour so the
+            // shipped portable zip stays self-contained.)
+            return Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                AppName + "-dev");
+#else
             return CurrentFolder;
+#endif
+        }
 
         var localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
         var folder = Path.Combine(localAppData, AppName);
@@ -86,6 +121,38 @@ public static class Const
 
         // Packaged single-file mode: runtime data lives in LocalAppData (writable, hot-updatable).
         return folder;
+    }
+
+    /// <summary>
+    /// Widget assemblies live next to the exe in portable mode (official layout, dev output —
+    /// the assembly provider hot-loads them from there); packaged mode gets them
+    /// extracted under the data folder. Decoupled from <see cref="DataFolder"/> because dev
+    /// builds redirect the data folder out of the build output while the DLLs stay in it.
+    /// </summary>
+    /// <summary>
+    /// The sandbox folder name for a check-harness process — its exe path carries a "tests"
+    /// segment and the harness folder name is the segment right after it — or null for normal
+    /// app processes (packaged app, dev build, release portable).
+    /// </summary>
+    private static string? TestHarnessSandboxName()
+    {
+        var exePath = Environment.ProcessPath;
+        if (string.IsNullOrEmpty(exePath)) return null;
+
+        var segments = exePath.Split(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+        for (var i = 0; i < segments.Length - 1; i++)
+        {
+            if (segments[i].Equals("tests", StringComparison.OrdinalIgnoreCase))
+                return segments[i + 1];
+        }
+        return null;
+    }
+
+    private static string GetWidgetsFolder()
+    {
+        if (Directory.Exists(Path.Combine(CurrentFolder, WidgetsFolderName)))
+            return Path.Combine(CurrentFolder, WidgetsFolderName);
+        return Path.Combine(DataFolder, WidgetsFolderName);
     }
 
     private static void SafeCopy(string source, string target)

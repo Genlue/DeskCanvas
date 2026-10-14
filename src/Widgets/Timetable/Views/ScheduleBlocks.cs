@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Layout;
 using Avalonia.Media;
+using Avalonia.Media.Immutable;
 using Timetable.Locales;
 using Timetable.Models;
 using Timetable.Services;
@@ -16,7 +17,7 @@ namespace Timetable.Views;
 internal static class ScheduleBlocks
 {
     /// <summary>Subtle background for empty grid slots (reads correctly in light and dark themes).</summary>
-    public static readonly IBrush LaneBrush = new SolidColorBrush(Color.FromArgb(0x14, 0x80, 0x80, 0x80));
+    public static readonly IBrush LaneBrush = new ImmutableSolidColorBrush(Color.FromArgb(0x14, 0x80, 0x80, 0x80));
 
     public static Border Create(TimetableRuntime.Slot slot, double titleFont, double subFont, bool showSub,
         bool showRoom, bool showTeacher)
@@ -60,7 +61,7 @@ internal static class ScheduleBlocks
 
         var border = new Border
         {
-            Background = new SolidColorBrush(color),
+            Background = CoursePalette.BrushFor(color),
             CornerRadius = new CornerRadius(6),
             Margin = new Thickness(1),
             Padding = new Thickness(2, 2, 2, 2),
