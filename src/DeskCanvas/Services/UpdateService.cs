@@ -364,7 +364,6 @@ public class UpdateService
         Uri.TryCreate(apiUrl, UriKind.Absolute, out var targetUri);
 
         var resolvedProxy = ProxySettings.ResolveProxy(settings.HttpProxy, targetUri);
-        bool isAutoMode = ProxySettings.GetMode(settings.HttpProxy) == ProxyModeKind.Auto;
 
         var (info, errorReason) = await TryFetchWithProxyAsync(apiUrl, resolvedProxy).ConfigureAwait(false);
         if (info != null)
@@ -372,9 +371,12 @@ public class UpdateService
             return (info, resolvedProxy, null);
         }
 
-        // In Auto mode, if an auto-detected proxy failed (e.g. local port couldn't reach GitHub),
-        // automatically try direct connection once as fallback.
-        if (isAutoMode && resolvedProxy.UsesProxy)
+        // Any resolved proxy route that failed to reach GitHub — auto-detected local port, system
+        // proxy, or a custom URL (including a stale/junk value left behind by an older build —
+        // which is exactly how an old install ends up unable to self-update, its silent-failure
+        // path giving the user nothing to act on) — gets one direct retry, so a broken proxy
+        // degrades to "check via direct" instead of a dead check.
+        if (resolvedProxy.UsesProxy)
         {
             var directProxy = new ResolvedProxy(null, ProxySourceKind.Direct);
             var (directInfo, directError) = await TryFetchWithProxyAsync(apiUrl, directProxy).ConfigureAwait(false);

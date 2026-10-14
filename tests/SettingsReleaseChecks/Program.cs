@@ -254,6 +254,24 @@ internal static class Program
         Check(DeskCanvas.Core.Services.ProxySettings.GetMode("http://127.0.0.1:7890") == DeskCanvas.Core.Services.ProxyModeKind.Custom,
             "custom URL resolves to ProxyModeKind.Custom");
 
+        // --- proxy persistence mapping: the file must stay parseable by pre-3.7.0 builds ----------
+        // ("auto"/"direct" are 3.7.0+ tokens; older builds sharing the file treat any unknown
+        // token as a custom proxy URL — WebProxy("auto") — and their update check dies silently)
+        var (autoFlag, autoFile) = DeskCanvas.Core.Services.ProxySettings.ToPersistedProxy("auto");
+        Check(autoFlag == true && autoFile == "system" &&
+              DeskCanvas.Core.Services.ProxySettings.FromPersistedProxy(autoFlag, autoFile) == "auto",
+            "auto persists as (true, 'system') and reconstructs to 'auto'");
+        Check(DeskCanvas.Core.Services.ProxySettings.ToPersistedProxy("direct") == (false, null) &&
+              DeskCanvas.Core.Services.ProxySettings.FromPersistedProxy(false, null) == "direct",
+            "direct persists as (false, null) and reconstructs to 'direct' (not auto)");
+        Check(DeskCanvas.Core.Services.ProxySettings.ToPersistedProxy("system") == (false, "system") &&
+              DeskCanvas.Core.Services.ProxySettings.ToPersistedProxy("http://127.0.0.1:7890") == (false, "http://127.0.0.1:7890"),
+            "system and custom URLs persist unchanged");
+        Check(DeskCanvas.Core.Services.ProxySettings.FromPersistedProxy(null, "auto") == "auto" &&
+              DeskCanvas.Core.Services.ProxySettings.FromPersistedProxy(null, "system") == "system" &&
+              DeskCanvas.Core.Services.ProxySettings.FromPersistedProxy(null, "http://127.0.0.1:7890") == "http://127.0.0.1:7890",
+            "legacy files (null flag) interpret raw values as-is");
+
         Check(DeskCanvas.Core.Services.ProxySettings.ParseWindowsProxyServer("127.0.0.1:7890") == "http://127.0.0.1:7890",
             "ParseWindowsProxyServer normalizes bare host:port");
         Check(DeskCanvas.Core.Services.ProxySettings.ParseWindowsProxyServer("http=127.0.0.1:7890;https=127.0.0.1:7897") == "http://127.0.0.1:7897",

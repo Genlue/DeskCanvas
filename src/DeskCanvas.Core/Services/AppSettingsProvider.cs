@@ -1,3 +1,4 @@
+using System.Text.Json;
 using DeskCanvas.Core.Interfaces;
 using DeskCanvas.Core.Models.Settings;
 
@@ -9,6 +10,14 @@ public class AppSettingsProvider() : JsonParser<AppSettings>(Const.AppSettingsFi
     /// <inheritdoc />
     protected override AppSettings Normalize(AppSettings settings)
     {
+        // Proxy persistence round-trip: the file stores the legacy-safe form ("system"/null/URL +
+        // ProxyAutoDetect — see ProxySettings.ToPersistedProxy); reconstruct the in-memory mode
+        // token ("auto"/"direct") so every consumer keeps seeing the semantic string.
+        settings = settings with
+        {
+            HttpProxy = ProxySettings.FromPersistedProxy(settings.ProxyAutoDetect, settings.HttpProxy)
+        };
+
         var surface = settings.Theme.EffectiveSurface;
         var theme = settings.Theme.NormalizeMaterial() with { Surface = surface };
         var surfaceThemes = settings.SurfaceThemes != null
@@ -41,5 +50,18 @@ public class AppSettingsProvider() : JsonParser<AppSettings>(Const.AppSettingsFi
             SurfaceThemes = surfaceThemes,
             Layout = layout
         };
+    }
+
+    /// <summary>
+    /// Persist the proxy mode in the legacy-safe form: the in-memory token ("auto"/"direct"/
+    /// "system"/custom URL) becomes (ProxyAutoDetect, file value) — see
+    /// <see cref="ProxySettings.ToPersistedProxy"/> for why the file must never carry the
+    /// 3.7.0+ tokens ("auto"/"direct") that pre-3.7.0 builds sharing this file misparse as a
+    /// custom proxy URL. The cached in-memory value stays the semantic one.
+    /// </summary>
+    protected override string SerializeForFile(AppSettings value)
+    {
+        var (autoDetect, fileValue) = ProxySettings.ToPersistedProxy(value.HttpProxy);
+        return JsonSerializer.Serialize(value with { ProxyAutoDetect = autoDetect, HttpProxy = fileValue });
     }
 }

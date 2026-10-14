@@ -12,7 +12,8 @@ namespace DeskCanvas.Core.Models.Settings;
 /// <param name="IgnoreUpdate">Version to ignore for update checks.</param>
 /// <param name="UpdateUrl">Custom update source (releases/latest page or API URL); <c>null</c>/empty disables update checks.</param>
 /// <param name="Grid">Custom manual grid settings (used when <see cref="Layout.GridMode"/> is <see cref="GridMode.Manual"/>).</param>
-/// <param name="HttpProxy">HTTP proxy for network requests: <c>null</c>/empty/<c>"auto"</c> = auto-detect active proxy and fall back to direct connection, <c>"direct"</c> = direct connection (bypass all proxies), <c>"system"</c> = use the system proxy, otherwise a custom proxy URL.</param>
+/// <param name="HttpProxy">HTTP proxy for network requests: <c>null</c>/empty/<c>"auto"</c> = auto-detect active proxy and fall back to direct connection, <c>"direct"</c> = direct connection (bypass all proxies), <c>"system"</c> = use the system proxy, otherwise a custom proxy URL. <para>This in-memory token is persisted in a legacy-safe form — see <see cref="ProxyAutoDetect"/> and <c>ProxySettings.ToPersistedProxy</c>.</para></param>
+/// <param name="ProxyAutoDetect">Persistence companion of <see cref="HttpProxy"/>'s auto mode: <c>true</c> on disk means the in-memory token is <c>"auto"</c>. The file itself only ever carries legacy-safe values (<c>null</c>/empty = direct, <c>"system"</c> = system proxy, otherwise a custom URL) so pre-3.7.0 builds — which read this same file and treat any unknown token as a custom proxy URL — keep working; <c>null</c> means a file written by an older build (interpret <see cref="HttpProxy"/> as-is). Not a user-facing setting.</param>
 /// <param name="TitleBarStyle">Title bar style of the settings window (macOS traffic lights or native system buttons); <c>null</c> uses <see cref="TitleBarStyle.Native"/> so old configurations keep their look.</param>
 /// <param name="TitleBarSize">Traffic light diameter in DIPs; <c>null</c> uses <see cref="DefaultTitleBarSize"/> (14 — a bit larger than the 12px macOS standard for high-DPI screens).</param>
 /// <param name="ActiveProfile">Active profile name; <c>null</c> or empty defaults to "默认配置".</param>
@@ -35,6 +36,7 @@ public record AppSettings(
     string? UpdateUrl = null,
     Grid? Grid = null,
     string? HttpProxy = "auto",
+    bool? ProxyAutoDetect = null,
     TitleBarStyle? TitleBarStyle = null,
     double? TitleBarSize = null,
     string? ActiveProfile = null,

@@ -33,11 +33,18 @@ public class JsonParser<T>(string filePath) : IDataProvider<T>
     {
         var oldData = data;
         DataChanging?.Invoke(this, data, newData);
-        var json = JsonSerializer.Serialize(data = newData);
-        
-        File.WriteAllText(filePath, json);
+        data = newData;
+
+        File.WriteAllText(filePath, SerializeForFile(newData));
         DataChanged?.Invoke(this, oldData, newData);
     }
+
+    /// <summary>
+    /// Hook for transforming the in-memory value into the on-disk JSON (e.g. persisting a
+    /// mode token in a form older builds can still parse). The cached in-memory value stays
+    /// the semantic one — only the file content is mapped. Default: serialize as-is.
+    /// </summary>
+    protected virtual string SerializeForFile(T value) => JsonSerializer.Serialize(value);
 
     /// <summary>
     /// Hook for normalizing deserialized data (e.g. filling in defaults for

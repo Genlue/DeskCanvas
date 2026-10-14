@@ -119,6 +119,43 @@ public static class ProxySettings
     }
 
     /// <summary>
+    /// Map the in-memory mode token into its on-disk (legacy-safe) persistence form.
+    /// <para>
+    /// <c>"auto"</c> and <c>"direct"</c> are 3.7.0+ tokens, but pre-3.7.0 builds share this same
+    /// settings file and treat any value that is neither empty nor <c>"system"</c> as a custom
+    /// proxy URL — <c>new WebProxy("auto")</c> resolves the literal host "auto", every request
+    /// fails, and the old build's update check dies silently (its failure path has no UI). The
+    /// file therefore only ever carries values with the old semantics: <c>null</c>/empty = direct,
+    /// <c>"system"</c> = system proxy, otherwise a URL. The auto intent travels in
+    /// <see cref="AppSettings.ProxyAutoDetect"/>, and auto persists as <c>"system"</c> — the most
+    /// useful legacy fallback (a proxied machine gets the working system proxy; a direct machine
+    /// has none and connects directly).
+    /// </para>
+    /// </summary>
+    public static (bool? AutoDetect, string? FileValue) ToPersistedProxy(string? semantic)
+    {
+        return GetMode(semantic) switch
+        {
+            ProxyModeKind.Auto => (true, "system"),
+            ProxyModeKind.Direct => (false, null),
+            ProxyModeKind.System => (false, "system"),
+            _ => (false, semantic)
+        };
+    }
+
+    /// <summary>
+    /// Reconstruct the in-memory mode token from the persisted form (inverse of
+    /// <see cref="ToPersistedProxy"/>). <c>null</c> <paramref name="autoDetect"/> means a file
+    /// written by an older build — interpret the raw value as-is, exactly as 3.7.0/3.7.1 did.
+    /// </summary>
+    public static string FromPersistedProxy(bool? autoDetect, string? fileValue)
+    {
+        if (autoDetect == true) return "auto";
+        if (autoDetect == false && string.IsNullOrWhiteSpace(fileValue)) return "direct";
+        return fileValue ?? "";
+    }
+
+    /// <summary>
     /// Create an <see cref="HttpClient"/> whose handler follows the configured proxy setting.
     /// </summary>
     public static HttpClient CreateHttpClient()
@@ -270,7 +307,9 @@ public static class ProxySettings
     }
 
     /// <summary>
-    /// Read the <see cref="AppSettings.HttpProxy"/> value straight from the settings file.
+    /// Read the <see cref="AppSettings.HttpProxy"/> value straight from the settings file,
+    /// reconstructed back into the in-memory mode token (the file stores the legacy-safe
+    /// persistence form — see <see cref="ToPersistedProxy"/>).
     /// Reads the file directly so widget plugins can use it without DI.
     /// </summary>
     public static string? GetProxySetting()
@@ -279,7 +318,8 @@ public static class ProxySettings
         {
             if (!File.Exists(Const.AppSettingsFile)) return "auto";
             var json = File.ReadAllText(Const.AppSettingsFile);
-            return JsonSerializer.Deserialize<AppSettings>(json)?.HttpProxy;
+            var settings = JsonSerializer.Deserialize<AppSettings>(json);
+            return settings == null ? "auto" : FromPersistedProxy(settings.ProxyAutoDetect, settings.HttpProxy);
         }
         catch (Exception)
         {
