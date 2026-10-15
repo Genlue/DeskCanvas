@@ -53,7 +53,6 @@ public partial class WeatherPopupWindow : SecondaryPanelWindow
             shell.PropertyChanged += OnShellPaintChanged;
             ApplyContentTheme(shell);
         }
-
         Closed += OnWindowClosed;
     }
 
@@ -97,8 +96,10 @@ public partial class WeatherPopupWindow : SecondaryPanelWindow
 
     private void OnShellPaintChanged(object? sender, AvaloniaPropertyChangedEventArgs e)
     {
-        if (e.Property == SecondaryPanelShell.CardBackgroundProperty
-            || e.Property == SecondaryPanelShell.CardBorderBrushProperty)
+        // Every binder Refresh assigns a fresh PanelAppearance record, so this fires on each
+        // settings/variant/focus-state change — including material-only swaps where the card
+        // brushes stay value-equal (透明→透明) and a CardBackground listener would miss.
+        if (e.Property == SecondaryPanelShell.SurfaceAppearanceProperty)
         {
             ApplyContentTheme(PanelShell);
         }
@@ -107,10 +108,13 @@ public partial class WeatherPopupWindow : SecondaryPanelWindow
     /// <summary>The plugin-owned palette. Content text follows the historic weather rule
     /// (多彩 keeps white-on-blue regardless of the variant); in the 多彩 theme the card's
     /// weather blue is asserted over the shell baseline. The compare-before-write guard keeps
-    /// the PropertyChanged feedback from looping.</summary>
+    /// the PropertyChanged feedback from looping. The theme is the panel's EFFECTIVE one —
+    /// the focus-state theme while 失焦自动切换 is live, the shared theme otherwise — resolved
+    /// through the same entry point the appearance binder uses, so the content and the shell
+    /// can never paint different states.</summary>
     private void ApplyContentTheme(SecondaryPanelShell? shell)
     {
-        var theme = PanelAppearanceResolver.ReadTheme(settingsProvider ??= PanelAppearanceResolver.TryResolveSettingsProvider());
+        var theme = PanelAppearanceResolver.ResolveEffectiveTheme(settingsProvider ??= PanelAppearanceResolver.TryResolveSettingsProvider());
         bool isDark = PanelAppearanceResolver.IsDark(theme, ActualThemeVariant);
 
         IBrush textBrush = (theme.IsColorful || isDark) ? Brushes.White : new SolidColorBrush(Color.FromRgb(30, 30, 30));

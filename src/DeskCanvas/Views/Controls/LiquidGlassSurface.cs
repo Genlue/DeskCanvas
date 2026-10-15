@@ -13,6 +13,7 @@ using Avalonia.Rendering.SceneGraph;
 using Avalonia.Skia;
 using Avalonia.Styling;
 using Avalonia.Threading;
+using Avalonia.VisualTree;
 using SkiaSharp;
 using DeskCanvas.Core.Models.Settings;
 using DeskCanvas.Services;
@@ -114,10 +115,27 @@ public sealed class LiquidGlassSurface : Control
     public static readonly StyledProperty<bool> SettingsSurfaceProperty =
         AvaloniaProperty.Register<LiquidGlassSurface, bool>(nameof(SettingsSurface));
 
+    /// <summary>
+    /// Compute the wallpaper sampling origin from <b>layout offsets only</b>, ignoring every
+    /// ancestor render transform on the way to the window.
+    /// <para>
+    /// The secondary-panel shell sets this: its host window animates the card's
+    /// <c>ScaleTransform</c> for the open/close zoom, and Avalonia's <c>PointToScreen</c> composes
+    /// render transforms — so a frame built while the card is scaled (the panel asks for one right
+    /// before the transition starts) would bake the mid-zoom position into the material and the
+    /// glass would sample the wallpaper from the wrong spot for the panel's whole lifetime. With
+    /// this flag the position is always the at-rest rect; the zoom itself is re-parameterised per
+    /// tick through <see cref="SetAnimationFrameScale"/> from that correct base.
+    /// </para>
+    /// </summary>
+    public static readonly StyledProperty<bool> IgnoresAncestorTransformProperty =
+        AvaloniaProperty.Register<LiquidGlassSurface, bool>(nameof(IgnoresAncestorTransform));
+
     public Theme? Material { get => GetValue(MaterialProperty); set => SetValue(MaterialProperty, value); }
     public CornerRadius CornerRadius { get => GetValue(CornerRadiusProperty); set => SetValue(CornerRadiusProperty, value); }
     public bool Preview { get => GetValue(PreviewProperty); set => SetValue(PreviewProperty, value); }
     public bool SettingsSurface { get => GetValue(SettingsSurfaceProperty); set => SetValue(SettingsSurfaceProperty, value); }
+    public bool IgnoresAncestorTransform { get => GetValue(IgnoresAncestorTransformProperty); set => SetValue(IgnoresAncestorTransformProperty, value); }
 
     private readonly DispatcherTimer debounce;
     private Window? window;
@@ -545,7 +563,12 @@ public sealed class LiquidGlassSurface : Control
         var top = screens?.Min(s => s.Bounds.Y) ?? 0;
         var desktopWidth = (screens?.Max(s => s.Bounds.Right) ?? 1920) - left;
         var desktopHeight = (screens?.Max(s => s.Bounds.Bottom) ?? 1080) - top;
-        var position = window != null ? this.PointToScreen(default) : default;
+        // PointToScreen composes render transforms (Avalonia composes them per visual in
+        // GetOffsetFrom); a host that animates its card (the panel shell's open/close zoom) must
+        // not let that mid-zoom matrix reach the sampling origin — see IgnoresAncestorTransform.
+        var position = window == null
+            ? default
+            : IgnoresAncestorTransform ? DesktopPositionIgnoringRenderTransforms() : this.PointToScreen(default);
         var widget = window as Widget;
         var (cols, rows) = widget?.CurrentSpan ?? (0, 0);
         var material = Material ?? new Theme(null, null, 0.18, true, false, "Inter", SurfaceStyle.LiquidGlass);
@@ -584,6 +607,28 @@ public sealed class LiquidGlassSurface : Control
                     { Blur = material.EffectiveLiquidGlass.Blur * 0.35, EdgeWidth = material.EffectiveLiquidGlass.EdgeWidth * 0.35 }
                 }
             };
+    }
+
+    /// <summary>
+    /// The surface's top-left corner in screen (physical) pixels, computed from layout offsets
+    /// (<see cref="Visual.Bounds.TopLeft"/>) only — every <c>RenderTransform</c> on the way up is
+    /// deliberately skipped, so an ancestor's animation never shifts the sampled wallpaper region.
+    /// Falls back to the regular <c>PointToScreen</c> when the walk does not reach the window
+    /// (an unexpected tree shape must not break the material).
+    /// </summary>
+    private PixelPoint DesktopPositionIgnoringRenderTransforms()
+    {
+        if (window == null) return default;
+        var offset = default(Point);
+        var visual = (Visual?)this;
+        while (visual != null && !ReferenceEquals(visual, window))
+        {
+            var topLeft = visual.Bounds.TopLeft;
+            offset = new Point(offset.X + topLeft.X, offset.Y + topLeft.Y);
+            visual = visual.GetVisualParent();
+        }
+
+        return ReferenceEquals(visual, window) ? window.PointToScreen(offset) : this.PointToScreen(default);
     }
 
     /// <summary>

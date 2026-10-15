@@ -958,11 +958,22 @@ public static class LiquidGlassWallpaper
     /// grids) and the atomics the rest of the class already uses.
     /// </para>
     /// </summary>
+    /// <summary>
+    /// Whether a probe round is wanted at all: the user's live-sampling switch, or a running
+    /// wallpaper-change settle window — which must keep probing even with live sampling off,
+    /// because the watcher path has no other publisher (see <see cref="BeginSettle"/>). Extracted
+    /// so the guard is assertable without capturing a real desktop.
+    /// </summary>
+    internal static bool ProbeWanted => !suspended && (liveSamplingEnabled || SettleActive);
+
     private static ProbeOutcome ProbeCapture()
     {
         // The enabled/suspended state is re-checked here: the tick queued this probe a moment ago
-        // and a fullscreen transition may have landed in between.
-        if (!liveSamplingEnabled || suspended) return ProbeOutcome.Unusable;
+        // and a fullscreen transition may have landed in between. A settle window probes even with
+        // live sampling off — this guard used to reject those probes outright, which silently
+        // disabled the whole wallpaper-change convergence: the change-instant capture (mid-fade or
+        // an MPO overlay artifact) froze on every glass card until an unrelated event re-rendered.
+        if (!ProbeWanted) return ProbeOutcome.Unusable;
 
         var pooled = Interlocked.Exchange(ref probeBuffer, null);
         SKBitmap? bmp = null;

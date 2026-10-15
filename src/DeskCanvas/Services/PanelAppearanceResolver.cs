@@ -107,15 +107,27 @@ public static class PanelAppearanceResolver
     }
 
     /// <summary>
-    /// Read the theme through the shared provider; falls back to <see cref="FallbackTheme"/>
-    /// when there is no provider (headless checks, panels opened before the host finished
-    /// wiring) or the read throws. Never throws.
+    /// The panel's effective theme — the single rule the appearance binder and every plugin-owned
+    /// content theming share: while 失焦自动切换 is live, every layer of the panel follows the
+    /// uniform state's theme (the same one <see cref="PanelAppearanceBinder"/> resolves for the
+    /// shell); otherwise the shared theme. Without a provider (headless checks, very early
+    /// start-up) or on a read failure this falls back to <see cref="FallbackTheme"/>. Never throws.
     /// </summary>
-    public static Theme ReadTheme(IAppSettingsProvider? settings)
+    /// <remarks>
+    /// Content theming MUST read the theme through here (or off the shell's resolved
+    /// <see cref="PanelAppearance"/>) instead of the shared theme directly: with 失焦自动切换 on,
+    /// the state material and the shared material differ by design, and a panel whose shell paints
+    /// one state while its content paints the other is exactly the reported mixed style.
+    /// </remarks>
+    public static Theme ResolveEffectiveTheme(IAppSettingsProvider? settings)
     {
+        if (settings is null) return FallbackTheme;
         try
         {
-            return settings?.Get().Theme ?? FallbackTheme;
+            var appSettings = settings.Get();
+            if (appSettings.FocusLink is not { Enabled: true }) return appSettings.Theme;
+            var coordinator = App.Services?.GetService(typeof(FocusThemeCoordinator)) as FocusThemeCoordinator;
+            return coordinator?.ResolveWindowTheme(appSettings) ?? appSettings.Theme;
         }
         catch
         {
@@ -299,7 +311,7 @@ public sealed class PanelAppearanceBinder
     /// <summary>Recompute the appearance and push it into the shell and the panel window.</summary>
     public void Refresh()
     {
-        var theme = ResolveTheme() ?? PanelAppearanceResolver.ReadTheme(settings);
+        var theme = PanelAppearanceResolver.ResolveEffectiveTheme(settings);
         var radius = shell.CornerRadius.TopLeft;
         var appearance = PanelAppearanceResolver.Resolve(theme, PanelAppearanceResolver.IsDark(theme, window.ActualThemeVariant), radius);
 
@@ -310,23 +322,6 @@ public sealed class PanelAppearanceBinder
         // touches business content, so plugin-specific brushes applied afterwards survive.
         shell.SurfaceAppearance = appearance;
         window.TransparencyLevelHint = appearance.TransparencyLevels;
-    }
-
-    /// <summary>
-    /// The panel's effective theme. With 失焦自动切换 enabled the panel follows the uniform
-    /// state's theme (light/dark pair and optional surface material) — the same theme every
-    /// window and the settings chrome follow; otherwise, or without a coordinator, the
-    /// shared theme.
-    /// </summary>
-    private Theme? ResolveTheme()
-    {
-        if (settings is null) return null;
-
-        var appSettings = settings.Get();
-        if (appSettings.FocusLink is not { Enabled: true }) return appSettings.Theme;
-
-        var coordinator = App.Services?.GetService(typeof(FocusThemeCoordinator)) as FocusThemeCoordinator;
-        return coordinator?.ResolveWindowTheme(appSettings) ?? appSettings.Theme;
     }
 
     private void OnSettingsChanged(object? sender, AppSettings? oldData, AppSettings newData)

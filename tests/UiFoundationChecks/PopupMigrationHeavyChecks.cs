@@ -276,8 +276,9 @@ internal static partial class Program
               && PanelDragBehavior.IsDragExcluded(shell.CloseButton, shell.HeaderDragArea),
             "Weather: the close button in the header is excluded from dragging");
         // The palette is plugin-owned: it follows the historic weather rule against whatever
-        // variant this window actually runs in (headless has no provider → the fallback theme).
-        var fallback = PanelAppearanceResolver.ReadTheme(null);
+        // variant this window actually runs in (headless has no provider → the fallback theme,
+        // the same source the binder resolves the shell with).
+        var fallback = PanelAppearanceResolver.ResolveEffectiveTheme(null);
         bool isDark = PanelAppearanceResolver.IsDark(fallback, popup.ActualThemeVariant);
         var expectedText = (fallback.IsColorful || isDark) ? Colors.White : Color.FromRgb(30, 30, 30);
         Check(popup.Resources["WeatherForegroundBrush"] is ISolidColorBrush fg

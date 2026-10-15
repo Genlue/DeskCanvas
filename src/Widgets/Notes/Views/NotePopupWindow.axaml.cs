@@ -10,6 +10,7 @@ using Notes.Models;
 using Notes.Services;
 using DeskCanvas.Services;
 using DeskCanvas.Views;
+using DeskCanvas.Views.Controls;
 
 namespace Notes.Views;
 
@@ -57,6 +58,12 @@ public partial class NotePopupWindow : SecondaryPanelWindow
         InitializeComponent();
         InitializePanel(cornerRadius);
 
+        // The content palette must follow the panel's EFFECTIVE theme (the focus-state theme
+        // while 失焦自动切换 is live) — the same one the appearance binder resolves for the
+        // shell — and re-assert itself on every binder refresh (settings/variant/focus flips),
+        // which always assigns a fresh PanelAppearance record.
+        if (PanelShell is { } shell)
+            shell.PropertyChanged += OnShellPaintChanged;
         ApplyContentTheme();
         Populate();
 
@@ -191,12 +198,20 @@ public partial class NotePopupWindow : SecondaryPanelWindow
 
     // ---------- theme ----------
 
+    private void OnShellPaintChanged(object? sender, AvaloniaPropertyChangedEventArgs e)
+    {
+        if (e.Property == SecondaryPanelShell.SurfaceAppearanceProperty)
+            ApplyContentTheme();
+    }
+
     /// <summary>Content text colours stay plugin-owned: the shared shell never paints the
-    /// editor's TextBoxes, so they follow the same light/dark rule as before. The card, the
-    /// glass and the header chrome are the appearance binder's job.</summary>
+    /// editor's TextBoxes, so they follow the same light/dark rule as before — resolved against
+    /// the panel's EFFECTIVE theme (focus-state theme while 失焦自动切换 is live, shared theme
+    /// otherwise), the same rule the shell's own chrome uses. The card, the glass and the
+    /// header chrome are the appearance binder's job.</summary>
     private void ApplyContentTheme()
     {
-        var theme = PanelAppearanceResolver.ReadTheme(PanelAppearanceResolver.TryResolveSettingsProvider());
+        var theme = PanelAppearanceResolver.ResolveEffectiveTheme(PanelAppearanceResolver.TryResolveSettingsProvider());
         bool isDark = PanelAppearanceResolver.IsDark(theme, ActualThemeVariant);
 
         IBrush textBrush = isDark ? Brushes.White : new SolidColorBrush(Color.FromRgb(30, 30, 30));
@@ -258,6 +273,9 @@ public partial class NotePopupWindow : SecondaryPanelWindow
 
     private void OnWindowClosed(object? sender, EventArgs e)
     {
+        if (PanelShell is { } shell)
+            shell.PropertyChanged -= OnShellPaintChanged;
+
         // Flush a pending edit (e.g. the user typed and hit ✕ without focusing away).
         suppressCommit = false;
         Commit();

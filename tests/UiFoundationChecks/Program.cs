@@ -92,6 +92,7 @@ internal static partial class Program
         CheckIconButtonsAndSectionHeaders();
         CheckCompoundInputs();
         CheckPanelShell();
+        CheckGlassSettleProbing();
         CheckPopupMigrationTools();
         CheckPopupMigrationInfo();
         CheckPopupMigrationHeavy();

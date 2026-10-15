@@ -58,6 +58,7 @@ internal static partial class Program
 
         CheckResolverMatrix();
         CheckShellTemplateParts();
+        CheckGlassSamplingAnchor();
         CheckCloseButtonAccessibleName();
         CheckShellClosePaths();
         CheckTemplateReapplication();
@@ -158,12 +159,54 @@ internal static partial class Program
         // W10: the fallback theme is the NON-GLASS baseline (OpacityLevel 1.0 → derived Solid
         // → UsesNativeBlur=false), aligned with the old plugins' catch branch that never
         // enabled native blur; 0.8 used to derive Acrylic — the opposite semantics.
-        Check(PanelAppearanceResolver.ReadTheme(null) == PanelAppearanceResolver.FallbackTheme,
+        Check(PanelAppearanceResolver.ResolveEffectiveTheme(null) == PanelAppearanceResolver.FallbackTheme,
             "no provider → the fallback theme (dark, non-glass baseline)");
         Check(PanelAppearanceResolver.IsDark(PanelAppearanceResolver.FallbackTheme, ThemeVariant.Light),
             "the fallback theme is dark, like every popup's catch block");
         Check(!PanelAppearanceResolver.FallbackTheme.UsesNativeBlur,
             "the fallback theme never implies native blur (UsesNativeBlur=false, W10)");
+
+        // The single effective-theme rule: with 失焦自动切换 OFF (or in a headless app without
+        // a coordinator) every panel resolves the SHARED theme — the same theme the binder
+        // paints the shell with, so the plugin content and the shell can never split states.
+        var sharedTheme = ThemeOf(SurfaceStyle.LiquidGlassV2, isDark: false);
+        var stubProvider = new StubEffectiveThemeSettings(new AppSettings(
+            sharedTheme, [], new Layout(GridMode.Manual, true, false, true, false),
+            new Dimensions(80, 12, 16), new Region("zh-Hans"), false, null));
+        Check(ReferenceEquals(PanelAppearanceResolver.ResolveEffectiveTheme(stubProvider), sharedTheme),
+            "focus link disabled → the shared theme");
+        var focusedStateLink = new FocusLinkSettings(
+            Enabled: true,
+            Focused: new FocusMode(true, false),
+            Unfocused: new FocusMode(false, false),
+            FocusedSurface: SurfaceStyle.Colorful,
+            UnfocusedSurface: SurfaceStyle.LiquidGlass);
+        stubProvider.Save(stubProvider.Get() with { FocusLink = focusedStateLink });
+        Check(ReferenceEquals(PanelAppearanceResolver.ResolveEffectiveTheme(stubProvider), sharedTheme),
+            "focus link enabled but headless (no coordinator service) → the shared theme fallback");
+
+        // Pure state resolution (no coordinator instance needed): the focused state carries the
+        // colorful material + dark mode, the unfocused one the liquid-glass material + light mode
+        // — ResolveStateTheme is what both the binder and ResolveEffectiveTheme consume.
+        var focusedTheme = FocusThemeCoordinator.ResolveStateTheme(focusedStateLink, focused: true,
+            new AppSettings(sharedTheme, [], new Layout(GridMode.Manual, true, false, true, false),
+                new Dimensions(80, 12, 16), new Region("zh-Hans"), false, null));
+        Check(focusedTheme.EffectiveSurface == SurfaceStyle.Colorful && focusedTheme.DarkMode == true,
+            "the focused state resolves its own material + mode (colorful, dark)");
+        var unfocusedTheme = FocusThemeCoordinator.ResolveStateTheme(focusedStateLink, focused: false,
+            new AppSettings(sharedTheme, [], new Layout(GridMode.Manual, true, false, true, false),
+                new Dimensions(80, 12, 16), new Region("zh-Hans"), false, null));
+        Check(unfocusedTheme.EffectiveSurface == SurfaceStyle.LiquidGlass && unfocusedTheme.DarkMode == false,
+            "the unfocused state resolves its own material + mode (liquid glass, light)");
+    }
+
+    /// <summary>Minimal <see cref="IAppSettingsProvider"/> stub for the effective-theme rule.</summary>
+    private sealed class StubEffectiveThemeSettings(AppSettings value) : IAppSettingsProvider
+    {
+        public event DataChangedEvent<AppSettings>? DataChanging { add { } remove { } }
+        public event DataChangedEvent<AppSettings>? DataChanged { add { } remove { } }
+        public AppSettings Get() => value;
+        public void Save(AppSettings data) => value = data;
     }
 
     private static Theme ThemeOf(SurfaceStyle surface, bool isDark) => new(
@@ -219,6 +262,8 @@ internal static partial class Program
         Check(shell.HeaderDragArea is not null, "PART_HeaderDragArea resolves");
         Check(shell.CloseButton is not null, "PART_CloseButton resolves");
         Check(shell.ContentHost is not null, "PART_ContentPresenter resolves");
+        Check(shell.GlassSurface is { IgnoresAncestorTransform: true },
+            "PART_GlassSurface ignores ancestor render transforms (the card zoom must not shift the wallpaper sampling origin)");
         if (shell.CardBorder is { } card)
         {
             Check(card.Opacity == 0.0,
@@ -255,6 +300,67 @@ internal static partial class Program
             "a resolver refresh rewrites the semantic title brush (plugins re-apply theirs on top)");
         Check(shell.HeaderActions is not null && shell.FooterContent is not null,
             "the resolver never touches the business header/footer slots");
+
+        host.Close();
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+    }
+
+    // ---- 2b. Glass sampling anchor vs the card zoom ----------------------------------------
+
+    /// <summary>
+    /// The panel window asks the glass for its first frame while the card is still at the 0.6
+    /// spawn scale (Loaded order: connect → request → play). The sampling origin must be the
+    /// AT-REST rect — the zoom is re-parameterised per tick through SetAnimationFrameScale —
+    /// so the transform-free position walk must return the same point at any card scale, while
+    /// the raw PointToScreen (which composes render transforms) demonstrably would not. This is
+    /// the regression test for the reported 二级面板玻璃采样错位（偏上）.
+    /// </summary>
+    private static void CheckGlassSamplingAnchor()
+    {
+        Console.WriteLine("--- PART_GlassSurface: sampling origin ignores the card zoom ---");
+
+        var shell = new SecondaryPanelShell { Title = "Anchor" };
+        shell.Content = new TextBox();
+        var host = new Window { Width = 460, Height = 580, SystemDecorations = SystemDecorations.None };
+        host.Content = shell;
+        host.Show();
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+
+        var surface = shell.GlassSurface!;
+        var card = shell.CardBorder!;
+        var walk = typeof(LiquidGlassSurface).GetMethod(
+            "DesktopPositionIgnoringRenderTransforms", BindingFlags.Instance | BindingFlags.NonPublic);
+        Check(walk is not null, "the transform-free position walk exists");
+
+        PixelPoint Invoke() => walk!.Invoke(surface, Array.Empty<object?>()) is PixelPoint p ? p : default;
+        PixelPoint RawPointToScreen() => surface.PointToScreen(default);
+
+        var restRaw = RawPointToScreen();
+
+        // The pre-animation state InitializeVisualCard arms: 0.6 around the card center.
+        var spawnScale = new ScaleTransform(0.6, 0.6);
+        card.RenderTransform = spawnScale;
+        card.RenderTransformOrigin = RelativePoint.Center;
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+
+        var zoomedRaw = RawPointToScreen();
+        Check(zoomedRaw != restRaw,
+            "sanity: the raw PointToScreen really shifts under the 0.6 card zoom (the bug the flag guards)");
+
+        var zoomedWalk = Invoke();
+        Check(zoomedWalk == restRaw,
+            "the sampling walk returns the at-rest origin while the card is mid-zoom");
+
+        // Any scale around any origin must stay transparent to the walk.
+        card.RenderTransformOrigin = new RelativePoint(0.2, 0.9, RelativeUnit.Relative);
+        spawnScale.ScaleX = spawnScale.ScaleY = 0.75;
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+        Check(Invoke() == restRaw, "the walk stays at-rest under a different origin and scale");
+
+        card.RenderTransform = null;
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+        Check(Invoke() == restRaw && RawPointToScreen() == restRaw,
+            "at rest the walk and the raw path agree again");
 
         host.Close();
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();

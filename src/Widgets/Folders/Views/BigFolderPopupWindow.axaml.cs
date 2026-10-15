@@ -13,6 +13,7 @@ using Folders.Services;
 using DeskCanvas.Core.Models.Settings;
 using DeskCanvas.Services;
 using DeskCanvas.Views;
+using DeskCanvas.Views.Controls;
 
 namespace Folders.Views;
 
@@ -82,6 +83,14 @@ public partial class BigFolderPopupWindow : SecondaryPanelWindow
         InitializeComponent();
         InitializePanel(cornerRadius);
 
+        // Re-assert the plugin-owned tint on every binder refresh (settings/variant/focus
+        // flips) so the content never keeps a stale state's palette.
+        if (PanelShell is { } shell)
+        {
+            shell.PropertyChanged += OnShellPaintChanged;
+            Closed += (_, _) => shell.PropertyChanged -= OnShellPaintChanged;
+        }
+
         SyncSettingsControls();
         ApplyContentTheme();
         PopulateItems();
@@ -91,17 +100,20 @@ public partial class BigFolderPopupWindow : SecondaryPanelWindow
     {
         // Historic semantics kept: any failure to read the settings (no provider, headless,
         // early start-up) leaves the transform animation ON — only a real native-blur theme
-        // turns it off.
-        try { return PanelAppearanceResolver.TryResolveSettingsProvider()!.Get().Theme.UsesNativeBlur; }
-        catch { return false; }
+        // turns it off. Reads the panel's EFFECTIVE theme (the focus-state theme while
+        // 失焦自动切换 is live), not the shared one — the state's material decides.
+        return PanelAppearanceResolver.ResolveEffectiveTheme(PanelAppearanceResolver.TryResolveSettingsProvider()).UsesNativeBlur;
     }
 
     /// <summary>Content-only tint: the header action button keeps the popup's historic
     /// secondary chrome colour. The shell's title and the shared close button are painted by
-    /// the appearance binder; the card, the glass and the transparency level too.</summary>
+    /// the appearance binder; the card, the glass and the transparency level too. Resolved
+    /// against the panel's EFFECTIVE theme (focus-state theme while 失焦自动切换 is live),
+    /// and re-asserted on every binder refresh (settings/variant/focus flips) — the binder
+    /// always assigns a fresh PanelAppearance record.</summary>
     private void ApplyContentTheme()
     {
-        var theme = PanelAppearanceResolver.ReadTheme(PanelAppearanceResolver.TryResolveSettingsProvider());
+        var theme = PanelAppearanceResolver.ResolveEffectiveTheme(PanelAppearanceResolver.TryResolveSettingsProvider());
         bool isDark = PanelAppearanceResolver.IsDark(theme, ActualThemeVariant);
 
         SettingsButton.Foreground = isDark
@@ -265,12 +277,20 @@ public partial class BigFolderPopupWindow : SecondaryPanelWindow
         popup.ShowAsSecondaryPanel(owner);
     }
 
+    /// <summary>Every binder Refresh assigns a fresh <see cref="PanelAppearance"/> record, so
+    /// this re-runs the plugin tint after settings, variant and 失焦自动切换 flips.</summary>
+    private void OnShellPaintChanged(object? sender, AvaloniaPropertyChangedEventArgs e)
+    {
+        if (e.Property == SecondaryPanelShell.SurfaceAppearanceProperty)
+            ApplyContentTheme();
+    }
+
     private void ApplyWindowRegion()
     {
         var handle = TryGetPlatformHandle()?.Handle;
         if (handle == null) return;
 
-        var theme = PanelAppearanceResolver.ReadTheme(PanelAppearanceResolver.TryResolveSettingsProvider());
+        var theme = PanelAppearanceResolver.ResolveEffectiveTheme(PanelAppearanceResolver.TryResolveSettingsProvider());
 
         if (theme.UsesNativeBlur)
         {

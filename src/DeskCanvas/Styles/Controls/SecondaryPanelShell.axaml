@@ -32,11 +32,16 @@
                         <Panel>
                             <!-- PART_GlassSurface: the ONLY shell glass surface. Business content
                                  may host its own; the panel window targets this part explicitly
-                                 instead of "the first LiquidGlassSurface it finds". -->
+                                 instead of "the first LiquidGlassSurface it finds".
+                                 IgnoresAncestorTransform: the window animates this card's
+                                 ScaleTransform for the open/close zoom — the sampling origin must
+                                 stay the at-rest rect (the zoom is fed to the surface through
+                                 SetAnimationFrameScale instead of leaking into PointToScreen). -->
                             <controls:LiquidGlassSurface x:Name="PART_GlassSurface"
                                                          IsVisible="{TemplateBinding UseRenderedGlass}"
                                                          Material="{TemplateBinding GlassMaterial}"
-                                                         CornerRadius="{TemplateBinding CornerRadius}" />
+                                                         CornerRadius="{TemplateBinding CornerRadius}"
+                                                         IgnoresAncestorTransform="True" />
 
                             <Grid RowDefinitions="Auto,*,Auto" Margin="{TemplateBinding ContentPadding}">
                                 <!-- PART_HeaderDragArea: hit-testable (transparent background) and
