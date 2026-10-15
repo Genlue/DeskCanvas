@@ -201,6 +201,24 @@ public class UpdateService
 
     private AppSettings RecordCheckOutcome(DateTime utcNow, string statusSummary)
     {
+        // The network part intentionally stays context-free. Saving settings raises
+        // DataChanging, whose production subscribers update Avalonia theme/locale/resources;
+        // marshal only that side effect back to the UI thread. Before this boundary existed,
+        // the 3.7.0 ConfigureAwait(false) continuation made a successful request fail while
+        // persisting its result and the UI reported the misleading network error.
+        if (!Dispatcher.UIThread.CheckAccess())
+        {
+            return Dispatcher.UIThread
+                .InvokeAsync(() => RecordCheckOutcomeCore(utcNow, statusSummary))
+                .GetAwaiter()
+                .GetResult();
+        }
+
+        return RecordCheckOutcomeCore(utcNow, statusSummary);
+    }
+
+    private AppSettings RecordCheckOutcomeCore(DateTime utcNow, string statusSummary)
+    {
         var currentSettings = appSettingsProvider.Get();
         var updatedSettings = currentSettings with
         {

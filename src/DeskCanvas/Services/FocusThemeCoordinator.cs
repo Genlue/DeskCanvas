@@ -23,7 +23,8 @@ namespace DeskCanvas.Services;
 /// The coordinator's remaining jobs: listen to the focus watcher and re-run the global
 /// switch on state changes (and on settings saves, wallpaper brightness flips, exits from
 /// fullscreen), and poke the tracked widget windows so they re-resolve their material
-/// paths when the theme flipped without a variant change. While
+/// paths when the theme flipped without a variant change — including the one refresh that
+/// follows a flip of the master switch itself (see <see cref="Reapply"/>). While
 /// <see cref="FocusLinkSettings.Enabled"/> is false the app-level theme is simply the
 /// shared one — the pre-feature behaviour.
 /// </para>
@@ -40,6 +41,12 @@ public sealed class FocusThemeCoordinator : IDisposable
     private FocusStateSnapshot state = FocusStateSnapshot.Focused;
     private bool fullscreenSuspended;
 
+    /// <summary>
+    /// The master switch as the last pass saw it. Flipping it is the one settings change that
+    /// cannot be handled by the global application alone — see <see cref="Reapply"/>.
+    /// </summary>
+    private bool featureEnabled;
+
     public FocusThemeCoordinator(
         IAppSettingsProvider appSettingsProvider,
         FocusWatchService focusWatch,
@@ -55,6 +62,9 @@ public sealed class FocusThemeCoordinator : IDisposable
 
         state = focusWatch.Current;
         fullscreenSuspended = fullscreenWatcher.IsFullscreen;
+        // Seed the switch from the saved configuration: the settle pass below must not read as a
+        // toggle (nothing to refresh — the session just started).
+        featureEnabled = appSettingsProvider.Get().FocusLink is { Enabled: true };
 
         focusWatch.StateChanged += (_, snapshot) =>
         {
@@ -100,7 +110,18 @@ public sealed class FocusThemeCoordinator : IDisposable
     /// <summary>Re-evaluate the uniform state and apply it globally (state change, settings
     /// change, wallpaper flip, fullscreen exit). A state whose theme already applied
     /// short-circuits inside the theme service — the windows are only poked when the theme
-    /// actually flipped.</summary>
+    /// actually flipped, or when the master switch itself moved (see below).</summary>
+    /// <para>
+    /// <b>开关本功能后接一次刷新。</b> Flipping the master switch is the one settings change the
+    /// global application alone cannot carry: the switch is not part of the tuple the application
+    /// is keyed on, so the pass that follows a save reports "nothing changed" and never pokes the
+    /// windows — yet every window resolves its card brush, glass layer, outline and native
+    /// transparency hint from its <i>own</i> effective theme, which just changed (into a state
+    /// theme on enable, back to the shared one on disable). Left alone, the widgets keep painting
+    /// the previous material over a global resource set that already moved on — the garbled
+    /// themes. So a toggle forces one application and pokes every tracked window: one refresh,
+    /// exactly like switching the theme by hand.
+    /// </para>
     public void Reapply()
     {
         if (!Dispatcher.UIThread.CheckAccess())
@@ -112,14 +133,38 @@ public sealed class FocusThemeCoordinator : IDisposable
         windows.RemoveAll(reference => !reference.TryGetTarget(out _));
 
         var settings = appSettingsProvider.Get();
-        if (settings.FocusLink is not { Enabled: true }) return;
+        var enabled = settings.FocusLink is { Enabled: true };
+
+        // A fullscreen application owns the desktop (and the widgets nobody can see): hold
+        // everything — the toggle refresh included — and settle once when the desktop is back.
         if (fullscreenSuspended) return;
+
+        var toggled = enabled != featureEnabled;
+        featureEnabled = enabled;
+
+        if (!enabled)
+        {
+            // Switched off: the shared theme drives the app again, and every window has to drop
+            // the state theme it was painting (its material may differ from the shared one).
+            if (!toggled) return;
+            themeService.ApplyFocusState(settings, focused: true, force: true);
+            PokeAll();
+            return;
+        }
 
         // A variant change reaches the windows through ActualThemeVariantChanged on its own;
         // the poke covers the material-swap cases where the variant stays put — and runs only
-        // when the global application really happened, never on a no-op save.
-        if (!themeService.ApplyFocusState(settings, ResolveFocused(state))) return;
+        // when the global application really happened (or the switch just moved), never on a
+        // no-op save.
+        if (!themeService.ApplyFocusState(settings, ResolveFocused(state), force: toggled) && !toggled) return;
 
+        PokeAll();
+    }
+
+    /// <summary>Tell every tracked window to re-resolve its material (the refresh half of a
+    /// switch — the global application alone cannot reach per-window values).</summary>
+    private void PokeAll()
+    {
         foreach (var reference in windows)
             if (reference.TryGetTarget(out var window)) PokeWindow(window);
     }

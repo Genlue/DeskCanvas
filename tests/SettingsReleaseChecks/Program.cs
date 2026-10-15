@@ -2,6 +2,9 @@ using System.Diagnostics;
 using System.Reflection;
 using System.Resources;
 using System.Runtime.CompilerServices;
+using System.Net;
+using System.Net.Sockets;
+using System.Text;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Headless;
@@ -69,7 +72,7 @@ internal static class Program
     }
 
     [STAThread]
-    private static int Main()
+    private static int Main(string[] args)
     {
         // Keep every path the app derives from Const inside the build output: a Widgets folder
         // next to this exe puts Const into portable mode (Const.DataFolder = the exe folder), so
@@ -90,9 +93,22 @@ internal static class Program
             .SetupWithoutStarting();
         Application.Current!.Styles.Add(new FluentTheme());
 
+        if (args.Contains("--live-update"))
+        {
+            CheckLiveUpdate();
+            return failures == 0 ? 0 : 1;
+        }
+
+        if (args.Contains("--update-only"))
+        {
+            CheckSuccessfulUpdate();
+            return failures == 0 ? 0 : 1;
+        }
+
         CheckTrimmerPriority();
         CheckSettingsWindowRelease();
         CheckProxyAndUpdateDiagnostics();
+        CheckSuccessfulUpdate();
 
         Console.WriteLine();
         Console.WriteLine(failures == 0 ? "ALL SETTINGS RELEASE CHECKS PASSED" : $"{failures} CHECK(S) FAILED");
@@ -282,6 +298,13 @@ internal static class Program
         var monitor = new DisplayMonitorService(layoutStore);
         var updateService = new UpdateService(settingsStore);
 
+        // Update checks persist their result through IAppSettingsProvider.Save. In the real
+        // application that raises Avalonia theme/locale/resource callbacks, which must run on
+        // the UI thread. Keep this regression probe independent of those production services.
+        var updateSaveStayedOnUiThread = true;
+        settingsStore.DataChanging += (_, _, _) =>
+            updateSaveStayedOnUiThread &= Dispatcher.UIThread.CheckAccess();
+
         using var generalVm = new GeneralViewModel(settingsStore, updateService);
         using var advancedVm = new AdvancedViewModel(settingsStore, layoutStore, monitor);
 
@@ -303,18 +326,119 @@ internal static class Program
             HttpProxy = "direct",
             UpdateUrl = "http://127.0.0.1:1/repos/test/test/releases/latest"
         });
-        var (failInfo, failResult) = updateService.CheckForUpdatesDetailedAsync(isManual: false).GetAwaiter().GetResult();
+        var (failInfo, failResult) = RunAsyncOnUiThread(
+            () => updateService.CheckForUpdatesDetailedAsync(isManual: false));
         Check(failInfo == null && failResult == UpdateCheckResult.Failed, "unreachable endpoint returns UpdateCheckResult.Failed");
         Check(settingsStore.Get().LastUpdateCheckTime != null &&
               !string.IsNullOrWhiteSpace(settingsStore.Get().LastUpdateCheckStatus),
             $"failed automatic check records timestamp and failure reason ({settingsStore.Get().LastUpdateCheckStatus})");
+        Check(updateSaveStayedOnUiThread,
+            "update check persists its outcome on the UI thread");
 
-        var connFail = updateService.TestGitHubConnectivityAsync().GetAwaiter().GetResult();
+        var connFail = RunAsyncOnUiThread(() => updateService.TestGitHubConnectivityAsync());
         Check(!connFail.Success && !string.IsNullOrWhiteSpace(connFail.Summary),
             $"connectivity test against unreachable endpoint reports failure ({connFail.Summary})");
     }
 
     // ---- rig ----
+
+    private static void CheckSuccessfulUpdate()
+    {
+        Console.WriteLine("--- HTTP 200 update: release parsing, UI-thread save and version result ---");
+        using var endpoint = new ReleaseEndpoint();
+        var settings = new SettingsStore(DefaultSettings() with
+        {
+            HttpProxy = "direct",
+            UpdateUrl = endpoint.Url
+        });
+        // ThemeService's DataChanging subscriber writes Avalonia properties synchronously.
+        // Reproduce that contract so a successful response cannot hide an off-thread save.
+        settings.DataChanging += (_, _, _) => Dispatcher.UIThread.VerifyAccess();
+        var service = new UpdateService(settings);
+
+        try
+        {
+            var connectivity = RunAsyncOnUiThread(() => service.TestGitHubConnectivityAsync());
+            Check(connectivity.Success && connectivity.StatusCode == 200, "HTTP 200 connectivity probe succeeds");
+            var (info, status) = RunAsyncOnUiThread(
+                () => Task.Run(() => service.CheckForUpdatesDetailedAsync(isManual: true)));
+            Check(status == UpdateCheckResult.UpdateAvailable && info?.Version == new Version(99, 0, 0),
+                "the same endpoint returns UpdateAvailable after the asynchronous HTTP response");
+            Check(info?.AssetFileName == "DeskCanvas-win-x64.msi", "release metadata and installer asset are parsed");
+            Check(settings.Get().LastUpdateCheckTime != null &&
+                  settings.Get().LastUpdateCheckStatus?.Contains("99.0.0") == true,
+                "the successful update result is saved through UI-thread settings callbacks");
+        }
+        catch (Exception ex)
+        {
+            Check(false, $"successful update must not throw during the settings save: {ex.Message}");
+        }
+    }
+
+    private static void CheckLiveUpdate()
+    {
+        var settings = new SettingsStore(DefaultSettings());
+        settings.DataChanging += (_, _, _) => Dispatcher.UIThread.VerifyAccess();
+        var service = new UpdateService(settings);
+        var connectivity = RunAsyncOnUiThread(() => service.TestGitHubConnectivityAsync());
+        Console.WriteLine($"Live GitHub connectivity: {connectivity.Summary}");
+        var (info, status) = RunAsyncOnUiThread(() => service.CheckForUpdatesDetailedAsync(isManual: true));
+        Console.WriteLine($"Live update: {status}, tag={info?.TagName}, asset={info?.AssetFileName}");
+        Console.WriteLine(settings.Get().LastUpdateCheckStatus);
+        Check(info != null && status is UpdateCheckResult.UpToDate or UpdateCheckResult.UpdateAvailable,
+            "live GitHub release check completes with UI-thread settings callbacks");
+    }
+
+    /// <summary>A loopback release endpoint; no external network, fixed ports or user settings.</summary>
+    private sealed class ReleaseEndpoint : IDisposable
+    {
+        private readonly TcpListener listener = new(IPAddress.Loopback, 0);
+        private readonly CancellationTokenSource cancellation = new();
+        private readonly Task server;
+        public string Url { get; }
+
+        public ReleaseEndpoint()
+        {
+            listener.Start();
+            Url = $"http://127.0.0.1:{((IPEndPoint)listener.LocalEndpoint).Port}/releases/latest";
+            server = Task.Run(ServeAsync);
+        }
+
+        private async Task ServeAsync()
+        {
+            try
+            {
+                while (true)
+                {
+                    using var client = await listener.AcceptTcpClientAsync(cancellation.Token);
+                    await using var stream = client.GetStream();
+                    using var reader = new StreamReader(stream, leaveOpen: true);
+                    while (await reader.ReadLineAsync(cancellation.Token) is { Length: > 0 }) { }
+                    // Guarantee an asynchronous continuation even on a fast loopback connection.
+                    await Task.Delay(30, cancellation.Token);
+                    var body = Encoding.UTF8.GetBytes("""
+                        {"tag_name":"v99.0.0","name":"DeskCanvas 99.0.0","body":"Update check fixture",
+                         "html_url":"https://github.com/test/repo/releases/tag/v99.0.0",
+                         "assets":[{"name":"DeskCanvas-win-x64.msi","size":123,
+                         "browser_download_url":"https://github.com/test/repo/releases/download/v99.0.0/DeskCanvas-win-x64.msi"}]}
+                        """);
+                    var header = Encoding.ASCII.GetBytes(
+                        $"HTTP/1.1 200 OK\r\nContent-Type: application/json; charset=utf-8\r\nContent-Length: {body.Length}\r\nConnection: close\r\n\r\n");
+                    await stream.WriteAsync(header, cancellation.Token);
+                    await stream.WriteAsync(body, cancellation.Token);
+                }
+            }
+            catch (OperationCanceledException) when (cancellation.IsCancellationRequested) { }
+        }
+
+        public void Dispose()
+        {
+            cancellation.Cancel();
+            listener.Stop();
+            server.GetAwaiter().GetResult();
+            cancellation.Dispose();
+        }
+    }
 
     /// <summary>The Advanced view model's <c>attached</c> flag (true while it holds its subscriptions).</summary>
     private static bool? AdvancedViewModelAttached(Control page) =>
@@ -349,6 +473,26 @@ internal static class Program
             Thread.Sleep(25);
         }
         return MemoryTrimmerService.CompletedTrims >= target;
+    }
+
+    /// <summary>
+    /// Await a UI-context operation while keeping the headless dispatcher pumping. Production
+    /// callers await normally; this adapter is only needed because this check suite's entry
+    /// point is intentionally synchronous and STA-bound.
+    /// </summary>
+    private static T RunAsyncOnUiThread<T>(Func<Task<T>> operation)
+    {
+        var task = operation();
+        var timeout = Stopwatch.StartNew();
+        while (!task.IsCompleted)
+        {
+            if (timeout.Elapsed > TimeSpan.FromSeconds(75))
+                throw new TimeoutException("The UI-context update check did not complete within 75 seconds.");
+            Dispatcher.UIThread.RunJobs();
+            Thread.Sleep(15);
+        }
+
+        return task.GetAwaiter().GetResult();
     }
 
     private static AppSettings DefaultSettings() => new(

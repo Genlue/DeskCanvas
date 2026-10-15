@@ -214,12 +214,18 @@ public class ThemeService : IThemeService
     /// focus flip is a real theme switch, not a per-window imitation. Returns whether the
     /// application actually ran (an unchanged state short-circuits to <c>false</c>).
     /// </summary>
-    public bool ApplyFocusState(AppSettings settings, bool focused)
+    /// <param name="force">
+    /// Run the application even when the last pass already applied the very same tuple. The
+    /// 失焦自动切换 master switch needs it: flipping the switch changes nothing in the tuple the
+    /// application is keyed on (every widget window keeps resolving its own material), so without
+    /// a forced pass the windows are never told to re-resolve and stay on the previous theme.
+    /// </param>
+    public bool ApplyFocusState(AppSettings settings, bool focused, bool force = false)
     {
         var scopeTheme = settings.FocusLink is { Enabled: true } link
             ? FocusThemeCoordinator.ResolveStateTheme(link, focused, settings)
             : null;
-        return ApplyCoreWithTheme(settings, scopeTheme);
+        return ApplyCoreWithTheme(settings, scopeTheme, force);
     }
 
     /// <summary>What the last <see cref="ApplyCoreWithTheme"/> actually applied — an unchanged
@@ -235,7 +241,7 @@ public class ThemeService : IThemeService
         ApplyCoreWithTheme(settings, scopeTheme);
     }
 
-    private bool ApplyCoreWithTheme(AppSettings settings, Theme? scopeTheme)
+    private bool ApplyCoreWithTheme(AppSettings settings, Theme? scopeTheme, bool force = false)
     {
         var appTheme = (scopeTheme ?? ResolveApplicationTheme(settings)).NormalizeForSurface();
         var mode = new FocusMode(appTheme.DarkMode, appTheme.AutoTheme);
@@ -247,7 +253,8 @@ public class ThemeService : IThemeService
             _ => ThemeVariant.Dark,
         };
 
-        if (lastGlobalScope.Settings?.Equals(settings) == true
+        if (!force
+            && lastGlobalScope.Settings?.Equals(settings) == true
             && lastGlobalScope.Variant == appVariant
             && lastGlobalScope.ScopeTheme == appTheme)
         {

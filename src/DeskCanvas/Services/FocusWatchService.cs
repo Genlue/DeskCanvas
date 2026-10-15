@@ -69,6 +69,11 @@ public readonly record struct WindowedProcess(string Name, string? Title);
 /// <summary>One top-level window as seen by the focus watcher's z-order walk — metadata only.
 /// Gathered on the UI thread; all decisions are made by the pure
 /// <see cref="FocusWatchService.ResolveUnfocusedScreens"/>.</summary>
+/// <param name="IsNoActivate">
+/// The window carries <c>WS_EX_NOACTIVATE</c>: it refuses activation, which is the signature of a
+/// popup / overlay / HUD (the taskbar's thumbnail flyout, an IME or launcher surface, a tooltip) —
+/// never of an application the user is working in.
+/// </param>
 public sealed record FocusWindow(
     string ClassName,
     int ProcessId,
@@ -79,7 +84,8 @@ public sealed record FocusWindow(
     bool IsVisible = true,
     bool IsMinimized = false,
     bool IsCloaked = false,
-    bool IsToolWindow = false);
+    bool IsToolWindow = false,
+    bool IsNoActivate = false);
 
 /// <summary>The outcome of the z-order walk: which screens are kept unfocused, and the leading
 /// application (topmost application window; for the status line — <c>null</c> when none is left).</summary>
@@ -96,8 +102,10 @@ public sealed record FocusWalkOutcome(IReadOnlyList<int> UnfocusedScreenIndices,
 /// (“怎么点都是失焦”); the moment the last application window is minimized, closed or hidden,
 /// the screens it occupied snap back to <b>focused</b>. Minimized / cloaked / tool / titleless
 /// windows do not occupy the desktop, whitelisted processes are desktop furniture, shell
-/// surfaces (desktop, taskbar, start menu, task switchers) never count, and DeskCanvas' own
-/// windows (widgets, panels, the settings window) are invisible to the walk.
+/// surfaces (desktop, taskbar, start menu, task switchers) never count, windows that refuse
+/// activation (<c>WS_EX_NOACTIVATE</c> — popups, overlays, HUDs such as the taskbar's thumbnail
+/// flyout) occupy nothing, and DeskCanvas' own windows (widgets, panels, the settings window)
+/// are invisible to the walk.
 /// </para>
 /// <para>
 /// Anti-flicker dwell: a switch is only applied once the new state has held for the
@@ -317,7 +325,9 @@ public class FocusWatchService : IDisposable
             if (!IsWindowVisible(hwnd)) return true;
             if (IsIconic(hwnd)) return true;
             if (IsCloaked(hwnd)) return true;
-            if ((GetWindowLongW(hwnd, GWL_EXSTYLE) & WS_EX_TOOLWINDOW) != 0) return true;
+
+            var exStyle = GetWindowLongW(hwnd, GWL_EXSTYLE);
+            if ((exStyle & WS_EX_TOOLWINDOW) != 0) return true;
 
             var title = GetWindowTitle(hwnd);
             if (string.IsNullOrWhiteSpace(title)) return true;
@@ -329,7 +339,8 @@ public class FocusWatchService : IDisposable
 
             var isOwn = pid == ownPid;
             var processName = isOwn ? null : GetProcessNameCached(pid);
-            list.Add(new FocusWindow(className, pid, isOwn, processName, title, bounds));
+            list.Add(new FocusWindow(className, pid, isOwn, processName, title, bounds,
+                IsNoActivate: (exStyle & WS_EX_NOACTIVATE) != 0));
             return true;
         }, IntPtr.Zero);
 
@@ -444,8 +455,8 @@ public class FocusWatchService : IDisposable
     /// The heart of the feature — walk the top-level windows from the top of the z-order down
     /// and decide, per screen, whether an application window still occupies it.
     /// <list type="bullet">
-    /// <item>An <b>application window</b> (not a shell surface, not on the allowlist, not
-    /// DeskCanvas itself) keeps every screen it meaningfully covers unfocused.</item>
+    /// <item>An <b>application window</b> (not a shell surface, not a popup/overlay, not on the
+    /// allowlist, not DeskCanvas itself) keeps every screen it meaningfully covers unfocused.</item>
     /// <item>Everything else is skipped. The walk is about <i>what occupies the desktop</i>,
     /// not about which window is active — clicking the desktop, the taskbar or a widget never
     /// changes the outcome (“怎么点都是失焦”).</item>
@@ -471,6 +482,11 @@ public class FocusWatchService : IDisposable
 
             // Desktop / taskbar / start menu / task switchers: shell surfaces never occupy.
             if (IsShellWindow(window.ClassName, window.ProcessName)) continue;
+            // A window that refuses activation is a popup / overlay / HUD — the taskbar's
+            // thumbnail flyout (「主机弹出窗口」) is the one that used to flicker the theme: it is
+            // visible, titled, not a tool window and sits over the dock, but nobody is working
+            // in it. It never occupies the desktop.
+            if (window.IsNoActivate) continue;
             // DeskCanvas itself (widgets, panels, the settings window) is invisible to the walk.
             if (window.IsOwnProcess) continue;
             // The allowlist is desktop furniture: it neither pins nor prevents any state.
@@ -495,12 +511,14 @@ public class FocusWatchService : IDisposable
     }
 
     /// <summary>Hard shell classes that are always a shell surface — the desktop, both taskbars,
-    /// the Win11/Mica shell hosts (task view, alt-tab flyout, tray overflow) and the legacy task
-    /// switcher windows.</summary>
+    /// the Win11/Mica shell hosts (task view, alt-tab flyout, tray overflow), the legacy task
+    /// switcher windows and the XAML popup host the shell flies out above the taskbar (the
+    /// thumbnail / jump-list flyout titled 「主机弹出窗口」).</summary>
     public static bool IsShellWindowClass(string className) => className is
         "Progman" or "WorkerW" or "Shell_TrayWnd" or "Shell_SecondaryTrayWnd"
         or "XamlExplorerHostIslandWindow" or "TaskSwitcherWnd" or "ForegroundStaging"
-        or "MultitaskingViewFrame" or "TopLevelWindowForOverflowXamlIsland";
+        or "MultitaskingViewFrame" or "TopLevelWindowForOverflowXamlIsland"
+        or "Xaml_WindowedPopupClass";
 
     /// <summary>The generic Windows class shared by UWP windows and several shell surfaces.</summary>
     public const string CoreWindowClassName = "Windows.UI.Core.CoreWindow";
@@ -729,6 +747,10 @@ public class FocusWatchService : IDisposable
     private const uint PROCESS_QUERY_LIMITED_INFORMATION = 0x1000;
     private const int GWL_EXSTYLE = -20;
     private const int WS_EX_TOOLWINDOW = 0x00000080;
+
+    /// <summary>A window carrying this style cannot be activated — popups, overlays and HUDs,
+    /// never an application window (see <see cref="FocusWindow.IsNoActivate"/>).</summary>
+    private const int WS_EX_NOACTIVATE = 0x08000000;
 
     private const uint EVENT_SYSTEM_FOREGROUND = 0x0003;
     private const uint EVENT_SYSTEM_MINIMIZESTART = 0x0016;
