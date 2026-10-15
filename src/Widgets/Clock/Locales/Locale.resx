@@ -105,20 +105,23 @@
     <data name="Clock_Material_FollowGlobal" xml:space="preserve">
         <value>Follow Global Theme</value>
     </data>
-    <data name="Clock_Material_Acrylic" xml:space="preserve">
-        <value>Acrylic Blur</value>
+    <data name="Clock_Material_FollowGlobal_Desc" xml:space="preserve">
+        <value>Follows the currently active theme and light/dark mode</value>
     </data>
-    <data name="Clock_Material_LiquidGlass" xml:space="preserve">
-        <value>Liquid Glass</value>
+    <data name="Clock_Material_Acrylic_Desc" xml:space="preserve">
+        <value>OS-level frosted acrylic blur</value>
     </data>
-    <data name="Clock_Material_LiquidGlassV2" xml:space="preserve">
-        <value>New Liquid Glass</value>
+    <data name="Clock_Material_Solid_Desc" xml:space="preserve">
+        <value>Opaque solid card, no blur</value>
     </data>
-    <data name="Clock_Material_Solid" xml:space="preserve">
-        <value>Solid</value>
+    <data name="Clock_Material_LiquidGlass_Desc" xml:space="preserve">
+        <value>Refraction glass sampled from the desktop</value>
     </data>
-    <data name="Clock_Material_Colorful" xml:space="preserve">
-        <value>Colorful</value>
+    <data name="Clock_Material_LiquidGlassV2_Desc" xml:space="preserve">
+        <value>Real-time refraction · highlights and dispersion</value>
+    </data>
+    <data name="Clock_Material_Colorful_Desc" xml:space="preserve">
+        <value>Apple HIG vibrant opaque card</value>
     </data>
     <data name="Clock_LiquidGlassOpacity" xml:space="preserve">
         <value>Liquid Glass Opacity</value>

@@ -12,8 +12,11 @@ using DeskCanvas.Services;
 
 namespace Batteries.Views;
 
-public partial class BatteriesView : UserControl, IWidgetSelfRefreshing, IWidgetSuspendable
+public partial class BatteriesView : UserControl, IWidgetSelfRefreshing, IWidgetSuspendable, IWidgetSurfaceHints
 {
+    /// <inheritdoc />
+    public string? ColorfulBackgroundResourceKey => "BatteriesCardBackground";
+
     private readonly IWidgetLayoutProvider? layoutProvider;
     private BatteriesViewModel? viewModel;
     private BatteriesModel model;

@@ -19,14 +19,14 @@ public class AppSettingsProvider() : JsonParser<AppSettings>(Const.AppSettingsFi
         };
 
         var surface = settings.Theme.EffectiveSurface;
-        var theme = settings.Theme.NormalizeMaterial() with { Surface = surface };
+        var theme = (settings.Theme with { Surface = surface }).NormalizeForSurface();
         var surfaceThemes = settings.SurfaceThemes != null
             ? new Dictionary<string, Theme>(settings.SurfaceThemes, StringComparer.OrdinalIgnoreCase)
             : new Dictionary<string, Theme>(StringComparer.OrdinalIgnoreCase);
 
         if (surfaceThemes.Remove(nameof(SurfaceStyle.SoftGlow), out var legacy) &&
             !surfaceThemes.ContainsKey(nameof(SurfaceStyle.LiquidGlass)))
-            surfaceThemes[nameof(SurfaceStyle.LiquidGlass)] = legacy.NormalizeMaterial();
+            surfaceThemes[nameof(SurfaceStyle.LiquidGlass)] = legacy.NormalizeForSurface();
         // The currently selected soft-glow customization wins over an older saved lens preset.
         if (settings.Theme.Surface == SurfaceStyle.SoftGlow)
             surfaceThemes[nameof(SurfaceStyle.LiquidGlass)] = theme;
@@ -36,19 +36,50 @@ public class AppSettingsProvider() : JsonParser<AppSettings>(Const.AppSettingsFi
             surfaceThemes[surface.ToString()] = theme;
         }
 
+        foreach (var (k, v) in surfaceThemes.ToList())
+        {
+            var entryTheme = Enum.TryParse<SurfaceStyle>(k, ignoreCase: true, out var parsedSurface) && v.Surface == null
+                ? v with { Surface = parsedSurface }
+                : v;
+            surfaceThemes[k] = entryTheme.NormalizeForSurface();
+        }
+
         var layout = settings.Layout;
         if (layout.GridMode != GridMode.Manual || layout.LockSize)
         {
             layout = layout with { GridMode = GridMode.Manual, LockSize = false };
         }
 
+        // 失焦自动切换: tolerate hand-edited files — trim / de-duplicate the allowlist
+        // (process names, case-insensitive), drop blank entries, fold 柔光玻璃 into
+        // 液态玻璃 and clamp the anti-flicker dwell to its 0–1000 ms range. Null modes
+        // need no fixup: the record's Effective* accessors fall back to "follow the system".
+        var focusLink = settings.FocusLink;
+        if (focusLink != null)
+        {
+            var whitelist = (focusLink.Whitelist ?? [])
+                .Select(entry => entry?.Trim() ?? string.Empty)
+                .Where(entry => entry.Length > 0)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToArray();
+            focusLink = focusLink with
+            {
+                Whitelist = whitelist,
+                FocusedSurface = FocusLinkSettings.NormalizeSurface(focusLink.FocusedSurface),
+                UnfocusedSurface = FocusLinkSettings.NormalizeSurface(focusLink.UnfocusedSurface),
+                SwitchDelayMs = Math.Clamp(focusLink.SwitchDelayMs,
+                    FocusLinkSettings.SwitchDelayMinMs, FocusLinkSettings.SwitchDelayMaxMs)
+            };
+        }
+
         return settings with
         {
             Grid = settings.Grid ?? Grid.Default,
             Theme = theme,
-            Templates = settings.Templates.Select(t => t.NormalizeMaterial()).Distinct().ToArray(),
+            Templates = settings.Templates.Select(t => t.NormalizeForSurface()).Distinct().ToArray(),
             SurfaceThemes = surfaceThemes,
-            Layout = layout
+            Layout = layout,
+            FocusLink = focusLink
         };
     }
 

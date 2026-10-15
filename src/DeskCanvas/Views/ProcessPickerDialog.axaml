@@ -1,0 +1,57 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:locales="clr-namespace:DeskCanvas.Locales"
+        xmlns:services="clr-namespace:DeskCanvas.Services"
+        x:Class="DeskCanvas.Views.ProcessPickerDialog"
+        Width="440" Height="480"
+        SystemDecorations="None"
+        Background="Transparent"
+        TransparencyLevelHint="AcrylicBlur, None"
+        TransparencyBackgroundFallback="{DynamicResource SettingsBackground}"
+        CanResize="False"
+        ShowInTaskbar="False"
+        WindowStartupLocation="CenterOwner">
+    <Border Background="{DynamicResource MenuSurfaceBackground}"
+            BorderBrush="{DynamicResource MenuSurfaceBorder}"
+            BorderThickness="{DynamicResource HostSurfaceBorderThickness}"
+            CornerRadius="{DynamicResource HostSurfaceCornerRadius}"
+            BoxShadow="0 4 16 0 #80000000"
+            Padding="24"
+            Margin="16">
+        <DockPanel LastChildFill="True">
+            <TextBlock DockPanel.Dock="Top" FontWeight="SemiBold" Margin="0 0 0 12"
+                       Text="{x:Static locales:Locale.ProcessPicker_Title}" />
+            <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="8" Margin="0 0 0 10">
+                <TextBox x:Name="SearchBox" Width="280"
+                         Watermark="{x:Static locales:Locale.ProcessPicker_Search}"
+                         TextChanged="OnSearchChanged" />
+                <Button Content="{x:Static locales:Locale.ProcessPicker_Refresh}" Click="OnRefresh" />
+            </StackPanel>
+            <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" HorizontalAlignment="Right"
+                        Spacing="8" Margin="0 12 0 0">
+                <Button Content="{x:Static locales:Locale.ProcessPicker_Cancel}" Click="OnCancel" />
+                <Button Content="{x:Static locales:Locale.ProcessPicker_Add}" Click="OnConfirm" />
+            </StackPanel>
+            <TextBlock DockPanel.Dock="Bottom" TextWrapping="Wrap" Opacity="0.6"
+                       FontSize="{DynamicResource FontSizeCaption}" Margin="0 10 0 0"
+                       Text="{x:Static locales:Locale.ProcessPicker_Hint}" />
+            <Panel>
+                <ListBox x:Name="ProcessList" SelectionMode="Multiple" Background="Transparent">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate DataType="services:WindowedProcess">
+                            <StackPanel Margin="0 2">
+                                <TextBlock Text="{Binding Name}" />
+                                <TextBlock Text="{Binding Title}" Opacity="0.6"
+                                           FontSize="{DynamicResource FontSizeCaption}"
+                                           TextTrimming="CharacterEllipsis" MaxWidth="320" />
+                            </StackPanel>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+                <TextBlock x:Name="EmptyHint" IsVisible="False" Opacity="0.6"
+                           HorizontalAlignment="Center" VerticalAlignment="Center"
+                           Text="{x:Static locales:Locale.ProcessPicker_Empty}" />
+            </Panel>
+        </DockPanel>
+    </Border>
+</Window>

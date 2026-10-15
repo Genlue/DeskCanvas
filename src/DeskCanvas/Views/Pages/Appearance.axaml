@@ -6,7 +6,113 @@
              x:Class="DeskCanvas.Views.Pages.Appearance"
              x:DataType="viewModels:AppearanceViewModel">
     <StackPanel Orientation="Vertical" Spacing="3">
-        <TextBlock FontSize="14" FontWeight="SemiBold" Margin="0 0 0 10" 
+        <!-- 失焦自动切换: the feature's settings live ABOVE the shared 应用主题 section — the
+             section below configures the shared parameters, this block picks what each focus
+             state shows (theme + light/dark mode). -->
+        <TextBlock FontSize="14" FontWeight="SemiBold" Margin="0 0 0 10"
+                   Text="{x:Static locales:Locale.Settings_Appearance_FocusLink_Title}"/>
+        <controls:Setting Icon="{DynamicResource Windows}"
+            Title="{x:Static locales:Locale.Settings_Appearance_FocusLink_Enable_Title}"
+            Subtitle="{x:Static locales:Locale.Settings_Appearance_FocusLink_Enable_Subtitle}">
+            <ToggleSwitch IsChecked="{Binding FocusLinkEnabled}" HorizontalAlignment="Right"
+                          AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_FocusLink_Enable_Title}" />
+        </controls:Setting>
+        <controls:Setting Icon="{DynamicResource Brush}" IsVisible="{Binding FocusLinkEnabled}"
+            Title="{x:Static locales:Locale.Settings_Appearance_FocusLink_FocusedState_Title}"
+            Subtitle="{x:Static locales:Locale.Settings_Appearance_FocusLink_State_Subtitle}">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+                <ComboBox MinWidth="120" ItemsSource="{Binding FocusSurfaceOptions}"
+                          SelectedItem="{Binding FocusSurfaceFocused}"
+                          AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_FocusLink_FocusedState_Title}">
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate DataType="viewModels:FocusSurfaceViewModel">
+                            <TextBlock Text="{Binding Name}" Margin="0 4" />
+                        </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                </ComboBox>
+                <ComboBox MinWidth="110" ItemsSource="{Binding DarkModes}"
+                          SelectedItem="{Binding FocusModeFocused}">
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate DataType="viewModels:DarkModeViewModel">
+                            <TextBlock Text="{Binding Name}" Margin="0 4" />
+                        </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                </ComboBox>
+            </StackPanel>
+        </controls:Setting>
+        <controls:Setting Icon="{DynamicResource Brush}" IsVisible="{Binding FocusLinkEnabled}"
+            Title="{x:Static locales:Locale.Settings_Appearance_FocusLink_UnfocusedState_Title}"
+            Subtitle="{x:Static locales:Locale.Settings_Appearance_FocusLink_State_Subtitle}">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+                <ComboBox MinWidth="120" ItemsSource="{Binding FocusSurfaceOptions}"
+                          SelectedItem="{Binding FocusSurfaceUnfocused}"
+                          AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_FocusLink_UnfocusedState_Title}">
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate DataType="viewModels:FocusSurfaceViewModel">
+                            <TextBlock Text="{Binding Name}" Margin="0 4" />
+                        </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                </ComboBox>
+                <ComboBox MinWidth="110" ItemsSource="{Binding DarkModes}"
+                          SelectedItem="{Binding FocusModeUnfocused}">
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate DataType="viewModels:DarkModeViewModel">
+                            <TextBlock Text="{Binding Name}" Margin="0 4" />
+                        </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                </ComboBox>
+            </StackPanel>
+        </controls:Setting>
+        <TextBlock Margin="40 2 0 6" FontSize="{DynamicResource FontSizeCaption}"
+                   Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                   Text="{x:Static locales:Locale.Settings_Appearance_FocusLink_ColorPolicy_Hint}"
+                   IsVisible="{Binding FocusLinkEnabled}" TextWrapping="Wrap" />
+        <controls:Setting Icon="{DynamicResource Brush}" IsVisible="{Binding FocusLinkEnabled}"
+            Title="{x:Static locales:Locale.Settings_Appearance_FocusLink_Delay_Title}"
+            Subtitle="{x:Static locales:Locale.Settings_Appearance_FocusLink_Delay_Subtitle}">
+            <NumericUpDown MinWidth="130" Minimum="0" Maximum="1000" Increment="50" FormatString="F0"
+                           ParsingNumberStyle="Integer" Value="{Binding FocusSwitchDelayMs}"
+                           AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_FocusLink_Delay_Title}" />
+        </controls:Setting>
+        <controls:Setting Icon="{DynamicResource Color}" IsVisible="{Binding FocusLinkEnabled}"
+            Title="{x:Static locales:Locale.Settings_Appearance_FocusLink_Whitelist_Title}"
+            Subtitle="{x:Static locales:Locale.Settings_Appearance_FocusLink_Whitelist_Subtitle}">
+            <StackPanel Orientation="Vertical" Spacing="6" MinWidth="260" HorizontalAlignment="Right">
+                <ItemsControl ItemsSource="{Binding FocusWhitelist}" HorizontalAlignment="Right">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <WrapPanel MaxWidth="300" HorizontalAlignment="Right" />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate DataType="viewModels:FocusWhitelistItemViewModel">
+                            <Border Margin="0 0 4 4" Padding="8 2"
+                                    CornerRadius="{DynamicResource HostSurfaceCornerRadius}"
+                                    Background="{DynamicResource SystemControlBackgroundAltHighBrush}">
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <TextBlock Text="{Binding Name}" VerticalAlignment="Center" />
+                                    <Button Padding="2" Background="Transparent" BorderThickness="0"
+                                            FontSize="{DynamicResource FontSizeCaption}"
+                                            Content="{x:Static locales:Locale.Settings_Appearance_FocusLink_Whitelist_Remove}"
+                                            Tag="{Binding Name}" Click="RemoveFocusProcess" />
+                                </StackPanel>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+                <TextBlock Text="{x:Static locales:Locale.Settings_Appearance_FocusLink_Whitelist_Empty}"
+                           IsVisible="{Binding ShowFocusWhitelistEmpty}" HorizontalAlignment="Right"
+                           Opacity="0.6" FontSize="{DynamicResource FontSizeCaption}" />
+                <Button Content="{x:Static locales:Locale.Settings_Appearance_FocusLink_Whitelist_Add}"
+                        Click="AddFocusProcess" HorizontalAlignment="Right" />
+            </StackPanel>
+        </controls:Setting>
+        <controls:Setting Icon="{DynamicResource Brush}" IsVisible="{Binding FocusLinkEnabled}"
+            Title="{x:Static locales:Locale.Settings_Appearance_FocusLink_Status_Title}">
+            <TextBlock Text="{Binding FocusStatusText}" VerticalAlignment="Center" HorizontalAlignment="Right"
+                       AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_FocusLink_Status_Title}" />
+        </controls:Setting>
+        <TextBlock FontSize="14" FontWeight="SemiBold" Margin="0 20 0 10" 
                    Text="{x:Static locales:Locale.Settings_Appearance_ApplyTheme}"/>
         <ItemsControl ItemsSource="{Binding Themes}">
             <ItemsControl.ItemTemplate>
@@ -222,7 +328,8 @@
                    Text="{x:Static locales:Locale.Settings_Appearance_Colors}"/>
         <controls:Setting Icon="{DynamicResource Brush}" 
             Title="{x:Static locales:Locale.Settings_Appearance_DarkMode_Title}" 
-            Subtitle="{x:Static locales:Locale.Settings_Appearance_DarkMode_Subtitle}">
+            Subtitle="{x:Static locales:Locale.Settings_Appearance_DarkMode_Subtitle}"
+            IsVisible="{Binding ShowDarkModeRow}">
             <ComboBox ItemsSource="{Binding DarkModes}" MinWidth="130" 
                       SelectedItem="{Binding DarkMode}">
                 <ComboBox.ItemTemplate>

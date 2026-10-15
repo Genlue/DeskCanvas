@@ -23,8 +23,10 @@ using DeskCanvas.Core.Interfaces;
 using DeskCanvas.Core.Models;
 namespace Folders.Views;
 
-public partial class Folder : UserControl, IWidgetSelfRefreshing, INotifyPropertyChanged
+public partial class Folder : UserControl, IWidgetSelfRefreshing, INotifyPropertyChanged, IWidgetSurfaceHints
 {
+    public string? ColorfulBackgroundResourceKey => "FoldersCardBackground";
+
     private FolderModel model;
     private readonly IWidgetLayoutProvider widgetLayoutProvider;
 
@@ -149,6 +151,21 @@ public partial class Folder : UserControl, IWidgetSelfRefreshing, INotifyPropert
     private System.Threading.Timer? debounceTimer;
     private readonly object watcherLock = new();
 
+    /// <summary>
+    /// The platform handle the OLE drop target / WM_DROPFILES subclass were registered on,
+    /// captured while the window exists (<c>Loaded</c>).
+    /// <para>
+    /// <c>Unloaded</c> must unregister with this saved value: <c>TopLevel.HandleClosed</c> clears
+    /// <c>PlatformImpl</c> <i>before</i> it raises <c>Unloaded</c>, so during teardown
+    /// <c>TryGetPlatformHandle()</c> returns null and a fresh lookup silently skips the revoke.
+    /// What a skipped revoke leaves behind is not just a native registration: the static
+    /// registries in <see cref="WidgetOleDropTarget"/> keep the captured callbacks, which hold
+    /// this whole view (and through it the closed widget window) alive — one more set pinned per
+    /// closed Folders widget, i.e. the reported memory accumulation across profile switches.
+    /// </para>
+    /// </summary>
+    private IntPtr dropHandle = IntPtr.Zero;
+
     private void OnLoaded(object? sender, RoutedEventArgs e)
     {
         Refresh();
@@ -159,8 +176,9 @@ public partial class Folder : UserControl, IWidgetSelfRefreshing, INotifyPropert
         if (VisualRoot is TopLevel topLevel)
         {
             DragDrop.SetAllowDrop(topLevel, true);
-            if (topLevel.TryGetPlatformHandle()?.Handle is { } handle)
+            if (topLevel.TryGetPlatformHandle()?.Handle is { } handle && handle != IntPtr.Zero)
             {
+                dropHandle = handle;
                 WidgetOleDropTarget.Register(handle, OnOleDrop, OnOleDragActive);
                 WidgetOleDropTarget.RegisterWmDropFiles(handle, OnOleDrop, OnOleDragActive);
             }
@@ -170,10 +188,11 @@ public partial class Folder : UserControl, IWidgetSelfRefreshing, INotifyPropert
     private void OnUnloaded(object? sender, RoutedEventArgs e)
     {
         StopWatcher();
-        if (VisualRoot is TopLevel topLevel && topLevel.TryGetPlatformHandle()?.Handle is { } handle)
+        if (dropHandle != IntPtr.Zero)
         {
-            WidgetOleDropTarget.Unregister(handle);
-            WidgetOleDropTarget.UnregisterWmDropFiles(handle);
+            WidgetOleDropTarget.Unregister(dropHandle);
+            WidgetOleDropTarget.UnregisterWmDropFiles(dropHandle);
+            dropHandle = IntPtr.Zero;
         }
     }
 

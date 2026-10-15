@@ -146,4 +146,119 @@ public partial class Advanced : UserControl
                 Locale.Settings_Advanced_Backup_OkButton);
         }
     }
+
+    /// <summary>
+    /// Open the data folder in Explorer — the quickest way to confirm what is actually in it
+    /// (and to hand someone a path to look at).
+    /// </summary>
+    private void OnOpenDataFolderClicked(object? sender, RoutedEventArgs e)
+    {
+        DataFolderService.OpenInShell(DataFolderService.Current);
+    }
+
+    /// <summary>
+    /// Pick a new data folder. The choice is written as a pointer file and needs a restart,
+    /// because <see cref="Const.DataFolder"/> is resolved once per process.
+    /// <para>
+    /// Both confirmation buttons apply the switch; they differ only in whether the current data
+    /// is copied across. Cancelling happens in the folder picker, before this prompt.
+    /// </para>
+    /// </summary>
+    private async void OnChangeDataFolderClicked(object? sender, RoutedEventArgs e)
+    {
+        var owner = TopLevel.GetTopLevel(this) as Window;
+        var storage = owner?.StorageProvider;
+        if (owner == null || storage == null) return;
+
+        try
+        {
+            var start = await storage.TryGetFolderFromPathAsync(DataFolderService.Current);
+            var folders = await storage.OpenFolderPickerAsync(new FolderPickerOpenOptions
+            {
+                Title = Locale.Settings_Advanced_DataFolder_PickTitle,
+                AllowMultiple = false,
+                SuggestedStartLocation = start
+            });
+            if (folders.Count == 0) return;
+
+            var path = folders[0].TryGetLocalPath();
+            if (string.IsNullOrWhiteSpace(path)) return;
+
+            var invalid = DataFolderService.Validate(path);
+            if (invalid != DataFolderError.None)
+            {
+                await ConfirmDialog.InformAsync(owner, DescribeDataFolderError(invalid, null),
+                    Locale.Settings_Advanced_DataFolder_OkButton);
+                return;
+            }
+
+            var migrate = await ConfirmDialog.ConfirmAsync(owner,
+                string.Format(Locale.Settings_Advanced_DataFolder_ChangePrompt, path),
+                Locale.Settings_Advanced_DataFolder_ChangeMigrate,
+                Locale.Settings_Advanced_DataFolder_ChangeFresh);
+
+            var result = DataFolderService.Apply(path, migrate);
+            if (!result.Ok)
+            {
+                await ConfirmDialog.InformAsync(owner, DescribeDataFolderError(result.Error, result.Message),
+                    Locale.Settings_Advanced_DataFolder_OkButton);
+                return;
+            }
+
+            AppRestart.Restart();
+        }
+        catch (Exception ex)
+        {
+            await ConfirmDialog.InformAsync(owner,
+                string.Format(Locale.Settings_Advanced_DataFolder_Err_IoFailure, ex.Message),
+                Locale.Settings_Advanced_DataFolder_OkButton);
+        }
+    }
+
+    /// <summary>
+    /// Drop the saved folder so the app falls back to its layout rules (portable / packaged /
+    /// dev). Only offered while a saved choice is actually in effect.
+    /// </summary>
+    private async void OnResetDataFolderClicked(object? sender, RoutedEventArgs e)
+    {
+        var owner = TopLevel.GetTopLevel(this) as Window;
+        if (owner == null) return;
+
+        try
+        {
+            var fallback = DataFolderService.FallbackFolderAfterReset();
+
+            var migrate = await ConfirmDialog.ConfirmAsync(owner,
+                string.Format(Locale.Settings_Advanced_DataFolder_ResetPrompt, fallback),
+                Locale.Settings_Advanced_DataFolder_ChangeMigrate,
+                Locale.Settings_Advanced_DataFolder_ChangeFresh);
+
+            var result = DataFolderService.Reset(migrate);
+            if (!result.Ok)
+            {
+                await ConfirmDialog.InformAsync(owner, DescribeDataFolderError(result.Error, result.Message),
+                    Locale.Settings_Advanced_DataFolder_OkButton);
+                return;
+            }
+
+            AppRestart.Restart();
+        }
+        catch (Exception ex)
+        {
+            await ConfirmDialog.InformAsync(owner,
+                string.Format(Locale.Settings_Advanced_DataFolder_Err_IoFailure, ex.Message),
+                Locale.Settings_Advanced_DataFolder_OkButton);
+        }
+    }
+
+    private static string DescribeDataFolderError(DataFolderError error, string? detail) => error switch
+    {
+        DataFolderError.Empty => Locale.Settings_Advanced_DataFolder_Err_Empty,
+        DataFolderError.Invalid => Locale.Settings_Advanced_DataFolder_Err_Invalid,
+        DataFolderError.IsFile => Locale.Settings_Advanced_DataFolder_Err_IsFile,
+        DataFolderError.Unwritable => Locale.Settings_Advanced_DataFolder_Err_Unwritable,
+        DataFolderError.SameAsCurrent => Locale.Settings_Advanced_DataFolder_Err_SameAsCurrent,
+        DataFolderError.NoPointerLocation => Locale.Settings_Advanced_DataFolder_Err_NoPointerLocation,
+        _ => string.Format(Locale.Settings_Advanced_DataFolder_Err_IoFailure, detail ?? "")
+    };
 }

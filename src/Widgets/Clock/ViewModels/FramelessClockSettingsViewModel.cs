@@ -11,6 +11,7 @@ using DeskCanvas.Core.Interfaces;
 using DeskCanvas.Core.Models;
 using DeskCanvas.Core.Models.Settings;
 using DeskCanvas.Services;
+using DeskCanvas.ViewModels;
 
 namespace Clock.ViewModels;
 
@@ -53,15 +54,19 @@ public class FramelessClockSettingsViewModel : ReactiveObject
 
         var isZh = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName.Equals("zh", StringComparison.OrdinalIgnoreCase);
 
-        MaterialOptions = new List<ClockMaterialOption>
+        // The option LIST is derived from the shared preset catalog — same set, order and
+        // naming as the Appearance page's 应用主题 cards (ThemePresets.SurfaceTemplates +
+        // SurfaceNames.Of). Only the short hint text is per-material content.
+        var materialOptions = new List<ClockMaterialOption>
         {
-            new(null, Locale.Clock_Material_FollowGlobal, isZh ? "自动同步控制中心设置的全局主题材质" : "Sync with global theme surface set in Control Center"),
-            new(SurfaceStyle.Acrylic, Locale.Clock_Material_Acrylic, isZh ? "亚克力磨砂半透明背景" : "Frosted translucent acrylic background"),
-            new(SurfaceStyle.LiquidGlass, Locale.Clock_Material_LiquidGlass, isZh ? "经典流体光泽折射质感" : "Classic fluid glossy refraction surface"),
-            new(SurfaceStyle.LiquidGlassV2, Locale.Clock_Material_LiquidGlassV2, isZh ? "实时背景折射 · 高光色散字形玻璃" : "Real-time refraction · Dispersion glass glyphs"),
-            new(SurfaceStyle.Solid, Locale.Clock_Material_Solid, isZh ? "纯净不透明高对比文字卡片" : "Clean opaque high-contrast card"),
-            new(SurfaceStyle.Colorful, Locale.Clock_Material_Colorful, isZh ? "绚丽灵动渐变色彩材质" : "Vibrant gradient color surface")
+            new(null, Locale.Clock_Material_FollowGlobal, Locale.Clock_Material_FollowGlobal_Desc)
         };
+        materialOptions.AddRange(ThemePresets.SurfaceTemplates.Select(template =>
+            new ClockMaterialOption(
+                template.EffectiveSurface,
+                SurfaceNames.Of(template.EffectiveSurface),
+                MaterialDescription(template.EffectiveSurface))));
+        MaterialOptions = materialOptions;
 
         FontSourceOptions = new List<ClockFontSourceOption>
         {
@@ -294,6 +299,19 @@ public class FramelessClockSettingsViewModel : ReactiveObject
     }
 
     private static bool IsZh => System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName.Equals("zh", StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// The short hint shown under a material's name. The option list itself is derived from
+    /// <see cref="ThemePresets.SurfaceTemplates"/>; this only supplies the one-line text.
+    /// </summary>
+    private static string MaterialDescription(SurfaceStyle surface) => surface switch
+    {
+        SurfaceStyle.LiquidGlassV2 => Locale.Clock_Material_LiquidGlassV2_Desc,
+        SurfaceStyle.LiquidGlass or SurfaceStyle.SoftGlow => Locale.Clock_Material_LiquidGlass_Desc,
+        SurfaceStyle.Colorful => Locale.Clock_Material_Colorful_Desc,
+        SurfaceStyle.Solid => Locale.Clock_Material_Solid_Desc,
+        _ => Locale.Clock_Material_Acrylic_Desc
+    };
 
     public ClockFontOption SelectedSystemFont
     {

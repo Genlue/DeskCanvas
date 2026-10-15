@@ -13,6 +13,7 @@ using FixedWidgets.Models;
 using FixedWidgets.Services;
 using DeskCanvas.Core.Interfaces;
 using DeskCanvas.Core.Models;
+using DeskCanvas.Services;
 using DeskCanvas.Views.Controls;
 
 namespace FixedWidgets.Views.Settings;
@@ -251,15 +252,9 @@ public partial class AggregateSettings : UserControl
         TodayColorDarkSetting.IsVisible = isCustom;
     }
 
-    private static Color ResolveAccentColor()
+    private Color ResolveAccentColor()
     {
-        if (Application.Current != null &&
-            Application.Current.TryFindResource("SystemAccentColor", out var value) &&
-            value is Color accent)
-        {
-            return accent;
-        }
-        return Color.Parse("#FF7043");
+        return ThemeScopeResolver.ResolveColor(this, "SystemAccentColor", ActualThemeVariant, Color.Parse("#FF7043"));
     }
 
     private void OnFirstDayChanged(object? sender, SelectionChangedEventArgs e)

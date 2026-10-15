@@ -178,6 +178,25 @@ namespace DeskCanvas.Core.Models.Settings;
         : this;
 
     /// <summary>
+    /// Normalizes theme settings for its effective surface material.
+    /// Colorful enforces fixed colors (AccentColor=null, Monochrome=false, MonochromeVariant=null, OpacityLevel=1.0).
+    /// Other surfaces preserve accent color and monochrome customizations.
+    /// </summary>
+    public Theme NormalizeForSurface()
+    {
+        var theme = NormalizeMaterial();
+        return theme.EffectiveSurface == SurfaceStyle.Colorful
+            ? theme with
+            {
+                AccentColor = null,
+                Monochrome = false,
+                MonochromeVariant = null,
+                OpacityLevel = 1.0
+            }
+            : theme;
+    }
+
+    /// <summary>
     /// The highlighted glass ring color; falls back to <see cref="DefaultOutlineColor"/>
     /// when <see cref="OutlineColor"/> is not set.
     /// </summary>

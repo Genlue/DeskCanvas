@@ -25,6 +25,11 @@ namespace DeskCanvas.Core.Models.Settings;
 /// <param name="LastUpdateCheckTime">UTC timestamp of the last update check; <c>null</c> when never checked.</param>
 /// <param name="SurfaceThemes">Per-surface theme overrides keyed by <see cref="SurfaceStyle"/> name; <c>null</c> falls back to the built-in presets.</param>
 /// <param name="LastUpdateCheckStatus">Summary of the most recent update check outcome (connected/up-to-date, new version, or GitHub connection failure).</param>
+/// <param name="FocusLink">
+/// 失焦自动切换: auto light/dark switching when the desktop loses focus. <c>null</c> (old
+/// configurations, feature never enabled) means the feature is off — see
+/// <see cref="FocusLinkSettings"/>.
+/// </param>
 public record AppSettings(
     Theme Theme,
     Theme[] Templates,
@@ -44,7 +49,8 @@ public record AppSettings(
     UpdateCheckInterval UpdateInterval = UpdateCheckInterval.Daily,
     DateTime? LastUpdateCheckTime = null,
     Dictionary<string, Theme>? SurfaceThemes = null,
-    string? LastUpdateCheckStatus = null)
+    string? LastUpdateCheckStatus = null,
+    FocusLinkSettings? FocusLink = null)
 {
     /// <summary>
     /// Gets the saved theme configuration for the specified surface, falling back to default presets.
@@ -55,11 +61,12 @@ public record AppSettings(
         var key = surface.ToString();
         if (SurfaceThemes != null && SurfaceThemes.TryGetValue(key, out var savedTheme))
         {
-            return savedTheme.NormalizeMaterial();
+            var withSurface = savedTheme.Surface == null ? savedTheme with { Surface = surface } : savedTheme;
+            return withSurface.NormalizeForSurface();
         }
         if (surface == SurfaceStyle.LiquidGlass && SurfaceThemes != null &&
             SurfaceThemes.TryGetValue(nameof(SurfaceStyle.SoftGlow), out var legacy))
-            return legacy.NormalizeMaterial();
+            return legacy.NormalizeForSurface();
 
         return surface switch
         {
@@ -104,7 +111,7 @@ public record AppSettings(
     public AppSettings WithThemeForSurface(SurfaceStyle surface, Theme theme)
     {
         if (surface == SurfaceStyle.SoftGlow) surface = SurfaceStyle.LiquidGlass;
-        theme = theme.NormalizeMaterial();
+        theme = (theme with { Surface = surface }).NormalizeForSurface();
         var dict = SurfaceThemes != null 
             ? new Dictionary<string, Theme>(SurfaceThemes, StringComparer.OrdinalIgnoreCase) 
             : new Dictionary<string, Theme>(StringComparer.OrdinalIgnoreCase);

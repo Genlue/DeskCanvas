@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Avalonia.Threading;
 using ReactiveUI;
+using DeskCanvas.Core;
 using DeskCanvas.Core.Interfaces;
 using DeskCanvas.Core.Models;
 using DeskCanvas.Core.Models.Settings;
@@ -428,6 +429,43 @@ public class AdvancedViewModel : ReactiveObject, IDisposable
             appSettingsProvider.Save(settings with { UpdateUrl = string.IsNullOrWhiteSpace(value) ? null : value.Trim() });
         }
     }
+
+    // ---------- Data folder ----------
+
+    /// <summary>
+    /// The data folder in use. Read-only here: it is resolved once per process by
+    /// <see cref="Const"/>, so a change is written by <see cref="DataFolderService"/> and applied
+    /// by restarting the app.
+    /// </summary>
+    public string DataFolderPath => DataFolderService.Current;
+
+    /// <summary>
+    /// Localised description of the rule that picked <see cref="DataFolderPath"/> — the folder
+    /// depends on the build, the exe location and the environment, and this makes it visible
+    /// instead of a guess.
+    /// </summary>
+    public string DataFolderSourceText => DataFolderService.Source switch
+    {
+        DataFolderSource.Default => Locale.Settings_Advanced_DataFolder_Source_Default,
+        DataFolderSource.Portable => Locale.Settings_Advanced_DataFolder_Source_Portable,
+        DataFolderSource.PortableDev => Locale.Settings_Advanced_DataFolder_Source_PortableDev,
+        DataFolderSource.ExePointer => Locale.Settings_Advanced_DataFolder_Source_ExePointer,
+        DataFolderSource.AnchorPointer => Locale.Settings_Advanced_DataFolder_Source_AnchorPointer,
+        DataFolderSource.EnvironmentVariable => Locale.Settings_Advanced_DataFolder_Source_Environment,
+        DataFolderSource.TestHarness => Locale.Settings_Advanced_DataFolder_Source_TestHarness,
+        _ => Locale.Settings_Advanced_DataFolder_Source_Default
+    };
+
+    /// <summary>
+    /// False while the folder is pinned by the environment or by the harness sandbox: both outrank
+    /// the saved pointer, so offering a picker would silently write a setting that never takes
+    /// effect.
+    /// </summary>
+    public bool CanChangeDataFolder =>
+        DataFolderService.Source is not (DataFolderSource.EnvironmentVariable or DataFolderSource.TestHarness);
+
+    /// <summary>True when a saved user choice is in effect — the only case "restore default" undoes.</summary>
+    public bool CanResetDataFolder => DataFolderService.IsUserPinned;
 
     /// <summary>
     /// Notification-area icon visibility. The tray menu and the widget context menu can switch it

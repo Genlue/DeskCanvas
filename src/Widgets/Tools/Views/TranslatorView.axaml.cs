@@ -22,8 +22,10 @@ using DeskCanvas.Services;
 
 namespace Tools.Views;
 
-public partial class TranslatorView : UserControl, IWidgetSelfRefreshing
+public partial class TranslatorView : UserControl, IWidgetSelfRefreshing, IWidgetSurfaceHints
 {
+    public string? ColorfulBackgroundResourceKey => "TranslatorCardBackground";
+
     private static bool IsZh => System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName.Equals("zh", StringComparison.OrdinalIgnoreCase);
 
     /// <summary>Panel combos render items through ToString (compiled bindings can't see the record's properties).</summary>
@@ -434,10 +436,10 @@ public partial class TranslatorView : UserControl, IWidgetSelfRefreshing
             Grid.SetColumnSpan(OutputBoxBorder, 2);
             OutputBoxBorder.Margin = new Thickness(0, 1, 0, 0);
 
-            InputTextBox.TextWrapping = TextWrapping.NoWrap;
-            OutputTextBox.TextWrapping = TextWrapping.NoWrap;
-            ScrollViewer.SetHorizontalScrollBarVisibility(InputTextBox, ScrollBarVisibility.Auto);
-            ScrollViewer.SetHorizontalScrollBarVisibility(OutputTextBox, ScrollBarVisibility.Auto);
+            InputTextBox.TextWrapping = TextWrapping.Wrap;
+            OutputTextBox.TextWrapping = TextWrapping.Wrap;
+            ScrollViewer.SetHorizontalScrollBarVisibility(InputTextBox, ScrollBarVisibility.Disabled);
+            ScrollViewer.SetHorizontalScrollBarVisibility(OutputTextBox, ScrollBarVisibility.Disabled);
             ScrollViewer.SetVerticalScrollBarVisibility(InputTextBox, ScrollBarVisibility.Auto);
             ScrollViewer.SetVerticalScrollBarVisibility(OutputTextBox, ScrollBarVisibility.Auto);
 
@@ -464,10 +466,10 @@ public partial class TranslatorView : UserControl, IWidgetSelfRefreshing
             targetInner = widget.InnerRadius;
             targetPill = widget.PillRadius;
         }
-        else if (this.TryFindResource("WidgetInnerCornerRadius", ActualThemeVariant, out var ir) && ir is CornerRadius innerCr)
+        else if (ThemeScopeResolver.TryFindResource<CornerRadius>(this, "WidgetInnerCornerRadius", ActualThemeVariant, out var innerCr))
         {
             targetInner = innerCr;
-            if (this.TryFindResource("WidgetPillCornerRadius", ActualThemeVariant, out var pr) && pr is CornerRadius pillCr)
+            if (ThemeScopeResolver.TryFindResource<CornerRadius>(this, "WidgetPillCornerRadius", ActualThemeVariant, out var pillCr))
             {
                 targetPill = pillCr;
             }
@@ -489,19 +491,17 @@ public partial class TranslatorView : UserControl, IWidgetSelfRefreshing
 
     private void ConfigureScrollers()
     {
-        bool isSmall = currentTier == WidgetTier.Small || currentTier == WidgetTier.Cell;
-
         var inScroller = GetScroller(InputTextBox);
         if (inScroller != null)
         {
-            inScroller.HorizontalScrollBarVisibility = isSmall ? ScrollBarVisibility.Auto : ScrollBarVisibility.Disabled;
+            inScroller.HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled;
             inScroller.VerticalScrollBarVisibility = ScrollBarVisibility.Auto;
         }
 
         var outScroller = GetScroller(OutputTextBox);
         if (outScroller != null)
         {
-            outScroller.HorizontalScrollBarVisibility = isSmall ? ScrollBarVisibility.Auto : ScrollBarVisibility.Disabled;
+            outScroller.HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled;
             outScroller.VerticalScrollBarVisibility = ScrollBarVisibility.Auto;
         }
     }
@@ -907,52 +907,7 @@ public partial class TranslatorView : UserControl, IWidgetSelfRefreshing
         var scroller = GetScroller(textBox);
         if (scroller == null) return;
 
-        var maxX = Math.Max(0, scroller.Extent.Width - scroller.Viewport.Width);
         var maxY = Math.Max(0, scroller.Extent.Height - scroller.Viewport.Height);
-
-        // In 4x4 (Large) and 4x2 (Medium): vertical scrolling mode (上下滚动模式)
-        if (currentTier != WidgetTier.Small && currentTier != WidgetTier.Cell)
-        {
-            if (maxY > 0 && e.Delta.Y != 0)
-            {
-                var newY = Math.Clamp(scroller.Offset.Y - e.Delta.Y * 40.0, 0, maxY);
-                scroller.Offset = new Vector(scroller.Offset.X, newY);
-                e.Handled = true;
-            }
-            return;
-        }
-
-        // In 2x2 (Small): left-right horizontal scrolling mode (左右滚动模式)
-        // If Shift is pressed and vertical scrolling is possible, allow vertical scrolling
-        if (e.KeyModifiers.HasFlag(KeyModifiers.Shift) && maxY > 0)
-        {
-            var vDelta = e.Delta.Y;
-            if (vDelta != 0)
-            {
-                var newY = Math.Clamp(scroller.Offset.Y - vDelta * 40.0, 0, maxY);
-                scroller.Offset = new Vector(scroller.Offset.X, newY);
-                e.Handled = true;
-            }
-            return;
-        }
-
-        // Horizontal scrolling takes priority in 2x2 / 4x2
-        if (maxX > 0)
-        {
-            var delta = e.Delta.Y != 0 ? e.Delta.Y : -e.Delta.X;
-            if (delta == 0) return;
-
-            // "鼠标上滚（手指往前）则左移（对应滚动条左移）":
-            // Wheel up (delta > 0, finger forward) -> scroll left (Offset.X decreases, scrollbar moves left).
-            // Wheel down (delta < 0, finger backward) -> scroll right (Offset.X increases, scrollbar moves right).
-            const double scrollStep = 50.0;
-            var targetX = Math.Clamp(scroller.Offset.X - delta * scrollStep, 0, maxX);
-            scroller.Offset = new Vector(targetX, scroller.Offset.Y);
-            e.Handled = true;
-            return;
-        }
-
-        // Fallback to vertical scroll if no horizontal overflow exists
         if (maxY > 0 && e.Delta.Y != 0)
         {
             var newY = Math.Clamp(scroller.Offset.Y - e.Delta.Y * 40.0, 0, maxY);

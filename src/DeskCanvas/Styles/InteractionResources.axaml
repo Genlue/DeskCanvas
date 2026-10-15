@@ -23,6 +23,12 @@
             <SolidColorBrush x:Key="SeparatorBrush" Color="#000000" Opacity="0.08" />
             <SolidColorBrush x:Key="SecondaryTextBrush" Color="#8A8A8E" />
             <SolidColorBrush x:Key="ValidationErrorBrush" Color="#D70015" />
+            <!-- Batteries & Storage shared baselines -->
+            <SolidColorBrush x:Key="BatteriesTrackBrush" Color="#E5E5EA" />
+            <SolidColorBrush x:Key="StorageSubCardBackground" Color="#F2F2F7" />
+            <SolidColorBrush x:Key="StorageSubCardBorderBrush" Color="#E5E5EA" />
+            <SolidColorBrush x:Key="StorageTrackBackground" Color="#E5E5EA" />
+            <SolidColorBrush x:Key="StorageBadgeBackground" Color="#E5E5EA" />
             <!-- Predictable fallback pair (see resolver): 5.4:1 white-on-#0F6CBD. -->
             <SolidColorBrush x:Key="TextSelectionBackgroundBrush" Color="#0F6CBD" />
             <SolidColorBrush x:Key="TextSelectionForegroundBrush" Color="#FFFFFF" />
@@ -37,6 +43,12 @@
             <SolidColorBrush x:Key="SeparatorBrush" Color="#FFFFFF" Opacity="0.12" />
             <SolidColorBrush x:Key="SecondaryTextBrush" Color="#98989D" />
             <SolidColorBrush x:Key="ValidationErrorBrush" Color="#FF453A" />
+            <!-- Batteries & Storage shared baselines -->
+            <SolidColorBrush x:Key="BatteriesTrackBrush" Color="#2C2C2E" />
+            <SolidColorBrush x:Key="StorageSubCardBackground" Color="#2C2C2E" />
+            <SolidColorBrush x:Key="StorageSubCardBorderBrush" Color="#3A3A3C" />
+            <SolidColorBrush x:Key="StorageTrackBackground" Color="#2C2C2E" />
+            <SolidColorBrush x:Key="StorageBadgeBackground" Color="#3A3A3C" />
             <!-- Predictable fallback pair (see resolver): 10.5:1 black-on-#4CC2FF. -->
             <SolidColorBrush x:Key="TextSelectionBackgroundBrush" Color="#4CC2FF" />
             <SolidColorBrush x:Key="TextSelectionForegroundBrush" Color="#000000" />

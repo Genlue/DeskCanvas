@@ -22,7 +22,7 @@ using DeskCanvas.Views.Controls;
 
 namespace DeskCanvas.Views;
 
-public partial class Widget : Window, INotifyPropertyChanged
+public partial class Widget : Window, INotifyPropertyChanged, IFocusThemedWindow
 {
     private readonly IWidgetLayoutProvider widgetLayoutProvider;
     private readonly IAppSettingsProvider appSettingsProvider;
@@ -36,6 +36,13 @@ public partial class Widget : Window, INotifyPropertyChanged
     private (int Columns, int Rows)? manualSpan;
     private bool isFrameless;
 
+    /// <summary>Resolved lazily: the widget is also instantiated in contexts without the app
+    /// services (design-time / checks), where the 失焦自动切换 material resolution degrades to
+    /// the shared theme.</summary>
+    private FocusThemeCoordinator? focusCoordinator;
+    private FocusThemeCoordinator? FocusCoordinator =>
+        focusCoordinator ??= App.Services?.GetService(typeof(FocusThemeCoordinator)) as FocusThemeCoordinator;
+
     /// <summary>
     /// Reads the shared menu surface radius for Clip / native window region alignment. The XAML
     /// styles own CornerRadius; this value only keeps the acrylic popup's native clipping in sync
@@ -46,8 +53,7 @@ public partial class Widget : Window, INotifyPropertyChanged
     {
         get
         {
-            if (Application.Current?.TryFindResource("HostSurfaceCornerRadius", out var value) == true
-                && value is CornerRadius radius)
+            if (ThemeScopeResolver.TryFindResource<CornerRadius>(null, "HostSurfaceCornerRadius", null, out var radius))
                 return radius.TopLeft;
 
             return 12;
@@ -233,6 +239,10 @@ public partial class Widget : Window, INotifyPropertyChanged
     {
         // The native window exists now — size the card and clip the OS acrylic backdrop.
         displayMonitor.Attach(this);
+        // 失焦自动切换: the widget is desktop furniture — the focus watcher must recognise it
+        // as such (clicking a widget never flips the theme), and the coordinator assigns this
+        // window's per-screen light/dark variant.
+        DesktopFurniture.Attach(this);
         ApplyTransparencyHint();
         UpdateContentSize();
         ApplyWidgetRegion();
@@ -500,7 +510,19 @@ public partial class Widget : Window, INotifyPropertyChanged
         Notify(nameof(PillRadius));
     }
 
-    public Theme GlassMaterial => appSettingsProvider.Get().Theme;
+    /// <summary>
+    /// The theme this window renders with. Usually the shared theme; while 失焦自动切换 is
+    /// enabled it is the shared parameters with this screen's state substituted (light/dark
+    /// pair + optional surface material) — so two screens can show two materials at once.
+    /// </summary>
+    public Theme GlassMaterial
+    {
+        get
+        {
+            var settings = appSettingsProvider.Get();
+            return FocusCoordinator?.ResolveWindowTheme(settings) ?? settings.Theme;
+        }
+    }
 
     /// <summary>
     /// True when the card is drawn by the app itself from a desktop snapshot
@@ -600,7 +622,7 @@ public partial class Widget : Window, INotifyPropertyChanged
     {
         if (overlayControl == null) return;
 
-        var theme = appSettingsProvider.Get().Theme;
+        var theme = GlassMaterial;
         var hints = overlayProvider!.OverlayHints;
 
         var nativeBlurClip = !isFrameless && theme.UsesNativeBlur && !theme.UseNativeFrame;
@@ -711,11 +733,14 @@ public partial class Widget : Window, INotifyPropertyChanged
     /// True when the card should render the outline highlight ring: glass surface
     /// with the outline width &gt; 0, no native frame.
     /// </summary>
-    private bool IsOutlined =>
-        !isFrameless
-        && appSettingsProvider.Get().Theme.IsGlass
-        && appSettingsProvider.Get().Theme.OutlineWidth > 0
-        && !appSettingsProvider.Get().Theme.UseNativeFrame;
+    private bool IsOutlined
+    {
+        get
+        {
+            var theme = GlassMaterial;
+            return !isFrameless && theme.IsGlass && theme.OutlineWidth > 0 && !theme.UseNativeFrame;
+        }
+    }
 
     /// <summary>Highlight ring thickness (DIPs), 0 when the surface is not outlined glass.</summary>
     public Thickness WidgetOutlineThickness
@@ -723,7 +748,7 @@ public partial class Widget : Window, INotifyPropertyChanged
         get
         {
             if (!IsOutlined || IsStackWidget) return new Thickness(0);
-            var width = Math.Clamp(appSettingsProvider.Get().Theme.OutlineWidth, 0, 6);
+            var width = Math.Clamp(GlassMaterial.OutlineWidth, 0, 6);
             return new Thickness(width);
         }
     }
@@ -741,7 +766,7 @@ public partial class Widget : Window, INotifyPropertyChanged
         get
         {
             if (!IsOutlined || IsStackWidget) return null;
-            if (appSettingsProvider.Get().Theme.OutlineWidth > 0)
+            if (GlassMaterial.OutlineWidth > 0)
                 return BuildOutlineBrush();
             return null;
         }
@@ -752,7 +777,7 @@ public partial class Widget : Window, INotifyPropertyChanged
         var width = Math.Max(1, (ClientSize.Width > 0 ? ClientSize.Width : Width) - 2 * WidgetMargin.Left);
         var height = Math.Max(1, (ClientSize.Height > 0 ? ClientSize.Height : Height) - 2 * WidgetMargin.Top);
 
-        var theme = appSettingsProvider.Get().Theme;
+        var theme = GlassMaterial;
         var cornerAngle = Math.Atan2(width / 2.0, height / 2.0) * 180.0 / Math.PI;   // top-right corner direction
         var startAngle = 360.0 - cornerAngle;                                        // top-left corner direction
         var color = Color.TryParse(theme.EffectiveOutlineColor, out var parsed)
@@ -794,7 +819,7 @@ public partial class Widget : Window, INotifyPropertyChanged
         get
         {
             if (isFrameless || IsStackWidget) return Brushes.Transparent;
-            var theme = appSettingsProvider.Get().Theme;
+            var theme = GlassMaterial;
             var variant = ActualThemeVariant;
             if (theme.IsColorful)
             {
@@ -805,22 +830,35 @@ public partial class Widget : Window, INotifyPropertyChanged
                 if (ContentPresenter?.Content is IWidgetSurfaceHints hints
                     && hints.ColorfulBackgroundResourceKey is { Length: > 0 } key
                     && ContentPresenter.Content is Control hintedHost
-                    && hintedHost.TryFindResource(key, variant, out var hinted)
-                    && hinted is IBrush hintedBrush)
+                    && ThemeScopeResolver.TryFindResource<IBrush>(hintedHost, key, variant, out var hintedBrush)
+                    && hintedBrush != null)
                 {
                     return hintedBrush;
                 }
 
-                // Explicit fallback guarantee for Colorful theme to ensure pure white (light) or charcoal (dark)
-                if (this.TryFindResource("WidgetBackground", variant, out var cb) && cb is IBrush cbrush)
-                    return cbrush;
+                // Explicit fallback guarantee for 多彩: pure white (light) / charcoal (dark) —
+                // the palette's own WidgetBackground values, computed here rather than read
+                // from the resource: with several surface dictionaries loaded at once
+                // (per-state materials) another material's WidgetBackground could shadow it.
                 return variant == Avalonia.Styling.ThemeVariant.Dark
                     ? new SolidColorBrush(Color.Parse("#1C1C1E"))
                     : Brushes.White;
             }
-            return this.TryFindResource("WidgetBackground", variant, out var res) && res is IBrush brush
-                ? brush
-                : Brushes.Transparent;
+
+            // Rendered glass (液态玻璃 / 新液态玻璃): the card stays transparent — the
+            // LiquidGlassSurface layer draws the material (see ShowsGlassMaterial).
+            if (theme.UsesRenderedGlass) return Brushes.Transparent;
+
+            // 毛玻璃 / 纯色: the card is the user's background color coated with the shared
+            // opacity. Computed here — instead of the surface dictionaries' WidgetBackground
+            // resource — so a per-state surface selection can differ per window (the resource
+            // is app-wide and would show whichever dictionary was loaded last).
+            var dark = variant == Avalonia.Styling.ThemeVariant.Dark;
+            var hex = dark ? theme.EffectiveSolidBackgroundDark : theme.EffectiveSolidBackgroundLight;
+            var fallback = dark
+                ? DeskCanvas.Core.Models.Settings.Theme.DefaultSolidBackgroundDark
+                : DeskCanvas.Core.Models.Settings.Theme.DefaultSolidBackgroundLight;
+            return new SolidColorBrush(ThemeResourceHelper.ParseColor(hex, fallback), theme.OpacityLevel);
         }
     }
 
@@ -1236,23 +1274,33 @@ public partial class Widget : Window, INotifyPropertyChanged
         // outlined-glass highlight ring…).
         if (oldData?.Dimensions != newData.Dimensions || oldData?.Theme != newData.Theme)
         {
-            // Surface switch (毛玻璃↔纯色): reconfigure the native transparency.
-            if (oldData?.Theme?.UsesNativeBlur != newData.Theme.UsesNativeBlur)
-                ApplyTransparencyHint();
-            Notify(nameof(GlassMaterial));
-            Notify(nameof(ShowsGlassMaterial));
-            Notify(nameof(WidgetMargin));
-            UpdateOverlayLayout();
-            Notify(nameof(WidgetCardBackground));
-            Notify(nameof(Radius));
-            Notify(nameof(InnerRadius));
-            Notify(nameof(PillRadius));
-            Notify(nameof(SizeMenuTitle));
-            Notify(nameof(WidgetOutlineThickness));
-            Notify(nameof(WidgetOutlineBrush));
-            UpdateContentSize();
-            ApplyWidgetRegion();
+            RefreshThemeVisuals();
         }
+    }
+
+    /// <summary>
+    /// The refresh set shared by the manual path (a settings save that touched the theme)
+    /// and the focus path (<see cref="OnFocusThemeChanged"/>) — kept as one method so a
+    /// focus-state material swap re-resolves exactly what switching the same theme by
+    /// hand re-resolves: the native transparency hint, the card brush, the glass layer,
+    /// the outline, the overlay placement, the content size and the native window region.
+    /// </summary>
+    private void RefreshThemeVisuals()
+    {
+        ApplyTransparencyHint();
+        Notify(nameof(GlassMaterial));
+        Notify(nameof(ShowsGlassMaterial));
+        Notify(nameof(WidgetMargin));
+        UpdateOverlayLayout();
+        Notify(nameof(WidgetCardBackground));
+        Notify(nameof(Radius));
+        Notify(nameof(InnerRadius));
+        Notify(nameof(PillRadius));
+        Notify(nameof(SizeMenuTitle));
+        Notify(nameof(WidgetOutlineThickness));
+        Notify(nameof(WidgetOutlineBrush));
+        UpdateContentSize();
+        ApplyWidgetRegion();
     }
 
     /// <summary>
@@ -1267,7 +1315,7 @@ public partial class Widget : Window, INotifyPropertyChanged
     {
         if (isFrameless) return;
 
-        TransparencyLevelHint = appSettingsProvider.Get().Theme.UsesNativeBlur
+        TransparencyLevelHint = GlassMaterial.UsesNativeBlur
             ? [WindowTransparencyLevel.AcrylicBlur]
             : [WindowTransparencyLevel.Transparent];
     }
@@ -1383,6 +1431,22 @@ public partial class Widget : Window, INotifyPropertyChanged
     {
         Notify(nameof(WidgetCardBackground));
         Notify(nameof(WidgetOutlineBrush));
+    }
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// Called by <see cref="FocusThemeCoordinator"/> when the 失焦自动切换 state changes this
+    /// window's effective theme — the light/dark variant may stay put while the surface
+    /// material is swapped, so the material paths are re-resolved here (the same set the
+    /// shared-theme path notifies). Content that resolves its own colours (the Stack widget)
+    /// is poked through <see cref="IFocusThemedContent"/>.
+    /// </remarks>
+    public void OnFocusThemeChanged()
+    {
+        if (tornDown) return;
+
+        RefreshThemeVisuals();
+        (ContentPresenter.Content as IFocusThemedContent)?.OnFocusThemeChanged();
     }
 
     private void OnWidgetLayoutUpdated(object? sender, WidgetLayout? oldLayout, WidgetLayout newLayout)

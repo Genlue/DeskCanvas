@@ -943,7 +943,7 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
         return Color.FromArgb(baseC.A, r, g, b);
     }
 
-    private static void DrawSpecularRim(DrawingContext context, Geometry geometry, double targetW, double targetH, bool isDark, FramelessClockModel model, Theme? theme)
+    private void DrawSpecularRim(DrawingContext context, Geometry geometry, double targetW, double targetH, bool isDark, FramelessClockModel model, Theme? theme)
     {
         var edgeTint = (float)Math.Clamp(
             (theme?.EffectiveLiquidGlass.EdgeTint ?? LiquidGlassSettings.DefaultEdgeTint) / 100.0, 0.0, 1.0);
@@ -1014,7 +1014,7 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
 
     private static readonly Color DefaultOverlayColor = Color.FromRgb(0, 120, 215);
 
-    private static Color ResolveOverlayColor(FramelessClockModel model, Theme? theme)
+    private Color ResolveOverlayColor(FramelessClockModel model, Theme? theme)
     {
         var baseColor = model.FollowAccentColor
             ? ResolveAccentColor(theme) ?? DefaultOverlayColor
@@ -1024,16 +1024,14 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
         return Color.FromArgb((byte)(opacity * 255), baseColor.R, baseColor.G, baseColor.B);
     }
 
-    private static Color? ResolveAccentColor(Theme? theme)
+    private Color? ResolveAccentColor(Theme? theme)
     {
         var achromaticMonochrome = theme is { Monochrome: true }
             && theme.EffectiveMonochromeVariant != MonochromeStyle.Accent;
         if (!achromaticMonochrome && ParseHex(theme?.AccentColor) is { } picked)
             return picked;
 
-        if (Application.Current is { } app &&
-            app.TryFindResource("SystemAccentColor", out var value) &&
-            value is Color systemAccent)
+        if (ThemeScopeResolver.TryFindResource<Color>(this, "SystemAccentColor", ActualThemeVariant, out var systemAccent))
             return systemAccent;
 
         return null;

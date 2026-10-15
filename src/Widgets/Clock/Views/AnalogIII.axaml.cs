@@ -7,8 +7,15 @@ using DeskCanvas.Core.Interfaces;
 
 namespace Clock.Views;
 
-public partial class AnalogIII : UserControl, IFixedSizeWidget
+/// <summary>
+/// 表盘-2（城市/时区表盘）：通过 <see cref="IWidgetSurfaceHints"/> 声明 Colorful 模式下的专属卡片画刷
+/// （ClockCardBackground —— 恒黑卡片，与表盘-1、表盘-3 一致）。
+/// </summary>
+public partial class AnalogIII : UserControl, IFixedSizeWidget, IWidgetSurfaceHints
 {
+    /// <inheritdoc />
+    public string? ColorfulBackgroundResourceKey => "ClockCardBackground";
+
     private readonly AnalogClockViewModel viewModel;
 
     public IReadOnlyList<(int Columns, int Rows)> AllowedBaseSpans => AnalogI.AllowedBaseSpansOf;

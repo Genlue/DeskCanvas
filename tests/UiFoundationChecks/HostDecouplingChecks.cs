@@ -29,6 +29,22 @@ using Grid = DeskCanvas.Core.Models.Settings.Grid;
 using WeatherForecast = Weather.Views.Forecast;
 using WeatherFourDay = Weather.Views.FourDayForecast;
 using ProgressGauge = Progress.Views.ProgressView;
+using ClockAnalogI = Clock.Views.AnalogI;
+using ClockAnalogIV = Clock.Views.AnalogIV;
+using BatteriesWidgetView = Batteries.Views.BatteriesView;
+using MonitorMultiDashboard = Monitor.Views.MultiDashboard;
+using MonitorSingleMetric = Monitor.Views.SingleMetric;
+using StorageWidgetView = Storage.Views.StorageView;
+using MusicWidget = Music.Views.Music;
+using PomodoroWidgetView = Pomodoro.Views.PomodoroView;
+using HitokotoWidgetView = Hitokoto.Views.HitokotoView;
+using NoteWidgetView = Notes.Views.Note;
+using CalendarDate = Calendar.Views.Date;
+using CalendarMonth = Calendar.Views.Month;
+using ClockDigital = Clock.Views.Digital;
+using ClockAnalogIII = Clock.Views.AnalogIII;
+using ClockFlip = Clock.Views.FlipClock;
+using TimetableView = Timetable.Views.Timetable;
 
 namespace UiFoundationChecks;
 
@@ -37,8 +53,10 @@ namespace UiFoundationChecks;
 /// <list type="bullet">
 /// <item><b>源码契约</b>：宿主 Widget 外观路径不再出现 Weather/Progress 类型名字符串，
 /// Widget.axaml 无 StackIndicatorsHost 专属 XAML 残留（注释除外）。</item>
-/// <item><b>IWidgetSurfaceHints</b>：Weather/Progress 视图声明各自资源键；stub 内容实现接口时，
-/// 宿主 Colorful 路径按明暗变体解析到声明键，未实现接口（或键解析不到）回退 WidgetBackground。</item>
+/// <item><b>IWidgetSurfaceHints</b>：Weather/Progress/表盘-1/表盘-3 视图声明各自资源键；
+/// stub 内容实现接口时，宿主 Colorful 路径按明暗变体解析到声明键，未实现接口（或键解析不到）
+/// 回退 WidgetBackground；两个表盘视图经真实宿主解析到恒黑卡片
+/// （ClockCardBackground = #1C1C1E，亮暗两档同值）。</item>
 /// <item><b>Stack 装饰下沉</b>：StackIndicatorStrip 位于 Stack 插件、绑定 IStackWidget 数据，
 /// AutoHide 与滚轮/点击切页走新控件；宿主经 IWidgetOverlayProvider 消费；装饰单实例（引用相等）。</item>
 /// <item><b>布局提示契约</b>：outside-card 右缘空间、原生 Acrylic 内移、Region 合并提示的
@@ -111,6 +129,71 @@ internal static partial class Program
         var progress = new ProgressGauge();
         Check(progress is IWidgetSurfaceHints { ColorfulBackgroundResourceKey: "ProgressCardBackground" },
             $"ProgressView implements IWidgetSurfaceHints with ProgressCardBackground ({(progress as IWidgetSurfaceHints)?.ColorfulBackgroundResourceKey})");
+
+        // 表盘-1 / 表盘-3：多彩主题下的恒黑卡片（复刻 Apple 时钟小组件亮暗皆黑的卡片）。
+        var analogI = new ClockAnalogI();
+        Check(analogI is IWidgetSurfaceHints { ColorfulBackgroundResourceKey: "ClockCardBackground" },
+            $"AnalogI (表盘-1) implements IWidgetSurfaceHints with ClockCardBackground ({(analogI as IWidgetSurfaceHints)?.ColorfulBackgroundResourceKey})");
+
+        var analogIV = new ClockAnalogIV();
+        Check(analogIV is IWidgetSurfaceHints { ColorfulBackgroundResourceKey: "ClockCardBackground" },
+            $"AnalogIV (表盘-3) implements IWidgetSurfaceHints with ClockCardBackground ({(analogIV as IWidgetSurfaceHints)?.ColorfulBackgroundResourceKey})");
+
+        var batteries = new BatteriesWidgetView();
+        Check(batteries is IWidgetSurfaceHints { ColorfulBackgroundResourceKey: "BatteriesCardBackground" },
+            $"BatteriesView implements IWidgetSurfaceHints with BatteriesCardBackground ({(batteries as IWidgetSurfaceHints)?.ColorfulBackgroundResourceKey})");
+
+        var monitorMulti = new MonitorMultiDashboard();
+        Check(monitorMulti is IWidgetSurfaceHints { ColorfulBackgroundResourceKey: "MonitorCardBackground" },
+            $"MultiDashboard implements IWidgetSurfaceHints with MonitorCardBackground ({(monitorMulti as IWidgetSurfaceHints)?.ColorfulBackgroundResourceKey})");
+
+        var monitorSingle = new MonitorSingleMetric();
+        Check(monitorSingle is IWidgetSurfaceHints { ColorfulBackgroundResourceKey: "MonitorCardBackground" },
+            $"SingleMetric implements IWidgetSurfaceHints with MonitorCardBackground ({(monitorSingle as IWidgetSurfaceHints)?.ColorfulBackgroundResourceKey})");
+
+        var storage = new StorageWidgetView();
+        Check(storage is IWidgetSurfaceHints { ColorfulBackgroundResourceKey: "StorageCardBackground" },
+            $"StorageView implements IWidgetSurfaceHints with StorageCardBackground ({(storage as IWidgetSurfaceHints)?.ColorfulBackgroundResourceKey})");
+
+        var music = new MusicWidget();
+        Check(music is IWidgetSurfaceHints { ColorfulBackgroundResourceKey: "MusicCardBackground" },
+            $"Music implements IWidgetSurfaceHints with MusicCardBackground ({(music as IWidgetSurfaceHints)?.ColorfulBackgroundResourceKey})");
+
+        var pomodoro = new PomodoroWidgetView();
+        Check(pomodoro is IWidgetSurfaceHints { ColorfulBackgroundResourceKey: "PomodoroCardBackground" },
+            $"PomodoroView implements IWidgetSurfaceHints with PomodoroCardBackground ({(pomodoro as IWidgetSurfaceHints)?.ColorfulBackgroundResourceKey})");
+
+        var hitokoto = new HitokotoWidgetView();
+        Check(hitokoto is IWidgetSurfaceHints { ColorfulBackgroundResourceKey: "HitokotoCardBackground" },
+            $"HitokotoView implements IWidgetSurfaceHints with HitokotoCardBackground ({(hitokoto as IWidgetSurfaceHints)?.ColorfulBackgroundResourceKey})");
+
+        var note = (NoteWidgetView)RuntimeHelpers.GetUninitializedObject(typeof(NoteWidgetView));
+        Check(note is IWidgetSurfaceHints { ColorfulBackgroundResourceKey: "NotesCardBackground" },
+            $"Note implements IWidgetSurfaceHints with NotesCardBackground ({(note as IWidgetSurfaceHints)?.ColorfulBackgroundResourceKey})");
+
+        var calDate = (CalendarDate)RuntimeHelpers.GetUninitializedObject(typeof(CalendarDate));
+        Check(calDate is IWidgetSurfaceHints { ColorfulBackgroundResourceKey: "CalendarCardBackground" },
+            $"Calendar Date implements IWidgetSurfaceHints with CalendarCardBackground ({(calDate as IWidgetSurfaceHints)?.ColorfulBackgroundResourceKey})");
+
+        var calMonth = (CalendarMonth)RuntimeHelpers.GetUninitializedObject(typeof(CalendarMonth));
+        Check(calMonth is IWidgetSurfaceHints { ColorfulBackgroundResourceKey: "CalendarCardBackground" },
+            $"Calendar Month implements IWidgetSurfaceHints with CalendarCardBackground ({(calMonth as IWidgetSurfaceHints)?.ColorfulBackgroundResourceKey})");
+
+        var digitalClock = (ClockDigital)RuntimeHelpers.GetUninitializedObject(typeof(ClockDigital));
+        Check(digitalClock is IWidgetSurfaceHints { ColorfulBackgroundResourceKey: "ClockDigitalCardBackground" },
+            $"Clock Digital implements IWidgetSurfaceHints with ClockDigitalCardBackground ({(digitalClock as IWidgetSurfaceHints)?.ColorfulBackgroundResourceKey})");
+
+        var analogIII = (ClockAnalogIII)RuntimeHelpers.GetUninitializedObject(typeof(ClockAnalogIII));
+        Check(analogIII is IWidgetSurfaceHints { ColorfulBackgroundResourceKey: "ClockCardBackground" },
+            $"Clock AnalogIII implements IWidgetSurfaceHints with ClockCardBackground ({(analogIII as IWidgetSurfaceHints)?.ColorfulBackgroundResourceKey})");
+
+        var flipClock = (ClockFlip)RuntimeHelpers.GetUninitializedObject(typeof(ClockFlip));
+        Check(flipClock is IWidgetSurfaceHints { ColorfulBackgroundResourceKey: "FlipClockCardBackground" },
+            $"Clock FlipClock implements IWidgetSurfaceHints with FlipClockCardBackground ({(flipClock as IWidgetSurfaceHints)?.ColorfulBackgroundResourceKey})");
+
+        var timetable = (TimetableView)RuntimeHelpers.GetUninitializedObject(typeof(TimetableView));
+        Check(timetable is IWidgetSurfaceHints { ColorfulBackgroundResourceKey: "TimetableCardBackground" },
+            $"Timetable implements IWidgetSurfaceHints with TimetableCardBackground ({(timetable as IWidgetSurfaceHints)?.ColorfulBackgroundResourceKey})");
     }
 
     // ---- 3. 宿主 Colorful 路径按变体解析声明键 / 通用回退 -------------------------------------
@@ -165,6 +248,44 @@ internal static partial class Program
             $"light Colorful: an unresolvable declared key falls back to WidgetBackground ({DescribeBrush(bogus.WidgetCardBackground)})");
         bogus.Close();
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+
+        // 表盘-1 / 表盘-3：ClockCardBackground 在亮暗两档都解析到 #1C1C1E —— 多彩主题下的
+        // 恒黑卡片（此前亮色档落到 WidgetBackground 的纯白，正是回归点）。
+        var charcoal = Color.Parse("#1C1C1E");
+        void CheckDialCardIsCharcoal(string label, Func<UserControl> make, ThemeVariant variant)
+        {
+            var host = BuildDecoupledWidget(make, ColorfulTheme());
+            host.RequestedThemeVariant = variant;
+            host.Show();
+            Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+            Check(host.WidgetCardBackground is ISolidColorBrush { Color: { } dialCardColor }
+                  && dialCardColor == charcoal,
+                $"{label} {(variant == ThemeVariant.Dark ? "dark" : "light")}: Colorful card resolves the constant charcoal #1C1C1E ({DescribeBrush(host.WidgetCardBackground)})");
+            host.Close();
+            Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+        }
+
+        CheckDialCardIsCharcoal("AnalogI (表盘-1)", () => new ClockAnalogI(), ThemeVariant.Light);
+        CheckDialCardIsCharcoal("AnalogI (表盘-1)", () => new ClockAnalogI(), ThemeVariant.Dark);
+        CheckDialCardIsCharcoal("AnalogIV (表盘-3)", () => new ClockAnalogIV(), ThemeVariant.Light);
+        CheckDialCardIsCharcoal("AnalogIV (表盘-3)", () => new ClockAnalogIV(), ThemeVariant.Dark);
+
+        var flipLightGray = Color.Parse("#EFEFF4");
+        void CheckFlipClockCard(ThemeVariant variant, Color expectedColor)
+        {
+            var host = BuildDecoupledWidget(() => new FlipClockHintedContent(), ColorfulTheme());
+            host.RequestedThemeVariant = variant;
+            host.Show();
+            Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+            Check(host.WidgetCardBackground is ISolidColorBrush { Color: { } cardColor }
+                  && cardColor == expectedColor,
+                $"FlipClock {(variant == ThemeVariant.Dark ? "dark" : "light")}: Colorful card resolves {expectedColor} ({DescribeBrush(host.WidgetCardBackground)})");
+            host.Close();
+            Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+        }
+
+        CheckFlipClockCard(ThemeVariant.Light, flipLightGray);
+        CheckFlipClockCard(ThemeVariant.Dark, charcoal);
     }
 
     private static string DescribeBrush(IBrush? brush) => brush switch
@@ -178,6 +299,11 @@ internal static partial class Program
     private sealed class HintedContent : UserControl, IWidgetSurfaceHints
     {
         public string? ColorfulBackgroundResourceKey => "WeatherCardBackground";
+    }
+
+    private sealed class FlipClockHintedContent : UserControl, IWidgetSurfaceHints
+    {
+        public string? ColorfulBackgroundResourceKey => "FlipClockCardBackground";
     }
 
     private sealed class BogusKeyContent : UserControl, IWidgetSurfaceHints

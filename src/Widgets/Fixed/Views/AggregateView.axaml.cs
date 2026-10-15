@@ -58,7 +58,7 @@ public partial class AggregateView : UserControl, IFixedSizeWidget, IWidgetSelfR
     public AggregateView(AggregateModel model)
     {
         this.model = model;
-        viewModel = new AggregateViewModel(model);
+        viewModel = new AggregateViewModel(model, this);
         DataContext = viewModel;
         InitializeComponent();
         Classes.Add("Flush");
@@ -76,7 +76,7 @@ public partial class AggregateView : UserControl, IFixedSizeWidget, IWidgetSelfR
     private void OnLoaded(object? sender, RoutedEventArgs e)
     {
         if (viewModel != null) return;
-        viewModel = new AggregateViewModel(model);
+        viewModel = new AggregateViewModel(model, this);
         DataContext = viewModel;
     }
 

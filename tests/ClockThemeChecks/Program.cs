@@ -191,7 +191,7 @@ class Program
         Console.WriteLine("--- overlay accent resolution ---");
 
         var overlayMethod = typeof(FramelessDigital).GetMethod(
-            "ResolveOverlayColor", BindingFlags.NonPublic | BindingFlags.Static)!;
+            "ResolveOverlayColor", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static)!;
 
         Color Overlay(int opacityPercent, bool followAccent, string? customHex, string? themeAccent)
         {
@@ -201,7 +201,7 @@ class Program
                 OverlayColor: customHex ?? "#000000",
                 OverlayOpacity: opacityPercent / 100.0);
             var overlayTheme = BuildSettings(SurfaceStyle.Acrylic).Theme with { AccentColor = themeAccent };
-            return (Color)overlayMethod.Invoke(null, [overlayModel, overlayTheme])!;
+            return (Color)overlayMethod.Invoke(overlayMethod.IsStatic ? null : clock, [overlayModel, overlayTheme])!;
         }
 
         Application.Current!.Resources["SystemAccentColor"] = Color.Parse("#12C46A");
@@ -275,13 +275,13 @@ class Program
             AnalogIV.ResolveDialColor(new ClockModel(), isDarkVariant: false) == null
             && AnalogIV.ResolveDialColor(new ClockModel(), isDarkVariant: true) == null);
 
-        Check("黑白 resolves to white (#FFFFFF) in light mode and black (#1C1C1E) in dark mode",
+        Check("黑白 resolves to 表盘-1's Colorful dial pair — #EDEDED in light / #373738 in dark",
             AnalogIV.ResolveDialColor(
                 new ClockModel(DialColorMode: ClockDialColorMode.BlackWhite), isDarkVariant: false)
-                == Color.Parse("#FFFFFF")
+                == Color.Parse("#EDEDED")
             && AnalogIV.ResolveDialColor(
                 new ClockModel(DialColorMode: ClockDialColorMode.BlackWhite), isDarkVariant: true)
-                == Color.Parse("#1C1C1E"));
+                == Color.Parse("#373738"));
 
         Check("自定义 resolves the picked light/dark colors per variant",
             AnalogIV.ResolveDialColor(new ClockModel(

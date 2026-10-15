@@ -18,8 +18,10 @@ using Tools.Services;
 
 namespace Tools.Views;
 
-public partial class CalculatorView : UserControl, IWidgetSelfRefreshing
+public partial class CalculatorView : UserControl, IWidgetSelfRefreshing, IWidgetSurfaceHints
 {
+    public string? ColorfulBackgroundResourceKey => "CalculatorCardBackground";
+
     private CalculatorModel model;
     private readonly DispatcherTimer toastTimer;
     private WidgetTier currentTier = (WidgetTier)(-1);
@@ -177,7 +179,7 @@ public partial class CalculatorView : UserControl, IWidgetSelfRefreshing
         {
             targetInner = widget.InnerRadius;
         }
-        else if (this.TryFindResource("WidgetInnerCornerRadius", ActualThemeVariant, out var ir) && ir is CornerRadius innerCr)
+        else if (ThemeScopeResolver.TryFindResource<CornerRadius>(this, "WidgetInnerCornerRadius", ActualThemeVariant, out var innerCr))
         {
             targetInner = innerCr;
         }

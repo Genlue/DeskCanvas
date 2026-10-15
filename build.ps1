@@ -114,9 +114,34 @@ try {
     if ($LASTEXITCODE -ne 0) { throw "Publish failed (exit code $LASTEXITCODE)" }
 
     # --- Strict single exe: remove stray content copied next to the exe ---
+    # Each delete is guarded individually: safe-delete/trash guards on some machines throw
+    # terminating errors out of Remove-Item even with -ErrorAction SilentlyContinue, and one
+    # blocked file must not abort the rest of the packaging steps.
     Get-ChildItem $dist -File | Where-Object {
         $_.Extension -in ".pdb", ".xml", ".err" -or $_.Name -in "appSettings.json", "layout.json", "icon.ico", "weather_crash_log.txt"
-    } | ForEach-Object { Remove-Item -LiteralPath $_.FullName -Force -ErrorAction SilentlyContinue }
+    } | ForEach-Object {
+        try { Remove-Item -LiteralPath $_.FullName -Force -ErrorAction Stop }
+        catch { Write-Warning "Could not delete stray file $($_.FullName): $($_.Exception.Message)" }
+    }
+
+    # A leftover portable-layout Widgets folder next to the single-file exe silently flips the
+    # app into portable mode (Const.GetWidgetsFolder prefers the exe-adjacent Widgets folder and
+    # WidgetBundle.ExtractIfNeeded skips the embedded bundle when one exists there), so every
+    # rebuild would keep hot-loading stale widget DLLs from disk instead of the fresh bundle.
+    # Single-file dist must never carry one — remove it so the embedded bundle stays authoritative.
+    # If a delete guard blocks the removal, a rename achieves the same effect: the folder no
+    # longer sits next to the exe under the name "Widgets", so packaged mode resumes.
+    $staleDistWidgets = Join-Path $dist "Widgets"
+    if (Test-Path $staleDistWidgets) {
+        Write-Warning "Removing stale portable-layout Widgets folder next to the exe: $staleDistWidgets"
+        try {
+            Remove-Item -LiteralPath $staleDistWidgets -Recurse -Force -ErrorAction Stop
+        } catch {
+            $staleName = "Widgets.stale-" + (Get-Date -Format "yyyyMMdd-HHmmss")
+            Rename-Item -LiteralPath $staleDistWidgets -NewName $staleName -Force
+            Write-Warning "Delete blocked ($($_.Exception.Message)); renamed to $staleName instead."
+        }
+    }
 
     $exe = Join-Path $dist "DeskCanvas.exe"
     if (-not (Test-Path $exe)) { throw "Single-file exe not found: $exe" }

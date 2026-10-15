@@ -1,0 +1,755 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+            <ResourceDictionary.ThemeDictionaries>
+                <!-- ==================== Light Theme (Default) ==================== -->
+                <ResourceDictionary x:Key="Default">
+                    <!-- Standard macOS 18 Opaque Flat Card Background -->
+                    <SolidColorBrush x:Key="WidgetBackground" Color="#FFFFFF" />
+                    <SolidColorBrush x:Key="WidgetForeground" Color="#1C1C1E" />
+                    <SolidColorBrush x:Key="SystemControlForegroundBaseHighBrush" Color="#1C1C1E" />
+                    <SolidColorBrush x:Key="SystemControlForegroundBaseMediumBrush" Color="#8E8E93" />
+                    <SolidColorBrush x:Key="SystemControlForegroundBaseLowBrush" Color="#C7C7CC" />
+                    <SolidColorBrush x:Key="SystemControlForegroundAccentBrush" Color="#007AFF" />
+                    <SolidColorBrush x:Key="SystemControlHighlightAccentBrush" Color="#007AFF" />
+
+                    <!-- macOS System Blue Accent Ramp & Contrast (Light) -->
+                    <Color x:Key="SystemAccentColor">#007AFF</Color>
+                    <Color x:Key="SystemAccentColorLight1">#268FFF</Color>
+                    <Color x:Key="SystemAccentColorLight2">#5CABFF</Color>
+                    <Color x:Key="SystemAccentColorLight3">#85C2FF</Color>
+                    <Color x:Key="SystemAccentColorDark1">#0062CC</Color>
+                    <Color x:Key="SystemAccentColorDark2">#004C9E</Color>
+                    <Color x:Key="SystemAccentColorDark3">#003670</Color>
+                    <Color x:Key="AccentContrastColor">White</Color>
+
+                    <!-- Fluent Selection Controls Closure (Light) -->
+                    <SolidColorBrush x:Key="ToggleSwitchKnobFillOn" Color="White" />
+                    <SolidColorBrush x:Key="ToggleSwitchKnobFillOnPointerOver" Color="White" />
+                    <SolidColorBrush x:Key="ToggleSwitchKnobFillOnPressed" Color="White" />
+                    <SolidColorBrush x:Key="CheckBoxCheckGlyphForegroundChecked" Color="White" />
+                    <SolidColorBrush x:Key="CheckBoxCheckGlyphForegroundCheckedPointerOver" Color="White" />
+                    <SolidColorBrush x:Key="CheckBoxCheckGlyphForegroundCheckedPressed" Color="White" />
+                    <SolidColorBrush x:Key="CheckBoxCheckGlyphForegroundIndeterminate" Color="White" />
+                    <SolidColorBrush x:Key="CheckBoxCheckGlyphForegroundIndeterminatePointerOver" Color="White" />
+                    <SolidColorBrush x:Key="CheckBoxCheckGlyphForegroundIndeterminatePressed" Color="White" />
+                    <SolidColorBrush x:Key="RadioButtonCheckGlyphFill" Color="White" />
+                    <SolidColorBrush x:Key="RadioButtonCheckGlyphFillPointerOver" Color="White" />
+                    <SolidColorBrush x:Key="RadioButtonCheckGlyphFillPressed" Color="White" />
+
+                    <SolidColorBrush x:Key="ToggleSwitchFillOnPointerOver" Color="#007AFF" Opacity="0.85" />
+                    <SolidColorBrush x:Key="ToggleSwitchFillOnPressed" Color="#007AFF" Opacity="0.7" />
+                    <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillCheckedPointerOver" Color="#007AFF" Opacity="0.85" />
+                    <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillCheckedPressed" Color="#007AFF" Opacity="0.7" />
+                    <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillIndeterminatePointerOver" Color="#007AFF" Opacity="0.85" />
+                    <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillIndeterminatePressed" Color="#007AFF" Opacity="0.7" />
+                    <SolidColorBrush x:Key="RadioButtonOuterEllipseCheckedFillPointerOver" Color="#007AFF" Opacity="0.85" />
+                    <SolidColorBrush x:Key="RadioButtonOuterEllipseCheckedFillPressed" Color="#007AFF" Opacity="0.7" />
+                    <SolidColorBrush x:Key="RadioButtonOuterEllipseCheckedStrokePointerOver" Color="#007AFF" Opacity="0.85" />
+                    <SolidColorBrush x:Key="RadioButtonOuterEllipseCheckedStrokePressed" Color="#007AFF" Opacity="0.7" />
+
+                    <!-- Apple Human Interface Guidelines System Colors (Light) -->
+                    <SolidColorBrush x:Key="MacosRedBrush" Color="#FF3B30" />
+                    <SolidColorBrush x:Key="MacosOrangeBrush" Color="#FF9500" />
+                    <SolidColorBrush x:Key="MacosYellowBrush" Color="#FFCC00" />
+                    <SolidColorBrush x:Key="MacosGreenBrush" Color="#34C759" />
+                    <SolidColorBrush x:Key="MacosMintBrush" Color="#00C7BE" />
+                    <SolidColorBrush x:Key="MacosTealBrush" Color="#30B0C7" />
+                    <SolidColorBrush x:Key="MacosCyanBrush" Color="#32ADE6" />
+                    <SolidColorBrush x:Key="MacosBlueBrush" Color="#007AFF" />
+                    <SolidColorBrush x:Key="MacosIndigoBrush" Color="#5856D6" />
+                    <SolidColorBrush x:Key="MacosPurpleBrush" Color="#AF52DE" />
+                    <SolidColorBrush x:Key="MacosPinkBrush" Color="#FF2D55" />
+
+                    <!-- Calendar: Apple Red header, today marker, dark day text -->
+                    <SolidColorBrush x:Key="CalendarHeaderBrush" Color="#FF3B30" />
+                    <SolidColorBrush x:Key="CalendarTodayBrush" Color="#FF3B30" />
+
+                    <!-- Clock: Solid black hour/minute hands, vibrant Apple Orange second hand -->
+                    <SolidColorBrush x:Key="ClockHandBrush" Color="#000000" />
+                    <SolidColorBrush x:Key="ClockSecondHandBrush" Color="#FF9500" />
+                    <SolidColorBrush x:Key="ClockCenterPinBrush" Color="#FF9500" />
+
+                    <!-- Reminders: Apple Blue badge & circular checkmarks, dark text -->
+                    <SolidColorBrush x:Key="RemindersCardBackground" Color="#FFFFFF" />
+                    <SolidColorBrush x:Key="RemindersBadgeBrush" Color="#007AFF" />
+                    <SolidColorBrush x:Key="RemindersCheckBrush" Color="#007AFF" />
+                    <SolidColorBrush x:Key="RemindersDotOrange" Color="#FF9500" />
+                    <SolidColorBrush x:Key="RemindersDotRed" Color="#FF3B30" />
+                    <SolidColorBrush x:Key="RemindersDotBlue" Color="#007AFF" />
+                    <SolidColorBrush x:Key="RemindersDotPurple" Color="#AF52DE" />
+
+                    <!-- Notes: Apple Notes classic warm paper, amber yellow header, crisp ink text -->
+                    <SolidColorBrush x:Key="NotesCardBackground" Color="#FAF8F2" />
+                    <SolidColorBrush x:Key="NotesAccentBrush" Color="#FFCC00" />
+                    <SolidColorBrush x:Key="NotesPaperBackground" Color="#FAF8F2" />
+                    <SolidColorBrush x:Key="NotesTextBrush" Color="#1C1C1E" />
+                    <SolidColorBrush x:Key="NotesTitleForegroundBrush" Color="#000000" />
+                    <SolidColorBrush x:Key="NotesDividerBrush" Color="#E5DFD0" />
+                    <SolidColorBrush x:Key="NotesUpdatedBrush" Color="#8E8E93" />
+
+                    <!-- Music: Apple Music pure card with vibrant crimson-pink accents -->
+                    <SolidColorBrush x:Key="MusicCardBackground" Color="#FFFFFF" />
+                    <SolidColorBrush x:Key="MusicAccentBrush" Color="#FA2D48" />
+                    <SolidColorBrush x:Key="MusicScrubberTrackBrush" Color="#1C000000" />
+                    <SolidColorBrush x:Key="MusicPlayButtonBackgroundBrush" Color="#12000000" />
+                    <SolidColorBrush x:Key="MusicPlayButtonHoverBrush" Color="#22000000" />
+                    <SolidColorBrush x:Key="MusicCoverPlaceholderBrush" Color="#0E000000" />
+                    <SolidColorBrush x:Key="MusicCoverBorderBrush" Color="#12000000" />
+
+                    <!-- Pomodoro: Apple Focus pure card with dynamic semantic ring & button -->
+                    <SolidColorBrush x:Key="PomodoroCardBackground" Color="#FFFFFF" />
+                    <SolidColorBrush x:Key="PomodoroPillBackgroundBrush" Color="#10000000" />
+                    <SolidColorBrush x:Key="PomodoroPillBorderBrush" Color="#14000000" />
+                    <SolidColorBrush x:Key="PomodoroButtonBackgroundBrush" Color="#0D000000" />
+                    <SolidColorBrush x:Key="PomodoroButtonHoverBrush" Color="#1E000000" />
+
+                    <!-- Hitokoto: Apple Literary pure card with refined purple watermark & pill -->
+                    <SolidColorBrush x:Key="HitokotoCardBackground" Color="#FFFFFF" />
+                    <SolidColorBrush x:Key="HitokotoWatermarkBrush" Color="#16AF52DE" />
+                    <SolidColorBrush x:Key="HitokotoQuoteBrush" Color="#1C1C1E" />
+                    <SolidColorBrush x:Key="HitokotoAuthorBrush" Color="#8E8E93" />
+                    <SolidColorBrush x:Key="HitokotoPillBackgroundBrush" Color="#14AF52DE" />
+                    <SolidColorBrush x:Key="HitokotoPillBorderBrush" Color="#28AF52DE" />
+                    <SolidColorBrush x:Key="HitokotoPillForegroundBrush" Color="#7A3E9D" />
+                    <SolidColorBrush x:Key="HitokotoButtonHoverBrush" Color="#14000000" />
+                    <SolidColorBrush x:Key="HitokotoButtonPressedBrush" Color="#24000000" />
+
+                    <!-- Batteries: Apple Power Management (Light) -->
+                    <SolidColorBrush x:Key="BatteriesCardBackground" Color="#FFFFFF" />
+                    <SolidColorBrush x:Key="BatteriesTrackBrush" Color="#E5E5EA" />
+                    <SolidColorBrush x:Key="BatteriesIconBrush" Color="#1C1C1E" />
+                    <SolidColorBrush x:Key="BatteriesTextBrush" Color="#1C1C1E" />
+                    <SolidColorBrush x:Key="BatteriesNormalBrush" Color="#34C759" />
+                    <SolidColorBrush x:Key="BatteriesChargingBrush" Color="#34C759" />
+                    <SolidColorBrush x:Key="BatteriesWarningBrush" Color="#FF9500" />
+                    <SolidColorBrush x:Key="BatteriesCriticalBrush" Color="#FF3B30" />
+
+                    <!-- Monitor: Apple 4-color telemetry rings & card (Light) -->
+                    <SolidColorBrush x:Key="MonitorCardBackground" Color="#FFFFFF" />
+                    <SolidColorBrush x:Key="MonitorTrackBrush" Color="#E5E5EA" />
+                    <SolidColorBrush x:Key="MonitorCpuBrush" Color="#007AFF" />
+                    <SolidColorBrush x:Key="MonitorRamBrush" Color="#AF52DE" />
+                    <SolidColorBrush x:Key="MonitorDiskBrush" Color="#FF9500" />
+                    <SolidColorBrush x:Key="MonitorNetBrush" Color="#30B0C7" />
+                    <SolidColorBrush x:Key="MonitorBatteryBrush" Color="#34C759" />
+
+                    <!-- Storage: macOS Storage Palette (Light) -->
+                    <SolidColorBrush x:Key="StorageCardBackground" Color="#FFFFFF" />
+                    <SolidColorBrush x:Key="StorageSubCardBackground" Color="#F2F2F7" />
+                    <SolidColorBrush x:Key="StorageSubCardBorderBrush" Color="#E5E5EA" />
+                    <SolidColorBrush x:Key="StorageTrackBackground" Color="#E5E5EA" />
+                    <SolidColorBrush x:Key="StorageBadgeBackground" Color="#E5E5EA" />
+                    <SolidColorBrush x:Key="StorageSystemBrush" Color="#007AFF" />
+                    <SolidColorBrush x:Key="StorageAppsBrush" Color="#AF52DE" />
+                    <SolidColorBrush x:Key="StorageDocsBrush" Color="#FF9500" />
+                    <SolidColorBrush x:Key="StorageMediaBrush" Color="#30B0C7" />
+                    <SolidColorBrush x:Key="StorageRemovableBrush" Color="#34C759" />
+                    <SolidColorBrush x:Key="StorageWarningBrush" Color="#FF9500" />
+                    <SolidColorBrush x:Key="StorageCriticalBrush" Color="#FF3B30" />
+
+                    <!-- Folders: macOS Finder Sky Blue (Light) -->
+                    <SolidColorBrush x:Key="FoldersCardBackground" Color="#FFFFFF" />
+                    <SolidColorBrush x:Key="FolderAccentBrush" Color="#29A3FF" />
+
+                    <!-- Translate: Apple Translate blue (Light) -->
+                    <SolidColorBrush x:Key="TranslatorCardBackground" Color="#FFFFFF" />
+                    <SolidColorBrush x:Key="TranslateCardBackground" Color="#FFFFFF" />
+                    <SolidColorBrush x:Key="TranslateAccentBrush" Color="#007AFF" />
+                    <SolidColorBrush x:Key="TranslatorInputBackground" Color="#F2F2F7" />
+                    <SolidColorBrush x:Key="TranslatorOutputBackground" Color="#F0F6FF" />
+                    <SolidColorBrush x:Key="TranslatorOutputBorderBrush" Color="#25007AFF" />
+
+                    <!-- Calculator: Apple Calculator Orange & crisp keys (Light) -->
+                    <SolidColorBrush x:Key="CalculatorCardBackground" Color="#FFFFFF" />
+                    <SolidColorBrush x:Key="CalculatorDisplayBackground" Color="#F2F2F7" />
+                    <SolidColorBrush x:Key="CalculatorAccentBrush" Color="#FF9500" />
+                    <SolidColorBrush x:Key="CalculatorNumButtonBackground" Color="#F2F2F7" />
+                    <SolidColorBrush x:Key="CalculatorFuncButtonBackground" Color="#E5E5EA" />
+                    <SolidColorBrush x:Key="CalculatorOpButtonBackground" Color="#22FF9500" />
+
+                    <!-- Clipboard: Apple Clipboard (Light) -->
+                    <SolidColorBrush x:Key="ClipboardCardBackground" Color="#FFFFFF" />
+                    <SolidColorBrush x:Key="ClipboardItemCardBackground" Color="#F2F2F7" />
+                    <SolidColorBrush x:Key="ClipboardItemCardHoverBackground" Color="#E5E5EA" />
+                    <SolidColorBrush x:Key="ClipboardBadgeTextBgBrush" Color="#15007AFF" />
+                    <SolidColorBrush x:Key="ClipboardBadgeTextBrush" Color="#007AFF" />
+                    <SolidColorBrush x:Key="ClipboardBadgeCodeBgBrush" Color="#1534C759" />
+                    <SolidColorBrush x:Key="ClipboardBadgeCodeBrush" Color="#34C759" />
+                    <SolidColorBrush x:Key="ClipboardBadgeLinkBgBrush" Color="#15AF52DE" />
+                    <SolidColorBrush x:Key="ClipboardBadgeLinkBrush" Color="#AF52DE" />
+                    <SolidColorBrush x:Key="ClipboardBadgeFileBgBrush" Color="#15FF9500" />
+                    <SolidColorBrush x:Key="ClipboardBadgeFileBrush" Color="#FF9500" />
+
+                    <!-- ControlCenter: Apple Control Center (Light) -->
+                    <SolidColorBrush x:Key="ControlCenterCardBackground" Color="#FFFFFF" />
+                    <SolidColorBrush x:Key="ControlCenterCapsuleBackground" Color="#F2F2F7" />
+                    <SolidColorBrush x:Key="ControlCenterBadgeInactiveBackground" Color="#E5E5EA" />
+
+                    <!-- Map: Apple Maps (Light) -->
+                    <SolidColorBrush x:Key="MapCardBackground" Color="#FFFFFF" />
+                    <SolidColorBrush x:Key="MapFloatingButtonBackground" Color="#F5FFFFFF" />
+
+                    <!-- Time Progress: Pure white in light mode, authentic Apple dark card in dark mode -->
+                    <SolidColorBrush x:Key="ProgressCardBackground" Color="#FFFFFF" />
+                    <SolidColorBrush x:Key="ProgressMoveBrush" Color="#FA114F" />
+                    <SolidColorBrush x:Key="ProgressExerciseBrush" Color="#AFFF00" />
+                    <SolidColorBrush x:Key="ProgressStandBrush" Color="#00F5D4" />
+
+                    <!-- Search: Spotlight search pill & controls (Light) -->
+                    <SolidColorBrush x:Key="SearchCardBackground" Color="#FFFFFF" />
+                    <SolidColorBrush x:Key="SearchMagnifierBrush" Color="#007AFF" />
+                    <SolidColorBrush x:Key="SearchPillBackground" Color="#F2F2F7" />
+                    <SolidColorBrush x:Key="SearchPillBorderBrush" Color="#18000000" />
+                    <SolidColorBrush x:Key="SearchEngineButtonBackground" Color="#10000000" />
+                    <SolidColorBrush x:Key="SearchDockButtonBackground" Color="#10000000" />
+                    <LinearGradientBrush x:Key="SearchButtonBrush" StartPoint="0%,0%" EndPoint="100%,100%">
+                        <GradientStop Offset="0.0" Color="#007AFF" />
+                        <GradientStop Offset="1.0" Color="#0056D6" />
+                    </LinearGradientBrush>
+
+                    <!-- Weather: Apple Weather Sky Blue opaque gradient, pure white typography -->
+                    <LinearGradientBrush x:Key="WeatherCardBackground" StartPoint="0%,0%" EndPoint="0%,100%">
+                        <GradientStop Offset="0.0" Color="#1B71BE" />
+                        <GradientStop Offset="1.0" Color="#509CEB" />
+                    </LinearGradientBrush>
+                    <SolidColorBrush x:Key="WeatherForegroundBrush" Color="#FFFFFF" />
+                    <SolidColorBrush x:Key="WeatherIconBrush" Color="#FFD60A" />
+                    <SolidColorBrush x:Key="WeatherGaugeBrush" Color="#5AC8FA" />
+                    <LinearGradientBrush x:Key="WeatherTempBarBrush" StartPoint="0%,0%" EndPoint="100%,0%">
+                        <GradientStop Offset="0" Color="#34C759" />
+                        <GradientStop Offset="0.5" Color="#FFCC00" />
+                        <GradientStop Offset="1" Color="#FF9500" />
+                    </LinearGradientBrush>
+
+                    <!-- Card Border & Clock Dial / Strokes (Light) -->
+                    <SolidColorBrush x:Key="WidgetCardBorderBrush" Color="#15000000" />
+                    <!-- 表盘-1 / 表盘-2 / 表盘-3 (AnalogI/AnalogIII/AnalogIV) 的组件卡片：
+                         多彩主题下两档变体都用 Apple 深灰黑（恒黑卡片，复刻 Apple 时钟小组件亮暗皆黑的卡片），由各
+                         时钟视图经 IWidgetSurfaceHints 声明；其余组件仍走 WidgetBackground。 -->
+                    <SolidColorBrush x:Key="ClockCardBackground" Color="#1C1C1E" />
+                    <SolidColorBrush x:Key="FlipClockCardBackground" Color="#EFEFF4" />
+                    <!-- 数字时钟卡片与元素画刷 (Light) -->
+                    <SolidColorBrush x:Key="ClockDigitalCardBackground" Color="#FFFFFF" />
+                    <SolidColorBrush x:Key="ClockDigitalTimeBrush" Color="#1C1C1E" />
+                    <SolidColorBrush x:Key="ClockDigitalDateBrush" Color="#007AFF" />
+
+                    <!-- Calendar 日历卡片背景 (Light) -->
+                    <SolidColorBrush x:Key="CalendarCardBackground" Color="#FFFFFF" />
+
+                    <!-- Timetable 课程表卡片背景 (Light) -->
+                    <SolidColorBrush x:Key="TimetableCardBackground" Color="#FFFFFF" />
+                    <!-- 表盘-1 内圈面盘（多彩亮色档）：恒黑卡片上的“白盘”，保持既有观感
+                         （#1C1C1E@8% 叠白卡 = #EDEDED），与表盘-3「黑白」的亮色白同值。 -->
+                    <SolidColorBrush x:Key="ClockDialBackgroundBrush" Color="#EDEDED" Opacity="1.0" />
+                    <SolidColorBrush x:Key="ClockOpaqueDialBackgroundBrush" Color="#FFFFFF" Opacity="1.0" />
+                    <SolidColorBrush x:Key="ClockStrokesBrush" Color="#8E8E93" />
+                    <SolidColorBrush x:Key="FlipClockTopFlapBrush" Color="#F4F4F8" />
+                    <SolidColorBrush x:Key="FlipClockBottomFlapBrush" Color="#EAEAF0" />
+                    <SolidColorBrush x:Key="FlipClockFlapBorderBrush" Color="#16000000" />
+                    <SolidColorBrush x:Key="FlipClockCreaseBrush" Color="#24000000" />
+                    <SolidColorBrush x:Key="FlipClockHingeBrush" Color="#3E000000" />
+                    <!-- Contrast Accent (Light) -->
+                    <SolidColorBrush x:Key="AccentContrastForegroundBrush" Color="#FFFFFF" />
+                </ResourceDictionary>
+
+                <!-- ==================== Light Theme (Light Alias) ==================== -->
+                <ResourceDictionary x:Key="Light">
+                    <!-- Standard macOS 18 Opaque Flat Card Background -->
+                    <SolidColorBrush x:Key="WidgetBackground" Color="#FFFFFF" />
+                    <SolidColorBrush x:Key="WidgetForeground" Color="#1C1C1E" />
+                    <SolidColorBrush x:Key="SystemControlForegroundBaseHighBrush" Color="#1C1C1E" />
+                    <SolidColorBrush x:Key="SystemControlForegroundBaseMediumBrush" Color="#8E8E93" />
+                    <SolidColorBrush x:Key="SystemControlForegroundBaseLowBrush" Color="#C7C7CC" />
+                    <SolidColorBrush x:Key="SystemControlForegroundAccentBrush" Color="#007AFF" />
+                    <SolidColorBrush x:Key="SystemControlHighlightAccentBrush" Color="#007AFF" />
+
+                    <!-- macOS System Blue Accent Ramp & Contrast (Light) -->
+                    <Color x:Key="SystemAccentColor">#007AFF</Color>
+                    <Color x:Key="SystemAccentColorLight1">#268FFF</Color>
+                    <Color x:Key="SystemAccentColorLight2">#5CABFF</Color>
+                    <Color x:Key="SystemAccentColorLight3">#85C2FF</Color>
+                    <Color x:Key="SystemAccentColorDark1">#0062CC</Color>
+                    <Color x:Key="SystemAccentColorDark2">#004C9E</Color>
+                    <Color x:Key="SystemAccentColorDark3">#003670</Color>
+                    <Color x:Key="AccentContrastColor">White</Color>
+
+                    <!-- Fluent Selection Controls Closure (Light) -->
+                    <SolidColorBrush x:Key="ToggleSwitchKnobFillOn" Color="White" />
+                    <SolidColorBrush x:Key="ToggleSwitchKnobFillOnPointerOver" Color="White" />
+                    <SolidColorBrush x:Key="ToggleSwitchKnobFillOnPressed" Color="White" />
+                    <SolidColorBrush x:Key="CheckBoxCheckGlyphForegroundChecked" Color="White" />
+                    <SolidColorBrush x:Key="CheckBoxCheckGlyphForegroundCheckedPointerOver" Color="White" />
+                    <SolidColorBrush x:Key="CheckBoxCheckGlyphForegroundCheckedPressed" Color="White" />
+                    <SolidColorBrush x:Key="CheckBoxCheckGlyphForegroundIndeterminate" Color="White" />
+                    <SolidColorBrush x:Key="CheckBoxCheckGlyphForegroundIndeterminatePointerOver" Color="White" />
+                    <SolidColorBrush x:Key="CheckBoxCheckGlyphForegroundIndeterminatePressed" Color="White" />
+                    <SolidColorBrush x:Key="RadioButtonCheckGlyphFill" Color="White" />
+                    <SolidColorBrush x:Key="RadioButtonCheckGlyphFillPointerOver" Color="White" />
+                    <SolidColorBrush x:Key="RadioButtonCheckGlyphFillPressed" Color="White" />
+
+                    <SolidColorBrush x:Key="ToggleSwitchFillOnPointerOver" Color="#007AFF" Opacity="0.85" />
+                    <SolidColorBrush x:Key="ToggleSwitchFillOnPressed" Color="#007AFF" Opacity="0.7" />
+                    <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillCheckedPointerOver" Color="#007AFF" Opacity="0.85" />
+                    <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillCheckedPressed" Color="#007AFF" Opacity="0.7" />
+                    <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillIndeterminatePointerOver" Color="#007AFF" Opacity="0.85" />
+                    <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillIndeterminatePressed" Color="#007AFF" Opacity="0.7" />
+                    <SolidColorBrush x:Key="RadioButtonOuterEllipseCheckedFillPointerOver" Color="#007AFF" Opacity="0.85" />
+                    <SolidColorBrush x:Key="RadioButtonOuterEllipseCheckedFillPressed" Color="#007AFF" Opacity="0.7" />
+                    <SolidColorBrush x:Key="RadioButtonOuterEllipseCheckedStrokePointerOver" Color="#007AFF" Opacity="0.85" />
+                    <SolidColorBrush x:Key="RadioButtonOuterEllipseCheckedStrokePressed" Color="#007AFF" Opacity="0.7" />
+
+                    <!-- Apple Human Interface Guidelines System Colors (Light) -->
+                    <SolidColorBrush x:Key="MacosRedBrush" Color="#FF3B30" />
+                    <SolidColorBrush x:Key="MacosOrangeBrush" Color="#FF9500" />
+                    <SolidColorBrush x:Key="MacosYellowBrush" Color="#FFCC00" />
+                    <SolidColorBrush x:Key="MacosGreenBrush" Color="#34C759" />
+                    <SolidColorBrush x:Key="MacosMintBrush" Color="#00C7BE" />
+                    <SolidColorBrush x:Key="MacosTealBrush" Color="#30B0C7" />
+                    <SolidColorBrush x:Key="MacosCyanBrush" Color="#32ADE6" />
+                    <SolidColorBrush x:Key="MacosBlueBrush" Color="#007AFF" />
+                    <SolidColorBrush x:Key="MacosIndigoBrush" Color="#5856D6" />
+                    <SolidColorBrush x:Key="MacosPurpleBrush" Color="#AF52DE" />
+                    <SolidColorBrush x:Key="MacosPinkBrush" Color="#FF2D55" />
+
+                    <!-- Calendar: Apple Red header, today marker, dark day text -->
+                    <SolidColorBrush x:Key="CalendarHeaderBrush" Color="#FF3B30" />
+                    <SolidColorBrush x:Key="CalendarTodayBrush" Color="#FF3B30" />
+
+                    <!-- Clock: Solid black hour/minute hands, vibrant Apple Orange second hand -->
+                    <SolidColorBrush x:Key="ClockHandBrush" Color="#000000" />
+                    <SolidColorBrush x:Key="ClockSecondHandBrush" Color="#FF9500" />
+                    <SolidColorBrush x:Key="ClockCenterPinBrush" Color="#FF9500" />
+
+                    <!-- Reminders: Apple Blue badge & circular checkmarks, dark text -->
+                    <SolidColorBrush x:Key="RemindersCardBackground" Color="#FFFFFF" />
+                    <SolidColorBrush x:Key="RemindersBadgeBrush" Color="#007AFF" />
+                    <SolidColorBrush x:Key="RemindersCheckBrush" Color="#007AFF" />
+                    <SolidColorBrush x:Key="RemindersDotOrange" Color="#FF9500" />
+                    <SolidColorBrush x:Key="RemindersDotRed" Color="#FF3B30" />
+                    <SolidColorBrush x:Key="RemindersDotBlue" Color="#007AFF" />
+                    <SolidColorBrush x:Key="RemindersDotPurple" Color="#AF52DE" />
+
+                    <!-- Notes: Apple Notes classic warm paper, amber yellow header, crisp ink text -->
+                    <SolidColorBrush x:Key="NotesCardBackground" Color="#FAF8F2" />
+                    <SolidColorBrush x:Key="NotesAccentBrush" Color="#FFCC00" />
+                    <SolidColorBrush x:Key="NotesPaperBackground" Color="#FAF8F2" />
+                    <SolidColorBrush x:Key="NotesTextBrush" Color="#1C1C1E" />
+                    <SolidColorBrush x:Key="NotesTitleForegroundBrush" Color="#000000" />
+                    <SolidColorBrush x:Key="NotesDividerBrush" Color="#E5DFD0" />
+                    <SolidColorBrush x:Key="NotesUpdatedBrush" Color="#8E8E93" />
+
+                    <!-- Music: Apple Music pure card with vibrant crimson-pink accents -->
+                    <SolidColorBrush x:Key="MusicCardBackground" Color="#FFFFFF" />
+                    <SolidColorBrush x:Key="MusicAccentBrush" Color="#FA2D48" />
+                    <SolidColorBrush x:Key="MusicScrubberTrackBrush" Color="#1C000000" />
+                    <SolidColorBrush x:Key="MusicPlayButtonBackgroundBrush" Color="#12000000" />
+                    <SolidColorBrush x:Key="MusicPlayButtonHoverBrush" Color="#22000000" />
+                    <SolidColorBrush x:Key="MusicCoverPlaceholderBrush" Color="#0E000000" />
+                    <SolidColorBrush x:Key="MusicCoverBorderBrush" Color="#12000000" />
+
+                    <!-- Pomodoro: Apple Focus pure card with dynamic semantic ring & button -->
+                    <SolidColorBrush x:Key="PomodoroCardBackground" Color="#FFFFFF" />
+                    <SolidColorBrush x:Key="PomodoroPillBackgroundBrush" Color="#10000000" />
+                    <SolidColorBrush x:Key="PomodoroPillBorderBrush" Color="#14000000" />
+                    <SolidColorBrush x:Key="PomodoroButtonBackgroundBrush" Color="#0D000000" />
+                    <SolidColorBrush x:Key="PomodoroButtonHoverBrush" Color="#1E000000" />
+
+                    <!-- Hitokoto: Apple Literary pure card with refined purple watermark & pill -->
+                    <SolidColorBrush x:Key="HitokotoCardBackground" Color="#FFFFFF" />
+                    <SolidColorBrush x:Key="HitokotoWatermarkBrush" Color="#16AF52DE" />
+                    <SolidColorBrush x:Key="HitokotoQuoteBrush" Color="#1C1C1E" />
+                    <SolidColorBrush x:Key="HitokotoAuthorBrush" Color="#8E8E93" />
+                    <SolidColorBrush x:Key="HitokotoPillBackgroundBrush" Color="#14AF52DE" />
+                    <SolidColorBrush x:Key="HitokotoPillBorderBrush" Color="#28AF52DE" />
+                    <SolidColorBrush x:Key="HitokotoPillForegroundBrush" Color="#7A3E9D" />
+                    <SolidColorBrush x:Key="HitokotoButtonHoverBrush" Color="#14000000" />
+                    <SolidColorBrush x:Key="HitokotoButtonPressedBrush" Color="#24000000" />
+
+                    <!-- Batteries: Apple Power Management (Light) -->
+                    <SolidColorBrush x:Key="BatteriesCardBackground" Color="#FFFFFF" />
+                    <SolidColorBrush x:Key="BatteriesTrackBrush" Color="#E5E5EA" />
+                    <SolidColorBrush x:Key="BatteriesIconBrush" Color="#1C1C1E" />
+                    <SolidColorBrush x:Key="BatteriesTextBrush" Color="#1C1C1E" />
+                    <SolidColorBrush x:Key="BatteriesNormalBrush" Color="#34C759" />
+                    <SolidColorBrush x:Key="BatteriesChargingBrush" Color="#34C759" />
+                    <SolidColorBrush x:Key="BatteriesWarningBrush" Color="#FF9500" />
+                    <SolidColorBrush x:Key="BatteriesCriticalBrush" Color="#FF3B30" />
+
+                    <!-- Monitor: Apple 4-color telemetry rings & card (Light) -->
+                    <SolidColorBrush x:Key="MonitorCardBackground" Color="#FFFFFF" />
+                    <SolidColorBrush x:Key="MonitorTrackBrush" Color="#E5E5EA" />
+                    <SolidColorBrush x:Key="MonitorCpuBrush" Color="#007AFF" />
+                    <SolidColorBrush x:Key="MonitorRamBrush" Color="#AF52DE" />
+                    <SolidColorBrush x:Key="MonitorDiskBrush" Color="#FF9500" />
+                    <SolidColorBrush x:Key="MonitorNetBrush" Color="#30B0C7" />
+                    <SolidColorBrush x:Key="MonitorBatteryBrush" Color="#34C759" />
+
+                    <!-- Storage: macOS Storage Palette (Light) -->
+                    <SolidColorBrush x:Key="StorageCardBackground" Color="#FFFFFF" />
+                    <SolidColorBrush x:Key="StorageSubCardBackground" Color="#F2F2F7" />
+                    <SolidColorBrush x:Key="StorageSubCardBorderBrush" Color="#E5E5EA" />
+                    <SolidColorBrush x:Key="StorageTrackBackground" Color="#E5E5EA" />
+                    <SolidColorBrush x:Key="StorageBadgeBackground" Color="#E5E5EA" />
+                    <SolidColorBrush x:Key="StorageSystemBrush" Color="#007AFF" />
+                    <SolidColorBrush x:Key="StorageAppsBrush" Color="#AF52DE" />
+                    <SolidColorBrush x:Key="StorageDocsBrush" Color="#FF9500" />
+                    <SolidColorBrush x:Key="StorageMediaBrush" Color="#30B0C7" />
+                    <SolidColorBrush x:Key="StorageRemovableBrush" Color="#34C759" />
+                    <SolidColorBrush x:Key="StorageWarningBrush" Color="#FF9500" />
+                    <SolidColorBrush x:Key="StorageCriticalBrush" Color="#FF3B30" />
+
+                    <!-- Folders: macOS Finder Sky Blue (Light) -->
+                    <SolidColorBrush x:Key="FoldersCardBackground" Color="#FFFFFF" />
+                    <SolidColorBrush x:Key="FolderAccentBrush" Color="#29A3FF" />
+
+                    <!-- Translate: Apple Translate blue (Light) -->
+                    <SolidColorBrush x:Key="TranslatorCardBackground" Color="#FFFFFF" />
+                    <SolidColorBrush x:Key="TranslateCardBackground" Color="#FFFFFF" />
+                    <SolidColorBrush x:Key="TranslateAccentBrush" Color="#007AFF" />
+                    <SolidColorBrush x:Key="TranslatorInputBackground" Color="#F2F2F7" />
+                    <SolidColorBrush x:Key="TranslatorOutputBackground" Color="#F0F6FF" />
+                    <SolidColorBrush x:Key="TranslatorOutputBorderBrush" Color="#25007AFF" />
+
+                    <!-- Calculator: Apple Calculator Orange & crisp keys (Light) -->
+                    <SolidColorBrush x:Key="CalculatorCardBackground" Color="#FFFFFF" />
+                    <SolidColorBrush x:Key="CalculatorDisplayBackground" Color="#F2F2F7" />
+                    <SolidColorBrush x:Key="CalculatorAccentBrush" Color="#FF9500" />
+                    <SolidColorBrush x:Key="CalculatorNumButtonBackground" Color="#F2F2F7" />
+                    <SolidColorBrush x:Key="CalculatorFuncButtonBackground" Color="#E5E5EA" />
+                    <SolidColorBrush x:Key="CalculatorOpButtonBackground" Color="#22FF9500" />
+
+                    <!-- Clipboard: Apple Clipboard (Light) -->
+                    <SolidColorBrush x:Key="ClipboardCardBackground" Color="#FFFFFF" />
+                    <SolidColorBrush x:Key="ClipboardItemCardBackground" Color="#F2F2F7" />
+                    <SolidColorBrush x:Key="ClipboardItemCardHoverBackground" Color="#E5E5EA" />
+                    <SolidColorBrush x:Key="ClipboardBadgeTextBgBrush" Color="#15007AFF" />
+                    <SolidColorBrush x:Key="ClipboardBadgeTextBrush" Color="#007AFF" />
+                    <SolidColorBrush x:Key="ClipboardBadgeCodeBgBrush" Color="#1534C759" />
+                    <SolidColorBrush x:Key="ClipboardBadgeCodeBrush" Color="#34C759" />
+                    <SolidColorBrush x:Key="ClipboardBadgeLinkBgBrush" Color="#15AF52DE" />
+                    <SolidColorBrush x:Key="ClipboardBadgeLinkBrush" Color="#AF52DE" />
+                    <SolidColorBrush x:Key="ClipboardBadgeFileBgBrush" Color="#15FF9500" />
+                    <SolidColorBrush x:Key="ClipboardBadgeFileBrush" Color="#FF9500" />
+
+                    <!-- ControlCenter: Apple Control Center (Light) -->
+                    <SolidColorBrush x:Key="ControlCenterCardBackground" Color="#FFFFFF" />
+                    <SolidColorBrush x:Key="ControlCenterCapsuleBackground" Color="#F2F2F7" />
+                    <SolidColorBrush x:Key="ControlCenterBadgeInactiveBackground" Color="#E5E5EA" />
+
+                    <!-- Map: Apple Maps (Light) -->
+                    <SolidColorBrush x:Key="MapCardBackground" Color="#FFFFFF" />
+                    <SolidColorBrush x:Key="MapFloatingButtonBackground" Color="#F5FFFFFF" />
+
+                    <!-- Time Progress: Pure white in light mode, authentic Apple dark card in dark mode -->
+                    <SolidColorBrush x:Key="ProgressCardBackground" Color="#FFFFFF" />
+                    <SolidColorBrush x:Key="ProgressMoveBrush" Color="#FA114F" />
+                    <SolidColorBrush x:Key="ProgressExerciseBrush" Color="#AFFF00" />
+                    <SolidColorBrush x:Key="ProgressStandBrush" Color="#00F5D4" />
+
+                    <!-- Search: Spotlight search pill & controls (Light) -->
+                    <SolidColorBrush x:Key="SearchCardBackground" Color="#FFFFFF" />
+                    <SolidColorBrush x:Key="SearchMagnifierBrush" Color="#007AFF" />
+                    <SolidColorBrush x:Key="SearchPillBackground" Color="#F2F2F7" />
+                    <SolidColorBrush x:Key="SearchPillBorderBrush" Color="#18000000" />
+                    <SolidColorBrush x:Key="SearchEngineButtonBackground" Color="#10000000" />
+                    <SolidColorBrush x:Key="SearchDockButtonBackground" Color="#10000000" />
+                    <LinearGradientBrush x:Key="SearchButtonBrush" StartPoint="0%,0%" EndPoint="100%,100%">
+                        <GradientStop Offset="0.0" Color="#007AFF" />
+                        <GradientStop Offset="1.0" Color="#0056D6" />
+                    </LinearGradientBrush>
+
+                    <!-- Weather: Apple Weather Sky Blue opaque gradient, pure white typography -->
+                    <LinearGradientBrush x:Key="WeatherCardBackground" StartPoint="0%,0%" EndPoint="0%,100%">
+                        <GradientStop Offset="0.0" Color="#1B71BE" />
+                        <GradientStop Offset="1.0" Color="#509CEB" />
+                    </LinearGradientBrush>
+                    <SolidColorBrush x:Key="WeatherForegroundBrush" Color="#FFFFFF" />
+                    <SolidColorBrush x:Key="WeatherIconBrush" Color="#FFD60A" />
+                    <SolidColorBrush x:Key="WeatherGaugeBrush" Color="#5AC8FA" />
+                    <LinearGradientBrush x:Key="WeatherTempBarBrush" StartPoint="0%,0%" EndPoint="100%,0%">
+                        <GradientStop Offset="0" Color="#34C759" />
+                        <GradientStop Offset="0.5" Color="#FFCC00" />
+                        <GradientStop Offset="1" Color="#FF9500" />
+                    </LinearGradientBrush>
+
+                    <!-- Card Border & Clock Dial / Strokes (Light) -->
+                    <SolidColorBrush x:Key="WidgetCardBorderBrush" Color="#15000000" />
+                    <!-- 表盘-1 / 表盘-2 / 表盘-3 (AnalogI/AnalogIII/AnalogIV) 的组件卡片：
+                         多彩主题下两档变体都用 Apple 深灰黑（恒黑卡片，复刻 Apple 时钟小组件亮暗皆黑的卡片），由各
+                         时钟视图经 IWidgetSurfaceHints 声明；其余组件仍走 WidgetBackground。 -->
+                    <SolidColorBrush x:Key="ClockCardBackground" Color="#1C1C1E" />
+                    <SolidColorBrush x:Key="FlipClockCardBackground" Color="#EFEFF4" />
+                    <!-- 数字时钟卡片与元素画刷 (Light) -->
+                    <SolidColorBrush x:Key="ClockDigitalCardBackground" Color="#FFFFFF" />
+                    <SolidColorBrush x:Key="ClockDigitalTimeBrush" Color="#1C1C1E" />
+                    <SolidColorBrush x:Key="ClockDigitalDateBrush" Color="#007AFF" />
+
+                    <!-- Calendar 日历卡片背景 (Light) -->
+                    <SolidColorBrush x:Key="CalendarCardBackground" Color="#FFFFFF" />
+
+                    <!-- Timetable 课程表卡片背景 (Light) -->
+                    <SolidColorBrush x:Key="TimetableCardBackground" Color="#FFFFFF" />
+                    <!-- 表盘-1 内圈面盘（多彩亮色档）：恒黑卡片上的“白盘”，保持既有观感
+                         （#1C1C1E@8% 叠白卡 = #EDEDED），与表盘-3「黑白」的亮色白同值。 -->
+                    <SolidColorBrush x:Key="ClockDialBackgroundBrush" Color="#EDEDED" Opacity="1.0" />
+                    <SolidColorBrush x:Key="ClockOpaqueDialBackgroundBrush" Color="#FFFFFF" Opacity="1.0" />
+                    <SolidColorBrush x:Key="ClockStrokesBrush" Color="#8E8E93" />
+                    <SolidColorBrush x:Key="FlipClockTopFlapBrush" Color="#F4F4F8" />
+                    <SolidColorBrush x:Key="FlipClockBottomFlapBrush" Color="#EAEAF0" />
+                    <SolidColorBrush x:Key="FlipClockFlapBorderBrush" Color="#16000000" />
+                    <SolidColorBrush x:Key="FlipClockCreaseBrush" Color="#24000000" />
+                    <SolidColorBrush x:Key="FlipClockHingeBrush" Color="#3E000000" />
+                    <!-- Contrast Accent (Light) -->
+                    <SolidColorBrush x:Key="AccentContrastForegroundBrush" Color="#FFFFFF" />
+                </ResourceDictionary>
+
+                <!-- ==================== Dark Theme (Dark) ==================== -->
+                <ResourceDictionary x:Key="Dark">
+                    <!-- Standard macOS 18 Dark Opaque Charcoal Card Background -->
+                    <SolidColorBrush x:Key="WidgetBackground" Color="#1C1C1E" />
+                    <SolidColorBrush x:Key="WidgetForeground" Color="#FFFFFF" />
+                    <SolidColorBrush x:Key="SystemControlForegroundBaseHighBrush" Color="#FFFFFF" />
+                    <SolidColorBrush x:Key="SystemControlForegroundBaseMediumBrush" Color="#98989D" />
+                    <SolidColorBrush x:Key="SystemControlForegroundBaseLowBrush" Color="#48484A" />
+                    <SolidColorBrush x:Key="SystemControlForegroundAccentBrush" Color="#0A84FF" />
+                    <SolidColorBrush x:Key="SystemControlHighlightAccentBrush" Color="#0A84FF" />
+
+                    <!-- macOS System Blue Accent Ramp & Contrast (Dark) -->
+                    <Color x:Key="SystemAccentColor">#0A84FF</Color>
+                    <Color x:Key="SystemAccentColorLight1">#3B9DFF</Color>
+                    <Color x:Key="SystemAccentColorLight2">#6CB6FF</Color>
+                    <Color x:Key="SystemAccentColorLight3">#9DCFFF</Color>
+                    <Color x:Key="SystemAccentColorDark1">#006EE6</Color>
+                    <Color x:Key="SystemAccentColorDark2">#0058B8</Color>
+                    <Color x:Key="SystemAccentColorDark3">#00428A</Color>
+                    <Color x:Key="AccentContrastColor">White</Color>
+
+                    <!-- Fluent Selection Controls Closure (Dark) -->
+                    <SolidColorBrush x:Key="ToggleSwitchKnobFillOn" Color="White" />
+                    <SolidColorBrush x:Key="ToggleSwitchKnobFillOnPointerOver" Color="White" />
+                    <SolidColorBrush x:Key="ToggleSwitchKnobFillOnPressed" Color="White" />
+                    <SolidColorBrush x:Key="CheckBoxCheckGlyphForegroundChecked" Color="White" />
+                    <SolidColorBrush x:Key="CheckBoxCheckGlyphForegroundCheckedPointerOver" Color="White" />
+                    <SolidColorBrush x:Key="CheckBoxCheckGlyphForegroundCheckedPressed" Color="White" />
+                    <SolidColorBrush x:Key="CheckBoxCheckGlyphForegroundIndeterminate" Color="White" />
+                    <SolidColorBrush x:Key="CheckBoxCheckGlyphForegroundIndeterminatePointerOver" Color="White" />
+                    <SolidColorBrush x:Key="CheckBoxCheckGlyphForegroundIndeterminatePressed" Color="White" />
+                    <SolidColorBrush x:Key="RadioButtonCheckGlyphFill" Color="White" />
+                    <SolidColorBrush x:Key="RadioButtonCheckGlyphFillPointerOver" Color="White" />
+                    <SolidColorBrush x:Key="RadioButtonCheckGlyphFillPressed" Color="White" />
+
+                    <SolidColorBrush x:Key="ToggleSwitchFillOnPointerOver" Color="#0A84FF" Opacity="0.85" />
+                    <SolidColorBrush x:Key="ToggleSwitchFillOnPressed" Color="#0A84FF" Opacity="0.7" />
+                    <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillCheckedPointerOver" Color="#0A84FF" Opacity="0.85" />
+                    <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillCheckedPressed" Color="#0A84FF" Opacity="0.7" />
+                    <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillIndeterminatePointerOver" Color="#0A84FF" Opacity="0.85" />
+                    <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillIndeterminatePressed" Color="#0A84FF" Opacity="0.7" />
+                    <SolidColorBrush x:Key="RadioButtonOuterEllipseCheckedFillPointerOver" Color="#0A84FF" Opacity="0.85" />
+                    <SolidColorBrush x:Key="RadioButtonOuterEllipseCheckedFillPressed" Color="#0A84FF" Opacity="0.7" />
+                    <SolidColorBrush x:Key="RadioButtonOuterEllipseCheckedStrokePointerOver" Color="#0A84FF" Opacity="0.85" />
+                    <SolidColorBrush x:Key="RadioButtonOuterEllipseCheckedStrokePressed" Color="#0A84FF" Opacity="0.7" />
+
+                    <!-- Apple Human Interface Guidelines System Colors (Dark) -->
+                    <SolidColorBrush x:Key="MacosRedBrush" Color="#FF453A" />
+                    <SolidColorBrush x:Key="MacosOrangeBrush" Color="#FF9F0A" />
+                    <SolidColorBrush x:Key="MacosYellowBrush" Color="#FFD60A" />
+                    <SolidColorBrush x:Key="MacosGreenBrush" Color="#30D158" />
+                    <SolidColorBrush x:Key="MacosMintBrush" Color="#63E6E2" />
+                    <SolidColorBrush x:Key="MacosTealBrush" Color="#40C8E0" />
+                    <SolidColorBrush x:Key="MacosCyanBrush" Color="#64D2FF" />
+                    <SolidColorBrush x:Key="MacosBlueBrush" Color="#0A84FF" />
+                    <SolidColorBrush x:Key="MacosIndigoBrush" Color="#5E5CE6" />
+                    <SolidColorBrush x:Key="MacosPurpleBrush" Color="#BF5AF2" />
+                    <SolidColorBrush x:Key="MacosPinkBrush" Color="#FF375F" />
+
+                    <!-- Calendar: Apple Red header, today marker, crisp white day text -->
+                    <SolidColorBrush x:Key="CalendarHeaderBrush" Color="#FF453A" />
+                    <SolidColorBrush x:Key="CalendarTodayBrush" Color="#FF453A" />
+
+                    <!-- Clock: Solid white hour/minute hands, vibrant Apple Orange second hand -->
+                    <SolidColorBrush x:Key="ClockHandBrush" Color="#FFFFFF" />
+                    <SolidColorBrush x:Key="ClockSecondHandBrush" Color="#FF9F0A" />
+                    <SolidColorBrush x:Key="ClockCenterPinBrush" Color="#FF9F0A" />
+
+                    <!-- Reminders: Apple Blue badge & circular checkmarks, white text -->
+                    <SolidColorBrush x:Key="RemindersCardBackground" Color="#1C1C1E" />
+                    <SolidColorBrush x:Key="RemindersBadgeBrush" Color="#0A84FF" />
+                    <SolidColorBrush x:Key="RemindersCheckBrush" Color="#0A84FF" />
+                    <SolidColorBrush x:Key="RemindersDotOrange" Color="#FF9F0A" />
+                    <SolidColorBrush x:Key="RemindersDotRed" Color="#FF453A" />
+                    <SolidColorBrush x:Key="RemindersDotBlue" Color="#0A84FF" />
+                    <SolidColorBrush x:Key="RemindersDotPurple" Color="#BF5AF2" />
+
+                    <!-- Notes: Apple Notes warm charcoal, amber gold header, warm white text -->
+                    <SolidColorBrush x:Key="NotesCardBackground" Color="#1C1C1E" />
+                    <SolidColorBrush x:Key="NotesAccentBrush" Color="#FFD60A" />
+                    <SolidColorBrush x:Key="NotesPaperBackground" Color="#1C1C1E" />
+                    <SolidColorBrush x:Key="NotesTextBrush" Color="#FFFFFF" />
+                    <SolidColorBrush x:Key="NotesTitleForegroundBrush" Color="#000000" />
+                    <SolidColorBrush x:Key="NotesDividerBrush" Color="#333230" />
+                    <SolidColorBrush x:Key="NotesUpdatedBrush" Color="#98989D" />
+
+                    <!-- Music: Apple Music dark charcoal card with vibrant crimson-pink accents -->
+                    <SolidColorBrush x:Key="MusicCardBackground" Color="#1C1C1E" />
+                    <SolidColorBrush x:Key="MusicAccentBrush" Color="#FF375F" />
+                    <SolidColorBrush x:Key="MusicScrubberTrackBrush" Color="#26FFFFFF" />
+                    <SolidColorBrush x:Key="MusicPlayButtonBackgroundBrush" Color="#22FFFFFF" />
+                    <SolidColorBrush x:Key="MusicPlayButtonHoverBrush" Color="#36FFFFFF" />
+                    <SolidColorBrush x:Key="MusicCoverPlaceholderBrush" Color="#18FFFFFF" />
+                    <SolidColorBrush x:Key="MusicCoverBorderBrush" Color="#20FFFFFF" />
+
+                    <!-- Pomodoro: Apple Focus dark card with dynamic semantic ring & button -->
+                    <SolidColorBrush x:Key="PomodoroCardBackground" Color="#1C1C1E" />
+                    <SolidColorBrush x:Key="PomodoroPillBackgroundBrush" Color="#18FFFFFF" />
+                    <SolidColorBrush x:Key="PomodoroPillBorderBrush" Color="#20FFFFFF" />
+                    <SolidColorBrush x:Key="PomodoroButtonBackgroundBrush" Color="#16FFFFFF" />
+                    <SolidColorBrush x:Key="PomodoroButtonHoverBrush" Color="#28FFFFFF" />
+
+                    <!-- Hitokoto: Apple Literary dark card with luminous purple watermark & pill -->
+                    <SolidColorBrush x:Key="HitokotoCardBackground" Color="#1C1C1E" />
+                    <SolidColorBrush x:Key="HitokotoWatermarkBrush" Color="#20BF5AF2" />
+                    <SolidColorBrush x:Key="HitokotoQuoteBrush" Color="#FFFFFF" />
+                    <SolidColorBrush x:Key="HitokotoAuthorBrush" Color="#98989D" />
+                    <SolidColorBrush x:Key="HitokotoPillBackgroundBrush" Color="#20BF5AF2" />
+                    <SolidColorBrush x:Key="HitokotoPillBorderBrush" Color="#38BF5AF2" />
+                    <SolidColorBrush x:Key="HitokotoPillForegroundBrush" Color="#DAB6FC" />
+                    <SolidColorBrush x:Key="HitokotoButtonHoverBrush" Color="#20FFFFFF" />
+                    <SolidColorBrush x:Key="HitokotoButtonPressedBrush" Color="#35FFFFFF" />
+
+                    <!-- Batteries: Apple Power Management (Dark) -->
+                    <SolidColorBrush x:Key="BatteriesCardBackground" Color="#1C1C1E" />
+                    <SolidColorBrush x:Key="BatteriesTrackBrush" Color="#2C2C2E" />
+                    <SolidColorBrush x:Key="BatteriesIconBrush" Color="#FFFFFF" />
+                    <SolidColorBrush x:Key="BatteriesTextBrush" Color="#FFFFFF" />
+                    <SolidColorBrush x:Key="BatteriesNormalBrush" Color="#30D158" />
+                    <SolidColorBrush x:Key="BatteriesChargingBrush" Color="#30D158" />
+                    <SolidColorBrush x:Key="BatteriesWarningBrush" Color="#FF9F0A" />
+                    <SolidColorBrush x:Key="BatteriesCriticalBrush" Color="#FF453A" />
+
+                    <!-- Monitor: Apple 4-color telemetry rings & card (Dark) -->
+                    <SolidColorBrush x:Key="MonitorCardBackground" Color="#1C1C1E" />
+                    <SolidColorBrush x:Key="MonitorTrackBrush" Color="#2C2C2E" />
+                    <SolidColorBrush x:Key="MonitorCpuBrush" Color="#0A84FF" />
+                    <SolidColorBrush x:Key="MonitorRamBrush" Color="#BF5AF2" />
+                    <SolidColorBrush x:Key="MonitorDiskBrush" Color="#FF9F0A" />
+                    <SolidColorBrush x:Key="MonitorNetBrush" Color="#64D2FF" />
+                    <SolidColorBrush x:Key="MonitorBatteryBrush" Color="#30D158" />
+
+                    <!-- Storage: macOS Storage Palette (Dark) -->
+                    <SolidColorBrush x:Key="StorageCardBackground" Color="#1C1C1E" />
+                    <SolidColorBrush x:Key="StorageSubCardBackground" Color="#2C2C2E" />
+                    <SolidColorBrush x:Key="StorageSubCardBorderBrush" Color="#3A3A3C" />
+                    <SolidColorBrush x:Key="StorageTrackBackground" Color="#2C2C2E" />
+                    <SolidColorBrush x:Key="StorageBadgeBackground" Color="#3A3A3C" />
+                    <SolidColorBrush x:Key="StorageSystemBrush" Color="#0A84FF" />
+                    <SolidColorBrush x:Key="StorageAppsBrush" Color="#BF5AF2" />
+                    <SolidColorBrush x:Key="StorageDocsBrush" Color="#FF9F0A" />
+                    <SolidColorBrush x:Key="StorageMediaBrush" Color="#64D2FF" />
+                    <SolidColorBrush x:Key="StorageRemovableBrush" Color="#30D158" />
+                    <SolidColorBrush x:Key="StorageWarningBrush" Color="#FF9F0A" />
+                    <SolidColorBrush x:Key="StorageCriticalBrush" Color="#FF453A" />
+
+                    <!-- Folders: macOS Finder Sky Blue (Dark) -->
+                    <SolidColorBrush x:Key="FoldersCardBackground" Color="#1C1C1E" />
+                    <SolidColorBrush x:Key="FolderAccentBrush" Color="#33AAFF" />
+
+                    <!-- Translate: Apple Translate blue (Dark) -->
+                    <SolidColorBrush x:Key="TranslatorCardBackground" Color="#1C1C1E" />
+                    <SolidColorBrush x:Key="TranslateCardBackground" Color="#1C1C1E" />
+                    <SolidColorBrush x:Key="TranslateAccentBrush" Color="#0A84FF" />
+                    <SolidColorBrush x:Key="TranslatorInputBackground" Color="#262629" />
+                    <SolidColorBrush x:Key="TranslatorOutputBackground" Color="#1A2433" />
+                    <SolidColorBrush x:Key="TranslatorOutputBorderBrush" Color="#350A84FF" />
+
+                    <!-- Calculator: Apple Calculator Orange & dark charcoal keys (Dark) -->
+                    <SolidColorBrush x:Key="CalculatorCardBackground" Color="#1C1C1E" />
+                    <SolidColorBrush x:Key="CalculatorDisplayBackground" Color="#252528" />
+                    <SolidColorBrush x:Key="CalculatorAccentBrush" Color="#FF9F0A" />
+                    <SolidColorBrush x:Key="CalculatorNumButtonBackground" Color="#2C2C2E" />
+                    <SolidColorBrush x:Key="CalculatorFuncButtonBackground" Color="#3A3A3C" />
+                    <SolidColorBrush x:Key="CalculatorOpButtonBackground" Color="#2EFF9F0A" />
+
+                    <!-- Clipboard: Apple Clipboard (Dark) -->
+                    <SolidColorBrush x:Key="ClipboardCardBackground" Color="#1C1C1E" />
+                    <SolidColorBrush x:Key="ClipboardItemCardBackground" Color="#262629" />
+                    <SolidColorBrush x:Key="ClipboardItemCardHoverBackground" Color="#323236" />
+                    <SolidColorBrush x:Key="ClipboardBadgeTextBgBrush" Color="#250A84FF" />
+                    <SolidColorBrush x:Key="ClipboardBadgeTextBrush" Color="#0A84FF" />
+                    <SolidColorBrush x:Key="ClipboardBadgeCodeBgBrush" Color="#2530D158" />
+                    <SolidColorBrush x:Key="ClipboardBadgeCodeBrush" Color="#30D158" />
+                    <SolidColorBrush x:Key="ClipboardBadgeLinkBgBrush" Color="#25BF5AF2" />
+                    <SolidColorBrush x:Key="ClipboardBadgeLinkBrush" Color="#BF5AF2" />
+                    <SolidColorBrush x:Key="ClipboardBadgeFileBgBrush" Color="#25FF9F0A" />
+                    <SolidColorBrush x:Key="ClipboardBadgeFileBrush" Color="#FF9F0A" />
+
+                    <!-- ControlCenter: Apple Control Center (Dark) -->
+                    <SolidColorBrush x:Key="ControlCenterCardBackground" Color="#1C1C1E" />
+                    <SolidColorBrush x:Key="ControlCenterCapsuleBackground" Color="#2C2C2E" />
+                    <SolidColorBrush x:Key="ControlCenterBadgeInactiveBackground" Color="#3A3A3C" />
+
+                    <!-- Map: Apple Maps (Dark) -->
+                    <SolidColorBrush x:Key="MapCardBackground" Color="#1C1C1E" />
+                    <SolidColorBrush x:Key="MapFloatingButtonBackground" Color="#D92C2C2E" />
+
+                    <!-- Time Progress: Apple Fitness Pure Pitch Black with High Luminosity (Dark) -->
+                    <SolidColorBrush x:Key="ProgressCardBackground" Color="#000000" />
+                    <SolidColorBrush x:Key="ProgressMoveBrush" Color="#FA114F" />
+                    <SolidColorBrush x:Key="ProgressExerciseBrush" Color="#AFFF00" />
+                    <SolidColorBrush x:Key="ProgressStandBrush" Color="#00F5D4" />
+
+                    <!-- Search: Spotlight search pill & controls (Dark) -->
+                    <SolidColorBrush x:Key="SearchCardBackground" Color="#1C1C1E" />
+                    <SolidColorBrush x:Key="SearchMagnifierBrush" Color="#0A84FF" />
+                    <SolidColorBrush x:Key="SearchPillBackground" Color="#2C2C2E" />
+                    <SolidColorBrush x:Key="SearchPillBorderBrush" Color="#28FFFFFF" />
+                    <SolidColorBrush x:Key="SearchEngineButtonBackground" Color="#18FFFFFF" />
+                    <SolidColorBrush x:Key="SearchDockButtonBackground" Color="#18FFFFFF" />
+                    <LinearGradientBrush x:Key="SearchButtonBrush" StartPoint="0%,0%" EndPoint="100%,100%">
+                        <GradientStop Offset="0.0" Color="#0A84FF" />
+                        <GradientStop Offset="1.0" Color="#0066E0" />
+                    </LinearGradientBrush>
+
+                    <!-- Weather: Apple Weather Midnight Navy opaque gradient, pure white typography -->
+                    <LinearGradientBrush x:Key="WeatherCardBackground" StartPoint="0%,0%" EndPoint="0%,100%">
+                        <GradientStop Offset="0.0" Color="#121E31" />
+                        <GradientStop Offset="1.0" Color="#1E314F" />
+                    </LinearGradientBrush>
+                    <SolidColorBrush x:Key="WeatherForegroundBrush" Color="#FFFFFF" />
+                    <SolidColorBrush x:Key="WeatherIconBrush" Color="#FFD60A" />
+                    <SolidColorBrush x:Key="WeatherGaugeBrush" Color="#64D2FF" />
+                    <LinearGradientBrush x:Key="WeatherTempBarBrush" StartPoint="0%,0%" EndPoint="100%,0%">
+                        <GradientStop Offset="0" Color="#30D158" />
+                        <GradientStop Offset="0.5" Color="#FFD60A" />
+                        <GradientStop Offset="1" Color="#FF9F0A" />
+                    </LinearGradientBrush>
+
+                    <!-- Card Border & Clock Dial / Strokes (Dark) -->
+                    <SolidColorBrush x:Key="WidgetCardBorderBrush" Color="#25FFFFFF" />
+                    <!-- 表盘-1 / 表盘-2 / 表盘-3 的卡片：与亮色档一致，恒为 Apple 深灰黑（恒黑卡片）。 -->
+                    <SolidColorBrush x:Key="ClockCardBackground" Color="#1C1C1E" />
+                    <SolidColorBrush x:Key="FlipClockCardBackground" Color="#1C1C1E" />
+                    <!-- 数字时钟卡片与元素画刷 (Dark) -->
+                    <SolidColorBrush x:Key="ClockDigitalCardBackground" Color="#1C1C1E" />
+                    <SolidColorBrush x:Key="ClockDigitalTimeBrush" Color="#FFFFFF" />
+                    <SolidColorBrush x:Key="ClockDigitalDateBrush" Color="#FF9F0A" />
+
+                    <!-- Calendar 日历卡片背景 (Dark) -->
+                    <SolidColorBrush x:Key="CalendarCardBackground" Color="#1C1C1E" />
+
+                    <!-- Timetable 课程表卡片背景 (Dark) -->
+                    <SolidColorBrush x:Key="TimetableCardBackground" Color="#1C1C1E" />
+                    <!-- 表盘-1 内圈面盘（多彩暗色档）：叠在恒黑卡片上呈 #373738，
+                         与表盘-3「黑白」的暗色黑同值。 -->
+                    <SolidColorBrush x:Key="ClockDialBackgroundBrush" Color="#373738" Opacity="1.0" />
+                    <SolidColorBrush x:Key="ClockOpaqueDialBackgroundBrush" Color="#2C2C2E" Opacity="1.0" />
+                    <SolidColorBrush x:Key="ClockStrokesBrush" Color="#8E8E93" />
+                    <SolidColorBrush x:Key="FlipClockTopFlapBrush" Color="#2C2C2E" />
+                    <SolidColorBrush x:Key="FlipClockBottomFlapBrush" Color="#232325" />
+                    <SolidColorBrush x:Key="FlipClockFlapBorderBrush" Color="#20FFFFFF" />
+                    <SolidColorBrush x:Key="FlipClockCreaseBrush" Color="#88000000" />
+                    <SolidColorBrush x:Key="FlipClockHingeBrush" Color="#48FFFFFF" />
+                    <!-- Contrast Accent (Dark) -->
+                    <SolidColorBrush x:Key="AccentContrastForegroundBrush" Color="#FFFFFF" />
+                </ResourceDictionary>
+            </ResourceDictionary.ThemeDictionaries>
+</ResourceDictionary>

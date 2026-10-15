@@ -23,10 +23,10 @@
             <Setter Property="Cursor" Value="Hand" />
         </Style>
         <Style Selector="Button.NotesPanelBtn:pointerover">
-            <Setter Property="Background" Value="#22808080" />
+            <Setter Property="Background" Value="#1E000000" />
         </Style>
         <Style Selector="Button.NotesPanelBtn:pressed">
-            <Setter Property="Background" Value="#44808080" />
+            <Setter Property="Background" Value="#35000000" />
         </Style>
     </UserControl.Styles>
     <Grid RowDefinitions="Auto, Auto, *, Auto" VerticalAlignment="Stretch" HorizontalAlignment="Stretch">

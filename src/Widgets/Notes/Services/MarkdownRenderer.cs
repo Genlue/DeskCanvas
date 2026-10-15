@@ -11,6 +11,7 @@ using Markdig.Extensions.Tables;
 using Markdig.Extensions.TaskLists;
 using Markdig.Syntax;
 using Markdig.Syntax.Inlines;
+using DeskCanvas.Services;
 using Notes.Models;
 using Path = Avalonia.Controls.Shapes.Path;
 
@@ -585,18 +586,14 @@ public static class MarkdownRenderer
         ResolveThemed(scope, key) as IBrush ?? new SolidColorBrush(Color.Parse(fallback));
 
     /// <summary>
-    /// Resolve a theme resource with the app's ACTIVE variant made explicit.
-    /// An ambient TryFindResource can freeze on the "Default" (light) theme
-    /// dictionary of selector-less style overrides, e.g. returning the light
-    /// accent shade while the app renders dark. The element scope stays as a
-    /// fallback for hosts without an application-level definition.
+    /// Resolve a theme resource with the element's ACTIVE variant made explicit via ThemeScopeResolver.
+    /// Walks element -> Window -> Application so window-scoped colorful or normal theme isolation
+    /// takes precedence over Application.Current.
     /// </summary>
     private static object? ResolveThemed(StyledElement scope, string key)
     {
-        var app = Application.Current;
-        if (app is not null && ((IResourceHost)app).TryGetResource(key, app.ActualThemeVariant, out var themed))
-            return themed;
-        if (scope.TryFindResource(key, out var scoped)) return scoped;
+        if (ThemeScopeResolver.TryFindResource(scope as Visual, key, scope.ActualThemeVariant, out var res))
+            return res;
         return null;
     }
 }

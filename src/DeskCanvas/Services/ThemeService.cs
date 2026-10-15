@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Avalonia;
 using Avalonia.Markup.Xaml.Styling;
 using Avalonia.Media;
@@ -11,18 +12,27 @@ namespace DeskCanvas.Services;
 
 public class ThemeService : IThemeService
 {
+    private readonly IAppSettingsProvider appSettingsProvider;
     private readonly WallpaperThemeService wallpaperThemeService;
+
+    /// <summary>
+    /// Latest 失焦自动切换 settings seen by a save, so the <see cref="Apply(Theme)"/> overload
+    /// (interface-compatible path) resolves the same app-level mode the snapshot save did.
+    /// </summary>
+    private FocusLinkSettings? pendingFocusLink;
 
     public ThemeService(IAppSettingsProvider appSettingsProvider, WallpaperThemeService wallpaperThemeService)
     {
+        this.appSettingsProvider = appSettingsProvider;
         this.wallpaperThemeService = wallpaperThemeService;
         appSettingsProvider.DataChanging += (_, _, newSettings) =>
-            Apply(newSettings.Theme);
-        // Wallpaper changed while in auto mode: re-resolve the variant.
+            Apply(newSettings);
+        // Wallpaper changed while in auto mode: re-resolve the variant. With 失焦自动切换
+        // enabled the app-level pair is the "聚焦时" pair, so that is what decides here.
         this.wallpaperThemeService.DarkFlagChanged += _ =>
         {
             var settings = appSettingsProvider.Get();
-            if (settings.Theme.AutoTheme) Apply(settings.Theme);
+            if (EffectiveAppMode(settings).AutoTheme) Apply(settings);
         };
         // 跟随系统亮暗（DarkMode == null）时，系统切换深浅色既不走 DataChanging 也没有
         // 壁纸事件，但 ApplyAccent 写入的 SystemAccentColor 及整个 ramp 是按"当时的
@@ -33,9 +43,11 @@ public class ThemeService : IThemeService
         {
             var settings = appSettingsProvider.Get();
             // 显式亮/暗模式的 RequestedThemeVariant 恒定，不会触发本事件；AutoTheme 的
-            // 变体翻转由上面的壁纸监听处理（避免双重 Apply）。这里只接管跟随系统。
-            if (settings.Theme.AutoTheme || settings.Theme.DarkMode != null) return;
-            Apply(settings.Theme);
+            // 变体翻转由上面的壁纸监听处理（避免双重 Apply）。这里只接管跟随系统——
+            // 「失焦自动切换」启用时以「聚焦时」模式为准。
+            var mode = EffectiveAppMode(settings);
+            if (mode.AutoTheme || mode.DarkMode != null) return;
+            Apply(settings);
         };
         // System accent changes while the variant stays put trigger neither DataChanging nor
         // ActualThemeVariantChanged, yet the accent brush behind selected text changes — the
@@ -93,40 +105,188 @@ public class ThemeService : IThemeService
         Source = new Uri("avares://DeskCanvas/Styles/Accent.axaml")
     };
     
+    /// <summary>
+    /// Resolves the effective application-level theme (representing Settings window, dialogs,
+    /// and chrome). When focus link is disabled, returns normalized settings.Theme.
+    /// When focus link is enabled, returns the normalized "focused" state theme.
+    /// </summary>
+    public static Theme ResolveApplicationTheme(AppSettings settings)
+    {
+        if (settings.FocusLink is not { Enabled: true } link)
+        {
+            return settings.Theme.NormalizeForSurface();
+        }
+
+        return FocusThemeCoordinator.ResolveStateTheme(link, focused: true, settings).NormalizeForSurface();
+    }
+
+    /// <summary>
+    /// The light/dark pair behind the app-level variant. While 失焦自动切换 is enabled the
+    /// app's own chrome (settings window, dialogs — windows without a per-window override)
+    /// follows the "聚焦时" pair, the home state; the per-screen switching of the widget
+    /// windows is <see cref="FocusThemeCoordinator"/>'s job.
+    /// </summary>
+    private static FocusMode EffectiveAppMode(AppSettings settings)
+    {
+        var appTheme = ResolveApplicationTheme(settings);
+        return new FocusMode(appTheme.DarkMode, appTheme.AutoTheme);
+    }
+
+    /// <summary>
+    /// The distinct surface materials in play: the shared theme's own surface, plus — while
+    /// 失焦自动切换 is enabled — each state's override. With the feature off this is exactly
+    /// the single active surface, i.e. the historic behaviour.
+    /// <para>
+    /// 多彩 is part of the union like any other material; it is the one surface whose
+    /// <b>dictionary loading</b> is not driven by this set (the app-wide 多彩 style is only
+    /// loaded while the shared theme is 多彩 — a 多彩 focus state gets the palette merged into
+    /// its own window by <see cref="FocusThemeCoordinator"/> instead).
+    /// </para>
+    /// </summary>
+    private readonly ResourceInclude colorfulResourcesInclude = new(ThemeResourceHelper.BaseAppUri)
+    {
+        Source = new Uri(ThemeResourceHelper.ColorfulResourcesUri)
+    };
+
+    private void AttachApplicationColorfulResources()
+    {
+        if (Application.Current?.Resources == null) return;
+        var merged = Application.Current.Resources.MergedDictionaries;
+        for (int i = 0; i < merged.Count; i++)
+        {
+            if (merged[i] is ResourceInclude inc
+                && inc.Source?.OriginalString?.Contains("ColorfulResources.axaml", StringComparison.OrdinalIgnoreCase) == true)
+            {
+                return;
+            }
+        }
+        merged.Add(colorfulResourcesInclude);
+    }
+
+    private void RemoveApplicationColorfulResources()
+    {
+        if (Application.Current?.Resources == null) return;
+        var merged = Application.Current.Resources.MergedDictionaries;
+        for (int i = merged.Count - 1; i >= 0; i--)
+        {
+            if (merged[i] is ResourceInclude inc
+                && inc.Source?.OriginalString?.Contains("ColorfulResources.axaml", StringComparison.OrdinalIgnoreCase) == true)
+            {
+                merged.RemoveAt(i);
+            }
+        }
+    }
+
+    /// <inheritdoc />
     public void Apply(Theme theme)
     {
-        // Auto mode resolves light/dark from the wallpaper brightness; otherwise
-        // the explicit flag decides (null = follow the system).
-        var darkMode = theme.AutoTheme ? wallpaperThemeService.IsWallpaperDark() : theme.DarkMode;
-        Application.Current!.RequestedThemeVariant = darkMode switch
+        var current = appSettingsProvider.Get();
+        var settings = current with
+        {
+            Theme = theme,
+            FocusLink = pendingFocusLink ?? current.FocusLink
+        };
+        Apply(settings);
+    }
+
+    /// <inheritdoc />
+    public void Apply(AppSettings settings)
+    {
+        pendingFocusLink = settings.FocusLink;
+        ApplyCore(settings);
+    }
+
+    /// <summary>Raised on the UI thread after a global scope application actually ran (not
+    /// <summary>
+    /// The focus lens the 失焦自动切换 coordinator installs: given the settings it answers
+    /// <c>true</c> (desktop focused), <c>false</c> (unfocused) or <c>null</c> (feature off —
+    /// apply the shared theme). Every global application — settings saves, the variant and
+    /// wallpaper listeners, the coordinator's own flips — resolves the live state's theme
+    /// <b>once</b> through this lens; there is no second, corrective pass, so a colour drag
+    /// (which saves on every pointer move) costs exactly one global application.
+    /// </summary>
+    internal Func<AppSettings, bool?>? FocusLensResolver { get; set; }
+
+    /// <summary>
+    /// The global scope the 失焦自动切换 flips: resolves the state's theme (its light/dark
+    /// pair + optional surface material over the shared parameters) and runs the very same
+    /// application-level switch the settings page's theme buttons run — one code path, so a
+    /// focus flip is a real theme switch, not a per-window imitation. Returns whether the
+    /// application actually ran (an unchanged state short-circuits to <c>false</c>).
+    /// </summary>
+    public bool ApplyFocusState(AppSettings settings, bool focused)
+    {
+        var scopeTheme = settings.FocusLink is { Enabled: true } link
+            ? FocusThemeCoordinator.ResolveStateTheme(link, focused, settings)
+            : null;
+        return ApplyCoreWithTheme(settings, scopeTheme);
+    }
+
+    /// <summary>What the last <see cref="ApplyCoreWithTheme"/> actually applied — an unchanged
+    /// tuple skips the run entirely (focus flips, settings saves and wallpaper events all land here).</summary>
+    private (AppSettings? Settings, ThemeVariant Variant, Theme? ScopeTheme) lastGlobalScope;
+
+    private void ApplyCore(AppSettings settings)
+    {
+        var lens = FocusLensResolver?.Invoke(settings);
+        var scopeTheme = lens is { } focused && settings.FocusLink is { Enabled: true } link
+            ? FocusThemeCoordinator.ResolveStateTheme(link, focused, settings)
+            : null;
+        ApplyCoreWithTheme(settings, scopeTheme);
+    }
+
+    private bool ApplyCoreWithTheme(AppSettings settings, Theme? scopeTheme)
+    {
+        var appTheme = (scopeTheme ?? ResolveApplicationTheme(settings)).NormalizeForSurface();
+        var mode = new FocusMode(appTheme.DarkMode, appTheme.AutoTheme);
+        var darkMode = mode.AutoTheme ? wallpaperThemeService.IsWallpaperDark() : mode.DarkMode;
+        var appVariant = darkMode switch
         {
             null => ThemeVariant.Default,
             false => ThemeVariant.Light,
             _ => ThemeVariant.Dark,
         };
+
+        if (lastGlobalScope.Settings?.Equals(settings) == true
+            && lastGlobalScope.Variant == appVariant
+            && lastGlobalScope.ScopeTheme == appTheme)
+        {
+            return false;
+        }
+        lastGlobalScope = (settings, appVariant, appTheme);
+
+        Application.Current!.RequestedThemeVariant = appVariant;
+
+        var appProfile = ThemeProfileResolver.Resolve(appTheme, appVariant, settings);
+
+        // Uniform switching: one state is live at a time, so exactly one surface material
+        // is in play — the live theme's own. (Before the uniform switch this was the union
+        // of the two states' materials, mounted to serve per-screen windows.)
+        var surfaces = new HashSet<SurfaceStyle> { appTheme.EffectiveSurface };
         
-        Application.Current.Resources["FontFamily"] = theme.FontFamily == "Inter"
+        Application.Current.Resources["FontFamily"] = settings.Theme.FontFamily == "Inter"
             ? new FontFamily("avares://Avalonia.Fonts.Inter#Inter")
-            : new FontFamily(theme.FontFamily);
+            : new FontFamily(settings.Theme.FontFamily);
 
         // 全局元素阴影 (设置 → 外观): a soft drop shadow behind widget text and elem-shadow-marked
         // template parts (progress pills, metric rings), so content stays readable over busy
         // wallpapers. The effect is pushed to the live widget windows by WidgetTextShadow (see its
         // remarks for why the application happens in code instead of a style).
-        WidgetTextShadow.Update(theme);
+        WidgetTextShadow.Update(settings.Theme);
 
         // OS-level acrylic (the Transparent style sets the AcrylicBlur hint on the
         // windows): the desktop composer samples the live desktop every frame, so
         // dynamic wallpapers stay live behind the widgets. OpacityLevel is the
         // coating alpha. In Colorful mode, opacity is strictly 1.0 (opaque cards).
-        Application.Current.Resources["BackgroundOpacity"] = theme.IsColorful ? 1.0 : theme.OpacityLevel;
+        Application.Current.Resources["BackgroundOpacity"] = appTheme.IsColorful ? 1.0 : appTheme.OpacityLevel;
 
         // Animated wallpapers are sampled periodically. Turning this off keeps the
         // last captured frame and makes liquid glass deterministic/static. Both
-        // rendered materials carry their own sampling settings.
-        if (theme.UsesRenderedGlass)
+        // rendered materials carry their own sampling settings — the live theme's
+        // own optics drive the pipeline, exactly like a manual theme switch.
+        if (appTheme.UsesRenderedGlass)
         {
-            var glass = theme.EffectiveGlass;
+            var glass = appTheme.EffectiveGlass;
             LiquidGlassWallpaper.ConfigureLiveSampling(glass.LiveSampling, glass.LiveSamplingInterval);
         }
         else
@@ -135,110 +295,64 @@ public class ThemeService : IThemeService
             LiquidGlassSourceCache.Clear();
         }
 
-        // Accent source resolution happens further down, in ONE switch, right after the
-        // monochrome variant is known — see the ramp contract there for why.
-
         // 纯色 surface: the card color (per dark/light variant) and the coating
-        // opacity — Solid.axaml's WidgetBackground brush picks these up.
-        // In Colorful mode, fixed authentic Apple card backgrounds are strictly enforced.
-        var solidBackgroundDark = theme.IsColorful
-            ? Color.Parse("#1C1C1E")
-            : ThemeResourceHelper.ParseColor(theme.EffectiveSolidBackgroundDark, Theme.DefaultSolidBackgroundDark);
-        var solidBackgroundLight = theme.IsColorful
-            ? Color.Parse("#FFFFFF")
-            : ThemeResourceHelper.ParseColor(theme.EffectiveSolidBackgroundLight, Theme.DefaultSolidBackgroundLight);
-        Application.Current.Resources["SolidBackgroundDark"] = solidBackgroundDark;
-        Application.Current.Resources["SolidBackgroundLight"] = solidBackgroundLight;
+        // opacity — Solid.axaml's WidgetBackground brush picks these up. In Colorful
+        // mode, fixed authentic Apple card backgrounds are strictly enforced.
+        // Shared with the focus path's window-scope writes (single source of truth).
+        ThemeResourceHelper.WriteScopeCardResources(Application.Current.Resources, appTheme);
 
-        // Accent ramp — exactly ONE source wins per Apply, and every branch either rewrites the
-        // whole ramp or hands it back to Fluent. Preference order: 彩色 > 单色档 > 手选强调色 >
-        // 系统强调色.
-        //
-        // The "every branch" part is the fix, not decoration: the ramp lives in
-        // Application.Resources, so it OUTLIVES a single Apply. The old code only wrote it for
-        // 彩色 / 手选 / 单色 and did NOTHING otherwise, so leaving 单色 behind left the previous
-        // Apply's achromatic values in place — SystemAccentColor stayed pure white (or black) and
-        // every accent-driven surface kept rendering as it did in 单色. The visible fallout: with
-        // 黑白 turned off, an ON ToggleSwitch drew a white track (`SystemControlHighlightAccentBrush`
-        // = SystemAccentColor) under a white knob, and hovering it read the equally stale
-        // SystemAccentColorLight1 — the control simply vanished.
-        //
-        // - 黑白: the accent is strictly achromatic — BLACK in light mode, WHITE in dark mode —
-        //   so accent-following text (aggregate city name, battery rings) never picks up the
-        //   background colors. The ramp mapping is inverted accordingly: `dark:` feeds
-        //   SystemAccentColorDark1 which the LIGHT accent dictionaries read, `light:` feeds
-        //   SystemAccentColorLight2 for the DARK ones.
-        // - 背景色: text AND accent lock to the inverted background — light mode renders the
-        //   dark-mode background color, dark mode the light-mode one (the historic 黑白 ramp).
-        // - 强调色 keeps whatever accent the user (or the system) provides.
-        var monochromeVariant = theme.IsColorful || !theme.Monochrome
-            ? (MonochromeStyle?)null
-            : theme.EffectiveMonochromeVariant;
-        var isDarkVariant = darkMode ?? Application.Current.ActualThemeVariant == ThemeVariant.Dark;
-        switch (monochromeVariant)
-        {
-            case MonochromeStyle.BlackWhite:
-                ThemeResourceHelper.ApplyAccent(isDarkVariant ? Colors.White : Colors.Black, dark: Colors.Black, light: Colors.White);
-                break;
-            case MonochromeStyle.BackgroundColor:
-                ThemeResourceHelper.ApplyAccent(
-                    isDarkVariant ? solidBackgroundLight : solidBackgroundDark,
-                    dark: solidBackgroundDark,
-                    light: solidBackgroundLight);
-                break;
-            default:
-                if (theme.IsColorful)
-                {
-                    // Apple systemBlue: #007AFF on light, #0A84FF on dark (the ramp the
-                    // Colorful palettes were designed against).
-                    ThemeResourceHelper.ApplyAccent(Color.Parse("#007AFF"), light: Color.Parse("#0A84FF"));
-                }
-                else if (theme.AccentColor != null && Color.TryParse(theme.AccentColor, out var accentColor))
-                {
-                    ThemeResourceHelper.ApplyAccent(accentColor);
-                }
-                else
-                {
-                    // No accent picked means "use the system accent", which is exactly the
-                    // resource the Fluent theme already publishes: drop our overrides so its
-                    // value shines through again. Merely skipping the write is NOT equivalent —
-                    // it would leave the previous Apply's ramp (e.g. 黑白's pure white) behind.
-                    ThemeResourceHelper.ClearAccentOverrides();
-                }
-
-                break;
-        }
-
-        // Surface material drives both the background style and the transparency
-        // hint: Acrylic/OutlinedAcrylic → OS-level live blur, Solid → per-pixel
-        // transparency so the opacity slider actually blends with the desktop.
-        // Colorful (macOS) uses live OS acrylic blur with rich system semantic colors.
-        // Always on base accent fallback (generic icons / title fallback)
+        // Base accent fallback (generic icons / title fallback) is always on
         ThemeResourceHelper.SwitchStyle(accentStyle, true);
 
-        // Monochrome style dictionaries (appended after accentStyle so they win):
-        // 黑白 keeps the text family pure black/white and resolves the accent family through
-        // the achromatic ramp written above; 背景色 additionally locks the text family to the
-        // ramp (everything renders in the inverted background color); 强调色 keeps the accent
-        // as-is and only re-tints text (the historic Monochrome.axaml dictionaries).
-        // In Colorful mode, monochrome is strictly disabled.
-        ThemeResourceHelper.SwitchStyle(monochromeBlackWhiteStyle, monochromeVariant == MonochromeStyle.BlackWhite);
-        ThemeResourceHelper.SwitchStyle(monochromeBackgroundStyle, monochromeVariant == MonochromeStyle.BackgroundColor);
-        ThemeResourceHelper.SwitchStyle(monochromeStyle, monochromeVariant == MonochromeStyle.Accent);
+        var isDarkVariant = darkMode ?? Application.Current.ActualThemeVariant == ThemeVariant.Dark;
 
-        // Surface material background styles
-        ThemeResourceHelper.SwitchStyle(transparentStyle, theme.UsesNativeBlur && !theme.IsColorful);
-        ThemeResourceHelper.SwitchStyle(solidStyle, !theme.IsGlass && !theme.IsColorful);
-        ThemeResourceHelper.SwitchStyle(liquidGlassStyle, theme.UsesRenderedGlass);
+        if (appProfile.ColorPolicy == ThemeColorPolicy.ColorfulFixed)
+        {
+            // 卸载普通单色样式
+            ThemeResourceHelper.SwitchStyle(monochromeBlackWhiteStyle, false);
+            ThemeResourceHelper.SwitchStyle(monochromeBackgroundStyle, false);
+            ThemeResourceHelper.SwitchStyle(monochromeStyle, false);
 
-        // Colorful (macOS) uses live OS acrylic blur with rich Apple HIG system semantic colors.
-        // Loaded after accentStyle so its vibrant palette (Red calendar, Orange clock second hand,
-        // Blue/Purple/Orange monitor rings, etc.) takes precedence over single-color accent fallbacks.
-        ThemeResourceHelper.SwitchStyle(colorfulStyle, theme.IsColorful);
+            // 清理普通强调色 ramp 和直接覆盖键
+            ThemeResourceHelper.ClearAccentOverrides(Application.Current.Resources);
+            ThemeResourceHelper.ClearDirectComponentColorOverrides(Application.Current.Resources);
+
+            // 挂载多彩样式与资源字典
+            ThemeResourceHelper.SwitchStyle(colorfulStyle, true);
+            AttachApplicationColorfulResources();
+
+            Application.Current.Resources["ThemeScopePolicy"] = ThemeColorPolicy.ColorfulFixed;
+            Application.Current.Resources["ColorfulActive"] = true;
+        }
+        else
+        {
+            // 卸载多彩样式与资源字典
+            ThemeResourceHelper.SwitchStyle(colorfulStyle, false);
+            RemoveApplicationColorfulResources();
+            Application.Current.Resources.Remove("ColorfulActive");
+            ThemeResourceHelper.ClearDirectComponentColorOverrides(Application.Current.Resources);
+            ThemeResourceHelper.ClearAccentOverrides(Application.Current.Resources);
+
+            // 应用普通强调色 ramp
+            ThemeResourceHelper.ApplyAccentRamp(Application.Current.Resources, appProfile, isDarkVariant);
+
+            // 挂载对应单色样式
+            ThemeResourceHelper.SwitchStyle(monochromeBlackWhiteStyle, appProfile.MonochromeVariant == MonochromeStyle.BlackWhite);
+            ThemeResourceHelper.SwitchStyle(monochromeBackgroundStyle, appProfile.MonochromeVariant == MonochromeStyle.BackgroundColor);
+            ThemeResourceHelper.SwitchStyle(monochromeStyle, appProfile.MonochromeVariant == MonochromeStyle.Accent);
+
+            Application.Current.Resources["ThemeScopePolicy"] = ThemeColorPolicy.Normal;
+        }
+
+        // Surface material background styles.
+        ThemeResourceHelper.SwitchStyle(transparentStyle, surfaces.Contains(SurfaceStyle.Acrylic) && !appTheme.IsColorful);
+        ThemeResourceHelper.SwitchStyle(solidStyle, surfaces.Contains(SurfaceStyle.Solid) && !appTheme.IsColorful);
+        ThemeResourceHelper.SwitchStyle(liquidGlassStyle, surfaces.Contains(SurfaceStyle.LiquidGlass));
 
         // Text selection pair (W1): refresh only after every style switch above has landed, so
         // the resolver reads the FINAL accent brush of each variant rather than a mid-switch one.
         RefreshTextSelectionPalette();
+        return true;
     }
 
     /// <summary>
@@ -264,4 +378,13 @@ public class ThemeService : IThemeService
         var dark = TextSelectionPaletteResolver.Resolve(ThemeVariant.Dark, TextSelectionPaletteResolver.DarkFallback);
         ThemeResourceHelper.UpdateTextSelectionResources(light, dark);
     }
+    /// <summary>
+    /// Applies the computed accent ramp to the target resource dictionary (either Application.Resources
+    /// or a specific Window.Resources for focus-linked scoped styling).
+    /// </summary>
+    public static void ApplyAccentRamp(Avalonia.Controls.IResourceDictionary resources, Theme theme, bool isDarkVariant)
+        => ThemeResourceHelper.ApplyAccentRamp(resources, theme, isDarkVariant);
+
+    public static void ApplyAccentRamp(Avalonia.Controls.IResourceDictionary resources, ResolvedThemeProfile profile, bool isDarkVariant)
+        => ThemeResourceHelper.ApplyAccentRamp(resources, profile, isDarkVariant);
 }

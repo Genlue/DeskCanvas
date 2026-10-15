@@ -210,7 +210,14 @@ public static class LiquidGlassWallpaper
             Dispatcher.UIThread.Post(UpdateTimerState);
             return;
         }
-        var shouldRun = liveSamplingEnabled && !suspended && LiquidGlassSurface.HasActiveSurfaces;
+        // Two demand sources: the user's live-sampling switch — gated on glass actually being on
+        // screen, because the sampler is pointless while no widget is on screen — and the
+        // wallpaper-change settle window, which must also keep probing for consumers that draw
+        // their own material from the published frame (the frameless clock) even with live
+        // sampling off.
+        var shouldRun = !suspended && (liveSamplingEnabled
+            ? LiquidGlassSurface.HasActiveSurfaces
+            : SettleActive && HasFrameConsumers);
         if (shouldRun)
         {
             EnsurePacer();
@@ -343,8 +350,9 @@ public static class LiquidGlassWallpaper
         // queue a fresh tick even while this one is still probing on a worker.
         Interlocked.Exchange(ref tickQueued, 0);
 
-        if (!liveSamplingEnabled || suspended) { UpdateTimerState(); return; }
-        if (!LiquidGlassSurface.HasActiveSurfaces) { UpdateTimerState(); return; }
+        var settle = SettleActive;
+        if ((!liveSamplingEnabled && !settle) || suspended) { UpdateTimerState(); return; }
+        if (!LiquidGlassSurface.HasActiveSurfaces && !settle) { UpdateTimerState(); return; }
 
         var now = Environment.TickCount64;
         // The period is measured from the start of the previous round, not from its capture. A
@@ -363,6 +371,15 @@ public static class LiquidGlassWallpaper
             if (outcome == ProbeOutcome.Published)
             {
                 Volatile.Write(ref idleRounds, 0);
+                // A published frame restarts the settle window's stability count and marks the
+                // window as having delivered a new frame: the desktop just moved (another step of
+                // the fade), so "settled" must be re-established by fresh unchanged rounds rather
+                // than inherited from before the move.
+                if (SettleActive)
+                {
+                    Volatile.Write(ref settlePublished, 1);
+                    Volatile.Write(ref settleStable, 0);
+                }
                 // Immediate: the interval can be shorter than the surface's move/resize debounce,
                 // and a debounce restarted on every tick would never elapse — freezing the glass.
                 LiquidGlassSurface.RefreshAllImmediate();
@@ -375,6 +392,21 @@ public static class LiquidGlassWallpaper
                 // capture hiccups (MPO overlay transitions, a busy shell), so the glass
                 // stuttered even though the wallpaper never stopped animating.
                 Interlocked.Increment(ref idleRounds);
+                // The wallpaper has settled once the desktop verifiably shows what the surfaces
+                // show for consecutive rounds — but only after the window has published at least
+                // one new frame. Without that, an early "unchanged" reading (the capture still
+                // seeing the old scene while the host re-composites) would close the window before
+                // the transition was ever observed and freeze every surface on the old wallpaper;
+                // such a window runs to its deadline instead.
+                if (SettleActive && Volatile.Read(ref settlePublished) == 1
+                    && Interlocked.Increment(ref settleStable) >= SettleStableRounds)
+                    CloseSettle();
+            }
+            else if (SettleActive)
+            {
+                // An unusable capture says nothing about stability — a run of failures must not
+                // accumulate towards closing the window.
+                Volatile.Write(ref settleStable, 0);
             }
         }
         catch (Exception ex)
@@ -393,6 +425,10 @@ public static class LiquidGlassWallpaper
     {
         get
         {
+            // The settle window runs at its own cadence — close enough behind the fade to read as
+            // live, slow enough that a whole transition costs a few captures; the live sampler's
+            // cadence and its idle backoff are untouched.
+            if (SettleActive && !liveSamplingEnabled) return SettleIntervalMs;
             var idle = Math.Min(Volatile.Read(ref idleRounds), 6);
             var stretched = liveIntervalMs << idle;
             return Math.Min(Math.Max(stretched, liveIntervalMs), Math.Max(liveIntervalMs, MaxIdleIntervalMs));
@@ -422,7 +458,99 @@ public static class LiquidGlassWallpaper
     /// whoever happens to be free and latching the rest); the 1000 ms cap keeps slow intervals'
     /// behaviour unchanged.
     /// </summary>
-    private static int StallGuardMs => Math.Min(1000, Math.Max(150, 4 * EffectiveIntervalMs));
+    private static int StallGuardMs => SettleActive && !liveSamplingEnabled
+        // Settle rounds must not be held off for a full second while the fade is still moving —
+        // the guard exists to let the surfaces digest a publish, and a settle publish digests in
+        // well under 500 ms even with several cards. Only the window is tightened; the live
+        // sampler's own guard is untouched.
+        ? 2 * SettleIntervalMs
+        : Math.Min(1000, Math.Max(150, 4 * EffectiveIntervalMs));
+
+    // ---- wallpaper-change settle window ---------------------------------------------------------
+    // A wallpaper switch is not an instant: Windows cross-fades the desktop over up to a couple of
+    // seconds, and a capture taken mid-fade is a blend of the old and the new wallpaper. The
+    // event-driven watcher knows only that a switch STARTED; with live sampling off (the default
+    // static material) the refresh used to end at two fixed delays and whatever the fade happened
+    // to be at those instants became the frozen frame — glass could sit on the old wallpaper or on
+    // a half-faded blend until the next unrelated event re-rendered it.
+    //
+    // The settle window is that missing confirmation. After a wallpaper-change event the probe
+    // keeps running even with live sampling off: every fade step that differs from what the
+    // surfaces show is published (glass trails the desktop through the transition exactly like it
+    // does for an animated wallpaper), and the window closes only once it has published at least
+    // one new frame AND two consecutive probes find the desktop identical to it — the settled
+    // wallpaper. A window that has published nothing runs to its deadline instead of closing: a
+    // first "unchanged" probe right after the event is exactly the moment the capture is least
+    // trustworthy (the host is re-compositing and can still read the old scene), and closing on it
+    // would freeze every surface on the old wallpaper with no retry. Two more guards make the
+    // transition uniform, not just convergent: per-surface captures are disabled for the window
+    // (see GetShared — the probe owns every capture and each publish sweeps all surfaces together,
+    // so no widget can freeze on its own private fade step), and the published frame is, by
+    // construction, the settled one. Cost: a handful of captures over ~1–2 s on the probe's pooled
+    // buffer (no allocation once it is warm); when the window closes the pacer parks and the pooled
+    // buffer is given back with the sampler's idle state, so a desktop that merely changed its
+    // wallpaper pays nothing afterwards.
+
+    /// <summary>How long a settle window may run before giving up (a host that never stabilises).</summary>
+    private const int SettleDeadlineMs = 6000;
+
+    /// <summary>Probe cadence inside a settle window: close enough behind the fade to read as live, slow enough that the whole transition costs a few captures.</summary>
+    private const int SettleIntervalMs = 250;
+
+    /// <summary>Consecutive unchanged probes that close a settle window (see the section comment).</summary>
+    private const int SettleStableRounds = 2;
+
+    /// <summary>Absolute end of the current settle window; 0 = none. See <see cref="BeginSettle"/>.</summary>
+    private static long settleUntil;
+
+    /// <summary>Consecutive probes that found the desktop identical to the published frame while the settle window runs.</summary>
+    private static int settleStable;
+
+    /// <summary>1 once the current settle window has published a new frame. A window that never publishes may not close early (see the section comment).</summary>
+    private static int settlePublished;
+
+    /// <summary>True while the wallpaper-change settle window is running (see the section comment).</summary>
+    internal static bool SettleActive
+    {
+        get
+        {
+            var until = Volatile.Read(ref settleUntil);
+            return until != 0 && Environment.TickCount64 < until;
+        }
+    }
+
+    /// <summary>
+    /// Whether anything renders from the published frame: the glass surfaces, or through
+    /// <see cref="WallpaperInvalidated"/> the widgets that draw their own material from it (the
+    /// frameless clock). The settle window probes for these consumers, so a layout with only
+    /// those on screen still converges after a wallpaper switch.
+    /// </summary>
+    internal static bool HasFrameConsumers => LiquidGlassSurface.HasActiveSurfaces || WallpaperInvalidated != null;
+
+    /// <summary>
+    /// A wallpaper change was announced (the watcher's debounce elapsed): keep probing until the
+    /// desktop settles, so the frame the glass freezes on is the settled wallpaper rather than
+    /// wherever a fixed delay happened to land mid-fade. Idempotent — consecutive switches simply
+    /// restart the window. With live sampling on the probe already runs at the user's cadence and
+    /// publishes each fade step, so the window adds no cadence of its own there; it still re-arms
+    /// the demand in case the user switches live sampling off while the fade is running.
+    /// </summary>
+    public static void BeginSettle()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+        Volatile.Write(ref settleUntil, Environment.TickCount64 + SettleDeadlineMs);
+        Volatile.Write(ref settleStable, 0);
+        Volatile.Write(ref settlePublished, 0);
+        UpdateTimerState();
+    }
+
+    /// <summary>Close the settle window and re-evaluate whether the pacer still has a reason to tick.</summary>
+    private static void CloseSettle()
+    {
+        Volatile.Write(ref settleUntil, 0);
+        Volatile.Write(ref settleStable, 0);
+        UpdateTimerState();
+    }
 
     // ---- idle capture release ------------------------------------------------------------------
     // The desktop capture is the single largest allocation in the process — a full virtual desktop
@@ -588,6 +716,18 @@ public static class LiquidGlassWallpaper
                     if (stale != null) return stale;
                     return new WallpaperSnapshot(null, new SKColor(32, 38, 48));
                 }
+
+                // Wallpaper-transition uniformity: while a settle window runs, individual surfaces
+                // must NOT run their own captures — that race is what produced the "some cards show
+                // the new wallpaper, some still show the old one" report. A switch is a one-to-two-
+                // second cross-fade; each surface re-renders at its own moment, so per-surface
+                // captures land on different fade steps (old frame, mid-fade blend, settled frame)
+                // and get seeded into this shared cache at different instants. Here the window's
+                // single-flight probe owns every capture instead, and each frame it publishes is
+                // swept to all surfaces together; until the first publish, everyone keeps the last
+                // good frame. (stale == null is a first-ever render — it must still capture.)
+                if (cached == null && stale != null && SettleActive)
+                    return stale;
 
                 // Live sampling on: reuse the frame while it is fresh (so every widget samples
                 // the same instant), otherwise grab a new one. Live sampling off: the frozen

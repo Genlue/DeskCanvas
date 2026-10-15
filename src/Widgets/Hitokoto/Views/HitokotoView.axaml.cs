@@ -25,8 +25,11 @@ namespace Hitokoto.Views;
 /// Supports double-click to switch quotes, configurable auto-refresh intervals,
 /// setting-switched frameless desktop watermark mode, and a Material 3 secondary panel.
 /// </summary>
-public partial class HitokotoView : UserControl, IFramelessWidget, IWidgetSelfRefreshing, IWidgetSuspendable, IDisposable
+public partial class HitokotoView : UserControl, IFramelessWidget, IWidgetSelfRefreshing, IWidgetSuspendable, IDisposable, IWidgetSurfaceHints
 {
+    /// <inheritdoc />
+    public string? ColorfulBackgroundResourceKey => "HitokotoCardBackground";
+
     private readonly IAppSettingsProvider? appSettingsProvider;
     private readonly IWidgetLayoutProvider? widgetLayoutProvider;
     private HitokotoModel model;

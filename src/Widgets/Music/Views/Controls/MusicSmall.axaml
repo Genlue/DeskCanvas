@@ -16,17 +16,22 @@
             <Setter Property="MinHeight" Value="3"/>
             <Setter Property="Height" Value="3"/>
             <Setter Property="CornerRadius" Value="1.5"/>
-            <Setter Property="Background" Value="#20FFFFFF"/>
             <Setter Property="Foreground" Value="{DynamicResource MusicAccentBrush}"/>
             <Setter Property="Template">
                 <ControlTemplate>
-                    <Border Name="ProgressBarRoot" Classes="elem-shadow"
-                            Background="{TemplateBinding Background}"
+                    <Border Name="ProgressBarRoot"
                             CornerRadius="{TemplateBinding CornerRadius}"
                             ClipToBounds="True"
                             Height="{TemplateBinding Height}">
                         <Panel>
-                            <Border Name="PART_Indicator"
+                            <!-- Track: the fill brush at 15% opacity — the Monitor dashboard
+                                 ring formula, so the unfilled area stays a light tint on
+                                 dark / liquid-glass / monochrome surfaces instead of an
+                                 opaque near-black strip. -->
+                            <Border Background="{TemplateBinding Foreground}"
+                                    CornerRadius="{TemplateBinding CornerRadius}"
+                                    Opacity="0.15"/>
+                            <Border Name="PART_Indicator" Classes="elem-shadow"
                                     Background="{TemplateBinding Foreground}"
                                     CornerRadius="{TemplateBinding CornerRadius}"
                                     HorizontalAlignment="Left"/>
@@ -45,13 +50,13 @@
             <Setter Property="Opacity" Value="0.75"/>
         </Style>
         <Style Selector="Button.ios-play-btn">
-            <Setter Property="Background" Value="#1AFFFFFF"/>
+            <Setter Property="Background" Value="{DynamicResource MusicPlayButtonBackgroundBrush}"/>
             <Setter Property="BorderThickness" Value="0"/>
             <Setter Property="Padding" Value="0"/>
             <Setter Property="Cursor" Value="Hand"/>
         </Style>
         <Style Selector="Button.ios-play-btn:pointerover">
-            <Setter Property="Background" Value="#32FFFFFF"/>
+            <Setter Property="Background" Value="{DynamicResource MusicPlayButtonHoverBrush}"/>
             <Setter Property="Opacity" Value="0.9"/>
         </Style>
     </UserControl.Styles>
@@ -68,12 +73,12 @@
             <!-- Cover Art Frame -->
             <Border Name="CoverBorder" Grid.Column="0"
                     Width="52" Height="52" CornerRadius="12"
-                    ClipToBounds="True" Background="#16FFFFFF"
+                    ClipToBounds="True" Background="{DynamicResource MusicCoverPlaceholderBrush}"
                     VerticalAlignment="Center">
                 <Panel>
                     <!-- Fallback Note / Disc -->
                     <Panel IsVisible="{Binding CoverBitmap, Converter={x:Static ObjectConverters.IsNull}}">
-                        <Border Background="#12FFFFFF" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
+                        <Border Background="{DynamicResource MusicCoverPlaceholderBrush}" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
                         <PathIcon Data="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"
                                   Width="24" Height="24"
                                   Opacity="0.75"
@@ -84,7 +89,7 @@
                     <Image Source="{Binding CoverBitmap}"
                            Stretch="UniformToFill"
                            IsVisible="{Binding CoverBitmap, Converter={x:Static ObjectConverters.IsNotNull}}"/>
-                    <Border BorderBrush="#20FFFFFF" BorderThickness="0.8" CornerRadius="12" IsHitTestVisible="False"/>
+                    <Border BorderBrush="{DynamicResource MusicCoverBorderBrush}" BorderThickness="0.8" CornerRadius="12" IsHitTestVisible="False"/>
                 </Panel>
             </Border>
 

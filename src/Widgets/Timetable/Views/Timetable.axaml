@@ -75,12 +75,11 @@
 
         <!-- 2×2: today's lessons as readable colour cards (scrollable — never squeezed).
              Alignment contract with the overlay panel-open button (12px host inset + its own
-             4px margin): the header row is the button's 26px height starting at the same top
-             (layout top margin 4 puts the row at 16), so the day label and the corner button
-             share one center line at any header font size; the list's 5px right inset puts the
-             colour cards' right edge exactly on the button glyph's right edge
-             (12 + 8 + 5 = 25 = 12 + 4 + (26 − 8) / 2) while the scrollbar thumb stays pinned
-             to the viewport edge (20) and never reaches the cards.
+             4px margin): the header row is the button's 26px height starting at top margin 4,
+             so the day label and the corner button share one center line (Y = 17) at any header
+             font size. TodayHeader carries a 28px right margin to preserve clearance before the
+             corner button. The course cards fill the viewport with strictly equal left and right
+             margins (6px outer), and the scrollbar sits flush along the cards' right edge.
              HorizontalScrollBarVisibility=Disabled is load-bearing: the widget host's
              global rule (Widget.axaml) forces card ScrollViewers to Horizontal=Hidden,
              and Hidden measures the content with an UNCONSTRAINED width — long lesson
@@ -88,12 +87,12 @@
              right edge into a square corner. Disabled constrains the measure to the
              viewport so TextTrimming actually trims. (Local value > host style, so this
              survives the pointerover/non-pointerover style swap.) -->
-        <Grid Name="TodayLayout" IsVisible="False" RowDefinitions="26,*" Margin="8,4,8,6">
+        <Grid Name="TodayLayout" IsVisible="False" RowDefinitions="26,*" Margin="6,4,6,4">
             <TextBlock Name="TodayHeader" Classes="strong-label" TextTrimming="CharacterEllipsis"
-                       VerticalAlignment="Center" Margin="0,0,16,0" />
-            <ScrollViewer Name="TodayScroll" Grid.Row="1" Margin="0,5,0,0" VerticalScrollBarVisibility="Auto"
+                       VerticalAlignment="Center" Margin="0,0,28,0" />
+            <ScrollViewer Name="TodayScroll" Grid.Row="1" Margin="0,4,0,0" VerticalScrollBarVisibility="Auto"
                           HorizontalScrollBarVisibility="Disabled">
-                <StackPanel Name="TodayListPanel" Spacing="4" Margin="0,0,5,0" />
+                <StackPanel Name="TodayListPanel" Spacing="4" Margin="0" />
             </ScrollViewer>
         </Grid>
 

@@ -23,7 +23,7 @@
         </Style>
 
         <Style Selector="Border.calc-card">
-            <Setter Property="Background" Value="{DynamicResource CalculatorCardBackground}" />
+            <Setter Property="Background" Value="{DynamicResource CalculatorDisplayBackground}" />
             <Setter Property="BorderBrush" Value="{DynamicResource WidgetCardBorderBrush}" />
             <Setter Property="BorderThickness" Value="1" />
             <Setter Property="CornerRadius" Value="{DynamicResource WidgetInnerCornerRadius}" />

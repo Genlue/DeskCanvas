@@ -8,6 +8,7 @@ using Avalonia.Media;
 using ControlCenter.Models;
 using DeskCanvas.Core.Interfaces;
 using DeskCanvas.Core.Models;
+using DeskCanvas.Services;
 
 namespace ControlCenter.Views.Settings;
 
@@ -136,11 +137,7 @@ public partial class SingleControlSettings : UserControl
 
     private IBrush GetBrush(string key, Color fallback)
     {
-        if (this.TryFindResource(key, ActualThemeVariant, out var res) && res is IBrush b)
-            return b;
-        if (Application.Current?.TryFindResource(key, ActualThemeVariant, out var appRes) == true && appRes is IBrush ab)
-            return ab;
-        return new SolidColorBrush(fallback);
+        return ThemeScopeResolver.ResolveBrush(this, key, ActualThemeVariant, new SolidColorBrush(fallback));
     }
 
     private static StreamGeometry? SafeParseGeometry(string path)

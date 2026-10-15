@@ -21,11 +21,11 @@
             <Setter Property="VerticalContentAlignment" Value="Stretch" />
         </Style>
         <Style Selector="Button.card-btn:pointerover /template/ ContentPresenter">
-            <Setter Property="Background" Value="#15888888" />
+            <Setter Property="Background" Value="{DynamicResource ControlHoverBrush}" />
         </Style>
         <Style Selector="TextBox.flyout-input">
-            <Setter Property="Background" Value="#20808080" />
-            <Setter Property="BorderBrush" Value="#30ffffff" />
+            <Setter Property="Background" Value="{DynamicResource SearchPillBackground}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource SearchPillBorderBrush}" />
             <Setter Property="BorderThickness" Value="1" />
             <Setter Property="CornerRadius" Value="8" />
             <Setter Property="Padding" Value="8,4" />

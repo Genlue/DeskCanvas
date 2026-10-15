@@ -14,8 +14,10 @@ using DeskCanvas.Services;
 
 namespace Tools.Views;
 
-public partial class ClipboardView : UserControl, IWidgetSelfRefreshing
+public partial class ClipboardView : UserControl, IWidgetSelfRefreshing, IWidgetSurfaceHints
 {
+    public string? ColorfulBackgroundResourceKey => "ClipboardCardBackground";
+
     private readonly ClipboardMonitorService monitor;
     private ClipboardModel model;
     private string currentFilter = "All";

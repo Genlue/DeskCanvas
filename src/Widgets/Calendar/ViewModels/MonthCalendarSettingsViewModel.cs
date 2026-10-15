@@ -4,6 +4,7 @@ using Avalonia.Styling;
 using Calendar.Models;
 using ReactiveUI;
 using DeskCanvas.Core.Interfaces;
+using DeskCanvas.Services;
 
 namespace Calendar.ViewModels;
 
@@ -115,15 +116,11 @@ public class MonthCalendarSettingsViewModel(IWidgetLayoutProvider widgetLayoutPr
 
     private static Color AccentColor(bool dark = false)
     {
-        if (Avalonia.Application.Current is { } app &&
-            ((Avalonia.Controls.IResourceHost)app).TryGetResource(
-                "SystemAccentColor",
-                dark ? ThemeVariant.Dark : ThemeVariant.Light,
-                out var value) &&
-            value is Color color)
-            return color;
-
-        return Color.Parse("#0078D7");
+        return ThemeScopeResolver.ResolveColor(
+            null,
+            "SystemAccentColor",
+            dark ? ThemeVariant.Dark : ThemeVariant.Light,
+            Color.Parse("#0078D7"));
     }
 
     private void Save(MonthCalendarModel newModel)

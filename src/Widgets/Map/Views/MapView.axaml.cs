@@ -15,8 +15,10 @@ using DeskCanvas.Services;
 
 namespace Map.Views;
 
-public partial class MapView : UserControl, IWidgetSelfRefreshing
+public partial class MapView : UserControl, IWidgetSelfRefreshing, IWidgetSurfaceHints
 {
+    public string? ColorfulBackgroundResourceKey => "MapCardBackground";
+
     public static readonly StyledProperty<IBrush> ControlIconBrushProperty =
         AvaloniaProperty.Register<MapView, IBrush>(nameof(ControlIconBrush), Brushes.Black);
 

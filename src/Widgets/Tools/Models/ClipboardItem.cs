@@ -37,6 +37,15 @@ public class ClipboardItem
     }
 
     [JsonIgnore]
+    public bool IsLink => !string.IsNullOrWhiteSpace(Text) && (Text.TrimStart().StartsWith("http://", StringComparison.OrdinalIgnoreCase) || Text.TrimStart().StartsWith("https://", StringComparison.OrdinalIgnoreCase));
+
+    [JsonIgnore]
+    public bool IsCode => !string.IsNullOrWhiteSpace(Text) && !IsLink && (Text.Contains("git ") || Text.Contains("npm ") || Text.Contains("const ") || Text.Contains("function") || Text.Contains("class ") || Text.Contains("public ") || Text.Contains("def ") || (Text.Contains("{") && Text.Contains("}")));
+
+    [JsonIgnore]
+    public bool IsPlainText => !string.IsNullOrWhiteSpace(Text) && !IsLink && !IsCode;
+
+    [JsonIgnore]
     public string TypeGlyph => Type switch
     {
         ClipboardType.Text => "📝",

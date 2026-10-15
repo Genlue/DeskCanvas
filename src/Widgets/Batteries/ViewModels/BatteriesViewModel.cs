@@ -50,6 +50,7 @@ public class BatteryDeviceItem : INotifyPropertyChanged
                 OnPropertyChanged(nameof(ProgressFraction));
                 OnPropertyChanged(nameof(StrokeDashOffset));
                 OnPropertyChanged(nameof(StatusBrush));
+                OnPropertyChanged(nameof(TrackBrush));
                 OnPropertyChanged(nameof(StatusText));
                 OnPropertyChanged(nameof(TooltipText));
             }
@@ -84,6 +85,7 @@ public class BatteryDeviceItem : INotifyPropertyChanged
                 OnPropertyChanged(nameof(ProgressFraction));
                 OnPropertyChanged(nameof(StrokeDashOffset));
                 OnPropertyChanged(nameof(StatusBrush));
+                OnPropertyChanged(nameof(TrackBrush));
                 OnPropertyChanged(nameof(StatusText));
                 OnPropertyChanged(nameof(TooltipText));
             }
@@ -100,6 +102,7 @@ public class BatteryDeviceItem : INotifyPropertyChanged
                 isCharging = value;
                 OnPropertyChanged();
                 OnPropertyChanged(nameof(StatusBrush));
+                OnPropertyChanged(nameof(TrackBrush));
                 OnPropertyChanged(nameof(StatusText));
                 OnPropertyChanged(nameof(TooltipText));
             }
@@ -121,7 +124,8 @@ public class BatteryDeviceItem : INotifyPropertyChanged
         get
         {
             if (!hasDevice) return Brushes.Transparent;
-            var theme = appSettingsProvider?.Get()?.Theme;
+            Theme? theme = null;
+            try { theme = appSettingsProvider?.Get()?.Theme; } catch { }
             if (theme != null && !theme.IsColorful && theme.Monochrome)
             {
                 var isDark = Application.Current?.ActualThemeVariant == ThemeVariant.Dark;
@@ -146,10 +150,30 @@ public class BatteryDeviceItem : INotifyPropertyChanged
                     return ab;
                 return isDark ? new SolidColorBrush(Color.Parse("#70A5FF")) : new SolidColorBrush(Color.Parse("#0078D4"));
             }
-            if (IsCharging) return new SolidColorBrush(Color.Parse("#34C759"));
-            if (Percentage > 20) return new SolidColorBrush(Color.Parse("#34C759"));
-            if (Percentage > 10) return new SolidColorBrush(Color.Parse("#FF9500"));
-            return new SolidColorBrush(Color.Parse("#FF3B30"));
+            var isDarkVariant = Application.Current?.ActualThemeVariant == ThemeVariant.Dark;
+            if (IsCharging || Percentage > 20)
+                return new SolidColorBrush(Color.Parse(isDarkVariant ? "#30D158" : "#34C759"));
+            if (Percentage > 10)
+                return new SolidColorBrush(Color.Parse(isDarkVariant ? "#FF9F0A" : "#FF9500"));
+            return new SolidColorBrush(Color.Parse(isDarkVariant ? "#FF453A" : "#FF3B30"));
+        }
+    }
+
+    /// <summary>
+    /// Track tint source for the dashboard-style ring: the status colour while a device is
+    /// present; a neutral foreground tint for an empty slot, whose StatusBrush is Transparent —
+    /// without this the unfilled ring would vanish entirely instead of staying as a faint circle.
+    /// </summary>
+    public IBrush TrackBrush
+    {
+        get
+        {
+            if (hasDevice) return StatusBrush;
+            if (Application.Current != null &&
+                Application.Current.TryGetResource("SystemControlForegroundBaseHighBrush", Application.Current.ActualThemeVariant, out var neutral) &&
+                neutral is IBrush neutralBrush)
+                return neutralBrush;
+            return Brushes.Gray;
         }
     }
 

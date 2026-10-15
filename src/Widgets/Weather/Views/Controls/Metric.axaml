@@ -7,9 +7,11 @@
         <Canvas Width="110" Height="110">
             <!-- 量规弧长 242°（缺口 118° 居中于正下方）。StrokeDashArray 单位 = 描边宽度 8，
                  整圈 = 2π×50/8 ≈ 39.27，242/360 × 39.27 ≈ 26.398。改 StrokeThickness 必须同步改此值。 -->
+            <!-- Track: fill brush (WeatherGaugeBrush) at 15% opacity — the Monitor
+                 dashboard ring formula, unified across every theme/surface. -->
             <Path StrokeThickness="8" StrokeDashArray="26.398,26.398" StrokeLineCap="Round"
                   Opacity="0.15"
-                  Stroke="{DynamicResource SystemControlForegroundBaseHighBrush}"
+                  Stroke="{DynamicResource WeatherGaugeBrush}"
                   RenderTransformOrigin="55,55">
                 <Path.RenderTransform>
                     <RotateTransform Angle="149" />

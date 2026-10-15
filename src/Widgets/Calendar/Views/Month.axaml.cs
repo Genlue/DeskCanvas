@@ -3,14 +3,25 @@ using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Media;
 using Avalonia.Styling;
+using Avalonia.VisualTree;
 using Calendar.Models;
 using Calendar.ViewModels;
+using DeskCanvas.Core.Interfaces;
 using DeskCanvas.Services;
 
 namespace Calendar.Views;
 
-public partial class Month : UserControl
+/// <summary>
+/// 月历小组件：通过 IWidgetSurfaceHints 声明 Colorful 模式下的专属卡片画刷。
+/// </summary>
+public partial class Month : UserControl, IWidgetSurfaceHints, IFocusThemedContent
 {
+    /// <inheritdoc />
+    public string? ColorfulBackgroundResourceKey => "CalendarCardBackground";
+
+    /// <inheritdoc />
+    public void OnFocusThemeChanged() => UpdateTodayBrush();
+
     private readonly MonthCalendarModel monthCalendarModel;
 
     private readonly MonthCalendarViewModel viewModel;
@@ -28,6 +39,7 @@ public partial class Month : UserControl
         InitializeComponent();
         HollowToday = monthCalendarModel.HollowTodayNumber;
         UpdateTodayBrush();
+        ActualThemeVariantChanged += OnActualThemeVariantChanged;
         if (Application.Current != null)
             Application.Current.ActualThemeVariantChanged += OnActualThemeVariantChanged;
     }
@@ -44,6 +56,18 @@ public partial class Month : UserControl
 
         // The accent resource only resolves once the control is attached to a themed tree.
         UpdateTodayBrush();
+
+        ActualThemeVariantChanged -= OnActualThemeVariantChanged;
+        ActualThemeVariantChanged += OnActualThemeVariantChanged;
+
+        if (this.GetVisualRoot() is Window win)
+        {
+            windowHost = win;
+            win.ResourcesChanged -= OnAccentResourcesChanged;
+            win.ResourcesChanged += OnAccentResourcesChanged;
+            win.ActualThemeVariantChanged -= OnActualThemeVariantChanged;
+            win.ActualThemeVariantChanged += OnActualThemeVariantChanged;
+        }
 
         if (Application.Current != null)
         {
@@ -66,14 +90,29 @@ public partial class Month : UserControl
     {
         viewModel.Stop();
 
+        ActualThemeVariantChanged -= OnActualThemeVariantChanged;
+
+        if (windowHost != null)
+        {
+            windowHost.ResourcesChanged -= OnAccentResourcesChanged;
+            windowHost.ActualThemeVariantChanged -= OnActualThemeVariantChanged;
+            windowHost = null;
+        }
+
         // Application.Current is process-lifetime: leaving the handler attached would keep
         // every abandoned Month view (and its view model) alive forever.
         if (Application.Current != null)
             Application.Current.ActualThemeVariantChanged -= OnActualThemeVariantChanged;
 
         if (accentHost != null)
+        {
             accentHost.ResourcesChanged -= OnAccentResourcesChanged;
+            accentHost = null;
+        }
     }
+
+    /// <summary>The window resource host the window accent subscription belongs to.</summary>
+    private Window? windowHost;
 
     /// <summary>The process-lifetime resource host the accent subscription belongs to.</summary>
     private IResourceHost? accentHost;
@@ -135,7 +174,7 @@ public partial class Month : UserControl
 
     private void UpdateTodayBrush()
     {
-        var dark = Application.Current?.ActualThemeVariant == ThemeVariant.Dark;
+        var dark = this.ActualThemeVariant == ThemeVariant.Dark;
 
         if (monthCalendarModel.TodayColorMode != "Custom")
         {
@@ -189,10 +228,9 @@ public partial class Month : UserControl
         // today dot into the dark-mode background color (the same trap
         // AggregateViewModel.ResolveAccentBrush and MarkdownRenderer.ResolveThemed
         // document). SystemAccentColor is a plain application resource without theme
-        // dictionaries, so the plain overload stays safe for it.
-        if (this.TryFindResource("CalendarTodayBrush", this.ActualThemeVariant, out var calBrush) && calBrush is IBrush cb)
-            return cb;
-        if (this.TryFindResource("SystemAccentColor", out var value) && value is Color accent)
+        if (ThemeScopeResolver.TryFindResource<IBrush>(this, "CalendarTodayBrush", this.ActualThemeVariant, out var calBrush) && calBrush != null)
+            return calBrush;
+        if (ThemeScopeResolver.TryFindResource<Color>(this, "SystemAccentColor", this.ActualThemeVariant, out var accent))
             return new SolidColorBrush(accent);
         return null;
     }

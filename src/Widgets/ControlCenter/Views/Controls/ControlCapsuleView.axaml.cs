@@ -9,6 +9,7 @@ using Avalonia.Layout;
 using Avalonia.Media;
 using ControlCenter.Models;
 using ControlCenter.Services;
+using DeskCanvas.Services;
 
 namespace ControlCenter.Views.Controls;
 
@@ -90,15 +91,14 @@ public partial class ControlCapsuleView : UserControl
     private void UpdateAdaptiveCornerRadius()
     {
         double outerCardRadius = 24.0;
-        if (this.TryFindResource("WidgetCardCornerRadius", out var cardRes) && cardRes is CornerRadius cr)
+        if (ThemeScopeResolver.TryFindResource<CornerRadius>(this, "WidgetCardCornerRadius", ActualThemeVariant, out var cr))
             outerCardRadius = cr.TopLeft;
-        else if (Application.Current?.TryFindResource("WidgetCardCornerRadius", out var appCardRes) == true && appCardRes is CornerRadius acr)
-            outerCardRadius = acr.TopLeft;
 
         if (outerCardRadius <= 0)
         {
             var zero = new CornerRadius(0);
-            CapsuleRoot.CornerRadius = zero;
+            CapsuleCard.CornerRadius = zero;
+            CapsuleRing.CornerRadius = zero;
             SliderFillBar.CornerRadius = zero;
             Badge2x1Toggle.CornerRadius = zero;
             Badge1x2Toggle.CornerRadius = zero;
@@ -123,11 +123,13 @@ public partial class ControlCapsuleView : UserControl
         }
 
         var capsuleRadius = new CornerRadius(concentric);
-        var fillRadius = new CornerRadius(Math.Max(0.0, concentric - 1.0));
         var badgeRadius = new CornerRadius(Math.Max(3.0, Math.Round(concentric * 0.62)));
 
-        CapsuleRoot.CornerRadius = capsuleRadius;
-        SliderFillBar.CornerRadius = fillRadius;
+        // 卡片、边环与滑块填充条三者同心同半径：填充条已满铺到磁贴外沿（含 1px
+        // 边框环正下方），圆角跟随外沿曲线，最后由 capsule-ring 在其上统一描边。
+        CapsuleCard.CornerRadius = capsuleRadius;
+        CapsuleRing.CornerRadius = capsuleRadius;
+        SliderFillBar.CornerRadius = capsuleRadius;
         Badge2x1Toggle.CornerRadius = badgeRadius;
         Badge1x2Toggle.CornerRadius = badgeRadius;
         Badge2x2.CornerRadius = badgeRadius;
@@ -193,8 +195,8 @@ public partial class ControlCapsuleView : UserControl
         if (isDarkContrast) ClearContrastShadows();
 
         var highFgBrush = GetResourceBrush("SystemControlForegroundBaseHighBrush", Colors.White);
-        var inactiveBgBrush = new SolidColorBrush(Color.Parse("#1C808080"));
-        var badgeInactiveBg = new SolidColorBrush(Color.Parse("#26808080"));
+        var inactiveBgBrush = GetResourceBrush("ControlCenterCapsuleBackground", Color.Parse("#1C808080"));
+        var badgeInactiveBg = GetResourceBrush("ControlCenterBadgeInactiveBackground", Color.Parse("#26808080"));
 
         bool isActive = IsItemActive(snapshot);
         bool isMuted = (ItemType == ControlItemType.Volume && snapshot.IsMuted)
@@ -210,14 +212,14 @@ public partial class ControlCapsuleView : UserControl
         {
             if (ItemType == ControlItemType.AudioOutput)
             {
-                CapsuleRoot.Background = inactiveBgBrush;
+                CapsuleCard.Background = inactiveBgBrush;
                 Layout2x2Audio.IsVisible = true;
                 RebuildAudioDeviceList(snapshot.AudioDevices);
                 return;
             }
 
             Layout2x2General.IsVisible = true;
-            CapsuleRoot.Background = inactiveBgBrush;
+            CapsuleCard.Background = inactiveBgBrush;
 
             Icon2x2.Data = iconGeom;
             Badge2x2.Background = isActive ? accentBrush : badgeInactiveBg;
@@ -257,7 +259,7 @@ public partial class ControlCapsuleView : UserControl
                 Layout2x1Slider.IsVisible = true;
                 FilledOverlayLayer.IsVisible = true;
                 Overlay2x1Slider.IsVisible = true;
-                CapsuleRoot.Background = inactiveBgBrush;
+                CapsuleCard.Background = inactiveBgBrush;
 
                 string shortTitle = ControlCenterModel.GetItemShortName(ItemType);
                 string valText = GetSliderValueText(isMuted);
@@ -283,7 +285,7 @@ public partial class ControlCapsuleView : UserControl
             else
             {
                 Layout2x1Toggle.IsVisible = true;
-                CapsuleRoot.Background = inactiveBgBrush;
+                CapsuleCard.Background = inactiveBgBrush;
 
                 Badge2x1Toggle.Background = isActive ? accentBrush : badgeInactiveBg;
                 Icon2x1Toggle.Data = iconGeom;
@@ -307,7 +309,7 @@ public partial class ControlCapsuleView : UserControl
                 Layout1x2Slider.IsVisible = true;
                 FilledOverlayLayer.IsVisible = true;
                 Overlay1x2Slider.IsVisible = true;
-                CapsuleRoot.Background = inactiveBgBrush;
+                CapsuleCard.Background = inactiveBgBrush;
 
                 string shortTitle = ControlCenterModel.GetItemShortName(ItemType);
                 string valText = GetSliderValueText(isMuted);
@@ -333,7 +335,7 @@ public partial class ControlCapsuleView : UserControl
             else
             {
                 Layout1x2Toggle.IsVisible = true;
-                CapsuleRoot.Background = inactiveBgBrush;
+                CapsuleCard.Background = inactiveBgBrush;
 
                 Badge1x2Toggle.Background = isActive ? accentBrush : badgeInactiveBg;
                 Icon1x2Toggle.Data = iconGeom;
@@ -356,7 +358,7 @@ public partial class ControlCapsuleView : UserControl
         {
             FilledOverlayLayer.IsVisible = true;
             Overlay1x1.IsVisible = true;
-            CapsuleRoot.Background = inactiveBgBrush;
+            CapsuleCard.Background = inactiveBgBrush;
 
             string valText = GetSliderValueText(isMuted);
             Icon1x1.Foreground = highFgBrush;
@@ -372,7 +374,7 @@ public partial class ControlCapsuleView : UserControl
         }
         else
         {
-            CapsuleRoot.Background = isActive ? accentBrush : inactiveBgBrush;
+            CapsuleCard.Background = isActive ? accentBrush : inactiveBgBrush;
             Icon1x1.Foreground = isActive ? contrastBrush : highFgBrush;
             Label1x1.Text = ItemType == ControlItemType.AudioOutput
                 ? snapshot.CurrentAudioName
@@ -406,6 +408,9 @@ public partial class ControlCapsuleView : UserControl
     /// <summary>
     /// Updates the complementary clip regions for BaseContentLayer (unfilled) and
     /// FilledOverlayLayer (filled) so text/icons cut by the slider edge split-invert cleanly.
+    /// ContentStage 现为满铺坐标系（磁贴全尺寸，无 1px 边框内缩），填充条因此能一直
+    /// 铺到边框环正下方；1px 边框由 capsule-ring 覆盖层最后绘制在填充条之上，
+    /// 充满区与未充满区获得完全一致的边框宽度与圆角。
     /// </summary>
     private void UpdateSliderFillGeometry()
     {
@@ -813,11 +818,7 @@ public partial class ControlCapsuleView : UserControl
 
     private IBrush GetResourceBrush(string key, Color fallback)
     {
-        if (this.TryFindResource(key, ActualThemeVariant, out var res) && res is IBrush b)
-            return b;
-        if (Application.Current?.TryFindResource(key, ActualThemeVariant, out var appRes) == true && appRes is IBrush ab)
-            return ab;
-        return new SolidColorBrush(fallback);
+        return ThemeScopeResolver.ResolveBrush(this, key, ActualThemeVariant, new SolidColorBrush(fallback));
     }
 
     private static StreamGeometry? SafeParseGeometry(string path)

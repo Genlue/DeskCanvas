@@ -26,17 +26,25 @@ public class App : Application
 
     public override void OnFrameworkInitializationCompleted()
     {
+        if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktopLifetime)
+        {
+            desktopLifetime.ShutdownMode = ShutdownMode.OnExplicitShutdown;
+        }
+
         var services = new ServiceCollection()
             .AddSingleton<IAppSettingsProvider, AppSettingsProvider>()
             .AddSingleton<ILayoutProvider, LayoutProvider>()
             .AddSingleton<IAssemblyProvider, AssemblyProvider>()
             .AddSingleton<WallpaperThemeService>()
             .AddSingleton<WallpaperWatcherService>()
-            .AddSingleton<IThemeService, ThemeService>()
+            .AddSingleton<ThemeService>()
+            .AddSingleton<IThemeService>(sp => sp.GetRequiredService<ThemeService>())
             .AddSingleton<ILocaleService, LocaleService>()
             .AddSingleton<IGridService<Widget>, GridService>()
             .AddSingleton<DisplayMonitorService>()
             .AddSingleton<FullscreenWatcherService>()
+            .AddSingleton<FocusWatchService>()
+            .AddSingleton<FocusThemeCoordinator>()
             .AddSingleton<WidgetFactory>()
             .AddSingleton<IWidgetFactory<Window, UserControl>>(sp => sp.GetRequiredService<WidgetFactory>())
             .AddSingleton<ProfileService>()
@@ -59,7 +67,7 @@ public class App : Application
             .GetRequiredService<ILocaleService>();
         
         localeService.SetCulture(appSettingsProvider.Get().Region.Language);
-        themeService.Apply(appSettingsProvider.Get().Theme);
+        themeService.Apply(appSettingsProvider.Get());
         UpdateCornerRadiusResources(appSettingsProvider.Get());
         appSettingsProvider.DataChanged += (_, _, newSettings) => UpdateCornerRadiusResources(newSettings);
 
@@ -180,6 +188,14 @@ public class App : Application
             }
         };
         fullscreenWatcher.Attach(anchor);
+
+        // 失焦自动切换 (设置 → 外观): watch the desktop's activation state and push the
+        // per-screen light/dark variant onto the widget windows. The watcher rides the same
+        // anchor; the coordinator is constructed eagerly so it already observes settings,
+        // wallpaper and fullscreen changes — widgets register themselves when they open.
+        var focusWatch = services.GetRequiredService<FocusWatchService>();
+        focusWatch.Attach(anchor);
+        services.GetRequiredService<FocusThemeCoordinator>();
 
         // The startup reconciliation (ScreensChanged → OnScreensChanged, now wired before
         // Attach) usually created and showed the widgets already; Create() then only covers

@@ -5,12 +5,15 @@ using Avalonia.Layout;
 using Avalonia.VisualTree;
 using Monitor.Models;
 using Monitor.ViewModels;
+using DeskCanvas.Core.Interfaces;
 using DeskCanvas.Services;
 
 namespace Monitor.Views;
 
-public partial class MultiDashboard : UserControl
+public partial class MultiDashboard : UserControl, IWidgetSurfaceHints
 {
+    /// <inheritdoc />
+    public string? ColorfulBackgroundResourceKey => "MonitorCardBackground";
     private readonly MultiDashboardModel model;
     private MultiDashboardViewModel? viewModel;
 

@@ -86,11 +86,7 @@ public partial class ThemeButton : UserControl, INotifyPropertyChanged
         : new FontFamily(AppTheme.FontFamily);
 
     /// <summary>The preset name shown below the preview (毛玻璃 / 纯色 / 液态玻璃 / 新液态玻璃 / 多彩).</summary>
-    public string ThemeName => IsRenderedGlass
-        ? (AppTheme.IsLiquidGlassV2 ? Locale.Settings_Appearance_Surface_LiquidGlassV2 : Locale.Settings_Appearance_Surface_LiquidGlass)
-        : IsColorful ? Locale.Settings_Appearance_Surface_Colorful
-        : AppTheme.IsGlass ? Locale.Settings_Appearance_Surface_Frosted
-        : Locale.Settings_Appearance_Surface_Solid;
+    public string ThemeName => ViewModels.SurfaceNames.Of(AppTheme.EffectiveSurface);
 
     private static Color ParseColor(string hex, string fallbackHex) =>
         Color.TryParse(hex, out var color) ? color : Color.Parse(fallbackHex);
@@ -145,7 +141,8 @@ public partial class ThemeButton : UserControl, INotifyPropertyChanged
             // Every other mode reads the accent ramp ThemeService writes: 强调色 keeps the
             // picked accent, 背景色 resolves to the inverted background, 黑白 to pure
             // black (light) / white (dark).
-            return new SolidColorBrush((Color)Application.Current!.FindResource(dark ? "SystemAccentColorLight2" : "SystemAccentColorDark1")!);
+            var color = ThemeScopeResolver.ResolveColor(this, dark ? "SystemAccentColorLight2" : "SystemAccentColorDark1", ActualThemeVariant, dark ? Colors.White : Colors.Black);
+            return new SolidColorBrush(color);
         }
     }
     

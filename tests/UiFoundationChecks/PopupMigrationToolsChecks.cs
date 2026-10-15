@@ -254,15 +254,20 @@ internal static partial class Program
         // contract — exactly one CloseRequested per interaction and the base entering its
         // animated-close state (closeAnimationRunning) without closing on the spot.
         //
-        // The card starts scaled to 0.6 in the headless run (the open transition never ticks),
-        // so the window corners really expose PART_Backdrop — that is what the backdrop press
-        // below hits.
+        // The close-button click above pumps the open transition out first (see
+        // CompleteOpenTransition); the backdrop and inside-card sections below open FRESH
+        // panels whose card still sits at the spawn scale — either way the (2,2) corner press
+        // resolves to PART_Backdrop.
 
         // 1) Close-button click → exactly one request, the base runs the exit animation.
         var panel = create();
         var shell = (SecondaryPanelShell)panel.Content!;
         panel.Show();
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+        // Run the open transition out first: frozen mid-zoom, the click hit-tests against the
+        // unscaled layout and the projected button center lands on the content underneath
+        // (0 requests for the wrong reason). Same stand-in as the W7 close-path checks.
+        CompleteOpenTransition(panel);
         // The renderer's hit tester only exists after a render pass.
         AvaloniaHeadlessPlatform.ForceRenderTimerTick();
 

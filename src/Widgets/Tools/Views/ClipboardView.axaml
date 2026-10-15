@@ -15,7 +15,7 @@
             <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseMediumBrush}" />
         </Style>
         <Style Selector="Button.filter-btn:pointerover">
-            <Setter Property="Background" Value="#15888888" />
+            <Setter Property="Background" Value="{DynamicResource ControlHoverBrush}" />
         </Style>
         <Style Selector="Button.filter-btn.active">
             <Setter Property="Background" Value="{DynamicResource SystemControlHighlightListLowBrush}" />
@@ -23,7 +23,7 @@
             <Setter Property="FontWeight" Value="SemiBold" />
         </Style>
         <Style Selector="Button.menu-pill">
-            <Setter Property="Background" Value="#18808080" />
+            <Setter Property="Background" Value="{DynamicResource ControlHoverBrush}" />
             <Setter Property="BorderThickness" Value="0" />
             <Setter Property="Padding" Value="7,3" />
             <Setter Property="FontSize" Value="11" />
@@ -32,11 +32,11 @@
             <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}" />
         </Style>
         <Style Selector="Button.menu-pill:pointerover">
-            <Setter Property="Background" Value="#28808080" />
+            <Setter Property="Opacity" Value="0.8" />
         </Style>
         <Style Selector="Border.item-card">
-            <Setter Property="Background" Value="#16808080" />
-            <Setter Property="BorderBrush" Value="#15ffffff" />
+            <Setter Property="Background" Value="{DynamicResource ClipboardItemCardBackground}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource WidgetCardBorderBrush}" />
             <Setter Property="BorderThickness" Value="1" />
             <Setter Property="CornerRadius" Value="{DynamicResource WidgetInnerCornerRadius}" />
             <Setter Property="Cursor" Value="Hand" />
@@ -47,7 +47,7 @@
             </Setter>
         </Style>
         <Style Selector="Border.item-card:pointerover">
-            <Setter Property="Background" Value="#26808080" />
+            <Setter Property="Background" Value="{DynamicResource ClipboardItemCardHoverBackground}" />
         </Style>
         <Style Selector=":not(:pointerover) ScrollViewer">
             <Setter Property="VerticalScrollBarVisibility" Value="Hidden" />
@@ -117,7 +117,7 @@
                 <TextBlock Grid.Column="0" Text="{x:Static locales:Locale.Tools_Clipboard_Title}" FontWeight="SemiBold" FontSize="13"
                            TextTrimming="CharacterEllipsis"
                            Foreground="{DynamicResource SystemControlForegroundAccentBrush}" VerticalAlignment="Center" />
-                <Border Grid.Column="1" Background="#20808080" CornerRadius="8" Padding="5,1" Margin="4,0,0,0" VerticalAlignment="Center">
+                <Border Grid.Column="1" Background="{DynamicResource ControlHoverBrush}" CornerRadius="8" Padding="5,1" Margin="4,0,0,0" VerticalAlignment="Center">
                     <TextBlock x:Name="CountBadgeText" Text="0" FontSize="10" FontWeight="SemiBold"
                                Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}" />
                 </Border>
@@ -198,18 +198,32 @@
                                             <Image Source="{Binding Thumbnail}" Stretch="Uniform" />
                                         </Border>
 
-                                        <!-- Text Icon -->
-                                        <Border Classes="item-icon" Width="26" Height="26" CornerRadius="5" Background="#204090ff"
-                                                IsVisible="{Binding Text, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                                        <!-- Text Icon (Blue) -->
+                                        <Border Classes="item-icon" Width="26" Height="26" CornerRadius="5" Background="{DynamicResource ClipboardBadgeTextBgBrush}"
+                                                IsVisible="{Binding IsPlainText}">
                                             <PathIcon Data="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"
-                                                      Width="13" Height="13" Foreground="#4090ff" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                                      Width="13" Height="13" Foreground="{DynamicResource ClipboardBadgeTextBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
                                         </Border>
 
-                                        <!-- Files Icon -->
-                                        <Border Classes="item-icon" Width="26" Height="26" CornerRadius="5" Background="#20ffaa00"
+                                        <!-- Code Icon (Green) -->
+                                        <Border Classes="item-icon" Width="26" Height="26" CornerRadius="5" Background="{DynamicResource ClipboardBadgeCodeBgBrush}"
+                                                IsVisible="{Binding IsCode}">
+                                            <PathIcon Data="M9.4 16.6L4.8 12l4.6-4.6L8 6l-6 6 6 6 1.4-1.4zm5.2 0l4.6-4.6-4.6-4.6L16 6l6 6-6 6-1.4-1.4z"
+                                                      Width="13" Height="13" Foreground="{DynamicResource ClipboardBadgeCodeBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                        </Border>
+
+                                        <!-- Link Icon (Purple) -->
+                                        <Border Classes="item-icon" Width="26" Height="26" CornerRadius="5" Background="{DynamicResource ClipboardBadgeLinkBgBrush}"
+                                                IsVisible="{Binding IsLink}">
+                                            <PathIcon Data="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z"
+                                                      Width="13" Height="13" Foreground="{DynamicResource ClipboardBadgeLinkBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                        </Border>
+
+                                        <!-- Files Icon (Orange) -->
+                                        <Border Classes="item-icon" Width="26" Height="26" CornerRadius="5" Background="{DynamicResource ClipboardBadgeFileBgBrush}"
                                                 IsVisible="{Binding FilePaths, Converter={x:Static ObjectConverters.IsNotNull}}">
                                             <PathIcon Data="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"
-                                                      Width="13" Height="13" Foreground="#ffaa00" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                                      Width="13" Height="13" Foreground="{DynamicResource ClipboardBadgeFileBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
                                         </Border>
                                     </Panel>
                                 </Border>

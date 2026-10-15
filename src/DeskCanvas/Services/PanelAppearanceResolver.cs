@@ -299,7 +299,7 @@ public sealed class PanelAppearanceBinder
     /// <summary>Recompute the appearance and push it into the shell and the panel window.</summary>
     public void Refresh()
     {
-        var theme = PanelAppearanceResolver.ReadTheme(settings);
+        var theme = ResolveTheme() ?? PanelAppearanceResolver.ReadTheme(settings);
         var radius = shell.CornerRadius.TopLeft;
         var appearance = PanelAppearanceResolver.Resolve(theme, PanelAppearanceResolver.IsDark(theme, window.ActualThemeVariant), radius);
 
@@ -310,6 +310,23 @@ public sealed class PanelAppearanceBinder
         // touches business content, so plugin-specific brushes applied afterwards survive.
         shell.SurfaceAppearance = appearance;
         window.TransparencyLevelHint = appearance.TransparencyLevels;
+    }
+
+    /// <summary>
+    /// The panel's effective theme. With 失焦自动切换 enabled the panel follows the uniform
+    /// state's theme (light/dark pair and optional surface material) — the same theme every
+    /// window and the settings chrome follow; otherwise, or without a coordinator, the
+    /// shared theme.
+    /// </summary>
+    private Theme? ResolveTheme()
+    {
+        if (settings is null) return null;
+
+        var appSettings = settings.Get();
+        if (appSettings.FocusLink is not { Enabled: true }) return appSettings.Theme;
+
+        var coordinator = App.Services?.GetService(typeof(FocusThemeCoordinator)) as FocusThemeCoordinator;
+        return coordinator?.ResolveWindowTheme(appSettings) ?? appSettings.Theme;
     }
 
     private void OnSettingsChanged(object? sender, AppSettings? oldData, AppSettings newData)

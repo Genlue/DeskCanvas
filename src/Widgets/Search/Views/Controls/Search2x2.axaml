@@ -12,7 +12,7 @@
 
     <UserControl.Styles>
         <Style Selector="Button.engine-btn">
-            <Setter Property="Background" Value="#15808080" />
+            <Setter Property="Background" Value="{DynamicResource SearchEngineButtonBackground}" />
             <Setter Property="BorderThickness" Value="0" />
             <Setter Property="CornerRadius" Value="12" />
             <Setter Property="Padding" Value="6,2" />
@@ -20,12 +20,12 @@
             <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}" />
         </Style>
         <Style Selector="Button.engine-btn:pointerover /template/ ContentPresenter">
-            <Setter Property="Background" Value="#30808080" />
+            <Setter Property="Background" Value="{DynamicResource ControlHoverBrush}" />
         </Style>
         <Style Selector="Button.dock-btn">
-            <Setter Property="Background" Value="#15808080" />
+            <Setter Property="Background" Value="{DynamicResource SearchDockButtonBackground}" />
             <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="BorderBrush" Value="#15FFFFFF" />
+            <Setter Property="BorderBrush" Value="{DynamicResource WidgetCardBorderBrush}" />
             <Setter Property="CornerRadius" Value="13" />
             <Setter Property="Padding" Value="0" />
             <Setter Property="Cursor" Value="Hand" />
@@ -33,8 +33,8 @@
             <Setter Property="Height" Value="26" />
         </Style>
         <Style Selector="Button.dock-btn:pointerover /template/ ContentPresenter">
-            <Setter Property="Background" Value="#30808080" />
-            <Setter Property="BorderBrush" Value="#40FFFFFF" />
+            <Setter Property="Background" Value="{DynamicResource ControlHoverBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource SearchPillBorderBrush}" />
         </Style>
         <Style Selector="TextBox.search-input">
             <Setter Property="Background" Value="Transparent" />
@@ -98,8 +98,8 @@
         <Border Grid.Row="1"
                 Height="34"
                 CornerRadius="17"
-                Background="#25808080"
-                BorderBrush="#25FFFFFF"
+                Background="{DynamicResource SearchPillBackground}"
+                BorderBrush="{DynamicResource SearchPillBorderBrush}"
                 BorderThickness="1"
                 Padding="4,2"
                 Margin="0,0,0,8">
@@ -132,7 +132,7 @@
                         Classes="dock-btn"
                         Width="24" Height="24"
                         CornerRadius="12"
-                        Background="{Binding EngineColor}"
+                        Background="{DynamicResource SearchButtonBrush}"
                         BorderThickness="0"
                         Click="OnSearchActionClicked"
                         ToolTip.Tip="{x:Static locales:Locale.Search_Button}">

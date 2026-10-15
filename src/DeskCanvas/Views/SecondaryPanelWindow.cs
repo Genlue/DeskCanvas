@@ -37,7 +37,7 @@ namespace DeskCanvas.Views;
 /// card via <see cref="PanelCard"/> and call <see cref="InitializePanel"/> right after
 /// InitializeComponent. <see cref="Close"/> runs the exit animation before really closing.
 /// </summary>
-public abstract class SecondaryPanelWindow : Window
+public abstract class SecondaryPanelWindow : Window, IFocusThemedWindow
 {
     private delegate IntPtr LowLevelMouseProc(int nCode, IntPtr wParam, IntPtr lParam);
 
@@ -336,9 +336,17 @@ public abstract class SecondaryPanelWindow : Window
         // at the spawn scale so the open transition that follows still has something to animate.
         if (openAnimationPlayed)
         {
+            // Snap, never re-animate: the open transition has already played, so the
+            // reconnected card must sit at its final state immediately. The lingering
+            // open-transition setters go first — a still-armed DoubleTransition would
+            // swallow these writes and leave the card frozen mid-zoom (detaching the shell
+            // kills the card's own compositor animations, but the transform outlives it;
+            // a headless run never completes the transition at all).
+            card.Transitions = null;
             card.Opacity = 1.0;
             if (TransformAnimationEnabled && cardScale != null)
             {
+                cardScale.Transitions = null;
                 cardScale.ScaleX = 1.0;
                 cardScale.ScaleY = 1.0;
             }
@@ -423,6 +431,10 @@ public abstract class SecondaryPanelWindow : Window
         // a panel whose template was applied without the TemplateApplied hook being in place yet.
         ConnectPanelShell();
 
+        // 失焦自动切换: panels are desktop furniture too — recognised as such by the focus
+        // watcher, and styled with the per-screen light/dark variant of their screen.
+        DesktopFurniture.Attach(this);
+
         PositionPanel();
         OnPanelLoaded();
         // The surface is mounted and laid out now: ask it for a real frame before the zoom starts.
@@ -462,6 +474,15 @@ public abstract class SecondaryPanelWindow : Window
     {
         UninstallOutsideClickHook();
     }
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// 失焦自动切换: the panel follows the effective theme of its own screen (the same rule its
+    /// opening widget uses); the coordinator pokes this when the focus state changes — the
+    /// variant listener in <see cref="PanelAppearanceBinder"/> alone would miss a pure material
+    /// swap.
+    /// </remarks>
+    public void OnFocusThemeChanged() => appearanceBinder?.Refresh();
 
     private void OnPanelWindowClosed(object? sender, EventArgs e)
     {

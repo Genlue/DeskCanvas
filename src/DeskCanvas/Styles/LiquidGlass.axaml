@@ -16,6 +16,9 @@
                 </ResourceDictionary.ThemeDictionaries>
                 <SolidColorBrush x:Key="WidgetBackground" Color="Transparent" />
                 <x:Double x:Key="TextOpacity">1</x:Double>
+                <!-- See Transparent.axaml: the key the TextBlock style reads; 失焦自动切换
+                     overrides it per widget window (this material keeps full-opacity text). -->
+                <x:Double x:Key="WidgetTextOpacity">1</x:Double>
             </ResourceDictionary>
         </Style.Resources>
     </Style>
@@ -23,6 +26,6 @@
         <Setter Property="TransparencyLevelHint" Value="Transparent" />
     </Style>
     <Style Selector="TextBlock">
-        <Setter Property="Opacity" Value="1" />
+        <Setter Property="Opacity" Value="{DynamicResource WidgetTextOpacity}" />
     </Style>
 </Styles>

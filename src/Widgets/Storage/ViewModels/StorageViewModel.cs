@@ -92,6 +92,8 @@ public class DriveItemViewModel : INotifyPropertyChanged
     public long UsedBytes => usedBytes;
     public double UsageFraction => hasDrive ? usageFraction : 0.0;
     public int UsagePercent => hasDrive ? usagePercent : 0;
+    public bool IsCritical => hasDrive && (usagePercent >= 90 || (totalBytes >= 20L * 1024 * 1024 * 1024 && freeBytes < 8L * 1024 * 1024 * 1024));
+    public bool IsWarning => hasDrive && (usagePercent >= 75 || IsCritical);
 
     private static bool IsZh => System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName.Equals("zh", StringComparison.OrdinalIgnoreCase);
 
@@ -160,7 +162,8 @@ public class DriveItemViewModel : INotifyPropertyChanged
         get
         {
             if (!hasDrive) return Brushes.Transparent;
-            var theme = appSettingsProvider?.Get()?.Theme;
+            Theme? theme = null;
+            try { theme = appSettingsProvider?.Get()?.Theme; } catch { }
             var isDark = Application.Current?.ActualThemeVariant == ThemeVariant.Dark;
 
             if (theme != null && !theme.IsColorful && theme.Monochrome)
@@ -195,23 +198,55 @@ public class DriveItemViewModel : INotifyPropertyChanged
 
             if (useWarningColors)
             {
-                bool isCritical = usagePercent >= 90 || (totalBytes >= 20L * 1024 * 1024 * 1024 && freeBytes < 8L * 1024 * 1024 * 1024);
-                if (isCritical)
+                if (IsCritical)
                     return new SolidColorBrush(Color.Parse(isDark ? "#FF453A" : "#FF3B30"));
                 if (usagePercent >= 75)
                     return new SolidColorBrush(Color.Parse(isDark ? "#FF9F0A" : "#FF9500"));
+                return new SolidColorBrush(Color.Parse(isDark ? "#30D158" : "#34C759"));
             }
 
             if (driveType == DriveType.Removable)
                 return new SolidColorBrush(Color.Parse(isDark ? "#30D158" : "#34C759"));
 
-            return new SolidColorBrush(Color.Parse(isDark ? "#0A84FF" : "#007AFF"));
+            if (driveType == DriveType.Network)
+                return new SolidColorBrush(Color.Parse(isDark ? "#64D2FF" : "#30B0C7"));
+
+            if (isSystemDrive)
+                return new SolidColorBrush(Color.Parse(isDark ? "#0A84FF" : "#007AFF"));
+
+            // macOS Storage segmented color assignment for secondary partitions (D:, E:, F:...):
+            char dl = string.IsNullOrEmpty(driveLetter) ? 'D' : char.ToUpperInvariant(driveLetter[0]);
+            return (dl % 3) switch
+            {
+                0 => new SolidColorBrush(Color.Parse(isDark ? "#BF5AF2" : "#AF52DE")), // macOS Purple
+                1 => new SolidColorBrush(Color.Parse(isDark ? "#64D2FF" : "#30B0C7")), // macOS Teal/Cyan
+                _ => new SolidColorBrush(Color.Parse(isDark ? "#FF9F0A" : "#FF9500"))  // macOS Amber
+            };
+        }
+    }
+
+    /// <summary>
+    /// Track tint source for the dashboard-style ring/bar: the status colour while a drive is
+    /// present; a neutral foreground tint for an empty slot, whose StatusBrush is Transparent —
+    /// without this the unfilled ring would vanish entirely instead of staying as a faint circle.
+    /// </summary>
+    public IBrush TrackBrush
+    {
+        get
+        {
+            if (hasDrive) return StatusBrush;
+            if (Application.Current != null &&
+                Application.Current.TryGetResource("SystemControlForegroundBaseHighBrush", Application.Current.ActualThemeVariant, out var neutral) &&
+                neutral is IBrush neutralBrush)
+                return neutralBrush;
+            return Brushes.Gray;
         }
     }
 
     public void NotifyBrushChanged()
     {
         OnPropertyChanged(nameof(StatusBrush));
+        OnPropertyChanged(nameof(TrackBrush));
     }
 
     private void NotifyAll()
@@ -229,6 +264,8 @@ public class DriveItemViewModel : INotifyPropertyChanged
         OnPropertyChanged(nameof(UsedBytes));
         OnPropertyChanged(nameof(UsageFraction));
         OnPropertyChanged(nameof(UsagePercent));
+        OnPropertyChanged(nameof(IsCritical));
+        OnPropertyChanged(nameof(IsWarning));
         OnPropertyChanged(nameof(RightStatusText));
         OnPropertyChanged(nameof(UsedOverTotalText));
         OnPropertyChanged(nameof(FreeSpaceText));
@@ -239,6 +276,7 @@ public class DriveItemViewModel : INotifyPropertyChanged
         OnPropertyChanged(nameof(StrokeDashOffset));
         OnPropertyChanged(nameof(IconData));
         OnPropertyChanged(nameof(StatusBrush));
+        OnPropertyChanged(nameof(TrackBrush));
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;

@@ -211,6 +211,7 @@ public static class WidgetOleDropTarget
     public static void RegisterWmDropFiles(IntPtr hwnd, Action<List<string>> onDrop, Action<bool> onDragActive)
     {
         if (hwnd == IntPtr.Zero) return;
+        PruneDeadRegistrations();
         if (subclassRegistrations.TryGetValue(hwnd, out var existing))
         {
             existing.OnDrop = onDrop;
@@ -240,6 +241,9 @@ public static class WidgetOleDropTarget
     [DllImport("user32.dll")]
     private static extern IntPtr GetAncestor(IntPtr hwnd, uint gaFlags);
 
+    [DllImport("user32.dll")]
+    private static extern bool IsWindow(IntPtr hWnd);
+
     /// <summary>
     /// Register the drop target on a window handle. Unregisters any previous registration.
     /// </summary>
@@ -247,6 +251,7 @@ public static class WidgetOleDropTarget
     {
         if (hwnd == IntPtr.Zero) return;
 
+        PruneDeadRegistrations();
         var root = GetRootWindow(hwnd);
 
         var ole = OleInitialize(IntPtr.Zero);
@@ -273,6 +278,51 @@ public static class WidgetOleDropTarget
         var root = GetRootWindow(hwnd);
         if (registrations.Remove(root))
             RevokeDragDrop(root);
+    }
+
+    /// <summary>
+    /// Drop registrations whose window no longer exists.
+    /// <para>
+    /// The deterministic unregister lives in the views' <c>Unloaded</c> handler, but the naive
+    /// <c>VisualRoot is TopLevel &amp;&amp; TryGetPlatformHandle()</c> lookup there is doomed to fail:
+    /// <c>TopLevel.HandleClosed</c> clears <c>PlatformImpl</c> <i>before</i> it raises
+    /// <c>Unloaded</c>, so during teardown the window's handle can no longer be read and the
+    /// revoke is silently skipped. Every miss left its <c>DropTargetImpl</c>/<c>SubclassState</c>
+    /// behind, and their captured callbacks keep the whole widget view — and through it the
+    /// closed widget window — alive: one more set per closed Folders widget, which is exactly
+    /// the "switching profiles accumulates memory" report. Pruning on the next registration
+    /// releases what a missed unregister left, mirroring <c>WidgetZOrder.PruneDeadHandles</c>;
+    /// a reused native handle heals itself on the registration path below (the entry is either
+    /// revoked first or its callbacks are replaced).
+    /// </para>
+    /// </summary>
+    private static void PruneDeadRegistrations()
+    {
+        List<IntPtr>? deadOle = null;
+        foreach (var hwnd in registrations.Keys)
+            if (!IsWindow(hwnd)) (deadOle ??= []).Add(hwnd);
+        if (deadOle != null)
+        {
+            foreach (var hwnd in deadOle)
+            {
+                registrations.Remove(hwnd);
+                // Best effort: a window destroyed without a revoke may still hold the last COM
+                // reference to the drop target; dropping it here lets the managed object be
+                // collected.
+                RevokeDragDrop(hwnd);
+            }
+        }
+
+        List<IntPtr>? deadSubclasses = null;
+        foreach (var hwnd in subclassRegistrations.Keys)
+            if (!IsWindow(hwnd)) (deadSubclasses ??= []).Add(hwnd);
+        if (deadSubclasses != null)
+        {
+            // The OS dropped the subclass with its window; only the state — and through its
+            // callbacks the view — is still held here.
+            foreach (var hwnd in deadSubclasses)
+                subclassRegistrations.Remove(hwnd);
+        }
     }
 
     private static IntPtr GetRootWindow(IntPtr hwnd)

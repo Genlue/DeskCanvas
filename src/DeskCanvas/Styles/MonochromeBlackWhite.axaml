@@ -27,6 +27,8 @@
                     <SolidColorBrush x:Key="CalendarTodayBrush" Color="{DynamicResource SystemAccentColorDark1}" />
                     <SolidColorBrush x:Key="ClockSecondHandBrush" Color="{DynamicResource SystemAccentColorDark1}" />
                     <SolidColorBrush x:Key="ClockCenterPinBrush" Color="{DynamicResource SystemAccentColorDark1}" />
+                    <SolidColorBrush x:Key="ClockDigitalTimeBrush" Color="#1C1C1E" />
+                    <SolidColorBrush x:Key="ClockDigitalDateBrush" Color="#8E8E93" />
                     <SolidColorBrush x:Key="RemindersBadgeBrush" Color="{DynamicResource SystemAccentColorDark1}" />
                     <SolidColorBrush x:Key="RemindersCheckBrush" Color="{DynamicResource SystemAccentColorDark1}" />
                     <SolidColorBrush x:Key="NotesAccentBrush" Color="{DynamicResource SystemAccentColorDark1}" />
@@ -38,8 +40,15 @@
                     <SolidColorBrush x:Key="MonitorNetBrush" Color="{DynamicResource SystemAccentColorDark1}" />
                     <SolidColorBrush x:Key="MonitorBatteryBrush" Color="{DynamicResource SystemAccentColorDark1}" />
                     <SolidColorBrush x:Key="FolderAccentBrush" Color="{DynamicResource SystemAccentColorDark1}" />
+                    <SolidColorBrush x:Key="FoldersCardBackground" Color="Transparent" />
                     <SolidColorBrush x:Key="TranslateAccentBrush" Color="{DynamicResource SystemAccentColorDark1}" />
                     <SolidColorBrush x:Key="TranslateCardBackground" Color="Transparent" />
+                    <SolidColorBrush x:Key="TranslatorCardBackground" Color="Transparent" />
+                    <SolidColorBrush x:Key="ClipboardCardBackground" Color="Transparent" />
+                    <SolidColorBrush x:Key="ControlCenterCardBackground" Color="Transparent" />
+                    <SolidColorBrush x:Key="MapCardBackground" Color="Transparent" />
+                    <SolidColorBrush x:Key="SearchCardBackground" Color="Transparent" />
+                    <SolidColorBrush x:Key="RemindersCardBackground" Color="Transparent" />
                     <SolidColorBrush x:Key="CalculatorAccentBrush" Color="{DynamicResource SystemAccentColorDark1}" />
                     <SolidColorBrush x:Key="CalculatorCardBackground" Color="Transparent" />
                     <SolidColorBrush x:Key="CalculatorNumButtonBackground" Color="#12808080" />
@@ -53,6 +62,10 @@
                     <SolidColorBrush x:Key="WeatherGaugeBrush" Color="{DynamicResource SystemAccentColorDark1}" />
                     <SolidColorBrush x:Key="WeatherTempBarBrush" Color="{DynamicResource SystemAccentColorDark1}" />
                     <SolidColorBrush x:Key="WeatherCardBackground" Color="Transparent" />
+                    <SolidColorBrush x:Key="NotesCardBackground" Color="Transparent" />
+                    <SolidColorBrush x:Key="MusicCardBackground" Color="Transparent" />
+                    <SolidColorBrush x:Key="PomodoroCardBackground" Color="Transparent" />
+                    <SolidColorBrush x:Key="HitokotoCardBackground" Color="Transparent" />
                     <SolidColorBrush x:Key="NotesTextBrush" Color="Black" />
                     <SolidColorBrush x:Key="NotesTitleForegroundBrush" Color="Black" />
                     <SolidColorBrush x:Key="NotesDividerBrush" Color="Black" />
@@ -76,6 +89,8 @@
                     <SolidColorBrush x:Key="CalendarTodayBrush" Color="{DynamicResource SystemAccentColorLight2}" />
                     <SolidColorBrush x:Key="ClockSecondHandBrush" Color="{DynamicResource SystemAccentColorLight2}" />
                     <SolidColorBrush x:Key="ClockCenterPinBrush" Color="{DynamicResource SystemAccentColorLight2}" />
+                    <SolidColorBrush x:Key="ClockDigitalTimeBrush" Color="#FFFFFF" />
+                    <SolidColorBrush x:Key="ClockDigitalDateBrush" Color="#8E8E93" />
                     <SolidColorBrush x:Key="RemindersBadgeBrush" Color="{DynamicResource SystemAccentColorLight2}" />
                     <SolidColorBrush x:Key="RemindersCheckBrush" Color="{DynamicResource SystemAccentColorLight2}" />
                     <SolidColorBrush x:Key="NotesAccentBrush" Color="{DynamicResource SystemAccentColorLight2}" />
@@ -87,8 +102,15 @@
                     <SolidColorBrush x:Key="MonitorNetBrush" Color="{DynamicResource SystemAccentColorLight2}" />
                     <SolidColorBrush x:Key="MonitorBatteryBrush" Color="{DynamicResource SystemAccentColorLight2}" />
                     <SolidColorBrush x:Key="FolderAccentBrush" Color="{DynamicResource SystemAccentColorLight2}" />
+                    <SolidColorBrush x:Key="FoldersCardBackground" Color="Transparent" />
                     <SolidColorBrush x:Key="TranslateAccentBrush" Color="{DynamicResource SystemAccentColorLight2}" />
                     <SolidColorBrush x:Key="TranslateCardBackground" Color="Transparent" />
+                    <SolidColorBrush x:Key="TranslatorCardBackground" Color="Transparent" />
+                    <SolidColorBrush x:Key="ClipboardCardBackground" Color="Transparent" />
+                    <SolidColorBrush x:Key="ControlCenterCardBackground" Color="Transparent" />
+                    <SolidColorBrush x:Key="MapCardBackground" Color="Transparent" />
+                    <SolidColorBrush x:Key="SearchCardBackground" Color="Transparent" />
+                    <SolidColorBrush x:Key="RemindersCardBackground" Color="Transparent" />
                     <SolidColorBrush x:Key="CalculatorAccentBrush" Color="{DynamicResource SystemAccentColorLight2}" />
                     <SolidColorBrush x:Key="CalculatorCardBackground" Color="Transparent" />
                     <SolidColorBrush x:Key="CalculatorNumButtonBackground" Color="#16808080" />
@@ -102,6 +124,10 @@
                     <SolidColorBrush x:Key="WeatherGaugeBrush" Color="{DynamicResource SystemAccentColorLight2}" />
                     <SolidColorBrush x:Key="WeatherTempBarBrush" Color="{DynamicResource SystemAccentColorLight2}" />
                     <SolidColorBrush x:Key="WeatherCardBackground" Color="Transparent" />
+                    <SolidColorBrush x:Key="NotesCardBackground" Color="Transparent" />
+                    <SolidColorBrush x:Key="MusicCardBackground" Color="Transparent" />
+                    <SolidColorBrush x:Key="PomodoroCardBackground" Color="Transparent" />
+                    <SolidColorBrush x:Key="HitokotoCardBackground" Color="Transparent" />
                     <SolidColorBrush x:Key="NotesTextBrush" Color="White" />
                     <SolidColorBrush x:Key="NotesTitleForegroundBrush" Color="White" />
                     <SolidColorBrush x:Key="NotesDividerBrush" Color="White" />

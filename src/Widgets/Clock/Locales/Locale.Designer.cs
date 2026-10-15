@@ -485,33 +485,39 @@ namespace Clock.Locales {
             }
         }
 
-        public static string Clock_Material_Acrylic {
+        public static string Clock_Material_FollowGlobal_Desc {
             get {
-                return ResourceManager.GetString("Clock_Material_Acrylic", resourceCulture);
+                return ResourceManager.GetString("Clock_Material_FollowGlobal_Desc", resourceCulture);
             }
         }
 
-        public static string Clock_Material_LiquidGlass {
+        public static string Clock_Material_Acrylic_Desc {
             get {
-                return ResourceManager.GetString("Clock_Material_LiquidGlass", resourceCulture);
+                return ResourceManager.GetString("Clock_Material_Acrylic_Desc", resourceCulture);
             }
         }
 
-        public static string Clock_Material_LiquidGlassV2 {
+        public static string Clock_Material_Solid_Desc {
             get {
-                return ResourceManager.GetString("Clock_Material_LiquidGlassV2", resourceCulture);
+                return ResourceManager.GetString("Clock_Material_Solid_Desc", resourceCulture);
             }
         }
 
-        public static string Clock_Material_Solid {
+        public static string Clock_Material_LiquidGlass_Desc {
             get {
-                return ResourceManager.GetString("Clock_Material_Solid", resourceCulture);
+                return ResourceManager.GetString("Clock_Material_LiquidGlass_Desc", resourceCulture);
             }
         }
 
-        public static string Clock_Material_Colorful {
+        public static string Clock_Material_LiquidGlassV2_Desc {
             get {
-                return ResourceManager.GetString("Clock_Material_Colorful", resourceCulture);
+                return ResourceManager.GetString("Clock_Material_LiquidGlassV2_Desc", resourceCulture);
+            }
+        }
+
+        public static string Clock_Material_Colorful_Desc {
+            get {
+                return ResourceManager.GetString("Clock_Material_Colorful_Desc", resourceCulture);
             }
         }
 

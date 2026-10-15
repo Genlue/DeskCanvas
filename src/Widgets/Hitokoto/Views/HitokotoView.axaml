@@ -16,10 +16,10 @@
             <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}" />
         </Style>
         <Style Selector="Button.hitokoto-btn:pointerover">
-            <Setter Property="Background" Value="#25888888" />
+            <Setter Property="Background" Value="{DynamicResource HitokotoButtonHoverBrush}" />
         </Style>
         <Style Selector="Button.hitokoto-btn:pressed">
-            <Setter Property="Background" Value="#40888888" />
+            <Setter Property="Background" Value="{DynamicResource HitokotoButtonPressedBrush}" />
         </Style>
         <Style Selector="Border#ActionToolbar">
             <Setter Property="Transitions">
@@ -54,18 +54,21 @@
         <TextBlock x:Name="WatermarkQuote" Grid.Row="0" Grid.RowSpan="3"
                    Text="“" FontSize="68" FontWeight="Bold"
                    FontFamily="Georgia, SimSun, Serif"
-                   Opacity="0.11" IsHitTestVisible="False"
+                   Foreground="{DynamicResource HitokotoWatermarkBrush}"
+                   Opacity="0.18" IsHitTestVisible="False"
                    HorizontalAlignment="Left" VerticalAlignment="Top"
                    Margin="-2,-14,0,0" />
 
         <!-- Top Bar: Category Pill + Action Buttons -->
         <Grid x:Name="TopBarGrid" Grid.Row="0" ColumnDefinitions="Auto,*,Auto" Margin="0,0,0,2" ZIndex="5">
             <Border x:Name="CategoryPill" Grid.Column="0"
-                    Background="#1E808080" BorderBrush="#22ffffff" BorderThickness="1"
+                    Background="{DynamicResource HitokotoPillBackgroundBrush}"
+                    BorderBrush="{DynamicResource HitokotoPillBorderBrush}" BorderThickness="1"
                     CornerRadius="{DynamicResource WidgetPillCornerRadius}"
                     Padding="8,2" VerticalAlignment="Center">
                 <TextBlock x:Name="CategoryText" Text="诗词" FontSize="11" FontWeight="Medium"
-                           Opacity="0.88" />
+                           Foreground="{DynamicResource HitokotoPillForegroundBrush}"
+                           Opacity="0.9" />
             </Border>
 
             <Panel Grid.Column="1" />
@@ -118,6 +121,7 @@
                            Text="往者不可谏，来者犹可追。"
                            FontSize="15"
                            FontWeight="Medium"
+                           Foreground="{DynamicResource HitokotoQuoteBrush}"
                            TextWrapping="Wrap"
                            LineHeight="22"
                            VerticalAlignment="Center" />
@@ -127,7 +131,8 @@
         <!-- Bottom Bar: Attribution & Source Link -->
         <Grid x:Name="BottomBarGrid" Grid.Row="2" ColumnDefinitions="Auto,*,Auto" Margin="0,2,0,0">
             <TextBlock x:Name="SourceBadgeText" Grid.Column="0"
-                       Text="hitokoto.cn" FontSize="10.5" Opacity="0.4"
+                       Text="hitokoto.cn" FontSize="10.5" Opacity="0.5"
+                       Foreground="{DynamicResource HitokotoAuthorBrush}"
                        VerticalAlignment="Center" Cursor="Hand"
                        PointerPressed="OnSourceBadgePressed"
                        ToolTip.Tip="点击在浏览器查看该一言详情" />
@@ -136,7 +141,8 @@
 
             <TextBlock x:Name="AttributionText" Grid.Column="2"
                        Text="—— 孔子《论语·微子篇》"
-                       FontSize="12" Opacity="0.72"
+                       FontSize="12" Opacity="0.8"
+                       Foreground="{DynamicResource HitokotoAuthorBrush}"
                        TextTrimming="CharacterEllipsis"
                        VerticalAlignment="Center"
                        HorizontalAlignment="Right" />

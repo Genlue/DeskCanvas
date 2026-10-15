@@ -27,8 +27,11 @@ namespace Timetable.Views;
 /// instead of recreating the whole view.
 /// </para>
 /// </summary>
-public partial class Timetable : UserControl, IWidgetSelfRefreshing
+public partial class Timetable : UserControl, IWidgetSelfRefreshing, IWidgetSurfaceHints
 {
+    /// <inheritdoc />
+    public string? ColorfulBackgroundResourceKey => "TimetableCardBackground";
+
     private readonly Action liveTick;
 
     private TimetableModel model;
@@ -1059,9 +1062,7 @@ public partial class Timetable : UserControl, IWidgetSelfRefreshing
 
     private IBrush EnsureAccentBrush()
     {
-        var color = this.TryFindResource("SystemAccentColor", out var value) && value is Color accent
-            ? accent
-            : Color.FromRgb(0x00, 0x78, 0xD4);
+        var color = ThemeScopeResolver.ResolveColor(this, "SystemAccentColor", ActualThemeVariant, Color.FromRgb(0x00, 0x78, 0xD4));
 
         if (accentBrush == null || accentColor != color)
         {

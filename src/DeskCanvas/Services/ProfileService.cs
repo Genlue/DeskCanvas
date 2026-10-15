@@ -217,7 +217,7 @@ public class ProfileService
 
             // 7. Apply system-wide theme and locale live
             localeService.SetCulture(targetSettings.Region.Language);
-            themeService.Apply(targetSettings.Theme);
+            themeService.Apply(targetSettings);
 
             // 8. Build the desktop widgets of the new configuration
             OnUi(widgetFactory.CreateFromLayout);

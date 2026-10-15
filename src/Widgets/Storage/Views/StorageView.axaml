@@ -23,8 +23,8 @@
                     </Grid.RowDefinitions>
                     <Viewbox Grid.Row="0" Stretch="Uniform" ClipToBounds="False">
                         <Canvas Width="110" Height="110">
-                            <Path Opacity="0.15" StrokeThickness="8"
-                                  Stroke="{DynamicResource SystemControlForegroundBaseHighBrush}">
+                            <Path StrokeThickness="8" Opacity="0.15"
+                                  Stroke="{Binding TrackBrush}">
                                 <Path.Data>
                                     <EllipseGeometry Center="55,55" RadiusX="50" RadiusY="50" />
                                 </Path.Data>
@@ -83,8 +83,8 @@
                     </Grid.RowDefinitions>
                     <Viewbox Grid.Row="0" Stretch="Uniform" ClipToBounds="False">
                         <Canvas Width="110" Height="110">
-                            <Path Opacity="0.15" StrokeThickness="8"
-                                  Stroke="{DynamicResource SystemControlForegroundBaseHighBrush}">
+                            <Path StrokeThickness="8" Opacity="0.15"
+                                  Stroke="{Binding TrackBrush}">
                                 <Path.Data>
                                     <EllipseGeometry Center="55,55" RadiusX="50" RadiusY="50" />
                                 </Path.Data>
@@ -143,8 +143,8 @@
                     </Grid.RowDefinitions>
                     <Viewbox Grid.Row="0" Stretch="Uniform" ClipToBounds="False">
                         <Canvas Width="110" Height="110">
-                            <Path Opacity="0.15" StrokeThickness="8"
-                                  Stroke="{DynamicResource SystemControlForegroundBaseHighBrush}">
+                            <Path StrokeThickness="8" Opacity="0.15"
+                                  Stroke="{Binding TrackBrush}">
                                 <Path.Data>
                                     <EllipseGeometry Center="55,55" RadiusX="50" RadiusY="50" />
                                 </Path.Data>
@@ -203,8 +203,8 @@
                     </Grid.RowDefinitions>
                     <Viewbox Grid.Row="0" Stretch="Uniform" ClipToBounds="False">
                         <Canvas Width="110" Height="110">
-                            <Path Opacity="0.15" StrokeThickness="8"
-                                  Stroke="{DynamicResource SystemControlForegroundBaseHighBrush}">
+                            <Path StrokeThickness="8" Opacity="0.15"
+                                  Stroke="{Binding TrackBrush}">
                                 <Path.Data>
                                     <EllipseGeometry Center="55,55" RadiusX="50" RadiusY="50" />
                                 </Path.Data>

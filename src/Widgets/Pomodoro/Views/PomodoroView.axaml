@@ -7,7 +7,7 @@
 
     <UserControl.Styles>
         <Style Selector="Button.action-btn">
-            <Setter Property="Background" Value="#15808080" />
+            <Setter Property="Background" Value="{DynamicResource PomodoroButtonBackgroundBrush}" />
             <Setter Property="BorderThickness" Value="0" />
             <Setter Property="CornerRadius" Value="14" />
             <Setter Property="Width" Value="28" />
@@ -18,11 +18,11 @@
             <Setter Property="Cursor" Value="Hand" />
         </Style>
         <Style Selector="Button.action-btn:pointerover">
-            <Setter Property="Background" Value="#30808080" />
+            <Setter Property="Background" Value="{DynamicResource PomodoroButtonHoverBrush}" />
         </Style>
 
         <Style Selector="Button.action-btn-large">
-            <Setter Property="Background" Value="#15808080" />
+            <Setter Property="Background" Value="{DynamicResource PomodoroButtonBackgroundBrush}" />
             <Setter Property="BorderThickness" Value="0" />
             <Setter Property="CornerRadius" Value="18" />
             <Setter Property="Width" Value="36" />
@@ -33,7 +33,7 @@
             <Setter Property="Cursor" Value="Hand" />
         </Style>
         <Style Selector="Button.action-btn-large:pointerover">
-            <Setter Property="Background" Value="#30808080" />
+            <Setter Property="Background" Value="{DynamicResource PomodoroButtonHoverBrush}" />
         </Style>
 
         <Style Selector="Button.primary-play-btn">
@@ -75,11 +75,11 @@
             <Setter Property="Cursor" Value="Hand" />
         </Style>
         <Style Selector="Button.phase-menu-btn:pointerover Border">
-            <Setter Property="Background" Value="#35808080" />
+            <Setter Property="Background" Value="{DynamicResource PomodoroButtonHoverBrush}" />
         </Style>
 
         <Style Selector="Button.phase-pill">
-            <Setter Property="Background" Value="#12808080" />
+            <Setter Property="Background" Value="{DynamicResource PomodoroPillBackgroundBrush}" />
             <Setter Property="BorderThickness" Value="0" />
             <Setter Property="Padding" Value="8,4" />
             <Setter Property="FontSize" Value="11" />
@@ -88,7 +88,7 @@
             <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseMediumBrush}" />
         </Style>
         <Style Selector="Button.phase-pill:pointerover">
-            <Setter Property="Background" Value="#22808080" />
+            <Setter Property="Background" Value="{DynamicResource PomodoroButtonHoverBrush}" />
         </Style>
         <Style Selector="Button.phase-pill.active">
             <Setter Property="Background" Value="#30FF5A5F" />
@@ -106,7 +106,7 @@
             <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseMediumBrush}" />
         </Style>
         <Style Selector="Button.phase-tab:pointerover">
-            <Setter Property="Background" Value="#18808080" />
+            <Setter Property="Background" Value="{DynamicResource PomodoroButtonHoverBrush}" />
         </Style>
         <Style Selector="Button.phase-tab.active">
             <Setter Property="Background" Value="{DynamicResource SystemControlHighlightAccentBrush}" />
@@ -128,7 +128,7 @@
                             <MenuItem Header="{x:Static locales:Locale.Pomodoro_Tab_LongBreak}" Click="OnSelectPhaseFromFlyout" Tag="LongBreak" />
                         </MenuFlyout>
                     </Button.Flyout>
-                    <Border Background="#20808080" CornerRadius="8" Padding="6,2">
+                    <Border Background="{DynamicResource PomodoroPillBackgroundBrush}" CornerRadius="8" Padding="6,2">
                         <StackPanel Orientation="Horizontal" Spacing="4">
                             <Ellipse Width="6" Height="6" Fill="{Binding PhaseBrush}" VerticalAlignment="Center" />
                             <TextBlock Text="{Binding PhaseTitle}" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center" />
@@ -137,7 +137,7 @@
                     </Border>
                 </Button>
 
-                <Border Grid.Column="1" Background="#15808080" CornerRadius="8" Padding="6,2" VerticalAlignment="Center">
+                <Border Grid.Column="1" Background="{DynamicResource PomodoroPillBackgroundBrush}" CornerRadius="8" Padding="6,2" VerticalAlignment="Center">
                     <TextBlock Text="{Binding SessionCounterText}" FontSize="10" FontWeight="SemiBold" Opacity="0.85" />
                 </Border>
             </Grid>
@@ -248,7 +248,7 @@
                 </StackPanel>
 
                 <!-- Session & Cycle Info -->
-                <Border Background="#14808080" CornerRadius="10" Padding="10,6">
+                <Border Background="{DynamicResource PomodoroPillBackgroundBrush}" CornerRadius="10" Padding="10,6">
                     <StackPanel Spacing="3">
                         <TextBlock Text="{Binding SessionCounterText}" FontSize="12" FontWeight="SemiBold" />
                         <TextBlock Text="{Binding CycleProgressText}" FontSize="10" Opacity="0.6" />
@@ -277,17 +277,17 @@
                     <TextBlock Text="{Binding PhaseTitle}" FontSize="13" FontWeight="Bold" VerticalAlignment="Center" />
                 </StackPanel>
                 <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                    <Border Background="#15808080" CornerRadius="8" Padding="7,2" VerticalAlignment="Center">
+                    <Border Background="{DynamicResource PomodoroPillBackgroundBrush}" CornerRadius="8" Padding="7,2" VerticalAlignment="Center">
                         <TextBlock Text="{Binding CycleProgressText}" FontSize="10" FontWeight="SemiBold" Opacity="0.85" />
                     </Border>
-                    <Border Background="#15808080" CornerRadius="8" Padding="7,2" VerticalAlignment="Center">
+                    <Border Background="{DynamicResource PomodoroPillBackgroundBrush}" CornerRadius="8" Padding="7,2" VerticalAlignment="Center">
                         <TextBlock Text="{Binding SessionCounterText}" FontSize="10" FontWeight="SemiBold" Opacity="0.85" />
                     </Border>
                 </StackPanel>
             </Grid>
 
             <!-- Phase Switcher Tabs -->
-            <Border Grid.Row="1" Background="#12808080" CornerRadius="12" Padding="3" HorizontalAlignment="Center" Margin="0,4,0,8">
+            <Border Grid.Row="1" Background="{DynamicResource PomodoroPillBackgroundBrush}" CornerRadius="12" Padding="3" HorizontalAlignment="Center" Margin="0,4,0,8">
                 <StackPanel Orientation="Horizontal" Spacing="4">
                     <Button Classes="phase-tab" Classes.active="{Binding IsFocusPhase}"
                             Content="{x:Static locales:Locale.Pomodoro_Tab_Focus}" Click="OnSelectPhaseClicked" Tag="Focus" />

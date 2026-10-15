@@ -11,7 +11,7 @@
 
     <UserControl.Styles>
         <Style Selector="Button.engine-btn">
-            <Setter Property="Background" Value="#15808080" />
+            <Setter Property="Background" Value="{DynamicResource SearchEngineButtonBackground}" />
             <Setter Property="BorderThickness" Value="0" />
             <Setter Property="CornerRadius" Value="14" />
             <Setter Property="Padding" Value="7,3" />
@@ -19,7 +19,7 @@
             <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}" />
         </Style>
         <Style Selector="Button.engine-btn:pointerover /template/ ContentPresenter">
-            <Setter Property="Background" Value="#30808080" />
+            <Setter Property="Background" Value="{DynamicResource ControlHoverBrush}" />
         </Style>
         <Style Selector="TextBox.search-input">
             <Setter Property="Background" Value="Transparent" />
@@ -105,7 +105,7 @@
                 CornerRadius="19"
                 Margin="4,0,0,0"
                 VerticalAlignment="Center"
-                Background="{Binding EngineColor}"
+                Background="{DynamicResource SearchButtonBrush}"
                 Click="OnSearchActionClicked"
                 ToolTip.Tip="{x:Static locales:Locale.Search_Button}" AutomationProperties.Name="{x:Static locales:Locale.Search_Button}">
             <PathIcon Data="{x:Static services:SearchIconProvider.DefaultSearchIcon}"

@@ -155,7 +155,8 @@ public class AggregateViewModel : ReactiveObject, IDisposable
             return;
         }
 
-        var dark = Application.Current?.ActualThemeVariant == ThemeVariant.Dark;
+        var dark = (resourceHost as StyledElement)?.ActualThemeVariant == ThemeVariant.Dark
+            || Application.Current?.ActualThemeVariant == ThemeVariant.Dark;
         var hex = dark ? model.TodayColorDark : model.TodayColorLight;
 
         IBrush? brush = null;
@@ -187,8 +188,30 @@ public class AggregateViewModel : ReactiveObject, IDisposable
         TodayDotBrush = brush;
     }
 
-    private static IBrush ResolveAccentBrush()
+    private IBrush ResolveAccentBrush()
     {
+        var variant = (resourceHost as StyledElement)?.ActualThemeVariant
+            ?? Application.Current?.ActualThemeVariant
+            ?? ThemeVariant.Default;
+
+        // 优先从传入的 resourceHost 解析
+        if (resourceHost != null)
+        {
+            if (resourceHost is Visual vis)
+            {
+                if (ThemeScopeResolver.TryFindResource<IBrush>(vis, "CalendarTodayBrush", variant, out var vcb) && vcb != null)
+                    return vcb;
+                if (ThemeScopeResolver.TryFindResource<Color>(vis, "SystemAccentColor", variant, out var vacc))
+                    return new SolidColorBrush(vacc);
+            }
+
+            if (resourceHost.TryGetResource("CalendarTodayBrush", variant, out var calBrush) && calBrush is IBrush cb)
+                return cb;
+            if (resourceHost.TryGetResource("SystemAccentColor", variant, out var value) && value is Color accent)
+                return new SolidColorBrush(accent);
+        }
+
+        // 回退至 Application.Current
         if (Application.Current != null)
         {
             // Variant-explicit lookup: the variant-less overload resolves the LIGHT theme
@@ -200,6 +223,7 @@ public class AggregateViewModel : ReactiveObject, IDisposable
             if (Application.Current.TryFindResource("SystemAccentColor", out var value) && value is Color accent)
                 return new SolidColorBrush(accent);
         }
+
         return new SolidColorBrush(Color.Parse("#FF3B30"));
     }
 
@@ -208,7 +232,10 @@ public class AggregateViewModel : ReactiveObject, IDisposable
         UpdateTodayBrush();
     }
 
-    /// <summary>The process-lifetime resource host the accent subscription belongs to.</summary>
+    /// <summary>The resource host the view model is scoped to.</summary>
+    private IResourceHost? resourceHost;
+
+    /// <summary>The process-lifetime or window-lifetime resource host the accent subscription belongs to.</summary>
     private IResourceHost? accentHost;
 
     private void OnAccentResourcesChanged(object? sender, EventArgs e)
@@ -216,9 +243,32 @@ public class AggregateViewModel : ReactiveObject, IDisposable
         UpdateTodayBrush();
     }
 
-    public AggregateViewModel(AggregateModel model)
+    public void BindResourceHost(IResourceHost host)
+    {
+        if (ReferenceEquals(resourceHost, host)) return;
+
+        if (resourceHost is StyledElement oldSe)
+            oldSe.ActualThemeVariantChanged -= OnActualThemeVariantChanged;
+        if (accentHost != null)
+            accentHost.ResourcesChanged -= OnAccentResourcesChanged;
+
+        resourceHost = host;
+        if (resourceHost is StyledElement newSe)
+            newSe.ActualThemeVariantChanged += OnActualThemeVariantChanged;
+
+        accentHost = resourceHost ?? (Application.Current as IResourceHost);
+        if (accentHost != null)
+        {
+            accentHost.ResourcesChanged += OnAccentResourcesChanged;
+        }
+
+        UpdateTodayBrush();
+    }
+
+    public AggregateViewModel(AggregateModel model, IResourceHost? host = null)
     {
         this.model = model;
+        this.resourceHost = host;
         ApplyModel(model);
 
         TimerService.Timer1Second.Subscribe(OnSecondTick);
@@ -227,11 +277,14 @@ public class AggregateViewModel : ReactiveObject, IDisposable
         if (Application.Current != null)
             Application.Current.ActualThemeVariantChanged += OnActualThemeVariantChanged;
 
+        if (resourceHost is StyledElement se)
+            se.ActualThemeVariantChanged += OnActualThemeVariantChanged;
+
         // A colour picked in 外观 replaces the accent resource in place; follow it so the
         // marker does not keep the colour it was created with.
-        if (Application.Current is IResourceHost host)
+        accentHost = resourceHost ?? (Application.Current as IResourceHost);
+        if (accentHost != null)
         {
-            accentHost = host;
             accentHost.ResourcesChanged += OnAccentResourcesChanged;
         }
 
@@ -422,6 +475,8 @@ public class AggregateViewModel : ReactiveObject, IDisposable
         disposed = true;
         if (Application.Current != null)
             Application.Current.ActualThemeVariantChanged -= OnActualThemeVariantChanged;
+        if (resourceHost is StyledElement se)
+            se.ActualThemeVariantChanged -= OnActualThemeVariantChanged;
         if (accentHost != null)
             accentHost.ResourcesChanged -= OnAccentResourcesChanged;
         TimerService.Timer1Second.Unsubscribe(OnSecondTick);

@@ -17,8 +17,11 @@ using Storage.ViewModels;
 
 namespace Storage.Views;
 
-public partial class StorageView : UserControl, IWidgetSelfRefreshing, IWidgetSuspendable
+public partial class StorageView : UserControl, IWidgetSelfRefreshing, IWidgetSuspendable, IWidgetSurfaceHints
 {
+    /// <inheritdoc />
+    public string? ColorfulBackgroundResourceKey => "StorageCardBackground";
+
     private readonly IWidgetLayoutProvider? layoutProvider;
     private StorageViewModel? viewModel;
     private StorageModel model;
@@ -573,9 +576,9 @@ public partial class StorageView : UserControl, IWidgetSelfRefreshing, IWidgetSu
             FontWeight = FontWeight.SemiBold,
             VerticalAlignment = VerticalAlignment.Center,
             Margin = new Thickness(4, 0, 0, 0),
-            Opacity = item.UsagePercent >= 75 && model.UseWarningColors ? 0.98 : 0.86
+            Opacity = item.IsWarning && model.UseWarningColors ? 0.98 : 0.86
         };
-        if (item.UsagePercent >= 75 && model.UseWarningColors)
+        if (item.IsWarning && model.UseWarningColors)
             statusText.Foreground = item.StatusBrush;
         else
             statusText.Bind(TextBlock.ForegroundProperty, new DynamicResourceExtension("SystemControlForegroundBaseHighBrush"));
@@ -635,7 +638,7 @@ public partial class StorageView : UserControl, IWidgetSelfRefreshing, IWidgetSu
                 icon.Data = StreamGeometry.Parse(iconData);
             }
             statusText.Text = next.RightStatusText;
-            var warn = next.UsagePercent >= 75 && model.UseWarningColors;
+            var warn = next.IsWarning && model.UseWarningColors;
             statusText.Opacity = warn ? 0.98 : 0.86;
             if (warn)
             {
@@ -666,12 +669,12 @@ public partial class StorageView : UserControl, IWidgetSelfRefreshing, IWidgetSu
         var card = new Border
         {
             CornerRadius = new CornerRadius(9),
-            Background = new SolidColorBrush(Color.Parse("#14808080")),
-            BorderBrush = new SolidColorBrush(Color.Parse("#22808080")),
             BorderThickness = new Thickness(1),
             Padding = new Thickness(10, 6),
             Cursor = model.DoubleClickToOpen ? new Cursor(StandardCursorType.Hand) : Cursor.Default
         };
+        card.Bind(Border.BackgroundProperty, new DynamicResourceExtension("StorageSubCardBackground"));
+        card.Bind(Border.BorderBrushProperty, new DynamicResourceExtension("StorageSubCardBorderBrush"));
         ToolTip.SetTip(card, item.TooltipText);
         AttachDriveClickHandler(card, () => current);
 
@@ -725,12 +728,12 @@ public partial class StorageView : UserControl, IWidgetSelfRefreshing, IWidgetSu
             var fsBadge = new Border
             {
                 CornerRadius = new CornerRadius(4),
-                Background = new SolidColorBrush(Color.Parse("#1F808080")),
                 Padding = new Thickness(4, 1),
                 Margin = new Thickness(4, 0, 4, 0),
                 VerticalAlignment = VerticalAlignment.Center,
                 Child = badgeText
             };
+            fsBadge.Bind(Border.BackgroundProperty, new DynamicResourceExtension("StorageBadgeBackground"));
             badgeText.Bind(TextBlock.ForegroundProperty, new DynamicResourceExtension("SystemControlForegroundBaseHighBrush"));
             Grid.SetColumn(fsBadge, 2);
             topRow.Children.Add(fsBadge);
@@ -819,11 +822,11 @@ public partial class StorageView : UserControl, IWidgetSelfRefreshing, IWidgetSu
         var banner = new Border
         {
             CornerRadius = new CornerRadius(9),
-            Background = new SolidColorBrush(Color.Parse("#16808080")),
-            BorderBrush = new SolidColorBrush(Color.Parse("#24808080")),
             BorderThickness = new Thickness(1),
             Padding = new Thickness(12, 8)
         };
+        banner.Bind(Border.BackgroundProperty, new DynamicResourceExtension("StorageSubCardBackground"));
+        banner.Bind(Border.BorderBrushProperty, new DynamicResourceExtension("StorageSubCardBorderBrush"));
 
         var stack = new StackPanel
         {
@@ -868,9 +871,12 @@ public partial class StorageView : UserControl, IWidgetSelfRefreshing, IWidgetSu
             Width = trackWidth,
             Height = barHeight,
             CornerRadius = radius,
-            Background = new SolidColorBrush(Color.Parse("#26808080")),
             HorizontalAlignment = HorizontalAlignment.Stretch,
-            ClipToBounds = true
+            ClipToBounds = true,
+            // Track tint follows the Monitor dashboard rings: the fill colour at 15% opacity,
+            // so the unfilled area adapts to dark / glass / monochrome surfaces instead of
+            // reading as an opaque near-black strip.
+            Background = CreateTrackBrush(fillBrush)
         };
 
         var fill = new Border
@@ -892,9 +898,35 @@ public partial class StorageView : UserControl, IWidgetSelfRefreshing, IWidgetSu
             var next = Math.Clamp(nextFraction, 0.0, 1.0);
             fill.Width = next <= 0.0 ? 0.0 : Math.Max(barHeight, trackWidth * next);
             fill.Background = nextBrush;
+            track.Background = CreateTrackBrush(nextBrush);
         };
 
         return (track, update);
+    }
+
+    // Dashboard-ring track formula: fill colour at 15% tint. The alpha is BAKED into the
+    // colour (38/255) instead of set as Brush.Opacity: over the liquid-glass composition
+    // backdrops brush-level opacity is ignored and the track renders as an opaque pill
+    // (alpha-baked brushes like the old #30808080 scrubber track always rendered correctly).
+    private const byte TrackTintAlpha = 38; // 15% of 255
+
+    private static IBrush CreateTrackBrush(IBrush fillBrush)
+    {
+        // A fully transparent fill (drive-less slot, StatusBrush = Transparent) falls back to
+        // a neutral foreground tint so the empty track stays visible instead of vanishing.
+        var color = fillBrush is SolidColorBrush { Color.A: > 0 } solid
+            ? solid.Color
+            : NeutralTrackColor();
+        return new SolidColorBrush(Color.FromArgb(TrackTintAlpha, color.R, color.G, color.B));
+    }
+
+    private static Color NeutralTrackColor()
+    {
+        if (Application.Current != null &&
+            Application.Current.TryGetResource("SystemControlForegroundBaseHighBrush", Application.Current.ActualThemeVariant, out var neutral) &&
+            neutral is SolidColorBrush neutralSolid)
+            return neutralSolid.Color;
+        return Colors.Gray;
     }
 
     private (int Columns, int Rows) ResolveSpan()

@@ -2038,5 +2038,68 @@ namespace DeskCanvas.Locales {
                 return ResourceManager.GetString("SecondaryPanel_Close", resourceCulture);
             }
         }
+
+        public static string Settings_Appearance_FocusLink_Title => ResourceManager.GetString("Settings_Appearance_FocusLink_Title", resourceCulture);
+        public static string Settings_Appearance_FocusLink_Enable_Title => ResourceManager.GetString("Settings_Appearance_FocusLink_Enable_Title", resourceCulture);
+        public static string Settings_Appearance_FocusLink_Enable_Subtitle => ResourceManager.GetString("Settings_Appearance_FocusLink_Enable_Subtitle", resourceCulture);
+        public static string Settings_Appearance_FocusLink_Scope_Title => ResourceManager.GetString("Settings_Appearance_FocusLink_Scope_Title", resourceCulture);
+        public static string Settings_Appearance_FocusLink_Scope_Subtitle => ResourceManager.GetString("Settings_Appearance_FocusLink_Scope_Subtitle", resourceCulture);
+        public static string Settings_Appearance_FocusLink_Scope_PerScreen => ResourceManager.GetString("Settings_Appearance_FocusLink_Scope_PerScreen", resourceCulture);
+        public static string Settings_Appearance_FocusLink_Scope_Global => ResourceManager.GetString("Settings_Appearance_FocusLink_Scope_Global", resourceCulture);
+        public static string Settings_Appearance_FocusLink_FocusedState_Title => ResourceManager.GetString("Settings_Appearance_FocusLink_FocusedState_Title", resourceCulture);
+        public static string Settings_Appearance_FocusLink_UnfocusedState_Title => ResourceManager.GetString("Settings_Appearance_FocusLink_UnfocusedState_Title", resourceCulture);
+        public static string Settings_Appearance_FocusLink_State_Subtitle => ResourceManager.GetString("Settings_Appearance_FocusLink_State_Subtitle", resourceCulture);
+        public static string Settings_Appearance_FocusLink_Delay_Title => ResourceManager.GetString("Settings_Appearance_FocusLink_Delay_Title", resourceCulture);
+        public static string Settings_Appearance_FocusLink_Delay_Subtitle => ResourceManager.GetString("Settings_Appearance_FocusLink_Delay_Subtitle", resourceCulture);
+        public static string Settings_Appearance_FocusLink_ColorPolicy_Hint => ResourceManager.GetString("Settings_Appearance_FocusLink_ColorPolicy_Hint", resourceCulture);
+        public static string Settings_Appearance_FocusLink_Theme_Shared => ResourceManager.GetString("Settings_Appearance_FocusLink_Theme_Shared", resourceCulture);
+        public static string Settings_Appearance_FocusLink_Whitelist_Title => ResourceManager.GetString("Settings_Appearance_FocusLink_Whitelist_Title", resourceCulture);
+        public static string Settings_Appearance_FocusLink_Whitelist_Subtitle => ResourceManager.GetString("Settings_Appearance_FocusLink_Whitelist_Subtitle", resourceCulture);
+        public static string Settings_Appearance_FocusLink_Whitelist_Empty => ResourceManager.GetString("Settings_Appearance_FocusLink_Whitelist_Empty", resourceCulture);
+        public static string Settings_Appearance_FocusLink_Whitelist_Add => ResourceManager.GetString("Settings_Appearance_FocusLink_Whitelist_Add", resourceCulture);
+        public static string Settings_Appearance_FocusLink_Whitelist_Remove => ResourceManager.GetString("Settings_Appearance_FocusLink_Whitelist_Remove", resourceCulture);
+        public static string Settings_Appearance_FocusLink_Status_Title => ResourceManager.GetString("Settings_Appearance_FocusLink_Status_Title", resourceCulture);
+        public static string Settings_Appearance_FocusLink_Status_Disabled => ResourceManager.GetString("Settings_Appearance_FocusLink_Status_Disabled", resourceCulture);
+        public static string Settings_Appearance_FocusLink_Status_Focused => ResourceManager.GetString("Settings_Appearance_FocusLink_Status_Focused", resourceCulture);
+        public static string Settings_Appearance_FocusLink_Status_Unfocused => ResourceManager.GetString("Settings_Appearance_FocusLink_Status_Unfocused", resourceCulture);
+        public static string Settings_Appearance_FocusLink_Status_Foreground => ResourceManager.GetString("Settings_Appearance_FocusLink_Status_Foreground", resourceCulture);
+        public static string Settings_Appearance_FocusLink_Status_Application => ResourceManager.GetString("Settings_Appearance_FocusLink_Status_Application", resourceCulture);
+        public static string Settings_Appearance_FocusLink_Foreground_None => ResourceManager.GetString("Settings_Appearance_FocusLink_Foreground_None", resourceCulture);
+        public static string Settings_Appearance_FocusLink_Foreground_Desktop => ResourceManager.GetString("Settings_Appearance_FocusLink_Foreground_Desktop", resourceCulture);
+        public static string Settings_Appearance_FocusLink_Foreground_Widget => ResourceManager.GetString("Settings_Appearance_FocusLink_Foreground_Widget", resourceCulture);
+        public static string ProcessPicker_Title => ResourceManager.GetString("ProcessPicker_Title", resourceCulture);
+        public static string ProcessPicker_Search => ResourceManager.GetString("ProcessPicker_Search", resourceCulture);
+        public static string ProcessPicker_Refresh => ResourceManager.GetString("ProcessPicker_Refresh", resourceCulture);
+        public static string ProcessPicker_Empty => ResourceManager.GetString("ProcessPicker_Empty", resourceCulture);
+        public static string ProcessPicker_Hint => ResourceManager.GetString("ProcessPicker_Hint", resourceCulture);
+        public static string ProcessPicker_Add => ResourceManager.GetString("ProcessPicker_Add", resourceCulture);
+        public static string ProcessPicker_Cancel => ResourceManager.GetString("ProcessPicker_Cancel", resourceCulture);
+        public static string Settings_Advanced_DataFolder => ResourceManager.GetString("Settings_Advanced_DataFolder", resourceCulture);
+        public static string Settings_Advanced_DataFolder_Current_Title => ResourceManager.GetString("Settings_Advanced_DataFolder_Current_Title", resourceCulture);
+        public static string Settings_Advanced_DataFolder_Current_Subtitle => ResourceManager.GetString("Settings_Advanced_DataFolder_Current_Subtitle", resourceCulture);
+        public static string Settings_Advanced_DataFolder_Source_Title => ResourceManager.GetString("Settings_Advanced_DataFolder_Source_Title", resourceCulture);
+        public static string Settings_Advanced_DataFolder_Source_Default => ResourceManager.GetString("Settings_Advanced_DataFolder_Source_Default", resourceCulture);
+        public static string Settings_Advanced_DataFolder_Source_Portable => ResourceManager.GetString("Settings_Advanced_DataFolder_Source_Portable", resourceCulture);
+        public static string Settings_Advanced_DataFolder_Source_PortableDev => ResourceManager.GetString("Settings_Advanced_DataFolder_Source_PortableDev", resourceCulture);
+        public static string Settings_Advanced_DataFolder_Source_ExePointer => ResourceManager.GetString("Settings_Advanced_DataFolder_Source_ExePointer", resourceCulture);
+        public static string Settings_Advanced_DataFolder_Source_AnchorPointer => ResourceManager.GetString("Settings_Advanced_DataFolder_Source_AnchorPointer", resourceCulture);
+        public static string Settings_Advanced_DataFolder_Source_Environment => ResourceManager.GetString("Settings_Advanced_DataFolder_Source_Environment", resourceCulture);
+        public static string Settings_Advanced_DataFolder_Source_TestHarness => ResourceManager.GetString("Settings_Advanced_DataFolder_Source_TestHarness", resourceCulture);
+        public static string Settings_Advanced_DataFolder_Change => ResourceManager.GetString("Settings_Advanced_DataFolder_Change", resourceCulture);
+        public static string Settings_Advanced_DataFolder_Open => ResourceManager.GetString("Settings_Advanced_DataFolder_Open", resourceCulture);
+        public static string Settings_Advanced_DataFolder_Reset => ResourceManager.GetString("Settings_Advanced_DataFolder_Reset", resourceCulture);
+        public static string Settings_Advanced_DataFolder_PickTitle => ResourceManager.GetString("Settings_Advanced_DataFolder_PickTitle", resourceCulture);
+        public static string Settings_Advanced_DataFolder_ChangePrompt => ResourceManager.GetString("Settings_Advanced_DataFolder_ChangePrompt", resourceCulture);
+        public static string Settings_Advanced_DataFolder_ChangeMigrate => ResourceManager.GetString("Settings_Advanced_DataFolder_ChangeMigrate", resourceCulture);
+        public static string Settings_Advanced_DataFolder_ChangeFresh => ResourceManager.GetString("Settings_Advanced_DataFolder_ChangeFresh", resourceCulture);
+        public static string Settings_Advanced_DataFolder_ResetPrompt => ResourceManager.GetString("Settings_Advanced_DataFolder_ResetPrompt", resourceCulture);
+        public static string Settings_Advanced_DataFolder_Err_Empty => ResourceManager.GetString("Settings_Advanced_DataFolder_Err_Empty", resourceCulture);
+        public static string Settings_Advanced_DataFolder_Err_Invalid => ResourceManager.GetString("Settings_Advanced_DataFolder_Err_Invalid", resourceCulture);
+        public static string Settings_Advanced_DataFolder_Err_IsFile => ResourceManager.GetString("Settings_Advanced_DataFolder_Err_IsFile", resourceCulture);
+        public static string Settings_Advanced_DataFolder_Err_Unwritable => ResourceManager.GetString("Settings_Advanced_DataFolder_Err_Unwritable", resourceCulture);
+        public static string Settings_Advanced_DataFolder_Err_SameAsCurrent => ResourceManager.GetString("Settings_Advanced_DataFolder_Err_SameAsCurrent", resourceCulture);
+        public static string Settings_Advanced_DataFolder_Err_NoPointerLocation => ResourceManager.GetString("Settings_Advanced_DataFolder_Err_NoPointerLocation", resourceCulture);
+        public static string Settings_Advanced_DataFolder_Err_IoFailure => ResourceManager.GetString("Settings_Advanced_DataFolder_Err_IoFailure", resourceCulture);
+        public static string Settings_Advanced_DataFolder_OkButton => ResourceManager.GetString("Settings_Advanced_DataFolder_OkButton", resourceCulture);
     }
 }

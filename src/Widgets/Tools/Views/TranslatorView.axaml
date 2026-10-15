@@ -8,9 +8,9 @@
             <Setter Property="BorderThickness" Value="0" />
             <Setter Property="Padding" Value="4" />
             <Setter Property="FontSize" Value="13" />
-            <Setter Property="TextWrapping" Value="NoWrap" />
+            <Setter Property="TextWrapping" Value="Wrap" />
             <Setter Property="AcceptsReturn" Value="True" />
-            <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Auto" />
+            <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Disabled" />
             <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Auto" />
             <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}" />
         </Style>
@@ -23,7 +23,7 @@
             <Setter Property="BorderThickness" Value="0" />
         </Style>
         <Style Selector="Button.menu-btn">
-            <Setter Property="Background" Value="#18808080" />
+            <Setter Property="Background" Value="{DynamicResource ControlHoverBrush}" />
             <Setter Property="BorderThickness" Value="0" />
             <Setter Property="CornerRadius" Value="{DynamicResource WidgetPillCornerRadius}" />
             <Setter Property="Padding" Value="7,3" />
@@ -32,13 +32,21 @@
             <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}" />
         </Style>
         <Style Selector="Button.menu-btn:pointerover">
-            <Setter Property="Background" Value="#30808080" />
+            <Setter Property="Opacity" Value="0.8" />
         </Style>
         <Style Selector="Border.card-box">
-            <Setter Property="Background" Value="{DynamicResource TranslateCardBackground}" />
-            <Setter Property="BorderBrush" Value="#15ffffff" />
+            <Setter Property="Background" Value="{DynamicResource TranslatorInputBackground}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource WidgetCardBorderBrush}" />
             <Setter Property="BorderThickness" Value="1" />
             <Setter Property="CornerRadius" Value="{DynamicResource WidgetInnerCornerRadius}" />
+        </Style>
+        <Style Selector="Border.card-box-input">
+            <Setter Property="Background" Value="{DynamicResource TranslatorInputBackground}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource WidgetCardBorderBrush}" />
+        </Style>
+        <Style Selector="Border.card-box-output">
+            <Setter Property="Background" Value="{DynamicResource TranslatorOutputBackground}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource TranslatorOutputBorderBrush}" />
         </Style>
 
         <!-- 2x2 Small Tier Responsive Styles -->
@@ -56,8 +64,17 @@
         <Style Selector=":is(UserControl).tier-small TextBox.trans-box">
             <Setter Property="Padding" Value="2" />
             <Setter Property="FontSize" Value="11" />
-            <Setter Property="TextWrapping" Value="NoWrap" />
-            <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Auto" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+            <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Disabled" />
+            <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Auto" />
+        </Style>
+        <Style Selector=":is(UserControl).tier-small TextBox.trans-box ScrollViewer">
+            <Setter Property="HorizontalScrollBarVisibility" Value="Disabled" />
+            <Setter Property="VerticalScrollBarVisibility" Value="Auto" />
+        </Style>
+        <Style Selector=":is(UserControl).tier-small TextBox.trans-box ScrollViewer:pointerover">
+            <Setter Property="HorizontalScrollBarVisibility" Value="Disabled" />
+            <Setter Property="VerticalScrollBarVisibility" Value="Auto" />
         </Style>
         <Style Selector=":is(UserControl).tier-small Border.card-box">
             <Setter Property="Padding" Value="6,3" />
@@ -171,7 +188,7 @@
         </Border>
 
         <!-- Input Box Border -->
-        <Border x:Name="InputBoxBorder" Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" Classes="card-box" Padding="8,5"
+        <Border x:Name="InputBoxBorder" Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" Classes="card-box card-box-input" Padding="8,5"
                 CornerRadius="{DynamicResource WidgetInnerCornerRadius}">
             <Grid RowDefinitions="*,Auto">
                 <TextBox x:Name="InputTextBox" Classes="trans-box" Watermark="{x:Static locales:Locale.Tools_Translator_InputHint}"
@@ -254,7 +271,7 @@
         </Grid>
 
         <!-- Output Box Border -->
-        <Border x:Name="OutputBoxBorder" Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2" Classes="card-box" Padding="8,5"
+        <Border x:Name="OutputBoxBorder" Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2" Classes="card-box card-box-output" Padding="8,5"
                 CornerRadius="{DynamicResource WidgetInnerCornerRadius}">
             <Grid RowDefinitions="*,Auto">
                 <TextBox x:Name="OutputTextBox" Classes="trans-box" IsReadOnly="True"

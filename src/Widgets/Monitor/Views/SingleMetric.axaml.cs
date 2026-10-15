@@ -1,13 +1,16 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
+using DeskCanvas.Core.Interfaces;
 using Monitor.Models;
 using Monitor.ViewModels;
 
 namespace Monitor.Views;
 
-public partial class SingleMetric : UserControl
+public partial class SingleMetric : UserControl, IWidgetSurfaceHints
 {
+    /// <inheritdoc />
+    public string? ColorfulBackgroundResourceKey => "MonitorCardBackground";
     private readonly SingleMetricModel model;
     private SingleMetricViewModel? viewModel;
 

@@ -21,8 +21,11 @@ public enum MusicTier
     Large4x4
 }
 
-public partial class Music : UserControl, IWidgetSelfRefreshing, IWidgetSuspendable
+public partial class Music : UserControl, IWidgetSelfRefreshing, IWidgetSuspendable, IWidgetSurfaceHints
 {
+    /// <inheritdoc />
+    public string? ColorfulBackgroundResourceKey => "MusicCardBackground";
+
     /// <summary>The layout model is kept outside the view model so a fresh view model can be built
     /// with the same settings when the view is re-added to the visual tree after an unload.</summary>
     private readonly MusicModel model;

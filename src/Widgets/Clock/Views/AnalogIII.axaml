@@ -1,4 +1,4 @@
-﻿<UserControl xmlns="https://github.com/avaloniaui"
+<UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:controls="clr-namespace:Clock.Views.Controls"
              xmlns:viewModels="clr-namespace:Clock.ViewModels"
@@ -55,7 +55,7 @@
                 <TextBlock Canvas.Left="450" Canvas.Top="690" Text="6" />
                 <TextBlock Canvas.Left="185" Canvas.Top="415" Text="9" />
                 <TextBlock Canvas.Left="420" Canvas.Top="150" Text="12" />
-                <TextBlock Canvas.Top="550" Width="1000" FontSize="110" TextAlignment="Center" Text="{Binding CityAbbreviation}" />
+                <TextBlock Canvas.Top="550" Width="1000" FontSize="110" Opacity="0.85" Foreground="{DynamicResource ClockSecondHandBrush}" TextAlignment="Center" Text="{Binding CityAbbreviation}" />
             </Canvas>
             <controls:ClockHand DataContext="{Binding HourHand}" />
             <controls:ClockHand DataContext="{Binding MinuteHand}" />

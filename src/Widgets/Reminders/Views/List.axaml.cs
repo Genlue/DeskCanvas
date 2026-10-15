@@ -13,8 +13,10 @@ using DeskCanvas.Services;
 
 namespace Reminders.Views;
 
-public partial class List : UserControl, IWidgetSelfRefreshing
+public partial class List : UserControl, IWidgetSelfRefreshing, IWidgetSurfaceHints
 {
+    public string? ColorfulBackgroundResourceKey => "RemindersCardBackground";
+
     private readonly IWidgetLayoutProvider widgetLayoutProvider;
     private readonly RemindersViewModel viewModel;
 

@@ -1,4 +1,4 @@
-﻿<UserControl xmlns="https://github.com/avaloniaui"
+<UserControl xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:viewModels="clr-namespace:Clock.ViewModels"
         x:Class="Clock.Views.Digital"
@@ -17,9 +17,12 @@
                        IsVisible="{Binding ShowDate}"
                        HorizontalAlignment="Center"
                        Margin="0,4,0,0"
-                       FontSize="8" Opacity="0.5" />
+                       FontSize="8" Opacity="0.9"
+                       FontWeight="SemiBold"
+                       Foreground="{DynamicResource ClockDigitalDateBrush}" />
             <TextBlock Text="{Binding TimeText}"
-                       FontSize="34" HorizontalAlignment="Center" />
+                       FontSize="34" HorizontalAlignment="Center"
+                       Foreground="{DynamicResource ClockDigitalTimeBrush}" />
         </StackPanel>
     </Viewbox>
 </UserControl>

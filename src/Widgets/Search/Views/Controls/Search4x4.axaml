@@ -12,7 +12,7 @@
 
     <UserControl.Styles>
         <Style Selector="Button.engine-btn">
-            <Setter Property="Background" Value="#15808080" />
+            <Setter Property="Background" Value="{DynamicResource SearchEngineButtonBackground}" />
             <Setter Property="BorderThickness" Value="0" />
             <Setter Property="CornerRadius" Value="14" />
             <Setter Property="Padding" Value="8,4" />
@@ -20,7 +20,7 @@
             <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}" />
         </Style>
         <Style Selector="Button.engine-btn:pointerover /template/ ContentPresenter">
-            <Setter Property="Background" Value="#30808080" />
+            <Setter Property="Background" Value="{DynamicResource ControlHoverBrush}" />
         </Style>
         <Style Selector="Button.cat-pill">
             <Setter Property="Background" Value="Transparent" />
@@ -32,13 +32,13 @@
             <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseMediumBrush}" />
         </Style>
         <Style Selector="Button.cat-pill:pointerover /template/ ContentPresenter">
-            <Setter Property="Background" Value="#20808080" />
+            <Setter Property="Background" Value="{DynamicResource ControlHoverBrush}" />
             <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}" />
         </Style>
         <Style Selector="Button.grid-card">
-            <Setter Property="Background" Value="#18808080" />
+            <Setter Property="Background" Value="{DynamicResource SearchDockButtonBackground}" />
             <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="BorderBrush" Value="#15FFFFFF" />
+            <Setter Property="BorderBrush" Value="{DynamicResource WidgetCardBorderBrush}" />
             <Setter Property="CornerRadius" Value="10" />
             <Setter Property="Padding" Value="2,4" />
             <Setter Property="Cursor" Value="Hand" />
@@ -46,13 +46,13 @@
             <Setter Property="Height" Value="48" />
         </Style>
         <Style Selector="Button.grid-card:pointerover /template/ ContentPresenter">
-            <Setter Property="Background" Value="#30808080" />
-            <Setter Property="BorderBrush" Value="#40FFFFFF" />
+            <Setter Property="Background" Value="{DynamicResource ControlHoverBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource SearchPillBorderBrush}" />
         </Style>
         <Style Selector="Button.chip-btn">
-            <Setter Property="Background" Value="#15808080" />
+            <Setter Property="Background" Value="{DynamicResource SearchDockButtonBackground}" />
             <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="BorderBrush" Value="#12FFFFFF" />
+            <Setter Property="BorderBrush" Value="{DynamicResource WidgetCardBorderBrush}" />
             <Setter Property="CornerRadius" Value="11" />
             <Setter Property="Padding" Value="8,2" />
             <Setter Property="FontSize" Value="11" />
@@ -60,7 +60,7 @@
             <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}" />
         </Style>
         <Style Selector="Button.chip-btn:pointerover /template/ ContentPresenter">
-            <Setter Property="Background" Value="#25808080" />
+            <Setter Property="Background" Value="{DynamicResource ControlHoverBrush}" />
         </Style>
         <Style Selector="TextBox.search-input">
             <Setter Property="Background" Value="Transparent" />
@@ -118,8 +118,8 @@
         <Border Grid.Row="1"
                 Height="40"
                 CornerRadius="20"
-                Background="#25808080"
-                BorderBrush="#25FFFFFF"
+                Background="{DynamicResource SearchPillBackground}"
+                BorderBrush="{DynamicResource SearchPillBorderBrush}"
                 BorderThickness="1"
                 Padding="6,2"
                 Margin="0,0,0,10">
@@ -161,7 +161,7 @@
                         CornerRadius="16"
                         Padding="0"
                         Margin="2,0,1,0"
-                        Background="{Binding EngineColor}"
+                        Background="{DynamicResource SearchButtonBrush}"
                         Click="OnSearchActionClicked"
                         ToolTip.Tip="{x:Static locales:Locale.Search_Button}">
                     <PathIcon Data="{x:Static services:SearchIconProvider.DefaultSearchIcon}"

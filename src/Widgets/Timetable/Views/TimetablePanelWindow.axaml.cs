@@ -5,6 +5,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Layout;
 using Avalonia.Media;
+using DeskCanvas.Services;
 using DeskCanvas.Views;
 using Timetable.Locales;
 using Timetable.Models;
@@ -118,9 +119,8 @@ public partial class TimetablePanelWindow : SecondaryPanelWindow
         for (var i = 0; i < rowCount; i++)
             PanelGridHost.RowDefinitions.Add(new RowDefinition { Height = new GridLength(rowH, GridUnitType.Pixel) });
 
-        var accent = this.TryFindResource("SystemAccentColor", out var value) && value is Color accentColor
-            ? new SolidColorBrush(accentColor)
-            : new SolidColorBrush(Color.FromRgb(0x00, 0x78, 0xD4));
+        var accent = ThemeScopeResolver.ResolveBrush(this, "SystemAccentColor", ActualThemeVariant,
+            new SolidColorBrush(Color.FromRgb(0x00, 0x78, 0xD4)));
 
         // Day header.
         for (var dayIdx = 0; dayIdx < dayCount; dayIdx++)

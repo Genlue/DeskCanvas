@@ -328,6 +328,9 @@ internal static partial class Program
         var shell = (SecondaryPanelShell)panel.Content!;
         panel.Show();
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+        // Read the REVEALED state, not the open transition's t=0 frame: the reveal assertion
+        // below is about the panel having opened, so run the transition out first.
+        CompleteOpenTransition(panel);
 
         var card = shell.CardBorder!;
         Check(card.Opacity > 0, "the panel window revealed the card after load (opacity > 0)");
@@ -405,6 +408,37 @@ internal static partial class Program
         => typeof(Window).GetMethod(nameof(Window.Close), Array.Empty<Type>())!
             .Invoke(panel, null);
 
+    /// <summary>
+    /// Headless stand-in for the real 320 ms open clock — the twin of
+    /// <see cref="FrameworkClose"/>. Armed Transitions freeze at the current animation frame
+    /// in the headless run (a property write only retargets them, it never completes them),
+    /// which leaves the card mid-zoom: a real close-button click then hit-tests against the
+    /// UNSCALED layout and misses (the projected center resolves to the content underneath),
+    /// and mid-flight reads are wall-clock-dependent. Each forced render tick commits one
+    /// ~8 ms animation step; pump until the transition has really COMPLETED (the animation is
+    /// removed and the effective values land on the exact base values — a mid-flight frame
+    /// never reaches 1.0 within 1e-9).
+    /// </summary>
+    private static void CompleteOpenTransition(Window panel)
+    {
+        if (panel.Content is not SecondaryPanelShell shell) return;
+        for (var i = 0; i < 120; i++)
+        {
+            AvaloniaHeadlessPlatform.ForceRenderTimerTick();
+            Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+            var card = shell.CardBorder;
+            var scale = ReadField<ScaleTransform?>(panel, "cardScale");
+            if (card is null || scale is null) return;
+            if (Math.Abs(card.Opacity - 1.0) < 1e-9
+                && Math.Abs(scale.ScaleX - 1.0) < 1e-9
+                && Math.Abs(scale.ScaleY - 1.0) < 1e-9)
+            {
+                return;
+            }
+            System.Threading.Thread.Sleep(10);
+        }
+    }
+
     // ---- 5. Template re-application reconnects without stacking subscriptions --------------
 
     private static void CheckTemplateReapplication()
@@ -415,6 +449,10 @@ internal static partial class Program
         var shell = (SecondaryPanelShell)panel.Content!;
         panel.Show();
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+        // Let the open transition really finish BEFORE the detach: the transform's armed
+        // transition must be gone (base value = exact 1.0), or the re-connected transform
+        // below would still read a frozen mid-zoom frame.
+        CompleteOpenTransition(panel);
 
         var firstScale = ReadField<ScaleTransform?>(panel, "cardScale");
         Check(firstScale is not null, "the panel connected the card scale transform");

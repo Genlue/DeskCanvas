@@ -123,20 +123,23 @@ public class AssemblyProvider : IAssemblyProvider
     /// <inheritdoc />
     public object Activate(Type type, params object[] args)
     {
+        Exception? lastEx = null;
         try
         {
             return ActivatorUtilities.CreateInstance(serviceProvider, type, args);
         }
-        catch
+        catch (Exception ex)
         {
+            lastEx = ex is System.Reflection.TargetInvocationException tie && tie.InnerException != null ? tie.InnerException : ex;
             try
             {
                 if (args.Length == 0)
                     return Activator.CreateInstance(type)!;
                 return Activator.CreateInstance(type, args)!;
             }
-            catch
+            catch (Exception ex2)
             {
+                lastEx = ex2 is System.Reflection.TargetInvocationException tie2 && tie2.InnerException != null ? tie2.InnerException : ex2;
                 var constructors = type.GetConstructors()
                     .OrderByDescending(c => c.GetParameters().Length);
                 foreach (var ctor in constructors)
@@ -176,10 +179,13 @@ public class AssemblyProvider : IAssemblyProvider
                         {
                             return ctor.Invoke(values);
                         }
-                        catch { }
+                        catch (Exception ex3)
+                        {
+                            lastEx = ex3 is System.Reflection.TargetInvocationException tie3 && tie3.InnerException != null ? tie3.InnerException : ex3;
+                        }
                     }
                 }
-                throw new InvalidOperationException($"Failed to create an instance of {type.Name}");
+                throw new InvalidOperationException($"Failed to create an instance of {type.Name}: {lastEx?.Message}", lastEx);
             }
         }
     }

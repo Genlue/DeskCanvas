@@ -225,7 +225,7 @@ public partial class NoteSettings : UserControl
         BodyPaddingBox.Value = Math.Clamp(model.BodyPadding, 0, 64);
 
         var isColorful = (appSettingsProvider?.Get().Theme.IsColorful == true) ||
-                         (Application.Current != null && Application.Current.TryFindResource("MacosYellowBrush", out _));
+                         ThemeScopeResolver.TryFindResource(this, "MacosYellowBrush", actualDark ? ThemeVariant.Dark : ThemeVariant.Light, out _);
         if (isColorful)
         {
             HeaderModeBox.IsEnabled = false;
@@ -353,21 +353,16 @@ public partial class NoteSettings : UserControl
     private Color DefaultColor(MdFormat format)
     {
         var variant = EditingDark ? ThemeVariant.Dark : ThemeVariant.Light;
-        if (Application.Current is IResourceHost host)
+        if (format == MdFormat.Link)
         {
-            if (format == MdFormat.Link)
-            {
-                if (host.TryGetResource("SystemAccentColor", variant, out var accent) && accent is Color accentColor)
-                    return accentColor;
-                return Color.Parse("#0078D4");
-            }
+            return ThemeScopeResolver.ResolveColor(this, "SystemAccentColor", variant, Color.Parse("#0078D4"));
+        }
 
-            if (host.TryGetResource("SystemControlForegroundBaseHighBrush", variant, out var brush) &&
-                brush is ISolidColorBrush solid)
-            {
-                var raw = solid.Color;
-                return new Color(255, raw.R, raw.G, raw.B);
-            }
+        if (ThemeScopeResolver.TryFindResource<IBrush>(this, "SystemControlForegroundBaseHighBrush", variant, out var brush) &&
+            brush is ISolidColorBrush solid)
+        {
+            var raw = solid.Color;
+            return new Color(255, raw.R, raw.G, raw.B);
         }
 
         return EditingDark ? Color.Parse("#FFFFFF") : Colors.Black;

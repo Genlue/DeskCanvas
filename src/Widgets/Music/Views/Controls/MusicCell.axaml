@@ -12,13 +12,13 @@
 
     <UserControl.Styles>
         <Style Selector="Button.cell-btn">
-            <Setter Property="Background" Value="#25000000"/>
+            <Setter Property="Background" Value="{DynamicResource MusicPlayButtonBackgroundBrush}"/>
             <Setter Property="BorderThickness" Value="0"/>
             <Setter Property="Padding" Value="0"/>
             <Setter Property="Cursor" Value="Hand"/>
         </Style>
         <Style Selector="Button.cell-btn:pointerover">
-            <Setter Property="Background" Value="#45000000"/>
+            <Setter Property="Background" Value="{DynamicResource MusicPlayButtonHoverBrush}"/>
             <Setter Property="Opacity" Value="0.9"/>
         </Style>
     </UserControl.Styles>
@@ -28,17 +28,17 @@
         <Border Name="CellBorder"
                 CornerRadius="12"
                 ClipToBounds="True"
-                Background="#16FFFFFF"
+                Background="{DynamicResource MusicCoverPlaceholderBrush}"
                 HorizontalAlignment="Center"
                 VerticalAlignment="Center">
             <Panel>
                 <!-- Fallback Note / Disc -->
                 <Panel IsVisible="{Binding CoverBitmap, Converter={x:Static ObjectConverters.IsNull}}">
-                    <Border Background="#15FFFFFF" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
+                    <Border Background="{DynamicResource MusicCoverPlaceholderBrush}" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
                     <PathIcon Data="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"
                               Width="26" Height="26"
-                              Opacity="0.5"
-                              Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}"
+                              Opacity="0.75"
+                              Foreground="{DynamicResource MusicAccentBrush}"
                               HorizontalAlignment="Center" VerticalAlignment="Center"/>
                 </Panel>
                 <!-- Album Artwork -->
@@ -46,7 +46,7 @@
                        Stretch="UniformToFill"
                        IsVisible="{Binding CoverBitmap, Converter={x:Static ObjectConverters.IsNotNull}}"/>
                 <!-- Subtle inner edge -->
-                <Border BorderBrush="#20FFFFFF" BorderThickness="0.8" CornerRadius="12" IsHitTestVisible="False"/>
+                <Border BorderBrush="{DynamicResource MusicCoverBorderBrush}" BorderThickness="0.8" CornerRadius="12" IsHitTestVisible="False"/>
 
                 <!-- Center Play/Pause Pill Button -->
                 <Button Classes="cell-btn"

@@ -12,12 +12,15 @@ namespace DeskCanvas.Services;
 /// 2. Win32 SystemEvents.DisplaySettingsChanged (monitor resolution or topology change)
 /// 3. FileSystemWatcher on %APPDATA%\Microsoft\Windows\Themes (TranscodedWallpaper change)
 /// Upon change, invalidates the wallpaper capture cache and notifies all active LiquidGlass surfaces.
+/// The refresh then hands over to <see cref="LiquidGlassWallpaper.BeginSettle"/>: Windows cross-fades
+/// a wallpaper switch over up to a couple of seconds, so the event alone cannot know when the desktop
+/// has settled — the settle window keeps sampling until the frame the glass shows verifiably IS the
+/// desktop, instead of stopping at a fixed delay wherever the fade happened to be.
 /// </summary>
 public class WallpaperWatcherService : IDisposable
 {
     private readonly WallpaperThemeService? wallpaperThemeService;
     private readonly DispatcherTimer debounceTimer;
-    private readonly DispatcherTimer followUpTimer;
     private FileSystemWatcher? fileWatcher;
     private bool disposed;
 
@@ -32,12 +35,6 @@ public class WallpaperWatcherService : IDisposable
             Interval = TimeSpan.FromMilliseconds(200)
         };
         debounceTimer.Tick += OnDebounceTick;
-
-        followUpTimer = new DispatcherTimer
-        {
-            Interval = TimeSpan.FromMilliseconds(650)
-        };
-        followUpTimer.Tick += OnFollowUpTick;
 
         if (OperatingSystem.IsWindows())
         {
@@ -153,28 +150,13 @@ public class WallpaperWatcherService : IDisposable
         // 4. Raise event for any external listeners
         WallpaperChanged?.Invoke();
 
-        // 5. Schedule a follow-up refresh to capture the 100% settled wallpaper
-        // after Windows desktop cross-fade transition completes
-        followUpTimer.Stop();
-        followUpTimer.Start();
-    }
-
-    private void OnFollowUpTick(object? sender, EventArgs e)
-    {
-        followUpTimer.Stop();
-        if (disposed) return;
-
-        // Same suspension rule as OnDebounceTick: re-arm, refresh after the desktop returns.
-        if (LiquidGlassWallpaper.IsSuspended)
-        {
-            followUpTimer.Start();
-            return;
-        }
-
-        LiquidGlassWallpaper.Invalidate();
-        LiquidGlassSurface.RefreshAll();
-        wallpaperThemeService?.RequestCheck();
-        WallpaperChanged?.Invoke();
+        // 5. Keep tracking until the desktop settles. The fixed 650 ms follow-up refresh this
+        // replaces captured at one more guess of a delay and stopped wherever the cross-fade
+        // happened to be — glass could freeze on the old wallpaper or on a half-faded blend. The
+        // settle window publishes every fade step through the sampler's probe and closes itself
+        // once the desktop verifiably shows what the surfaces do (or a deadline passes), and its
+        // captures stop with it — nothing keeps running after the transition.
+        LiquidGlassWallpaper.BeginSettle();
     }
 
     public void Dispose()
@@ -183,7 +165,6 @@ public class WallpaperWatcherService : IDisposable
         disposed = true;
 
         debounceTimer.Stop();
-        followUpTimer.Stop();
 
         if (OperatingSystem.IsWindows())
         {

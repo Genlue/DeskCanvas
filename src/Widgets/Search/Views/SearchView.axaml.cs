@@ -21,8 +21,10 @@ public enum SearchTier
     Large4x4
 }
 
-public partial class SearchView : UserControl, IWidgetSelfRefreshing
+public partial class SearchView : UserControl, IWidgetSelfRefreshing, IWidgetSurfaceHints
 {
+    public string? ColorfulBackgroundResourceKey => "SearchCardBackground";
+
     private readonly SearchViewModel viewModel;
     private SearchTier currentTier = (SearchTier)(-1);
 

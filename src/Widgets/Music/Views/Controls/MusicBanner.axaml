@@ -15,16 +15,20 @@
             <Setter Property="MinWidth" Value="0"/>
             <Setter Property="MinHeight" Value="2.5"/>
             <Setter Property="Height" Value="2.5"/>
-            <Setter Property="Background" Value="#1AFFFFFF"/>
             <Setter Property="Foreground" Value="{DynamicResource MusicAccentBrush}"/>
             <Setter Property="Template">
                 <ControlTemplate>
-                    <Border Name="ProgressBarRoot" Classes="elem-shadow"
-                            Background="{TemplateBinding Background}"
+                    <Border Name="ProgressBarRoot"
                             ClipToBounds="True"
                             Height="{TemplateBinding Height}">
                         <Panel>
-                            <Border Name="PART_Indicator"
+                            <!-- Track: the fill brush at 15% opacity — the Monitor dashboard
+                                 ring formula, so the unfilled area stays a light tint on
+                                 dark / liquid-glass / monochrome surfaces instead of an
+                                 opaque near-black strip. -->
+                            <Border Background="{TemplateBinding Foreground}"
+                                    Opacity="0.15"/>
+                            <Border Name="PART_Indicator" Classes="elem-shadow"
                                     Background="{TemplateBinding Foreground}"
                                     HorizontalAlignment="Left"/>
                         </Panel>
@@ -42,13 +46,13 @@
             <Setter Property="Opacity" Value="0.75"/>
         </Style>
         <Style Selector="Button.banner-play-btn">
-            <Setter Property="Background" Value="#1AFFFFFF"/>
+            <Setter Property="Background" Value="{DynamicResource MusicPlayButtonBackgroundBrush}"/>
             <Setter Property="BorderThickness" Value="0"/>
             <Setter Property="Padding" Value="0"/>
             <Setter Property="Cursor" Value="Hand"/>
         </Style>
         <Style Selector="Button.banner-play-btn:pointerover">
-            <Setter Property="Background" Value="#30FFFFFF"/>
+            <Setter Property="Background" Value="{DynamicResource MusicPlayButtonHoverBrush}"/>
             <Setter Property="Opacity" Value="0.9"/>
         </Style>
     </UserControl.Styles>
@@ -62,12 +66,12 @@
             <!-- Left: Cover Art -->
             <Border Name="CoverBorder" Grid.Column="0"
                     Width="46" Height="46" CornerRadius="10"
-                    ClipToBounds="True" Background="#16FFFFFF"
+                    ClipToBounds="True" Background="{DynamicResource MusicCoverPlaceholderBrush}"
                     VerticalAlignment="Center" Margin="0,0,10,0">
                 <Panel>
                     <!-- Fallback Note / Disc -->
                     <Panel IsVisible="{Binding CoverBitmap, Converter={x:Static ObjectConverters.IsNull}}">
-                        <Border Background="#12FFFFFF" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
+                        <Border Background="{DynamicResource MusicCoverPlaceholderBrush}" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
                         <PathIcon Data="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"
                                   Width="22" Height="22"
                                   Opacity="0.75"
@@ -78,7 +82,7 @@
                     <Image Source="{Binding CoverBitmap}"
                            Stretch="UniformToFill"
                            IsVisible="{Binding CoverBitmap, Converter={x:Static ObjectConverters.IsNotNull}}"/>
-                    <Border BorderBrush="#20FFFFFF" BorderThickness="0.8" CornerRadius="10" IsHitTestVisible="False"/>
+                    <Border BorderBrush="{DynamicResource MusicCoverBorderBrush}" BorderThickness="0.8" CornerRadius="10" IsHitTestVisible="False"/>
                 </Panel>
             </Border>
 

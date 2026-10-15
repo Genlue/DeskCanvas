@@ -58,6 +58,25 @@
             <Button Content="{x:Static locales:Locale.Settings_Advanced_BackupImport_Title}" Click="OnImportBackup" />
         </controls:Setting>
         <TextBlock FontSize="14" FontWeight="SemiBold" Margin="0 20 0 10"
+                   Text="{x:Static locales:Locale.Settings_Advanced_DataFolder}"/>
+        <controls:Setting Icon="{DynamicResource Layers}"
+                          Title="{x:Static locales:Locale.Settings_Advanced_DataFolder_Current_Title}"
+                          Subtitle="{Binding DataFolderPath}"
+                          RestartRequired="True">
+            <StackPanel Orientation="Horizontal" Spacing="6">
+                <Button Content="{x:Static locales:Locale.Settings_Advanced_DataFolder_Change}"
+                        IsEnabled="{Binding CanChangeDataFolder}"
+                        Click="OnChangeDataFolderClicked" />
+                <Button Content="{x:Static locales:Locale.Settings_Advanced_DataFolder_Open}"
+                        Click="OnOpenDataFolderClicked" />
+                <Button Content="{x:Static locales:Locale.Settings_Advanced_DataFolder_Reset}"
+                        IsEnabled="{Binding CanResetDataFolder}"
+                        Click="OnResetDataFolderClicked" />
+            </StackPanel>
+        </controls:Setting>
+        <controls:Setting Title="{x:Static locales:Locale.Settings_Advanced_DataFolder_Source_Title}"
+                          Subtitle="{Binding DataFolderSourceText}" />
+        <TextBlock FontSize="14" FontWeight="SemiBold" Margin="0 20 0 10"
                    Text="{x:Static locales:Locale.Settings_Advanced_Tray}"/>
         <controls:Setting Icon="{DynamicResource Windows}"
                           Title="{x:Static locales:Locale.Tray_ShowIcon}"

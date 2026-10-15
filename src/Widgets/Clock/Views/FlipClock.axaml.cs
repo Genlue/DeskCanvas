@@ -10,9 +10,13 @@ namespace Clock.Views;
 
 /// <summary>
 /// Mechanical split-flap clock widget locked to the 2:1 proportion lattice (<c>4×2</c>, <c>6×3</c>, <c>8×4</c>).
+/// Declares <see cref="IWidgetSurfaceHints"/> for Colorful theme card background (<c>FlipClockCardBackground</c>).
 /// </summary>
-public partial class FlipClock : UserControl, IFixedSizeWidget, IWidgetSelfRefreshing
+public partial class FlipClock : UserControl, IFixedSizeWidget, IWidgetSelfRefreshing, IWidgetSurfaceHints
 {
+    /// <inheritdoc />
+    public string? ColorfulBackgroundResourceKey => "FlipClockCardBackground";
+
     private FlipClockModel model;
     private readonly FlipClockViewModel viewModel;
 

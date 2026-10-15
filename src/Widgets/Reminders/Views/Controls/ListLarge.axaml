@@ -29,10 +29,11 @@
             <Setter Property="Cursor" Value="Hand" />
         </Style>
         <Style Selector="Button.RemindersAddBtn:pointerover">
-            <Setter Property="Background" Value="#22808080" />
+            <Setter Property="Background" Value="{DynamicResource ControlHoverBrush}" />
         </Style>
         <Style Selector="Button.RemindersAddBtn:pressed">
-            <Setter Property="Background" Value="#44808080" />
+            <Setter Property="Background" Value="{DynamicResource ControlHoverBrush}" />
+            <Setter Property="Opacity" Value="0.8" />
         </Style>
     </UserControl.Styles>
     <Grid RowDefinitions="Auto, Auto, Auto, *" ColumnDefinitions="*, Auto">

@@ -1098,4 +1098,196 @@
     <data name="SecondaryPanel_Close" xml:space="preserve">
         <value>关闭面板</value>
     </data>
+    <data name="Settings_Appearance_FocusLink_Title" xml:space="preserve">
+        <value>失焦自动切换</value>
+    </data>
+    <data name="Settings_Appearance_FocusLink_Enable_Title" xml:space="preserve">
+        <value>启用失焦自动切换</value>
+    </data>
+    <data name="Settings_Appearance_FocusLink_Enable_Subtitle" xml:space="preserve">
+        <value>屏幕上还有应用窗口时使用「失焦时」模式；最后一个窗口最小化/关闭后切回「聚焦时」——点击桌面不会改变判定</value>
+    </data>
+    <data name="Settings_Appearance_FocusLink_Scope_Title" xml:space="preserve">
+        <value>判定方式</value>
+    </data>
+    <data name="Settings_Appearance_FocusLink_Scope_Subtitle" xml:space="preserve">
+        <value>各屏独立：按每块屏幕有没有应用窗口分别判定；全局统一：任一屏幕有应用窗口时所有屏幕一起切换</value>
+    </data>
+    <data name="Settings_Appearance_FocusLink_Scope_PerScreen" xml:space="preserve">
+        <value>各屏独立</value>
+    </data>
+    <data name="Settings_Appearance_FocusLink_Scope_Global" xml:space="preserve">
+        <value>全局统一</value>
+    </data>
+    <data name="Settings_Appearance_FocusLink_FocusedState_Title" xml:space="preserve">
+        <value>聚焦时</value>
+    </data>
+    <data name="Settings_Appearance_FocusLink_UnfocusedState_Title" xml:space="preserve">
+        <value>失焦时</value>
+    </data>
+    <data name="Settings_Appearance_FocusLink_State_Subtitle" xml:space="preserve">
+        <value>组件使用的主题与亮暗模式</value>
+    </data>
+    <data name="Settings_Appearance_FocusLink_Delay_Title" xml:space="preserve">
+        <value>检测时长</value>
+    </data>
+    <data name="Settings_Appearance_FocusLink_Delay_Subtitle" xml:space="preserve">
+        <value>切换前需保持新状态的等待时间，防止窗口开关造成的闪烁；0 = 立即切换（0–1000 毫秒）</value>
+    </data>
+    <data name="Settings_Appearance_FocusLink_ColorPolicy_Hint" xml:space="preserve">
+        <value>多彩状态使用固定组件配色；普通状态继续使用外观页中的强调色和单色设置。</value>
+    </data>
+    <data name="Settings_Appearance_FocusLink_Theme_Shared" xml:space="preserve">
+        <value>跟随应用主题</value>
+    </data>
+    <data name="Settings_Appearance_FocusLink_Whitelist_Title" xml:space="preserve">
+        <value>白名单进程</value>
+    </data>
+    <data name="Settings_Appearance_FocusLink_Whitelist_Subtitle" xml:space="preserve">
+        <value>这些进程不算应用：它们的窗口既不维持失焦、也不阻止聚焦</value>
+    </data>
+    <data name="Settings_Appearance_FocusLink_Whitelist_Empty" xml:space="preserve">
+        <value>尚未添加进程</value>
+    </data>
+    <data name="Settings_Appearance_FocusLink_Whitelist_Add" xml:space="preserve">
+        <value>添加进程…</value>
+    </data>
+    <data name="Settings_Appearance_FocusLink_Whitelist_Remove" xml:space="preserve">
+        <value>移除</value>
+    </data>
+    <data name="Settings_Appearance_FocusLink_Status_Title" xml:space="preserve">
+        <value>当前状态</value>
+    </data>
+    <data name="Settings_Appearance_FocusLink_Status_Disabled" xml:space="preserve">
+        <value>未启用</value>
+    </data>
+    <data name="Settings_Appearance_FocusLink_Status_Focused" xml:space="preserve">
+        <value>聚焦中</value>
+    </data>
+    <data name="Settings_Appearance_FocusLink_Status_Unfocused" xml:space="preserve">
+        <value>失焦中</value>
+    </data>
+    <data name="Settings_Appearance_FocusLink_Status_Foreground" xml:space="preserve">
+        <value>前台：{0}</value>
+    </data>
+    <data name="Settings_Appearance_FocusLink_Status_Application" xml:space="preserve">
+        <value>应用：{0}</value>
+    </data>
+    <data name="Settings_Appearance_FocusLink_Foreground_None" xml:space="preserve">
+        <value>无前台窗口</value>
+    </data>
+    <data name="Settings_Appearance_FocusLink_Foreground_Desktop" xml:space="preserve">
+        <value>桌面</value>
+    </data>
+    <data name="Settings_Appearance_FocusLink_Foreground_Widget" xml:space="preserve">
+        <value>DeskCanvas 组件</value>
+    </data>
+    <data name="ProcessPicker_Title" xml:space="preserve">
+        <value>选择进程</value>
+    </data>
+    <data name="ProcessPicker_Search" xml:space="preserve">
+        <value>搜索进程名或窗口标题</value>
+    </data>
+    <data name="ProcessPicker_Refresh" xml:space="preserve">
+        <value>刷新</value>
+    </data>
+    <data name="ProcessPicker_Empty" xml:space="preserve">
+        <value>没有匹配的运行中进程</value>
+    </data>
+    <data name="ProcessPicker_Hint" xml:space="preserve">
+        <value>只列出拥有可见窗口的进程；无窗口进程不会成为前台</value>
+    </data>
+    <data name="ProcessPicker_Add" xml:space="preserve">
+        <value>添加</value>
+    </data>
+    <data name="ProcessPicker_Cancel" xml:space="preserve">
+        <value>取消</value>
+    </data>
+    <data name="Settings_Advanced_DataFolder" xml:space="preserve">
+        <value>数据目录</value>
+    </data>
+    <data name="Settings_Advanced_DataFolder_Current_Title" xml:space="preserve">
+        <value>数据目录</value>
+    </data>
+    <data name="Settings_Advanced_DataFolder_Current_Subtitle" xml:space="preserve">
+        <value>设置、组件布局、组件数据与配置方案都保存在这里</value>
+    </data>
+    <data name="Settings_Advanced_DataFolder_Source_Title" xml:space="preserve">
+        <value>来源</value>
+    </data>
+    <data name="Settings_Advanced_DataFolder_Source_Default" xml:space="preserve">
+        <value>默认位置（%LocalAppData%\DeskCanvas）</value>
+    </data>
+    <data name="Settings_Advanced_DataFolder_Source_Portable" xml:space="preserve">
+        <value>便携模式（exe 所在目录）</value>
+    </data>
+    <data name="Settings_Advanced_DataFolder_Source_PortableDev" xml:space="preserve">
+        <value>调试构建（%LocalAppData%\DeskCanvas-dev）</value>
+    </data>
+    <data name="Settings_Advanced_DataFolder_Source_ExePointer" xml:space="preserve">
+        <value>自定义（exe 旁的 dataFolder.json）</value>
+    </data>
+    <data name="Settings_Advanced_DataFolder_Source_AnchorPointer" xml:space="preserve">
+        <value>自定义（默认目录中的 dataFolder.json）</value>
+    </data>
+    <data name="Settings_Advanced_DataFolder_Source_Environment" xml:space="preserve">
+        <value>环境变量 DESCANVAS_DATA_FOLDER</value>
+    </data>
+    <data name="Settings_Advanced_DataFolder_Source_TestHarness" xml:space="preserve">
+        <value>检查程序沙箱</value>
+    </data>
+    <data name="Settings_Advanced_DataFolder_Change" xml:space="preserve">
+        <value>更改…</value>
+    </data>
+    <data name="Settings_Advanced_DataFolder_Open" xml:space="preserve">
+        <value>打开</value>
+    </data>
+    <data name="Settings_Advanced_DataFolder_Reset" xml:space="preserve">
+        <value>恢复默认</value>
+    </data>
+    <data name="Settings_Advanced_DataFolder_PickTitle" xml:space="preserve">
+        <value>选择数据目录</value>
+    </data>
+    <data name="Settings_Advanced_DataFolder_ChangePrompt" xml:space="preserve">
+        <value>新的数据目录：
+{0}
+
+切换需要重启应用才能生效。是否把当前数据迁移（复制）到新目录？选择「不迁移，直接切换」将从空目录开始。</value>
+    </data>
+    <data name="Settings_Advanced_DataFolder_ChangeMigrate" xml:space="preserve">
+        <value>迁移并重启</value>
+    </data>
+    <data name="Settings_Advanced_DataFolder_ChangeFresh" xml:space="preserve">
+        <value>不迁移，直接切换</value>
+    </data>
+    <data name="Settings_Advanced_DataFolder_ResetPrompt" xml:space="preserve">
+        <value>恢复默认后应用将使用：
+{0}
+
+是否把当前数据迁移（复制）过去？选择「不迁移，直接切换」将从空目录开始。</value>
+    </data>
+    <data name="Settings_Advanced_DataFolder_Err_Empty" xml:space="preserve">
+        <value>路径为空。</value>
+    </data>
+    <data name="Settings_Advanced_DataFolder_Err_Invalid" xml:space="preserve">
+        <value>路径无效。</value>
+    </data>
+    <data name="Settings_Advanced_DataFolder_Err_IsFile" xml:space="preserve">
+        <value>该路径是文件，请选择文件夹。</value>
+    </data>
+    <data name="Settings_Advanced_DataFolder_Err_Unwritable" xml:space="preserve">
+        <value>无法写入该目录，请检查权限。</value>
+    </data>
+    <data name="Settings_Advanced_DataFolder_Err_SameAsCurrent" xml:space="preserve">
+        <value>该目录已经是当前数据目录。</value>
+    </data>
+    <data name="Settings_Advanced_DataFolder_Err_NoPointerLocation" xml:space="preserve">
+        <value>找不到可写入的位置来保存数据目录设置。</value>
+    </data>
+    <data name="Settings_Advanced_DataFolder_Err_IoFailure" xml:space="preserve">
+        <value>写入失败：{0}</value>
+    </data>
+    <data name="Settings_Advanced_DataFolder_OkButton" xml:space="preserve">
+        <value>确定</value>
+    </data>
 </root>

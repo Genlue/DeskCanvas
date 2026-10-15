@@ -12,8 +12,10 @@ using DeskCanvas.Core.Models;
 
 namespace ControlCenter.Views;
 
-public partial class SingleControlView : UserControl, IWidgetSelfRefreshing, IWidgetSuspendable, IDisposable
+public partial class SingleControlView : UserControl, IWidgetSelfRefreshing, IWidgetSuspendable, IDisposable, IWidgetSurfaceHints
 {
+    public string? ColorfulBackgroundResourceKey => "ControlCenterCardBackground";
+
     private SingleControlModel model;
     private readonly DispatcherTimer pollTimer;
     private bool isSuspended;

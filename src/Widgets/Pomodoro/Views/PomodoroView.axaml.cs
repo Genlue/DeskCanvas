@@ -11,8 +11,11 @@ using DeskCanvas.Services;
 
 namespace Pomodoro.Views;
 
-public partial class PomodoroView : UserControl, IWidgetSelfRefreshing
+public partial class PomodoroView : UserControl, IWidgetSelfRefreshing, IWidgetSurfaceHints
 {
+    /// <inheritdoc />
+    public string? ColorfulBackgroundResourceKey => "PomodoroCardBackground";
+
     private readonly IWidgetLayoutProvider? layoutProvider;
     private PomodoroViewModel? viewModel;
     private WidgetTier currentTier = (WidgetTier)(-1);

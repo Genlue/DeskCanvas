@@ -10,8 +10,16 @@ using DeskCanvas.Core.Interfaces;
 
 namespace Clock.Views;
 
-public partial class AnalogIV : UserControl, IFixedSizeWidget
+/// <summary>
+/// 表盘-3：通过 <see cref="IWidgetSurfaceHints"/> 向宿主声明多彩模式下的专属卡片画刷
+/// （ClockCardBackground —— 恒黑卡片，与表盘-1 一致，复刻 Apple 时钟小组件亮暗皆黑的
+/// 卡片外观；资源键按变体解析，宿主不按视图类型名判断外观）。其余主题不消费该键。
+/// </summary>
+public partial class AnalogIV : UserControl, IFixedSizeWidget, IWidgetSurfaceHints
 {
+    /// <inheritdoc />
+    public string? ColorfulBackgroundResourceKey => "ClockCardBackground";
+
     /// <summary>
     /// 表盘颜色 override key: the dial surface brush every theme dictionary publishes
     /// under this key (Colorful's fixed white/charcoal pair, the monochrome variants'

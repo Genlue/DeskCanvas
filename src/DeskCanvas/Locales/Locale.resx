@@ -999,4 +999,196 @@
     <data name="SecondaryPanel_Close" xml:space="preserve">
         <value>Close panel</value>
     </data>
+    <data name="Settings_Appearance_FocusLink_Title" xml:space="preserve">
+        <value>Auto switch on focus loss</value>
+    </data>
+    <data name="Settings_Appearance_FocusLink_Enable_Title" xml:space="preserve">
+        <value>Enable auto switching</value>
+    </data>
+    <data name="Settings_Appearance_FocusLink_Enable_Subtitle" xml:space="preserve">
+        <value>Use the “while unfocused” mode while an application window still occupies the screen, and switch back to “while focused” once the last one is minimized or closed — clicking the desktop never changes the state</value>
+    </data>
+    <data name="Settings_Appearance_FocusLink_Scope_Title" xml:space="preserve">
+        <value>Evaluation scope</value>
+    </data>
+    <data name="Settings_Appearance_FocusLink_Scope_Subtitle" xml:space="preserve">
+        <value>Per screen: each screen is judged by the application windows it carries; Global: one screen with an application switches the whole desktop</value>
+    </data>
+    <data name="Settings_Appearance_FocusLink_Scope_PerScreen" xml:space="preserve">
+        <value>Per screen</value>
+    </data>
+    <data name="Settings_Appearance_FocusLink_Scope_Global" xml:space="preserve">
+        <value>Global</value>
+    </data>
+    <data name="Settings_Appearance_FocusLink_FocusedState_Title" xml:space="preserve">
+        <value>While focused</value>
+    </data>
+    <data name="Settings_Appearance_FocusLink_UnfocusedState_Title" xml:space="preserve">
+        <value>While unfocused</value>
+    </data>
+    <data name="Settings_Appearance_FocusLink_State_Subtitle" xml:space="preserve">
+        <value>Theme and light/dark mode used by the widgets</value>
+    </data>
+    <data name="Settings_Appearance_FocusLink_Delay_Title" xml:space="preserve">
+        <value>Detection delay</value>
+    </data>
+    <data name="Settings_Appearance_FocusLink_Delay_Subtitle" xml:space="preserve">
+        <value>How long a new focus state must hold before the switch is applied — prevents flicker from windows flashing open and shut; 0 = switch immediately (0–1000 ms)</value>
+    </data>
+    <data name="Settings_Appearance_FocusLink_ColorPolicy_Hint" xml:space="preserve">
+        <value>Colorful states use fixed widget palettes; normal states continue using the accent and monochrome settings from the Appearance page.</value>
+    </data>
+    <data name="Settings_Appearance_FocusLink_Theme_Shared" xml:space="preserve">
+        <value>App theme</value>
+    </data>
+    <data name="Settings_Appearance_FocusLink_Whitelist_Title" xml:space="preserve">
+        <value>Process allowlist</value>
+    </data>
+    <data name="Settings_Appearance_FocusLink_Whitelist_Subtitle" xml:space="preserve">
+        <value>Processes that count as part of the desktop: their windows neither keep the state unfocused nor stand in the way of the focused mode</value>
+    </data>
+    <data name="Settings_Appearance_FocusLink_Whitelist_Empty" xml:space="preserve">
+        <value>No processes added yet</value>
+    </data>
+    <data name="Settings_Appearance_FocusLink_Whitelist_Add" xml:space="preserve">
+        <value>Add process…</value>
+    </data>
+    <data name="Settings_Appearance_FocusLink_Whitelist_Remove" xml:space="preserve">
+        <value>Remove</value>
+    </data>
+    <data name="Settings_Appearance_FocusLink_Status_Title" xml:space="preserve">
+        <value>Current state</value>
+    </data>
+    <data name="Settings_Appearance_FocusLink_Status_Disabled" xml:space="preserve">
+        <value>Disabled</value>
+    </data>
+    <data name="Settings_Appearance_FocusLink_Status_Focused" xml:space="preserve">
+        <value>Focused</value>
+    </data>
+    <data name="Settings_Appearance_FocusLink_Status_Unfocused" xml:space="preserve">
+        <value>Unfocused</value>
+    </data>
+    <data name="Settings_Appearance_FocusLink_Status_Foreground" xml:space="preserve">
+        <value>Foreground: {0}</value>
+    </data>
+    <data name="Settings_Appearance_FocusLink_Status_Application" xml:space="preserve">
+        <value>App: {0}</value>
+    </data>
+    <data name="Settings_Appearance_FocusLink_Foreground_None" xml:space="preserve">
+        <value>no foreground window</value>
+    </data>
+    <data name="Settings_Appearance_FocusLink_Foreground_Desktop" xml:space="preserve">
+        <value>desktop</value>
+    </data>
+    <data name="Settings_Appearance_FocusLink_Foreground_Widget" xml:space="preserve">
+        <value>DeskCanvas</value>
+    </data>
+    <data name="ProcessPicker_Title" xml:space="preserve">
+        <value>Select processes</value>
+    </data>
+    <data name="ProcessPicker_Search" xml:space="preserve">
+        <value>Search process name or window title</value>
+    </data>
+    <data name="ProcessPicker_Refresh" xml:space="preserve">
+        <value>Refresh</value>
+    </data>
+    <data name="ProcessPicker_Empty" xml:space="preserve">
+        <value>No matching running processes</value>
+    </data>
+    <data name="ProcessPicker_Hint" xml:space="preserve">
+        <value>Only processes with a visible window are listed; a process without one can never be in the foreground</value>
+    </data>
+    <data name="ProcessPicker_Add" xml:space="preserve">
+        <value>Add</value>
+    </data>
+    <data name="ProcessPicker_Cancel" xml:space="preserve">
+        <value>Cancel</value>
+    </data>
+    <data name="Settings_Advanced_DataFolder" xml:space="preserve">
+        <value>Data folder</value>
+    </data>
+    <data name="Settings_Advanced_DataFolder_Current_Title" xml:space="preserve">
+        <value>Data folder</value>
+    </data>
+    <data name="Settings_Advanced_DataFolder_Current_Subtitle" xml:space="preserve">
+        <value>Settings, widget layout, widget data and configuration profiles are all stored here</value>
+    </data>
+    <data name="Settings_Advanced_DataFolder_Source_Title" xml:space="preserve">
+        <value>Source</value>
+    </data>
+    <data name="Settings_Advanced_DataFolder_Source_Default" xml:space="preserve">
+        <value>Default location (%LocalAppData%\DeskCanvas)</value>
+    </data>
+    <data name="Settings_Advanced_DataFolder_Source_Portable" xml:space="preserve">
+        <value>Portable (the folder of the exe)</value>
+    </data>
+    <data name="Settings_Advanced_DataFolder_Source_PortableDev" xml:space="preserve">
+        <value>Debug build (%LocalAppData%\DeskCanvas-dev)</value>
+    </data>
+    <data name="Settings_Advanced_DataFolder_Source_ExePointer" xml:space="preserve">
+        <value>Custom (dataFolder.json next to the exe)</value>
+    </data>
+    <data name="Settings_Advanced_DataFolder_Source_AnchorPointer" xml:space="preserve">
+        <value>Custom (dataFolder.json in the default folder)</value>
+    </data>
+    <data name="Settings_Advanced_DataFolder_Source_Environment" xml:space="preserve">
+        <value>Environment variable DESCANVAS_DATA_FOLDER</value>
+    </data>
+    <data name="Settings_Advanced_DataFolder_Source_TestHarness" xml:space="preserve">
+        <value>Check-harness sandbox</value>
+    </data>
+    <data name="Settings_Advanced_DataFolder_Change" xml:space="preserve">
+        <value>Change…</value>
+    </data>
+    <data name="Settings_Advanced_DataFolder_Open" xml:space="preserve">
+        <value>Open</value>
+    </data>
+    <data name="Settings_Advanced_DataFolder_Reset" xml:space="preserve">
+        <value>Restore default</value>
+    </data>
+    <data name="Settings_Advanced_DataFolder_PickTitle" xml:space="preserve">
+        <value>Choose the data folder</value>
+    </data>
+    <data name="Settings_Advanced_DataFolder_ChangePrompt" xml:space="preserve">
+        <value>New data folder:
+{0}
+
+The app restarts to apply the change. Migrate (copy) the current data into the new folder? Choosing "Switch without migrating" starts from an empty folder.</value>
+    </data>
+    <data name="Settings_Advanced_DataFolder_ChangeMigrate" xml:space="preserve">
+        <value>Migrate and restart</value>
+    </data>
+    <data name="Settings_Advanced_DataFolder_ChangeFresh" xml:space="preserve">
+        <value>Switch without migrating</value>
+    </data>
+    <data name="Settings_Advanced_DataFolder_ResetPrompt" xml:space="preserve">
+        <value>After restoring the default the app uses:
+{0}
+
+Migrate (copy) the current data there? Choosing "Switch without migrating" starts from an empty folder.</value>
+    </data>
+    <data name="Settings_Advanced_DataFolder_Err_Empty" xml:space="preserve">
+        <value>The path is empty.</value>
+    </data>
+    <data name="Settings_Advanced_DataFolder_Err_Invalid" xml:space="preserve">
+        <value>That is not a valid folder path.</value>
+    </data>
+    <data name="Settings_Advanced_DataFolder_Err_IsFile" xml:space="preserve">
+        <value>That path is a file; choose a folder.</value>
+    </data>
+    <data name="Settings_Advanced_DataFolder_Err_Unwritable" xml:space="preserve">
+        <value>That folder is not writable; check its permissions.</value>
+    </data>
+    <data name="Settings_Advanced_DataFolder_Err_SameAsCurrent" xml:space="preserve">
+        <value>That is already the current data folder.</value>
+    </data>
+    <data name="Settings_Advanced_DataFolder_Err_NoPointerLocation" xml:space="preserve">
+        <value>No writable location to store the data folder setting.</value>
+    </data>
+    <data name="Settings_Advanced_DataFolder_Err_IoFailure" xml:space="preserve">
+        <value>Writing failed: {0}</value>
+    </data>
+    <data name="Settings_Advanced_DataFolder_OkButton" xml:space="preserve">
+        <value>OK</value>
+    </data>
 </root>

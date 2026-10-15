@@ -65,6 +65,8 @@
                     <SolidColorBrush x:Key="CalendarTodayBrush" Color="{DynamicResource SystemAccentColorDark1}" />
                     <SolidColorBrush x:Key="ClockSecondHandBrush" Color="{DynamicResource SystemAccentColorDark1}" />
                     <SolidColorBrush x:Key="ClockCenterPinBrush" Color="{DynamicResource SystemAccentColorDark1}" />
+                    <SolidColorBrush x:Key="ClockDigitalTimeBrush" Color="#1C1C1E" />
+                    <SolidColorBrush x:Key="ClockDigitalDateBrush" Color="{DynamicResource SystemAccentColorDark1}" />
                     <SolidColorBrush x:Key="RemindersBadgeBrush" Color="{DynamicResource SystemAccentColorDark1}" />
                     <SolidColorBrush x:Key="RemindersCheckBrush" Color="{DynamicResource SystemAccentColorDark1}" />
                     <SolidColorBrush x:Key="NotesAccentBrush" Color="{DynamicResource SystemAccentColorDark1}" />
@@ -76,13 +78,45 @@
                     <SolidColorBrush x:Key="MonitorNetBrush" Color="{DynamicResource SystemAccentColorDark1}" />
                     <SolidColorBrush x:Key="MonitorBatteryBrush" Color="{DynamicResource SystemAccentColorDark1}" />
                     <SolidColorBrush x:Key="FolderAccentBrush" Color="{DynamicResource SystemAccentColorDark1}" />
+                    <SolidColorBrush x:Key="FoldersCardBackground" Color="Transparent" />
                     <SolidColorBrush x:Key="TranslateAccentBrush" Color="{DynamicResource SystemAccentColorDark1}" />
                     <SolidColorBrush x:Key="TranslateCardBackground" Color="Transparent" />
+                    <SolidColorBrush x:Key="TranslatorCardBackground" Color="Transparent" />
+                    <SolidColorBrush x:Key="TranslatorInputBackground" Color="#12808080" />
+                    <SolidColorBrush x:Key="TranslatorOutputBackground" Color="#12808080" />
+                    <SolidColorBrush x:Key="TranslatorOutputBorderBrush" Color="#15000000" />
                     <SolidColorBrush x:Key="CalculatorAccentBrush" Color="{DynamicResource SystemAccentColorDark1}" />
                     <SolidColorBrush x:Key="CalculatorCardBackground" Color="Transparent" />
+                    <SolidColorBrush x:Key="CalculatorDisplayBackground" Color="#12808080" />
                     <SolidColorBrush x:Key="CalculatorNumButtonBackground" Color="#12808080" />
                     <SolidColorBrush x:Key="CalculatorFuncButtonBackground" Color="#20808080" />
                     <SolidColorBrush x:Key="CalculatorOpButtonBackground" Color="#20808080" />
+                    <SolidColorBrush x:Key="ClipboardCardBackground" Color="Transparent" />
+                    <SolidColorBrush x:Key="ClipboardItemCardBackground" Color="#12808080" />
+                    <SolidColorBrush x:Key="ClipboardItemCardHoverBackground" Color="#20808080" />
+                    <SolidColorBrush x:Key="ClipboardBadgeTextBgBrush" Color="#15808080" />
+                    <SolidColorBrush x:Key="ClipboardBadgeTextBrush" Color="{DynamicResource SystemAccentColorDark1}" />
+                    <SolidColorBrush x:Key="ClipboardBadgeCodeBgBrush" Color="#15808080" />
+                    <SolidColorBrush x:Key="ClipboardBadgeCodeBrush" Color="{DynamicResource SystemAccentColorDark1}" />
+                    <SolidColorBrush x:Key="ClipboardBadgeLinkBgBrush" Color="#15808080" />
+                    <SolidColorBrush x:Key="ClipboardBadgeLinkBrush" Color="{DynamicResource SystemAccentColorDark1}" />
+                    <SolidColorBrush x:Key="ClipboardBadgeFileBgBrush" Color="#15808080" />
+                    <SolidColorBrush x:Key="ClipboardBadgeFileBrush" Color="{DynamicResource SystemAccentColorDark1}" />
+                    <SolidColorBrush x:Key="ControlCenterCardBackground" Color="Transparent" />
+                    <SolidColorBrush x:Key="ControlCenterCapsuleBackground" Color="#12808080" />
+                    <SolidColorBrush x:Key="ControlCenterBadgeInactiveBackground" Color="#20808080" />
+                    <SolidColorBrush x:Key="MapCardBackground" Color="Transparent" />
+                    <SolidColorBrush x:Key="MapFloatingButtonBackground" Color="#80808080" />
+                    <SolidColorBrush x:Key="SearchCardBackground" Color="Transparent" />
+                    <SolidColorBrush x:Key="SearchPillBorderBrush" Color="#15000000" />
+                    <SolidColorBrush x:Key="SearchEngineButtonBackground" Color="#12808080" />
+                    <SolidColorBrush x:Key="SearchDockButtonBackground" Color="#12808080" />
+                    <SolidColorBrush x:Key="SearchButtonBrush" Color="{DynamicResource SystemAccentColorDark1}" />
+                    <SolidColorBrush x:Key="RemindersCardBackground" Color="Transparent" />
+                    <SolidColorBrush x:Key="RemindersDotOrange" Color="{DynamicResource SystemAccentColorDark1}" />
+                    <SolidColorBrush x:Key="RemindersDotRed" Color="{DynamicResource SystemAccentColorDark1}" />
+                    <SolidColorBrush x:Key="RemindersDotBlue" Color="{DynamicResource SystemAccentColorDark1}" />
+                    <SolidColorBrush x:Key="RemindersDotPurple" Color="{DynamicResource SystemAccentColorDark1}" />
                     <SolidColorBrush x:Key="ProgressMoveBrush" Color="{DynamicResource SystemAccentColorDark1}" />
                     <SolidColorBrush x:Key="ProgressExerciseBrush" Color="{DynamicResource SystemAccentColorDark1}" />
                     <SolidColorBrush x:Key="ProgressStandBrush" Color="{DynamicResource SystemAccentColorDark1}" />
@@ -91,6 +125,27 @@
                     <SolidColorBrush x:Key="WeatherGaugeBrush" Color="{DynamicResource SystemAccentColorDark1}" />
                     <SolidColorBrush x:Key="WeatherTempBarBrush" Color="{DynamicResource SystemAccentColorDark1}" />
                     <SolidColorBrush x:Key="WeatherCardBackground" Color="Transparent" />
+                    <SolidColorBrush x:Key="NotesCardBackground" Color="Transparent" />
+                    <SolidColorBrush x:Key="MusicCardBackground" Color="Transparent" />
+                    <SolidColorBrush x:Key="MusicScrubberTrackBrush" Color="#20808080" />
+                    <SolidColorBrush x:Key="MusicPlayButtonBackgroundBrush" Color="#15808080" />
+                    <SolidColorBrush x:Key="MusicPlayButtonHoverBrush" Color="#30808080" />
+                    <SolidColorBrush x:Key="MusicCoverPlaceholderBrush" Color="#10808080" />
+                    <SolidColorBrush x:Key="MusicCoverBorderBrush" Color="#20808080" />
+                    <SolidColorBrush x:Key="PomodoroCardBackground" Color="Transparent" />
+                    <SolidColorBrush x:Key="PomodoroPillBackgroundBrush" Color="#15808080" />
+                    <SolidColorBrush x:Key="PomodoroPillBorderBrush" Color="#20808080" />
+                    <SolidColorBrush x:Key="PomodoroButtonBackgroundBrush" Color="#15808080" />
+                    <SolidColorBrush x:Key="PomodoroButtonHoverBrush" Color="#30808080" />
+                    <SolidColorBrush x:Key="HitokotoCardBackground" Color="Transparent" />
+                    <SolidColorBrush x:Key="HitokotoWatermarkBrush" Color="{DynamicResource SystemAccentColorDark1}" Opacity="0.15" />
+                    <SolidColorBrush x:Key="HitokotoQuoteBrush" Color="{DynamicResource SystemBaseHighColor}" />
+                    <SolidColorBrush x:Key="HitokotoAuthorBrush" Color="{DynamicResource SystemBaseMediumColor}" />
+                    <SolidColorBrush x:Key="HitokotoPillBackgroundBrush" Color="#15808080" />
+                    <SolidColorBrush x:Key="HitokotoPillBorderBrush" Color="#20808080" />
+                    <SolidColorBrush x:Key="HitokotoPillForegroundBrush" Color="{DynamicResource SystemAccentColorDark1}" />
+                    <SolidColorBrush x:Key="HitokotoButtonHoverBrush" Color="#20808080" />
+                    <SolidColorBrush x:Key="HitokotoButtonPressedBrush" Color="#35808080" />
                     <SolidColorBrush x:Key="NotesTextBrush" Color="{DynamicResource SystemBaseHighColor}" />
                     <SolidColorBrush x:Key="NotesTitleForegroundBrush" Color="{DynamicResource SystemBaseHighColor}" />
                     <SolidColorBrush x:Key="NotesDividerBrush" Color="{DynamicResource SystemBaseHighColor}" />
@@ -143,6 +198,8 @@
                     <SolidColorBrush x:Key="CalendarTodayBrush" Color="{DynamicResource SystemAccentColorLight2}" />
                     <SolidColorBrush x:Key="ClockSecondHandBrush" Color="{DynamicResource SystemAccentColorLight2}" />
                     <SolidColorBrush x:Key="ClockCenterPinBrush" Color="{DynamicResource SystemAccentColorLight2}" />
+                    <SolidColorBrush x:Key="ClockDigitalTimeBrush" Color="#FFFFFF" />
+                    <SolidColorBrush x:Key="ClockDigitalDateBrush" Color="{DynamicResource SystemAccentColorLight2}" />
                     <SolidColorBrush x:Key="RemindersBadgeBrush" Color="{DynamicResource SystemAccentColorLight2}" />
                     <SolidColorBrush x:Key="RemindersCheckBrush" Color="{DynamicResource SystemAccentColorLight2}" />
                     <SolidColorBrush x:Key="NotesAccentBrush" Color="{DynamicResource SystemAccentColorLight2}" />
@@ -154,13 +211,45 @@
                     <SolidColorBrush x:Key="MonitorNetBrush" Color="{DynamicResource SystemAccentColorLight2}" />
                     <SolidColorBrush x:Key="MonitorBatteryBrush" Color="{DynamicResource SystemAccentColorLight2}" />
                     <SolidColorBrush x:Key="FolderAccentBrush" Color="{DynamicResource SystemAccentColorLight2}" />
+                    <SolidColorBrush x:Key="FoldersCardBackground" Color="Transparent" />
                     <SolidColorBrush x:Key="TranslateAccentBrush" Color="{DynamicResource SystemAccentColorLight2}" />
                     <SolidColorBrush x:Key="TranslateCardBackground" Color="Transparent" />
+                    <SolidColorBrush x:Key="TranslatorCardBackground" Color="Transparent" />
+                    <SolidColorBrush x:Key="TranslatorInputBackground" Color="#18808080" />
+                    <SolidColorBrush x:Key="TranslatorOutputBackground" Color="#18808080" />
+                    <SolidColorBrush x:Key="TranslatorOutputBorderBrush" Color="#25FFFFFF" />
                     <SolidColorBrush x:Key="CalculatorAccentBrush" Color="{DynamicResource SystemAccentColorLight2}" />
                     <SolidColorBrush x:Key="CalculatorCardBackground" Color="Transparent" />
+                    <SolidColorBrush x:Key="CalculatorDisplayBackground" Color="#18808080" />
                     <SolidColorBrush x:Key="CalculatorNumButtonBackground" Color="#16808080" />
                     <SolidColorBrush x:Key="CalculatorFuncButtonBackground" Color="#24808080" />
                     <SolidColorBrush x:Key="CalculatorOpButtonBackground" Color="#24808080" />
+                    <SolidColorBrush x:Key="ClipboardCardBackground" Color="Transparent" />
+                    <SolidColorBrush x:Key="ClipboardItemCardBackground" Color="#18808080" />
+                    <SolidColorBrush x:Key="ClipboardItemCardHoverBackground" Color="#25808080" />
+                    <SolidColorBrush x:Key="ClipboardBadgeTextBgBrush" Color="#20808080" />
+                    <SolidColorBrush x:Key="ClipboardBadgeTextBrush" Color="{DynamicResource SystemAccentColorLight2}" />
+                    <SolidColorBrush x:Key="ClipboardBadgeCodeBgBrush" Color="#20808080" />
+                    <SolidColorBrush x:Key="ClipboardBadgeCodeBrush" Color="{DynamicResource SystemAccentColorLight2}" />
+                    <SolidColorBrush x:Key="ClipboardBadgeLinkBgBrush" Color="#20808080" />
+                    <SolidColorBrush x:Key="ClipboardBadgeLinkBrush" Color="{DynamicResource SystemAccentColorLight2}" />
+                    <SolidColorBrush x:Key="ClipboardBadgeFileBgBrush" Color="#20808080" />
+                    <SolidColorBrush x:Key="ClipboardBadgeFileBrush" Color="{DynamicResource SystemAccentColorLight2}" />
+                    <SolidColorBrush x:Key="ControlCenterCardBackground" Color="Transparent" />
+                    <SolidColorBrush x:Key="ControlCenterCapsuleBackground" Color="#18808080" />
+                    <SolidColorBrush x:Key="ControlCenterBadgeInactiveBackground" Color="#25808080" />
+                    <SolidColorBrush x:Key="MapCardBackground" Color="Transparent" />
+                    <SolidColorBrush x:Key="MapFloatingButtonBackground" Color="#80808080" />
+                    <SolidColorBrush x:Key="SearchCardBackground" Color="Transparent" />
+                    <SolidColorBrush x:Key="SearchPillBorderBrush" Color="#25FFFFFF" />
+                    <SolidColorBrush x:Key="SearchEngineButtonBackground" Color="#18808080" />
+                    <SolidColorBrush x:Key="SearchDockButtonBackground" Color="#18808080" />
+                    <SolidColorBrush x:Key="SearchButtonBrush" Color="{DynamicResource SystemAccentColorLight2}" />
+                    <SolidColorBrush x:Key="RemindersCardBackground" Color="Transparent" />
+                    <SolidColorBrush x:Key="RemindersDotOrange" Color="{DynamicResource SystemAccentColorLight2}" />
+                    <SolidColorBrush x:Key="RemindersDotRed" Color="{DynamicResource SystemAccentColorLight2}" />
+                    <SolidColorBrush x:Key="RemindersDotBlue" Color="{DynamicResource SystemAccentColorLight2}" />
+                    <SolidColorBrush x:Key="RemindersDotPurple" Color="{DynamicResource SystemAccentColorLight2}" />
                     <SolidColorBrush x:Key="ProgressMoveBrush" Color="{DynamicResource SystemAccentColorLight2}" />
                     <SolidColorBrush x:Key="ProgressExerciseBrush" Color="{DynamicResource SystemAccentColorLight2}" />
                     <SolidColorBrush x:Key="ProgressStandBrush" Color="{DynamicResource SystemAccentColorLight2}" />
@@ -169,6 +258,27 @@
                     <SolidColorBrush x:Key="WeatherGaugeBrush" Color="{DynamicResource SystemAccentColorLight2}" />
                     <SolidColorBrush x:Key="WeatherTempBarBrush" Color="{DynamicResource SystemAccentColorLight2}" />
                     <SolidColorBrush x:Key="WeatherCardBackground" Color="Transparent" />
+                    <SolidColorBrush x:Key="NotesCardBackground" Color="Transparent" />
+                    <SolidColorBrush x:Key="MusicCardBackground" Color="Transparent" />
+                    <SolidColorBrush x:Key="MusicScrubberTrackBrush" Color="#30808080" />
+                    <SolidColorBrush x:Key="MusicPlayButtonBackgroundBrush" Color="#20808080" />
+                    <SolidColorBrush x:Key="MusicPlayButtonHoverBrush" Color="#35808080" />
+                    <SolidColorBrush x:Key="MusicCoverPlaceholderBrush" Color="#16808080" />
+                    <SolidColorBrush x:Key="MusicCoverBorderBrush" Color="#25808080" />
+                    <SolidColorBrush x:Key="PomodoroCardBackground" Color="Transparent" />
+                    <SolidColorBrush x:Key="PomodoroPillBackgroundBrush" Color="#20808080" />
+                    <SolidColorBrush x:Key="PomodoroPillBorderBrush" Color="#25808080" />
+                    <SolidColorBrush x:Key="PomodoroButtonBackgroundBrush" Color="#18808080" />
+                    <SolidColorBrush x:Key="PomodoroButtonHoverBrush" Color="#30808080" />
+                    <SolidColorBrush x:Key="HitokotoCardBackground" Color="Transparent" />
+                    <SolidColorBrush x:Key="HitokotoWatermarkBrush" Color="{DynamicResource SystemAccentColorLight2}" Opacity="0.2" />
+                    <SolidColorBrush x:Key="HitokotoQuoteBrush" Color="{DynamicResource SystemBaseHighColor}" />
+                    <SolidColorBrush x:Key="HitokotoAuthorBrush" Color="{DynamicResource SystemBaseMediumColor}" />
+                    <SolidColorBrush x:Key="HitokotoPillBackgroundBrush" Color="#20808080" />
+                    <SolidColorBrush x:Key="HitokotoPillBorderBrush" Color="#25808080" />
+                    <SolidColorBrush x:Key="HitokotoPillForegroundBrush" Color="{DynamicResource SystemAccentColorLight2}" />
+                    <SolidColorBrush x:Key="HitokotoButtonHoverBrush" Color="#25808080" />
+                    <SolidColorBrush x:Key="HitokotoButtonPressedBrush" Color="#40808080" />
                     <SolidColorBrush x:Key="NotesTextBrush" Color="{DynamicResource SystemBaseHighColor}" />
                     <SolidColorBrush x:Key="NotesTitleForegroundBrush" Color="{DynamicResource SystemBaseHighColor}" />
                     <SolidColorBrush x:Key="NotesDividerBrush" Color="{DynamicResource SystemBaseHighColor}" />

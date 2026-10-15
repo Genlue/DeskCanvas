@@ -10,11 +10,22 @@ namespace Timetable.Services;
 /// </summary>
 public static class CoursePalette
 {
-    /// <summary>Harmonious defaults; a course without a colour keeps the same slot while the name is unchanged.</summary>
+    /// <summary>
+    /// Harmonious Apple HIG-inspired pastel and jewel tones (Mint, Sky, Lavender, Coral, Orange, Teal, Rose, etc.)
+    /// with elegant saturation that avoids visual clutter or eye fatigue and coordinates with the desktop.
+    /// </summary>
     public static readonly string[] Defaults =
     [
-        "#5B8FF9", "#61DDAA", "#F6BD16", "#7262FD", "#78D3F8",
-        "#9661BC", "#F6903D", "#00949F", "#F08BB4", "#E8684A"
+        "#508AEB", // 蔚蓝 (Apple Blue)
+        "#43C690", // 薄荷绿 (Apple Mint)
+        "#F3A83B", // 活力橙 (Apple Orange)
+        "#7B6BE6", // 梦幻紫 (Apple Purple)
+        "#4EB5E6", // 海天蓝 (Apple Cyan)
+        "#E86D83", // 珊瑚粉 (Apple Coral)
+        "#8E6FD8", // 珊瑚粉 (Apple Coral)
+        "#2BB7B3", // 冰川青 (Apple Teal)
+        "#E08658", // 柔桃色 (Warm Peach)
+        "#D45D79"  // 浆果红 (Apple Rose)
     ];
 
     private static readonly IBrush DarkForeground = new SolidColorBrush(Color.FromRgb(0x21, 0x23, 0x27));

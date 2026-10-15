@@ -142,7 +142,7 @@ public class SettingsViewModel : ReactiveObject
     }
 
     private static StreamGeometry? GetIcon(string name) =>
-        (StreamGeometry?)(Application.Current!.TryFindResource(name, out var icon) ? icon : null);
+        ThemeScopeResolver.TryFindResource<StreamGeometry>(null, name, null, out var icon) ? icon : null;
 
     private readonly Dictionary<PageViewModel, UserControl> pageCache = new();
 

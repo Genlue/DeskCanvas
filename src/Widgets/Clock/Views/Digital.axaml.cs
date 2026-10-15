@@ -2,11 +2,18 @@ using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Clock.Models;
 using Clock.ViewModels;
+using DeskCanvas.Core.Interfaces;
 
 namespace Clock.Views;
 
-public partial class Digital : UserControl
+/// <summary>
+/// 数字时钟小组件：通过 IWidgetSurfaceHints 声明 Colorful 模式下的专属卡片画刷。
+/// </summary>
+public partial class Digital : UserControl, IWidgetSurfaceHints
 {
+    /// <inheritdoc />
+    public string? ColorfulBackgroundResourceKey => "ClockDigitalCardBackground";
+
     private readonly DigitalClockViewModel viewModel;
 
     public Digital() : this(new ClockModel()) {}

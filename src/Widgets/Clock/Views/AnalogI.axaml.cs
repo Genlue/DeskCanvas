@@ -8,8 +8,16 @@ using DeskCanvas.Core.Interfaces;
 
 namespace Clock.Views;
 
-public partial class AnalogI : UserControl, IFixedSizeWidget
+/// <summary>
+/// 表盘-1：通过 <see cref="IWidgetSurfaceHints"/> 向宿主声明多彩模式下的专属卡片画刷
+/// （ClockCardBackground —— 恒黑卡片，复刻 Apple 时钟小组件亮暗皆黑的卡片外观；
+/// 资源键按变体解析，宿主不按视图类型名判断外观）。其余主题不消费该键。
+/// </summary>
+public partial class AnalogI : UserControl, IFixedSizeWidget, IWidgetSurfaceHints
 {
+    /// <inheritdoc />
+    public string? ColorfulBackgroundResourceKey => "ClockCardBackground";
+
     private readonly AnalogClockViewModel viewModel;
 
     public static readonly IReadOnlyList<(int Columns, int Rows)> AllowedBaseSpansOf = [(1, 1)];

@@ -16,8 +16,10 @@ using DeskCanvas.Core.Models;
 
 namespace ControlCenter.Views;
 
-public partial class ControlCenterView : UserControl, IWidgetSelfRefreshing, IWidgetSuspendable, IDisposable
+public partial class ControlCenterView : UserControl, IWidgetSelfRefreshing, IWidgetSuspendable, IDisposable, IWidgetSurfaceHints
 {
+    public string? ColorfulBackgroundResourceKey => "ControlCenterCardBackground";
+
     private ControlCenterModel model;
     private readonly DispatcherTimer pollTimer;
     private readonly List<ControlCapsuleView> activeCapsules = [];

@@ -351,8 +351,13 @@ public static class OpticsProfile
 
         const int cardWidth = 300;
         const int cardHeight = 220;
-        var x0 = Math.Max(0, wallpaper.Width / 2 - cardWidth / 2);
-        var y0 = Math.Max(0, wallpaper.Height / 2 - cardHeight / 2);
+        // Sample the most detailed card-sized window instead of always the centre. The check
+        // measures the lens by displacing content, so a wallpaper whose centre is a smooth
+        // gradient (or a uniform field) has nothing displaceable there and the rim delta
+        // collapses below the threshold — failing on the wallpaper choice rather than on the
+        // optics. Scanning for structure keeps the measurement honest: it runs where lensing
+        // can actually show, whatever wallpaper the machine happens to have.
+        var (x0, y0) = MostDetailedWindow(wallpaper, cardWidth, cardHeight);
         var variants = new (string Name, LiquidGlassSettings Glass)[]
         {
             // "the rim lens visibly moves content" is a lens-recipe property: the shipped
@@ -397,11 +402,48 @@ public static class OpticsProfile
             var rawMean = rawFringe / Math.Max(1, count);
             var rimDelta = rimMove / Math.Max(1, rimCount);
             var centreDelta = centreMove / Math.Max(1, centreCount);
-            Console.WriteLine($"{name}: mean |R−B| card {cardMean:F2} vs raw {rawMean:F2}; " +
+            Console.WriteLine($"{name} @({x0},{y0}): mean |R−B| card {cardMean:F2} vs raw {rawMean:F2}; " +
                 $"lens effect rim {rimDelta:F1} vs centre {centreDelta:F1} levels");
             Check(cardMean <= rawMean * 1.25f + 2, "real wallpaper: the glass does not add colour fringing beyond vibrancy");
             Check(rimDelta > 4.5f, "real wallpaper: the rim lens visibly moves content");
         }
+    }
+
+    /// <summary>
+    /// The top-left corner of the card-sized window carrying the most local structure in
+    /// <paramref name="wallpaper"/>. Deterministic: a coarse grid of candidates scored by summed
+    /// neighbour luminance deltas (every 8th pixel — enough to rank windows without paying a
+    /// GetPixel per pixel of a 4K image).
+    /// </summary>
+    private static (int X, int Y) MostDetailedWindow(SKBitmap wallpaper, int width, int height)
+    {
+        var maxX = Math.Max(0, wallpaper.Width - width);
+        var maxY = Math.Max(0, wallpaper.Height - height);
+        var bestX = maxX / 2;
+        var bestY = maxY / 2;
+        var bestScore = -1.0;
+        for (var y = 0; y <= maxY; y += 96)
+        for (var x = 0; x <= maxX; x += 96)
+        {
+            double score = 0;
+            var previous = wallpaper.GetPixel(x, y);
+            for (var sy = 0; sy < height; sy += 8)
+            for (var sx = 0; sx < width; sx += 8)
+            {
+                var pixel = wallpaper.GetPixel(x + sx, y + sy);
+                score += Math.Abs(pixel.Red - previous.Red)
+                       + Math.Abs(pixel.Green - previous.Green)
+                       + Math.Abs(pixel.Blue - previous.Blue);
+                previous = pixel;
+            }
+            if (score > bestScore)
+            {
+                bestScore = score;
+                bestX = x;
+                bestY = y;
+            }
+        }
+        return (bestX, bestY);
     }
 
     /// <summary>The material is rendered on a worker thread and cached, but a large

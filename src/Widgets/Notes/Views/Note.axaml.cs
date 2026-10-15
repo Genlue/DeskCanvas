@@ -17,6 +17,7 @@ using DeskCanvas.Core.Models;
 using DeskCanvas.Core.Models.Settings;
 using DeskCanvas.Views.Controls;
 using DeskCanvas.Views;
+using DeskCanvas.Services;
 
 namespace Notes.Views;
 
@@ -28,8 +29,18 @@ namespace Notes.Views;
 /// The colored top bar (title) follows the app accent or a custom color, with a
 /// per-widget opacity.
 /// </summary>
-public partial class Note : UserControl, IWidgetSelfRefreshing
+public partial class Note : UserControl, IWidgetSelfRefreshing, IWidgetSurfaceHints, IFocusThemedContent
 {
+    /// <inheritdoc />
+    public string? ColorfulBackgroundResourceKey => "NotesCardBackground";
+
+    /// <inheritdoc />
+    public void OnFocusThemeChanged()
+    {
+        ApplyHeader(Model);
+        OnThemeVariantChanged(this, EventArgs.Empty);
+    }
+
     /// <summary>Card height (DIP) at/below which the header turns compact and the footer hides.</summary>
     private const double CompactHeight = 100;
 
@@ -57,6 +68,8 @@ public partial class Note : UserControl, IWidgetSelfRefreshing
         SizeChanged += OnSizeChanged;
         Unloaded += OnUnloaded;
         appSettingsProvider.DataChanged += OnAppSettingsChanged;
+
+        ActualThemeVariantChanged += OnThemeVariantChanged;
 
         // Light/dark switch: re-render the markdown with the palette of the
         // now-active theme (colors are chosen at render time).
@@ -282,19 +295,20 @@ public partial class Note : UserControl, IWidgetSelfRefreshing
     /// </summary>
     private void ApplyHeader(NoteModel model)
     {
-        var theme = appSettingsProvider.Get().Theme;
+        var theme = FocusThemeCoordinator.ResolveVisualTheme(this) ?? appSettingsProvider.Get().Theme;
         var opacity = theme.IsColorful ? 1.0 : Math.Clamp(model.HeaderOpacity, 0, 1);
 
         Color color;
         if (theme.IsColorful)
         {
             // 多彩模式强制顶栏 100% 不透明，且严格统一为 Apple Notes 经典黄色
-            var isDark = Application.Current?.ActualThemeVariant == ThemeVariant.Dark;
-            color = isDark ? Color.Parse("#FFD60A") : Color.Parse("#FFCC00");
+            var isDark = this.ActualThemeVariant == ThemeVariant.Dark;
+            color = ThemeScopeResolver.ResolveColor(this, "NotesAccentBrush", this.ActualThemeVariant,
+                isDark ? Color.Parse("#FFD60A") : Color.Parse("#FFCC00"));
         }
         else if (model.FollowAccentHeader)
         {
-            color = ResolveAccent();
+            color = ResolveAccent(theme);
         }
         else
         {
@@ -304,12 +318,10 @@ public partial class Note : UserControl, IWidgetSelfRefreshing
         HeaderBorder.Background = new SolidColorBrush(color, opacity);
     }
 
-    private Color ResolveAccent()
+    private Color ResolveAccent(Theme theme)
     {
-        var theme = appSettingsProvider.Get().Theme;
         if (theme.AccentColor != null && Color.TryParse(theme.AccentColor, out var accent)) return accent;
-        if (this.TryFindResource("SystemAccentColor", out var accentResource) && accentResource is Color system) return system;
-        return Color.Parse("#0078D4");
+        return ThemeScopeResolver.ResolveColor(this, "SystemAccentColor", this.ActualThemeVariant, Color.Parse("#0078D4"));
     }
 
     // ---------- interaction ----------
@@ -555,6 +567,7 @@ public partial class Note : UserControl, IWidgetSelfRefreshing
         SizeChanged -= OnSizeChanged;
         Unloaded -= OnUnloaded;
         appSettingsProvider.DataChanged -= OnAppSettingsChanged;
+        ActualThemeVariantChanged -= OnThemeVariantChanged;
         if (Application.Current != null)
             Application.Current.ActualThemeVariantChanged -= OnThemeVariantChanged;
         RenderScroll.RemoveHandler(PointerPressedEvent, OnRenderedPressed);

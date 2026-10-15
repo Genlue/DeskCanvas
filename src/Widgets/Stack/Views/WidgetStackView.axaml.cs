@@ -20,6 +20,7 @@ using DeskCanvas.Core.Interfaces;
 using DeskCanvas.Core.Models;
 using DeskCanvas.Core.Models.Attributes;
 using DeskCanvas.Core.Models.Settings;
+using DeskCanvas.Services;
 using DeskCanvas.Views.Controls;
 using AppTheme = DeskCanvas.Core.Models.Settings.Theme;
 using DeskCanvas.Views;
@@ -31,7 +32,7 @@ namespace StackWidgets.Views;
 /// 向宿主提供下沉到本插件的分页圆点装饰（StackIndicatorStrip）与布局提示，
 /// 宿主不再持有 Stack 专属 XAML 与放置逻辑（W10 §9.2）。
 /// </summary>
-public partial class WidgetStackView : UserControl, IWidgetSelfRefreshing, IStackWidget, IWidgetSuspendable, IWidgetOverlayProvider
+public partial class WidgetStackView : UserControl, IWidgetSelfRefreshing, IStackWidget, IWidgetSuspendable, IWidgetOverlayProvider, IFocusThemedContent
 {
     private readonly IWidgetLayoutProvider widgetLayoutProvider;
     private readonly IAssemblyProvider assemblyProvider;
@@ -519,26 +520,35 @@ public partial class WidgetStackView : UserControl, IWidgetSelfRefreshing, IStac
         }
     }
 
+    /// <inheritdoc />
+    /// <remarks>
+    /// 失焦自动切换: the host window pokes this when the focus state swaps the window's
+    /// effective theme — the regular settings-changed path does not fire for focus transitions,
+    /// and the inner cards resolve their own backgrounds.
+    /// </remarks>
+    public void OnFocusThemeChanged() => Dispatcher.UIThread.Post(UpdateAllCardStyles);
+
     private CornerRadius ResolveCornerRadius()
     {
-        if (this.TryFindResource("WidgetCardCornerRadius", out var cr) && cr is CornerRadius r)
-            return r;
-        if (Application.Current?.TryFindResource("WidgetCardCornerRadius", out var acr) == true && acr is CornerRadius ar)
-            return ar;
+        if (ThemeScopeResolver.TryFindResource<CornerRadius>(this, "WidgetCardCornerRadius", ActualThemeVariant, out var cr))
+            return cr;
         var rad = appSettingsProvider?.Get()?.Dimensions?.Radius ?? 16;
         return new CornerRadius(rad);
     }
 
     private IBrush ResolveDefaultCardBackground()
     {
-        var theme = appSettingsProvider?.Get()?.Theme;
+        // 失焦自动切换: the inner cards belong to the widget's window, so they follow that
+        // window's effective theme (per-state surface material) — not the shared theme.
+        var theme = FocusThemeCoordinator.ResolveVisualTheme(this) ?? appSettingsProvider?.Get()?.Theme;
         var variant = ActualThemeVariant;
         bool isDark = variant == ThemeVariant.Dark || (theme?.DarkMode ?? false);
 
         if (theme?.IsColorful == true)
         {
-            if (this.TryFindResource("WidgetBackground", variant, out var cb) && cb is IBrush cbrush)
-                return cbrush;
+            // The palette's own values, computed rather than resolved from the shared
+            // WidgetBackground resource — with per-state materials several surface dictionaries
+            // are loaded at once and another material's brush could shadow it.
             return isDark
                 ? new SolidColorBrush(Color.Parse("#1C1C1E"))
                 : Brushes.White;
@@ -556,7 +566,8 @@ public partial class WidgetStackView : UserControl, IWidgetSelfRefreshing, IStac
 
     private IBrush ResolveCardBackground(string viewTypeName)
     {
-        var theme = appSettingsProvider?.Get()?.Theme;
+        // 失焦自动切换: same rule as ResolveDefaultCardBackground — the window's effective theme.
+        var theme = FocusThemeCoordinator.ResolveVisualTheme(this) ?? appSettingsProvider?.Get()?.Theme;
         var variant = ActualThemeVariant;
         bool isDark = variant == ThemeVariant.Dark || (theme?.DarkMode ?? false);
 
@@ -564,18 +575,30 @@ public partial class WidgetStackView : UserControl, IWidgetSelfRefreshing, IStac
         {
             if (viewTypeName is "Forecast" or "FourDayForecast")
             {
-                if (this.TryFindResource("WeatherCardBackground", variant, out var wcb) && wcb is IBrush wb)
+                if (ThemeScopeResolver.TryFindResource<IBrush>(this, "WeatherCardBackground", variant, out var wcb) && wcb is IBrush wb)
                     return wb;
                 return BuildWeatherCardBackground(isDark);
             }
             if (viewTypeName is "Progress" or "ProgressView")
             {
-                if (this.TryFindResource("ProgressCardBackground", variant, out var pcb) && pcb is IBrush pb)
+                if (ThemeScopeResolver.TryFindResource<IBrush>(this, "ProgressCardBackground", variant, out var pcb) && pcb is IBrush pb)
                     return pb;
             }
-
-            if (this.TryFindResource("WidgetBackground", variant, out var cb) && cb is IBrush cbrush)
-                return cbrush;
+            if (viewTypeName is "Batteries" or "BatteriesView")
+            {
+                if (ThemeScopeResolver.TryFindResource<IBrush>(this, "BatteriesCardBackground", variant, out var bcb) && bcb is IBrush bb)
+                    return bb;
+            }
+            if (viewTypeName is "Monitor" or "MultiDashboard" or "SingleMetric")
+            {
+                if (ThemeScopeResolver.TryFindResource<IBrush>(this, "MonitorCardBackground", variant, out var mcb) && mcb is IBrush mb)
+                    return mb;
+            }
+            if (viewTypeName is "Storage" or "StorageView")
+            {
+                if (ThemeScopeResolver.TryFindResource<IBrush>(this, "StorageCardBackground", variant, out var scb) && scb is IBrush sb)
+                    return sb;
+            }
 
             return isDark
                 ? new SolidColorBrush(Color.Parse("#1C1C1E"))

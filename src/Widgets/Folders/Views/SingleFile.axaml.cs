@@ -67,14 +67,23 @@ public partial class SingleFile : UserControl, IWidgetSelfRefreshing
         }
     }
 
+    /// <summary>
+    /// The platform handle the OLE drop target / WM_DROPFILES subclass were registered on,
+    /// captured while the window exists (<c>Loaded</c>); <c>Unloaded</c> can no longer read it
+    /// (see <see cref="WidgetOleDropTarget.PruneDeadRegistrations"/> for the full story of what
+    /// a skipped revoke pins).
+    /// </summary>
+    private IntPtr dropHandle = IntPtr.Zero;
+
     private void OnLoaded(object? sender, RoutedEventArgs e)
     {
         ApplyModel();
         if (VisualRoot is TopLevel topLevel)
         {
             DragDrop.SetAllowDrop(topLevel, true);
-            if (topLevel.TryGetPlatformHandle()?.Handle is { } handle)
+            if (topLevel.TryGetPlatformHandle()?.Handle is { } handle && handle != IntPtr.Zero)
             {
+                dropHandle = handle;
                 WidgetOleDropTarget.Register(handle, OnOleDrop, OnOleDragActive);
                 WidgetOleDropTarget.RegisterWmDropFiles(handle, OnOleDrop, OnOleDragActive);
             }
@@ -83,10 +92,11 @@ public partial class SingleFile : UserControl, IWidgetSelfRefreshing
 
     private void OnUnloaded(object? sender, RoutedEventArgs e)
     {
-        if (VisualRoot is TopLevel topLevel && topLevel.TryGetPlatformHandle()?.Handle is { } handle)
+        if (dropHandle != IntPtr.Zero)
         {
-            WidgetOleDropTarget.Unregister(handle);
-            WidgetOleDropTarget.UnregisterWmDropFiles(handle);
+            WidgetOleDropTarget.Unregister(dropHandle);
+            WidgetOleDropTarget.UnregisterWmDropFiles(dropHandle);
+            dropHandle = IntPtr.Zero;
         }
     }
 

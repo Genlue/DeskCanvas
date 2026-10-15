@@ -12,8 +12,10 @@ public enum ClockDialColorMode
     BackgroundColor = 0,
 
     /// <summary>
-    /// 黑白: fixed black-and-white — white (#FFFFFF) in light mode, black (#1C1C1E)
-    /// in dark mode, i.e. the same black and white dial-1 uses on the Colorful theme.
+    /// 黑白: fixed black-and-white — the exact pair 表盘-1 (AnalogI) wears on the Colorful
+    /// theme: #EDEDED in light mode and #373738 in dark mode, i.e. the on-screen values of
+    /// dial-1's inner face (its light "white dial" and dark "black dial" under the theme's
+    /// constant black card).
     /// </summary>
     BlackWhite = 1,
 
@@ -33,11 +35,11 @@ public record ClockModel(
     string? DialColorLight = null,
     string? DialColorDark = null)
 {
-    /// <summary>Default dial color in light mode (the Colorful theme's white — dial-1's light look).</summary>
-    public const string DefaultDialColorLight = "#FFFFFF";
+    /// <summary>Default dial color in light mode — 表盘-1's Colorful light dial face (the white dial).</summary>
+    public const string DefaultDialColorLight = "#EDEDED";
 
-    /// <summary>Default dial color in dark mode (the Colorful theme's black — dial-1's dark look).</summary>
-    public const string DefaultDialColorDark = "#1C1C1E";
+    /// <summary>Default dial color in dark mode — 表盘-1's Colorful dark dial face (the black dial).</summary>
+    public const string DefaultDialColorDark = "#373738";
 
     /// <summary>
     /// The 自定义 dial color in light mode; falls back to the 黑白 value when unset,
