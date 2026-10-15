@@ -350,6 +350,23 @@ public static class LiquidGlassWallpaper
         // queue a fresh tick even while this one is still probing on a worker.
         Interlocked.Exchange(ref tickQueued, 0);
 
+        // Settle deadline expiry (RC1): a window that ran to its deadline must never just die.
+        // Detection reads the raw deadline instead of SettleActive — the window is expired
+        // exactly when settleUntil is in the past and not yet cleaned, a state SettleActive
+        // reports as "inactive" and the early-outs below would silently park the pacer on
+        // (the zero-publish death this exists to prevent). Zero publications → force the
+        // fallback publish; anything else → close (with the close-out sweep) and move on.
+        var now0 = Environment.TickCount64;
+        var until0 = Volatile.Read(ref settleUntil);
+        if (until0 != 0 && now0 >= until0)
+        {
+            if (Volatile.Read(ref settlePublished) == 0 && !suspended)
+                RunSettleDeadlineFallback();
+            else
+                CloseSettle();
+            return;
+        }
+
         var settle = SettleActive;
         if ((!liveSamplingEnabled && !settle) || suspended) { UpdateTimerState(); return; }
         if (!LiquidGlassSurface.HasActiveSurfaces && !settle) { UpdateTimerState(); return; }
@@ -379,6 +396,7 @@ public static class LiquidGlassWallpaper
                 {
                     Volatile.Write(ref settlePublished, 1);
                     Volatile.Write(ref settleStable, 0);
+                    GlassDiagnostics.Event("settle window published a transition frame");
                 }
                 // Immediate: the interval can be shorter than the surface's move/resize debounce,
                 // and a debounce restarted on every tick would never elapse — freezing the glass.
@@ -479,17 +497,22 @@ public static class LiquidGlassWallpaper
     // surfaces show is published (glass trails the desktop through the transition exactly like it
     // does for an animated wallpaper), and the window closes only once it has published at least
     // one new frame AND two consecutive probes find the desktop identical to it — the settled
-    // wallpaper. A window that has published nothing runs to its deadline instead of closing: a
-    // first "unchanged" probe right after the event is exactly the moment the capture is least
-    // trustworthy (the host is re-compositing and can still read the old scene), and closing on it
-    // would freeze every surface on the old wallpaper with no retry. Two more guards make the
-    // transition uniform, not just convergent: per-surface captures are disabled for the window
-    // (see GetShared — the probe owns every capture and each publish sweeps all surfaces together,
-    // so no widget can freeze on its own private fade step), and the published frame is, by
-    // construction, the settled one. Cost: a handful of captures over ~1–2 s on the probe's pooled
-    // buffer (no allocation once it is warm); when the window closes the pacer parks and the pooled
-    // buffer is given back with the sampler's idle state, so a desktop that merely changed its
-    // wallpaper pays nothing afterwards.
+    // wallpaper. A window that has published nothing no longer merely runs to its deadline: the
+    // real trace showed the whole 6 s being spent without a publish (the switch reads as a wild
+    // jump against the replaced scene, so early probes are rejected, while slow captures and busy
+    // surfaces eat the budget) and then dying with every surface still on the old wallpaper. The
+    // deadline now triggers a bounded forced-publish fallback (see
+    // RunSettleDeadlineFallback), and Invalidate/BeginSettle retire the temporal acceptance grid
+    // at the source so the misclassification cannot happen in the first place. Two more guards
+    // make the transition uniform, not just convergent: per-surface captures are disabled for the
+    // window (see GetShared — the probe owns every capture and each publish sweeps all surfaces
+    // together, so no widget can freeze on its own private fade step), and the published frame is,
+    // by construction, the settled one. Closing the window runs the close-out sweep
+    // (SweepSettleCloseOut) so a surface that dropped the final publish is dragged onto it even on
+    // a desktop that never changes again. Cost: a handful of captures over ~1–2 s on the probe's
+    // pooled buffer (no allocation once it is warm); when the window closes the pacer parks and the
+    // pooled buffer is given back with the sampler's idle state, so a desktop that merely changed
+    // its wallpaper pays nothing afterwards.
 
     /// <summary>How long a settle window may run before giving up (a host that never stabilises).</summary>
     private const int SettleDeadlineMs = 6000;
@@ -541,6 +564,12 @@ public static class LiquidGlassWallpaper
         Volatile.Write(ref settleUntil, Environment.TickCount64 + SettleDeadlineMs);
         Volatile.Write(ref settleStable, 0);
         Volatile.Write(ref settlePublished, 0);
+        // Fresh budget for the zero-publish deadline fallback (see RunSettleDeadlineFallback) and
+        // a retired acceptance grid — the frame arriving after this event replaces the scene the
+        // grid describes, exactly as in Invalidate.
+        Volatile.Write(ref settleFallbacks, 0);
+        ResetTemporalAcceptance();
+        GlassDiagnostics.Event($"settle window opened (deadline {SettleDeadlineMs}ms, live sampling {(liveSamplingEnabled ? "on" : "off")})");
         UpdateTimerState();
     }
 
@@ -550,6 +579,128 @@ public static class LiquidGlassWallpaper
         Volatile.Write(ref settleUntil, 0);
         Volatile.Write(ref settleStable, 0);
         UpdateTimerState();
+        SweepSettleCloseOut();
+    }
+
+    /// <summary>
+    /// Settle close-out verification (RC3): when the window closes, every frame-demanding surface
+    /// must be rendering the frame the window ended on. A surface that was mid-prepare during the
+    /// final publish dropped that frame by design, and a static desktop never publishes again —
+    /// without this sweep that surface froze on the old wallpaper until an unrelated event
+    /// re-rendered it ("统一发放后部分组件更新失败"). Idempotent: surfaces already built on the
+    /// final snapshot are skipped, so a normal close where everyone converged costs nothing.
+    /// </summary>
+    private static void SweepSettleCloseOut()
+    {
+        long finalId;
+        lock (Gate)
+        {
+            finalId = cached?.CaptureId ?? 0;
+        }
+        if (finalId == 0) return;
+        var corrected = LiquidGlassSurface.SweepStaleMaterials(finalId);
+        if (corrected > 0)
+            GlassDiagnostics.Event($"settle close-out: {corrected} surface(s) forced onto the final published frame");
+    }
+
+    /// <summary>Short confirmation window reopened by the settle deadline fallback.</summary>
+    private const int SettleRecoveryMs = 1500;
+
+    /// <summary>Forced fallback publish attempts one zero-publish window may spend before giving up.</summary>
+    private const int MaxSettleFallbacks = 3;
+
+    /// <summary>Fallback publish attempts spent by the current settle window (reset by BeginSettle).</summary>
+    private static int settleFallbacks;
+
+    /// <summary>
+    /// The deadline fallback for a settle window that is about to die having published nothing
+    /// (RC1): retire the temporal acceptance grid and force one publish attempt past every guard.
+    /// <para>
+    /// The old behaviour let such a window simply expire — by design, per the section comment —
+    /// but the real trace showed a window CAN spend its whole 6 s without a publish: a wallpaper
+    /// switch is a wild jump against the replaced scene, so the first probes were rejected as
+    /// "overlay transition", and with slow captures plus busy surfaces (2 rejected rounds + 1
+    /// published round ≈ 3×750 ms of surface prepares each) the deadline arrived first. The
+    /// surfaces then sat on the old wallpaper until an unrelated event — "sometimes not a single
+    /// widget updates after changing the wallpaper". Invalidate/BeginSettle now retire the grid at
+    /// the source, and this fallback guarantees the window can never end without an attempt.
+    /// </para>
+    /// </summary>
+    private static async void RunSettleDeadlineFallback()
+    {
+        var attempt = Interlocked.Increment(ref settleFallbacks);
+        if (attempt > MaxSettleFallbacks)
+        {
+            GlassDiagnostics.Event("settle window expired with nothing published — fallback budget exhausted, giving up");
+            CloseSettle();
+            return;
+        }
+
+        // Retire the stale scene reference BEFORE probing: with the grid present the forced round
+        // would be rejected by the very misclassification this fallback exists to bypass.
+        ResetTemporalAcceptance();
+        GlassDiagnostics.Event(
+            $"settle window expired with nothing published — forcing fallback publish attempt {attempt}/{MaxSettleFallbacks}");
+
+        if (Interlocked.Exchange(ref probing, 1) == 1)
+        {
+            // A round is already in flight — forcing a second concurrent capture would race it.
+            // Give it a short window to land (its outcome handling runs the same publish path).
+            Volatile.Write(ref settleUntil, Environment.TickCount64 + SettleRecoveryMs);
+            Volatile.Write(ref settleStable, 0);
+            UpdateTimerState();
+            return;
+        }
+
+        try
+        {
+            var outcome = await Task.Run(() => ProbeCapture(forced: true));
+            switch (outcome)
+            {
+                case ProbeOutcome.Published:
+                    Volatile.Write(ref settlePublished, 1);
+                    Volatile.Write(ref settleStable, 0);
+                    LiquidGlassSurface.RefreshAllImmediate();
+                    // The refresh just dropped frames on any busy surface; the close-out sweep
+                    // arms their catch-up flags so the forced frame is still guaranteed.
+                    SweepSettleCloseOut();
+                    // A short confirmation window lets the normal stability rounds verify the
+                    // settled frame and close on their own terms.
+                    Volatile.Write(ref settleUntil, Environment.TickCount64 + SettleRecoveryMs);
+                    Volatile.Write(ref settleStable, 0);
+                    UpdateTimerState();
+                    break;
+                case ProbeOutcome.Unchanged:
+                    // The desktop verifiably equals what the surfaces render — the "missing"
+                    // update never existed. Close for good.
+                    CloseSettle();
+                    break;
+                default:
+                    // Still nothing usable: retry within the bounded budget, then give up.
+                    if (attempt >= MaxSettleFallbacks)
+                    {
+                        CloseSettle();
+                    }
+                    else
+                    {
+                        Volatile.Write(ref settleUntil, Environment.TickCount64 + SettleRecoveryMs);
+                        Volatile.Write(ref settleStable, 0);
+                        UpdateTimerState();
+                    }
+                    break;
+            }
+        }
+        catch (Exception ex)
+        {
+            // Same contract as the tick: a failing probe must not kill the async path.
+            GlassDiagnostics.Failure(ex);
+            Volatile.Write(ref settleUntil, Environment.TickCount64 + SettleRecoveryMs);
+            UpdateTimerState();
+        }
+        finally
+        {
+            Volatile.Write(ref probing, 0);
+        }
     }
 
     // ---- idle capture release ------------------------------------------------------------------
@@ -777,6 +928,16 @@ public static class LiquidGlassWallpaper
         // through it at the backoff rate.
         Volatile.Write(ref idleRounds, 0);
 
+        // The temporal acceptance grid described the scene being replaced. A wallpaper switch is,
+        // by definition, a wild jump against that scene — leaving the grid in place made the first
+        // probes after the event read the NEW wallpaper as an MPO overlay transition and reject it
+        // (the reported "sometimes not a single widget updates"). Retire it here and in
+        // BeginSettle so the incoming frame validates against nothing and publishes immediately.
+        // lastPublishedSamples stays: it still describes what the surfaces render. The resolved
+        // host is deliberately NOT forgotten — host invalidation is the capture's own self-healing
+        // path (NoteUnusableCapture), not an invalidation concern.
+        ResetTemporalAcceptance();
+
         Interlocked.Exchange(ref lastRoundAt, Environment.TickCount64);
         previousStale?.Dispose();
 
@@ -932,9 +1093,11 @@ public static class LiquidGlassWallpaper
     /// <summary>
     /// What one probe round established. Drives the idle backoff in the tick: only
     /// <see cref="Unchanged"/> is evidence that the desktop is standing still — the other
-    /// non-publishing outcome observed nothing and must not stretch the interval.
+    /// non-publishing outcome observed nothing and must not stretch the interval. Internal
+    /// because the deadline fallback's check seam (<see cref="ForcedProbeOverride"/>) is typed
+    /// on it.
     /// </summary>
-    private enum ProbeOutcome
+    internal enum ProbeOutcome
     {
         /// <summary>New wallpaper content was published; the surfaces were refreshed.</summary>
         Published,
@@ -966,14 +1129,31 @@ public static class LiquidGlassWallpaper
     /// </summary>
     internal static bool ProbeWanted => !suspended && (liveSamplingEnabled || SettleActive);
 
+    /// <summary>
+    /// Check seam: stands in for a forced probe round so the settle deadline fallback is drivable
+    /// without a real desktop. Holds the <see cref="ProbeOutcome"/> value to return (cast from
+    /// int to keep the field reflection-friendly without generics over the nested enum); null in
+    /// the app and never set by production code.
+    /// </summary>
+    internal static int? ForcedProbeOverride = null;
+
     private static ProbeOutcome ProbeCapture()
+    {
+        return ProbeCapture(forced: false);
+    }
+
+    private static ProbeOutcome ProbeCapture(bool forced)
     {
         // The enabled/suspended state is re-checked here: the tick queued this probe a moment ago
         // and a fullscreen transition may have landed in between. A settle window probes even with
         // live sampling off — this guard used to reject those probes outright, which silently
         // disabled the whole wallpaper-change convergence: the change-instant capture (mid-fade or
         // an MPO overlay artifact) froze on every glass card until an unrelated event re-rendered.
-        if (!ProbeWanted) return ProbeOutcome.Unusable;
+        // The deadline fallback (RunSettleDeadlineFallback) probes with forced: true — its window
+        // has already expired, so SettleActive is false and the ordinary guard would refuse the
+        // very round the fallback exists to run.
+        if (ForcedProbeOverride is { } forcedOutcome) return (ProbeOutcome)forcedOutcome;
+        if (!forced && !ProbeWanted) return ProbeOutcome.Unusable;
 
         var pooled = Interlocked.Exchange(ref probeBuffer, null);
         SKBitmap? bmp = null;
@@ -1085,7 +1265,7 @@ public static class LiquidGlassWallpaper
                     : jumped ? "wallpaper capture jumped (overlay transition?) — masking with the previous frame"
                     : "wallpaper capture failed — masking with the previous frame");
             }
-            else if ((flat || jumped) && now - firstUnusableAt >= UnusableGraceMs)
+            else if (now - firstUnusableAt >= UnusableGraceMs)
             {
                 DesktopCapturer.ForgetResolvedHost();
                 // Forgiving the host alone cannot unstick a genuinely new wallpaper: the temporal
@@ -1095,6 +1275,9 @@ public static class LiquidGlassWallpaper
                 // content. Retire the acceptance reference too, so the next capture validates
                 // against nothing and publishes; the grids re-arm from the current scene then.
                 // lastPublishedSamples stays: it still describes what the surfaces render.
+                // (The branch deliberately covers plain capture FAILURES too, not only flat/jumped
+                // frames: a run of null captures — PrintWindow and the screen BitBlt both failing —
+                // used to never reach any recovery at all, because there was no frame to classify.)
                 lock (SampleGate)
                 {
                     lastAcceptedSamples = null;
@@ -1106,14 +1289,18 @@ public static class LiquidGlassWallpaper
     }
 
     /// <summary>
-    /// Retire the temporal acceptance grid. Called when the capture source itself changes
-    /// (window host ⇄ screen BitBlt, see <see cref="DesktopCapturer"/>): the two sources look
-    /// very different for the same desktop — the screen contains every window, the host only
-    /// the wallpaper — and the wild-jump check would read the first frame from the new source
-    /// as an overlay transition and drop it. With nothing to compare against, it validates as
-    /// fresh and publishes.
+    /// Retire the temporal acceptance grid (<c>lastAcceptedSamples</c>/<c>lastAcceptedHost</c>).
+    /// Two call sites share the invariant: the capture source itself changing (window host ⇄
+    /// screen BitBlt, see <see cref="DesktopCapturer"/>) — the two sources look very different for
+    /// the same desktop and the wild-jump check would read the first frame from the new source as
+    /// an overlay transition — and every wallpaper-change entry point
+    /// (<see cref="Invalidate"/>/<see cref="BeginSettle"/>, see the doc there): a new wallpaper is,
+    /// against the scene the grid describes, a wild jump by definition. With nothing to compare
+    /// against, the next frame validates as fresh and publishes. Internal because
+    /// <see cref="DesktopCapturer"/>'s screen-fallback transitions call it too (same
+    /// source-change rationale).
     /// </summary>
-    internal static void ResetAcceptanceOnSourceChange()
+    internal static void ResetTemporalAcceptance()
     {
         lock (SampleGate)
         {
@@ -1856,7 +2043,7 @@ public static class DesktopCapturer
     private static void EnterScreenFallback()
     {
         if (Interlocked.Exchange(ref screenFallback, 1) == 1) return;
-        LiquidGlassWallpaper.ResetAcceptanceOnSourceChange();
+        LiquidGlassWallpaper.ResetTemporalAcceptance();
         TraceCapture("screenfallback:engage",
             "no wallpaper host could be printed (UIPI — a shell/host at a higher integrity " +
             "level?); capturing the screen instead, with DeskCanvas's own windows excluded");
@@ -1869,7 +2056,7 @@ public static class DesktopCapturer
         // may leave it.
         if (CaptureOverride == "screen") return;
         if (Interlocked.Exchange(ref screenFallback, 0) == 0) return;
-        LiquidGlassWallpaper.ResetAcceptanceOnSourceChange();
+        LiquidGlassWallpaper.ResetTemporalAcceptance();
         RestoreCaptureVisibility();
         TraceCapture("screenfallback:leave", "a wallpaper host prints again — back to window captures");
     }

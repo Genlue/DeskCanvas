@@ -1107,7 +1107,18 @@ public record WallpaperSnapshot(
     bool Tile = false,
     bool LiveCapture = false) : IDisposable
 {
+    private static long nextCaptureId;
+
     private byte[]? _imageBytes = ImageBytes;
+
+    /// <summary>
+    /// Monotonic identity of this snapshot instance. The settle close-out sweep compares a
+    /// surface's prepared material against the frame the settle window ended on — the number is
+    /// all that comparison needs, so it deliberately carries no snapshot reference (a stored
+    /// reference would extend the capture's lifetime behind the refcount's back). Placement copies
+    /// (<c>with</c> clones) inherit the id: same pixels, same identity.
+    /// </summary>
+    public long CaptureId { get; } = Interlocked.Increment(ref nextCaptureId);
 
     /// <summary>
     /// The captured pixels, reference counted.

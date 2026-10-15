@@ -63,6 +63,56 @@ public sealed class LiquidGlassSurface : Control
         foreach (var surface in Active) surface.RequestSampledFrame();
     }
 
+    /// <summary>
+    /// Check seam for the settle close-out sweep: replaces the per-surface action (the immediate
+    /// re-render) with an observer, so the close-out contract is assertable without the render
+    /// pipeline. Null in the app; the sweep's SELECTION logic (DemandsFrames + snapshot identity)
+    /// always runs regardless.
+    /// </summary>
+    internal static Action<LiquidGlassSurface, long>? SweepRenderOverride = null;
+
+    /// <summary>
+    /// Settle close-out verification: force every live frame-demanding surface whose material was
+    /// NOT built from the frame identified by <paramref name="captureId"/> onto that final frame.
+    /// <para>
+    /// The unified publish path (<see cref="RefreshAllImmediate"/>) drops frames on busy surfaces
+    /// by design — and a static desktop never publishes again, so the one surface that was
+    /// mid-prepare during the last publish used to sit on the old wallpaper forever ("统一发放后
+    /// 部分组件更新失败"). The sweep runs when a settle window closes (and after its deadline
+    /// fallback publish): idle surfaces re-render immediately, busy ones get their pending flag
+    /// armed so RenderMaterial's finally catches up. Returns the number of surfaces corrected.
+    /// </para>
+    /// </summary>
+    internal static int SweepStaleMaterials(long captureId)
+    {
+        var corrected = 0;
+        foreach (var surface in Active)
+        {
+            if (!surface.DemandsFrames) continue;
+            var current = surface.prepared;
+            if (current != null && current.CaptureId == captureId) continue;
+
+            if (surface.busy)
+            {
+                // Mid-prepare: its Get() already sampled an older frame. Arm the catch-up flag —
+                // RenderMaterial's finally will run exactly one follow-up render.
+                Interlocked.Exchange(ref surface.pendingSampledFrame, 1);
+            }
+            else if (SweepRenderOverride is { } hook)
+            {
+                hook(surface, captureId);
+            }
+            else
+            {
+                // Immediate, not through the debounce: the settle window just closed and there
+                // will be no further publishes to restart it.
+                surface.RenderMaterial();
+            }
+            corrected++;
+        }
+        return corrected;
+    }
+
     private static void RefreshAll(bool immediate)
     {
         foreach (var surface in Active) surface.RequestRender(immediate);
@@ -117,19 +167,24 @@ public sealed class LiquidGlassSurface : Control
 
     /// <summary>
     /// Compute the wallpaper sampling origin from <b>layout offsets only</b>, ignoring every
-    /// ancestor render transform on the way to the window.
+    /// ancestor render transform on the way to the window. DEFAULT <c>true</c> for every
+    /// wallpaper-sampling surface.
     /// <para>
-    /// The secondary-panel shell sets this: its host window animates the card's
-    /// <c>ScaleTransform</c> for the open/close zoom, and Avalonia's <c>PointToScreen</c> composes
-    /// render transforms — so a frame built while the card is scaled (the panel asks for one right
-    /// before the transition starts) would bake the mid-zoom position into the material and the
-    /// glass would sample the wallpaper from the wrong spot for the panel's whole lifetime. With
-    /// this flag the position is always the at-rest rect; the zoom itself is re-parameterised per
-    /// tick through <see cref="SetAnimationFrameScale"/> from that correct base.
+    /// Avalonia's <c>PointToScreen</c> composes render transforms per visual on the way up, so any
+    /// ancestor matrix shifts the sampled region by an amount proportional to the surface's
+    /// distance from the transform's anchor — the reported "采样壁纸与实际壁纸错位，位置因素显著"
+    /// (some positions off, others fine). The shell's open/close zoom was the first known case
+    /// (hence this flag's original opt-in on the secondary-panel shell); the frameless clock and
+    /// surfaces nested inside a widget's scaled content
+    /// (<see cref="Widget"/> puts a <c>ScaleTransform</c> on its <c>ContentPresenter</c> whenever
+    /// ContentScale ≠ 1) are the same defect. The layout-offset walk
+    /// (<see cref="GlassSamplingOrigin.Resolve"/>) equals the raw <c>PointToScreen</c> whenever no
+    /// transform exists, so the default was flipped to <c>true</c> in 3.8.3. Set <c>false</c> only
+    /// to explicitly opt back into the raw path.
     /// </para>
     /// </summary>
     public static readonly StyledProperty<bool> IgnoresAncestorTransformProperty =
-        AvaloniaProperty.Register<LiquidGlassSurface, bool>(nameof(IgnoresAncestorTransform));
+        AvaloniaProperty.Register<LiquidGlassSurface, bool>(nameof(IgnoresAncestorTransform), defaultValue: true);
 
     public Theme? Material { get => GetValue(MaterialProperty); set => SetValue(MaterialProperty, value); }
     public CornerRadius CornerRadius { get => GetValue(CornerRadiusProperty); set => SetValue(CornerRadiusProperty, value); }
@@ -158,18 +213,28 @@ public sealed class LiquidGlassSurface : Control
     {
         private int references = 1;
 
-        public Prepared(GlassSource? source, AuraTexture aura, LiquidGlassRenderer.Frame frame, SKBitmap? cpu)
+        public Prepared(GlassSource? source, AuraTexture aura, LiquidGlassRenderer.Frame frame, SKBitmap? cpu, long captureId)
         {
             Source = source;
             Aura = aura;
             Frame = frame;
             Cpu = cpu;
+            CaptureId = captureId;
         }
 
         public GlassSource? Source { get; }
         public AuraTexture Aura { get; }
         public LiquidGlassRenderer.Frame Frame { get; }
         public SKBitmap? Cpu { get; }
+
+        /// <summary>
+        /// Identity of the wallpaper snapshot the material was built from
+        /// (<see cref="WallpaperSnapshot.CaptureId"/>). Only the NUMBER is stored — never the
+        /// snapshot reference, which would extend the capture's lifetime behind the refcount's
+        /// back. The settle close-out sweep compares this against the frame the settle window
+        /// ended on to catch a surface whose published material missed the final publish.
+        /// </summary>
+        public long CaptureId { get; }
 
         public void AddRef() => Interlocked.Increment(ref references);
 
@@ -350,7 +415,7 @@ public sealed class LiquidGlassSurface : Control
     /// </summary>
     private void RequestSampledFrame()
     {
-        if (!attached || !IsVisible || Material?.UsesRenderedGlass != true) return;
+        if (!attached || !IsEffectivelyVisible || Material?.UsesRenderedGlass != true) return;
         if (busy)
         {
             // Dropped on purpose — but remember it, so the frame is not lost forever when the
@@ -390,7 +455,10 @@ public sealed class LiquidGlassSurface : Control
 
     private async void RenderMaterial()
     {
-        if (busy || !attached || !IsVisible || Material?.UsesRenderedGlass != true || Bounds.Width < 1 || Bounds.Height < 1) return;
+        // Same visibility rule as DemandsFrames (IsEffectivelyVisible): a surface inside a
+        // collapsed parent must not prepare, and the two guards used to disagree — a hidden
+        // shell's glass could consume a publish while DemandsFrames said it wanted none.
+        if (busy || !attached || !IsEffectivelyVisible || Material?.UsesRenderedGlass != true || Bounds.Width < 1 || Bounds.Height < 1) return;
         busy = true;
         var current = revision;
         var started = Environment.TickCount64;
@@ -492,7 +560,7 @@ public sealed class LiquidGlassSurface : Control
             if (!attached || revision != current)
             {
                 GlassDiagnostics.Note($"discarded ({path}: geometry changed)", started, frame);
-                RetirePrepared(new Prepared(nextSource, nextAura, frame, null));
+                RetirePrepared(new Prepared(nextSource, nextAura, frame, null, wallpaper.CaptureId));
                 return;
             }
 
@@ -501,11 +569,11 @@ public sealed class LiquidGlassSurface : Control
             if (nextSource == null && nextCpu == null)
             {
                 GlassDiagnostics.Note($"empty ({path}) — keeping the previous material", started, frame);
-                RetirePrepared(new Prepared(null, nextAura, frame, null));
+                RetirePrepared(new Prepared(null, nextAura, frame, null, wallpaper.CaptureId));
                 return;
             }
 
-            var previous = Interlocked.Exchange(ref prepared, new Prepared(nextSource, nextAura, frame, nextCpu));
+            var previous = Interlocked.Exchange(ref prepared, new Prepared(nextSource, nextAura, frame, nextCpu, wallpaper.CaptureId));
             RetirePrepared(previous);
             GlassDiagnostics.Published(Environment.TickCount64 - started,
                 $"{path} {frame.Width}x{frame.Height} capture {result.CaptureMs}ms backdrop {result.BackdropMs}ms " +
@@ -526,8 +594,14 @@ public sealed class LiquidGlassSurface : Control
             if (attached && revision != current)
             {
                 // The revision re-render calls Get() and picks up the newest published frame,
-                // which supersedes anything the pending flag could ask for.
-                Interlocked.Exchange(ref pendingSampledFrame, 0);
+                // which supersedes anything the pending flag could ask for — but the flag STAYS
+                // SET. Clearing it here used to lose the dropped frame for good when revisions
+                // kept flipping (a settle publishing while the user drags): each re-render
+                // restarted the 90 ms debounce, the storm outlived every publisher, and the
+                // surface sat on old material for the whole settle window (5×750 ms discards in
+                // the 3.8.2 trace). Keeping the flag means the re-render that finally completes
+                // with a stable revision consumes it and runs exactly one catch-up render; the
+                // settle close-out sweep is the second net under a storm that never ends.
                 RequestRender();
             }
             else if (attached && Interlocked.Exchange(ref pendingSampledFrame, 0) == 1)
@@ -553,30 +627,22 @@ public sealed class LiquidGlassSurface : Control
         var renderScale = (float)(scaling * quality);
         var width = Math.Max(1, (int)Math.Ceiling(Bounds.Width * renderScale));
         var height = Math.Max(1, (int)Math.Ceiling(Bounds.Height * renderScale));
-        var screen = window?.Screens.ScreenFromWindow(window);
         var screens = window?.Screens.All;
         var primaryScaling = screens?.FirstOrDefault(s => s.IsPrimary)?.Scaling
                              ?? screens?.FirstOrDefault()?.Scaling
                              ?? scaling;
         var backdropScale = (float)(primaryScaling * quality);
-        var left = screens?.Min(s => s.Bounds.X) ?? 0;
-        var top = screens?.Min(s => s.Bounds.Y) ?? 0;
-        var desktopWidth = (screens?.Max(s => s.Bounds.Right) ?? 1920) - left;
-        var desktopHeight = (screens?.Max(s => s.Bounds.Bottom) ?? 1080) - top;
-        // PointToScreen composes render transforms (Avalonia composes them per visual in
-        // GetOffsetFrom); a host that animates its card (the panel shell's open/close zoom) must
-        // not let that mid-zoom matrix reach the sampling origin — see IgnoresAncestorTransform.
-        var position = window == null
-            ? default
-            : IgnoresAncestorTransform ? DesktopPositionIgnoringRenderTransforms() : this.PointToScreen(default);
+        // Shared desktop geometry (extent + sampling origin), the one source of truth the clock's
+        // glyph renderer also uses — see GlassSamplingOrigin. The sampling origin walks layout
+        // offsets by default (IgnoresAncestorTransform), so an ancestor's mid-zoom matrix or a
+        // content scale can never shift the wallpaper region the card samples.
+        var geometry = GlassSamplingOrigin.FrameDesktopGeometry(window, this, quality);
         var widget = window as Widget;
         var (cols, rows) = widget?.CurrentSpan ?? (0, 0);
         var material = Material ?? new Theme(null, null, 0.18, true, false, "Inter", SurfaceStyle.LiquidGlass);
         var frame = new LiquidGlassRenderer.Frame(width, height, renderScale, (float)CornerRadius.TopLeft,
-            (float)((position.X - left) * quality), (float)((position.Y - top) * quality),
-            (float)(desktopWidth * quality), (float)(desktopHeight * quality),
-            (float)(((screen?.Bounds.X ?? 0) - left) * quality), (float)(((screen?.Bounds.Y ?? 0) - top) * quality),
-            (float)((screen?.Bounds.Width ?? 1920) * quality), (float)((screen?.Bounds.Height ?? 1080) * quality),
+            geometry.DesktopX, geometry.DesktopY, geometry.DesktopWidth, geometry.DesktopHeight,
+            geometry.ScreenX, geometry.ScreenY, geometry.ScreenWidth, geometry.ScreenHeight,
             material, ActualThemeVariant == ThemeVariant.Dark, SettingsSurface, (float)quality,
             Columns: cols, Rows: rows, BackdropScale: backdropScale);
         if (!Preview) return frame;
@@ -611,25 +677,12 @@ public sealed class LiquidGlassSurface : Control
 
     /// <summary>
     /// The surface's top-left corner in screen (physical) pixels, computed from layout offsets
-    /// (<see cref="Visual.Bounds.TopLeft"/>) only — every <c>RenderTransform</c> on the way up is
-    /// deliberately skipped, so an ancestor's animation never shifts the sampled wallpaper region.
-    /// Falls back to the regular <c>PointToScreen</c> when the walk does not reach the window
-    /// (an unexpected tree shape must not break the material).
+    /// only — see <see cref="GlassSamplingOrigin.Resolve"/> (the shared implementation the
+    /// frameless clock uses too). Kept as a thin wrapper so the panel-shell checks can keep
+    /// asserting the walk's behaviour directly.
     /// </summary>
     private PixelPoint DesktopPositionIgnoringRenderTransforms()
-    {
-        if (window == null) return default;
-        var offset = default(Point);
-        var visual = (Visual?)this;
-        while (visual != null && !ReferenceEquals(visual, window))
-        {
-            var topLeft = visual.Bounds.TopLeft;
-            offset = new Point(offset.X + topLeft.X, offset.Y + topLeft.Y);
-            visual = visual.GetVisualParent();
-        }
-
-        return ReferenceEquals(visual, window) ? window.PointToScreen(offset) : this.PointToScreen(default);
-    }
+        => GlassSamplingOrigin.Resolve(this, window);
 
     /// <summary>
     /// The soft recipe's dye bloom, built from the shared backdrop. Cell-centre sampling keeps this

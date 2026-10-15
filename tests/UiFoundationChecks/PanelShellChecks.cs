@@ -263,7 +263,7 @@ internal static partial class Program
         Check(shell.CloseButton is not null, "PART_CloseButton resolves");
         Check(shell.ContentHost is not null, "PART_ContentPresenter resolves");
         Check(shell.GlassSurface is { IgnoresAncestorTransform: true },
-            "PART_GlassSurface ignores ancestor render transforms (the card zoom must not shift the wallpaper sampling origin)");
+            "PART_GlassSurface ignores ancestor render transforms (the card zoom must not shift the wallpaper sampling origin; the shell's explicit True matches the 3.8.3 pipeline-wide default)");
         if (shell.CardBorder is { } card)
         {
             Check(card.Opacity == 0.0,
@@ -360,7 +360,7 @@ internal static partial class Program
         card.RenderTransform = null;
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
         Check(Invoke() == restRaw && RawPointToScreen() == restRaw,
-            "at rest the walk and the raw path agree again");
+            "at rest the walk and the raw path agree again (and they agree everywhere without a transform — which is why the walk became the default origin path in 3.8.3, see GlassOriginChecks)");
 
         host.Close();
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();

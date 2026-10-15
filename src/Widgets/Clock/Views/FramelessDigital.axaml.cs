@@ -20,6 +20,7 @@ using DeskCanvas.Core.Interfaces;
 using DeskCanvas.Core.Models;
 using DeskCanvas.Core.Models.Settings;
 using DeskCanvas.Services;
+using DeskCanvas.Views.Controls;
 
 namespace Clock.Views;
 
@@ -499,24 +500,25 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
         }
 
         var isDark = ActualThemeVariant == ThemeVariant.Dark;
-        var screen = window?.Screens.ScreenFromWindow(window);
-        var screenPos = window != null ? this.PointToScreen(default) : default;
 
-        var screens = window?.Screens.All;
-        var left = screens?.Min(s => s.Bounds.X) ?? 0;
-        var top = screens?.Min(s => s.Bounds.Y) ?? 0;
-        var desktopWidth = (screens?.Max(s => s.Bounds.Right) ?? 1920) - left;
-        var desktopHeight = (screens?.Max(s => s.Bounds.Bottom) ?? 1080) - top;
+        // Shared glass geometry (sampling origin walk + desktop extent), the one source of truth
+        // LiquidGlassSurface.BuildFrame uses too. The clock has no quality concept — originScale 1
+        // keeps the frame's desktop coordinates in raw physical pixels, numerically identical to
+        // what the clock's private copy used to compute — but the ORIGIN now goes through the
+        // transform-free layout walk: Avalonia's PointToScreen composes ancestor render
+        // transforms, so the clock inside a widget whose content is scaled (ContentScale ≠ 1)
+        // sampled the wallpaper shifted by a distance proportional to its offset from the scale
+        // anchor (the reported 采样错位 being position-dependent).
+        var geometry = GlassSamplingOrigin.FrameDesktopGeometry(window, this, 1.0);
 
         var widget = window as DeskCanvas.Views.Widget;
         var (cols, rows) = widget?.CurrentSpan ?? (0, 0);
 
         var frame = new LiquidGlassRenderer.Frame(
             width, height, (float)scaling, 0f,
-            screenPos.X - left, screenPos.Y - top,
-            desktopWidth, desktopHeight,
-            (screen?.Bounds.X ?? 0) - left, (screen?.Bounds.Y ?? 0) - top,
-            screen?.Bounds.Width ?? 1920, screen?.Bounds.Height ?? 1080,
+            geometry.DesktopX, geometry.DesktopY,
+            geometry.DesktopWidth, geometry.DesktopHeight,
+            geometry.ScreenX, geometry.ScreenY, geometry.ScreenWidth, geometry.ScreenHeight,
             effectiveTheme, isDark,
             Columns: cols, Rows: rows,
             GlyphOpacity: (float)Math.Clamp(model.LiquidGlassOpacity / 100.0, 0, 2));
