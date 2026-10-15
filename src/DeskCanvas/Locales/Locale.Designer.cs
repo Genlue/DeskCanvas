@@ -114,6 +114,7 @@ namespace DeskCanvas.Locales {
         public static string Settings_General_Update_Route_EnvProxy => ResourceManager.GetString("Settings_General_Update_Route_EnvProxy", resourceCulture);
         public static string Settings_General_Update_Route_LocalPort => ResourceManager.GetString("Settings_General_Update_Route_LocalPort", resourceCulture);
         public static string Settings_General_Update_Route_CustomProxy => ResourceManager.GetString("Settings_General_Update_Route_CustomProxy", resourceCulture);
+        public static string Settings_General_Update_Route_AtomFallback => ResourceManager.GetString("Settings_General_Update_Route_AtomFallback", resourceCulture);
         public static string Settings_General_Update_Record_UpToDate => ResourceManager.GetString("Settings_General_Update_Record_UpToDate", resourceCulture);
         public static string Settings_General_Update_Record_FoundNew => ResourceManager.GetString("Settings_General_Update_Record_FoundNew", resourceCulture);
         public static string Settings_General_Update_Record_Failed => ResourceManager.GetString("Settings_General_Update_Record_Failed", resourceCulture);

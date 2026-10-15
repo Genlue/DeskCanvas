@@ -966,6 +966,9 @@
     <data name="Settings_General_Update_Route_CustomProxy" xml:space="preserve">
         <value>Proxy {0} (Custom)</value>
     </data>
+    <data name="Settings_General_Update_Route_AtomFallback" xml:space="preserve">
+        <value>atom fallback feed (quota-free)</value>
+    </data>
     <data name="Settings_General_Update_Record_UpToDate" xml:space="preserve">
         <value>Last checked {0} · Up to date ({1}) · {2}</value>
     </data>

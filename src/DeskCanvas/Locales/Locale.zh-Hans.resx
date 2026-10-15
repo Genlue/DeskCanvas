@@ -1065,6 +1065,9 @@
     <data name="Settings_General_Update_Route_CustomProxy" xml:space="preserve">
         <value>代理 {0} (自定义)</value>
     </data>
+    <data name="Settings_General_Update_Route_AtomFallback" xml:space="preserve">
+        <value>atom 备用源 (免 API 配额)</value>
+    </data>
     <data name="Settings_General_Update_Record_UpToDate" xml:space="preserve">
         <value>上次检查 {0} · 已是最新版本 ({1}) · {2}</value>
     </data>

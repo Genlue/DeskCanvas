@@ -139,10 +139,14 @@ public class UpdateService
 
         try
         {
-            var (info, proxyUsed, errorReason) = await FetchReleaseInfoWithDiagnosticsAsync().ConfigureAwait(false);
+            var (info, proxyUsed, errorReason, viaAtom) = await FetchReleaseInfoWithDiagnosticsAsync().ConfigureAwait(false);
             var now = DateTime.UtcNow;
             var timeStr = now.ToLocalTime().ToString("yyyy-MM-dd HH:mm");
             var routeDesc = FormatRouteDescription(proxyUsed, isAutoMode: false);
+            if (viaAtom)
+            {
+                routeDesc += " · " + Locales.Locale.Settings_General_Update_Route_AtomFallback;
+            }
             var currentVersion = Assembly.GetExecutingAssembly().GetName().Version ?? new Version(1, 0, 0);
 
             if (info == null)
@@ -346,29 +350,32 @@ public class UpdateService
     /// </summary>
     public async Task<ReleaseInfo?> FetchReleaseInfoAsync()
     {
-        var (info, _, _) = await FetchReleaseInfoWithDiagnosticsAsync().ConfigureAwait(false);
+        var (info, _, _, _) = await FetchReleaseInfoWithDiagnosticsAsync().ConfigureAwait(false);
         return info;
     }
 
     /// <summary>
     /// Fetch latest release metadata from GitHub API along with the proxy route used and any failure reason.
+    /// The <paramref name="viaAtom"/> flag marks a success served by the releases.atom fallback
+    /// (surfaced in the check-status route description for diagnosis).
     /// </summary>
-    public async Task<(ReleaseInfo? Info, ResolvedProxy ProxyUsed, string? ErrorReason)> FetchReleaseInfoWithDiagnosticsAsync()
+    public async Task<(ReleaseInfo? Info, ResolvedProxy ProxyUsed, string? ErrorReason, bool ViaAtom)> FetchReleaseInfoWithDiagnosticsAsync()
     {
         var settings = appSettingsProvider.Get();
         var effectiveUrl = settings.EffectiveUpdateUrl;
         if (string.IsNullOrWhiteSpace(effectiveUrl))
-            return (null, new ResolvedProxy(null, ProxySourceKind.Direct), Locales.Locale.Settings_General_Update_Error_Network);
+            return (null, new ResolvedProxy(null, ProxySourceKind.Direct), Locales.Locale.Settings_General_Update_Error_Network, false);
 
         var apiUrl = ResolveApiUrl(effectiveUrl);
         Uri.TryCreate(apiUrl, UriKind.Absolute, out var targetUri);
 
         var resolvedProxy = ProxySettings.ResolveProxy(settings.HttpProxy, targetUri);
+        var directProxy = new ResolvedProxy(null, ProxySourceKind.Direct);
 
         var (info, errorReason) = await TryFetchWithProxyAsync(apiUrl, resolvedProxy).ConfigureAwait(false);
         if (info != null)
         {
-            return (info, resolvedProxy, null);
+            return (info, resolvedProxy, null, false);
         }
 
         // Any resolved proxy route that failed to reach GitHub — auto-detected local port, system
@@ -378,15 +385,71 @@ public class UpdateService
         // degrades to "check via direct" instead of a dead check.
         if (resolvedProxy.UsesProxy)
         {
-            var directProxy = new ResolvedProxy(null, ProxySourceKind.Direct);
             var (directInfo, directError) = await TryFetchWithProxyAsync(apiUrl, directProxy).ConfigureAwait(false);
             if (directInfo != null)
             {
-                return (directInfo, directProxy, null);
+                return (directInfo, directProxy, null, false);
             }
         }
 
-        return (null, resolvedProxy, errorReason);
+        // Quota-free fallback: the unauthenticated GitHub REST API allows only 60 requests/hour
+        // per IP, and a popular proxy exit node shares that budget across every user on it — the
+        // check then dies with HTTP 403 ("API rate limit exceeded for <node IP>") no matter how
+        // healthy the route is. releases.atom lives on github.com (a different endpoint family
+        // from api.github.com, both of which a flapping proxy client may reach at different
+        // times) and carries the same releases with no API quota: same proxy route first, then
+        // one direct attempt, mirroring the API chain. The API error reason is kept as the
+        // reported failure when even this fallback fails — 403-rate-limit is the actionable message.
+        var atomUrl = ReleaseAtomParser.DeriveAtomUrl(apiUrl);
+        if (atomUrl != null)
+        {
+            if (resolvedProxy.UsesProxy)
+            {
+                var (atomInfo, _) = await TryFetchAtomAsync(atomUrl, resolvedProxy).ConfigureAwait(false);
+                if (atomInfo != null)
+                {
+                    return (ToReleaseInfo(atomInfo), resolvedProxy, null, true);
+                }
+            }
+
+            var (atomDirectInfo, _) = await TryFetchAtomAsync(atomUrl, directProxy).ConfigureAwait(false);
+            if (atomDirectInfo != null)
+            {
+                return (ToReleaseInfo(atomDirectInfo), directProxy, null, true);
+            }
+        }
+
+        return (null, resolvedProxy, errorReason, false);
+    }
+
+    /// <summary>Map the parsed atom entry onto the auto-updater's release metadata (no asset info in feeds — the popup falls back to opening the release page).</summary>
+    private static ReleaseInfo ToReleaseInfo(AtomReleaseInfo atom) =>
+        new(atom.Version, atom.TagName, atom.Title, atom.ChangelogText, atom.PageUrl, null, null, 0);
+
+    private static async Task<(AtomReleaseInfo? Info, string? ErrorReason)> TryFetchAtomAsync(string atomUrl, ResolvedProxy proxy)
+    {
+        try
+        {
+            using var httpClient = ProxySettings.CreateHttpClient(proxy);
+            httpClient.DefaultRequestHeaders.UserAgent.ParseAdd("DeskCanvas-Updater");
+            httpClient.DefaultRequestHeaders.Accept.ParseAdd("application/atom+xml");
+
+            using var response = await httpClient.GetAsync(atomUrl).ConfigureAwait(false);
+            if (!response.IsSuccessStatusCode)
+            {
+                return (null, $"HTTP {(int)response.StatusCode}");
+            }
+
+            var xml = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+            var parsed = ReleaseAtomParser.TryParse(xml);
+            return parsed != null
+                ? (parsed, null)
+                : (null, Locales.Locale.Settings_General_Update_Error_Network);
+        }
+        catch (Exception ex)
+        {
+            return (null, DescribeException(ex, proxy));
+        }
     }
 
     private static async Task<(ReleaseInfo? Info, string? ErrorReason)> TryFetchWithProxyAsync(string apiUrl, ResolvedProxy proxy)
