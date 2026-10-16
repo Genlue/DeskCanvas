@@ -10,6 +10,7 @@
         <Style Selector="TextBlock">
             <Setter Property="FontSize" Value="140" />
             <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}" />
         </Style>
     </UserControl.Styles>
     

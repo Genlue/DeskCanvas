@@ -1,0 +1,1402 @@
+type DeskCanvas.Contracts.ActivityReason
+enumvalue DeskCanvas.Contracts.ActivityReason DesktopVisible
+enumvalue DeskCanvas.Contracts.ActivityReason DisplayDetached
+enumvalue DeskCanvas.Contracts.ActivityReason None
+enumvalue DeskCanvas.Contracts.ActivityReason Preview
+enumvalue DeskCanvas.Contracts.ActivityReason ResourcePressure
+enumvalue DeskCanvas.Contracts.ActivityReason ScreenCovered
+enumvalue DeskCanvas.Contracts.ActivityReason SessionLocked
+enumvalue DeskCanvas.Contracts.ActivityReason StackInactive
+enumvalue DeskCanvas.Contracts.ActivityReason TrayHidden
+type DeskCanvas.Contracts.ActivitySnapshot
+method DeskCanvas.Contracts.ActivitySnapshot Deconstruct(DeskCanvas.Contracts.ActivityReason,System.Boolean) -> System.Void
+method DeskCanvas.Contracts.ActivitySnapshot Equals(System.Object) -> System.Boolean
+method DeskCanvas.Contracts.ActivitySnapshot Equals(DeskCanvas.Contracts.ActivitySnapshot) -> System.Boolean
+method DeskCanvas.Contracts.ActivitySnapshot GetHashCode() -> System.Int32
+method DeskCanvas.Contracts.ActivitySnapshot ToString() -> System.String
+method DeskCanvas.Contracts.ActivitySnapshot op_Equality(DeskCanvas.Contracts.ActivitySnapshot,DeskCanvas.Contracts.ActivitySnapshot) -> System.Boolean
+method DeskCanvas.Contracts.ActivitySnapshot op_Inequality(DeskCanvas.Contracts.ActivitySnapshot,DeskCanvas.Contracts.ActivitySnapshot) -> System.Boolean
+property DeskCanvas.Contracts.ActivitySnapshot DeadlineAllowed -> System.Boolean
+property DeskCanvas.Contracts.ActivitySnapshot IsPreview -> System.Boolean
+property DeskCanvas.Contracts.ActivitySnapshot IsVisible -> System.Boolean
+property DeskCanvas.Contracts.ActivitySnapshot PollingActive -> System.Boolean
+property DeskCanvas.Contracts.ActivitySnapshot Preview -> DeskCanvas.Contracts.ActivitySnapshot
+property DeskCanvas.Contracts.ActivitySnapshot Reasons -> DeskCanvas.Contracts.ActivityReason
+property DeskCanvas.Contracts.ActivitySnapshot RenderActive -> System.Boolean
+type DeskCanvas.Contracts.DataSnapshot`1
+method DeskCanvas.Contracts.DataSnapshot`1 Deconstruct(T,System.Int64,System.DateTimeOffset,System.TimeSpan,System.String,System.String) -> System.Void
+method DeskCanvas.Contracts.DataSnapshot`1 Equals(System.Object) -> System.Boolean
+method DeskCanvas.Contracts.DataSnapshot`1 Equals(DeskCanvas.Contracts.DataSnapshot<T>) -> System.Boolean
+method DeskCanvas.Contracts.DataSnapshot`1 GetHashCode() -> System.Int32
+method DeskCanvas.Contracts.DataSnapshot`1 IsStale(System.DateTimeOffset) -> System.Boolean
+method DeskCanvas.Contracts.DataSnapshot`1 ToString() -> System.String
+method DeskCanvas.Contracts.DataSnapshot`1 op_Equality(DeskCanvas.Contracts.DataSnapshot<T>,DeskCanvas.Contracts.DataSnapshot<T>) -> System.Boolean
+method DeskCanvas.Contracts.DataSnapshot`1 op_Inequality(DeskCanvas.Contracts.DataSnapshot<T>,DeskCanvas.Contracts.DataSnapshot<T>) -> System.Boolean
+property DeskCanvas.Contracts.DataSnapshot`1 ErrorCode -> System.String
+property DeskCanvas.Contracts.DataSnapshot`1 FetchedAt -> System.DateTimeOffset
+property DeskCanvas.Contracts.DataSnapshot`1 Freshness -> System.TimeSpan
+property DeskCanvas.Contracts.DataSnapshot`1 HasValue -> System.Boolean
+property DeskCanvas.Contracts.DataSnapshot`1 Source -> System.String
+property DeskCanvas.Contracts.DataSnapshot`1 Value -> T
+property DeskCanvas.Contracts.DataSnapshot`1 Version -> System.Int64
+type DeskCanvas.Contracts.DraftSettingsStore`1
+method DeskCanvas.Contracts.DraftSettingsStore`1 BeginDraft() -> T
+method DeskCanvas.Contracts.DraftSettingsStore`1 Commit(T,System.Int64) -> DeskCanvas.Contracts.SettingsCommitResult<T>
+property DeskCanvas.Contracts.DraftSettingsStore`1 Revision -> System.Int64
+property DeskCanvas.Contracts.DraftSettingsStore`1 Snapshot -> T
+event DeskCanvas.Contracts.DraftSettingsStore`1 Committed -> System.EventHandler<DeskCanvas.Contracts.SettingsCommitResult<T>>
+type DeskCanvas.Contracts.GlassMemoryEstimator
+method DeskCanvas.Contracts.GlassMemoryEstimator EstimateBgraBytes(System.Int32,System.Int32) -> System.Int64
+type DeskCanvas.Contracts.IDataSubscription
+property DeskCanvas.Contracts.IDataSubscription IsDisposed -> System.Boolean
+property DeskCanvas.Contracts.IDataSubscription Owner -> DeskCanvas.Contracts.WidgetInstanceId
+type DeskCanvas.Contracts.IResourceLedger
+method DeskCanvas.Contracts.IResourceLedger Report(System.String,DeskCanvas.Contracts.ResourceKind,System.Int32,System.Int64,System.String) -> System.Void
+method DeskCanvas.Contracts.IResourceLedger Snapshot() -> System.Collections.Generic.IReadOnlyList<DeskCanvas.Contracts.ResourceUsage>
+type DeskCanvas.Contracts.IWidgetResourceLease
+property DeskCanvas.Contracts.IWidgetResourceLease Bytes -> System.Int64
+property DeskCanvas.Contracts.IWidgetResourceLease IsDisposed -> System.Boolean
+property DeskCanvas.Contracts.IWidgetResourceLease ResourceKey -> System.String
+type DeskCanvas.Contracts.IWidgetScheduleLease
+property DeskCanvas.Contracts.IWidgetScheduleLease IsDisposed -> System.Boolean
+property DeskCanvas.Contracts.IWidgetScheduleLease JobId -> System.Guid
+property DeskCanvas.Contracts.IWidgetScheduleLease Request -> DeskCanvas.Contracts.WidgetScheduleRequest
+type DeskCanvas.Contracts.IWidgetScheduler
+method DeskCanvas.Contracts.IWidgetScheduler Schedule(DeskCanvas.Contracts.WidgetScheduleRequest,System.Func<System.Threading.CancellationToken,System.Threading.Tasks.ValueTask>) -> DeskCanvas.Contracts.IWidgetScheduleLease
+type DeskCanvas.Contracts.IWidgetSession
+method DeskCanvas.Contracts.IWidgetSession ApplySettingsAsync(System.Object,System.Threading.CancellationToken) -> System.Threading.Tasks.ValueTask
+method DeskCanvas.Contracts.IWidgetSession InitializeAsync(System.Threading.CancellationToken) -> System.Threading.Tasks.ValueTask
+method DeskCanvas.Contracts.IWidgetSession SetActivityAsync(DeskCanvas.Contracts.ActivitySnapshot,System.Threading.CancellationToken) -> System.Threading.Tasks.ValueTask
+property DeskCanvas.Contracts.IWidgetSession Activity -> DeskCanvas.Contracts.ActivitySnapshot
+property DeskCanvas.Contracts.IWidgetSession Fault -> System.Exception
+property DeskCanvas.Contracts.IWidgetSession Generation -> System.Int64
+property DeskCanvas.Contracts.IWidgetSession InstanceId -> DeskCanvas.Contracts.WidgetInstanceId
+property DeskCanvas.Contracts.IWidgetSession State -> DeskCanvas.Contracts.WidgetLifecycleState
+type DeskCanvas.Contracts.JobOverlapPolicy
+enumvalue DeskCanvas.Contracts.JobOverlapPolicy Queue
+enumvalue DeskCanvas.Contracts.JobOverlapPolicy ReplaceLatest
+enumvalue DeskCanvas.Contracts.JobOverlapPolicy SkipIfRunning
+type DeskCanvas.Contracts.LayoutRevision
+method DeskCanvas.Contracts.LayoutRevision Deconstruct(System.Int64) -> System.Void
+method DeskCanvas.Contracts.LayoutRevision Equals(System.Object) -> System.Boolean
+method DeskCanvas.Contracts.LayoutRevision Equals(DeskCanvas.Contracts.LayoutRevision) -> System.Boolean
+method DeskCanvas.Contracts.LayoutRevision GetHashCode() -> System.Int32
+method DeskCanvas.Contracts.LayoutRevision Next() -> DeskCanvas.Contracts.LayoutRevision
+method DeskCanvas.Contracts.LayoutRevision ToString() -> System.String
+method DeskCanvas.Contracts.LayoutRevision op_Equality(DeskCanvas.Contracts.LayoutRevision,DeskCanvas.Contracts.LayoutRevision) -> System.Boolean
+method DeskCanvas.Contracts.LayoutRevision op_Inequality(DeskCanvas.Contracts.LayoutRevision,DeskCanvas.Contracts.LayoutRevision) -> System.Boolean
+property DeskCanvas.Contracts.LayoutRevision Initial -> DeskCanvas.Contracts.LayoutRevision
+property DeskCanvas.Contracts.LayoutRevision Value -> System.Int64
+type DeskCanvas.Contracts.ResourceBudget
+method DeskCanvas.Contracts.ResourceBudget Deconstruct(System.Int64,System.String) -> System.Void
+method DeskCanvas.Contracts.ResourceBudget Equals(System.Object) -> System.Boolean
+method DeskCanvas.Contracts.ResourceBudget Equals(DeskCanvas.Contracts.ResourceBudget) -> System.Boolean
+method DeskCanvas.Contracts.ResourceBudget GetHashCode() -> System.Int32
+method DeskCanvas.Contracts.ResourceBudget ToString() -> System.String
+method DeskCanvas.Contracts.ResourceBudget op_Equality(DeskCanvas.Contracts.ResourceBudget,DeskCanvas.Contracts.ResourceBudget) -> System.Boolean
+method DeskCanvas.Contracts.ResourceBudget op_Inequality(DeskCanvas.Contracts.ResourceBudget,DeskCanvas.Contracts.ResourceBudget) -> System.Boolean
+property DeskCanvas.Contracts.ResourceBudget SoftCapBytes -> System.Int64
+property DeskCanvas.Contracts.ResourceBudget TierName -> System.String
+property DeskCanvas.Contracts.ResourceBudget Tiers -> System.Collections.Generic.IReadOnlyList<DeskCanvas.Contracts.ResourceBudget>
+type DeskCanvas.Contracts.ResourceKind
+enumvalue DeskCanvas.Contracts.ResourceKind FileIcon
+enumvalue DeskCanvas.Contracts.ResourceKind GlassBackdrop
+enumvalue DeskCanvas.Contracts.ResourceKind GlassCapture
+enumvalue DeskCanvas.Contracts.ResourceKind GlassLease
+enumvalue DeskCanvas.Contracts.ResourceKind GlyphMask
+enumvalue DeskCanvas.Contracts.ResourceKind MapTile
+enumvalue DeskCanvas.Contracts.ResourceKind Other
+enumvalue DeskCanvas.Contracts.ResourceKind PictureFrame
+enumvalue DeskCanvas.Contracts.ResourceKind PicturePendingDecode
+enumvalue DeskCanvas.Contracts.ResourceKind WallpaperSnapshot
+type DeskCanvas.Contracts.ResourcePressureEvaluator
+method DeskCanvas.Contracts.ResourcePressureEvaluator ApplyHysteresis(DeskCanvas.Contracts.ResourcePressureLevel,DeskCanvas.Contracts.ResourcePressureLevel,System.Int32) -> DeskCanvas.Contracts.ResourcePressureLevel
+method DeskCanvas.Contracts.ResourcePressureEvaluator Evaluate(DeskCanvas.Contracts.ResourcePressureState) -> DeskCanvas.Contracts.ResourcePressureLevel
+method DeskCanvas.Contracts.ResourcePressureEvaluator ResetForChecks() -> System.Void
+method DeskCanvas.Contracts.ResourcePressureEvaluator TotalReclaimableBytes(System.Collections.Generic.IReadOnlyList<DeskCanvas.Contracts.ResourceUsage>) -> System.Int64
+field DeskCanvas.Contracts.ResourcePressureEvaluator HighRatio -> System.Double
+field DeskCanvas.Contracts.ResourcePressureEvaluator WatchRatio -> System.Double
+type DeskCanvas.Contracts.ResourcePressureLevel
+enumvalue DeskCanvas.Contracts.ResourcePressureLevel High
+enumvalue DeskCanvas.Contracts.ResourcePressureLevel None
+enumvalue DeskCanvas.Contracts.ResourcePressureLevel Watch
+type DeskCanvas.Contracts.ResourcePressureState
+method DeskCanvas.Contracts.ResourcePressureState Deconstruct(System.Int64,System.Int64,System.Boolean) -> System.Void
+method DeskCanvas.Contracts.ResourcePressureState Equals(System.Object) -> System.Boolean
+method DeskCanvas.Contracts.ResourcePressureState Equals(DeskCanvas.Contracts.ResourcePressureState) -> System.Boolean
+method DeskCanvas.Contracts.ResourcePressureState GetHashCode() -> System.Int32
+method DeskCanvas.Contracts.ResourcePressureState ToString() -> System.String
+method DeskCanvas.Contracts.ResourcePressureState op_Equality(DeskCanvas.Contracts.ResourcePressureState,DeskCanvas.Contracts.ResourcePressureState) -> System.Boolean
+method DeskCanvas.Contracts.ResourcePressureState op_Inequality(DeskCanvas.Contracts.ResourcePressureState,DeskCanvas.Contracts.ResourcePressureState) -> System.Boolean
+property DeskCanvas.Contracts.ResourcePressureState CapBytes -> System.Int64
+property DeskCanvas.Contracts.ResourcePressureState Rising -> System.Boolean
+property DeskCanvas.Contracts.ResourcePressureState TotalReclaimableBytes -> System.Int64
+type DeskCanvas.Contracts.ResourceUsage
+method DeskCanvas.Contracts.ResourceUsage Deconstruct(System.String,DeskCanvas.Contracts.ResourceKind,System.Int32,System.Int64,System.String) -> System.Void
+method DeskCanvas.Contracts.ResourceUsage Equals(System.Object) -> System.Boolean
+method DeskCanvas.Contracts.ResourceUsage Equals(DeskCanvas.Contracts.ResourceUsage) -> System.Boolean
+method DeskCanvas.Contracts.ResourceUsage GetHashCode() -> System.Int32
+method DeskCanvas.Contracts.ResourceUsage ToString() -> System.String
+method DeskCanvas.Contracts.ResourceUsage op_Equality(DeskCanvas.Contracts.ResourceUsage,DeskCanvas.Contracts.ResourceUsage) -> System.Boolean
+method DeskCanvas.Contracts.ResourceUsage op_Inequality(DeskCanvas.Contracts.ResourceUsage,DeskCanvas.Contracts.ResourceUsage) -> System.Boolean
+property DeskCanvas.Contracts.ResourceUsage Count -> System.Int32
+property DeskCanvas.Contracts.ResourceUsage EstimatedBytes -> System.Int64
+property DeskCanvas.Contracts.ResourceUsage Kind -> DeskCanvas.Contracts.ResourceKind
+property DeskCanvas.Contracts.ResourceUsage Owner -> System.String
+property DeskCanvas.Contracts.ResourceUsage ReleaseThread -> System.String
+type DeskCanvas.Contracts.SettingsCommitResult`1
+method DeskCanvas.Contracts.SettingsCommitResult`1 ConflictAt(System.Int64,T) -> DeskCanvas.Contracts.SettingsCommitResult<T>
+method DeskCanvas.Contracts.SettingsCommitResult`1 Deconstruct(System.Boolean,System.Int64,T,System.String) -> System.Void
+method DeskCanvas.Contracts.SettingsCommitResult`1 Equals(System.Object) -> System.Boolean
+method DeskCanvas.Contracts.SettingsCommitResult`1 Equals(DeskCanvas.Contracts.SettingsCommitResult<T>) -> System.Boolean
+method DeskCanvas.Contracts.SettingsCommitResult`1 GetHashCode() -> System.Int32
+method DeskCanvas.Contracts.SettingsCommitResult`1 ToString() -> System.String
+method DeskCanvas.Contracts.SettingsCommitResult`1 op_Equality(DeskCanvas.Contracts.SettingsCommitResult<T>,DeskCanvas.Contracts.SettingsCommitResult<T>) -> System.Boolean
+method DeskCanvas.Contracts.SettingsCommitResult`1 op_Inequality(DeskCanvas.Contracts.SettingsCommitResult<T>,DeskCanvas.Contracts.SettingsCommitResult<T>) -> System.Boolean
+property DeskCanvas.Contracts.SettingsCommitResult`1 Conflict -> System.String
+property DeskCanvas.Contracts.SettingsCommitResult`1 Revision -> System.Int64
+property DeskCanvas.Contracts.SettingsCommitResult`1 Snapshot -> T
+property DeskCanvas.Contracts.SettingsCommitResult`1 Succeeded -> System.Boolean
+type DeskCanvas.Contracts.ThemeImpact
+enumvalue DeskCanvas.Contracts.ThemeImpact Geometry
+enumvalue DeskCanvas.Contracts.ThemeImpact Material
+enumvalue DeskCanvas.Contracts.ThemeImpact Motion
+enumvalue DeskCanvas.Contracts.ThemeImpact None
+enumvalue DeskCanvas.Contracts.ThemeImpact Palette
+enumvalue DeskCanvas.Contracts.ThemeImpact Typography
+type DeskCanvas.Contracts.ThemeSnapshot
+method DeskCanvas.Contracts.ThemeSnapshot Deconstruct(System.Int64,System.String,System.String,System.Double,DeskCanvas.Contracts.ThemeImpact) -> System.Void
+method DeskCanvas.Contracts.ThemeSnapshot Equals(System.Object) -> System.Boolean
+method DeskCanvas.Contracts.ThemeSnapshot Equals(DeskCanvas.Contracts.ThemeSnapshot) -> System.Boolean
+method DeskCanvas.Contracts.ThemeSnapshot GetHashCode() -> System.Int32
+method DeskCanvas.Contracts.ThemeSnapshot ToString() -> System.String
+method DeskCanvas.Contracts.ThemeSnapshot op_Equality(DeskCanvas.Contracts.ThemeSnapshot,DeskCanvas.Contracts.ThemeSnapshot) -> System.Boolean
+method DeskCanvas.Contracts.ThemeSnapshot op_Inequality(DeskCanvas.Contracts.ThemeSnapshot,DeskCanvas.Contracts.ThemeSnapshot) -> System.Boolean
+property DeskCanvas.Contracts.ThemeSnapshot Density -> System.Double
+property DeskCanvas.Contracts.ThemeSnapshot Impact -> DeskCanvas.Contracts.ThemeImpact
+property DeskCanvas.Contracts.ThemeSnapshot Material -> System.String
+property DeskCanvas.Contracts.ThemeSnapshot Palette -> System.String
+property DeskCanvas.Contracts.ThemeSnapshot Revision -> System.Int64
+type DeskCanvas.Contracts.WidgetInstanceDescriptor
+method DeskCanvas.Contracts.WidgetInstanceDescriptor Deconstruct(DeskCanvas.Contracts.WidgetInstanceId,System.String,System.String,DeskCanvas.Contracts.LayoutRevision,System.Int64) -> System.Void
+method DeskCanvas.Contracts.WidgetInstanceDescriptor Equals(System.Object) -> System.Boolean
+method DeskCanvas.Contracts.WidgetInstanceDescriptor Equals(DeskCanvas.Contracts.WidgetInstanceDescriptor) -> System.Boolean
+method DeskCanvas.Contracts.WidgetInstanceDescriptor GetHashCode() -> System.Int32
+method DeskCanvas.Contracts.WidgetInstanceDescriptor ToString() -> System.String
+method DeskCanvas.Contracts.WidgetInstanceDescriptor op_Equality(DeskCanvas.Contracts.WidgetInstanceDescriptor,DeskCanvas.Contracts.WidgetInstanceDescriptor) -> System.Boolean
+method DeskCanvas.Contracts.WidgetInstanceDescriptor op_Inequality(DeskCanvas.Contracts.WidgetInstanceDescriptor,DeskCanvas.Contracts.WidgetInstanceDescriptor) -> System.Boolean
+property DeskCanvas.Contracts.WidgetInstanceDescriptor Generation -> System.Int64
+property DeskCanvas.Contracts.WidgetInstanceDescriptor InstanceId -> DeskCanvas.Contracts.WidgetInstanceId
+property DeskCanvas.Contracts.WidgetInstanceDescriptor Revision -> DeskCanvas.Contracts.LayoutRevision
+property DeskCanvas.Contracts.WidgetInstanceDescriptor ScreenId -> System.String
+property DeskCanvas.Contracts.WidgetInstanceDescriptor WidgetId -> System.String
+type DeskCanvas.Contracts.WidgetInstanceId
+method DeskCanvas.Contracts.WidgetInstanceId Deconstruct(System.Guid) -> System.Void
+method DeskCanvas.Contracts.WidgetInstanceId Equals(System.Object) -> System.Boolean
+method DeskCanvas.Contracts.WidgetInstanceId Equals(DeskCanvas.Contracts.WidgetInstanceId) -> System.Boolean
+method DeskCanvas.Contracts.WidgetInstanceId GetHashCode() -> System.Int32
+method DeskCanvas.Contracts.WidgetInstanceId New() -> DeskCanvas.Contracts.WidgetInstanceId
+method DeskCanvas.Contracts.WidgetInstanceId ToString() -> System.String
+method DeskCanvas.Contracts.WidgetInstanceId op_Equality(DeskCanvas.Contracts.WidgetInstanceId,DeskCanvas.Contracts.WidgetInstanceId) -> System.Boolean
+method DeskCanvas.Contracts.WidgetInstanceId op_Inequality(DeskCanvas.Contracts.WidgetInstanceId,DeskCanvas.Contracts.WidgetInstanceId) -> System.Boolean
+property DeskCanvas.Contracts.WidgetInstanceId IsEmpty -> System.Boolean
+property DeskCanvas.Contracts.WidgetInstanceId Value -> System.Guid
+type DeskCanvas.Contracts.WidgetJobKind
+enumvalue DeskCanvas.Contracts.WidgetJobKind BusinessDeadline
+enumvalue DeskCanvas.Contracts.WidgetJobKind DataPolling
+enumvalue DeskCanvas.Contracts.WidgetJobKind Debounce
+enumvalue DeskCanvas.Contracts.WidgetJobKind EventDriven
+enumvalue DeskCanvas.Contracts.WidgetJobKind UiUpdate
+enumvalue DeskCanvas.Contracts.WidgetJobKind VisualAnimation
+type DeskCanvas.Contracts.WidgetLifecycleState
+enumvalue DeskCanvas.Contracts.WidgetLifecycleState Created
+enumvalue DeskCanvas.Contracts.WidgetLifecycleState Disposed
+enumvalue DeskCanvas.Contracts.WidgetLifecycleState Disposing
+enumvalue DeskCanvas.Contracts.WidgetLifecycleState Faulted
+enumvalue DeskCanvas.Contracts.WidgetLifecycleState Initializing
+enumvalue DeskCanvas.Contracts.WidgetLifecycleState Ready
+type DeskCanvas.Contracts.WidgetScheduleRequest
+method DeskCanvas.Contracts.WidgetScheduleRequest Deconstruct(DeskCanvas.Contracts.WidgetInstanceId,DeskCanvas.Contracts.WidgetJobKind,System.Nullable<System.TimeSpan>,DeskCanvas.Contracts.JobOverlapPolicy,System.Nullable<System.TimeSpan>,System.Boolean) -> System.Void
+method DeskCanvas.Contracts.WidgetScheduleRequest Equals(System.Object) -> System.Boolean
+method DeskCanvas.Contracts.WidgetScheduleRequest Equals(DeskCanvas.Contracts.WidgetScheduleRequest) -> System.Boolean
+method DeskCanvas.Contracts.WidgetScheduleRequest GetHashCode() -> System.Int32
+method DeskCanvas.Contracts.WidgetScheduleRequest ToString() -> System.String
+method DeskCanvas.Contracts.WidgetScheduleRequest op_Equality(DeskCanvas.Contracts.WidgetScheduleRequest,DeskCanvas.Contracts.WidgetScheduleRequest) -> System.Boolean
+method DeskCanvas.Contracts.WidgetScheduleRequest op_Inequality(DeskCanvas.Contracts.WidgetScheduleRequest,DeskCanvas.Contracts.WidgetScheduleRequest) -> System.Boolean
+property DeskCanvas.Contracts.WidgetScheduleRequest Kind -> DeskCanvas.Contracts.WidgetJobKind
+property DeskCanvas.Contracts.WidgetScheduleRequest Overlap -> DeskCanvas.Contracts.JobOverlapPolicy
+property DeskCanvas.Contracts.WidgetScheduleRequest Owner -> DeskCanvas.Contracts.WidgetInstanceId
+property DeskCanvas.Contracts.WidgetScheduleRequest Period -> System.Nullable<System.TimeSpan>
+property DeskCanvas.Contracts.WidgetScheduleRequest RunWhenHidden -> System.Boolean
+property DeskCanvas.Contracts.WidgetScheduleRequest Timeout -> System.Nullable<System.TimeSpan>
+type DeskCanvas.Core.Const
+field DeskCanvas.Core.Const AppName -> System.String
+field DeskCanvas.Core.Const AppSettingsFile -> System.String
+field DeskCanvas.Core.Const AppSettingsFileName -> System.String
+field DeskCanvas.Core.Const CountdownFile -> System.String
+field DeskCanvas.Core.Const CurrentFolder -> System.String
+field DeskCanvas.Core.Const DataFolder -> System.String
+field DeskCanvas.Core.Const DataFolderPointerFileName -> System.String
+field DeskCanvas.Core.Const DataFolderPointerPath -> System.String
+field DeskCanvas.Core.Const DataFolderPointerPropertyName -> System.String
+field DeskCanvas.Core.Const DataFolderSource -> DeskCanvas.Core.Models.DataFolderSource
+field DeskCanvas.Core.Const DefaultDataFolder -> System.String
+field DeskCanvas.Core.Const DiceFile -> System.String
+field DeskCanvas.Core.Const FortuneFile -> System.String
+field DeskCanvas.Core.Const HabitsFile -> System.String
+field DeskCanvas.Core.Const HabitsFileName -> System.String
+field DeskCanvas.Core.Const LayoutFile -> System.String
+field DeskCanvas.Core.Const LayoutFileName -> System.String
+field DeskCanvas.Core.Const ProfilesFolder -> System.String
+field DeskCanvas.Core.Const RemindersFile -> System.String
+field DeskCanvas.Core.Const ShortcutsFile -> System.String
+field DeskCanvas.Core.Const ShortcutsFileName -> System.String
+field DeskCanvas.Core.Const TimetableFile -> System.String
+field DeskCanvas.Core.Const WheelFile -> System.String
+field DeskCanvas.Core.Const WidgetsFolder -> System.String
+field DeskCanvas.Core.Const WidgetsFolderName -> System.String
+type DeskCanvas.Core.Interfaces.DataChangedEvent`1
+method DeskCanvas.Core.Interfaces.DataChangedEvent`1 BeginInvoke(System.Object,T,T,System.AsyncCallback,System.Object) -> System.IAsyncResult
+method DeskCanvas.Core.Interfaces.DataChangedEvent`1 EndInvoke(System.IAsyncResult) -> System.Void
+method DeskCanvas.Core.Interfaces.DataChangedEvent`1 Invoke(System.Object,T,T) -> System.Void
+type DeskCanvas.Core.Interfaces.IAppSettingsProvider
+type DeskCanvas.Core.Interfaces.IAssemblyProvider
+method DeskCanvas.Core.Interfaces.IAssemblyProvider Activate(System.Type,System.Object[]) -> System.Object
+method DeskCanvas.Core.Interfaces.IAssemblyProvider GetAssemblyInfos(System.String) -> System.Linq.ILookup<System.String,DeskCanvas.Core.Models.AssemblyInfo>
+method DeskCanvas.Core.Interfaces.IAssemblyProvider GetLocaleResourceManager(System.Reflection.Assembly) -> System.Resources.ResourceManager
+method DeskCanvas.Core.Interfaces.IAssemblyProvider LoadAssembly(System.String) -> System.Reflection.Assembly
+method DeskCanvas.Core.Interfaces.IAssemblyProvider UnloadAssembly(System.String) -> System.Void
+type DeskCanvas.Core.Interfaces.IDataProvider`1
+method DeskCanvas.Core.Interfaces.IDataProvider`1 Get() -> T
+method DeskCanvas.Core.Interfaces.IDataProvider`1 Save(T) -> System.Void
+event DeskCanvas.Core.Interfaces.IDataProvider`1 DataChanged -> DeskCanvas.Core.Interfaces.DataChangedEvent<T>
+event DeskCanvas.Core.Interfaces.IDataProvider`1 DataChanging -> DeskCanvas.Core.Interfaces.DataChangedEvent<T>
+type DeskCanvas.Core.Interfaces.IFixedSizeWidget
+method DeskCanvas.Core.Interfaces.IFixedSizeWidget IsAllowedSpan(System.Int32,System.Int32) -> System.Boolean
+method DeskCanvas.Core.Interfaces.IFixedSizeWidget SnapSpan(System.Int32,System.Int32) -> System.ValueTuple<System.Int32,System.Int32>
+property DeskCanvas.Core.Interfaces.IFixedSizeWidget AllowedBaseSpans -> System.Collections.Generic.IReadOnlyList<System.ValueTuple<System.Int32,System.Int32>>
+property DeskCanvas.Core.Interfaces.IFixedSizeWidget PresetSpans -> System.Collections.Generic.IReadOnlyList<System.ValueTuple<System.Int32,System.Int32>>
+type DeskCanvas.Core.Interfaces.IFramelessWidget
+property DeskCanvas.Core.Interfaces.IFramelessWidget IsFrameless -> System.Boolean
+type DeskCanvas.Core.Interfaces.IGridService`1
+method DeskCanvas.Core.Interfaces.IGridService`1 SetSize(T,System.Int32,System.Int32) -> System.Void
+method DeskCanvas.Core.Interfaces.IGridService`1 SnapPosition(T) -> System.Void
+method DeskCanvas.Core.Interfaces.IGridService`1 SnapSize(T) -> System.Void
+type DeskCanvas.Core.Interfaces.ILayoutProvider
+type DeskCanvas.Core.Interfaces.ILocaleService
+method DeskCanvas.Core.Interfaces.ILocaleService SetCulture(System.String) -> System.Void
+type DeskCanvas.Core.Interfaces.IStackWidget
+method DeskCanvas.Core.Interfaces.IStackWidget EditCurrentChild(System.Object) -> System.Void
+method DeskCanvas.Core.Interfaces.IStackWidget SwitchToIndex(System.Int32) -> System.Void
+property DeskCanvas.Core.Interfaces.IStackWidget AutoHideIndicators -> System.Boolean
+property DeskCanvas.Core.Interfaces.IStackWidget CanEditCurrentChild -> System.Boolean
+property DeskCanvas.Core.Interfaces.IStackWidget CurrentChildTitle -> System.String
+property DeskCanvas.Core.Interfaces.IStackWidget IndicatorItems -> System.Collections.Generic.IReadOnlyList<DeskCanvas.Core.Interfaces.StackWidgetIndicatorItem>
+property DeskCanvas.Core.Interfaces.IStackWidget IsTransitionActive -> System.Boolean
+event DeskCanvas.Core.Interfaces.IStackWidget IndicatorItemsChanged -> System.EventHandler
+type DeskCanvas.Core.Interfaces.IStartupService
+method DeskCanvas.Core.Interfaces.IStartupService IsEnabled() -> System.Boolean
+method DeskCanvas.Core.Interfaces.IStartupService SetRunOnStartup(System.Boolean) -> System.Boolean
+type DeskCanvas.Core.Interfaces.IThemeService
+method DeskCanvas.Core.Interfaces.IThemeService Apply(DeskCanvas.Core.Models.Settings.Theme) -> System.Void
+method DeskCanvas.Core.Interfaces.IThemeService Apply(DeskCanvas.Core.Models.Settings.AppSettings) -> System.Void
+type DeskCanvas.Core.Interfaces.IWidgetFactory`2
+method DeskCanvas.Core.Interfaces.IWidgetFactory`2 Add(DeskCanvas.Core.Models.WidgetLayout) -> TWindow
+method DeskCanvas.Core.Interfaces.IWidgetFactory`2 Add(DeskCanvas.Core.Models.ScreenLayout,DeskCanvas.Core.Models.WidgetLayout) -> TWindow
+method DeskCanvas.Core.Interfaces.IWidgetFactory`2 CloseAll() -> System.Void
+method DeskCanvas.Core.Interfaces.IWidgetFactory`2 Create() -> System.Collections.Generic.IEnumerable<TWindow>
+method DeskCanvas.Core.Interfaces.IWidgetFactory`2 CreateControl(System.Type) -> TControl
+method DeskCanvas.Core.Interfaces.IWidgetFactory`2 CreateFromLayout() -> System.Void
+method DeskCanvas.Core.Interfaces.IWidgetFactory`2 RecreateAll() -> System.Void
+method DeskCanvas.Core.Interfaces.IWidgetFactory`2 ResumeAll() -> System.Void
+method DeskCanvas.Core.Interfaces.IWidgetFactory`2 SuspendAll() -> System.Void
+type DeskCanvas.Core.Interfaces.IWidgetLayoutProvider
+method DeskCanvas.Core.Interfaces.IWidgetLayoutProvider Remove() -> System.Void
+property DeskCanvas.Core.Interfaces.IWidgetLayoutProvider ScreenId -> System.String
+type DeskCanvas.Core.Interfaces.IWidgetSelfRefreshing
+method DeskCanvas.Core.Interfaces.IWidgetSelfRefreshing Refresh(DeskCanvas.Core.Models.WidgetLayout) -> System.Void
+type DeskCanvas.Core.Interfaces.IWidgetSurfaceHints
+property DeskCanvas.Core.Interfaces.IWidgetSurfaceHints ColorfulBackgroundResourceKey -> System.String
+type DeskCanvas.Core.Interfaces.IWidgetSuspendable
+method DeskCanvas.Core.Interfaces.IWidgetSuspendable Resume() -> System.Void
+method DeskCanvas.Core.Interfaces.IWidgetSuspendable Suspend() -> System.Void
+type DeskCanvas.Core.Interfaces.StackWidgetIndicatorItem
+method DeskCanvas.Core.Interfaces.StackWidgetIndicatorItem Deconstruct(System.Int32,System.String,System.Boolean,System.Double) -> System.Void
+method DeskCanvas.Core.Interfaces.StackWidgetIndicatorItem Equals(System.Object) -> System.Boolean
+method DeskCanvas.Core.Interfaces.StackWidgetIndicatorItem Equals(DeskCanvas.Core.Interfaces.StackWidgetIndicatorItem) -> System.Boolean
+method DeskCanvas.Core.Interfaces.StackWidgetIndicatorItem GetHashCode() -> System.Int32
+method DeskCanvas.Core.Interfaces.StackWidgetIndicatorItem ToString() -> System.String
+method DeskCanvas.Core.Interfaces.StackWidgetIndicatorItem op_Equality(DeskCanvas.Core.Interfaces.StackWidgetIndicatorItem,DeskCanvas.Core.Interfaces.StackWidgetIndicatorItem) -> System.Boolean
+method DeskCanvas.Core.Interfaces.StackWidgetIndicatorItem op_Inequality(DeskCanvas.Core.Interfaces.StackWidgetIndicatorItem,DeskCanvas.Core.Interfaces.StackWidgetIndicatorItem) -> System.Boolean
+property DeskCanvas.Core.Interfaces.StackWidgetIndicatorItem Index -> System.Int32
+property DeskCanvas.Core.Interfaces.StackWidgetIndicatorItem IsActive -> System.Boolean
+property DeskCanvas.Core.Interfaces.StackWidgetIndicatorItem Opacity -> System.Double
+property DeskCanvas.Core.Interfaces.StackWidgetIndicatorItem Title -> System.String
+type DeskCanvas.Core.Models.ActiveDisplayPath
+method DeskCanvas.Core.Models.ActiveDisplayPath Deconstruct(System.String,System.String,System.UInt32,System.UInt32,System.Boolean,System.UInt32,DeskCanvas.Core.Models.PhysicalMonitorIdentity,System.Nullable<System.UInt32>) -> System.Void
+method DeskCanvas.Core.Models.ActiveDisplayPath Equals(System.Object) -> System.Boolean
+method DeskCanvas.Core.Models.ActiveDisplayPath Equals(DeskCanvas.Core.Models.ActiveDisplayPath) -> System.Boolean
+method DeskCanvas.Core.Models.ActiveDisplayPath GetHashCode() -> System.Int32
+method DeskCanvas.Core.Models.ActiveDisplayPath ToString() -> System.String
+method DeskCanvas.Core.Models.ActiveDisplayPath op_Equality(DeskCanvas.Core.Models.ActiveDisplayPath,DeskCanvas.Core.Models.ActiveDisplayPath) -> System.Boolean
+method DeskCanvas.Core.Models.ActiveDisplayPath op_Inequality(DeskCanvas.Core.Models.ActiveDisplayPath,DeskCanvas.Core.Models.ActiveDisplayPath) -> System.Boolean
+property DeskCanvas.Core.Models.ActiveDisplayPath AdapterId -> System.String
+property DeskCanvas.Core.Models.ActiveDisplayPath CloneGroupId -> System.Nullable<System.UInt32>
+property DeskCanvas.Core.Models.ActiveDisplayPath GdiDeviceName -> System.String
+property DeskCanvas.Core.Models.ActiveDisplayPath OutputTechnology -> System.UInt32
+property DeskCanvas.Core.Models.ActiveDisplayPath PhysicalIdentity -> DeskCanvas.Core.Models.PhysicalMonitorIdentity
+property DeskCanvas.Core.Models.ActiveDisplayPath SourceId -> System.UInt32
+property DeskCanvas.Core.Models.ActiveDisplayPath TargetAvailable -> System.Boolean
+property DeskCanvas.Core.Models.ActiveDisplayPath TargetId -> System.UInt32
+type DeskCanvas.Core.Models.AssemblyInfo
+method DeskCanvas.Core.Models.AssemblyInfo Deconstruct(System.String,System.String,System.String,System.String,System.Version,System.String) -> System.Void
+method DeskCanvas.Core.Models.AssemblyInfo Equals(System.Object) -> System.Boolean
+method DeskCanvas.Core.Models.AssemblyInfo Equals(DeskCanvas.Core.Models.AssemblyInfo) -> System.Boolean
+method DeskCanvas.Core.Models.AssemblyInfo GetHashCode() -> System.Int32
+method DeskCanvas.Core.Models.AssemblyInfo ToString() -> System.String
+method DeskCanvas.Core.Models.AssemblyInfo op_Equality(DeskCanvas.Core.Models.AssemblyInfo,DeskCanvas.Core.Models.AssemblyInfo) -> System.Boolean
+method DeskCanvas.Core.Models.AssemblyInfo op_Inequality(DeskCanvas.Core.Models.AssemblyInfo,DeskCanvas.Core.Models.AssemblyInfo) -> System.Boolean
+property DeskCanvas.Core.Models.AssemblyInfo AssemblyName -> System.String
+property DeskCanvas.Core.Models.AssemblyInfo Author -> System.String
+property DeskCanvas.Core.Models.AssemblyInfo DisplayName -> System.String
+property DeskCanvas.Core.Models.AssemblyInfo FilePath -> System.String
+property DeskCanvas.Core.Models.AssemblyInfo IconData -> System.String
+property DeskCanvas.Core.Models.AssemblyInfo Version -> System.Version
+type DeskCanvas.Core.Models.Attributes.LocaleAttribute
+property DeskCanvas.Core.Models.Attributes.LocaleAttribute DisplayName -> System.String
+property DeskCanvas.Core.Models.Attributes.LocaleAttribute IconData -> System.String
+property DeskCanvas.Core.Models.Attributes.LocaleAttribute LocaleType -> System.Type
+type DeskCanvas.Core.Models.Attributes.WidgetInfoAttribute
+property DeskCanvas.Core.Models.Attributes.WidgetInfoAttribute DefaultColumns -> System.Int32
+property DeskCanvas.Core.Models.Attributes.WidgetInfoAttribute DefaultRows -> System.Int32
+property DeskCanvas.Core.Models.Attributes.WidgetInfoAttribute EditModelViewType -> System.Type
+property DeskCanvas.Core.Models.Attributes.WidgetInfoAttribute ModelType -> System.Type
+property DeskCanvas.Core.Models.Attributes.WidgetInfoAttribute PresetSpanList -> System.String
+property DeskCanvas.Core.Models.Attributes.WidgetInfoAttribute PresetSpans -> System.Collections.Generic.IReadOnlyList<System.ValueTuple<System.Int32,System.Int32>>
+property DeskCanvas.Core.Models.Attributes.WidgetInfoAttribute Subtitle -> System.String
+property DeskCanvas.Core.Models.Attributes.WidgetInfoAttribute Title -> System.String
+property DeskCanvas.Core.Models.Attributes.WidgetInfoAttribute ViewType -> System.Type
+type DeskCanvas.Core.Models.BackupData
+method DeskCanvas.Core.Models.BackupData Deconstruct(System.Int32,DeskCanvas.Core.Models.Settings.AppSettings,DeskCanvas.Core.Models.ScreensLayout) -> System.Void
+method DeskCanvas.Core.Models.BackupData Equals(System.Object) -> System.Boolean
+method DeskCanvas.Core.Models.BackupData Equals(DeskCanvas.Core.Models.BackupData) -> System.Boolean
+method DeskCanvas.Core.Models.BackupData GetHashCode() -> System.Int32
+method DeskCanvas.Core.Models.BackupData ToString() -> System.String
+method DeskCanvas.Core.Models.BackupData op_Equality(DeskCanvas.Core.Models.BackupData,DeskCanvas.Core.Models.BackupData) -> System.Boolean
+method DeskCanvas.Core.Models.BackupData op_Inequality(DeskCanvas.Core.Models.BackupData,DeskCanvas.Core.Models.BackupData) -> System.Boolean
+property DeskCanvas.Core.Models.BackupData AppSettings -> DeskCanvas.Core.Models.Settings.AppSettings
+property DeskCanvas.Core.Models.BackupData Screens -> DeskCanvas.Core.Models.ScreensLayout
+property DeskCanvas.Core.Models.BackupData Version -> System.Int32
+field DeskCanvas.Core.Models.BackupData CurrentVersion -> System.Int32
+type DeskCanvas.Core.Models.BindingSource
+enumvalue DeskCanvas.Core.Models.BindingSource AutoDetected
+enumvalue DeskCanvas.Core.Models.BindingSource Manual
+enumvalue DeskCanvas.Core.Models.BindingSource Migrated
+type DeskCanvas.Core.Models.BindingStatus
+enumvalue DeskCanvas.Core.Models.BindingStatus Bound
+enumvalue DeskCanvas.Core.Models.BindingStatus Conflict
+enumvalue DeskCanvas.Core.Models.BindingStatus Unconfigured
+enumvalue DeskCanvas.Core.Models.BindingStatus Unresolved
+type DeskCanvas.Core.Models.DataFolderSource
+enumvalue DeskCanvas.Core.Models.DataFolderSource AnchorPointer
+enumvalue DeskCanvas.Core.Models.DataFolderSource Default
+enumvalue DeskCanvas.Core.Models.DataFolderSource EnvironmentVariable
+enumvalue DeskCanvas.Core.Models.DataFolderSource ExePointer
+enumvalue DeskCanvas.Core.Models.DataFolderSource Portable
+enumvalue DeskCanvas.Core.Models.DataFolderSource PortableDev
+enumvalue DeskCanvas.Core.Models.DataFolderSource TestHarness
+type DeskCanvas.Core.Models.DisplayTopology
+method DeskCanvas.Core.Models.DisplayTopology HasSameGeometry(System.Collections.Generic.IEnumerable<System.ValueTuple<System.Int32,System.Int32,System.Int32,System.Int32>>,System.Collections.Generic.IEnumerable<System.ValueTuple<System.Int32,System.Int32,System.Int32,System.Int32>>) -> System.Boolean
+method DeskCanvas.Core.Models.DisplayTopology SelectDevice(System.Collections.Generic.IEnumerable<System.String>,System.String) -> System.String
+type DeskCanvas.Core.Models.PhysicalMonitorIdentity
+method DeskCanvas.Core.Models.PhysicalMonitorIdentity Deconstruct(System.String,System.String,System.String,System.String,System.String,System.String,System.String,System.Boolean,System.UInt32,System.UInt32) -> System.Void
+method DeskCanvas.Core.Models.PhysicalMonitorIdentity Equals(System.Object) -> System.Boolean
+method DeskCanvas.Core.Models.PhysicalMonitorIdentity Equals(DeskCanvas.Core.Models.PhysicalMonitorIdentity) -> System.Boolean
+method DeskCanvas.Core.Models.PhysicalMonitorIdentity GetHashCode() -> System.Int32
+method DeskCanvas.Core.Models.PhysicalMonitorIdentity IsValidSerialNumber(System.String) -> System.Boolean
+method DeskCanvas.Core.Models.PhysicalMonitorIdentity NormalizeDeviceInstanceId(System.String) -> System.String
+method DeskCanvas.Core.Models.PhysicalMonitorIdentity ToString() -> System.String
+method DeskCanvas.Core.Models.PhysicalMonitorIdentity op_Equality(DeskCanvas.Core.Models.PhysicalMonitorIdentity,DeskCanvas.Core.Models.PhysicalMonitorIdentity) -> System.Boolean
+method DeskCanvas.Core.Models.PhysicalMonitorIdentity op_Inequality(DeskCanvas.Core.Models.PhysicalMonitorIdentity,DeskCanvas.Core.Models.PhysicalMonitorIdentity) -> System.Boolean
+property DeskCanvas.Core.Models.PhysicalMonitorIdentity ConnectorInstance -> System.UInt32
+property DeskCanvas.Core.Models.PhysicalMonitorIdentity DeviceInstanceId -> System.String
+property DeskCanvas.Core.Models.PhysicalMonitorIdentity DeviceInterfacePath -> System.String
+property DeskCanvas.Core.Models.PhysicalMonitorIdentity FriendlyName -> System.String
+property DeskCanvas.Core.Models.PhysicalMonitorIdentity HardwareId -> System.String
+property DeskCanvas.Core.Models.PhysicalMonitorIdentity IsInternal -> System.Boolean
+property DeskCanvas.Core.Models.PhysicalMonitorIdentity Manufacturer -> System.String
+property DeskCanvas.Core.Models.PhysicalMonitorIdentity OutputTechnology -> System.UInt32
+property DeskCanvas.Core.Models.PhysicalMonitorIdentity ProductCode -> System.String
+property DeskCanvas.Core.Models.PhysicalMonitorIdentity SerialNumber -> System.String
+type DeskCanvas.Core.Models.ScreenBatchResult
+method DeskCanvas.Core.Models.ScreenBatchResult Deconstruct(System.Collections.Generic.IReadOnlyList<DeskCanvas.Core.Models.ScreenMatch>,System.Collections.Generic.IReadOnlyList<DeskCanvas.Core.Models.ScreenLayout>) -> System.Void
+method DeskCanvas.Core.Models.ScreenBatchResult Equals(System.Object) -> System.Boolean
+method DeskCanvas.Core.Models.ScreenBatchResult Equals(DeskCanvas.Core.Models.ScreenBatchResult) -> System.Boolean
+method DeskCanvas.Core.Models.ScreenBatchResult GetHashCode() -> System.Int32
+method DeskCanvas.Core.Models.ScreenBatchResult ToString() -> System.String
+method DeskCanvas.Core.Models.ScreenBatchResult op_Equality(DeskCanvas.Core.Models.ScreenBatchResult,DeskCanvas.Core.Models.ScreenBatchResult) -> System.Boolean
+method DeskCanvas.Core.Models.ScreenBatchResult op_Inequality(DeskCanvas.Core.Models.ScreenBatchResult,DeskCanvas.Core.Models.ScreenBatchResult) -> System.Boolean
+property DeskCanvas.Core.Models.ScreenBatchResult Matches -> System.Collections.Generic.IReadOnlyList<DeskCanvas.Core.Models.ScreenMatch>
+property DeskCanvas.Core.Models.ScreenBatchResult UnmatchedConfigs -> System.Collections.Generic.IReadOnlyList<DeskCanvas.Core.Models.ScreenLayout>
+type DeskCanvas.Core.Models.ScreenBinding
+method DeskCanvas.Core.Models.ScreenBinding Deconstruct(System.String,System.String,System.String,System.String,System.Collections.Generic.List<System.String>,DeskCanvas.Core.Models.BindingSource,DeskCanvas.Core.Models.BindingStatus) -> System.Void
+method DeskCanvas.Core.Models.ScreenBinding Equals(System.Object) -> System.Boolean
+method DeskCanvas.Core.Models.ScreenBinding Equals(DeskCanvas.Core.Models.ScreenBinding) -> System.Boolean
+method DeskCanvas.Core.Models.ScreenBinding GetHashCode() -> System.Int32
+method DeskCanvas.Core.Models.ScreenBinding MatchesInstance(System.String) -> System.Boolean
+method DeskCanvas.Core.Models.ScreenBinding ToString() -> System.String
+method DeskCanvas.Core.Models.ScreenBinding op_Equality(DeskCanvas.Core.Models.ScreenBinding,DeskCanvas.Core.Models.ScreenBinding) -> System.Boolean
+method DeskCanvas.Core.Models.ScreenBinding op_Inequality(DeskCanvas.Core.Models.ScreenBinding,DeskCanvas.Core.Models.ScreenBinding) -> System.Boolean
+property DeskCanvas.Core.Models.ScreenBinding DeviceInstanceId -> System.String
+property DeskCanvas.Core.Models.ScreenBinding DeviceInterfacePath -> System.String
+property DeskCanvas.Core.Models.ScreenBinding HardwareId -> System.String
+property DeskCanvas.Core.Models.ScreenBinding InstanceAliases -> System.Collections.Generic.List<System.String>
+property DeskCanvas.Core.Models.ScreenBinding SerialNumber -> System.String
+property DeskCanvas.Core.Models.ScreenBinding Source -> DeskCanvas.Core.Models.BindingSource
+property DeskCanvas.Core.Models.ScreenBinding Status -> DeskCanvas.Core.Models.BindingStatus
+type DeskCanvas.Core.Models.ScreenIdentity
+method DeskCanvas.Core.Models.ScreenIdentity Deconstruct(System.String,System.String,System.Int32,System.Int32,System.Boolean,System.Double,System.String,System.String,DeskCanvas.Core.Models.PhysicalMonitorIdentity,DeskCanvas.Core.Models.BindingStatus) -> System.Void
+method DeskCanvas.Core.Models.ScreenIdentity Equals(System.Object) -> System.Boolean
+method DeskCanvas.Core.Models.ScreenIdentity Equals(DeskCanvas.Core.Models.ScreenIdentity) -> System.Boolean
+method DeskCanvas.Core.Models.ScreenIdentity GetHashCode() -> System.Int32
+method DeskCanvas.Core.Models.ScreenIdentity ToString() -> System.String
+method DeskCanvas.Core.Models.ScreenIdentity op_Equality(DeskCanvas.Core.Models.ScreenIdentity,DeskCanvas.Core.Models.ScreenIdentity) -> System.Boolean
+method DeskCanvas.Core.Models.ScreenIdentity op_Inequality(DeskCanvas.Core.Models.ScreenIdentity,DeskCanvas.Core.Models.ScreenIdentity) -> System.Boolean
+property DeskCanvas.Core.Models.ScreenIdentity BindingStatus -> DeskCanvas.Core.Models.BindingStatus
+property DeskCanvas.Core.Models.ScreenIdentity DeviceName -> System.String
+property DeskCanvas.Core.Models.ScreenIdentity FriendlyName -> System.String
+property DeskCanvas.Core.Models.ScreenIdentity HardwareId -> System.String
+property DeskCanvas.Core.Models.ScreenIdentity Height -> System.Int32
+property DeskCanvas.Core.Models.ScreenIdentity IsAnonymous -> System.Boolean
+property DeskCanvas.Core.Models.ScreenIdentity IsPrimary -> System.Boolean
+property DeskCanvas.Core.Models.ScreenIdentity Key -> System.String
+property DeskCanvas.Core.Models.ScreenIdentity MonitorId -> System.String
+property DeskCanvas.Core.Models.ScreenIdentity PhysicalIdentity -> DeskCanvas.Core.Models.PhysicalMonitorIdentity
+property DeskCanvas.Core.Models.ScreenIdentity PnpInstanceId -> System.String
+property DeskCanvas.Core.Models.ScreenIdentity Scaling -> System.Double
+property DeskCanvas.Core.Models.ScreenIdentity Width -> System.Int32
+field DeskCanvas.Core.Models.ScreenIdentity FallbackName -> System.String
+type DeskCanvas.Core.Models.ScreenLayout
+method DeskCanvas.Core.Models.ScreenLayout Deconstruct(System.String,System.String,System.String,System.String,DeskCanvas.Core.Models.Settings.Grid,System.Nullable<System.Double>,System.Collections.Generic.List<DeskCanvas.Core.Models.WidgetLayout>,System.Nullable<System.Double>,System.Nullable<System.Double>,System.String,System.String,DeskCanvas.Core.Models.ScreenBinding) -> System.Void
+method DeskCanvas.Core.Models.ScreenLayout Equals(System.Object) -> System.Boolean
+method DeskCanvas.Core.Models.ScreenLayout Equals(DeskCanvas.Core.Models.ScreenLayout) -> System.Boolean
+method DeskCanvas.Core.Models.ScreenLayout GetHashCode() -> System.Int32
+method DeskCanvas.Core.Models.ScreenLayout ToString() -> System.String
+method DeskCanvas.Core.Models.ScreenLayout op_Equality(DeskCanvas.Core.Models.ScreenLayout,DeskCanvas.Core.Models.ScreenLayout) -> System.Boolean
+method DeskCanvas.Core.Models.ScreenLayout op_Inequality(DeskCanvas.Core.Models.ScreenLayout,DeskCanvas.Core.Models.ScreenLayout) -> System.Boolean
+property DeskCanvas.Core.Models.ScreenLayout Alias -> System.String
+property DeskCanvas.Core.Models.ScreenLayout Binding -> DeskCanvas.Core.Models.ScreenBinding
+property DeskCanvas.Core.Models.ScreenLayout ContentScale -> System.Nullable<System.Double>
+property DeskCanvas.Core.Models.ScreenLayout DeviceName -> System.String
+property DeskCanvas.Core.Models.ScreenLayout DisplayName -> System.String
+property DeskCanvas.Core.Models.ScreenLayout Grid -> DeskCanvas.Core.Models.Settings.Grid
+property DeskCanvas.Core.Models.ScreenLayout HardwareId -> System.String
+property DeskCanvas.Core.Models.ScreenLayout Id -> System.String
+property DeskCanvas.Core.Models.ScreenLayout Key -> System.String
+property DeskCanvas.Core.Models.ScreenLayout Layout -> System.Collections.Generic.List<DeskCanvas.Core.Models.WidgetLayout>
+property DeskCanvas.Core.Models.ScreenLayout Margin -> System.Nullable<System.Double>
+property DeskCanvas.Core.Models.ScreenLayout MonitorId -> System.String
+property DeskCanvas.Core.Models.ScreenLayout Radius -> System.Nullable<System.Double>
+type DeskCanvas.Core.Models.ScreenMatch
+method DeskCanvas.Core.Models.ScreenMatch Deconstruct(DeskCanvas.Core.Models.ScreenIdentity,DeskCanvas.Core.Models.ScreenLayout,DeskCanvas.Core.Models.BindingStatus,System.String) -> System.Void
+method DeskCanvas.Core.Models.ScreenMatch Equals(System.Object) -> System.Boolean
+method DeskCanvas.Core.Models.ScreenMatch Equals(DeskCanvas.Core.Models.ScreenMatch) -> System.Boolean
+method DeskCanvas.Core.Models.ScreenMatch GetHashCode() -> System.Int32
+method DeskCanvas.Core.Models.ScreenMatch ToString() -> System.String
+method DeskCanvas.Core.Models.ScreenMatch op_Equality(DeskCanvas.Core.Models.ScreenMatch,DeskCanvas.Core.Models.ScreenMatch) -> System.Boolean
+method DeskCanvas.Core.Models.ScreenMatch op_Inequality(DeskCanvas.Core.Models.ScreenMatch,DeskCanvas.Core.Models.ScreenMatch) -> System.Boolean
+property DeskCanvas.Core.Models.ScreenMatch Config -> DeskCanvas.Core.Models.ScreenLayout
+property DeskCanvas.Core.Models.ScreenMatch MatchReason -> System.String
+property DeskCanvas.Core.Models.ScreenMatch Screen -> DeskCanvas.Core.Models.ScreenIdentity
+property DeskCanvas.Core.Models.ScreenMatch Status -> DeskCanvas.Core.Models.BindingStatus
+type DeskCanvas.Core.Models.ScreenMatcher
+method DeskCanvas.Core.Models.ScreenMatcher HasHardwareConflict(DeskCanvas.Core.Models.ScreenLayout,DeskCanvas.Core.Models.ScreenIdentity) -> System.Boolean
+method DeskCanvas.Core.Models.ScreenMatcher Match(System.Collections.Generic.IReadOnlyList<DeskCanvas.Core.Models.ScreenLayout>,DeskCanvas.Core.Models.ScreenIdentity) -> DeskCanvas.Core.Models.ScreenLayout
+method DeskCanvas.Core.Models.ScreenMatcher Match(System.Collections.Generic.IReadOnlyList<DeskCanvas.Core.Models.ScreenLayout>,DeskCanvas.Core.Models.ScreenIdentity,System.Collections.Generic.ISet<System.String>,System.Boolean,System.Boolean) -> DeskCanvas.Core.Models.ScreenLayout
+method DeskCanvas.Core.Models.ScreenMatcher MatchBatch(System.Collections.Generic.IReadOnlyList<DeskCanvas.Core.Models.ScreenLayout>,System.Collections.Generic.IReadOnlyList<DeskCanvas.Core.Models.ScreenIdentity>) -> DeskCanvas.Core.Models.ScreenBatchResult
+type DeskCanvas.Core.Models.ScreensLayout
+method DeskCanvas.Core.Models.ScreensLayout AddScreen(DeskCanvas.Core.Models.ScreenLayout) -> DeskCanvas.Core.Models.ScreensLayout
+method DeskCanvas.Core.Models.ScreensLayout Deconstruct(System.Collections.Generic.List<DeskCanvas.Core.Models.ScreenLayout>,System.Int32) -> System.Void
+method DeskCanvas.Core.Models.ScreensLayout Deduplicate() -> DeskCanvas.Core.Models.ScreensLayout
+method DeskCanvas.Core.Models.ScreensLayout EnsureWidgetIdentities(System.Boolean) -> DeskCanvas.Core.Models.ScreensLayout
+method DeskCanvas.Core.Models.ScreensLayout Equals(System.Object) -> System.Boolean
+method DeskCanvas.Core.Models.ScreensLayout Equals(DeskCanvas.Core.Models.ScreensLayout) -> System.Boolean
+method DeskCanvas.Core.Models.ScreensLayout FindById(System.String) -> DeskCanvas.Core.Models.ScreenLayout
+method DeskCanvas.Core.Models.ScreensLayout FromLegacy(System.Collections.Generic.List<DeskCanvas.Core.Models.WidgetLayout>) -> DeskCanvas.Core.Models.ScreensLayout
+method DeskCanvas.Core.Models.ScreensLayout GetHashCode() -> System.Int32
+method DeskCanvas.Core.Models.ScreensLayout MigrateLegacyWidgets(System.Func<DeskCanvas.Core.Models.WidgetLayout,System.Nullable<System.ValueTuple<System.String,System.Int32,System.Int32>>>) -> DeskCanvas.Core.Models.ScreensLayout
+method DeskCanvas.Core.Models.ScreensLayout PruneStaleLegacyEntries(System.Collections.Generic.IReadOnlyList<DeskCanvas.Core.Models.ScreenLayout>) -> DeskCanvas.Core.Models.ScreensLayout
+method DeskCanvas.Core.Models.ScreensLayout ToString() -> System.String
+method DeskCanvas.Core.Models.ScreensLayout UpsertScreen(DeskCanvas.Core.Models.ScreenLayout) -> DeskCanvas.Core.Models.ScreensLayout
+method DeskCanvas.Core.Models.ScreensLayout WithScreen(DeskCanvas.Core.Models.ScreenLayout) -> DeskCanvas.Core.Models.ScreensLayout
+method DeskCanvas.Core.Models.ScreensLayout op_Equality(DeskCanvas.Core.Models.ScreensLayout,DeskCanvas.Core.Models.ScreensLayout) -> System.Boolean
+method DeskCanvas.Core.Models.ScreensLayout op_Inequality(DeskCanvas.Core.Models.ScreensLayout,DeskCanvas.Core.Models.ScreensLayout) -> System.Boolean
+property DeskCanvas.Core.Models.ScreensLayout AllWidgets -> System.Collections.Generic.List<DeskCanvas.Core.Models.WidgetLayout>
+property DeskCanvas.Core.Models.ScreensLayout Screens -> System.Collections.Generic.List<DeskCanvas.Core.Models.ScreenLayout>
+property DeskCanvas.Core.Models.ScreensLayout Version -> System.Int32
+field DeskCanvas.Core.Models.ScreensLayout LegacyPrimaryId -> System.String
+type DeskCanvas.Core.Models.Settings.AppSettings
+method DeskCanvas.Core.Models.Settings.AppSettings Deconstruct(DeskCanvas.Core.Models.Settings.Theme,DeskCanvas.Core.Models.Settings.Theme[],DeskCanvas.Core.Models.Settings.Layout,DeskCanvas.Core.Models.Settings.Dimensions,DeskCanvas.Core.Models.Settings.Region,System.Boolean,System.String,System.String,DeskCanvas.Core.Models.Settings.Grid,System.String,System.Nullable<System.Boolean>,System.Nullable<DeskCanvas.Core.Models.Settings.TitleBarStyle>,System.Nullable<System.Double>,System.String,System.Boolean,DeskCanvas.Core.Models.Settings.UpdateCheckInterval,System.Nullable<System.DateTime>,System.Collections.Generic.Dictionary<System.String,DeskCanvas.Core.Models.Settings.Theme>,System.String,DeskCanvas.Core.Models.Settings.FocusLinkSettings) -> System.Void
+method DeskCanvas.Core.Models.Settings.AppSettings Equals(System.Object) -> System.Boolean
+method DeskCanvas.Core.Models.Settings.AppSettings Equals(DeskCanvas.Core.Models.Settings.AppSettings) -> System.Boolean
+method DeskCanvas.Core.Models.Settings.AppSettings GetHashCode() -> System.Int32
+method DeskCanvas.Core.Models.Settings.AppSettings GetThemeForSurface(DeskCanvas.Core.Models.Settings.SurfaceStyle) -> DeskCanvas.Core.Models.Settings.Theme
+method DeskCanvas.Core.Models.Settings.AppSettings ToString() -> System.String
+method DeskCanvas.Core.Models.Settings.AppSettings WithThemeForSurface(DeskCanvas.Core.Models.Settings.SurfaceStyle,DeskCanvas.Core.Models.Settings.Theme) -> DeskCanvas.Core.Models.Settings.AppSettings
+method DeskCanvas.Core.Models.Settings.AppSettings op_Equality(DeskCanvas.Core.Models.Settings.AppSettings,DeskCanvas.Core.Models.Settings.AppSettings) -> System.Boolean
+method DeskCanvas.Core.Models.Settings.AppSettings op_Inequality(DeskCanvas.Core.Models.Settings.AppSettings,DeskCanvas.Core.Models.Settings.AppSettings) -> System.Boolean
+property DeskCanvas.Core.Models.Settings.AppSettings ActiveProfile -> System.String
+property DeskCanvas.Core.Models.Settings.AppSettings Dimensions -> DeskCanvas.Core.Models.Settings.Dimensions
+property DeskCanvas.Core.Models.Settings.AppSettings EffectiveActiveProfile -> System.String
+property DeskCanvas.Core.Models.Settings.AppSettings EffectiveTitleBarSize -> System.Double
+property DeskCanvas.Core.Models.Settings.AppSettings EffectiveTitleBarStyle -> DeskCanvas.Core.Models.Settings.TitleBarStyle
+property DeskCanvas.Core.Models.Settings.AppSettings EffectiveUpdateUrl -> System.String
+property DeskCanvas.Core.Models.Settings.AppSettings FocusLink -> DeskCanvas.Core.Models.Settings.FocusLinkSettings
+property DeskCanvas.Core.Models.Settings.AppSettings Grid -> DeskCanvas.Core.Models.Settings.Grid
+property DeskCanvas.Core.Models.Settings.AppSettings HttpProxy -> System.String
+property DeskCanvas.Core.Models.Settings.AppSettings IgnoreUpdate -> System.String
+property DeskCanvas.Core.Models.Settings.AppSettings LastUpdateCheckStatus -> System.String
+property DeskCanvas.Core.Models.Settings.AppSettings LastUpdateCheckTime -> System.Nullable<System.DateTime>
+property DeskCanvas.Core.Models.Settings.AppSettings Layout -> DeskCanvas.Core.Models.Settings.Layout
+property DeskCanvas.Core.Models.Settings.AppSettings ProxyAutoDetect -> System.Nullable<System.Boolean>
+property DeskCanvas.Core.Models.Settings.AppSettings Region -> DeskCanvas.Core.Models.Settings.Region
+property DeskCanvas.Core.Models.Settings.AppSettings RunOnStartup -> System.Boolean
+property DeskCanvas.Core.Models.Settings.AppSettings ShowTrayIcon -> System.Boolean
+property DeskCanvas.Core.Models.Settings.AppSettings SurfaceThemes -> System.Collections.Generic.Dictionary<System.String,DeskCanvas.Core.Models.Settings.Theme>
+property DeskCanvas.Core.Models.Settings.AppSettings Templates -> DeskCanvas.Core.Models.Settings.Theme[]
+property DeskCanvas.Core.Models.Settings.AppSettings Theme -> DeskCanvas.Core.Models.Settings.Theme
+property DeskCanvas.Core.Models.Settings.AppSettings TitleBarSize -> System.Nullable<System.Double>
+property DeskCanvas.Core.Models.Settings.AppSettings TitleBarStyle -> System.Nullable<DeskCanvas.Core.Models.Settings.TitleBarStyle>
+property DeskCanvas.Core.Models.Settings.AppSettings UpdateInterval -> DeskCanvas.Core.Models.Settings.UpdateCheckInterval
+property DeskCanvas.Core.Models.Settings.AppSettings UpdateUrl -> System.String
+field DeskCanvas.Core.Models.Settings.AppSettings DefaultProfileName -> System.String
+field DeskCanvas.Core.Models.Settings.AppSettings DefaultReleaseApiUrl -> System.String
+field DeskCanvas.Core.Models.Settings.AppSettings DefaultTitleBarSize -> System.Double
+type DeskCanvas.Core.Models.Settings.Dimensions
+method DeskCanvas.Core.Models.Settings.Dimensions Deconstruct(System.Int32,System.Int32,System.Int32) -> System.Void
+method DeskCanvas.Core.Models.Settings.Dimensions Equals(System.Object) -> System.Boolean
+method DeskCanvas.Core.Models.Settings.Dimensions Equals(DeskCanvas.Core.Models.Settings.Dimensions) -> System.Boolean
+method DeskCanvas.Core.Models.Settings.Dimensions GetHashCode() -> System.Int32
+method DeskCanvas.Core.Models.Settings.Dimensions ToString() -> System.String
+method DeskCanvas.Core.Models.Settings.Dimensions op_Equality(DeskCanvas.Core.Models.Settings.Dimensions,DeskCanvas.Core.Models.Settings.Dimensions) -> System.Boolean
+method DeskCanvas.Core.Models.Settings.Dimensions op_Inequality(DeskCanvas.Core.Models.Settings.Dimensions,DeskCanvas.Core.Models.Settings.Dimensions) -> System.Boolean
+property DeskCanvas.Core.Models.Settings.Dimensions Margin -> System.Int32
+property DeskCanvas.Core.Models.Settings.Dimensions Radius -> System.Int32
+property DeskCanvas.Core.Models.Settings.Dimensions Size -> System.Int32
+type DeskCanvas.Core.Models.Settings.FocusLinkSettings
+method DeskCanvas.Core.Models.Settings.FocusLinkSettings CreateDefault(System.Nullable<System.Boolean>,System.Boolean) -> DeskCanvas.Core.Models.Settings.FocusLinkSettings
+method DeskCanvas.Core.Models.Settings.FocusLinkSettings Deconstruct(System.Boolean,DeskCanvas.Core.Models.Settings.FocusMode,DeskCanvas.Core.Models.Settings.FocusMode,System.Nullable<DeskCanvas.Core.Models.Settings.SurfaceStyle>,System.Nullable<DeskCanvas.Core.Models.Settings.SurfaceStyle>,System.String[],System.Int32) -> System.Void
+method DeskCanvas.Core.Models.Settings.FocusLinkSettings Equals(System.Object) -> System.Boolean
+method DeskCanvas.Core.Models.Settings.FocusLinkSettings Equals(DeskCanvas.Core.Models.Settings.FocusLinkSettings) -> System.Boolean
+method DeskCanvas.Core.Models.Settings.FocusLinkSettings GetHashCode() -> System.Int32
+method DeskCanvas.Core.Models.Settings.FocusLinkSettings NormalizeSurface(System.Nullable<DeskCanvas.Core.Models.Settings.SurfaceStyle>) -> System.Nullable<DeskCanvas.Core.Models.Settings.SurfaceStyle>
+method DeskCanvas.Core.Models.Settings.FocusLinkSettings ToString() -> System.String
+method DeskCanvas.Core.Models.Settings.FocusLinkSettings op_Equality(DeskCanvas.Core.Models.Settings.FocusLinkSettings,DeskCanvas.Core.Models.Settings.FocusLinkSettings) -> System.Boolean
+method DeskCanvas.Core.Models.Settings.FocusLinkSettings op_Inequality(DeskCanvas.Core.Models.Settings.FocusLinkSettings,DeskCanvas.Core.Models.Settings.FocusLinkSettings) -> System.Boolean
+property DeskCanvas.Core.Models.Settings.FocusLinkSettings EffectiveFocused -> DeskCanvas.Core.Models.Settings.FocusMode
+property DeskCanvas.Core.Models.Settings.FocusLinkSettings EffectiveSwitchDelayMs -> System.Int32
+property DeskCanvas.Core.Models.Settings.FocusLinkSettings EffectiveUnfocused -> DeskCanvas.Core.Models.Settings.FocusMode
+property DeskCanvas.Core.Models.Settings.FocusLinkSettings EffectiveWhitelist -> System.String[]
+property DeskCanvas.Core.Models.Settings.FocusLinkSettings Enabled -> System.Boolean
+property DeskCanvas.Core.Models.Settings.FocusLinkSettings Focused -> DeskCanvas.Core.Models.Settings.FocusMode
+property DeskCanvas.Core.Models.Settings.FocusLinkSettings FocusedSurface -> System.Nullable<DeskCanvas.Core.Models.Settings.SurfaceStyle>
+property DeskCanvas.Core.Models.Settings.FocusLinkSettings SwitchDelayMs -> System.Int32
+property DeskCanvas.Core.Models.Settings.FocusLinkSettings Unfocused -> DeskCanvas.Core.Models.Settings.FocusMode
+property DeskCanvas.Core.Models.Settings.FocusLinkSettings UnfocusedSurface -> System.Nullable<DeskCanvas.Core.Models.Settings.SurfaceStyle>
+property DeskCanvas.Core.Models.Settings.FocusLinkSettings Whitelist -> System.String[]
+field DeskCanvas.Core.Models.Settings.FocusLinkSettings DefaultSwitchDelayMs -> System.Int32
+field DeskCanvas.Core.Models.Settings.FocusLinkSettings SwitchDelayMaxMs -> System.Int32
+field DeskCanvas.Core.Models.Settings.FocusLinkSettings SwitchDelayMinMs -> System.Int32
+type DeskCanvas.Core.Models.Settings.FocusMode
+method DeskCanvas.Core.Models.Settings.FocusMode Deconstruct(System.Nullable<System.Boolean>,System.Boolean) -> System.Void
+method DeskCanvas.Core.Models.Settings.FocusMode Equals(System.Object) -> System.Boolean
+method DeskCanvas.Core.Models.Settings.FocusMode Equals(DeskCanvas.Core.Models.Settings.FocusMode) -> System.Boolean
+method DeskCanvas.Core.Models.Settings.FocusMode GetHashCode() -> System.Int32
+method DeskCanvas.Core.Models.Settings.FocusMode ToString() -> System.String
+method DeskCanvas.Core.Models.Settings.FocusMode op_Equality(DeskCanvas.Core.Models.Settings.FocusMode,DeskCanvas.Core.Models.Settings.FocusMode) -> System.Boolean
+method DeskCanvas.Core.Models.Settings.FocusMode op_Inequality(DeskCanvas.Core.Models.Settings.FocusMode,DeskCanvas.Core.Models.Settings.FocusMode) -> System.Boolean
+property DeskCanvas.Core.Models.Settings.FocusMode AutoTheme -> System.Boolean
+property DeskCanvas.Core.Models.Settings.FocusMode DarkMode -> System.Nullable<System.Boolean>
+property DeskCanvas.Core.Models.Settings.FocusMode System -> DeskCanvas.Core.Models.Settings.FocusMode
+type DeskCanvas.Core.Models.Settings.Grid
+method DeskCanvas.Core.Models.Settings.Grid Deconstruct(System.Int32,System.Int32,System.Double,System.Double,System.Double) -> System.Void
+method DeskCanvas.Core.Models.Settings.Grid Equals(System.Object) -> System.Boolean
+method DeskCanvas.Core.Models.Settings.Grid Equals(DeskCanvas.Core.Models.Settings.Grid) -> System.Boolean
+method DeskCanvas.Core.Models.Settings.Grid GetHashCode() -> System.Int32
+method DeskCanvas.Core.Models.Settings.Grid ToString() -> System.String
+method DeskCanvas.Core.Models.Settings.Grid op_Equality(DeskCanvas.Core.Models.Settings.Grid,DeskCanvas.Core.Models.Settings.Grid) -> System.Boolean
+method DeskCanvas.Core.Models.Settings.Grid op_Inequality(DeskCanvas.Core.Models.Settings.Grid,DeskCanvas.Core.Models.Settings.Grid) -> System.Boolean
+property DeskCanvas.Core.Models.Settings.Grid CellPercent -> System.Double
+property DeskCanvas.Core.Models.Settings.Grid Columns -> System.Int32
+property DeskCanvas.Core.Models.Settings.Grid Default -> DeskCanvas.Core.Models.Settings.Grid
+property DeskCanvas.Core.Models.Settings.Grid Rows -> System.Int32
+property DeskCanvas.Core.Models.Settings.Grid XPercent -> System.Double
+property DeskCanvas.Core.Models.Settings.Grid YPercent -> System.Double
+type DeskCanvas.Core.Models.Settings.GridMode
+enumvalue DeskCanvas.Core.Models.Settings.GridMode Free
+enumvalue DeskCanvas.Core.Models.Settings.GridMode Manual
+enumvalue DeskCanvas.Core.Models.Settings.GridMode Virtual
+type DeskCanvas.Core.Models.Settings.IRenderedGlassSettings
+property DeskCanvas.Core.Models.Settings.IRenderedGlassSettings BackdropClarity -> System.Double
+property DeskCanvas.Core.Models.Settings.IRenderedGlassSettings Blur -> System.Double
+property DeskCanvas.Core.Models.Settings.IRenderedGlassSettings LiveSampling -> System.Boolean
+property DeskCanvas.Core.Models.Settings.IRenderedGlassSettings LiveSamplingInterval -> System.Int32
+property DeskCanvas.Core.Models.Settings.IRenderedGlassSettings WallpaperOffsetX -> System.Double
+property DeskCanvas.Core.Models.Settings.IRenderedGlassSettings WallpaperOffsetY -> System.Double
+type DeskCanvas.Core.Models.Settings.Layout
+method DeskCanvas.Core.Models.Settings.Layout Deconstruct(DeskCanvas.Core.Models.Settings.GridMode,System.Boolean,System.Boolean,System.Boolean,System.Boolean) -> System.Void
+method DeskCanvas.Core.Models.Settings.Layout Equals(System.Object) -> System.Boolean
+method DeskCanvas.Core.Models.Settings.Layout Equals(DeskCanvas.Core.Models.Settings.Layout) -> System.Boolean
+method DeskCanvas.Core.Models.Settings.Layout GetHashCode() -> System.Int32
+method DeskCanvas.Core.Models.Settings.Layout ToString() -> System.String
+method DeskCanvas.Core.Models.Settings.Layout op_Equality(DeskCanvas.Core.Models.Settings.Layout,DeskCanvas.Core.Models.Settings.Layout) -> System.Boolean
+method DeskCanvas.Core.Models.Settings.Layout op_Inequality(DeskCanvas.Core.Models.Settings.Layout,DeskCanvas.Core.Models.Settings.Layout) -> System.Boolean
+property DeskCanvas.Core.Models.Settings.Layout GridMode -> DeskCanvas.Core.Models.Settings.GridMode
+property DeskCanvas.Core.Models.Settings.Layout LockPosition -> System.Boolean
+property DeskCanvas.Core.Models.Settings.Layout LockSize -> System.Boolean
+property DeskCanvas.Core.Models.Settings.Layout SnapPosition -> System.Boolean
+property DeskCanvas.Core.Models.Settings.Layout SnapSize -> System.Boolean
+type DeskCanvas.Core.Models.Settings.LiquidGlassRefractionLens
+method DeskCanvas.Core.Models.Settings.LiquidGlassRefractionLens Deconstruct(System.Single,System.Single,System.Single,System.Single) -> System.Void
+method DeskCanvas.Core.Models.Settings.LiquidGlassRefractionLens Equals(System.Object) -> System.Boolean
+method DeskCanvas.Core.Models.Settings.LiquidGlassRefractionLens Equals(DeskCanvas.Core.Models.Settings.LiquidGlassRefractionLens) -> System.Boolean
+method DeskCanvas.Core.Models.Settings.LiquidGlassRefractionLens GetHashCode() -> System.Int32
+method DeskCanvas.Core.Models.Settings.LiquidGlassRefractionLens ToString() -> System.String
+method DeskCanvas.Core.Models.Settings.LiquidGlassRefractionLens op_Equality(DeskCanvas.Core.Models.Settings.LiquidGlassRefractionLens,DeskCanvas.Core.Models.Settings.LiquidGlassRefractionLens) -> System.Boolean
+method DeskCanvas.Core.Models.Settings.LiquidGlassRefractionLens op_Inequality(DeskCanvas.Core.Models.Settings.LiquidGlassRefractionLens,DeskCanvas.Core.Models.Settings.LiquidGlassRefractionLens) -> System.Boolean
+property DeskCanvas.Core.Models.Settings.LiquidGlassRefractionLens Amount -> System.Single
+property DeskCanvas.Core.Models.Settings.LiquidGlassRefractionLens Band -> System.Single
+property DeskCanvas.Core.Models.Settings.LiquidGlassRefractionLens DepthEffect -> System.Single
+property DeskCanvas.Core.Models.Settings.LiquidGlassRefractionLens GradRadius -> System.Single
+type DeskCanvas.Core.Models.Settings.LiquidGlassSettings
+method DeskCanvas.Core.Models.Settings.LiquidGlassSettings Deconstruct(System.Double,System.Double,System.Double,System.Double,System.Double,System.Double,System.Double,System.Double,System.Double,System.Double,System.Double,System.Double,System.Boolean,System.Int32,System.Double) -> System.Void
+method DeskCanvas.Core.Models.Settings.LiquidGlassSettings Equals(System.Object) -> System.Boolean
+method DeskCanvas.Core.Models.Settings.LiquidGlassSettings Equals(DeskCanvas.Core.Models.Settings.LiquidGlassSettings) -> System.Boolean
+method DeskCanvas.Core.Models.Settings.LiquidGlassSettings GetHashCode() -> System.Int32
+method DeskCanvas.Core.Models.Settings.LiquidGlassSettings Normalize() -> DeskCanvas.Core.Models.Settings.LiquidGlassSettings
+method DeskCanvas.Core.Models.Settings.LiquidGlassSettings ToString() -> System.String
+method DeskCanvas.Core.Models.Settings.LiquidGlassSettings op_Equality(DeskCanvas.Core.Models.Settings.LiquidGlassSettings,DeskCanvas.Core.Models.Settings.LiquidGlassSettings) -> System.Boolean
+method DeskCanvas.Core.Models.Settings.LiquidGlassSettings op_Inequality(DeskCanvas.Core.Models.Settings.LiquidGlassSettings,DeskCanvas.Core.Models.Settings.LiquidGlassSettings) -> System.Boolean
+property DeskCanvas.Core.Models.Settings.LiquidGlassSettings BackdropClarity -> System.Double
+property DeskCanvas.Core.Models.Settings.LiquidGlassSettings Blur -> System.Double
+property DeskCanvas.Core.Models.Settings.LiquidGlassSettings Dispersion -> System.Double
+property DeskCanvas.Core.Models.Settings.LiquidGlassSettings DyeSpread -> System.Double
+property DeskCanvas.Core.Models.Settings.LiquidGlassSettings EdgeTint -> System.Double
+property DeskCanvas.Core.Models.Settings.LiquidGlassSettings EdgeWidth -> System.Double
+property DeskCanvas.Core.Models.Settings.LiquidGlassSettings Glow -> System.Double
+property DeskCanvas.Core.Models.Settings.LiquidGlassSettings Highlight -> System.Double
+property DeskCanvas.Core.Models.Settings.LiquidGlassSettings IsSoftRecipe -> System.Boolean
+property DeskCanvas.Core.Models.Settings.LiquidGlassSettings LightAngle -> System.Double
+property DeskCanvas.Core.Models.Settings.LiquidGlassSettings LiveSampling -> System.Boolean
+property DeskCanvas.Core.Models.Settings.LiquidGlassSettings LiveSamplingInterval -> System.Int32
+property DeskCanvas.Core.Models.Settings.LiquidGlassSettings Refraction -> System.Double
+property DeskCanvas.Core.Models.Settings.LiquidGlassSettings SoftGlowPreset -> DeskCanvas.Core.Models.Settings.LiquidGlassSettings
+property DeskCanvas.Core.Models.Settings.LiquidGlassSettings Spectrum -> System.Double
+property DeskCanvas.Core.Models.Settings.LiquidGlassSettings WallpaperOffsetX -> System.Double
+property DeskCanvas.Core.Models.Settings.LiquidGlassSettings WallpaperOffsetY -> System.Double
+field DeskCanvas.Core.Models.Settings.LiquidGlassSettings DefaultBackdropClarity -> System.Double
+field DeskCanvas.Core.Models.Settings.LiquidGlassSettings DefaultDyeSpread -> System.Double
+field DeskCanvas.Core.Models.Settings.LiquidGlassSettings DefaultEdgeTint -> System.Double
+field DeskCanvas.Core.Models.Settings.LiquidGlassSettings DefaultEdgeTintChromaBoost -> System.Double
+field DeskCanvas.Core.Models.Settings.LiquidGlassSettings DefaultLiveSampling -> System.Boolean
+field DeskCanvas.Core.Models.Settings.LiquidGlassSettings DefaultLiveSamplingInterval -> System.Int32
+field DeskCanvas.Core.Models.Settings.LiquidGlassSettings MaxDyeBandFraction -> System.Double
+field DeskCanvas.Core.Models.Settings.LiquidGlassSettings MaxLiveSamplingInterval -> System.Int32
+field DeskCanvas.Core.Models.Settings.LiquidGlassSettings MinBackdropClarity -> System.Double
+field DeskCanvas.Core.Models.Settings.LiquidGlassSettings MinDyeBandFraction -> System.Double
+field DeskCanvas.Core.Models.Settings.LiquidGlassSettings MinLiveSamplingInterval -> System.Int32
+field DeskCanvas.Core.Models.Settings.LiquidGlassSettings WallpaperOffsetLimit -> System.Double
+type DeskCanvas.Core.Models.Settings.LiquidGlassV2Lens
+method DeskCanvas.Core.Models.Settings.LiquidGlassV2Lens Compute(System.Double,System.Single,System.Single) -> DeskCanvas.Core.Models.Settings.LiquidGlassRefractionLens
+method DeskCanvas.Core.Models.Settings.LiquidGlassV2Lens SmoothCap(System.Single,System.Single) -> System.Single
+type DeskCanvas.Core.Models.Settings.LiquidGlassV2Settings
+method DeskCanvas.Core.Models.Settings.LiquidGlassV2Settings Deconstruct(System.Double,System.Double,System.Double,System.Double,System.Double,System.Double,System.Double,System.Boolean,System.Int32,System.Double) -> System.Void
+method DeskCanvas.Core.Models.Settings.LiquidGlassV2Settings Equals(System.Object) -> System.Boolean
+method DeskCanvas.Core.Models.Settings.LiquidGlassV2Settings Equals(DeskCanvas.Core.Models.Settings.LiquidGlassV2Settings) -> System.Boolean
+method DeskCanvas.Core.Models.Settings.LiquidGlassV2Settings GetHashCode() -> System.Int32
+method DeskCanvas.Core.Models.Settings.LiquidGlassV2Settings Normalize() -> DeskCanvas.Core.Models.Settings.LiquidGlassV2Settings
+method DeskCanvas.Core.Models.Settings.LiquidGlassV2Settings ToString() -> System.String
+method DeskCanvas.Core.Models.Settings.LiquidGlassV2Settings op_Equality(DeskCanvas.Core.Models.Settings.LiquidGlassV2Settings,DeskCanvas.Core.Models.Settings.LiquidGlassV2Settings) -> System.Boolean
+method DeskCanvas.Core.Models.Settings.LiquidGlassV2Settings op_Inequality(DeskCanvas.Core.Models.Settings.LiquidGlassV2Settings,DeskCanvas.Core.Models.Settings.LiquidGlassV2Settings) -> System.Boolean
+property DeskCanvas.Core.Models.Settings.LiquidGlassV2Settings BackdropClarity -> System.Double
+property DeskCanvas.Core.Models.Settings.LiquidGlassV2Settings Blur -> System.Double
+property DeskCanvas.Core.Models.Settings.LiquidGlassV2Settings Dispersion -> System.Double
+property DeskCanvas.Core.Models.Settings.LiquidGlassV2Settings Highlight -> System.Double
+property DeskCanvas.Core.Models.Settings.LiquidGlassV2Settings LiveSampling -> System.Boolean
+property DeskCanvas.Core.Models.Settings.LiquidGlassV2Settings LiveSamplingInterval -> System.Int32
+property DeskCanvas.Core.Models.Settings.LiquidGlassV2Settings Refraction -> System.Double
+property DeskCanvas.Core.Models.Settings.LiquidGlassV2Settings Vibrancy -> System.Double
+property DeskCanvas.Core.Models.Settings.LiquidGlassV2Settings WallpaperOffsetX -> System.Double
+property DeskCanvas.Core.Models.Settings.LiquidGlassV2Settings WallpaperOffsetY -> System.Double
+field DeskCanvas.Core.Models.Settings.LiquidGlassV2Settings BandToAmountRatio -> System.Double
+field DeskCanvas.Core.Models.Settings.LiquidGlassV2Settings CornerBandCapFactor -> System.Double
+field DeskCanvas.Core.Models.Settings.LiquidGlassV2Settings CornerBandCapTransitionFrac -> System.Double
+field DeskCanvas.Core.Models.Settings.LiquidGlassV2Settings DefaultLiveSamplingInterval -> System.Int32
+field DeskCanvas.Core.Models.Settings.LiquidGlassV2Settings GradRadiusFactor -> System.Double
+field DeskCanvas.Core.Models.Settings.LiquidGlassV2Settings HighlightAngleDegrees -> System.Double
+field DeskCanvas.Core.Models.Settings.LiquidGlassV2Settings HighlightFalloff -> System.Double
+field DeskCanvas.Core.Models.Settings.LiquidGlassV2Settings HighlightReference -> System.Double
+field DeskCanvas.Core.Models.Settings.LiquidGlassV2Settings MaxLiveSamplingInterval -> System.Int32
+field DeskCanvas.Core.Models.Settings.LiquidGlassV2Settings MinBackdropClarity -> System.Double
+field DeskCanvas.Core.Models.Settings.LiquidGlassV2Settings MinLiveSamplingInterval -> System.Int32
+field DeskCanvas.Core.Models.Settings.LiquidGlassV2Settings RefractionAmountMaxFrac -> System.Double
+field DeskCanvas.Core.Models.Settings.LiquidGlassV2Settings StrokeFeatherDips -> System.Double
+field DeskCanvas.Core.Models.Settings.LiquidGlassV2Settings StrokeWidthDips -> System.Double
+field DeskCanvas.Core.Models.Settings.LiquidGlassV2Settings VibrancySaturationBoost -> System.Double
+field DeskCanvas.Core.Models.Settings.LiquidGlassV2Settings WallpaperOffsetLimit -> System.Double
+type DeskCanvas.Core.Models.Settings.MonochromeStyle
+enumvalue DeskCanvas.Core.Models.Settings.MonochromeStyle Accent
+enumvalue DeskCanvas.Core.Models.Settings.MonochromeStyle BackgroundColor
+enumvalue DeskCanvas.Core.Models.Settings.MonochromeStyle BlackWhite
+type DeskCanvas.Core.Models.Settings.Region
+method DeskCanvas.Core.Models.Settings.Region Deconstruct(System.String) -> System.Void
+method DeskCanvas.Core.Models.Settings.Region Equals(System.Object) -> System.Boolean
+method DeskCanvas.Core.Models.Settings.Region Equals(DeskCanvas.Core.Models.Settings.Region) -> System.Boolean
+method DeskCanvas.Core.Models.Settings.Region GetHashCode() -> System.Int32
+method DeskCanvas.Core.Models.Settings.Region ToString() -> System.String
+method DeskCanvas.Core.Models.Settings.Region op_Equality(DeskCanvas.Core.Models.Settings.Region,DeskCanvas.Core.Models.Settings.Region) -> System.Boolean
+method DeskCanvas.Core.Models.Settings.Region op_Inequality(DeskCanvas.Core.Models.Settings.Region,DeskCanvas.Core.Models.Settings.Region) -> System.Boolean
+property DeskCanvas.Core.Models.Settings.Region Language -> System.String
+type DeskCanvas.Core.Models.Settings.SurfaceStyle
+enumvalue DeskCanvas.Core.Models.Settings.SurfaceStyle Acrylic
+enumvalue DeskCanvas.Core.Models.Settings.SurfaceStyle Colorful
+enumvalue DeskCanvas.Core.Models.Settings.SurfaceStyle LiquidGlass
+enumvalue DeskCanvas.Core.Models.Settings.SurfaceStyle LiquidGlassV2
+enumvalue DeskCanvas.Core.Models.Settings.SurfaceStyle OutlinedAcrylic
+enumvalue DeskCanvas.Core.Models.Settings.SurfaceStyle SoftGlow
+enumvalue DeskCanvas.Core.Models.Settings.SurfaceStyle Solid
+type DeskCanvas.Core.Models.Settings.Theme
+method DeskCanvas.Core.Models.Settings.Theme Deconstruct(System.Nullable<System.Boolean>,System.String,System.Double,System.Boolean,System.Boolean,System.String,System.Nullable<DeskCanvas.Core.Models.Settings.SurfaceStyle>,System.String,System.Double,System.String,System.String,System.Nullable<DeskCanvas.Core.Models.Settings.MonochromeStyle>,System.Boolean,DeskCanvas.Core.Models.Settings.LiquidGlassSettings,DeskCanvas.Core.Models.Settings.LiquidGlassV2Settings,System.Boolean,System.Double) -> System.Void
+method DeskCanvas.Core.Models.Settings.Theme Equals(System.Object) -> System.Boolean
+method DeskCanvas.Core.Models.Settings.Theme Equals(DeskCanvas.Core.Models.Settings.Theme) -> System.Boolean
+method DeskCanvas.Core.Models.Settings.Theme GetHashCode() -> System.Int32
+method DeskCanvas.Core.Models.Settings.Theme NormalizeForSurface() -> DeskCanvas.Core.Models.Settings.Theme
+method DeskCanvas.Core.Models.Settings.Theme NormalizeMaterial() -> DeskCanvas.Core.Models.Settings.Theme
+method DeskCanvas.Core.Models.Settings.Theme ToString() -> System.String
+method DeskCanvas.Core.Models.Settings.Theme op_Equality(DeskCanvas.Core.Models.Settings.Theme,DeskCanvas.Core.Models.Settings.Theme) -> System.Boolean
+method DeskCanvas.Core.Models.Settings.Theme op_Inequality(DeskCanvas.Core.Models.Settings.Theme,DeskCanvas.Core.Models.Settings.Theme) -> System.Boolean
+property DeskCanvas.Core.Models.Settings.Theme AccentColor -> System.String
+property DeskCanvas.Core.Models.Settings.Theme AutoTheme -> System.Boolean
+property DeskCanvas.Core.Models.Settings.Theme DarkMode -> System.Nullable<System.Boolean>
+property DeskCanvas.Core.Models.Settings.Theme EffectiveGlass -> DeskCanvas.Core.Models.Settings.IRenderedGlassSettings
+property DeskCanvas.Core.Models.Settings.Theme EffectiveLiquidGlass -> DeskCanvas.Core.Models.Settings.LiquidGlassSettings
+property DeskCanvas.Core.Models.Settings.Theme EffectiveLiquidGlassV2 -> DeskCanvas.Core.Models.Settings.LiquidGlassV2Settings
+property DeskCanvas.Core.Models.Settings.Theme EffectiveMonochromeVariant -> DeskCanvas.Core.Models.Settings.MonochromeStyle
+property DeskCanvas.Core.Models.Settings.Theme EffectiveOutlineColor -> System.String
+property DeskCanvas.Core.Models.Settings.Theme EffectiveSolidBackgroundDark -> System.String
+property DeskCanvas.Core.Models.Settings.Theme EffectiveSolidBackgroundLight -> System.String
+property DeskCanvas.Core.Models.Settings.Theme EffectiveSurface -> DeskCanvas.Core.Models.Settings.SurfaceStyle
+property DeskCanvas.Core.Models.Settings.Theme EffectiveTextShadowStrength -> System.Double
+property DeskCanvas.Core.Models.Settings.Theme FontFamily -> System.String
+property DeskCanvas.Core.Models.Settings.Theme IsColorful -> System.Boolean
+property DeskCanvas.Core.Models.Settings.Theme IsGlass -> System.Boolean
+property DeskCanvas.Core.Models.Settings.Theme IsLiquidGlass -> System.Boolean
+property DeskCanvas.Core.Models.Settings.Theme IsLiquidGlassV2 -> System.Boolean
+property DeskCanvas.Core.Models.Settings.Theme IsSoftGlow -> System.Boolean
+property DeskCanvas.Core.Models.Settings.Theme LiquidGlass -> DeskCanvas.Core.Models.Settings.LiquidGlassSettings
+property DeskCanvas.Core.Models.Settings.Theme LiquidGlassV2 -> DeskCanvas.Core.Models.Settings.LiquidGlassV2Settings
+property DeskCanvas.Core.Models.Settings.Theme Monochrome -> System.Boolean
+property DeskCanvas.Core.Models.Settings.Theme MonochromeVariant -> System.Nullable<DeskCanvas.Core.Models.Settings.MonochromeStyle>
+property DeskCanvas.Core.Models.Settings.Theme OpacityLevel -> System.Double
+property DeskCanvas.Core.Models.Settings.Theme OutlineColor -> System.String
+property DeskCanvas.Core.Models.Settings.Theme OutlineWidth -> System.Double
+property DeskCanvas.Core.Models.Settings.Theme SolidBackgroundDark -> System.String
+property DeskCanvas.Core.Models.Settings.Theme SolidBackgroundLight -> System.String
+property DeskCanvas.Core.Models.Settings.Theme Surface -> System.Nullable<DeskCanvas.Core.Models.Settings.SurfaceStyle>
+property DeskCanvas.Core.Models.Settings.Theme TextShadowEnabled -> System.Boolean
+property DeskCanvas.Core.Models.Settings.Theme TextShadowStrength -> System.Double
+property DeskCanvas.Core.Models.Settings.Theme UseNativeFrame -> System.Boolean
+property DeskCanvas.Core.Models.Settings.Theme UsesNativeBlur -> System.Boolean
+property DeskCanvas.Core.Models.Settings.Theme UsesRenderedGlass -> System.Boolean
+field DeskCanvas.Core.Models.Settings.Theme DefaultMonochromeVariant -> DeskCanvas.Core.Models.Settings.MonochromeStyle
+field DeskCanvas.Core.Models.Settings.Theme DefaultOutlineColor -> System.String
+field DeskCanvas.Core.Models.Settings.Theme DefaultOutlineWidth -> System.Double
+field DeskCanvas.Core.Models.Settings.Theme DefaultSoftGlowOpacity -> System.Double
+field DeskCanvas.Core.Models.Settings.Theme DefaultSolidBackgroundDark -> System.String
+field DeskCanvas.Core.Models.Settings.Theme DefaultSolidBackgroundLight -> System.String
+type DeskCanvas.Core.Models.Settings.ThemeColorPolicy
+enumvalue DeskCanvas.Core.Models.Settings.ThemeColorPolicy ColorfulFixed
+enumvalue DeskCanvas.Core.Models.Settings.ThemeColorPolicy Normal
+type DeskCanvas.Core.Models.Settings.ThemePresets
+field DeskCanvas.Core.Models.Settings.ThemePresets SurfaceTemplates -> DeskCanvas.Core.Models.Settings.Theme[]
+type DeskCanvas.Core.Models.Settings.TitleBarStyle
+enumvalue DeskCanvas.Core.Models.Settings.TitleBarStyle Native
+enumvalue DeskCanvas.Core.Models.Settings.TitleBarStyle TrafficLights
+type DeskCanvas.Core.Models.Settings.UpdateCheckInterval
+enumvalue DeskCanvas.Core.Models.Settings.UpdateCheckInterval Daily
+enumvalue DeskCanvas.Core.Models.Settings.UpdateCheckInterval Disabled
+enumvalue DeskCanvas.Core.Models.Settings.UpdateCheckInterval Every12Hours
+enumvalue DeskCanvas.Core.Models.Settings.UpdateCheckInterval Every6Hours
+enumvalue DeskCanvas.Core.Models.Settings.UpdateCheckInterval OnStartup
+enumvalue DeskCanvas.Core.Models.Settings.UpdateCheckInterval Weekly
+type DeskCanvas.Core.Models.WidgetLayout
+method DeskCanvas.Core.Models.WidgetLayout Deconstruct(System.String,System.String,System.Int32,System.Int32,System.Int32,System.Int32,System.Nullable<System.Text.Json.JsonElement>,System.Nullable<System.Double>,System.Guid,System.Int64) -> System.Void
+method DeskCanvas.Core.Models.WidgetLayout EnsureIdentity() -> DeskCanvas.Core.Models.WidgetLayout
+method DeskCanvas.Core.Models.WidgetLayout Equals(System.Object) -> System.Boolean
+method DeskCanvas.Core.Models.WidgetLayout Equals(DeskCanvas.Core.Models.WidgetLayout) -> System.Boolean
+method DeskCanvas.Core.Models.WidgetLayout GetHashCode() -> System.Int32
+method DeskCanvas.Core.Models.WidgetLayout GetModel() -> T
+method DeskCanvas.Core.Models.WidgetLayout GetModel(System.Type) -> System.Object
+method DeskCanvas.Core.Models.WidgetLayout IndexOfIdentity(System.Collections.Generic.IReadOnlyList<DeskCanvas.Core.Models.WidgetLayout>,DeskCanvas.Core.Models.WidgetLayout) -> System.Int32
+method DeskCanvas.Core.Models.WidgetLayout SameWidgetAs(DeskCanvas.Core.Models.WidgetLayout) -> System.Boolean
+method DeskCanvas.Core.Models.WidgetLayout ToString() -> System.String
+method DeskCanvas.Core.Models.WidgetLayout op_Equality(DeskCanvas.Core.Models.WidgetLayout,DeskCanvas.Core.Models.WidgetLayout) -> System.Boolean
+method DeskCanvas.Core.Models.WidgetLayout op_Inequality(DeskCanvas.Core.Models.WidgetLayout,DeskCanvas.Core.Models.WidgetLayout) -> System.Boolean
+property DeskCanvas.Core.Models.WidgetLayout ContentScale -> System.Nullable<System.Double>
+property DeskCanvas.Core.Models.WidgetLayout Generation -> System.Int64
+property DeskCanvas.Core.Models.WidgetLayout HasStableIdentity -> System.Boolean
+property DeskCanvas.Core.Models.WidgetLayout Height -> System.Int32
+property DeskCanvas.Core.Models.WidgetLayout InstanceId -> System.Guid
+property DeskCanvas.Core.Models.WidgetLayout Settings -> System.Nullable<System.Text.Json.JsonElement>
+property DeskCanvas.Core.Models.WidgetLayout SubType -> System.String
+property DeskCanvas.Core.Models.WidgetLayout Type -> System.String
+property DeskCanvas.Core.Models.WidgetLayout Width -> System.Int32
+property DeskCanvas.Core.Models.WidgetLayout X -> System.Int32
+property DeskCanvas.Core.Models.WidgetLayout Y -> System.Int32
+type DeskCanvas.Core.Scheduling.IWidgetScheduler
+method DeskCanvas.Core.Scheduling.IWidgetScheduler Pause(System.String) -> System.Void
+method DeskCanvas.Core.Scheduling.IWidgetScheduler Resume(System.String) -> System.Void
+method DeskCanvas.Core.Scheduling.IWidgetScheduler Schedule(DeskCanvas.Core.Scheduling.SchedulerJobOptions,System.Func<System.Threading.CancellationToken,System.Threading.Tasks.ValueTask>) -> DeskCanvas.Core.Scheduling.SchedulerLease
+method DeskCanvas.Core.Scheduling.IWidgetScheduler Snapshot() -> System.Collections.Generic.IReadOnlyList<DeskCanvas.Core.Scheduling.SchedulerJobSnapshot>
+type DeskCanvas.Core.Scheduling.SchedulerJobId
+method DeskCanvas.Core.Scheduling.SchedulerJobId Deconstruct(System.Guid) -> System.Void
+method DeskCanvas.Core.Scheduling.SchedulerJobId Equals(System.Object) -> System.Boolean
+method DeskCanvas.Core.Scheduling.SchedulerJobId Equals(DeskCanvas.Core.Scheduling.SchedulerJobId) -> System.Boolean
+method DeskCanvas.Core.Scheduling.SchedulerJobId GetHashCode() -> System.Int32
+method DeskCanvas.Core.Scheduling.SchedulerJobId New() -> DeskCanvas.Core.Scheduling.SchedulerJobId
+method DeskCanvas.Core.Scheduling.SchedulerJobId ToString() -> System.String
+method DeskCanvas.Core.Scheduling.SchedulerJobId op_Equality(DeskCanvas.Core.Scheduling.SchedulerJobId,DeskCanvas.Core.Scheduling.SchedulerJobId) -> System.Boolean
+method DeskCanvas.Core.Scheduling.SchedulerJobId op_Inequality(DeskCanvas.Core.Scheduling.SchedulerJobId,DeskCanvas.Core.Scheduling.SchedulerJobId) -> System.Boolean
+property DeskCanvas.Core.Scheduling.SchedulerJobId Value -> System.Guid
+type DeskCanvas.Core.Scheduling.SchedulerJobOptions
+method DeskCanvas.Core.Scheduling.SchedulerJobOptions Equals(System.Object) -> System.Boolean
+method DeskCanvas.Core.Scheduling.SchedulerJobOptions Equals(DeskCanvas.Core.Scheduling.SchedulerJobOptions) -> System.Boolean
+method DeskCanvas.Core.Scheduling.SchedulerJobOptions GetHashCode() -> System.Int32
+method DeskCanvas.Core.Scheduling.SchedulerJobOptions ToString() -> System.String
+method DeskCanvas.Core.Scheduling.SchedulerJobOptions op_Equality(DeskCanvas.Core.Scheduling.SchedulerJobOptions,DeskCanvas.Core.Scheduling.SchedulerJobOptions) -> System.Boolean
+method DeskCanvas.Core.Scheduling.SchedulerJobOptions op_Inequality(DeskCanvas.Core.Scheduling.SchedulerJobOptions,DeskCanvas.Core.Scheduling.SchedulerJobOptions) -> System.Boolean
+property DeskCanvas.Core.Scheduling.SchedulerJobOptions Overlap -> DeskCanvas.Core.Scheduling.SchedulerOverlapPolicy
+property DeskCanvas.Core.Scheduling.SchedulerJobOptions OwnerId -> System.String
+property DeskCanvas.Core.Scheduling.SchedulerJobOptions Period -> System.TimeSpan
+property DeskCanvas.Core.Scheduling.SchedulerJobOptions StartImmediately -> System.Boolean
+property DeskCanvas.Core.Scheduling.SchedulerJobOptions Timeout -> System.Nullable<System.TimeSpan>
+property DeskCanvas.Core.Scheduling.SchedulerJobOptions Visibility -> DeskCanvas.Core.Scheduling.SchedulerVisibility
+property DeskCanvas.Core.Scheduling.SchedulerJobOptions WorkKind -> DeskCanvas.Core.Scheduling.SchedulerWorkKind
+type DeskCanvas.Core.Scheduling.SchedulerJobSnapshot
+method DeskCanvas.Core.Scheduling.SchedulerJobSnapshot Deconstruct(DeskCanvas.Core.Scheduling.SchedulerJobId,System.String,DeskCanvas.Core.Scheduling.SchedulerWorkKind,DeskCanvas.Core.Scheduling.SchedulerVisibility,System.Boolean,System.Boolean,System.Int64,System.Int64,System.Int64,System.Int64,System.Int64,System.Int64) -> System.Void
+method DeskCanvas.Core.Scheduling.SchedulerJobSnapshot Equals(System.Object) -> System.Boolean
+method DeskCanvas.Core.Scheduling.SchedulerJobSnapshot Equals(DeskCanvas.Core.Scheduling.SchedulerJobSnapshot) -> System.Boolean
+method DeskCanvas.Core.Scheduling.SchedulerJobSnapshot GetHashCode() -> System.Int32
+method DeskCanvas.Core.Scheduling.SchedulerJobSnapshot ToString() -> System.String
+method DeskCanvas.Core.Scheduling.SchedulerJobSnapshot op_Equality(DeskCanvas.Core.Scheduling.SchedulerJobSnapshot,DeskCanvas.Core.Scheduling.SchedulerJobSnapshot) -> System.Boolean
+method DeskCanvas.Core.Scheduling.SchedulerJobSnapshot op_Inequality(DeskCanvas.Core.Scheduling.SchedulerJobSnapshot,DeskCanvas.Core.Scheduling.SchedulerJobSnapshot) -> System.Boolean
+property DeskCanvas.Core.Scheduling.SchedulerJobSnapshot Cancelled -> System.Int64
+property DeskCanvas.Core.Scheduling.SchedulerJobSnapshot Completed -> System.Int64
+property DeskCanvas.Core.Scheduling.SchedulerJobSnapshot Failed -> System.Int64
+property DeskCanvas.Core.Scheduling.SchedulerJobSnapshot JobId -> DeskCanvas.Core.Scheduling.SchedulerJobId
+property DeskCanvas.Core.Scheduling.SchedulerJobSnapshot OwnerId -> System.String
+property DeskCanvas.Core.Scheduling.SchedulerJobSnapshot Paused -> System.Boolean
+property DeskCanvas.Core.Scheduling.SchedulerJobSnapshot Queued -> System.Int64
+property DeskCanvas.Core.Scheduling.SchedulerJobSnapshot Running -> System.Boolean
+property DeskCanvas.Core.Scheduling.SchedulerJobSnapshot Skipped -> System.Int64
+property DeskCanvas.Core.Scheduling.SchedulerJobSnapshot Started -> System.Int64
+property DeskCanvas.Core.Scheduling.SchedulerJobSnapshot Visibility -> DeskCanvas.Core.Scheduling.SchedulerVisibility
+property DeskCanvas.Core.Scheduling.SchedulerJobSnapshot WorkKind -> DeskCanvas.Core.Scheduling.SchedulerWorkKind
+type DeskCanvas.Core.Scheduling.SchedulerLease
+method DeskCanvas.Core.Scheduling.SchedulerLease Dispose() -> System.Void
+method DeskCanvas.Core.Scheduling.SchedulerLease DisposeAsync() -> System.Threading.Tasks.ValueTask
+property DeskCanvas.Core.Scheduling.SchedulerLease JobId -> DeskCanvas.Core.Scheduling.SchedulerJobId
+type DeskCanvas.Core.Scheduling.SchedulerOverlapPolicy
+enumvalue DeskCanvas.Core.Scheduling.SchedulerOverlapPolicy Allow
+enumvalue DeskCanvas.Core.Scheduling.SchedulerOverlapPolicy QueueLatest
+enumvalue DeskCanvas.Core.Scheduling.SchedulerOverlapPolicy Skip
+type DeskCanvas.Core.Scheduling.SchedulerVisibility
+enumvalue DeskCanvas.Core.Scheduling.SchedulerVisibility DeadlineOnly
+enumvalue DeskCanvas.Core.Scheduling.SchedulerVisibility Hidden
+enumvalue DeskCanvas.Core.Scheduling.SchedulerVisibility Visible
+type DeskCanvas.Core.Scheduling.SchedulerWorkKind
+enumvalue DeskCanvas.Core.Scheduling.SchedulerWorkKind Deadline
+enumvalue DeskCanvas.Core.Scheduling.SchedulerWorkKind Poll
+enumvalue DeskCanvas.Core.Scheduling.SchedulerWorkKind Ui
+type DeskCanvas.Core.Scheduling.WidgetScheduler
+method DeskCanvas.Core.Scheduling.WidgetScheduler DisposeAsync() -> System.Threading.Tasks.ValueTask
+method DeskCanvas.Core.Scheduling.WidgetScheduler Pause(System.String) -> System.Void
+method DeskCanvas.Core.Scheduling.WidgetScheduler Resume(System.String) -> System.Void
+method DeskCanvas.Core.Scheduling.WidgetScheduler Schedule(DeskCanvas.Core.Scheduling.SchedulerJobOptions,System.Func<System.Threading.CancellationToken,System.Threading.Tasks.ValueTask>) -> DeskCanvas.Core.Scheduling.SchedulerLease
+method DeskCanvas.Core.Scheduling.WidgetScheduler Snapshot() -> System.Collections.Generic.IReadOnlyList<DeskCanvas.Core.Scheduling.SchedulerJobSnapshot>
+type DeskCanvas.Core.Services.AppSettingsProvider
+type DeskCanvas.Core.Services.AssemblyProvider
+method DeskCanvas.Core.Services.AssemblyProvider Activate(System.Type,System.Object[]) -> System.Object
+method DeskCanvas.Core.Services.AssemblyProvider GetAssemblyInfos(System.String) -> System.Linq.ILookup<System.String,DeskCanvas.Core.Models.AssemblyInfo>
+method DeskCanvas.Core.Services.AssemblyProvider GetLocaleResourceManager(System.Reflection.Assembly) -> System.Resources.ResourceManager
+method DeskCanvas.Core.Services.AssemblyProvider LoadAssembly(System.String) -> System.Reflection.Assembly
+method DeskCanvas.Core.Services.AssemblyProvider UnloadAssembly(System.String) -> System.Void
+type DeskCanvas.Core.Services.AtomReleaseInfo
+method DeskCanvas.Core.Services.AtomReleaseInfo Deconstruct(System.String,System.String,System.Version,System.String,System.String) -> System.Void
+method DeskCanvas.Core.Services.AtomReleaseInfo Equals(System.Object) -> System.Boolean
+method DeskCanvas.Core.Services.AtomReleaseInfo Equals(DeskCanvas.Core.Services.AtomReleaseInfo) -> System.Boolean
+method DeskCanvas.Core.Services.AtomReleaseInfo GetHashCode() -> System.Int32
+method DeskCanvas.Core.Services.AtomReleaseInfo ToString() -> System.String
+method DeskCanvas.Core.Services.AtomReleaseInfo op_Equality(DeskCanvas.Core.Services.AtomReleaseInfo,DeskCanvas.Core.Services.AtomReleaseInfo) -> System.Boolean
+method DeskCanvas.Core.Services.AtomReleaseInfo op_Inequality(DeskCanvas.Core.Services.AtomReleaseInfo,DeskCanvas.Core.Services.AtomReleaseInfo) -> System.Boolean
+property DeskCanvas.Core.Services.AtomReleaseInfo ChangelogText -> System.String
+property DeskCanvas.Core.Services.AtomReleaseInfo PageUrl -> System.String
+property DeskCanvas.Core.Services.AtomReleaseInfo TagName -> System.String
+property DeskCanvas.Core.Services.AtomReleaseInfo Title -> System.String
+property DeskCanvas.Core.Services.AtomReleaseInfo Version -> System.Version
+type DeskCanvas.Core.Services.JsonParser`1
+method DeskCanvas.Core.Services.JsonParser`1 Get() -> T
+method DeskCanvas.Core.Services.JsonParser`1 Save(T) -> System.Void
+event DeskCanvas.Core.Services.JsonParser`1 DataChanged -> DeskCanvas.Core.Interfaces.DataChangedEvent<T>
+event DeskCanvas.Core.Services.JsonParser`1 DataChanging -> DeskCanvas.Core.Interfaces.DataChangedEvent<T>
+type DeskCanvas.Core.Services.LayoutProvider
+method DeskCanvas.Core.Services.LayoutProvider Get() -> DeskCanvas.Core.Models.ScreensLayout
+type DeskCanvas.Core.Services.ProxyModeKind
+enumvalue DeskCanvas.Core.Services.ProxyModeKind Auto
+enumvalue DeskCanvas.Core.Services.ProxyModeKind Custom
+enumvalue DeskCanvas.Core.Services.ProxyModeKind Direct
+enumvalue DeskCanvas.Core.Services.ProxyModeKind System
+type DeskCanvas.Core.Services.ProxySettings
+method DeskCanvas.Core.Services.ProxySettings CreateHandler() -> System.Net.Http.HttpClientHandler
+method DeskCanvas.Core.Services.ProxySettings CreateHandler(System.String) -> System.Net.Http.HttpClientHandler
+method DeskCanvas.Core.Services.ProxySettings CreateHandler(DeskCanvas.Core.Services.ResolvedProxy) -> System.Net.Http.HttpClientHandler
+method DeskCanvas.Core.Services.ProxySettings CreateHttpClient() -> System.Net.Http.HttpClient
+method DeskCanvas.Core.Services.ProxySettings CreateHttpClient(System.String,System.Nullable<System.TimeSpan>) -> System.Net.Http.HttpClient
+method DeskCanvas.Core.Services.ProxySettings CreateHttpClient(DeskCanvas.Core.Services.ResolvedProxy,System.Nullable<System.TimeSpan>) -> System.Net.Http.HttpClient
+method DeskCanvas.Core.Services.ProxySettings DetectActiveProxy(System.Uri) -> DeskCanvas.Core.Services.ResolvedProxy
+method DeskCanvas.Core.Services.ProxySettings FromPersistedProxy(System.Nullable<System.Boolean>,System.String) -> System.String
+method DeskCanvas.Core.Services.ProxySettings GetMode(System.String) -> DeskCanvas.Core.Services.ProxyModeKind
+method DeskCanvas.Core.Services.ProxySettings GetProxySetting() -> System.String
+method DeskCanvas.Core.Services.ProxySettings NormalizeProxyUrl(System.String,System.String) -> System.String
+method DeskCanvas.Core.Services.ProxySettings ParseWindowsProxyServer(System.String) -> System.String
+method DeskCanvas.Core.Services.ProxySettings ResolveProxy(System.String,System.Uri) -> DeskCanvas.Core.Services.ResolvedProxy
+method DeskCanvas.Core.Services.ProxySettings ToPersistedProxy(System.String) -> System.ValueTuple<System.Nullable<System.Boolean>,System.String>
+method DeskCanvas.Core.Services.ProxySettings TryGetWindowsSystemProxy(System.Uri) -> System.String
+type DeskCanvas.Core.Services.ProxySourceKind
+enumvalue DeskCanvas.Core.Services.ProxySourceKind CustomProxy
+enumvalue DeskCanvas.Core.Services.ProxySourceKind Direct
+enumvalue DeskCanvas.Core.Services.ProxySourceKind EnvironmentVariable
+enumvalue DeskCanvas.Core.Services.ProxySourceKind LocalPort
+enumvalue DeskCanvas.Core.Services.ProxySourceKind SystemProxy
+type DeskCanvas.Core.Services.ReleaseAtomParser
+method DeskCanvas.Core.Services.ReleaseAtomParser DeriveAtomUrl(System.String) -> System.String
+method DeskCanvas.Core.Services.ReleaseAtomParser TryParse(System.String) -> DeskCanvas.Core.Services.AtomReleaseInfo
+type DeskCanvas.Core.Services.ResolvedProxy
+method DeskCanvas.Core.Services.ResolvedProxy Deconstruct(System.String,DeskCanvas.Core.Services.ProxySourceKind,System.String) -> System.Void
+method DeskCanvas.Core.Services.ResolvedProxy Equals(System.Object) -> System.Boolean
+method DeskCanvas.Core.Services.ResolvedProxy Equals(DeskCanvas.Core.Services.ResolvedProxy) -> System.Boolean
+method DeskCanvas.Core.Services.ResolvedProxy GetHashCode() -> System.Int32
+method DeskCanvas.Core.Services.ResolvedProxy ToString() -> System.String
+method DeskCanvas.Core.Services.ResolvedProxy op_Equality(DeskCanvas.Core.Services.ResolvedProxy,DeskCanvas.Core.Services.ResolvedProxy) -> System.Boolean
+method DeskCanvas.Core.Services.ResolvedProxy op_Inequality(DeskCanvas.Core.Services.ResolvedProxy,DeskCanvas.Core.Services.ResolvedProxy) -> System.Boolean
+property DeskCanvas.Core.Services.ResolvedProxy DisplayEndpoint -> System.String
+property DeskCanvas.Core.Services.ResolvedProxy ProxyUrl -> System.String
+property DeskCanvas.Core.Services.ResolvedProxy Source -> DeskCanvas.Core.Services.ProxySourceKind
+property DeskCanvas.Core.Services.ResolvedProxy UsesProxy -> System.Boolean
+type DeskCanvas.Core.Services.StartupService
+method DeskCanvas.Core.Services.StartupService IsEnabled() -> System.Boolean
+method DeskCanvas.Core.Services.StartupService SetRunOnStartup(System.Boolean) -> System.Boolean
+type DeskCanvas.Core.Services.WidgetLayoutProvider
+method DeskCanvas.Core.Services.WidgetLayoutProvider Get() -> DeskCanvas.Core.Models.WidgetLayout
+method DeskCanvas.Core.Services.WidgetLayoutProvider Remove() -> System.Void
+method DeskCanvas.Core.Services.WidgetLayoutProvider Save(DeskCanvas.Core.Models.WidgetLayout) -> System.Void
+property DeskCanvas.Core.Services.WidgetLayoutProvider ScreenId -> System.String
+event DeskCanvas.Core.Services.WidgetLayoutProvider DataChanged -> DeskCanvas.Core.Interfaces.DataChangedEvent<DeskCanvas.Core.Models.WidgetLayout>
+event DeskCanvas.Core.Services.WidgetLayoutProvider DataChanging -> DeskCanvas.Core.Interfaces.DataChangedEvent<DeskCanvas.Core.Models.WidgetLayout>
+type DeskCanvas.Runtime.ClockThemeSettingsAdapter
+method DeskCanvas.Runtime.ClockThemeSettingsAdapter CommitPalette(System.String,System.Int64) -> DeskCanvas.Contracts.SettingsCommitResult<DeskCanvas.Contracts.ThemeSnapshot>
+property DeskCanvas.Runtime.ClockThemeSettingsAdapter Store -> DeskCanvas.Contracts.DraftSettingsStore<DeskCanvas.Contracts.ThemeSnapshot>
+type DeskCanvas.Runtime.CountdownThemeSettingsAdapter
+method DeskCanvas.Runtime.CountdownThemeSettingsAdapter CommitMaterial(System.String,System.Int64) -> DeskCanvas.Contracts.SettingsCommitResult<DeskCanvas.Contracts.ThemeSnapshot>
+property DeskCanvas.Runtime.CountdownThemeSettingsAdapter Store -> DeskCanvas.Contracts.DraftSettingsStore<DeskCanvas.Contracts.ThemeSnapshot>
+type DeskCanvas.Runtime.IWidgetActivityConsumer
+method DeskCanvas.Runtime.IWidgetActivityConsumer OnSessionActivity(DeskCanvas.Contracts.ActivitySnapshot) -> System.Void
+type DeskCanvas.Runtime.MediaSessionSharedProvider
+method DeskCanvas.Runtime.MediaSessionSharedProvider AcquireAsync(System.String,System.Threading.CancellationToken) -> System.Threading.Tasks.Task<DeskCanvas.Runtime.Lease<DeskCanvas.Runtime.MediaSnapshotKey,DeskCanvas.Runtime.SharedMediaSnapshot>>
+property DeskCanvas.Runtime.MediaSessionSharedProvider Statistics -> DeskCanvas.Runtime.SharedDataStatistics
+type DeskCanvas.Runtime.MediaSnapshotKey
+method DeskCanvas.Runtime.MediaSnapshotKey Equals(System.Object) -> System.Boolean
+method DeskCanvas.Runtime.MediaSnapshotKey Equals(DeskCanvas.Runtime.MediaSnapshotKey) -> System.Boolean
+method DeskCanvas.Runtime.MediaSnapshotKey GetHashCode() -> System.Int32
+method DeskCanvas.Runtime.MediaSnapshotKey ToString() -> System.String
+method DeskCanvas.Runtime.MediaSnapshotKey op_Equality(DeskCanvas.Runtime.MediaSnapshotKey,DeskCanvas.Runtime.MediaSnapshotKey) -> System.Boolean
+method DeskCanvas.Runtime.MediaSnapshotKey op_Inequality(DeskCanvas.Runtime.MediaSnapshotKey,DeskCanvas.Runtime.MediaSnapshotKey) -> System.Boolean
+field DeskCanvas.Runtime.MediaSnapshotKey Current -> DeskCanvas.Runtime.MediaSnapshotKey
+type DeskCanvas.Runtime.OpenMeteoRequest
+method DeskCanvas.Runtime.OpenMeteoRequest Deconstruct(DeskCanvas.Runtime.WeatherRequest,DeskCanvas.Runtime.WeatherResource,System.String,System.String,System.Nullable<System.Int32>) -> System.Void
+method DeskCanvas.Runtime.OpenMeteoRequest Equals(System.Object) -> System.Boolean
+method DeskCanvas.Runtime.OpenMeteoRequest Equals(DeskCanvas.Runtime.OpenMeteoRequest) -> System.Boolean
+method DeskCanvas.Runtime.OpenMeteoRequest GetHashCode() -> System.Int32
+method DeskCanvas.Runtime.OpenMeteoRequest Normalize() -> DeskCanvas.Runtime.OpenMeteoRequest
+method DeskCanvas.Runtime.OpenMeteoRequest ToString() -> System.String
+method DeskCanvas.Runtime.OpenMeteoRequest op_Equality(DeskCanvas.Runtime.OpenMeteoRequest,DeskCanvas.Runtime.OpenMeteoRequest) -> System.Boolean
+method DeskCanvas.Runtime.OpenMeteoRequest op_Inequality(DeskCanvas.Runtime.OpenMeteoRequest,DeskCanvas.Runtime.OpenMeteoRequest) -> System.Boolean
+property DeskCanvas.Runtime.OpenMeteoRequest Count -> System.Nullable<System.Int32>
+property DeskCanvas.Runtime.OpenMeteoRequest Language -> System.String
+property DeskCanvas.Runtime.OpenMeteoRequest Location -> DeskCanvas.Runtime.WeatherRequest
+property DeskCanvas.Runtime.OpenMeteoRequest Query -> System.String
+property DeskCanvas.Runtime.OpenMeteoRequest Resource -> DeskCanvas.Runtime.WeatherResource
+type DeskCanvas.Runtime.OpenMeteoSharedProvider
+method DeskCanvas.Runtime.OpenMeteoSharedProvider AcquireAsync(System.String,DeskCanvas.Runtime.OpenMeteoRequest,System.Threading.CancellationToken) -> System.Threading.Tasks.Task<DeskCanvas.Runtime.Lease<DeskCanvas.Runtime.OpenMeteoRequest,System.String>>
+method DeskCanvas.Runtime.OpenMeteoSharedProvider BuildUri(DeskCanvas.Runtime.OpenMeteoRequest) -> System.Uri
+property DeskCanvas.Runtime.OpenMeteoSharedProvider Statistics -> DeskCanvas.Runtime.SharedDataStatistics
+type DeskCanvas.Runtime.PersistentSettingsResult`1
+method DeskCanvas.Runtime.PersistentSettingsResult`1 Deconstruct(System.Boolean,System.Int64,T,System.String) -> System.Void
+method DeskCanvas.Runtime.PersistentSettingsResult`1 Equals(System.Object) -> System.Boolean
+method DeskCanvas.Runtime.PersistentSettingsResult`1 Equals(DeskCanvas.Runtime.PersistentSettingsResult<T>) -> System.Boolean
+method DeskCanvas.Runtime.PersistentSettingsResult`1 GetHashCode() -> System.Int32
+method DeskCanvas.Runtime.PersistentSettingsResult`1 ToString() -> System.String
+method DeskCanvas.Runtime.PersistentSettingsResult`1 op_Equality(DeskCanvas.Runtime.PersistentSettingsResult<T>,DeskCanvas.Runtime.PersistentSettingsResult<T>) -> System.Boolean
+method DeskCanvas.Runtime.PersistentSettingsResult`1 op_Inequality(DeskCanvas.Runtime.PersistentSettingsResult<T>,DeskCanvas.Runtime.PersistentSettingsResult<T>) -> System.Boolean
+property DeskCanvas.Runtime.PersistentSettingsResult`1 Error -> System.String
+property DeskCanvas.Runtime.PersistentSettingsResult`1 Revision -> System.Int64
+property DeskCanvas.Runtime.PersistentSettingsResult`1 Snapshot -> T
+property DeskCanvas.Runtime.PersistentSettingsResult`1 Succeeded -> System.Boolean
+type DeskCanvas.Runtime.PersistentSettingsSession`1
+method DeskCanvas.Runtime.PersistentSettingsSession`1 Commit(System.Int64) -> DeskCanvas.Runtime.PersistentSettingsResult<T>
+method DeskCanvas.Runtime.PersistentSettingsSession`1 Reload() -> System.Void
+method DeskCanvas.Runtime.PersistentSettingsSession`1 Stage(T) -> System.Void
+property DeskCanvas.Runtime.PersistentSettingsSession`1 Draft -> T
+property DeskCanvas.Runtime.PersistentSettingsSession`1 Revision -> System.Int64
+event DeskCanvas.Runtime.PersistentSettingsSession`1 Committed -> System.EventHandler<DeskCanvas.Runtime.PersistentSettingsResult<T>>
+type DeskCanvas.Runtime.ResourceLedger
+method DeskCanvas.Runtime.ResourceLedger Report(System.String,DeskCanvas.Contracts.ResourceKind,System.Int32,System.Int64,System.String) -> System.Void
+method DeskCanvas.Runtime.ResourceLedger ResetForChecks() -> System.Void
+method DeskCanvas.Runtime.ResourceLedger Snapshot() -> System.Collections.Generic.IReadOnlyList<DeskCanvas.Contracts.ResourceUsage>
+property DeskCanvas.Runtime.ResourceLedger Instance -> DeskCanvas.Runtime.ResourceLedger
+field DeskCanvas.Runtime.ResourceLedger MaxOwnersPerKind -> System.Int32
+field DeskCanvas.Runtime.ResourceLedger OverflowOwner -> System.String
+type DeskCanvas.Runtime.SharedDataProvider`2
+method DeskCanvas.Runtime.SharedDataProvider`2 AcquireAsync(System.String,TKey,System.Threading.CancellationToken) -> System.Threading.Tasks.Task<DeskCanvas.Runtime.Lease<TKey,TValue>>
+property DeskCanvas.Runtime.SharedDataProvider`2 Statistics -> DeskCanvas.Runtime.SharedDataStatistics
+type DeskCanvas.Runtime.SharedDataProvider`2+Lease
+method DeskCanvas.Runtime.SharedDataProvider`2+Lease Dispose() -> System.Void
+property DeskCanvas.Runtime.SharedDataProvider`2+Lease IsDisposed -> System.Boolean
+property DeskCanvas.Runtime.SharedDataProvider`2+Lease Owner -> System.String
+property DeskCanvas.Runtime.SharedDataProvider`2+Lease Snapshot -> DeskCanvas.Contracts.DataSnapshot<TValue>
+type DeskCanvas.Runtime.SharedDataStatistics
+method DeskCanvas.Runtime.SharedDataStatistics Deconstruct(System.Int64,System.Int64,System.Int64,System.Int64,System.Int32) -> System.Void
+method DeskCanvas.Runtime.SharedDataStatistics Equals(System.Object) -> System.Boolean
+method DeskCanvas.Runtime.SharedDataStatistics Equals(DeskCanvas.Runtime.SharedDataStatistics) -> System.Boolean
+method DeskCanvas.Runtime.SharedDataStatistics GetHashCode() -> System.Int32
+method DeskCanvas.Runtime.SharedDataStatistics ToString() -> System.String
+method DeskCanvas.Runtime.SharedDataStatistics op_Equality(DeskCanvas.Runtime.SharedDataStatistics,DeskCanvas.Runtime.SharedDataStatistics) -> System.Boolean
+method DeskCanvas.Runtime.SharedDataStatistics op_Inequality(DeskCanvas.Runtime.SharedDataStatistics,DeskCanvas.Runtime.SharedDataStatistics) -> System.Boolean
+property DeskCanvas.Runtime.SharedDataStatistics ActiveOwners -> System.Int32
+property DeskCanvas.Runtime.SharedDataStatistics CacheHits -> System.Int64
+property DeskCanvas.Runtime.SharedDataStatistics Coalesced -> System.Int64
+property DeskCanvas.Runtime.SharedDataStatistics Failures -> System.Int64
+property DeskCanvas.Runtime.SharedDataStatistics Requests -> System.Int64
+type DeskCanvas.Runtime.SharedDriveSnapshot
+method DeskCanvas.Runtime.SharedDriveSnapshot CaptureAll() -> System.Collections.Generic.IReadOnlyList<DeskCanvas.Runtime.SharedDriveSnapshot>
+method DeskCanvas.Runtime.SharedDriveSnapshot Deconstruct(System.String,System.IO.DriveType,System.Int64,System.Int64,System.String,System.String) -> System.Void
+method DeskCanvas.Runtime.SharedDriveSnapshot Equals(System.Object) -> System.Boolean
+method DeskCanvas.Runtime.SharedDriveSnapshot Equals(DeskCanvas.Runtime.SharedDriveSnapshot) -> System.Boolean
+method DeskCanvas.Runtime.SharedDriveSnapshot GetHashCode() -> System.Int32
+method DeskCanvas.Runtime.SharedDriveSnapshot ToString() -> System.String
+method DeskCanvas.Runtime.SharedDriveSnapshot op_Equality(DeskCanvas.Runtime.SharedDriveSnapshot,DeskCanvas.Runtime.SharedDriveSnapshot) -> System.Boolean
+method DeskCanvas.Runtime.SharedDriveSnapshot op_Inequality(DeskCanvas.Runtime.SharedDriveSnapshot,DeskCanvas.Runtime.SharedDriveSnapshot) -> System.Boolean
+property DeskCanvas.Runtime.SharedDriveSnapshot DriveFormat -> System.String
+property DeskCanvas.Runtime.SharedDriveSnapshot DriveType -> System.IO.DriveType
+property DeskCanvas.Runtime.SharedDriveSnapshot FreeBytes -> System.Int64
+property DeskCanvas.Runtime.SharedDriveSnapshot Name -> System.String
+property DeskCanvas.Runtime.SharedDriveSnapshot TotalBytes -> System.Int64
+property DeskCanvas.Runtime.SharedDriveSnapshot VolumeLabel -> System.String
+type DeskCanvas.Runtime.SharedMediaSnapshot
+method DeskCanvas.Runtime.SharedMediaSnapshot Deconstruct(System.String,System.String,System.String,System.String,System.String,System.Boolean,System.TimeSpan,System.TimeSpan,System.Boolean,System.Boolean,System.Boolean,System.Byte[]) -> System.Void
+method DeskCanvas.Runtime.SharedMediaSnapshot Equals(System.Object) -> System.Boolean
+method DeskCanvas.Runtime.SharedMediaSnapshot Equals(DeskCanvas.Runtime.SharedMediaSnapshot) -> System.Boolean
+method DeskCanvas.Runtime.SharedMediaSnapshot GetHashCode() -> System.Int32
+method DeskCanvas.Runtime.SharedMediaSnapshot ToString() -> System.String
+method DeskCanvas.Runtime.SharedMediaSnapshot op_Equality(DeskCanvas.Runtime.SharedMediaSnapshot,DeskCanvas.Runtime.SharedMediaSnapshot) -> System.Boolean
+method DeskCanvas.Runtime.SharedMediaSnapshot op_Inequality(DeskCanvas.Runtime.SharedMediaSnapshot,DeskCanvas.Runtime.SharedMediaSnapshot) -> System.Boolean
+property DeskCanvas.Runtime.SharedMediaSnapshot AlbumTitle -> System.String
+property DeskCanvas.Runtime.SharedMediaSnapshot Artist -> System.String
+property DeskCanvas.Runtime.SharedMediaSnapshot CanPlayPause -> System.Boolean
+property DeskCanvas.Runtime.SharedMediaSnapshot CanSkipNext -> System.Boolean
+property DeskCanvas.Runtime.SharedMediaSnapshot CanSkipPrevious -> System.Boolean
+property DeskCanvas.Runtime.SharedMediaSnapshot Duration -> System.TimeSpan
+property DeskCanvas.Runtime.SharedMediaSnapshot Empty -> DeskCanvas.Runtime.SharedMediaSnapshot
+property DeskCanvas.Runtime.SharedMediaSnapshot HasTrack -> System.Boolean
+property DeskCanvas.Runtime.SharedMediaSnapshot IsPlaying -> System.Boolean
+property DeskCanvas.Runtime.SharedMediaSnapshot PlayerName -> System.String
+property DeskCanvas.Runtime.SharedMediaSnapshot Position -> System.TimeSpan
+property DeskCanvas.Runtime.SharedMediaSnapshot SourceAppId -> System.String
+property DeskCanvas.Runtime.SharedMediaSnapshot ThumbnailData -> System.Byte[]
+property DeskCanvas.Runtime.SharedMediaSnapshot Title -> System.String
+type DeskCanvas.Runtime.SharedTimeZone
+method DeskCanvas.Runtime.SharedTimeZone ResetForChecks() -> System.Void
+method DeskCanvas.Runtime.SharedTimeZone Resolve(System.String) -> System.TimeZoneInfo
+type DeskCanvas.Runtime.StorageDrivesSharedProvider
+method DeskCanvas.Runtime.StorageDrivesSharedProvider AcquireAsync(System.String,System.Threading.CancellationToken) -> System.Threading.Tasks.Task<DeskCanvas.Runtime.Lease<System.Int32,System.Collections.Generic.IReadOnlyList<DeskCanvas.Runtime.SharedDriveSnapshot>>>
+property DeskCanvas.Runtime.StorageDrivesSharedProvider Statistics -> DeskCanvas.Runtime.SharedDataStatistics
+type DeskCanvas.Runtime.SystemMetric
+enumvalue DeskCanvas.Runtime.SystemMetric BatteryLevel
+enumvalue DeskCanvas.Runtime.SystemMetric CpuUsage
+enumvalue DeskCanvas.Runtime.SystemMetric DiskUsage
+enumvalue DeskCanvas.Runtime.SystemMetric NetworkUsage
+enumvalue DeskCanvas.Runtime.SystemMetric RamUsage
+type DeskCanvas.Runtime.SystemMetricValue
+method DeskCanvas.Runtime.SystemMetricValue Deconstruct(System.Nullable<System.Double>) -> System.Void
+method DeskCanvas.Runtime.SystemMetricValue Equals(System.Object) -> System.Boolean
+method DeskCanvas.Runtime.SystemMetricValue Equals(DeskCanvas.Runtime.SystemMetricValue) -> System.Boolean
+method DeskCanvas.Runtime.SystemMetricValue GetHashCode() -> System.Int32
+method DeskCanvas.Runtime.SystemMetricValue ToString() -> System.String
+method DeskCanvas.Runtime.SystemMetricValue op_Equality(DeskCanvas.Runtime.SystemMetricValue,DeskCanvas.Runtime.SystemMetricValue) -> System.Boolean
+method DeskCanvas.Runtime.SystemMetricValue op_Inequality(DeskCanvas.Runtime.SystemMetricValue,DeskCanvas.Runtime.SystemMetricValue) -> System.Boolean
+property DeskCanvas.Runtime.SystemMetricValue Ratio -> System.Nullable<System.Double>
+type DeskCanvas.Runtime.SystemMetricsSharedProvider
+method DeskCanvas.Runtime.SystemMetricsSharedProvider AcquireAsync(System.String,DeskCanvas.Runtime.SystemMetric,System.Threading.CancellationToken) -> System.Threading.Tasks.Task<DeskCanvas.Runtime.Lease<DeskCanvas.Runtime.SystemMetric,DeskCanvas.Runtime.SystemMetricValue>>
+property DeskCanvas.Runtime.SystemMetricsSharedProvider Statistics -> DeskCanvas.Runtime.SharedDataStatistics
+type DeskCanvas.Runtime.WeatherRequest
+method DeskCanvas.Runtime.WeatherRequest Deconstruct(System.Double,System.Double,System.String) -> System.Void
+method DeskCanvas.Runtime.WeatherRequest Equals(System.Object) -> System.Boolean
+method DeskCanvas.Runtime.WeatherRequest Equals(DeskCanvas.Runtime.WeatherRequest) -> System.Boolean
+method DeskCanvas.Runtime.WeatherRequest GetHashCode() -> System.Int32
+method DeskCanvas.Runtime.WeatherRequest Normalize() -> DeskCanvas.Runtime.WeatherRequest
+method DeskCanvas.Runtime.WeatherRequest ToString() -> System.String
+method DeskCanvas.Runtime.WeatherRequest op_Equality(DeskCanvas.Runtime.WeatherRequest,DeskCanvas.Runtime.WeatherRequest) -> System.Boolean
+method DeskCanvas.Runtime.WeatherRequest op_Inequality(DeskCanvas.Runtime.WeatherRequest,DeskCanvas.Runtime.WeatherRequest) -> System.Boolean
+property DeskCanvas.Runtime.WeatherRequest Latitude -> System.Double
+property DeskCanvas.Runtime.WeatherRequest Longitude -> System.Double
+property DeskCanvas.Runtime.WeatherRequest Unit -> System.String
+type DeskCanvas.Runtime.WeatherResource
+enumvalue DeskCanvas.Runtime.WeatherResource AirQuality
+enumvalue DeskCanvas.Runtime.WeatherResource Forecast
+enumvalue DeskCanvas.Runtime.WeatherResource Geocoding
+type DeskCanvas.Runtime.WeatherSharedDataProvider
+method DeskCanvas.Runtime.WeatherSharedDataProvider AcquireAsync(System.String,DeskCanvas.Runtime.WeatherRequest,System.Threading.CancellationToken) -> System.Threading.Tasks.Task<DeskCanvas.Runtime.WeatherSharedLease>
+property DeskCanvas.Runtime.WeatherSharedDataProvider Statistics -> DeskCanvas.Runtime.WeatherSharedStatistics
+type DeskCanvas.Runtime.WeatherSharedDataProvider+WeatherSharedLease
+method DeskCanvas.Runtime.WeatherSharedDataProvider+WeatherSharedLease Dispose() -> System.Void
+property DeskCanvas.Runtime.WeatherSharedDataProvider+WeatherSharedLease IsDisposed -> System.Boolean
+property DeskCanvas.Runtime.WeatherSharedDataProvider+WeatherSharedLease Snapshot -> DeskCanvas.Contracts.DataSnapshot<DeskCanvas.Runtime.WeatherSharedValue>
+type DeskCanvas.Runtime.WeatherSharedStatistics
+method DeskCanvas.Runtime.WeatherSharedStatistics Deconstruct(System.Int64,System.Int64,System.Int64,System.Int64,System.Int32) -> System.Void
+method DeskCanvas.Runtime.WeatherSharedStatistics Equals(System.Object) -> System.Boolean
+method DeskCanvas.Runtime.WeatherSharedStatistics Equals(DeskCanvas.Runtime.WeatherSharedStatistics) -> System.Boolean
+method DeskCanvas.Runtime.WeatherSharedStatistics GetHashCode() -> System.Int32
+method DeskCanvas.Runtime.WeatherSharedStatistics ToString() -> System.String
+method DeskCanvas.Runtime.WeatherSharedStatistics op_Equality(DeskCanvas.Runtime.WeatherSharedStatistics,DeskCanvas.Runtime.WeatherSharedStatistics) -> System.Boolean
+method DeskCanvas.Runtime.WeatherSharedStatistics op_Inequality(DeskCanvas.Runtime.WeatherSharedStatistics,DeskCanvas.Runtime.WeatherSharedStatistics) -> System.Boolean
+property DeskCanvas.Runtime.WeatherSharedStatistics ActiveOwners -> System.Int32
+property DeskCanvas.Runtime.WeatherSharedStatistics CacheHits -> System.Int64
+property DeskCanvas.Runtime.WeatherSharedStatistics Coalesced -> System.Int64
+property DeskCanvas.Runtime.WeatherSharedStatistics Failures -> System.Int64
+property DeskCanvas.Runtime.WeatherSharedStatistics Requests -> System.Int64
+type DeskCanvas.Runtime.WeatherSharedValue
+method DeskCanvas.Runtime.WeatherSharedValue Deconstruct(System.Double,System.Int32,System.Double,System.Double) -> System.Void
+method DeskCanvas.Runtime.WeatherSharedValue Equals(System.Object) -> System.Boolean
+method DeskCanvas.Runtime.WeatherSharedValue Equals(DeskCanvas.Runtime.WeatherSharedValue) -> System.Boolean
+method DeskCanvas.Runtime.WeatherSharedValue GetHashCode() -> System.Int32
+method DeskCanvas.Runtime.WeatherSharedValue ToString() -> System.String
+method DeskCanvas.Runtime.WeatherSharedValue op_Equality(DeskCanvas.Runtime.WeatherSharedValue,DeskCanvas.Runtime.WeatherSharedValue) -> System.Boolean
+method DeskCanvas.Runtime.WeatherSharedValue op_Inequality(DeskCanvas.Runtime.WeatherSharedValue,DeskCanvas.Runtime.WeatherSharedValue) -> System.Boolean
+property DeskCanvas.Runtime.WeatherSharedValue MaxTemperature -> System.Double
+property DeskCanvas.Runtime.WeatherSharedValue MinTemperature -> System.Double
+property DeskCanvas.Runtime.WeatherSharedValue Temperature -> System.Double
+property DeskCanvas.Runtime.WeatherSharedValue WeatherCode -> System.Int32
+type DeskCanvas.Runtime.WidgetSession
+method DeskCanvas.Runtime.WidgetSession ApplySettingsAsync(System.Object,System.Threading.CancellationToken) -> System.Threading.Tasks.ValueTask
+method DeskCanvas.Runtime.WidgetSession DisposeAsync() -> System.Threading.Tasks.ValueTask
+method DeskCanvas.Runtime.WidgetSession InitializeAsync(System.Threading.CancellationToken) -> System.Threading.Tasks.ValueTask
+method DeskCanvas.Runtime.WidgetSession SetActivityAsync(DeskCanvas.Contracts.ActivitySnapshot,System.Threading.CancellationToken) -> System.Threading.Tasks.ValueTask
+property DeskCanvas.Runtime.WidgetSession Activity -> DeskCanvas.Contracts.ActivitySnapshot
+property DeskCanvas.Runtime.WidgetSession Fault -> System.Exception
+property DeskCanvas.Runtime.WidgetSession Generation -> System.Int64
+property DeskCanvas.Runtime.WidgetSession InstanceId -> DeskCanvas.Contracts.WidgetInstanceId
+property DeskCanvas.Runtime.WidgetSession State -> DeskCanvas.Contracts.WidgetLifecycleState
+type DeskCanvas.Runtime.WidgetSessionRegistry
+method DeskCanvas.Runtime.WidgetSessionRegistry GetOrCreate(DeskCanvas.Contracts.WidgetInstanceId) -> DeskCanvas.Contracts.IWidgetSession
+method DeskCanvas.Runtime.WidgetSessionRegistry Remove(DeskCanvas.Contracts.WidgetInstanceId,DeskCanvas.Contracts.ActivitySnapshot) -> System.Boolean
+method DeskCanvas.Runtime.WidgetSessionRegistry ReportActivity(DeskCanvas.Contracts.WidgetInstanceId,DeskCanvas.Contracts.ActivitySnapshot) -> System.Void
+method DeskCanvas.Runtime.WidgetSessionRegistry ResetForChecks() -> System.Void
+method DeskCanvas.Runtime.WidgetSessionRegistry TryGet(DeskCanvas.Contracts.WidgetInstanceId) -> DeskCanvas.Contracts.IWidgetSession
+type DeskCanvas.UI.ClockStatusPresenter
+method DeskCanvas.UI.ClockStatusPresenter ShowTime(System.String) -> System.Void
+method DeskCanvas.UI.ClockStatusPresenter ShowUnavailable() -> System.Void
+property DeskCanvas.UI.ClockStatusPresenter Shared -> DeskCanvas.UI.SharedStatusPresenter
+type DeskCanvas.UI.Controls.ColorInput
+method DeskCanvas.UI.Controls.ColorInput InitializeComponent(System.Boolean) -> System.Void
+property DeskCanvas.UI.Controls.ColorInput AllowEmpty -> System.Boolean
+property DeskCanvas.UI.Controls.ColorInput AlphaPolicy -> DeskCanvas.UI.Controls.ColorInputAlphaPolicy
+property DeskCanvas.UI.Controls.ColorInput ColorFormat -> DeskCanvas.UI.Controls.ColorInputFormat
+property DeskCanvas.UI.Controls.ColorInput HasValidationError -> System.Boolean
+property DeskCanvas.UI.Controls.ColorInput InvalidFormatText -> System.String
+property DeskCanvas.UI.Controls.ColorInput IsAlphaVisible -> System.Boolean
+property DeskCanvas.UI.Controls.ColorInput IsReadOnly -> System.Boolean
+property DeskCanvas.UI.Controls.ColorInput ValidationMessage -> System.String
+property DeskCanvas.UI.Controls.ColorInput Value -> System.String
+field DeskCanvas.UI.Controls.ColorInput AllowEmptyProperty -> Avalonia.StyledProperty<System.Boolean>
+field DeskCanvas.UI.Controls.ColorInput AlphaPolicyProperty -> Avalonia.StyledProperty<DeskCanvas.UI.Controls.ColorInputAlphaPolicy>
+field DeskCanvas.UI.Controls.ColorInput ColorFormatProperty -> Avalonia.StyledProperty<DeskCanvas.UI.Controls.ColorInputFormat>
+field DeskCanvas.UI.Controls.ColorInput HasValidationErrorProperty -> Avalonia.DirectProperty<DeskCanvas.UI.Controls.ColorInput,System.Boolean>
+field DeskCanvas.UI.Controls.ColorInput InvalidFormatTextProperty -> Avalonia.StyledProperty<System.String>
+field DeskCanvas.UI.Controls.ColorInput IsAlphaVisibleProperty -> Avalonia.StyledProperty<System.Boolean>
+field DeskCanvas.UI.Controls.ColorInput IsReadOnlyProperty -> Avalonia.StyledProperty<System.Boolean>
+field DeskCanvas.UI.Controls.ColorInput ValidationMessageProperty -> Avalonia.DirectProperty<DeskCanvas.UI.Controls.ColorInput,System.String>
+field DeskCanvas.UI.Controls.ColorInput ValueProperty -> Avalonia.StyledProperty<System.String>
+event DeskCanvas.UI.Controls.ColorInput ValueCommitted -> System.EventHandler<DeskCanvas.UI.Controls.ColorInputValueCommittedEventArgs>
+type DeskCanvas.UI.Controls.ColorInputAlphaPolicy
+enumvalue DeskCanvas.UI.Controls.ColorInputAlphaPolicy ForceOpaque
+enumvalue DeskCanvas.UI.Controls.ColorInputAlphaPolicy Preserve
+type DeskCanvas.UI.Controls.ColorInputFormat
+enumvalue DeskCanvas.UI.Controls.ColorInputFormat Argb
+enumvalue DeskCanvas.UI.Controls.ColorInputFormat Rgb
+type DeskCanvas.UI.Controls.ColorInputValueCommittedEventArgs
+property DeskCanvas.UI.Controls.ColorInputValueCommittedEventArgs Value -> System.String
+type DeskCanvas.UI.Controls.GlassSurfaceBase
+method DeskCanvas.UI.Controls.GlassSurfaceBase RequestRender(System.Boolean) -> System.Void
+method DeskCanvas.UI.Controls.GlassSurfaceBase SetAnimationFrameScale(System.Double,Avalonia.Point) -> System.Void
+property DeskCanvas.UI.Controls.GlassSurfaceBase CornerRadius -> Avalonia.CornerRadius
+type DeskCanvas.UI.Controls.LabeledSlider
+method DeskCanvas.UI.Controls.LabeledSlider InitializeComponent(System.Boolean) -> System.Void
+property DeskCanvas.UI.Controls.LabeledSlider DisplayFormat -> System.String
+property DeskCanvas.UI.Controls.LabeledSlider Maximum -> System.Double
+property DeskCanvas.UI.Controls.LabeledSlider Minimum -> System.Double
+property DeskCanvas.UI.Controls.LabeledSlider ShowEditableValue -> System.Boolean
+property DeskCanvas.UI.Controls.LabeledSlider Step -> System.Double
+property DeskCanvas.UI.Controls.LabeledSlider Unit -> System.String
+property DeskCanvas.UI.Controls.LabeledSlider Value -> System.Double
+field DeskCanvas.UI.Controls.LabeledSlider DisplayFormatProperty -> Avalonia.StyledProperty<System.String>
+field DeskCanvas.UI.Controls.LabeledSlider MaximumProperty -> Avalonia.StyledProperty<System.Double>
+field DeskCanvas.UI.Controls.LabeledSlider MinimumProperty -> Avalonia.StyledProperty<System.Double>
+field DeskCanvas.UI.Controls.LabeledSlider ShowEditableValueProperty -> Avalonia.StyledProperty<System.Boolean>
+field DeskCanvas.UI.Controls.LabeledSlider StepProperty -> Avalonia.StyledProperty<System.Double>
+field DeskCanvas.UI.Controls.LabeledSlider UnitProperty -> Avalonia.StyledProperty<System.String>
+field DeskCanvas.UI.Controls.LabeledSlider ValueProperty -> Avalonia.StyledProperty<System.Double>
+event DeskCanvas.UI.Controls.LabeledSlider ValueCommitted -> System.EventHandler<DeskCanvas.UI.Controls.LabeledSliderValueCommittedEventArgs>
+type DeskCanvas.UI.Controls.LabeledSliderValueCommittedEventArgs
+property DeskCanvas.UI.Controls.LabeledSliderValueCommittedEventArgs Value -> System.Double
+type DeskCanvas.UI.Controls.PanelDragBehavior
+method DeskCanvas.UI.Controls.PanelDragBehavior GetIsDragHandle(Avalonia.Controls.Control) -> System.Boolean
+method DeskCanvas.UI.Controls.PanelDragBehavior GetIsInteractive(Avalonia.Controls.Control) -> System.Boolean
+method DeskCanvas.UI.Controls.PanelDragBehavior IsDragExcluded(Avalonia.Visual,Avalonia.Controls.Control) -> System.Boolean
+method DeskCanvas.UI.Controls.PanelDragBehavior SetIsDragHandle(Avalonia.Controls.Control,System.Boolean) -> System.Void
+method DeskCanvas.UI.Controls.PanelDragBehavior SetIsInteractive(Avalonia.Controls.Control,System.Boolean) -> System.Void
+field DeskCanvas.UI.Controls.PanelDragBehavior IsDragHandleProperty -> Avalonia.AttachedProperty<System.Boolean>
+field DeskCanvas.UI.Controls.PanelDragBehavior IsInteractiveProperty -> Avalonia.AttachedProperty<System.Boolean>
+type DeskCanvas.UI.Controls.SecondaryPanelShell
+property DeskCanvas.UI.Controls.SecondaryPanelShell Backdrop -> Avalonia.Controls.Panel
+property DeskCanvas.UI.Controls.SecondaryPanelShell CardBackground -> Avalonia.Media.IBrush
+property DeskCanvas.UI.Controls.SecondaryPanelShell CardBorder -> Avalonia.Controls.Border
+property DeskCanvas.UI.Controls.SecondaryPanelShell CardBorderBrush -> Avalonia.Media.IBrush
+property DeskCanvas.UI.Controls.SecondaryPanelShell CloseButton -> Avalonia.Controls.Button
+property DeskCanvas.UI.Controls.SecondaryPanelShell CloseButtonLabel -> System.String
+property DeskCanvas.UI.Controls.SecondaryPanelShell ContentHost -> Avalonia.Controls.Presenters.ContentPresenter
+property DeskCanvas.UI.Controls.SecondaryPanelShell ContentPadding -> Avalonia.Thickness
+property DeskCanvas.UI.Controls.SecondaryPanelShell FooterContent -> System.Object
+property DeskCanvas.UI.Controls.SecondaryPanelShell GlassSurface -> DeskCanvas.UI.Controls.GlassSurfaceBase
+property DeskCanvas.UI.Controls.SecondaryPanelShell HeaderActions -> System.Object
+property DeskCanvas.UI.Controls.SecondaryPanelShell HeaderContent -> System.Object
+property DeskCanvas.UI.Controls.SecondaryPanelShell HeaderDragArea -> Avalonia.Controls.Control
+property DeskCanvas.UI.Controls.SecondaryPanelShell IconForeground -> Avalonia.Media.IBrush
+property DeskCanvas.UI.Controls.SecondaryPanelShell IsTemplateApplied -> System.Boolean
+property DeskCanvas.UI.Controls.SecondaryPanelShell Subtitle -> System.String
+property DeskCanvas.UI.Controls.SecondaryPanelShell SubtitleForeground -> Avalonia.Media.IBrush
+property DeskCanvas.UI.Controls.SecondaryPanelShell Title -> System.String
+property DeskCanvas.UI.Controls.SecondaryPanelShell TitleForeground -> Avalonia.Media.IBrush
+property DeskCanvas.UI.Controls.SecondaryPanelShell UseRenderedGlass -> System.Boolean
+field DeskCanvas.UI.Controls.SecondaryPanelShell CardBackgroundProperty -> Avalonia.StyledProperty<Avalonia.Media.IBrush>
+field DeskCanvas.UI.Controls.SecondaryPanelShell CardBorderBrushProperty -> Avalonia.StyledProperty<Avalonia.Media.IBrush>
+field DeskCanvas.UI.Controls.SecondaryPanelShell CloseButtonLabelProperty -> Avalonia.StyledProperty<System.String>
+field DeskCanvas.UI.Controls.SecondaryPanelShell CloseRequestedEvent -> Avalonia.Interactivity.RoutedEvent<Avalonia.Interactivity.RoutedEventArgs>
+field DeskCanvas.UI.Controls.SecondaryPanelShell ContentPaddingProperty -> Avalonia.StyledProperty<Avalonia.Thickness>
+field DeskCanvas.UI.Controls.SecondaryPanelShell FooterContentProperty -> Avalonia.StyledProperty<System.Object>
+field DeskCanvas.UI.Controls.SecondaryPanelShell GlassSurfaceProperty -> Avalonia.StyledProperty<DeskCanvas.UI.Controls.GlassSurfaceBase>
+field DeskCanvas.UI.Controls.SecondaryPanelShell HeaderActionsProperty -> Avalonia.StyledProperty<System.Object>
+field DeskCanvas.UI.Controls.SecondaryPanelShell HeaderContentProperty -> Avalonia.StyledProperty<System.Object>
+field DeskCanvas.UI.Controls.SecondaryPanelShell IconForegroundProperty -> Avalonia.StyledProperty<Avalonia.Media.IBrush>
+field DeskCanvas.UI.Controls.SecondaryPanelShell SubtitleForegroundProperty -> Avalonia.StyledProperty<Avalonia.Media.IBrush>
+field DeskCanvas.UI.Controls.SecondaryPanelShell SubtitleProperty -> Avalonia.StyledProperty<System.String>
+field DeskCanvas.UI.Controls.SecondaryPanelShell TitleForegroundProperty -> Avalonia.StyledProperty<Avalonia.Media.IBrush>
+field DeskCanvas.UI.Controls.SecondaryPanelShell TitleProperty -> Avalonia.StyledProperty<System.String>
+field DeskCanvas.UI.Controls.SecondaryPanelShell UseRenderedGlassProperty -> Avalonia.StyledProperty<System.Boolean>
+event DeskCanvas.UI.Controls.SecondaryPanelShell CloseRequested -> System.EventHandler<Avalonia.Interactivity.RoutedEventArgs>
+event DeskCanvas.UI.Controls.SecondaryPanelShell TemplateConnected -> System.EventHandler
+type DeskCanvas.UI.Controls.Setting
+method DeskCanvas.UI.Controls.Setting InitializeComponent(System.Boolean) -> System.Void
+property DeskCanvas.UI.Controls.Setting AdminRequired -> System.Boolean
+property DeskCanvas.UI.Controls.Setting AdminRequiredText -> System.String
+property DeskCanvas.UI.Controls.Setting EditorHorizontalAlignment -> Avalonia.Layout.HorizontalAlignment
+property DeskCanvas.UI.Controls.Setting EditorMinWidth -> System.Double
+property DeskCanvas.UI.Controls.Setting EffectiveLayout -> DeskCanvas.UI.Controls.SettingEffectiveLayout
+property DeskCanvas.UI.Controls.Setting Icon -> Avalonia.Media.StreamGeometry
+property DeskCanvas.UI.Controls.Setting LabelMinWidth -> System.Double
+property DeskCanvas.UI.Controls.Setting LayoutMode -> DeskCanvas.UI.Controls.SettingLayoutMode
+property DeskCanvas.UI.Controls.Setting RestartRequired -> System.Boolean
+property DeskCanvas.UI.Controls.Setting RestartRequiredText -> System.String
+property DeskCanvas.UI.Controls.Setting Subtitle -> System.String
+property DeskCanvas.UI.Controls.Setting Title -> System.String
+field DeskCanvas.UI.Controls.Setting AdminRequiredProperty -> Avalonia.StyledProperty<System.Boolean>
+field DeskCanvas.UI.Controls.Setting AdminRequiredTextProperty -> Avalonia.StyledProperty<System.String>
+field DeskCanvas.UI.Controls.Setting EditorHorizontalAlignmentProperty -> Avalonia.StyledProperty<Avalonia.Layout.HorizontalAlignment>
+field DeskCanvas.UI.Controls.Setting EditorMinWidthProperty -> Avalonia.StyledProperty<System.Double>
+field DeskCanvas.UI.Controls.Setting IconProperty -> Avalonia.StyledProperty<Avalonia.Media.StreamGeometry>
+field DeskCanvas.UI.Controls.Setting LabelMinWidthProperty -> Avalonia.StyledProperty<System.Double>
+field DeskCanvas.UI.Controls.Setting LayoutModeProperty -> Avalonia.StyledProperty<DeskCanvas.UI.Controls.SettingLayoutMode>
+field DeskCanvas.UI.Controls.Setting RestartRequiredProperty -> Avalonia.StyledProperty<System.Boolean>
+field DeskCanvas.UI.Controls.Setting RestartRequiredTextProperty -> Avalonia.StyledProperty<System.String>
+field DeskCanvas.UI.Controls.Setting SubtitleProperty -> Avalonia.StyledProperty<System.String>
+field DeskCanvas.UI.Controls.Setting TitleProperty -> Avalonia.StyledProperty<System.String>
+type DeskCanvas.UI.Controls.SettingEffectiveLayout
+enumvalue DeskCanvas.UI.Controls.SettingEffectiveLayout Horizontal
+enumvalue DeskCanvas.UI.Controls.SettingEffectiveLayout Stacked
+type DeskCanvas.UI.Controls.SettingLayoutMode
+enumvalue DeskCanvas.UI.Controls.SettingLayoutMode Auto
+enumvalue DeskCanvas.UI.Controls.SettingLayoutMode Inline
+enumvalue DeskCanvas.UI.Controls.SettingLayoutMode Stacked
+type DeskCanvas.UI.Controls.SettingLayoutPanel
+method DeskCanvas.UI.Controls.SettingLayoutPanel GetSlot(Avalonia.Controls.Control) -> DeskCanvas.UI.Controls.SettingLayoutSlot
+method DeskCanvas.UI.Controls.SettingLayoutPanel SetSlot(Avalonia.Controls.Control,DeskCanvas.UI.Controls.SettingLayoutSlot) -> System.Void
+property DeskCanvas.UI.Controls.SettingLayoutPanel EditorAlignment -> Avalonia.Layout.HorizontalAlignment
+property DeskCanvas.UI.Controls.SettingLayoutPanel EditorMinWidth -> System.Double
+property DeskCanvas.UI.Controls.SettingLayoutPanel EffectiveLayout -> DeskCanvas.UI.Controls.SettingEffectiveLayout
+property DeskCanvas.UI.Controls.SettingLayoutPanel IconGap -> System.Double
+property DeskCanvas.UI.Controls.SettingLayoutPanel LabelMinWidth -> System.Double
+property DeskCanvas.UI.Controls.SettingLayoutPanel LastHorizontalThreshold -> System.Double
+property DeskCanvas.UI.Controls.SettingLayoutPanel LayoutMode -> DeskCanvas.UI.Controls.SettingLayoutMode
+property DeskCanvas.UI.Controls.SettingLayoutPanel RowGap -> System.Double
+field DeskCanvas.UI.Controls.SettingLayoutPanel EditorAlignmentProperty -> Avalonia.StyledProperty<Avalonia.Layout.HorizontalAlignment>
+field DeskCanvas.UI.Controls.SettingLayoutPanel EditorMinWidthProperty -> Avalonia.StyledProperty<System.Double>
+field DeskCanvas.UI.Controls.SettingLayoutPanel EffectiveLayoutProperty -> Avalonia.DirectProperty<DeskCanvas.UI.Controls.SettingLayoutPanel,DeskCanvas.UI.Controls.SettingEffectiveLayout>
+field DeskCanvas.UI.Controls.SettingLayoutPanel Hysteresis -> System.Double
+field DeskCanvas.UI.Controls.SettingLayoutPanel IconGapProperty -> Avalonia.StyledProperty<System.Double>
+field DeskCanvas.UI.Controls.SettingLayoutPanel LabelMinWidthProperty -> Avalonia.StyledProperty<System.Double>
+field DeskCanvas.UI.Controls.SettingLayoutPanel LayoutModeProperty -> Avalonia.StyledProperty<DeskCanvas.UI.Controls.SettingLayoutMode>
+field DeskCanvas.UI.Controls.SettingLayoutPanel RowGapProperty -> Avalonia.StyledProperty<System.Double>
+field DeskCanvas.UI.Controls.SettingLayoutPanel SlotProperty -> Avalonia.AttachedProperty<DeskCanvas.UI.Controls.SettingLayoutSlot>
+type DeskCanvas.UI.Controls.SettingLayoutSlot
+enumvalue DeskCanvas.UI.Controls.SettingLayoutSlot Editor
+enumvalue DeskCanvas.UI.Controls.SettingLayoutSlot Icon
+enumvalue DeskCanvas.UI.Controls.SettingLayoutSlot Label
+type DeskCanvas.UI.CountdownStatusPresenter
+method DeskCanvas.UI.CountdownStatusPresenter ShowCountdown(System.String) -> System.Void
+method DeskCanvas.UI.CountdownStatusPresenter ShowNoEvents() -> System.Void
+property DeskCanvas.UI.CountdownStatusPresenter Shared -> DeskCanvas.UI.SharedStatusPresenter
+type DeskCanvas.UI.Samples.SharedComponentCatalog
+type DeskCanvas.UI.SharedStatus
+method DeskCanvas.UI.SharedStatus Deconstruct(DeskCanvas.UI.SharedStatusKind,System.String,System.Boolean) -> System.Void
+method DeskCanvas.UI.SharedStatus Equals(System.Object) -> System.Boolean
+method DeskCanvas.UI.SharedStatus Equals(DeskCanvas.UI.SharedStatus) -> System.Boolean
+method DeskCanvas.UI.SharedStatus GetHashCode() -> System.Int32
+method DeskCanvas.UI.SharedStatus ToString() -> System.String
+method DeskCanvas.UI.SharedStatus op_Equality(DeskCanvas.UI.SharedStatus,DeskCanvas.UI.SharedStatus) -> System.Boolean
+method DeskCanvas.UI.SharedStatus op_Inequality(DeskCanvas.UI.SharedStatus,DeskCanvas.UI.SharedStatus) -> System.Boolean
+property DeskCanvas.UI.SharedStatus CanRetry -> System.Boolean
+property DeskCanvas.UI.SharedStatus Kind -> DeskCanvas.UI.SharedStatusKind
+property DeskCanvas.UI.SharedStatus Message -> System.String
+type DeskCanvas.UI.SharedStatusKind
+enumvalue DeskCanvas.UI.SharedStatusKind Empty
+enumvalue DeskCanvas.UI.SharedStatusKind Error
+enumvalue DeskCanvas.UI.SharedStatusKind Loading
+enumvalue DeskCanvas.UI.SharedStatusKind Ready
+enumvalue DeskCanvas.UI.SharedStatusKind Stale
+type DeskCanvas.UI.SharedStatusPresenter
+method DeskCanvas.UI.SharedStatusPresenter SetEmpty(System.String) -> System.Void
+method DeskCanvas.UI.SharedStatusPresenter SetError(System.String,System.Boolean) -> System.Void
+method DeskCanvas.UI.SharedStatusPresenter SetLoading(System.String) -> System.Void
+method DeskCanvas.UI.SharedStatusPresenter SetReady(System.String) -> System.Void
+method DeskCanvas.UI.SharedStatusPresenter SetStale(System.String) -> System.Void
+property DeskCanvas.UI.SharedStatusPresenter Current -> DeskCanvas.UI.SharedStatus
+event DeskCanvas.UI.SharedStatusPresenter Changed -> System.EventHandler<DeskCanvas.UI.SharedStatus>

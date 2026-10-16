@@ -57,8 +57,8 @@ public class InteropService
         const int GWL_EXSTYLE = -20;
 
         var handle = window.TryGetPlatformHandle()?.Handle;
-        
-        if (handle == null) return;
+
+        if (handle == null || !IsWindow(handle.Value)) return;
 
         var exStyle = (int)GetWindowLong(handle.Value, GWL_EXSTYLE);
 
@@ -103,11 +103,10 @@ public class InteropService
         radius = Math.Clamp(radius, 0, Math.Min(width, height) / 2);
 
         // Win32 GDI CreateRoundRectRgn treats right/bottom as exclusive.
-        // x + width + 1 ensures the right and bottom border pixel columns
-        // are included rather than truncated.
+        // [x, x + width) covers exactly 'width' pixels without 1-pixel bleed.
         var region = radius > 0
-            ? CreateRoundRectRgn(x, y, x + width + 1, y + height + 1, radius * 2, radius * 2)
-            : CreateRectRgn(x, y, x + width + 1, y + height + 1);
+            ? CreateRoundRectRgn(x, y, x + width, y + height, radius * 2, radius * 2)
+            : CreateRectRgn(x, y, x + width, y + height);
         if (region == IntPtr.Zero) return;
 
         if (SetWindowRgn(handle, region, true) == 0)
@@ -177,11 +176,20 @@ public class InteropService
     /// <summary>
     /// Remove a previously applied window region (full-window rectangle again).
     /// </summary>
+    public static void ClearWindowRegion(IntPtr handle)
+    {
+        if (handle == IntPtr.Zero) return;
+        SetWindowRgn(handle, IntPtr.Zero, true);
+    }
+
+    /// <summary>
+    /// Remove a previously applied window region (full-window rectangle again).
+    /// </summary>
     public static void ClearWidgetRegion(Window window)
     {
         var handle = window.TryGetPlatformHandle()?.Handle;
         if (handle == null) return;
-        SetWindowRgn(handle.Value, IntPtr.Zero, true);
+        ClearWindowRegion(handle.Value);
     }
 
     [DllImport("gdi32.dll")]
@@ -201,6 +209,9 @@ public class InteropService
 
     [DllImport("user32.dll")]
     private static extern IntPtr GetWindowLong(IntPtr hWnd, int nIndex);
+
+    [DllImport("user32.dll")]
+    private static extern bool IsWindow(IntPtr hWnd);
 
     private static void SetWindowLong(IntPtr hWnd, int nIndex, IntPtr dwNewLong)
     {

@@ -27,6 +27,7 @@ public partial class UpdatePopup : Window, INotifyPropertyChanged
         this.updateService = updateService;
         DataContext = this;
         InitializeComponent();
+        WindowRoles.Register(this, WindowRole.Dialog);
     }
 
     public UpdatePopup(Version version, UpdateService updateService)

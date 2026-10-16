@@ -1,0 +1,618 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+    <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+        <xsd:element name="root" msdata:IsDataSet="true" />
+    </xsd:schema>
+    <resheader name="resmimetype">
+        <value>text/microsoft-resx</value>
+    </resheader>
+    <resheader name="version">
+        <value>1.3</value>
+    </resheader>
+    <resheader name="reader">
+        <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    </resheader>
+    <resheader name="writer">
+        <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    </resheader>
+    <data name="Shortcuts" xml:space="preserve">
+        <value>快捷指令</value>
+    </data>
+    <data name="Shortcuts_Title" xml:space="preserve">
+        <value>快捷指令</value>
+    </data>
+    <data name="Shortcuts_Subtitle" xml:space="preserve">
+        <value>把多步操作串成一条指令，点按即可运行</value>
+    </data>
+    <data name="Shortcuts_NewName" xml:space="preserve">
+        <value>新指令</value>
+    </data>
+    <data name="Shortcuts_Unit_Percent" xml:space="preserve">
+        <value>{0}%</value>
+    </data>
+    <data name="Shortcuts_Unit_Times" xml:space="preserve">
+        <value>{0} 次</value>
+    </data>
+    <data name="Shortcuts_Param_CopyOf" xml:space="preserve">
+        <value>{0} 副本</value>
+    </data>
+    <data name="Shortcuts_Error_Timeout" xml:space="preserve">
+        <value>执行超时</value>
+    </data>
+    <data name="Shortcuts_Settings_Open" xml:space="preserve">
+        <value>打开</value>
+    </data>
+    <data name="Shortcuts_Tile_New" xml:space="preserve">
+        <value>新建指令</value>
+    </data>
+    <data name="Shortcuts_Tile_TapToRun" xml:space="preserve">
+        <value>点按运行</value>
+    </data>
+    <data name="Shortcuts_Tile_TapToCreate" xml:space="preserve">
+        <value>点按新建</value>
+    </data>
+    <data name="Shortcuts_Tile_Running" xml:space="preserve">
+        <value>运行中</value>
+    </data>
+    <data name="Shortcuts_Tile_Step" xml:space="preserve">
+        <value>第 {0}/{1} 步</value>
+    </data>
+    <data name="Shortcuts_Tile_Done" xml:space="preserve">
+        <value>已完成</value>
+    </data>
+    <data name="Shortcuts_Tile_Failed" xml:space="preserve">
+        <value>失败</value>
+    </data>
+    <data name="Shortcuts_Tile_Cancelled" xml:space="preserve">
+        <value>已取消</value>
+    </data>
+    <data name="Shortcuts_Card_Empty" xml:space="preserve">
+        <value>还没有指令</value>
+    </data>
+    <data name="Shortcuts_Card_EmptyHint" xml:space="preserve">
+        <value>点按创建第一条指令</value>
+    </data>
+    <data name="Shortcuts_Menu_Run" xml:space="preserve">
+        <value>运行</value>
+    </data>
+    <data name="Shortcuts_Menu_Edit" xml:space="preserve">
+        <value>编辑</value>
+    </data>
+    <data name="Shortcuts_Menu_Duplicate" xml:space="preserve">
+        <value>复制一份</value>
+    </data>
+    <data name="Shortcuts_Menu_Delete" xml:space="preserve">
+        <value>删除</value>
+    </data>
+    <data name="Shortcuts_Menu_New" xml:space="preserve">
+        <value>新建指令</value>
+    </data>
+    <data name="Shortcuts_Menu_Stop" xml:space="preserve">
+        <value>停止</value>
+    </data>
+    <data name="Shortcuts_Delete_Message" xml:space="preserve">
+        <value>删除「{0}」？此操作不可撤销。</value>
+    </data>
+    <data name="Shortcuts_Delete_Ok" xml:space="preserve">
+        <value>删除</value>
+    </data>
+    <data name="Shortcuts_Cancel" xml:space="preserve">
+        <value>取消</value>
+    </data>
+    <data name="Shortcuts_Popup_Title" xml:space="preserve">
+        <value>快捷指令</value>
+    </data>
+    <data name="Shortcuts_Popup_Subtitle" xml:space="preserve">
+        <value>{0} 个指令</value>
+    </data>
+    <data name="Shortcuts_Add" xml:space="preserve">
+        <value>新建</value>
+    </data>
+    <data name="Shortcuts_Search_Placeholder" xml:space="preserve">
+        <value>搜索指令</value>
+    </data>
+    <data name="Shortcuts_Empty" xml:space="preserve">
+        <value>还没有指令</value>
+    </data>
+    <data name="Shortcuts_EmptyHint" xml:space="preserve">
+        <value>从模板或空白开始创建</value>
+    </data>
+    <data name="Shortcuts_Template_Header" xml:space="preserve">
+        <value>从模板开始</value>
+    </data>
+    <data name="Shortcuts_Template_Blank" xml:space="preserve">
+        <value>空白指令</value>
+    </data>
+    <data name="Shortcuts_Template_Lock" xml:space="preserve">
+        <value>一键锁屏</value>
+    </data>
+    <data name="Shortcuts_Template_Mute" xml:space="preserve">
+        <value>静音专注</value>
+    </data>
+    <data name="Shortcuts_Template_Shot" xml:space="preserve">
+        <value>截屏归档</value>
+    </data>
+    <data name="Shortcuts_Actions_Count" xml:space="preserve">
+        <value>{0} 个动作</value>
+    </data>
+    <data name="Shortcuts_Actions_CountOne" xml:space="preserve">
+        <value>1 个动作</value>
+    </data>
+    <data name="Shortcuts_NoMatch" xml:space="preserve">
+        <value>没有匹配的指令</value>
+    </data>
+    <data name="Shortcuts_Editor_Title" xml:space="preserve">
+        <value>快捷指令编辑器</value>
+    </data>
+    <data name="Shortcuts_Done" xml:space="preserve">
+        <value>完成</value>
+    </data>
+    <data name="Shortcuts_Undo" xml:space="preserve">
+        <value>撤销</value>
+    </data>
+    <data name="Shortcuts_Redo" xml:space="preserve">
+        <value>重做</value>
+    </data>
+    <data name="Shortcuts_Grip" xml:space="preserve">
+        <value>拖拽排序</value>
+    </data>
+    <data name="Shortcuts_RowMenu" xml:space="preserve">
+        <value>更多操作</value>
+    </data>
+    <data name="Shortcuts_Editor_NameWatermark" xml:space="preserve">
+        <value>指令名称</value>
+    </data>
+    <data name="Shortcuts_IconPicker_Title" xml:space="preserve">
+        <value>图标与颜色</value>
+    </data>
+    <data name="Shortcuts_NoActions" xml:space="preserve">
+        <value>还没有动作，从下方添加</value>
+    </data>
+    <data name="Shortcuts_Add_Action" xml:space="preserve">
+        <value>添加动作</value>
+    </data>
+    <data name="Shortcuts_Library_Search" xml:space="preserve">
+        <value>搜索动作</value>
+    </data>
+    <data name="Shortcuts_Library_Recent" xml:space="preserve">
+        <value>最近使用</value>
+    </data>
+    <data name="Shortcuts_Action_Delete" xml:space="preserve">
+        <value>删除动作</value>
+    </data>
+    <data name="Shortcuts_Action_Duplicate" xml:space="preserve">
+        <value>复制动作</value>
+    </data>
+    <data name="Shortcuts_Action_MoveUp" xml:space="preserve">
+        <value>上移</value>
+    </data>
+    <data name="Shortcuts_Action_MoveDown" xml:space="preserve">
+        <value>下移</value>
+    </data>
+    <data name="Shortcuts_InvalidValue" xml:space="preserve">
+        <value>值无效</value>
+    </data>
+    <data name="Shortcuts_EndRepeat" xml:space="preserve">
+        <value>结束重复</value>
+    </data>
+    <data name="Shortcuts_EndIf" xml:space="preserve">
+        <value>结束如果</value>
+    </data>
+    <data name="Shortcuts_Else" xml:space="preserve">
+        <value>否则</value>
+    </data>
+    <data name="Shortcuts_Collapse" xml:space="preserve">
+        <value>折叠</value>
+    </data>
+    <data name="Shortcuts_Expand" xml:space="preserve">
+        <value>展开</value>
+    </data>
+    <data name="Shortcuts_Param_Missing" xml:space="preserve">
+        <value>未设置</value>
+    </data>
+    <data name="Shortcuts_Param_Value" xml:space="preserve">
+        <value>值</value>
+    </data>
+    <data name="Shortcuts_Param_Variable" xml:space="preserve">
+        <value>变量</value>
+    </data>
+    <data name="Shortcuts_Param_UseValue" xml:space="preserve">
+        <value>固定值</value>
+    </data>
+    <data name="Shortcuts_Param_UseVariable" xml:space="preserve">
+        <value>插入变量</value>
+    </data>
+    <data name="Shortcuts_Param_LastResult" xml:space="preserve">
+        <value>上一步的结果</value>
+    </data>
+    <data name="Shortcuts_Param_ResultOf" xml:space="preserve">
+        <value>「{0}」的结果</value>
+    </data>
+    <data name="Shortcuts_Param_NoCandidates" xml:space="preserve">
+        <value>还没有可引用的前置动作</value>
+    </data>
+    <data name="Shortcuts_Param_Browse" xml:space="preserve">
+        <value>浏览</value>
+    </data>
+    <data name="Shortcuts_Param_PickFile" xml:space="preserve">
+        <value>选择文件</value>
+    </data>
+    <data name="Shortcuts_Param_PickFolder" xml:space="preserve">
+        <value>选择文件夹</value>
+    </data>
+    <data name="Shortcuts_Param_PickApp" xml:space="preserve">
+        <value>选择应用</value>
+    </data>
+    <data name="Shortcuts_Param_SecondsUnit" xml:space="preserve">
+        <value>{0} 秒</value>
+    </data>
+    <data name="Shortcuts_Param_target" xml:space="preserve">
+        <value>应用</value>
+    </data>
+    <data name="Shortcuts_Param_args" xml:space="preserve">
+        <value>启动参数</value>
+    </data>
+    <data name="Shortcuts_Param_path" xml:space="preserve">
+        <value>路径</value>
+    </data>
+    <data name="Shortcuts_Param_url" xml:space="preserve">
+        <value>网址</value>
+    </data>
+    <data name="Shortcuts_Param_query" xml:space="preserve">
+        <value>搜索内容</value>
+    </data>
+    <data name="Shortcuts_Param_engine" xml:space="preserve">
+        <value>搜索引擎</value>
+    </data>
+    <data name="Shortcuts_Param_level" xml:space="preserve">
+        <value>音量</value>
+    </data>
+    <data name="Shortcuts_Param_seconds" xml:space="preserve">
+        <value>等待时长</value>
+    </data>
+    <data name="Shortcuts_Param_text" xml:space="preserve">
+        <value>文本</value>
+    </data>
+    <data name="Shortcuts_Param_message" xml:space="preserve">
+        <value>内容</value>
+    </data>
+    <data name="Shortcuts_Param_format" xml:space="preserve">
+        <value>格式</value>
+    </data>
+    <data name="Shortcuts_Param_min" xml:space="preserve">
+        <value>最小值</value>
+    </data>
+    <data name="Shortcuts_Param_max" xml:space="preserve">
+        <value>最大值</value>
+    </data>
+    <data name="Shortcuts_Param_left" xml:space="preserve">
+        <value>左值</value>
+    </data>
+    <data name="Shortcuts_Param_op" xml:space="preserve">
+        <value>条件</value>
+    </data>
+    <data name="Shortcuts_Param_right" xml:space="preserve">
+        <value>比较值</value>
+    </data>
+    <data name="Shortcuts_Param_count" xml:space="preserve">
+        <value>次数</value>
+    </data>
+    <data name="Shortcuts_Param_input" xml:space="preserve">
+        <value>输入</value>
+    </data>
+    <data name="Shortcuts_Param_operation" xml:space="preserve">
+        <value>方式</value>
+    </data>
+    <data name="Shortcuts_Param_find" xml:space="preserve">
+        <value>查找</value>
+    </data>
+    <data name="Shortcuts_Param_replace_with" xml:space="preserve">
+        <value>替换为</value>
+    </data>
+    <data name="Shortcuts_Param_note" xml:space="preserve">
+        <value>注释</value>
+    </data>
+    <data name="Shortcuts_Param_mode" xml:space="preserve">
+        <value>动作</value>
+    </data>
+    <data name="Shortcuts_Param_surface" xml:space="preserve">
+        <value>材质</value>
+    </data>
+    <data name="Shortcuts_Param_title" xml:space="preserve">
+        <value>提醒内容</value>
+    </data>
+    <data name="Shortcuts_Choice_upper" xml:space="preserve">
+        <value>转为大写</value>
+    </data>
+    <data name="Shortcuts_Choice_lower" xml:space="preserve">
+        <value>转为小写</value>
+    </data>
+    <data name="Shortcuts_Choice_trim" xml:space="preserve">
+        <value>去除首尾空白</value>
+    </data>
+    <data name="Shortcuts_Choice_replace" xml:space="preserve">
+        <value>文本替换</value>
+    </data>
+    <data name="Shortcuts_Op_equals" xml:space="preserve">
+        <value>等于</value>
+    </data>
+    <data name="Shortcuts_Op_notEquals" xml:space="preserve">
+        <value>不等于</value>
+    </data>
+    <data name="Shortcuts_Op_contains" xml:space="preserve">
+        <value>包含</value>
+    </data>
+    <data name="Shortcuts_Op_startsWith" xml:space="preserve">
+        <value>开头是</value>
+    </data>
+    <data name="Shortcuts_Op_endsWith" xml:space="preserve">
+        <value>结尾是</value>
+    </data>
+    <data name="Shortcuts_Op_greater" xml:space="preserve">
+        <value>大于</value>
+    </data>
+    <data name="Shortcuts_Op_less" xml:space="preserve">
+        <value>小于</value>
+    </data>
+    <data name="Shortcuts_Op_isEmpty" xml:space="preserve">
+        <value>为空</value>
+    </data>
+    <data name="Shortcuts_Op_isNotEmpty" xml:space="preserve">
+        <value>不为空</value>
+    </data>
+    <data name="Shortcuts_Engine_bing" xml:space="preserve">
+        <value>必应</value>
+    </data>
+    <data name="Shortcuts_Engine_baidu" xml:space="preserve">
+        <value>百度</value>
+    </data>
+    <data name="Shortcuts_Engine_google" xml:space="preserve">
+        <value>Google</value>
+    </data>
+    <data name="Shortcuts_Mode_hide" xml:space="preserve">
+        <value>隐藏</value>
+    </data>
+    <data name="Shortcuts_Mode_show" xml:space="preserve">
+        <value>显示</value>
+    </data>
+    <data name="Shortcuts_Mode_toggle" xml:space="preserve">
+        <value>切换</value>
+    </data>
+    <data name="Shortcuts_Dark_dark" xml:space="preserve">
+        <value>深色</value>
+    </data>
+    <data name="Shortcuts_Dark_light" xml:space="preserve">
+        <value>浅色</value>
+    </data>
+    <data name="Shortcuts_Dark_system" xml:space="preserve">
+        <value>跟随系统</value>
+    </data>
+    <data name="Shortcuts_Surface_cycle" xml:space="preserve">
+        <value>循环切换</value>
+    </data>
+    <data name="Shortcuts_Surface_acrylic" xml:space="preserve">
+        <value>毛玻璃</value>
+    </data>
+    <data name="Shortcuts_Surface_solid" xml:space="preserve">
+        <value>纯色</value>
+    </data>
+    <data name="Shortcuts_Surface_liquidglass" xml:space="preserve">
+        <value>液态玻璃</value>
+    </data>
+    <data name="Shortcuts_Surface_softglow" xml:space="preserve">
+        <value>柔光玻璃</value>
+    </data>
+    <data name="Shortcuts_Surface_liquidglassv2" xml:space="preserve">
+        <value>新液态玻璃</value>
+    </data>
+    <data name="Shortcuts_Surface_colorful" xml:space="preserve">
+        <value>多彩</value>
+    </data>
+    <data name="Shortcuts_Cat_Launch" xml:space="preserve">
+        <value>打开与启动</value>
+    </data>
+    <data name="Shortcuts_Cat_Media" xml:space="preserve">
+        <value>媒体</value>
+    </data>
+    <data name="Shortcuts_Cat_System" xml:space="preserve">
+        <value>系统与工具</value>
+    </data>
+    <data name="Shortcuts_Cat_Text" xml:space="preserve">
+        <value>文本与数据</value>
+    </data>
+    <data name="Shortcuts_Cat_Flow" xml:space="preserve">
+        <value>分支与循环</value>
+    </data>
+    <data name="Shortcuts_Cat_DeskCanvas" xml:space="preserve">
+        <value>组件联动</value>
+    </data>
+    <data name="Shortcuts_Action_openApp" xml:space="preserve">
+        <value>打开应用</value>
+    </data>
+    <data name="Shortcuts_Action_openFile" xml:space="preserve">
+        <value>打开文件或文件夹</value>
+    </data>
+    <data name="Shortcuts_Action_openUrl" xml:space="preserve">
+        <value>打开网址</value>
+    </data>
+    <data name="Shortcuts_Action_webSearch" xml:space="preserve">
+        <value>浏览器搜索</value>
+    </data>
+    <data name="Shortcuts_Action_mediaPlayPause" xml:space="preserve">
+        <value>播放或暂停</value>
+    </data>
+    <data name="Shortcuts_Action_mediaNext" xml:space="preserve">
+        <value>下一曲</value>
+    </data>
+    <data name="Shortcuts_Action_mediaPrevious" xml:space="preserve">
+        <value>上一曲</value>
+    </data>
+    <data name="Shortcuts_Action_setVolume" xml:space="preserve">
+        <value>设定音量</value>
+    </data>
+    <data name="Shortcuts_Action_muteToggle" xml:space="preserve">
+        <value>切换静音</value>
+    </data>
+    <data name="Shortcuts_Action_lockScreen" xml:space="preserve">
+        <value>锁定屏幕</value>
+    </data>
+    <data name="Shortcuts_Action_sleep" xml:space="preserve">
+        <value>让电脑休眠</value>
+    </data>
+    <data name="Shortcuts_Action_screenshot" xml:space="preserve">
+        <value>截取屏幕</value>
+    </data>
+    <data name="Shortcuts_Action_emptyRecycleBin" xml:space="preserve">
+        <value>清空回收站</value>
+    </data>
+    <data name="Shortcuts_Action_wait" xml:space="preserve">
+        <value>等待</value>
+    </data>
+    <data name="Shortcuts_Action_notify" xml:space="preserve">
+        <value>显示通知</value>
+    </data>
+    <data name="Shortcuts_Action_getClipboard" xml:space="preserve">
+        <value>读取剪贴板</value>
+    </data>
+    <data name="Shortcuts_Action_setClipboard" xml:space="preserve">
+        <value>复制到剪贴板</value>
+    </data>
+    <data name="Shortcuts_Action_textTransform" xml:space="preserve">
+        <value>文本变换</value>
+    </data>
+    <data name="Shortcuts_Action_currentDate" xml:space="preserve">
+        <value>当前日期时间</value>
+    </data>
+    <data name="Shortcuts_Action_randomNumber" xml:space="preserve">
+        <value>随机数</value>
+    </data>
+    <data name="Shortcuts_Action_if" xml:space="preserve">
+        <value>如果</value>
+    </data>
+    <data name="Shortcuts_Action_repeat" xml:space="preserve">
+        <value>重复</value>
+    </data>
+    <data name="Shortcuts_Action_comment" xml:space="preserve">
+        <value>注释</value>
+    </data>
+    <data name="Shortcuts_Action_themeSurface" xml:space="preserve">
+        <value>切换主题材质</value>
+    </data>
+    <data name="Shortcuts_Action_themeDarkMode" xml:space="preserve">
+        <value>深浅色模式</value>
+    </data>
+    <data name="Shortcuts_Action_widgetsVisibility" xml:space="preserve">
+        <value>组件显隐</value>
+    </data>
+    <data name="Shortcuts_Action_addReminder" xml:space="preserve">
+        <value>添加提醒</value>
+    </data>
+    <data name="Shortcuts_Action_openDataFolder" xml:space="preserve">
+        <value>打开数据目录</value>
+    </data>
+    <data name="Shortcuts_Output_Volume" xml:space="preserve">
+        <value>音量 {0}%</value>
+    </data>
+    <data name="Shortcuts_Output_Muted" xml:space="preserve">
+        <value>已静音</value>
+    </data>
+    <data name="Shortcuts_Output_Unmuted" xml:space="preserve">
+        <value>已取消静音</value>
+    </data>
+    <data name="Shortcuts_Output_Locked" xml:space="preserve">
+        <value>屏幕已锁定</value>
+    </data>
+    <data name="Shortcuts_Output_Sleeping" xml:space="preserve">
+        <value>即将休眠</value>
+    </data>
+    <data name="Shortcuts_Output_Screenshot" xml:space="preserve">
+        <value>截图已保存</value>
+    </data>
+    <data name="Shortcuts_Output_BinEmptied" xml:space="preserve">
+        <value>回收站已清空</value>
+    </data>
+    <data name="Shortcuts_Output_BinAlreadyEmpty" xml:space="preserve">
+        <value>回收站已经是空的</value>
+    </data>
+    <data name="Shortcuts_Output_NotificationSent" xml:space="preserve">
+        <value>通知已发送</value>
+    </data>
+    <data name="Shortcuts_Output_Random" xml:space="preserve">
+        <value>随机数：{0}</value>
+    </data>
+    <data name="Shortcuts_Output_NoMedia" xml:space="preserve">
+        <value>没有正在播放的媒体</value>
+    </data>
+    <data name="Shortcuts_Output_Copied" xml:space="preserve">
+        <value>已复制</value>
+    </data>
+    <data name="Shortcuts_Output_ClipboardEmpty" xml:space="preserve">
+        <value>剪贴板为空</value>
+    </data>
+    <data name="Shortcuts_Output_Theme" xml:space="preserve">
+        <value>已切换到{0}</value>
+    </data>
+    <data name="Shortcuts_Output_WidgetsHidden" xml:space="preserve">
+        <value>已隐藏桌面组件</value>
+    </data>
+    <data name="Shortcuts_Output_WidgetsShown" xml:space="preserve">
+        <value>已显示桌面组件</value>
+    </data>
+    <data name="Shortcuts_Output_ReminderAdded" xml:space="preserve">
+        <value>已添加提醒：{0}</value>
+    </data>
+    <data name="Shortcuts_Output_DataFolder" xml:space="preserve">
+        <value>已打开数据目录</value>
+    </data>
+    <data name="Shortcuts_Error_EmptyParam" xml:space="preserve">
+        <value>请先填写「{0}」</value>
+    </data>
+    <data name="Shortcuts_Error_Failed" xml:space="preserve">
+        <value>执行失败：{0}</value>
+    </data>
+    <data name="Shortcuts_Error_NoApp" xml:space="preserve">
+        <value>无法启动「{0}」</value>
+    </data>
+    <data name="Shortcuts_Error_UnknownAction" xml:space="preserve">
+        <value>未知动作：{0}</value>
+    </data>
+    <data name="Shortcuts_Error_NoService" xml:space="preserve">
+        <value>当前环境不支持该操作</value>
+    </data>
+    <data name="Shortcuts_Error_Notification" xml:space="preserve">
+        <value>无法显示系统通知</value>
+    </data>
+    <data name="Shortcuts_Error_ConfirmReject" xml:space="preserve">
+        <value>已取消</value>
+    </data>
+    <data name="Shortcuts_ConfirmDestructive" xml:space="preserve">
+        <value>该操作会删除数据且不可恢复，继续执行吗？</value>
+    </data>
+    <data name="Shortcuts_ConfirmRunMessage" xml:space="preserve">
+        <value>运行「{0}」吗？</value>
+    </data>
+    <data name="Shortcuts_ConfirmRunOk" xml:space="preserve">
+        <value>运行</value>
+    </data>
+    <data name="Shortcuts_Settings_MaxTiles" xml:space="preserve">
+        <value>卡片显示上限</value>
+    </data>
+    <data name="Shortcuts_Settings_Confirm" xml:space="preserve">
+        <value>运行前确认</value>
+    </data>
+    <data name="Shortcuts_Settings_Edit" xml:space="preserve">
+        <value>编辑指令</value>
+    </data>
+    <data name="Shortcuts_Settings_OpenEditor" xml:space="preserve">
+        <value>打开编辑器</value>
+    </data>
+    <data name="Shortcuts_Settings_OpenPanel" xml:space="preserve">
+        <value>打开面板</value>
+    </data>
+    <data name="Shortcuts_Settings_Hint" xml:space="preserve">
+        <value>在编辑器里编排动作，卡片上点按磁贴即可运行。</value>
+    </data>
+    <data name="Shortcuts_Switch" xml:space="preserve">
+        <value>切换指令</value>
+    </data>
+</root>

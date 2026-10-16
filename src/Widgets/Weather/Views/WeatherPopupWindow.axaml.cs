@@ -58,14 +58,15 @@ public partial class WeatherPopupWindow : SecondaryPanelWindow
 
     public static void ShowPopup(ForecastViewModel viewModel, Point? screenCenter, Window? owner = null, double? cornerRadius = null)
     {
-        if (PanelCoolingDown<WeatherPopupWindow>())
-            return;
-
-        if (TryCloseActivePanel<WeatherPopupWindow>())
-            return;
-
-        var popup = new WeatherPopupWindow(viewModel, screenCenter, cornerRadius);
-        popup.ShowAsSecondaryPanel(owner);
+        // PerOwner: every weather widget owns its own panel — two weather components no longer
+        // evict each other's panel. The service handles cooldown, toggle-close and the pinned
+        // show; the decision (mirroring the old early returns) is deliberately ignored.
+        PanelService.Open(new PanelRequest(
+            owner is Widget widget ? widget.InstanceId : default,
+            owner,
+            "weather",
+            PanelScope.PerOwner,
+            () => new WeatherPopupWindow(viewModel, screenCenter, cornerRadius)));
     }
 
     private void BindData()
@@ -117,7 +118,10 @@ public partial class WeatherPopupWindow : SecondaryPanelWindow
         var theme = PanelAppearanceResolver.ResolveEffectiveTheme(settingsProvider ??= PanelAppearanceResolver.TryResolveSettingsProvider());
         bool isDark = PanelAppearanceResolver.IsDark(theme, ActualThemeVariant);
 
-        IBrush textBrush = (theme.IsColorful || isDark) ? Brushes.White : new SolidColorBrush(Color.FromRgb(30, 30, 30));
+        IBrush fallbackText = (theme.IsColorful || isDark) ? Brushes.White : new SolidColorBrush(Color.FromRgb(30, 30, 30));
+        IBrush textBrush = theme.Monochrome
+            ? ThemeScopeResolver.ResolveBrush(this, "WeatherForegroundBrush", ActualThemeVariant, fallbackText)
+            : fallbackText;
         IBrush subTextBrush = (theme.IsColorful || isDark) ? new SolidColorBrush(Color.FromArgb(200, 255, 255, 255)) : new SolidColorBrush(Color.FromArgb(180, 0, 0, 0));
         Resources["WeatherForegroundBrush"] = textBrush;
         CityText.Foreground = textBrush;

@@ -1,0 +1,53 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="clr-namespace:DeskCanvas.UI.Controls"
+             x:Class="DeskCanvas.UI.Controls.Setting">
+    <UserControl.Template>
+        <ControlTemplate>
+            <Border CornerRadius="{DynamicResource HostSurfaceCornerRadius}" BorderThickness="0"
+                    Padding="{DynamicResource SettingsRowPadding}"
+                    Background="{DynamicResource SystemControlBackgroundAltHighBrush}">
+                <!-- One layout engine for the whole row: icon / label group / the SINGLE editor
+                     presenter. The panel decides horizontal vs stacked during measurement (see
+                     SettingLayoutPanel); the title wraps instead of truncating, and the
+                     requirement hints take real layout space below the subtitle. Hint texts are
+                     properties the embedding application localizes (the host facade feeds its
+                     Locale resources); this shared template never hardcodes copy. -->
+                <controls:SettingLayoutPanel
+                    LayoutMode="{TemplateBinding LayoutMode}"
+                    LabelMinWidth="{TemplateBinding LabelMinWidth}"
+                    EditorMinWidth="{TemplateBinding EditorMinWidth}"
+                    EditorAlignment="{TemplateBinding EditorHorizontalAlignment}"
+                    RowGap="{DynamicResource SettingsRowGap}">
+                    <PathIcon controls:SettingLayoutPanel.Slot="Icon"
+                              Height="24" VerticalAlignment="Center"
+                              IsVisible="{TemplateBinding Icon, Converter={x:Static ObjectConverters.IsNotNull}}"
+                              Data="{TemplateBinding Icon}" />
+                    <StackPanel controls:SettingLayoutPanel.Slot="Label" VerticalAlignment="Center" Spacing="3">
+                        <TextBlock VerticalAlignment="Center"
+                                   TextWrapping="Wrap"
+                                   TextTrimming="None"
+                                   Text="{TemplateBinding Title}" />
+                        <TextBlock IsVisible="{TemplateBinding Subtitle, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                                   Opacity="0.6" FontSize="{DynamicResource FontSizeCaption}"
+                                   TextWrapping="Wrap"
+                                   Text="{TemplateBinding Subtitle}" />
+                        <TextBlock IsVisible="{TemplateBinding AdminRequired}"
+                                   FontSize="{DynamicResource FontSizeCaption}"
+                                   Foreground="{DynamicResource SecondaryTextBrush}"
+                                   TextWrapping="Wrap"
+                                   Text="{TemplateBinding AdminRequiredText}" />
+                        <TextBlock IsVisible="{TemplateBinding RestartRequired}"
+                                   FontSize="{DynamicResource FontSizeCaption}"
+                                   Foreground="{DynamicResource SecondaryTextBrush}"
+                                   TextWrapping="Wrap"
+                                   Text="{TemplateBinding RestartRequiredText}" />
+                    </StackPanel>
+                    <ContentPresenter controls:SettingLayoutPanel.Slot="Editor"
+                                      Content="{TemplateBinding Content}"
+                                      VerticalAlignment="Center" />
+                </controls:SettingLayoutPanel>
+            </Border>
+        </ControlTemplate>
+    </UserControl.Template>
+</UserControl>

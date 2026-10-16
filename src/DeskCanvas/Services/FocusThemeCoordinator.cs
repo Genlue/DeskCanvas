@@ -11,22 +11,24 @@ using DeskCanvas.Core.Models.Settings;
 namespace DeskCanvas.Services;
 
 /// <summary>
-/// Drives 失焦自动切换 as a <b>uniform</b> switch: the whole desktop is in exactly one
-/// state at a time — "unfocused" while any non-whitelisted application window occupies
-/// any screen, "focused" the moment the last one is gone — and a state flip applies the
-/// state's theme through <see cref="ThemeService.ApplyFocusState"/>, the very same
-/// application-level switch the settings page's theme buttons run. There is no
-/// per-window/per-screen override layer any more: every window (widgets, panels, the
-/// settings window itself) simply follows the one live global theme, which is what makes
-/// the result identical to switching the theme by hand.
+/// Drives 失焦自动切换. The desktop's occupancy is observed <b>per screen</b>
+/// (<see cref="FocusStateSnapshot.UnfocusedScreens"/>); the theme each window renders with is
+/// resolved from the state of the screen <i>that window sits on</i> — a screen still carrying a
+/// non-whitelisted application window shows the unfocused theme while a cleared screen next to
+/// it shows the focused one. The application-level switch (settings window, dialogs) keeps
+/// following the uniform live state, which is what makes a state flip identical to switching
+/// the theme by hand. A window that cannot be mapped to a screen — and the whole feature when
+/// <see cref="FocusLinkSettings.Enabled"/> is false — falls back to the uniform behaviour, so
+/// headless contexts and screens without geometry keep working exactly as before.
 /// <para>
-/// The coordinator's remaining jobs: listen to the focus watcher and re-run the global
-/// switch on state changes (and on settings saves, wallpaper brightness flips, exits from
-/// fullscreen), and poke the tracked widget windows so they re-resolve their material
-/// paths when the theme flipped without a variant change — including the one refresh that
-/// follows a flip of the master switch itself (see <see cref="Reapply"/>). While
-/// <see cref="FocusLinkSettings.Enabled"/> is false the app-level theme is simply the
-/// shared one — the pre-feature behaviour.
+/// The coordinator's remaining jobs: listen to the focus watcher and re-run the switch on
+/// state changes (and on settings saves, wallpaper brightness flips, exits from fullscreen),
+/// and poke the tracked widget windows — applying each window's own per-screen variant and
+/// window-scope colour resources first (<see cref="ApplyWindowTheme"/>) — so they re-resolve
+/// their material paths when their theme moved without a variant change, including the one
+/// refresh that follows a flip of the master switch itself (see <see cref="Reapply"/>). While
+/// <see cref="FocusLinkSettings.Enabled"/> is false the app-level theme is simply the shared
+/// one — the pre-feature behaviour.
 /// </para>
 /// </summary>
 public sealed class FocusThemeCoordinator : IDisposable
@@ -40,6 +42,14 @@ public sealed class FocusThemeCoordinator : IDisposable
 
     private FocusStateSnapshot state = FocusStateSnapshot.Focused;
     private bool fullscreenSuspended;
+
+    /// <summary>
+    /// The snapshot the tracked windows were last poked against. A state flip that reshuffles
+    /// <i>which</i> screens are unfocused ({"A"} → {"B"}) leaves the uniform focused-bool — and
+    /// therefore the global application — untouched, yet windows moved between the two state
+    /// themes still need a poke; comparing against this catches exactly those reshuffles.
+    /// </summary>
+    private FocusStateSnapshot? lastPokedSnapshot;
 
     /// <summary>
     /// The master switch as the last pass saw it. Flipping it is the one settings change that
@@ -110,7 +120,9 @@ public sealed class FocusThemeCoordinator : IDisposable
     /// <summary>Re-evaluate the uniform state and apply it globally (state change, settings
     /// change, wallpaper flip, fullscreen exit). A state whose theme already applied
     /// short-circuits inside the theme service — the windows are only poked when the theme
-    /// actually flipped, or when the master switch itself moved (see below).</summary>
+    /// actually flipped, when the master switch itself moved (see below), or when the
+    /// per-screen occupancy reshuffled which screens are unfocused while the uniform
+    /// state stayed put.</summary>
     /// <para>
     /// <b>开关本功能后接一次刷新。</b> Flipping the master switch is the one settings change the
     /// global application alone cannot carry: the switch is not part of the tuple the application
@@ -137,7 +149,7 @@ public sealed class FocusThemeCoordinator : IDisposable
 
         // A fullscreen application owns the desktop (and the widgets nobody can see): hold
         // everything — the toggle refresh included — and settle once when the desktop is back.
-        if (fullscreenSuspended) return;
+        if (fullscreenSuspended || fullscreenWatcher.IsFullscreen) return;
 
         var toggled = enabled != featureEnabled;
         featureEnabled = enabled;
@@ -148,37 +160,108 @@ public sealed class FocusThemeCoordinator : IDisposable
             // the state theme it was painting (its material may differ from the shared one).
             if (!toggled) return;
             themeService.ApplyFocusState(settings, focused: true, force: true);
+            lastPokedSnapshot = state;
             PokeAll();
             return;
         }
 
+        // Per-screen: a snapshot that reshuffles which screens are unfocused ({"A"} → {"B"})
+        // leaves the uniform focused-bool alone — the global application short-circuits — but
+        // the windows on those screens really did move between the two state themes. Poke
+        // whenever the snapshot actually changed, not only when the uniform theme flipped.
+        var snapshotMoved = lastPokedSnapshot is not { } last || !state.SameAs(last);
+
         // A variant change reaches the windows through ActualThemeVariantChanged on its own;
         // the poke covers the material-swap cases where the variant stays put — and runs only
-        // when the global application really happened (or the switch just moved), never on a
-        // no-op save.
-        if (!themeService.ApplyFocusState(settings, ResolveFocused(state), force: toggled) && !toggled) return;
+        // when the global application really happened (or the switch just moved, or the
+        // per-screen occupancy reshuffled), never on a no-op save.
+        if (!themeService.ApplyFocusState(settings, ResolveFocused(state), force: toggled)
+            && !toggled && !snapshotMoved) return;
 
+        lastPokedSnapshot = state;
         PokeAll();
     }
 
     /// <summary>Tell every tracked window to re-resolve its material (the refresh half of a
-    /// switch — the global application alone cannot reach per-window values).</summary>
+    /// switch — the global application alone cannot reach per-window values). Each window is
+    /// first given its own per-screen theme state (variant + window-scope colours) and only
+    /// then poked, so the material paths re-resolve against the fresh window-level state.</summary>
     private void PokeAll()
     {
         foreach (var reference in windows)
             if (reference.TryGetTarget(out var window)) PokeWindow(window);
     }
 
-    private static void PokeWindow(Window window)
+    private void PokeWindow(Window window)
     {
+        ApplyWindowTheme(window);
         if (window is IFocusThemedWindow themed) themed.OnFocusThemeChanged();
     }
 
+    /// <summary>
+    /// Push the window's own per-screen theme state onto the window: its
+    /// <see cref="Window.RequestedThemeVariant"/> and its window-scope colour resources
+    /// (accent ramp, or the colorful dictionary when this screen's state theme is 多彩).
+    /// The global material style dictionaries stay app-wide — only the variant and the
+    /// colour keys can differ per screen without a StyleIncludes rework (ADR-P4b).
+    /// </summary>
+    /// <remarks>
+    /// Only keys this coordinator itself writes are ever cleared on the fallback path:
+    /// widgets keep their own window-scope semantic colours (CalendarTodayBrush …), and the
+    /// app-level monochrome style unification stays uniform by design — window scope can add
+    /// styles but never remove the application's, so per-screen monochrome <i>styles</i> are a
+    /// recorded boundary.
+    /// </remarks>
+    private void ApplyWindowTheme(Window window)
+    {
+        var settings = appSettingsProvider.Get();
+        if (settings.FocusLink is not { Enabled: true })
+        {
+            // Feature off = the uniform fallback: drop everything this class put on the window
+            // so it follows the application resources again, exactly like the pre-feature code.
+            ThemeResourceHelper.ClearAccentOverrides(window.Resources);
+            ThemeResourceHelper.RemoveColorfulResourcesInclude(window);
+            window.Resources.Remove("ColorfulActive");
+            window.RequestedThemeVariant = ThemeVariant.Default;
+            return;
+        }
+
+        var theme = ResolveWindowTheme(settings, window);
+        var variant = ResolveVariant(new FocusMode(theme.DarkMode, theme.AutoTheme), wallpaperTheme.IsWallpaperDark());
+        window.RequestedThemeVariant = variant;
+
+        if (theme.IsColorful)
+        {
+            // 多彩: merge the closed colorful dictionary into the window — the Fluent keys
+            // resolve colorfully inside THIS window without moving the app-wide policy, and
+            // the accent ramp is strictly cleared (ColorfulFixed forbids user accents).
+            ThemeResourceHelper.AttachColorfulResourcesInclude(window);
+            window.Resources["ColorfulActive"] = true;
+            ThemeResourceHelper.ClearAccentOverrides(window.Resources);
+        }
+        else
+        {
+            ThemeResourceHelper.RemoveColorfulResourcesInclude(window);
+            window.Resources.Remove("ColorfulActive");
+
+            // ThemeVariant members are static properties, not constants — equality, not switch
+            // patterns. Follow-the-system (Default) reads the window's live variant: the same
+            // reading the global path takes (darkMode ?? actual variant == Dark).
+            var isDarkVariant = variant == ThemeVariant.Dark
+                ? true
+                : variant == ThemeVariant.Light
+                    ? false
+                    : window.ActualThemeVariant == ThemeVariant.Dark;
+            ThemeResourceHelper.ApplyAccentRamp(window.Resources, theme, isDarkVariant);
+        }
+    }
+
     /// <summary>The theme a visual's window should render with: the shared theme when the
-    /// feature is off, otherwise the live uniform state's theme — the entry point for
-    /// widget-assembly content (which resolves its own colours and has no direct reference
-    /// to the coordinator). Returns <c>null</c> when the app services are unavailable
-    /// (design time, headless checks).</summary>
+    /// feature is off, otherwise the state theme of the screen that visual's window sits on —
+    /// the entry point for widget-assembly content (which resolves its own colours and has no
+    /// direct reference to the coordinator). A visual whose window cannot be determined falls
+    /// back to the uniform entry point. Returns <c>null</c> when the app services are
+    /// unavailable (design time, headless checks).</summary>
     public static Theme? ResolveVisualTheme(Visual visual)
     {
         var provider = App.Services?.GetService(typeof(IAppSettingsProvider)) as IAppSettingsProvider;
@@ -190,16 +273,60 @@ public sealed class FocusThemeCoordinator : IDisposable
         var coordinator = App.Services?.GetService(typeof(FocusThemeCoordinator)) as FocusThemeCoordinator;
         if (coordinator is null) return settings.Theme;
 
-        return coordinator.ResolveWindowTheme(settings);
+        var window = visual as Window ?? visual.GetVisualRoot() as Window;
+        return window is { } w
+            ? coordinator.ResolveWindowTheme(settings, w)
+            : coordinator.ResolveWindowTheme(settings);
     }
 
-    /// <summary>The window's effective theme: the shared theme with the live state's
-    /// light/dark pair and (optional) surface material substituted. With the uniform switch
-    /// every window resolves the same theme — the one the settings window follows, too.</summary>
+    /// <summary>The window's effective theme under the per-screen policy: the state theme of
+    /// the screen the window itself sits on. Windows that cannot be mapped to a screen (no
+    /// platform screens yet, headless without an injected mapping) fall back to the uniform
+    /// entry point below.</summary>
+    public Theme ResolveWindowTheme(AppSettings settings, Window window) =>
+        ResolveWindowTheme(settings, state, ResolveWindowScreen(window));
+
+    /// <summary>The window's effective theme with the live uniform state: the shared theme
+    /// with the live state's light/dark pair and (optional) surface material substituted.
+    /// Kept as the uniform compatibility entry — every caller that has no window at hand
+    /// (and the headless fallback) resolves through here.</summary>
     public Theme ResolveWindowTheme(AppSettings settings) =>
         settings.FocusLink is { Enabled: true } link
             ? ResolveStateTheme(link, ResolveFocused(state), settings)
             : settings.Theme;
+
+    /// <summary>
+    /// Resolves the physical-pixel rect of the screen a window sits on; <c>null</c> = unknown
+    /// (the uniform fallback then applies). The default implementation is the platform's own
+    /// window→screen query — the same bounds source the focus watcher builds
+    /// <see cref="FocusStateSnapshot.UnfocusedScreens"/> from — and the headless checks inject
+    /// a fake mapping here.
+    /// </summary>
+    public Func<Window, ScreenRect?>? WindowScreenResolver { get; set; }
+
+    private ScreenRect? ResolveWindowScreen(Window window)
+    {
+        if (WindowScreenResolver is { } resolver) return resolver(window);
+
+        try
+        {
+            return window.Screens.ScreenFromWindow(window) is { } screen
+                ? new ScreenRect(screen.Bounds.X, screen.Bounds.Y, screen.Bounds.Right, screen.Bounds.Bottom)
+                : null;
+        }
+        catch
+        {
+            // No platform screens (design time, headless setup): the uniform fallback.
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Test seam for the headless checks: replaces the live occupancy snapshot so per-screen
+    /// resolution can be exercised without a real desktop walk. Production code only ever
+    /// sets the snapshot through <see cref="FocusWatchService.StateChanged"/>.
+    /// </summary>
+    public void InjectSnapshotForChecks(FocusStateSnapshot snapshot) => state = snapshot;
 
     // ---------- Decision (pure, testable) ----------
 
@@ -210,6 +337,29 @@ public sealed class FocusThemeCoordinator : IDisposable
     /// allowlisted processes and shell surfaces never occupy anything.
     /// </summary>
     public static bool ResolveFocused(FocusStateSnapshot state) => !state.AnyApplicationFocused;
+
+    /// <summary>
+    /// Is this screen focused? Per-screen rule: a screen is focused exactly when no
+    /// application window occupies <b>it</b> — the per-screen reading of
+    /// <see cref="FocusStateSnapshot.UnfocusedScreens"/> that the uniform switch used to
+    /// collapse into a single bool. A window that cannot be mapped to a screen (null rect)
+    /// falls back to the uniform rule, so headless / geometry-less contexts behave exactly
+    /// like the pre-per-screen code.
+    /// </summary>
+    public static bool ResolveFocused(FocusStateSnapshot state, ScreenRect? screen) =>
+        screen is { } rect ? !state.UnfocusedScreens.Contains(rect) : ResolveFocused(state);
+
+    /// <summary>
+    /// Pure per-screen theme resolution: the occupancy state of the given screen picks
+    /// between the two state themes. Feature off, or a screen-less window, resolves exactly
+    /// like the uniform entry point — one function so the matrix in
+    /// <c>tests/PerScreenThemeChecks</c> needs no windows and no desktop.
+    /// </summary>
+    public static Theme ResolveWindowTheme(AppSettings settings, FocusStateSnapshot snapshot, ScreenRect? screen)
+    {
+        if (settings.FocusLink is not { Enabled: true } link) return settings.Theme;
+        return ResolveStateTheme(link, ResolveFocused(snapshot, screen), settings);
+    }
 
     /// <summary>Resolve a mode pair into the variant a window should carry.</summary>
     public static ThemeVariant ResolveVariant(FocusMode mode, bool wallpaperDark) =>

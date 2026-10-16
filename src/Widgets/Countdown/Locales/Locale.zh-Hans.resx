@@ -1,0 +1,174 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+    <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+        <xsd:element name="root" msdata:IsDataSet="true" />
+    </xsd:schema>
+    <resheader name="resmimetype">
+        <value>text/microsoft-resx</value>
+    </resheader>
+    <resheader name="version">
+        <value>1.3</value>
+    </resheader>
+    <resheader name="reader">
+        <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    </resheader>
+    <resheader name="writer">
+        <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    </resheader>
+    <data name="Countdown" xml:space="preserve">
+        <value>倒计时</value>
+    </data>
+    <data name="Countdown_Title" xml:space="preserve">
+        <value>倒数纪念日</value>
+    </data>
+    <data name="Countdown_Subtitle" xml:space="preserve">
+        <value>记录重要日子与纪念日</value>
+    </data>
+    <data name="Countdown_DaysRemaining" xml:space="preserve">
+        <value>天后</value>
+    </data>
+    <data name="Countdown_DaysPassed" xml:space="preserve">
+        <value>天前</value>
+    </data>
+    <data name="Countdown_Today" xml:space="preserve">
+        <value>今天</value>
+    </data>
+    <data name="Countdown_HoursMinutesSeconds" xml:space="preserve">
+        <value>剩余时间</value>
+    </data>
+    <data name="Countdown_CountupSubtitle" xml:space="preserve">
+        <value>始于 {0}</value>
+    </data>
+    <data name="Countdown_EventArrived" xml:space="preserve">
+        <value>目标日已到达！</value>
+    </data>
+    <data name="Countdown_Default_NewYear" xml:space="preserve">
+        <value>元旦</value>
+    </data>
+    <data name="Countdown_Default_SpringFestival" xml:space="preserve">
+        <value>春节</value>
+    </data>
+    <data name="Countdown_Default_Weekend" xml:space="preserve">
+        <value>周末</value>
+    </data>
+    <data name="Countdown_AddEvent" xml:space="preserve">
+        <value>新增事件</value>
+    </data>
+    <data name="Countdown_EditEvent" xml:space="preserve">
+        <value>编辑事件</value>
+    </data>
+    <data name="Countdown_EventTitle" xml:space="preserve">
+        <value>事件名称</value>
+    </data>
+    <data name="Countdown_TargetDate" xml:space="preserve">
+        <value>目标日期</value>
+    </data>
+    <data name="Countdown_IsLunar" xml:space="preserve">
+        <value>农历</value>
+    </data>
+    <data name="Countdown_Repeat" xml:space="preserve">
+        <value>重复周期</value>
+    </data>
+    <data name="Countdown_Repeat_None" xml:space="preserve">
+        <value>不重复</value>
+    </data>
+    <data name="Countdown_Repeat_Yearly" xml:space="preserve">
+        <value>每年</value>
+    </data>
+    <data name="Countdown_Repeat_Monthly" xml:space="preserve">
+        <value>每月</value>
+    </data>
+    <data name="Countdown_Repeat_Weekly" xml:space="preserve">
+        <value>每周</value>
+    </data>
+    <data name="Countdown_Direction" xml:space="preserve">
+        <value>计数模式</value>
+    </data>
+    <data name="Countdown_Direction_Auto" xml:space="preserve">
+        <value>自动 (未来倒数/过去正数)</value>
+    </data>
+    <data name="Countdown_Direction_Countdown" xml:space="preserve">
+        <value>倒数日</value>
+    </data>
+    <data name="Countdown_Direction_Countup" xml:space="preserve">
+        <value>正数纪念日</value>
+    </data>
+    <data name="Countdown_Category" xml:space="preserve">
+        <value>分类</value>
+    </data>
+    <data name="Countdown_Category_General" xml:space="preserve">
+        <value>常规</value>
+    </data>
+    <data name="Countdown_Category_Exam" xml:space="preserve">
+        <value>考试</value>
+    </data>
+    <data name="Countdown_Category_Anniversary" xml:space="preserve">
+        <value>纪念日</value>
+    </data>
+    <data name="Countdown_Category_Life" xml:space="preserve">
+        <value>生活</value>
+    </data>
+    <data name="Countdown_Category_Holiday" xml:space="preserve">
+        <value>节日</value>
+    </data>
+    <data name="Countdown_Category_Work" xml:space="preserve">
+        <value>工作</value>
+    </data>
+    <data name="Countdown_Pin" xml:space="preserve">
+        <value>置顶</value>
+    </data>
+    <data name="Countdown_Delete" xml:space="preserve">
+        <value>删除</value>
+    </data>
+    <data name="Countdown_Save" xml:space="preserve">
+        <value>保存</value>
+    </data>
+    <data name="Countdown_Cancel" xml:space="preserve">
+        <value>取消</value>
+    </data>
+    <data name="Countdown_Style" xml:space="preserve">
+        <value>卡片风格</value>
+    </data>
+    <data name="Countdown_Style_MinimalNumber" xml:space="preserve">
+        <value>极简大数字</value>
+    </data>
+    <data name="Countdown_Style_RingProgress" xml:space="preserve">
+        <value>环形流逝感</value>
+    </data>
+    <data name="Countdown_Style_EventList" xml:space="preserve">
+        <value>多事件列表</value>
+    </data>
+    <data name="Countdown_Granularity" xml:space="preserve">
+        <value>时间精确度</value>
+    </data>
+    <data name="Countdown_Granularity_DaysOnly" xml:space="preserve">
+        <value>仅整天</value>
+    </data>
+    <data name="Countdown_Granularity_Auto24Hours" xml:space="preserve">
+        <value>最后24小时时分秒跳动</value>
+    </data>
+    <data name="Countdown_Granularity_AlwaysDetailed" xml:space="preserve">
+        <value>始终详细倒数</value>
+    </data>
+    <data name="Countdown_TargetEvent" xml:space="preserve">
+        <value>展示事件</value>
+    </data>
+    <data name="Countdown_TargetEvent_Auto" xml:space="preserve">
+        <value>自动 (置顶或最近)</value>
+    </data>
+    <data name="Countdown_EmptyEvents" xml:space="preserve">
+        <value>暂无事件，点击上方按钮新增</value>
+    </data>
+    <data name="Countdown_Close" xml:space="preserve">
+        <value>关闭面板</value>
+    </data>
+    <data name="Countdown_TotalEvents" xml:space="preserve">
+        <value>共 {0} 个事件</value>
+    </data>
+    <data name="Countdown_Progress" xml:space="preserve">
+        <value>流逝进度</value>
+    </data>
+    <data name="Countdown_Style_Subtitle" xml:space="preserve">
+        <value>应用于各尺寸卡片的外观布局表现</value>
+    </data>
+</root>

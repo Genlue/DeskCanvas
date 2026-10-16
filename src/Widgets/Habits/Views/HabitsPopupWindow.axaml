@@ -1,0 +1,245 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:locales="clr-namespace:Habits.Locales"
+        xmlns:controls="clr-namespace:DeskCanvas.Views.Controls;assembly=DeskCanvas"
+        x:Class="Habits.Views.HabitsPopupWindow"
+        Title="Habits"
+        SystemDecorations="None"
+        Background="Transparent"
+        TransparencyLevelHint="Transparent"
+        ShowInTaskbar="False"
+        CanResize="False"
+        Width="440"
+        Height="540">
+
+    <Window.Styles>
+        <!-- Pill Action Button -->
+        <Style Selector="Button.pill-btn">
+            <Setter Property="Height" Value="26" />
+            <Setter Property="Padding" Value="10,2" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="CornerRadius" Value="13" />
+            <Setter Property="Background" Value="#15808080" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="Cursor" Value="Hand" />
+        </Style>
+        <Style Selector="Button.pill-btn:pointerover">
+            <Setter Property="Background" Value="#30808080" />
+        </Style>
+
+        <!-- Segment Tab Button -->
+        <Style Selector="RadioButton.seg-tab">
+            <Setter Property="Height" Value="26" />
+            <Setter Property="Padding" Value="10,2" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="CornerRadius" Value="13" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Cursor" Value="Hand" />
+        </Style>
+        <Style Selector="RadioButton.seg-tab:checked">
+            <Setter Property="Background" Value="{DynamicResource SystemAccentColor}" />
+            <Setter Property="Foreground" Value="White" />
+        </Style>
+
+        <Style Selector="Button.icon-action-btn">
+            <Setter Property="Width" Value="24" />
+            <Setter Property="Height" Value="24" />
+            <Setter Property="CornerRadius" Value="12" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="Opacity" Value="0.6" />
+            <Setter Property="Cursor" Value="Hand" />
+        </Style>
+        <Style Selector="Button.icon-action-btn:pointerover">
+            <Setter Property="Opacity" Value="1.0" />
+            <Setter Property="Background" Value="#20808080" />
+        </Style>
+    </Window.Styles>
+
+    <controls:SecondaryPanelShell>
+        <!-- Header Content -->
+        <controls:SecondaryPanelShell.HeaderContent>
+            <StackPanel VerticalAlignment="Center" Spacing="2">
+                <TextBlock Text="{x:Static locales:Locale.Habits_Title}"
+                           FontSize="16" FontWeight="Bold" />
+                <TextBlock x:Name="SubtitleText"
+                           FontSize="11" Opacity="0.6"
+                           Text="{x:Static locales:Locale.Habits_Subtitle}" />
+            </StackPanel>
+        </controls:SecondaryPanelShell.HeaderContent>
+
+        <!-- Header Actions: Add Habit Button -->
+        <controls:SecondaryPanelShell.HeaderActions>
+            <Button x:Name="AddHabitBtn" Classes="pill-btn"
+                    Content="{x:Static locales:Locale.Habits_AddHabit}"
+                    Click="OnAddHabitClicked"
+                    VerticalAlignment="Center" />
+        </controls:SecondaryPanelShell.HeaderActions>
+
+        <!-- Panel Body -->
+        <Grid RowDefinitions="Auto, *">
+            <!-- Top Segment Tabs -->
+            <Border Grid.Row="0" Background="#10808080" CornerRadius="15" Padding="2"
+                    HorizontalAlignment="Center" Margin="0,0,0,10">
+                <StackPanel Orientation="Horizontal" Spacing="2">
+                    <RadioButton x:Name="TabTodayBtn" Classes="seg-tab"
+                                 Content="{x:Static locales:Locale.Habits_Tab_Today}"
+                                 IsChecked="True" Checked="OnTabChanged" />
+                    <RadioButton x:Name="TabCalendarBtn" Classes="seg-tab"
+                                 Content="{x:Static locales:Locale.Habits_Tab_Calendar}"
+                                 Checked="OnTabChanged" />
+                    <RadioButton x:Name="TabStatsBtn" Classes="seg-tab"
+                                 Content="{x:Static locales:Locale.Habits_Tab_Stats}"
+                                 Checked="OnTabChanged" />
+                </StackPanel>
+            </Border>
+
+            <!-- Tab 1: Today & Habit Management -->
+            <Grid Grid.Row="1" x:Name="TodayTabPanel" RowDefinitions="Auto, *">
+                <!-- Add / Edit Form Panel (Collapsible) -->
+                <Border Grid.Row="0" x:Name="FormPanel" IsVisible="False"
+                        Background="#15808080" CornerRadius="12" Padding="12" Margin="0,0,0,8">
+                    <StackPanel Spacing="8">
+                        <TextBlock x:Name="FormTitleText" Text="{x:Static locales:Locale.Habits_AddHabit}"
+                                   FontWeight="Bold" FontSize="13" />
+
+                        <Grid ColumnDefinitions="*, Auto">
+                            <TextBox Grid.Column="0" x:Name="FormTitleBox"
+                                     Watermark="{x:Static locales:Locale.Habits_TitlePrompt}" Margin="0,0,8,0" />
+                            <TextBox Grid.Column="1" x:Name="FormIconBox" Width="60"
+                                     Watermark="{x:Static locales:Locale.Habits_IconPrompt}" />
+                        </Grid>
+
+                        <!-- Type Selector: Boolean vs Numeric -->
+                        <StackPanel Orientation="Horizontal" Spacing="16">
+                            <RadioButton x:Name="TypeBooleanRadio" Content="{x:Static locales:Locale.Habits_Type_Boolean}"
+                                         IsChecked="True" Checked="OnFormTypeChanged" />
+                            <RadioButton x:Name="TypeNumericRadio" Content="{x:Static locales:Locale.Habits_Type_Numeric}"
+                                         Checked="OnFormTypeChanged" />
+                        </StackPanel>
+
+                        <!-- Numeric inputs (Target, Step, Unit) -->
+                        <Grid x:Name="NumericConfigGrid" IsVisible="False" ColumnDefinitions="*, *, *">
+                            <TextBox Grid.Column="0" x:Name="FormTargetBox"
+                                     Watermark="{x:Static locales:Locale.Habits_TargetValue}" Margin="0,0,4,0" />
+                            <TextBox Grid.Column="1" x:Name="FormStepBox"
+                                     Watermark="{x:Static locales:Locale.Habits_StepValue}" Margin="0,0,4,0" />
+                            <TextBox Grid.Column="2" x:Name="FormUnitBox"
+                                     Watermark="{x:Static locales:Locale.Habits_Unit}" />
+                        </Grid>
+
+                        <!-- Frequency Selector -->
+                        <ComboBox x:Name="FormFreqCombo" HorizontalAlignment="Stretch" />
+
+                        <!-- Form Actions -->
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
+                            <Button Classes="pill-btn" Content="{x:Static locales:Locale.Habits_Cancel}"
+                                    Click="OnFormCancelClicked" />
+                            <Button Classes="pill-btn" Background="{DynamicResource SystemAccentColor}" Foreground="White"
+                                    Content="{x:Static locales:Locale.Habits_Save}"
+                                    Click="OnFormSaveClicked" />
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
+                <!-- Habits List -->
+                <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled">
+                    <StackPanel x:Name="HabitsManagementList" Spacing="4">
+                        <!-- Populated dynamically in code -->
+                    </StackPanel>
+                </ScrollViewer>
+            </Grid>
+
+            <!-- Tab 2: Calendar & History (Backfill) -->
+            <Grid Grid.Row="1" x:Name="CalendarTabPanel" IsVisible="False" RowDefinitions="Auto, Auto, *, Auto">
+                <!-- Month Switcher -->
+                <Grid Grid.Row="0" ColumnDefinitions="Auto, *, Auto" Margin="0,0,0,6">
+                    <Button Grid.Column="0" Classes="pill-btn" Content="&lt;" Click="OnPrevMonthClicked" />
+                    <TextBlock Grid.Column="1" x:Name="CalendarMonthText"
+                               FontSize="14" FontWeight="Bold"
+                               HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    <Button Grid.Column="2" Classes="pill-btn" Content="&gt;" Click="OnNextMonthClicked" />
+                </Grid>
+
+                <!-- Week Day Labels -->
+                <UniformGrid Grid.Row="1" Columns="7" Margin="0,0,0,4">
+                    <TextBlock Text="{x:Static locales:Locale.Habits_Weekday_Mon}" FontSize="11" Opacity="0.5" HorizontalAlignment="Center" />
+                    <TextBlock Text="{x:Static locales:Locale.Habits_Weekday_Tue}" FontSize="11" Opacity="0.5" HorizontalAlignment="Center" />
+                    <TextBlock Text="{x:Static locales:Locale.Habits_Weekday_Wed}" FontSize="11" Opacity="0.5" HorizontalAlignment="Center" />
+                    <TextBlock Text="{x:Static locales:Locale.Habits_Weekday_Thu}" FontSize="11" Opacity="0.5" HorizontalAlignment="Center" />
+                    <TextBlock Text="{x:Static locales:Locale.Habits_Weekday_Fri}" FontSize="11" Opacity="0.5" HorizontalAlignment="Center" />
+                    <TextBlock Text="{x:Static locales:Locale.Habits_Weekday_Sat}" FontSize="11" Opacity="0.5" HorizontalAlignment="Center" />
+                    <TextBlock Text="{x:Static locales:Locale.Habits_Weekday_Sun}" FontSize="11" Opacity="0.5" HorizontalAlignment="Center" />
+                </UniformGrid>
+
+                <!-- Calendar Days Grid -->
+                <UniformGrid Grid.Row="2" x:Name="CalendarDaysGrid" Columns="7">
+                    <!-- Populated in code -->
+                </UniformGrid>
+
+                <!-- Selected Date Detail & Backfill Panel -->
+                <Border Grid.Row="3" Background="#10808080" CornerRadius="10" Padding="10,8" Margin="0,6,0,0">
+                    <StackPanel Spacing="4">
+                        <TextBlock x:Name="SelectedDateTitleText" FontWeight="Bold" FontSize="12" />
+                        <StackPanel x:Name="SelectedDateHabitsPanel" Spacing="4">
+                            <!-- Populated in code -->
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+            </Grid>
+
+            <!-- Tab 3: Statistics Dashboard -->
+            <ScrollViewer Grid.Row="1" x:Name="StatsTabPanel" IsVisible="False" HorizontalScrollBarVisibility="Disabled">
+                <StackPanel Spacing="10" Margin="4">
+                    <UniformGrid Columns="2">
+                        <!-- Current Longest Streak -->
+                        <Border Background="#12808080" CornerRadius="12" Padding="12" Margin="4">
+                            <StackPanel Spacing="4">
+                                <TextBlock Text="{x:Static locales:Locale.Habits_CurrentStreak}" FontSize="11" Opacity="0.6" />
+                                <TextBlock x:Name="StatCurrentStreakText" Text="{x:Static locales:Locale.Habits_Stat_CurrentStreak_Value}" FontSize="20" FontWeight="Bold"
+                                           Foreground="#FF9500" />
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Best Streak -->
+                        <Border Background="#12808080" CornerRadius="12" Padding="12" Margin="4">
+                            <StackPanel Spacing="4">
+                                <TextBlock Text="{x:Static locales:Locale.Habits_BestStreak}" FontSize="11" Opacity="0.6" />
+                                <TextBlock x:Name="StatBestStreakText" Text="{x:Static locales:Locale.Habits_Stat_BestStreak_Value}" FontSize="20" FontWeight="Bold"
+                                           Foreground="#FFD60A" />
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Total Check-ins -->
+                        <Border Background="#12808080" CornerRadius="12" Padding="12" Margin="4">
+                            <StackPanel Spacing="4">
+                                <TextBlock Text="{x:Static locales:Locale.Habits_TotalCheckIns}" FontSize="11" Opacity="0.6" />
+                                <TextBlock x:Name="StatTotalCheckInsText" Text="{x:Static locales:Locale.Habits_Stat_TotalCheckIns_Value}" FontSize="20" FontWeight="Bold"
+                                           Foreground="#007AFF" />
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Monthly Completion Rate -->
+                        <Border Background="#12808080" CornerRadius="12" Padding="12" Margin="4">
+                            <StackPanel Spacing="4">
+                                <TextBlock Text="{x:Static locales:Locale.Habits_CompletionRate}" FontSize="11" Opacity="0.6" />
+                                <TextBlock x:Name="StatCompletionRateText" Text="0%" FontSize="20" FontWeight="Bold"
+                                           Foreground="#34C759" />
+                            </StackPanel>
+                        </Border>
+                    </UniformGrid>
+
+                    <!-- Breakdown per Habit -->
+                    <TextBlock Text="{x:Static locales:Locale.Habits_StatsBreakdown}" FontWeight="Bold" FontSize="13" Margin="4,4,0,0" />
+                    <StackPanel x:Name="StatsHabitsBreakdown" Spacing="4">
+                        <!-- Populated in code -->
+                    </StackPanel>
+                </StackPanel>
+            </ScrollViewer>
+        </Grid>
+    </controls:SecondaryPanelShell>
+</Window>

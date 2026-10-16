@@ -35,14 +35,6 @@ namespace Folders.Views;
 /// </summary>
 public partial class BigFolderPopupWindow : SecondaryPanelWindow
 {
-    [DllImport("gdi32.dll")]
-    private static extern IntPtr CreateRoundRectRgn(int x1, int y1, int x2, int y2, int cx, int cy);
-
-    [DllImport("user32.dll")]
-    private static extern int SetWindowRgn(IntPtr hWnd, IntPtr hRgn, bool bRedraw);
-
-    [DllImport("gdi32.dll")]
-    private static extern bool DeleteObject(IntPtr hObject);
 
     public static readonly StyledProperty<int> PopupGridColumnsProperty =
         AvaloniaProperty.Register<BigFolderPopupWindow, int>(nameof(PopupGridColumns), 4);
@@ -56,13 +48,9 @@ public partial class BigFolderPopupWindow : SecondaryPanelWindow
     private readonly Point? spawnScreenCenter;
     private BigFolderModel currentModel;
     private readonly Action<BigFolderModel>? onModelChanged;
-    // The native-blur theme clips this window with SetWindowRgn; a window region cannot
-    // follow a render transform, so the transition falls back to opacity only.
-    private readonly bool transformAnimationEnabled;
     private bool suppressSettingsEvents = false;
 
     protected override Point? SpawnScreenCenter => spawnScreenCenter;
-    protected override bool TransformAnimationEnabled => transformAnimationEnabled;
     protected override int DeactivateCloseGraceMs => 150;
 
     public BigFolderPopupWindow() : this(new BigFolderModel(), null, null) { }
@@ -78,7 +66,6 @@ public partial class BigFolderPopupWindow : SecondaryPanelWindow
         currentModel = model;
         spawnScreenCenter = screenCenter;
         this.onModelChanged = onModelChanged;
-        transformAnimationEnabled = !UsesNativeBlurTheme();
 
         InitializeComponent();
         InitializePanel(cornerRadius);
@@ -94,15 +81,6 @@ public partial class BigFolderPopupWindow : SecondaryPanelWindow
         SyncSettingsControls();
         ApplyContentTheme();
         PopulateItems();
-    }
-
-    private static bool UsesNativeBlurTheme()
-    {
-        // Historic semantics kept: any failure to read the settings (no provider, headless,
-        // early start-up) leaves the transform animation ON — only a real native-blur theme
-        // turns it off. Reads the panel's EFFECTIVE theme (the focus-state theme while
-        // 失焦自动切换 is live), not the shared one — the state's material decides.
-        return PanelAppearanceResolver.ResolveEffectiveTheme(PanelAppearanceResolver.TryResolveSettingsProvider()).UsesNativeBlur;
     }
 
     /// <summary>Content-only tint: the header action button keeps the popup's historic
@@ -285,44 +263,7 @@ public partial class BigFolderPopupWindow : SecondaryPanelWindow
             ApplyContentTheme();
     }
 
-    private void ApplyWindowRegion()
-    {
-        var handle = TryGetPlatformHandle()?.Handle;
-        if (handle == null) return;
-
-        var theme = PanelAppearanceResolver.ResolveEffectiveTheme(PanelAppearanceResolver.TryResolveSettingsProvider());
-
-        if (theme.UsesNativeBlur)
-        {
-            var screen = Screens.ScreenFromWindow(this) ?? Screens.Primary;
-            double scaling = screen?.Scaling ?? 1.0;
-            int width = (int)Math.Round(ClientSize.Width * scaling);
-            int height = (int)Math.Round(ClientSize.Height * scaling);
-            // Match the card's own corner radius (propagated from the opening widget),
-            // so the native blur region and the visual card share the same curvature.
-            int radius = (int)Math.Round((SpawnCornerRadius > 0 ? SpawnCornerRadius : 18) * scaling);
-
-            width = Math.Max(1, width);
-            height = Math.Max(1, height);
-            radius = Math.Clamp(radius, 0, Math.Min(width, height) / 2);
-
-            var region = CreateRoundRectRgn(0, 0, width + 1, height + 1, radius * 2, radius * 2);
-            if (region != IntPtr.Zero)
-            {
-                if (SetWindowRgn(handle.Value, region, true) == 0)
-                    DeleteObject(region);
-            }
-        }
-        else
-        {
-            SetWindowRgn(handle.Value, IntPtr.Zero, true);
-        }
-    }
-
-    protected override void OnPanelLoaded()
-    {
-        ApplyWindowRegion();
-    }
+    // Region clipping is handled centrally by SecondaryPanelWindow.ApplyWindowRegion.
 
     protected override bool OnPanelEscape()
     {

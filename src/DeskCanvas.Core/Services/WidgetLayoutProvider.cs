@@ -21,6 +21,16 @@ public class WidgetLayoutProvider(ILayoutProvider layoutProvider, string screenI
     /// <inheritdoc />
     public void Save(WidgetLayout data)
     {
+        // Legacy callers may still construct a layout without the new identity fields.
+        // Preserve the session's stable ID when updating such an entry so a settings or
+        // geometry write cannot silently downgrade it back to geometry-based matching.
+        if (!data.HasStableIdentity && widgetLayout?.HasStableIdentity == true)
+            data = data with
+            {
+                InstanceId = widgetLayout.InstanceId,
+                Generation = Math.Max(widgetLayout.Generation, data.Generation)
+            };
+
         DataChanging?.Invoke(this, widgetLayout, data);
         var screens = layoutProvider.Get();
         var screen = screens.FindById(ScreenId);

@@ -1,0 +1,45 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net8.0</TargetFramework>
+        <OutputPath>..\..\DeskCanvas\bin\$(Configuration)\$(TargetFramework)\Widgets</OutputPath>
+        <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+        <NoWarn>$(NoWarn);AVLN3001</NoWarn>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <PackageReference Include="Avalonia" PrivateAssets="all" ExcludeAssets="runtime">
+        <IncludeAssets>compile; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      </PackageReference>
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\..\DeskCanvas\DeskCanvas.csproj">
+            <Private>false</Private>
+            <ExcludeAssets>runtime</ExcludeAssets>
+        </ProjectReference>
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\..\DeskCanvas.Core\DeskCanvas.Core.csproj">
+            <Private>false</Private>
+            <ExcludeAssets>runtime</ExcludeAssets>
+        </ProjectReference>
+    </ItemGroup>
+
+    <ItemGroup>
+      <EmbeddedResource Update="Locales\Locale.resx">
+        <Generator>PublicResXFileCodeGenerator</Generator>
+        <LastGenOutput>Locale.Designer.cs</LastGenOutput>
+      </EmbeddedResource>
+    </ItemGroup>
+
+    <ItemGroup>
+      <Compile Update="Locales\Locale.Designer.cs">
+        <DesignTime>True</DesignTime>
+        <AutoGen>True</AutoGen>
+        <DependentUpon>Locale.resx</DependentUpon>
+      </Compile>
+    </ItemGroup>
+
+</Project>

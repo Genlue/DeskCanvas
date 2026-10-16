@@ -1,0 +1,144 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="clr-namespace:Dice.Views.Controls"
+             xmlns:views="clr-namespace:Dice.Views"
+             xmlns:locales="clr-namespace:Dice.Locales"
+             x:Class="Dice.Views.DiceView"
+             Foreground="{DynamicResource WidgetForeground}">
+
+    <UserControl.Styles>
+        <!--  Ghost 图标按钮：透明底，:pointerover 提亮  -->
+        <Style Selector="Button.ghost-btn">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="4" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Foreground" Value="{DynamicResource WidgetForeground}" />
+            <Setter Property="Opacity" Value="0.6" />
+        </Style>
+        <Style Selector="Button.ghost-btn:pointerover">
+            <Setter Property="Opacity" Value="1" />
+            <Setter Property="Background" Value="#18808080" />
+        </Style>
+
+        <!--  主按钮：唯一强调色  -->
+        <Style Selector="Button.roll-pill">
+            <Setter Property="Background" Value="{DynamicResource SystemControlHighlightAccentBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource AccentContrastForegroundBrush}" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="14,5" />
+            <Setter Property="CornerRadius" Value="{DynamicResource WidgetPillCornerRadius}" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+        </Style>
+
+        <!--  Header 总和 pill：中性灰底，蓝只留给主按钮  -->
+        <Style Selector="Border.sum-pill">
+            <Setter Property="Background" Value="#14808080" />
+            <Setter Property="CornerRadius" Value="{DynamicResource WidgetPillCornerRadius}" />
+            <Setter Property="Padding" Value="8,2" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+    </UserControl.Styles>
+
+    <Grid Background="Transparent" PointerPressed="OnCardPointerPressed">
+        <!-- 1x1 Cell Layout -->
+        <Grid x:Name="CellLayout" RowDefinitions="*,Auto" Margin="6" IsVisible="False">
+            <controls:DiceFaceControl x:Name="CellDiceFace" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                     Width="56" Height="56"/>
+            <TextBlock Grid.Row="1" Text="{x:Static locales:Locale.Dice_TapToRoll}" FontSize="10" Opacity="0.55" HorizontalAlignment="Center" Margin="0,2,0,0"/>
+        </Grid>
+
+        <!-- 2x2 Small Layout -->
+        <Grid x:Name="SmallLayout" RowDefinitions="Auto,*,Auto" Margin="12,10" IsVisible="True">
+            <!-- Header -->
+            <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto,Auto">
+                <TextBlock Text="{x:Static locales:Locale.Dice_Title}" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center"
+                           TextTrimming="CharacterEllipsis"/>
+
+                <Border x:Name="SumPill" Grid.Column="2" Classes="sum-pill" Margin="0,0,4,0">
+                    <TextBlock x:Name="SmallSumText" Text="{x:Static locales:Locale.Dice_SumPlaceholder}" FontSize="11" FontWeight="SemiBold"
+                               Foreground="{DynamicResource WidgetForeground}"/>
+                </Border>
+
+                <Button Grid.Column="3" Classes="ghost-btn" Click="OnExpandDetailsClicked" ToolTip.Tip="{x:Static locales:Locale.Dice_DetailsTip}">
+                    <PathIcon Data="M7 10l5 5 5-5z" Width="12" Height="12"/>
+                </Button>
+            </Grid>
+
+            <!-- Dice Tray (Center) -->
+            <ItemsControl x:Name="SmallDiceContainer" Grid.Row="1" VerticalAlignment="Center" HorizontalAlignment="Center">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <WrapPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" ItemWidth="58" ItemHeight="58"/>
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+            </ItemsControl>
+
+            <!-- Bottom Action -->
+            <Button Grid.Row="2" Classes="roll-pill" HorizontalAlignment="Center" Click="OnRollActionClicked">
+                <TextBlock x:Name="SmallRollText" Text="{x:Static locales:Locale.Dice_RollAction}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+            </Button>
+        </Grid>
+
+        <!-- 4x2 Wide Layout -->
+        <Grid x:Name="WideLayout" ColumnDefinitions="*,1,*" Margin="14,10" IsVisible="False">
+            <!-- Left: Dice Tray -->
+            <Grid Grid.Column="0" RowDefinitions="Auto,*,Auto" Margin="0,0,10,0">
+                <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto">
+                    <TextBlock Text="{x:Static locales:Locale.Dice_Title}" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center"
+                               TextTrimming="CharacterEllipsis"/>
+                    <Border Grid.Column="2" Classes="sum-pill">
+                        <TextBlock x:Name="WideSumText" Text="{x:Static locales:Locale.Dice_SumPlaceholder}" FontSize="11" FontWeight="SemiBold"
+                                   Foreground="{DynamicResource WidgetForeground}"/>
+                    </Border>
+                </Grid>
+
+                <ItemsControl x:Name="WideDiceContainer" Grid.Row="1" VerticalAlignment="Center" HorizontalAlignment="Center">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <WrapPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" ItemWidth="52" ItemHeight="52"/>
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                </ItemsControl>
+
+                <Button Grid.Row="2" Classes="roll-pill" HorizontalAlignment="Center" Click="OnRollActionClicked">
+                    <TextBlock Text="{x:Static locales:Locale.Dice_RollAction}"/>
+                </Button>
+            </Grid>
+
+            <!-- Separator -->
+            <Rectangle Grid.Column="1" Fill="#14808080" VerticalAlignment="Stretch" Margin="0,4"/>
+
+            <!-- Right: History List -->
+            <Grid Grid.Column="2" RowDefinitions="Auto,*" Margin="10,0,0,0">
+                <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="0,0,0,6">
+                    <TextBlock Text="{x:Static locales:Locale.Dice_RecentRolls}" FontSize="12" FontWeight="SemiBold" Opacity="0.8"
+                               VerticalAlignment="Center"/>
+                    <Button Grid.Column="1" Classes="ghost-btn" Click="OnExpandDetailsClicked" ToolTip.Tip="{x:Static locales:Locale.Dice_FullHistoryTip}">
+                        <PathIcon Data="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z" Width="11" Height="11"/>
+                    </Button>
+                </Grid>
+
+                <ListBox x:Name="WideHistoryList" Grid.Row="1" Background="Transparent" BorderThickness="0" Padding="0">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate x:DataType="views:DiceHistoryItemViewModel">
+                            <Grid ColumnDefinitions="Auto,*,Auto" Margin="0,2" MinHeight="22">
+                                <TextBlock Text="{Binding Timestamp, StringFormat='{}{0:HH:mm}'}" FontSize="11" Opacity="0.55"
+                                           VerticalAlignment="Center"/>
+                                <TextBlock Grid.Column="1" Text="{Binding ValuesSummary}" FontSize="11" Margin="6,0"
+                                           TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
+                                <TextBlock Grid.Column="2" Text="{Binding SumSummary}" FontSize="11" FontWeight="Bold"
+                                           Foreground="{DynamicResource WidgetForeground}" HorizontalAlignment="Right"
+                                           VerticalAlignment="Center"/>
+                            </Grid>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+            </Grid>
+        </Grid>
+    </Grid>
+</UserControl>

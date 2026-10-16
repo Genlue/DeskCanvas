@@ -1,0 +1,257 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:locales="clr-namespace:Countdown.Locales"
+        xmlns:models="clr-namespace:Countdown.Models"
+        xmlns:local="clr-namespace:Countdown.Views"
+        xmlns:controls="clr-namespace:DeskCanvas.Views.Controls;assembly=DeskCanvas"
+        x:Class="Countdown.Views.CountdownPopupWindow"
+        Title="{x:Static locales:Locale.Countdown_Title}"
+        SystemDecorations="None"
+        Background="Transparent"
+        TransparencyLevelHint="Transparent"
+        ShowInTaskbar="False"
+        CanResize="False"
+        Width="420"
+        Height="540">
+
+    <Window.Styles>
+        <Style Selector="Button.pill-btn">
+            <Setter Property="Height" Value="26" />
+            <Setter Property="Padding" Value="10,2" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="CornerRadius" Value="13" />
+            <Setter Property="Background" Value="{DynamicResource CountdownPillBackgroundBrush}" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="Cursor" Value="Hand" />
+        </Style>
+        <Style Selector="Button.pill-btn:pointerover">
+            <Setter Property="Opacity" Value="0.85" />
+        </Style>
+
+        <Style Selector="Button.action-icon-btn">
+            <Setter Property="Width" Value="24" />
+            <Setter Property="Height" Value="24" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="CornerRadius" Value="6" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Opacity" Value="0.6" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="Cursor" Value="Hand" />
+        </Style>
+        <Style Selector="Button.action-icon-btn:pointerover">
+            <Setter Property="Opacity" Value="1.0" />
+            <Setter Property="Background" Value="{DynamicResource CountdownPillBackgroundBrush}" />
+        </Style>
+        <Style Selector="Button.action-icon-btn.active">
+            <Setter Property="Opacity" Value="1.0" />
+            <Setter Property="Foreground" Value="#FF9F0A" />
+        </Style>
+        <Style Selector="Button.action-icon-btn.danger:pointerover">
+            <Setter Property="Background" Value="#30FF3B30" />
+            <Setter Property="Foreground" Value="#FF3B30" />
+        </Style>
+
+        <Style Selector="RadioButton.color-pick-radio">
+            <Setter Property="Width" Value="22" />
+            <Setter Property="Height" Value="22" />
+            <Setter Property="Cursor" Value="Hand" />
+        </Style>
+    </Window.Styles>
+
+    <controls:SecondaryPanelShell>
+        <!-- Header: Title and Live Item Count -->
+        <controls:SecondaryPanelShell.HeaderContent>
+            <StackPanel VerticalAlignment="Center" Spacing="2">
+                <TextBlock Text="{x:Static locales:Locale.Countdown_Title}"
+                           FontSize="16" FontWeight="Bold" />
+                <TextBlock x:Name="SubtitleText"
+                           FontSize="11" Opacity="0.6"
+                           Text="{x:Static locales:Locale.Countdown_Title}" />
+            </StackPanel>
+        </controls:SecondaryPanelShell.HeaderContent>
+
+        <!-- Header Actions: Add Button -->
+        <controls:SecondaryPanelShell.HeaderActions>
+            <Button x:Name="AddEventButton"
+                    Classes="pill-btn"
+                    Content="{x:Static locales:Locale.Countdown_AddEvent}"
+                    Click="OnAddEventClicked"
+                    VerticalAlignment="Center" />
+        </controls:SecondaryPanelShell.HeaderActions>
+
+        <!-- Main Content Area: List View vs Inline Editor -->
+        <Panel>
+            <!-- 1. Event List View -->
+            <Grid x:Name="ListViewPanel" RowDefinitions="*">
+                <ScrollViewer Padding="0,4,0,8" HorizontalScrollBarVisibility="Disabled">
+                    <StackPanel Spacing="6">
+                        <!-- Empty Notice -->
+                        <StackPanel x:Name="EmptyNoticePanel"
+                                    IsVisible="False"
+                                    VerticalAlignment="Center"
+                                    HorizontalAlignment="Center"
+                                    Spacing="10"
+                                    Margin="0,60">
+                            <PathIcon Data="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20a2 2 0 0 0 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10zm0-12H5V6h14v2zm-7 5h5v5h-5z"
+                                      Width="36" Height="36" Opacity="0.3" HorizontalAlignment="Center" />
+                            <TextBlock Text="{x:Static locales:Locale.Countdown_EmptyEvents}"
+                                       FontSize="12" Opacity="0.5" HorizontalAlignment="Center" />
+                        </StackPanel>
+
+                        <!-- Events List Items -->
+                        <ItemsControl x:Name="EventsItemsControl">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate DataType="local:CountdownPopupItemViewModel">
+                                    <Border Margin="0,3" Padding="12,10" CornerRadius="10"
+                                            Background="{DynamicResource CountdownPillBackgroundBrush}">
+                                        <Grid ColumnDefinitions="Auto,*,Auto,Auto">
+                                            <!-- Color Pill / Dot -->
+                                            <Ellipse Grid.Column="0" Width="10" Height="10" Fill="{Binding ColorBrush}"
+                                                     Margin="0,0,10,0" VerticalAlignment="Center" />
+
+                                            <!-- Title & Details -->
+                                            <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+                                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                                    <TextBlock Text="{Binding Title}" FontSize="13" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                                                    <Border Background="{DynamicResource CountdownPillBackgroundBrush}" CornerRadius="4" Padding="4,1" VerticalAlignment="Center">
+                                                        <TextBlock Text="{Binding Category}" FontSize="9" Opacity="0.75" />
+                                                    </Border>
+                                                    <Border Background="{DynamicResource CountdownPillBackgroundBrush}" CornerRadius="4" Padding="4,1" VerticalAlignment="Center"
+                                                            IsVisible="{Binding IsLunar}">
+                                                        <TextBlock Text="{x:Static locales:Locale.Countdown_IsLunar}" FontSize="9" Opacity="0.75" />
+                                                    </Border>
+                                                </StackPanel>
+                                                <TextBlock Text="{Binding FormattedDate}" FontSize="11" Opacity="0.55" />
+                                            </StackPanel>
+
+                                            <!-- Days Badge -->
+                                            <Border Grid.Column="2" CornerRadius="8" Padding="8,4" Margin="8,0"
+                                                    Background="{DynamicResource CountdownPillBackgroundBrush}" VerticalAlignment="Center">
+                                                <StackPanel Orientation="Horizontal" Spacing="4">
+                                                    <TextBlock Text="{Binding MainDisplayNumber}" FontSize="15" FontWeight="Bold"
+                                                               Foreground="{Binding ColorBrush}" />
+                                                    <TextBlock Text="{Binding UnitLabel}" FontSize="10" Opacity="0.65" VerticalAlignment="Center" />
+                                                </StackPanel>
+                                            </Border>
+
+                                            <!-- Action Buttons (Pin, Edit, Delete) -->
+                                            <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="2" VerticalAlignment="Center">
+                                                <Button Classes="action-icon-btn"
+                                                        Classes.active="{Binding IsPinned}"
+                                                        Click="OnPinItemClicked"
+                                                        Tag="{Binding}"
+                                                        ToolTip.Tip="{x:Static locales:Locale.Countdown_Pin}">
+                                                    <PathIcon Data="M16 12V4h1V2H7v2h1v8l-2 2v2h5.2v6h1.6v-6H18v-2l-2-2z" Width="12" Height="12" />
+                                                </Button>
+                                                <Button Classes="action-icon-btn"
+                                                        Click="OnEditItemClicked"
+                                                        Tag="{Binding}"
+                                                        ToolTip.Tip="{x:Static locales:Locale.Countdown_EditEvent}">
+                                                    <PathIcon Data="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34a.9959.9959 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" Width="12" Height="12" />
+                                                </Button>
+                                                <Button Classes="action-icon-btn danger"
+                                                        Click="OnDeleteItemClicked"
+                                                        Tag="{Binding}"
+                                                        ToolTip.Tip="{x:Static locales:Locale.Countdown_Delete}">
+                                                    <PathIcon Data="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" Width="12" Height="12" />
+                                                </Button>
+                                            </StackPanel>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </ScrollViewer>
+            </Grid>
+
+            <!-- 2. Editor Panel (Inline Add / Edit) -->
+            <Border x:Name="EditorPanel"
+                    IsVisible="False"
+                    Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}"
+                    CornerRadius="12"
+                    Padding="14,12"
+                    Margin="0,4,0,8">
+                <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+                    <StackPanel Spacing="10">
+                        <TextBlock x:Name="EditorHeaderTitle" Text="{x:Static locales:Locale.Countdown_AddEvent}"
+                                   FontSize="15" FontWeight="Bold" />
+
+                        <!-- Title Input -->
+                        <StackPanel Spacing="4">
+                            <TextBlock Text="{x:Static locales:Locale.Countdown_EventTitle}" FontSize="12" Opacity="0.75" />
+                            <TextBox x:Name="EventTitleTextBox" Watermark="{x:Static locales:Locale.Countdown_EventTitle}" />
+                        </StackPanel>
+
+                        <!-- DatePicker -->
+                        <StackPanel Spacing="4">
+                            <TextBlock Text="{x:Static locales:Locale.Countdown_TargetDate}" FontSize="12" Opacity="0.75" />
+                            <DatePicker x:Name="TargetDatePicker" HorizontalAlignment="Stretch" />
+                        </StackPanel>
+
+                        <!-- Lunar and Repeat Row -->
+                        <Grid ColumnDefinitions="*,*">
+                            <CheckBox Grid.Column="0" x:Name="IsLunarCheckBox"
+                                      Content="{x:Static locales:Locale.Countdown_IsLunar}"
+                                      VerticalAlignment="Center" />
+                            <StackPanel Grid.Column="1" Spacing="4">
+                                <TextBlock Text="{x:Static locales:Locale.Countdown_Repeat}" FontSize="11" Opacity="0.75" />
+                                <ComboBox x:Name="RepeatComboBox" HorizontalAlignment="Stretch" SelectedIndex="0">
+                                    <ComboBoxItem Content="{x:Static locales:Locale.Countdown_Repeat_None}" Tag="None" />
+                                    <ComboBoxItem Content="{x:Static locales:Locale.Countdown_Repeat_Yearly}" Tag="Yearly" />
+                                    <ComboBoxItem Content="{x:Static locales:Locale.Countdown_Repeat_Monthly}" Tag="Monthly" />
+                                    <ComboBoxItem Content="{x:Static locales:Locale.Countdown_Repeat_Weekly}" Tag="Weekly" />
+                                </ComboBox>
+                            </StackPanel>
+                        </Grid>
+
+                        <!-- Direction Mode -->
+                        <StackPanel Spacing="4">
+                            <TextBlock Text="{x:Static locales:Locale.Countdown_Direction}" FontSize="11" Opacity="0.75" />
+                            <ComboBox x:Name="DirectionComboBox" HorizontalAlignment="Stretch" SelectedIndex="0">
+                                <ComboBoxItem Content="{x:Static locales:Locale.Countdown_Direction_Auto}" Tag="Auto" />
+                                <ComboBoxItem Content="{x:Static locales:Locale.Countdown_Direction_Countdown}" Tag="Countdown" />
+                                <ComboBoxItem Content="{x:Static locales:Locale.Countdown_Direction_Countup}" Tag="Countup" />
+                            </ComboBox>
+                        </StackPanel>
+
+                        <!-- Category -->
+                        <StackPanel Spacing="4">
+                            <TextBlock Text="{x:Static locales:Locale.Countdown_Category}" FontSize="11" Opacity="0.75" />
+                            <ComboBox x:Name="CategoryComboBox" HorizontalAlignment="Stretch" SelectedIndex="0">
+                                <ComboBoxItem Content="{x:Static locales:Locale.Countdown_Category_General}" Tag="General" />
+                                <ComboBoxItem Content="{x:Static locales:Locale.Countdown_Category_Exam}" Tag="Exam" />
+                                <ComboBoxItem Content="{x:Static locales:Locale.Countdown_Category_Anniversary}" Tag="Anniversary" />
+                                <ComboBoxItem Content="{x:Static locales:Locale.Countdown_Category_Life}" Tag="Life" />
+                                <ComboBoxItem Content="{x:Static locales:Locale.Countdown_Category_Holiday}" Tag="Holiday" />
+                                <ComboBoxItem Content="{x:Static locales:Locale.Countdown_Category_Work}" Tag="Work" />
+                            </ComboBox>
+                        </StackPanel>
+
+                        <!-- Color Tags Selection -->
+                        <StackPanel Spacing="4">
+                            <TextBlock Text="{x:Static locales:Locale.Countdown_Category}" FontSize="11" Opacity="0.75" />
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <Button x:Name="ColorBtnRed" Classes="action-icon-btn" Width="20" Height="20" CornerRadius="10" Background="#FF5A5F" Click="OnColorTagSelected" Tag="#FF5A5F" />
+                                <Button x:Name="ColorBtnOrange" Classes="action-icon-btn" Width="20" Height="20" CornerRadius="10" Background="#FF9F0A" Click="OnColorTagSelected" Tag="#FF9F0A" />
+                                <Button x:Name="ColorBtnGreen" Classes="action-icon-btn" Width="20" Height="20" CornerRadius="10" Background="#30D158" Click="OnColorTagSelected" Tag="#30D158" />
+                                <Button x:Name="ColorBtnBlue" Classes="action-icon-btn" Width="20" Height="20" CornerRadius="10" Background="#0A84FF" Click="OnColorTagSelected" Tag="#0A84FF" />
+                                <Button x:Name="ColorBtnPurple" Classes="action-icon-btn" Width="20" Height="20" CornerRadius="10" Background="#BF5AF2" Click="OnColorTagSelected" Tag="#BF5AF2" />
+                            </StackPanel>
+                        </StackPanel>
+
+                        <!-- Action Buttons -->
+                        <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right" Margin="0,10,0,0">
+                            <Button Classes="pill-btn" Content="{x:Static locales:Locale.Countdown_Cancel}" Click="OnCancelEditClicked" />
+                            <Button Classes="pill-btn" Background="#FF5A5F" Foreground="White"
+                                    Content="{x:Static locales:Locale.Countdown_Save}" Click="OnSaveEditClicked" />
+                        </StackPanel>
+                    </StackPanel>
+                </ScrollViewer>
+            </Border>
+        </Panel>
+    </controls:SecondaryPanelShell>
+</Window>

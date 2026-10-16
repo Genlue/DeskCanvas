@@ -3,6 +3,8 @@ using System.Linq;
 using Avalonia.Controls;
 using Avalonia.LogicalTree;
 using DeskCanvas.Views.Controls;
+using ColorInputFormat = DeskCanvas.UI.Controls.ColorInputFormat;
+using ColorInputAlphaPolicy = DeskCanvas.UI.Controls.ColorInputAlphaPolicy;
 
 namespace UiFoundationChecks;
 
@@ -103,7 +105,7 @@ internal static partial class Program
         // W6 已迁移 FramelessClockSettings，本批只覆盖 Analog / Digital / Flip。
         var provider = new StubWidgetLayoutProvider();
         var analog = new Clock.Views.Settings.AnalogClockSettings(provider);
-        CheckBatchPageContract("AnalogClock", analog, expectedHeaders: 0, expectedSettings: 6, extra: () =>
+        CheckBatchPageContract("AnalogClock", analog, expectedHeaders: 0, expectedSettings: 9, extra: () =>
         {
             // 表盘明暗双色行（自定义模式业务）仍在，走共享 ColorInput。
             Check(analog.FindControl<ColorInput>("DialColorDarkInput") is not null
@@ -111,6 +113,8 @@ internal static partial class Program
                 "AnalogClock: the dark/light dial colour rows survive on ColorInput");
             Check(BatchSetting(analog, Clock.Locales.Locale.Clock_DialColor_Title) is not null,
                 "AnalogClock: the dial colour mode row survives");
+            Check(BatchSetting(analog, Clock.Locales.Locale.Clock_DialOpaque) is not null,
+                "AnalogClock: the dial opaque toggle row survives");
         });
 
         var digital = new Clock.Views.Settings.DigitalClockSettings(provider);

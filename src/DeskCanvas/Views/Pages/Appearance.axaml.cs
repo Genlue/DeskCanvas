@@ -4,6 +4,7 @@ using Avalonia.Interactivity;
 using DeskCanvas.Core.Interfaces;
 using DeskCanvas.Services;
 using DeskCanvas.ViewModels;
+using DeskCanvas.Views.Controls;
 
 namespace DeskCanvas.Views.Pages;
 
@@ -24,6 +25,18 @@ public partial class Appearance : UserControl
 
     private void ApplySolidToLight(object? sender, RoutedEventArgs e) =>
         ((AppearanceViewModel)DataContext!).ApplySolidToLight();
+
+    private void CommitOpacityLevel(object? sender, LabeledSliderValueCommittedEventArgs e) =>
+        ((AppearanceViewModel)DataContext!).CommitOpacityLevel();
+
+    private void CommitThemeSliders(object? sender, LabeledSliderValueCommittedEventArgs e) =>
+        ((AppearanceViewModel)DataContext!).CommitThemeSliders();
+
+    private void RetrySettingsSave(object? sender, RoutedEventArgs e) =>
+        ((AppearanceViewModel)DataContext!).RetrySettingsSave();
+
+    private void ReloadSettings(object? sender, RoutedEventArgs e) =>
+        ((AppearanceViewModel)DataContext!).ReloadSettings();
 
     private void ApplySolidToDark(object? sender, RoutedEventArgs e) =>
         ((AppearanceViewModel)DataContext!).ApplySolidToDark();

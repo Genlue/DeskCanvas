@@ -11,6 +11,7 @@ using Avalonia.Interactivity;
 using Avalonia.LogicalTree;
 using Avalonia.Media;
 using Avalonia.Styling;
+using Avalonia.VisualTree;
 using DeskCanvas.Views;
 using DeskCanvas.Views.Controls;
 using Hitokoto.Views;
@@ -154,14 +155,15 @@ internal static partial class Program
         Check(popup.GetLogicalDescendants().OfType<SecondaryPanelShell>().Count() == 1,
             $"{label}: 树中恰好一个 Shell（无壳中壳、无包旧卡片）");
 
-        // 旧外壳节点名必须彻底消失；逻辑树中不得再有 LiquidGlassSurface（玻璃归 Shell 模板部件）。
+        // 旧外壳节点名必须彻底消失；树中唯一的玻璃表面就是 Shell 端口槽位持有的那一个。
         var names = popup.GetLogicalDescendants().OfType<Control>()
             .Select(c => c.Name).Where(n => n is not null).ToHashSet();
         Check(!names.Contains("CardBorder"), $"{label}: 无本地 CardBorder");
         Check(!names.Contains("LiquidGlassSurfaceControl"), $"{label}: 无本地 LiquidGlassSurfaceControl");
         Check(!names.Contains("CloseButton"), $"{label}: 无本地 CloseButton");
-        Check(popup.GetLogicalDescendants().OfType<LiquidGlassSurface>().Count() == 0,
-            $"{label}: 逻辑树无 LiquidGlassSurface（玻璃由 Shell 模板部件持有）");
+        var glassInTree = popup.GetVisualDescendants().OfType<LiquidGlassSurface>().ToList();
+        Check(glassInTree.Count == 1 && ReferenceEquals(glassInTree[0], shell!.GlassSurface),
+            $"{label}: Shell 端口槽位持有树中唯一玻璃表面（业务不得另声明）");
 
         // Styles 不得再声明外壳/玻璃/关闭按钮相关选择器。
         var selectors = popup.Styles.OfType<Style>()

@@ -39,7 +39,7 @@ namespace Clock.Views;
 /// </list>
 /// </para>
 /// </summary>
-public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSelfRefreshing, IWidgetSuspendable
+public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSelfRefreshing, IWidgetSuspendable, IFocusThemedContent
 {
     private FramelessClockModel model;
     private readonly IWidgetLayoutProvider? widgetLayoutProvider;
@@ -318,13 +318,15 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
         }
     }
 
+    void IFocusThemedContent.OnFocusThemeChanged() => ApplyCurrentMaterial();
+
     /// <summary>
     /// The single invalidation entry for all material- and model-affecting events.
     /// </summary>
     private void ApplyCurrentMaterial()
     {
         SetupTimer();
-        material = FramelessThemeResolver.Resolve(model, appSettingsProvider?.Get().Theme);
+        material = FramelessThemeResolver.Resolve(model, FocusThemeCoordinator.ResolveVisualTheme(this) ?? appSettingsProvider?.Get().Theme);
 
         lastRegionKey = null;
         ClearLiquidGlassCache();
@@ -479,7 +481,7 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
         var width = Math.Max(1, (int)Math.Ceiling(Bounds.Width * scaling));
         var height = Math.Max(1, (int)Math.Ceiling(Bounds.Height * scaling));
 
-        var effectiveTheme = FramelessThemeResolver.EffectiveTheme(appSettingsProvider?.Get().Theme, model.SurfaceOverride);
+        var effectiveTheme = FramelessThemeResolver.EffectiveTheme(FocusThemeCoordinator.ResolveVisualTheme(this) ?? appSettingsProvider?.Get().Theme, model.SurfaceOverride);
         if (!effectiveTheme.UsesRenderedGlass)
         {
             effectiveTheme = effectiveTheme with { Surface = SurfaceStyle.LiquidGlass };
@@ -687,7 +689,7 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
         var timeStr = FormatTime(now);
         var cacheKey = CacheKey(now);
 
-        var globalTheme = appSettingsProvider?.Get().Theme;
+        var globalTheme = FocusThemeCoordinator.ResolveVisualTheme(this) ?? appSettingsProvider?.Get().Theme;
         var effectiveTheme = FramelessThemeResolver.EffectiveTheme(globalTheme, model.SurfaceOverride);
         material = FramelessThemeResolver.Resolve(model, globalTheme);
 

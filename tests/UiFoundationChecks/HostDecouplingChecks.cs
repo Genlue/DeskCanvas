@@ -53,10 +53,10 @@ namespace UiFoundationChecks;
 /// <list type="bullet">
 /// <item><b>源码契约</b>：宿主 Widget 外观路径不再出现 Weather/Progress 类型名字符串，
 /// Widget.axaml 无 StackIndicatorsHost 专属 XAML 残留（注释除外）。</item>
-/// <item><b>IWidgetSurfaceHints</b>：Weather/Progress/表盘-1/表盘-3 视图声明各自资源键；
+/// <item><b>IWidgetSurfaceHints</b>：Weather/Progress/表盘-1/表盘-2/表盘-3 视图声明各自资源键；
 /// stub 内容实现接口时，宿主 Colorful 路径按明暗变体解析到声明键，未实现接口（或键解析不到）
-/// 回退 WidgetBackground；两个表盘视图经真实宿主解析到恒黑卡片
-/// （ClockCardBackground = #1C1C1E，亮暗两档同值）。</item>
+/// 回退 WidgetBackground；表盘-1 经真实宿主解析到恒黑卡片（ClockCardBackground = #1C1C1E），
+/// 表盘-2 与全新表盘-3 解析到亮色白卡、暗色黑卡（ClockAnalogIIICardBackground / ClockAnalogIVCardBackground）。</item>
 /// <item><b>Stack 装饰下沉</b>：StackIndicatorStrip 位于 Stack 插件、绑定 IStackWidget 数据，
 /// AutoHide 与滚轮/点击切页走新控件；宿主经 IWidgetOverlayProvider 消费；装饰单实例（引用相等）。</item>
 /// <item><b>布局提示契约</b>：outside-card 右缘空间、原生 Acrylic 内移、Region 合并提示的
@@ -136,8 +136,8 @@ internal static partial class Program
             $"AnalogI (表盘-1) implements IWidgetSurfaceHints with ClockCardBackground ({(analogI as IWidgetSurfaceHints)?.ColorfulBackgroundResourceKey})");
 
         var analogIV = new ClockAnalogIV();
-        Check(analogIV is IWidgetSurfaceHints { ColorfulBackgroundResourceKey: "ClockCardBackground" },
-            $"AnalogIV (表盘-3) implements IWidgetSurfaceHints with ClockCardBackground ({(analogIV as IWidgetSurfaceHints)?.ColorfulBackgroundResourceKey})");
+        Check(analogIV is IWidgetSurfaceHints { ColorfulBackgroundResourceKey: "ClockAnalogIVCardBackground" },
+            $"AnalogIV (表盘-3) implements IWidgetSurfaceHints with ClockAnalogIVCardBackground ({(analogIV as IWidgetSurfaceHints)?.ColorfulBackgroundResourceKey})");
 
         var batteries = new BatteriesWidgetView();
         Check(batteries is IWidgetSurfaceHints { ColorfulBackgroundResourceKey: "BatteriesCardBackground" },
@@ -184,8 +184,8 @@ internal static partial class Program
             $"Clock Digital implements IWidgetSurfaceHints with ClockDigitalCardBackground ({(digitalClock as IWidgetSurfaceHints)?.ColorfulBackgroundResourceKey})");
 
         var analogIII = (ClockAnalogIII)RuntimeHelpers.GetUninitializedObject(typeof(ClockAnalogIII));
-        Check(analogIII is IWidgetSurfaceHints { ColorfulBackgroundResourceKey: "ClockCardBackground" },
-            $"Clock AnalogIII implements IWidgetSurfaceHints with ClockCardBackground ({(analogIII as IWidgetSurfaceHints)?.ColorfulBackgroundResourceKey})");
+        Check(analogIII is IWidgetSurfaceHints { ColorfulBackgroundResourceKey: "ClockAnalogIIICardBackground" },
+            $"Clock AnalogIII implements IWidgetSurfaceHints with ClockAnalogIIICardBackground ({(analogIII as IWidgetSurfaceHints)?.ColorfulBackgroundResourceKey})");
 
         var flipClock = (ClockFlip)RuntimeHelpers.GetUninitializedObject(typeof(ClockFlip));
         Check(flipClock is IWidgetSurfaceHints { ColorfulBackgroundResourceKey: "FlipClockCardBackground" },
@@ -249,8 +249,8 @@ internal static partial class Program
         bogus.Close();
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
 
-        // 表盘-1 / 表盘-3：ClockCardBackground 在亮暗两档都解析到 #1C1C1E —— 多彩主题下的
-        // 恒黑卡片（此前亮色档落到 WidgetBackground 的纯白，正是回归点）。
+        // 表盘-1：ClockCardBackground 在亮暗两档都解析到 #1C1C1E —— 多彩主题下的
+        // 恒黑卡片（内圈有白盘）。
         var charcoal = Color.Parse("#1C1C1E");
         void CheckDialCardIsCharcoal(string label, Func<UserControl> make, ThemeVariant variant)
         {
@@ -267,8 +267,22 @@ internal static partial class Program
 
         CheckDialCardIsCharcoal("AnalogI (表盘-1)", () => new ClockAnalogI(), ThemeVariant.Light);
         CheckDialCardIsCharcoal("AnalogI (表盘-1)", () => new ClockAnalogI(), ThemeVariant.Dark);
-        CheckDialCardIsCharcoal("AnalogIV (表盘-3)", () => new ClockAnalogIV(), ThemeVariant.Light);
-        CheckDialCardIsCharcoal("AnalogIV (表盘-3)", () => new ClockAnalogIV(), ThemeVariant.Dark);
+
+        void CheckAnalogIVCard(ThemeVariant variant, Color expectedColor)
+        {
+            var host = BuildDecoupledWidget(() => new ClockAnalogIV(), ColorfulTheme());
+            host.RequestedThemeVariant = variant;
+            host.Show();
+            Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+            Check(host.WidgetCardBackground is ISolidColorBrush { Color: { } cardColor }
+                  && cardColor == expectedColor,
+                $"AnalogIV (表盘-3) {(variant == ThemeVariant.Dark ? "dark" : "light")}: Colorful card resolves {expectedColor} ({DescribeBrush(host.WidgetCardBackground)})");
+            host.Close();
+            Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+        }
+
+        CheckAnalogIVCard(ThemeVariant.Light, Colors.White);
+        CheckAnalogIVCard(ThemeVariant.Dark, charcoal);
 
         var flipLightGray = Color.Parse("#EFEFF4");
         void CheckFlipClockCard(ThemeVariant variant, Color expectedColor)
@@ -286,6 +300,22 @@ internal static partial class Program
 
         CheckFlipClockCard(ThemeVariant.Light, flipLightGray);
         CheckFlipClockCard(ThemeVariant.Dark, charcoal);
+
+        void CheckAnalogIIICard(ThemeVariant variant, Color expectedColor)
+        {
+            var host = BuildDecoupledWidget(() => new ClockAnalogIII(), ColorfulTheme());
+            host.RequestedThemeVariant = variant;
+            host.Show();
+            Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+            Check(host.WidgetCardBackground is ISolidColorBrush { Color: { } cardColor }
+                  && cardColor == expectedColor,
+                $"AnalogIII (表盘-2) {(variant == ThemeVariant.Dark ? "dark" : "light")}: Colorful card resolves {expectedColor} ({DescribeBrush(host.WidgetCardBackground)})");
+            host.Close();
+            Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+        }
+
+        CheckAnalogIIICard(ThemeVariant.Light, Colors.White);
+        CheckAnalogIIICard(ThemeVariant.Dark, charcoal);
     }
 
     private static string DescribeBrush(IBrush? brush) => brush switch

@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Avalonia" />
+    <PackageReference Include="Avalonia.Desktop" />
+    <PackageReference Include="Avalonia.Headless" />
+    <PackageReference Include="Avalonia.Themes.Fluent" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
+    <ProjectReference Include="..\..\src\DeskCanvas.Contracts\DeskCanvas.Contracts.csproj" />
+    <ProjectReference Include="..\..\src\DeskCanvas.Runtime\DeskCanvas.Runtime.csproj" />
+    <ProjectReference Include="..\..\src\DeskCanvas\DeskCanvas.csproj" />
+    <!-- The pilot widget assembly is activated by name through the factory path. -->
+    <ProjectReference Include="..\..\src\Widgets\Clock\Clock.csproj" />
+  </ItemGroup>
+</Project>

@@ -206,6 +206,12 @@ internal class Program
             "Dark-variant accent brush == the picked accent (red)");
         Assert(BrushOf("SystemControlForegroundBaseHighBrush", ThemeVariant.Dark) == Colors.Red,
             "Dark-variant text brush == the accent too (text becomes the accent)");
+        Assert(BrushOf("WeatherForegroundBrush", ThemeVariant.Dark) == Colors.Red,
+            "Dark-variant WeatherForegroundBrush == the picked accent (red)");
+        Assert(BrushOf("NotesTextBrush", ThemeVariant.Dark) == Colors.Red,
+            "Dark-variant NotesTextBrush == the picked accent (red)");
+        Assert(BrushOf("HitokotoQuoteBrush", ThemeVariant.Dark) == Colors.Red,
+            "Dark-variant HitokotoQuoteBrush == the picked accent (red)");
 
         Console.WriteLine("\n--- Follow-system (DarkMode = null, 背景色): per-variant brushes stay correct ---");
         themeService.Apply(Monochrome(MonochromeStyle.BackgroundColor, null, darkBg, lightBg));

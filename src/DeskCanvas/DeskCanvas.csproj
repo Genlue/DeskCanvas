@@ -35,7 +35,9 @@
     </ItemGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\DeskCanvas.UI\DeskCanvas.UI.csproj" />
       <ProjectReference Include="..\DeskCanvas.Core\DeskCanvas.Core.csproj" />
+      <ProjectReference Include="..\DeskCanvas.Runtime\DeskCanvas.Runtime.csproj" />
       <None Update="app.manifest">
         <DependentUpon>App.axaml</DependentUpon>
       </None>

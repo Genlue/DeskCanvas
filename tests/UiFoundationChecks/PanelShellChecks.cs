@@ -258,12 +258,12 @@ internal static partial class Program
         Check(shell.IsTemplateApplied, "the shell template applied under the real App.axaml");
         Check(shell.Backdrop is not null, "PART_Backdrop resolves");
         Check(shell.CardBorder is not null, "PART_CardBorder resolves");
-        Check(shell.GlassSurface is not null, "PART_GlassSurface resolves");
+        Check(shell.GlassSurface is not null, "the shell's glass surface resolves (host facade port slot)");
         Check(shell.HeaderDragArea is not null, "PART_HeaderDragArea resolves");
         Check(shell.CloseButton is not null, "PART_CloseButton resolves");
         Check(shell.ContentHost is not null, "PART_ContentPresenter resolves");
-        Check(shell.GlassSurface is { IgnoresAncestorTransform: true },
-            "PART_GlassSurface ignores ancestor render transforms (the card zoom must not shift the wallpaper sampling origin; the shell's explicit True matches the 3.8.3 pipeline-wide default)");
+        Check(shell.GlassSurface is LiquidGlassSurface { IgnoresAncestorTransform: true },
+            "the shell's glass surface is the host LiquidGlassSurface port implementation and ignores ancestor render transforms (the card zoom must not shift the wallpaper sampling origin; the 3.8.3 pipeline-wide default holds)");
         if (shell.CardBorder is { } card)
         {
             Check(card.Opacity == 0.0,
@@ -468,8 +468,8 @@ internal static partial class Program
         FrameworkClose(panel);
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
         Check(!panel.IsVisible, "the framework close finished the dismissal");
-        Check(!ActivePanelMap().ContainsKey(typeof(TestPanelWindow)),
-            "the active-panel map dropped the closed instance");
+        Check(!PanelServiceActiveMap().ContainsKey(LegacyKey(typeof(TestPanelWindow))),
+            "the PanelService active map dropped the closed instance");
 
         // A press on the in-window area outside the card (PART_Backdrop only) closes too.
         var backdropPanel = new TestPanelWindow();
@@ -692,9 +692,9 @@ internal static partial class Program
         var panelShell = (SecondaryPanelShell)panel.Content!;
         panel.Show();
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
-        Check(ReadStaticField("ActivePanels") is Dictionary<Type, SecondaryPanelWindow> map
-              && map.ContainsKey(typeof(TestPanelWindow)),
-            "an open panel is registered in the active map");
+        Check(PanelServiceActiveMap().TryGetValue(LegacyKey(typeof(TestPanelWindow)), out var registeredPanel)
+              && ReferenceEquals(registeredPanel, panel),
+            "an open panel is registered in the PanelService active map (legacy process/type key)");
         var liveBinder = ReadField<PanelAppearanceBinder?>(panel, "appearanceBinder");
         Check(liveBinder is not null && liveBinder.IsAttached,
             "the panel window attached its appearance binder");
@@ -702,16 +702,25 @@ internal static partial class Program
         FrameworkClose(panel);
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
 
-        Check(!ActivePanelMap().ContainsKey(typeof(TestPanelWindow)),
-            "the closed panel is gone from the active map (a later open creates a fresh one)");
+        Check(!PanelServiceActiveMap().ContainsKey(LegacyKey(typeof(TestPanelWindow))),
+            "the closed panel is gone from the PanelService active map (a later open creates a fresh one)");
         Check(liveBinder is not null && !liveBinder.IsAttached,
             "the closed panel's binder is detached");
         Check(panelShell.GlassSurface is { IsVisible: false },
             "the closed panel's shell glass surface is hidden (nothing paints after the window is gone)");
     }
 
-    private static Dictionary<Type, SecondaryPanelWindow> ActivePanelMap()
-        => (Dictionary<Type, SecondaryPanelWindow>)ReadStaticField("ActivePanels")!;
+    /// <summary>The PanelService active-panel map, read through reflection (the service keeps
+    /// the single-instance state the old <c>SecondaryPanelWindow.ActivePanels</c> dictionary
+    /// used to hold; P6 slice 1 moved it).</summary>
+    private static Dictionary<string, SecondaryPanelWindow> PanelServiceActiveMap()
+        => (Dictionary<string, SecondaryPanelWindow>)typeof(PanelService)
+            .GetField("activePanels", BindingFlags.Static | BindingFlags.NonPublic)
+            ?.GetValue(null)!;
+
+    /// <summary>The legacy key a panel registers under at construction: process scope plus the
+    /// concrete CLR type name (PanelService.LegacyKeyFor, reimplemented to avoid InternalsVisibleTo).</summary>
+    private static string LegacyKey(Type panelType) => "process|" + panelType.FullName;
 
     /// <summary>Like <see cref="StubSettings"/> but Save actually raises DataChanged — the
     /// shared provider's live contract the binder listens to.</summary>
@@ -736,10 +745,6 @@ internal static partial class Program
         }
     }
 
-    private static object? ReadStaticField(string name) => typeof(SecondaryPanelWindow)
-        .GetField(name, BindingFlags.Static | BindingFlags.NonPublic)
-        ?.GetValue(null);
-
     private static T? ReadField<T>(object owner, string name) => (T?)typeof(SecondaryPanelWindow)
         .GetField(name, BindingFlags.Instance | BindingFlags.NonPublic)
         ?.GetValue(owner);
@@ -759,15 +764,17 @@ internal static partial class Program
         Check(popup.GetLogicalDescendants().OfType<SecondaryPanelShell>().Count() == 1,
             "exactly one shell in the tree (no shell-in-shell, no wrapped old card)");
 
-        // No local chrome: the old names must not exist anywhere, and no LiquidGlassSurface
-        // outside the shell's template (template parts are visual, not logical children).
+        // No local chrome: the old names must not exist anywhere, and the ONLY glass surface in
+        // the tree is the one the shell's port slot hosts (the host facade provides it; business
+        // content must not declare its own at the shell level).
         var names = popup.GetLogicalDescendants().OfType<Control>()
             .Select(c => c.Name).Where(n => n is not null).ToHashSet();
         Check(!names.Contains("CardBorder"), "no local CardBorder");
         Check(!names.Contains("LiquidGlassSurfaceControl"), "no local LiquidGlassSurfaceControl");
         Check(!names.Contains("CloseButton"), "no local CloseButton");
-        Check(popup.GetLogicalDescendants().OfType<LiquidGlassSurface>().Count() == 0,
-            "no LiquidGlassSurface in the logical tree (the shell's template part owns the glass)");
+        var glassInTree = popup.GetVisualDescendants().OfType<LiquidGlassSurface>().ToList();
+        Check(glassInTree.Count == 1 && ReferenceEquals(glassInTree[0], ((SecondaryPanelShell)popup.Content!).GlassSurface),
+            "the shell's port slot owns the only glass surface in the tree (no business-declared surface)");
 
         // The window no longer overrides PanelCard: the base falls back to the shell's card.
         var panelCardGetter = typeof(ClipboardPopupWindow)

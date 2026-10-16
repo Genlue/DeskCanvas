@@ -1,0 +1,33 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:ui="clr-namespace:DeskCanvas.UI.Controls">
+    <!-- Shared secondary-panel shell (W7, port slice). One chrome for all secondary popups:
+         backdrop, card, glass surface slot, header (drag area + title + business actions + the
+         shared close button), the single business content presenter and an optional footer.
+         The material is NOT computed here — the host's appearance resolver hands its result to
+         the host facade's SurfaceAppearance property, which decomposes into the properties the
+         template binds below. Plugin-specific colours (weather gradients, category colours) are
+         applied by the plugin on top and are never touched here.
+         PART_GlassSurfaceHost is a SLOT: the host facade provides the platform surface through
+         the shell's GlassSurface property (typed to the GlassSurfaceBase port; the host's
+         LiquidGlassSurface is the single production implementation). The shell mirrors
+         UseRenderedGlass and the card radius onto it in code — the template does not bind
+         material or sampling flags, because the optics are a host concern.
+         The card starts at Opacity=0: a late template application can never flash an unstyled
+         card, the panel window reveals it with the shared 320 ms open transition. -->
+    <!-- The template itself lives in SecondaryPanelShellTemplate.axaml (keyed) so the host
+         facade — which a type selector can never match (exact-type matching) — binds to the
+         SAME template source through the avares://DeskCanvas shim style. -->
+    <Styles.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceInclude Source="avares://DeskCanvas.UI/Styles/Controls/SecondaryPanelShellTemplate.axaml" />
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </Styles.Resources>
+    <Style Selector="ui|SecondaryPanelShell">
+        <Setter Property="ContentPadding" Value="{DynamicResource SecondaryPanelContentPadding}" />
+        <Setter Property="CornerRadius" Value="{DynamicResource SecondaryPanelCornerRadius}" />
+        <Setter Property="Template" Value="{StaticResource PanelShellTemplate}" />
+    </Style>
+</Styles>

@@ -9,6 +9,9 @@ public class MultiDashboardViewModel : ReactiveObject, IDisposable
 {
     private readonly MetricType[] types;
     private readonly Action updateAction;
+    private readonly string owner = $"monitor-dashboard-{Guid.NewGuid():N}";
+    private readonly CancellationTokenSource lifetime = new();
+    private bool disposed;
 
     /// <summary>
     /// In-flight latch: the tick fires every second, but a round is up to four WMI queries
@@ -45,6 +48,7 @@ public class MultiDashboardViewModel : ReactiveObject, IDisposable
 
     private void Update()
     {
+        if (disposed) return;
         if (Interlocked.CompareExchange(ref updateInFlight, 1, 0) != 0) return;
         _ = UpdateAsync();
     }
@@ -56,11 +60,13 @@ public class MultiDashboardViewModel : ReactiveObject, IDisposable
             for (var i = 0; i < types.Length; i++)
             {
                 var type = types[i];
-                var value = await MetricService.GetMetricValue(type);
+                var value = await MetricService.GetMetricValue(type, owner, lifetime.Token);
+                if (disposed) return;
                 if (value.HasValue)
                     Items[i].Metric = new MetricViewModel(value.Value, MetricService.GetMetricIcon(type));
             }
         }
+        catch (OperationCanceledException) { }
         finally
         {
             Interlocked.Exchange(ref updateInFlight, 0);
@@ -69,6 +75,10 @@ public class MultiDashboardViewModel : ReactiveObject, IDisposable
 
     public void Dispose()
     {
+        if (disposed) return;
+        disposed = true;
+        lifetime.Cancel();
+        lifetime.Dispose();
         TimerService.Timer1Second.Unsubscribe(updateAction);
         GC.SuppressFinalize(this);
     }

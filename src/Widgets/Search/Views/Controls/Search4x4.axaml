@@ -165,7 +165,7 @@
                         Click="OnSearchActionClicked"
                         ToolTip.Tip="{x:Static locales:Locale.Search_Button}">
                     <PathIcon Data="{x:Static services:SearchIconProvider.DefaultSearchIcon}"
-                              Foreground="#FFFFFF"
+                              Foreground="{DynamicResource AccentContrastForegroundBrush}"
                               Width="14" Height="14"
                               HorizontalAlignment="Center"
                               VerticalAlignment="Center"/>

@@ -38,7 +38,16 @@ public class LayoutProvider() : JsonParser<ScreensLayout>(Const.LayoutFile), ILa
         if (data == null)
             throw new FormatException($"Can't deserialize {nameof(ScreensLayout)}");
 
-        return data = Normalize(data).Deduplicate();
+        var normalized = Normalize(data).Deduplicate();
+        var migrated = normalized.EnsureWidgetIdentities(out var identitiesChanged);
+        data = migrated;
+
+        // Persist the one-time identity migration immediately. This makes subsequent loads
+        // deterministic and prevents duplicate legacy entries from being generated again.
+        if (identitiesChanged)
+            Save(migrated);
+
+        return data;
     }
 
     /// <inheritdoc />

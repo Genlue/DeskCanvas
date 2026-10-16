@@ -1,0 +1,13 @@
+# Shared UI sample catalog
+
+`new DeskCanvas.UI.Samples.SharedComponentCatalog()` is an embeddable Avalonia view. It needs only the embedding application's control theme (for example Fluent), and imports the shared geometry tokens itself. Samples cover percentage display, editable decimals, disabled state, `Setting` rows (icon/subtitle/editor presenter, stacked variant) and `ColorInput` (RGB ForceOpaque and ARGB with visible alpha). Run `dotnet run --project tests/UiSharedAvaloniaChecks` for headless checks.
+
+New pages use `xmlns:ui="using:DeskCanvas.UI.Controls"` and `<ui:LabeledSlider Value="{Binding Level}" ShowEditableValue="True" />`, `<ui:Setting Title="..." Content="{Binding Editor}" />` or `<ui:ColorInput Value="{Binding Accent}" ColorFormat="Rgb" />`. Include `avares://DeskCanvas.UI/Styles/DesignTokens.axaml` in the application's merged dictionaries. The shared assembly uses the repository's centrally managed Avalonia 11.1.3 version and has no host, widget, storage, platform or runtime dependency.
+
+`Setting` requirement hints (`AdminRequiredText` / `RestartRequiredText`) and the `ColorInput` error (`InvalidFormatText`) carry neutral English defaults; embedding applications localize them by setting the properties (the host facade feeds its Locale resources). The shared template never hardcodes copy.
+
+Existing consumers continue using `DeskCanvas.Views.Controls.LabeledSlider`, `DeskCanvas.Views.Controls.Setting`, `DeskCanvas.Views.Controls.SettingLayoutPanel` and `DeskCanvas.Views.Controls.ColorInput` in the host assembly. Those facades inherit the same editors, alias the same styled properties (and the `SettingLayoutPanel.Slot` attached property), and forward commits with the old host event-argument types. `avares://DeskCanvas/Styles/DesignTokens.axaml` merges the new dictionary, retaining every old key. `avares://DeskCanvas/Views/Controls/LabeledSlider.axaml`, `.../Setting.axaml` and `.../ColorInput.axaml` also remain loadable.
+
+Production consumers include Clock's `FramelessClockSettings` (percentage opacity) and Picture's `PictureSettings` (fractional crop and zoom). Folders' `FolderSettings` and `SingleFileSettings` already persist on `ValueCommitted` using the compatible host event signature.
+
+`Value` is TwoWay by default. External model loads mirror the value without committing; user changes snap to `Minimum + n * Step`. A completion event fires once for a changed value on drag release, adjust-key release, numeric Enter/focus loss/spin. Persistence should subscribe to `ValueCommitted`; the live Value binding is the preview seam. Event payloads use the displayed effective value. Runtime range changes normalize Value without claiming a user commit.

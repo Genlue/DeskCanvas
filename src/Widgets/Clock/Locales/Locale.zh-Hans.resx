@@ -141,6 +141,9 @@
   <data name="Clock_AnalogIV_Title" xml:space="preserve">
     <value>表盘-3</value>
   </data>
+  <data name="Clock_DialOpaque" xml:space="preserve">
+    <value>表盘不透明</value>
+  </data>
   <data name="Clock_DialColor_Title" xml:space="preserve">
     <value>表盘颜色</value>
   </data>
@@ -208,7 +211,7 @@
     <value>自动跟随当前生效的主题与亮暗模式</value>
   </data>
   <data name="Clock_Material_Acrylic_Desc" xml:space="preserve">
-    <value>系统级亚克力磨砂模糊背景</value>
+    <value>系统级 Mica 材质背景</value>
   </data>
   <data name="Clock_Material_Solid_Desc" xml:space="preserve">
     <value>不透明纯色卡片，无模糊</value>

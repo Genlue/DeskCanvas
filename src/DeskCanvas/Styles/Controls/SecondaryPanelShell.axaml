@@ -1,99 +1,21 @@
 <Styles xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:controls="clr-namespace:DeskCanvas.Views.Controls">
-    <!-- Shared secondary-panel shell (W7). One chrome for all nine popups: backdrop, card,
-         glass surface, header (drag area + title + business actions + the shared close button),
-         the single business content presenter and an optional footer.
-         The material is NOT computed here — PanelAppearanceResolver hands the host's result to
-         SecondaryPanelShell.SurfaceAppearance, which decomposes into the properties the template
-         binds below. Plugin-specific colours (weather gradients, category colours) are applied by
-         the plugin on top and are never touched here.
-         The card starts at Opacity=0: a late template application can never flash an unstyled
-         card, the panel window reveals it with the shared 320 ms open transition. -->
-    <!-- A Style targeting the shell type (same pattern as IconButton.axaml): an implicit
-         ControlTheme with a {x:Type} key does not compile in this project's Avalonia/XamlIl
-         combination. -->
+    <!-- Compat style for the host facade type (glass-surface-port slice). The shared chrome
+         template lives in DeskCanvas.UI (keyed PanelShellTemplate); a type selector matches the
+         exact type only, so the facade needs its own thin style — the template source stays
+         single. The shared shell's own style (same setters, ui type selector) keeps the shared
+         type standalone for embedding apps. -->
+    <Styles.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceInclude Source="avares://DeskCanvas.UI/Styles/Controls/SecondaryPanelShellTemplate.axaml" />
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </Styles.Resources>
     <Style Selector="controls|SecondaryPanelShell">
         <Setter Property="ContentPadding" Value="{DynamicResource SecondaryPanelContentPadding}" />
         <Setter Property="CornerRadius" Value="{DynamicResource SecondaryPanelCornerRadius}" />
-        <Setter Property="Template">
-            <ControlTemplate>
-                <!-- PART_Backdrop: the in-window area outside the card. The only surface whose
-                     own press dismisses the panel (see SecondaryPanelShell). -->
-                <Panel x:Name="PART_Backdrop" Background="Transparent">
-                    <!-- PART_CardBorder: the single animation and clipping boundary. -->
-                    <Border x:Name="PART_CardBorder"
-                            Opacity="0"
-                            BorderThickness="1"
-                            ClipToBounds="True"
-                            CornerRadius="{TemplateBinding CornerRadius}"
-                            Background="{TemplateBinding CardBackground}"
-                            BorderBrush="{TemplateBinding CardBorderBrush}">
-                        <Panel>
-                            <!-- PART_GlassSurface: the ONLY shell glass surface. Business content
-                                 may host its own; the panel window targets this part explicitly
-                                 instead of "the first LiquidGlassSurface it finds".
-                                 IgnoresAncestorTransform: the window animates this card's
-                                 ScaleTransform for the open/close zoom — the sampling origin must
-                                 stay the at-rest rect (the zoom is fed to the surface through
-                                 SetAnimationFrameScale instead of leaking into PointToScreen). -->
-                            <controls:LiquidGlassSurface x:Name="PART_GlassSurface"
-                                                         IsVisible="{TemplateBinding UseRenderedGlass}"
-                                                         Material="{TemplateBinding GlassMaterial}"
-                                                         CornerRadius="{TemplateBinding CornerRadius}"
-                                                         IgnoresAncestorTransform="True" />
-
-                            <Grid RowDefinitions="Auto,*,Auto" Margin="{TemplateBinding ContentPadding}">
-                                <!-- PART_HeaderDragArea: hit-testable (transparent background) and
-                                     marked as the shared drag handle from code behind. -->
-                                <Grid x:Name="PART_HeaderDragArea" Grid.Row="0"
-                                      ColumnDefinitions="*,Auto"
-                                      Margin="0,0,0,10"
-                                      Background="Transparent">
-                                    <!-- Default shared title block (used when the panel does not
-                                         supply HeaderContent). -->
-                                    <StackPanel Grid.Column="0" Orientation="Vertical" Spacing="2"
-                                                VerticalAlignment="Center"
-                                                IsVisible="{TemplateBinding HeaderContent, Converter={x:Static ObjectConverters.IsNull}}">
-                                        <TextBlock Text="{TemplateBinding Title}"
-                                                   FontSize="15" FontWeight="Bold"
-                                                   TextTrimming="CharacterEllipsis"
-                                                   Foreground="{TemplateBinding TitleForeground}" />
-                                        <TextBlock Text="{TemplateBinding Subtitle}"
-                                                   FontSize="12" Opacity="0.7"
-                                                   IsVisible="{TemplateBinding Subtitle, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
-                                                   Foreground="{TemplateBinding SubtitleForeground}" />
-                                    </StackPanel>
-                                    <!-- Dynamic business header (e.g. a title plus a live counter badge). -->
-                                    <ContentPresenter Grid.Column="0"
-                                                      Content="{TemplateBinding HeaderContent}"
-                                                      IsVisible="{TemplateBinding HeaderContent, Converter={x:Static ObjectConverters.IsNotNull}}" />
-
-                                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4"
-                                                VerticalAlignment="Center">
-                                        <ContentPresenter Content="{TemplateBinding HeaderActions}" />
-                                        <!-- PART_CloseButton: the shared icon button; its localized
-                                             accessible name is set in code behind so a later
-                                             culture switch still names it. -->
-                                        <Button x:Name="PART_CloseButton" Classes="dc-icon-button" Content="✕"
-                                                VerticalAlignment="Center"
-                                                Foreground="{TemplateBinding IconForeground}" />
-                                    </StackPanel>
-                                </Grid>
-
-                                <!-- PART_ContentPresenter: the single business content slot. -->
-                                <ContentPresenter x:Name="PART_ContentPresenter" Grid.Row="1"
-                                                  Content="{TemplateBinding Content}"
-                                                  ContentTemplate="{TemplateBinding ContentTemplate}" />
-
-                                <ContentPresenter Grid.Row="2"
-                                                  Content="{TemplateBinding FooterContent}"
-                                                  IsVisible="{TemplateBinding FooterContent, Converter={x:Static ObjectConverters.IsNotNull}}" />
-                            </Grid>
-                        </Panel>
-                    </Border>
-                </Panel>
-            </ControlTemplate>
-        </Setter>
+        <Setter Property="Template" Value="{StaticResource PanelShellTemplate}" />
     </Style>
 </Styles>

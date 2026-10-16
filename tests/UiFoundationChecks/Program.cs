@@ -22,6 +22,15 @@ using DeskCanvas.Services;
 using DeskCanvas.Views;
 using DeskCanvas.Views.Controls;
 using Grid = Avalonia.Controls.Grid;
+// The shared row/layout engine and the input enums moved to DeskCanvas.UI (ADR-P3); the host
+// facades keep the old type names. Alias the moved types so the existing assertions keep
+// running against the one shared implementation.
+using SettingLayoutPanel = DeskCanvas.UI.Controls.SettingLayoutPanel;
+using SettingLayoutSlot = DeskCanvas.UI.Controls.SettingLayoutSlot;
+using SettingLayoutMode = DeskCanvas.UI.Controls.SettingLayoutMode;
+using SettingEffectiveLayout = DeskCanvas.UI.Controls.SettingEffectiveLayout;
+using ColorInputFormat = DeskCanvas.UI.Controls.ColorInputFormat;
+using ColorInputAlphaPolicy = DeskCanvas.UI.Controls.ColorInputAlphaPolicy;
 
 namespace UiFoundationChecks;
 
@@ -1095,7 +1104,7 @@ internal static partial class Program
                 new Dimensions(80, 12, 16), new Region("zh-Hans"), false, null)));
         var sliders = appearance.GetLogicalDescendants().OfType<LabeledSlider>().Count();
         var colors = appearance.GetLogicalDescendants().OfType<ColorInput>().Count();
-        Check(sliders == 18, $"Appearance: all 18 optics rows are LabeledSliders ({sliders})");
+        Check(sliders == 19, $"Appearance: 18 optics rows plus opacity are LabeledSliders ({sliders})");
         Check(colors == 4, $"Appearance: all 4 colour rows are ColorInputs ({colors})");
         Check(CountStray<Slider, LabeledSlider>(appearance) == 0 && CountStray<ColorPicker, ColorInput>(appearance) == 0,
             "Appearance: no bare Slider / ColorPicker left");
@@ -1103,7 +1112,7 @@ internal static partial class Program
         // not the value column of a slider — they must not have been absorbed.
         Check(appearance.GetLogicalDescendants().OfType<NumericUpDown>()
                 .Count(n => !n.GetLogicalAncestors().OfType<LabeledSlider>().Any()) == 4,
-            "Appearance: the four non-slider numeric rows are untouched");
+            "Appearance: the four remaining non-slider numeric rows are untouched");
     }
 
     // ---- W6 helpers ----------------------------------------------------------------------

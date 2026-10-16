@@ -270,6 +270,9 @@ class Program
             && dial3.IsAllowedSpan(2, 2) && !dial3.IsAllowedSpan(2, 1)
             && dial3.SnapSpan(3, 3) == (3, 3));
 
+        Check("AnalogIV implements IWidgetSurfaceHints with ClockAnalogIVCardBackground",
+            dial3 is DeskCanvas.Core.Interfaces.IWidgetSurfaceHints { ColorfulBackgroundResourceKey: "ClockAnalogIVCardBackground" });
+
         // ---- 表盘颜色 (dial color) resolution contract ----
         Check("表盘颜色 defaults to 跟随背景 (null resolution — the theme brush is used)",
             AnalogIV.ResolveDialColor(new ClockModel(), isDarkVariant: false) == null
@@ -310,6 +313,30 @@ class Program
                 DialColorLight: null,
                 DialColorDark: null
             });
+
+        Check("AnalogI implements ResolveDialColor matching AnalogIV",
+            AnalogI.ResolveDialColor(new ClockModel(DialColorMode: ClockDialColorMode.BlackWhite), false)
+            == Color.Parse("#EDEDED")
+            && AnalogI.ResolveDialColor(new ClockModel(DialColorMode: ClockDialColorMode.BlackWhite), true)
+            == Color.Parse("#373738"));
+
+        var prevUiCulture = System.Threading.Thread.CurrentThread.CurrentUICulture;
+        try
+        {
+            System.Threading.Thread.CurrentThread.CurrentUICulture = new System.Globalization.CultureInfo("zh-Hans");
+            var lunarResult = TickDialClockViewModel.GetLunarDateString(new DateTime(2026, 10, 16));
+            Check($"TickDialClockViewModel lunar date for 2026-10-16 is 九月初七 (got '{lunarResult}')",
+                lunarResult == "九月初七");
+        }
+        finally
+        {
+            System.Threading.Thread.CurrentThread.CurrentUICulture = prevUiCulture;
+        }
+
+        var tickVm = new TickDialClockViewModel(new ClockModel(Use24Hours: true));
+        Check("TickDialClockViewModel defaults ShowSeconds=true and ShowDate=true",
+            tickVm.ShowSeconds && tickVm.ShowDate);
+        tickVm.Dispose();
     }
 
     private static void CheckNativeWindowTransparency()

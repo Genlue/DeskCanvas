@@ -17,14 +17,22 @@ public class AnalogClockSettingsViewModel(IWidgetLayoutProvider widgetLayoutProv
 
     public bool ShowSeconds
     {
-        get => clockModel.ShowSeconds;
-        set => UpdateClockModel(clockModel with { ShowSeconds = value });
+        get => widgetLayoutProvider.Get().SubType == "AnalogIV"
+            ? (clockModel.ShowSecondsTrail ?? true)
+            : clockModel.ShowSeconds;
+        set => UpdateClockModel(widgetLayoutProvider.Get().SubType == "AnalogIV"
+            ? clockModel with { ShowSecondsTrail = value, ShowSeconds = value }
+            : clockModel with { ShowSeconds = value });
     }
 
     public bool ShowDate
     {
-        get => clockModel.ShowDate;
-        set => UpdateClockModel(clockModel with { ShowDate = value });
+        get => widgetLayoutProvider.Get().SubType == "AnalogIV"
+            ? (clockModel.ShowDateAndLunar ?? true)
+            : clockModel.ShowDate;
+        set => UpdateClockModel(widgetLayoutProvider.Get().SubType == "AnalogIV"
+            ? clockModel with { ShowDateAndLunar = value, ShowDate = value }
+            : clockModel with { ShowDate = value });
     }
 
     public bool Use24Hours
@@ -55,12 +63,29 @@ public class AnalogClockSettingsViewModel(IWidgetLayoutProvider widgetLayoutProv
 
     public TimeZoneInfo[] TimeZones => TimeZoneInfo.GetSystemTimeZones().Append(TimeZone).ToArray();
 
+    /// <summary>表盘不透明开关：仅在表盘-1 (AnalogI) 展示。</summary>
+    public bool IsDialOpaque
+    {
+        get => clockModel.IsDialOpaque;
+        set
+        {
+            if (value == clockModel.IsDialOpaque) return;
+            UpdateClockModel(clockModel with { IsDialOpaque = value });
+            this.RaisePropertyChanged(nameof(IsDialOpaque));
+            this.RaisePropertyChanged(nameof(ShowDialColorSetting));
+        }
+    }
+
+    public bool ShowDialOpaqueSetting => widgetLayoutProvider.Get().SubType == "AnalogI";
+
     /// <summary>
-    /// 表盘颜色 exists for 表盘-3 (AnalogIV) only — its opaque dial surface is what the
-    /// setting recolors. This panel is shared by the three analog dials, so the row is
-    /// gated by the widget sub-type instead of a separate settings view.
+    /// 表盘颜色设置：当表盘-1勾选“表盘不透明”时展开。
     /// </summary>
-    public bool ShowDialColorSetting => widgetLayoutProvider.Get().SubType == "AnalogIV";
+    public bool ShowDialColorSetting => ShowDialOpaqueSetting && IsDialOpaque;
+
+    public bool Show24HoursSetting => widgetLayoutProvider.Get().SubType == "AnalogIV";
+
+    public bool ShowDateSetting => widgetLayoutProvider.Get().SubType == "AnalogIV";
 
     /// <summary>The 表盘颜色 mode options, in display order.</summary>
     public DialColorModeOption[] DialColorModes { get; } =

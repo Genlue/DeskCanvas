@@ -1,0 +1,83 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:ui="clr-namespace:DeskCanvas.UI.Controls">
+    <!-- The single source of the shared panel-shell chrome template. Both the shared shell
+         (DeskCanvas.UI type selector) and the host facade (avares://DeskCanvas shim style)
+         reference this keyed template, so derived facades receive the identical chrome — a
+         type selector matches the exact type only, which is why the shim re-declares the
+         setters instead of relying on the shared style. TargetType is the SHARED type: every
+         bound property lives on it, and derived instances resolve the same property identity. -->
+    <ControlTemplate x:Key="PanelShellTemplate" TargetType="ui:SecondaryPanelShell">
+        <!-- PART_Backdrop: the in-window area outside the card. The only surface whose own
+             press dismisses the panel (see SecondaryPanelShell). -->
+        <Panel x:Name="PART_Backdrop" Background="Transparent">
+            <!-- PART_CardBorder: the single animation and clipping boundary. -->
+            <Border x:Name="PART_CardBorder"
+                    Opacity="0"
+                    BorderThickness="1"
+                    ClipToBounds="True"
+                    CornerRadius="{TemplateBinding CornerRadius}"
+                    Background="{TemplateBinding CardBackground}"
+                    BorderBrush="{TemplateBinding CardBorderBrush}">
+                <Panel>
+                    <!-- PART_GlassSurfaceHost: hosts the glass surface the embedding app assigned
+                         to the shell's GlassSurface property (the ONLY shell glass surface —
+                         business content may host its own, but the panel window targets the
+                         shell's explicitly). When no surface is provided the shell renders with
+                         an unpainted card. The presenter itself is transparent and not
+                         hit-testable, so backdrop dismissal semantics are unchanged. -->
+                    <ContentPresenter x:Name="PART_GlassSurfaceHost"
+                                      Content="{TemplateBinding GlassSurface}" />
+
+                    <Grid RowDefinitions="Auto,*,Auto" Margin="{TemplateBinding ContentPadding}">
+                        <!-- PART_HeaderDragArea: hit-testable (transparent background) and marked
+                             as the shared drag handle from code behind. -->
+                        <Grid x:Name="PART_HeaderDragArea" Grid.Row="0"
+                              ColumnDefinitions="*,Auto"
+                              Margin="0,0,0,10"
+                              Background="Transparent">
+                            <!-- Default shared title block (used when the panel does not supply
+                                 HeaderContent). -->
+                            <StackPanel Grid.Column="0" Orientation="Vertical" Spacing="2"
+                                        VerticalAlignment="Center"
+                                        IsVisible="{TemplateBinding HeaderContent, Converter={x:Static ObjectConverters.IsNull}}">
+                                <TextBlock Text="{TemplateBinding Title}"
+                                           FontSize="15" FontWeight="Bold"
+                                           TextTrimming="CharacterEllipsis"
+                                           Foreground="{TemplateBinding TitleForeground}" />
+                                <TextBlock Text="{TemplateBinding Subtitle}"
+                                           FontSize="12" Opacity="0.7"
+                                           IsVisible="{TemplateBinding Subtitle, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                                           Foreground="{TemplateBinding SubtitleForeground}" />
+                            </StackPanel>
+                            <!-- Dynamic business header (e.g. a title plus a live counter badge). -->
+                            <ContentPresenter Grid.Column="0"
+                                              Content="{TemplateBinding HeaderContent}"
+                                              IsVisible="{TemplateBinding HeaderContent, Converter={x:Static ObjectConverters.IsNotNull}}" />
+
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4"
+                                        VerticalAlignment="Center">
+                                <ContentPresenter Content="{TemplateBinding HeaderActions}" />
+                                <!-- PART_CloseButton: the shared icon button; its localized
+                                     accessible name is set in code behind so a later culture
+                                     switch still names it. -->
+                                <Button x:Name="PART_CloseButton" Classes="dc-icon-button" Content="✕"
+                                        VerticalAlignment="Center"
+                                        Foreground="{TemplateBinding IconForeground}" />
+                            </StackPanel>
+                        </Grid>
+
+                        <!-- PART_ContentPresenter: the single business content slot. -->
+                        <ContentPresenter x:Name="PART_ContentPresenter" Grid.Row="1"
+                                          Content="{TemplateBinding Content}"
+                                          ContentTemplate="{TemplateBinding ContentTemplate}" />
+
+                        <ContentPresenter Grid.Row="2"
+                                          Content="{TemplateBinding FooterContent}"
+                                          IsVisible="{TemplateBinding FooterContent, Converter={x:Static ObjectConverters.IsNotNull}}" />
+                    </Grid>
+                </Panel>
+            </Border>
+        </Panel>
+    </ControlTemplate>
+</ResourceDictionary>

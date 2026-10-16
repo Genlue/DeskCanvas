@@ -41,6 +41,8 @@ public static class ThemeResourceHelper
         "ClockSecondHandBrush",
         "ClockCenterPinBrush",
         "ClockCardBackground",
+        "ClockAnalogIIICardBackground",
+        "ClockAnalogIVCardBackground",
         "FlipClockCardBackground",
         "ClockDigitalCardBackground",
         "ClockDigitalTimeBrush",

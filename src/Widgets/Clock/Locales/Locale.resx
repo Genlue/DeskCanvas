@@ -42,6 +42,9 @@
     <data name="Clock_AnalogIV_Title" xml:space="preserve">
         <value>Dial 3</value>
     </data>
+    <data name="Clock_DialOpaque" xml:space="preserve">
+        <value>Opaque Dial</value>
+    </data>
     <data name="Clock_DialColor_Title" xml:space="preserve">
         <value>Dial Color</value>
     </data>
@@ -109,7 +112,7 @@
         <value>Follows the currently active theme and light/dark mode</value>
     </data>
     <data name="Clock_Material_Acrylic_Desc" xml:space="preserve">
-        <value>OS-level frosted acrylic blur</value>
+        <value>OS-level Mica backdrop</value>
     </data>
     <data name="Clock_Material_Solid_Desc" xml:space="preserve">
         <value>Opaque solid card, no blur</value>

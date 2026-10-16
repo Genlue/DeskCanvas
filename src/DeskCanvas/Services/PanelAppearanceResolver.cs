@@ -109,9 +109,10 @@ public static class PanelAppearanceResolver
     /// <summary>
     /// The panel's effective theme — the single rule the appearance binder and every plugin-owned
     /// content theming share: while 失焦自动切换 is live, every layer of the panel follows the
-    /// uniform state's theme (the same one <see cref="PanelAppearanceBinder"/> resolves for the
-    /// shell); otherwise the shared theme. Without a provider (headless checks, very early
-    /// start-up) or on a read failure this falls back to <see cref="FallbackTheme"/>. Never throws.
+    /// state theme of the screen the panel's <b>own window</b> sits on (the same rule its
+    /// opening widget uses); otherwise the shared theme. Without a provider (headless checks,
+    /// very early start-up) or on a read failure this falls back to <see cref="FallbackTheme"/>.
+    /// Never throws.
     /// </summary>
     /// <remarks>
     /// Content theming MUST read the theme through here (or off the shell's resolved
@@ -119,7 +120,13 @@ public static class PanelAppearanceResolver
     /// the state material and the shared material differ by design, and a panel whose shell paints
     /// one state while its content paints the other is exactly the reported mixed style.
     /// </remarks>
-    public static Theme ResolveEffectiveTheme(IAppSettingsProvider? settings)
+    public static Theme ResolveEffectiveTheme(IAppSettingsProvider? settings) =>
+        ResolveEffectiveTheme(settings, window: null);
+
+    /// <summary>The per-screen entry: the panel window maps to its screen and follows that
+    /// screen's state. A null window (or one without a resolvable screen) falls back to the
+    /// uniform entry — the behaviour before per-screen resolution existed.</summary>
+    public static Theme ResolveEffectiveTheme(IAppSettingsProvider? settings, Window? window)
     {
         if (settings is null) return FallbackTheme;
         try
@@ -127,7 +134,10 @@ public static class PanelAppearanceResolver
             var appSettings = settings.Get();
             if (appSettings.FocusLink is not { Enabled: true }) return appSettings.Theme;
             var coordinator = App.Services?.GetService(typeof(FocusThemeCoordinator)) as FocusThemeCoordinator;
-            return coordinator?.ResolveWindowTheme(appSettings) ?? appSettings.Theme;
+            if (coordinator is null) return appSettings.Theme;
+            return window is { } w
+                ? coordinator.ResolveWindowTheme(appSettings, w)
+                : coordinator.ResolveWindowTheme(appSettings);
         }
         catch
         {
@@ -308,10 +318,12 @@ public sealed class PanelAppearanceBinder
         Interlocked.Decrement(ref activeCount);
     }
 
-    /// <summary>Recompute the appearance and push it into the shell and the panel window.</summary>
+    /// <summary>Recompute the appearance and push it into the shell and the panel window.
+    /// The panel's own window is passed to the resolver so a panel follows the state theme
+    /// of the screen it was opened on.</summary>
     public void Refresh()
     {
-        var theme = PanelAppearanceResolver.ResolveEffectiveTheme(settings);
+        var theme = PanelAppearanceResolver.ResolveEffectiveTheme(settings, window);
         var radius = shell.CornerRadius.TopLeft;
         var appearance = PanelAppearanceResolver.Resolve(theme, PanelAppearanceResolver.IsDark(theme, window.ActualThemeVariant), radius);
 
@@ -322,6 +334,10 @@ public sealed class PanelAppearanceBinder
         // touches business content, so plugin-specific brushes applied afterwards survive.
         shell.SurfaceAppearance = appearance;
         window.TransparencyLevelHint = appearance.TransparencyLevels;
+        if (window is Views.SecondaryPanelWindow spw)
+        {
+            spw.ApplyWindowRegion();
+        }
     }
 
     private void OnSettingsChanged(object? sender, AppSettings? oldData, AppSettings newData)

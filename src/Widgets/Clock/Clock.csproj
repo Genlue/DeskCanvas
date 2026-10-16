@@ -21,6 +21,10 @@
     </ItemGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\..\DeskCanvas.UI\DeskCanvas.UI.csproj">
+        <Private>false</Private>
+        <ExcludeAssets>runtime</ExcludeAssets>
+      </ProjectReference>
       <ProjectReference Include="..\..\DeskCanvas\DeskCanvas.csproj">
         <Private>false</Private>
           <ExcludeAssets>runtime</ExcludeAssets>
@@ -29,6 +33,10 @@
 
     <ItemGroup>
         <ProjectReference Include="..\..\DeskCanvas.Core\DeskCanvas.Core.csproj">
+            <Private>false</Private>
+            <ExcludeAssets>runtime</ExcludeAssets>
+        </ProjectReference>
+        <ProjectReference Include="..\..\DeskCanvas.Runtime\DeskCanvas.Runtime.csproj">
             <Private>false</Private>
             <ExcludeAssets>runtime</ExcludeAssets>
         </ProjectReference>

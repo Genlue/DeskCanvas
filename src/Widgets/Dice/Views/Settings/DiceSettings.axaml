@@ -1,0 +1,47 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="clr-namespace:DeskCanvas.Views.Controls;assembly=DeskCanvas"
+             xmlns:locales="clr-namespace:Dice.Locales"
+             x:Class="Dice.Views.Settings.DiceSettings"
+             controls:SettingsPage.ScrollOwnership="Host">
+
+    <StackPanel Orientation="Vertical" Spacing="6" Margin="0,0,10,0">
+        <!-- 1. Dice Count -->
+        <controls:Setting Title="{x:Static locales:Locale.Dice_Count}">
+            <ComboBox x:Name="CountComboBox" MinWidth="180" SelectionChanged="OnSettingChanged">
+                <ComboBoxItem Content="{x:Static locales:Locale.Dice_Count1}" Tag="1" />
+                <ComboBoxItem Content="{x:Static locales:Locale.Dice_Count2}" Tag="2" />
+                <ComboBoxItem Content="{x:Static locales:Locale.Dice_Count3}" Tag="3" />
+                <ComboBoxItem Content="{x:Static locales:Locale.Dice_Count4}" Tag="4" />
+                <ComboBoxItem Content="{x:Static locales:Locale.Dice_Count5}" Tag="5" />
+                <ComboBoxItem Content="{x:Static locales:Locale.Dice_Count6}" Tag="6" />
+            </ComboBox>
+        </controls:Setting>
+
+        <!-- 2. Dice Type -->
+        <controls:Setting Title="{x:Static locales:Locale.Dice_Type}">
+            <ComboBox x:Name="TypeComboBox" MinWidth="180" SelectionChanged="OnSettingChanged">
+                <ComboBoxItem Content="{x:Static locales:Locale.Dice_TypeD6}" Tag="6" />
+                <ComboBoxItem Content="{x:Static locales:Locale.Dice_TypeD4}" Tag="4" />
+                <ComboBoxItem Content="{x:Static locales:Locale.Dice_TypeD8}" Tag="8" />
+                <ComboBoxItem Content="{x:Static locales:Locale.Dice_TypeD10}" Tag="10" />
+                <ComboBoxItem Content="{x:Static locales:Locale.Dice_TypeD12}" Tag="12" />
+                <ComboBoxItem Content="{x:Static locales:Locale.Dice_TypeD20}" Tag="20" />
+                <ComboBoxItem Content="{x:Static locales:Locale.Dice_TypeD100}" Tag="100" />
+            </ComboBox>
+        </controls:Setting>
+
+        <!-- 3. Face Style -->
+        <controls:Setting Title="{x:Static locales:Locale.Dice_FaceStyle}">
+            <ComboBox x:Name="FaceStyleComboBox" MinWidth="180" SelectionChanged="OnSettingChanged">
+                <ComboBoxItem Content="{x:Static locales:Locale.Dice_FaceDots}" Tag="0" />
+                <ComboBoxItem Content="{x:Static locales:Locale.Dice_FaceNumbers}" Tag="1" />
+            </ComboBox>
+        </controls:Setting>
+
+        <!-- 4. Show Sum -->
+        <controls:Setting Title="{x:Static locales:Locale.Dice_ShowSum}">
+            <ToggleSwitch x:Name="ShowSumToggle" IsCheckedChanged="OnToggleChanged" OnContent="" OffContent="" />
+        </controls:Setting>
+    </StackPanel>
+</UserControl>

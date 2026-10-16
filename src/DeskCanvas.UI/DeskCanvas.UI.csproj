@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Avalonia" />
+    <!-- ColorInput embeds the ColorPicker; the theme ships in this companion package. -->
+    <PackageReference Include="Avalonia.Controls.ColorPicker" />
+    <ProjectReference Include="..\DeskCanvas.Contracts\DeskCanvas.Contracts.csproj" />
+  </ItemGroup>
+</Project>

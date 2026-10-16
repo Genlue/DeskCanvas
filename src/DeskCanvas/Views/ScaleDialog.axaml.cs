@@ -1,3 +1,4 @@
+using DeskCanvas.Services;
 using System;
 using System.Globalization;
 using Avalonia.Controls;
@@ -19,6 +20,7 @@ public partial class ScaleDialog : Window
     {
         this.onApply = onApply;
         InitializeComponent();
+        WindowRoles.Register(this, WindowRole.Dialog);
         ScaleInput.Text = current.ToString("0.##", CultureInfo.InvariantCulture);
         Opened += (_, _) =>
         {

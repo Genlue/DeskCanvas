@@ -192,7 +192,8 @@ internal static partial class Program
         if (Directory.Exists(known)) return known;
 
         return Directory.EnumerateDirectories(dist, "Widgets", SearchOption.AllDirectories)
-            .FirstOrDefault(d => File.Exists(Path.Combine(d, "Weather.dll")));
+            .FirstOrDefault(d => (d.Contains("3.5.0", StringComparison.OrdinalIgnoreCase) || d.Contains("baseline", StringComparison.OrdinalIgnoreCase))
+                                 && File.Exists(Path.Combine(d, "Weather.dll")));
     }
 
     private static void VerifyBaselineWidgetDlls()

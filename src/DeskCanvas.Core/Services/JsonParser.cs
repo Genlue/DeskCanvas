@@ -6,6 +6,7 @@ namespace DeskCanvas.Core.Services;
 /// <inheritdoc />
 public class JsonParser<T>(string filePath) : IDataProvider<T>
 {
+    private readonly object sync = new();
     /// <summary>
     /// Cached deserialized data; <c>null</c> until the first <see cref="Get"/> call.
     /// </summary>
@@ -18,25 +19,77 @@ public class JsonParser<T>(string filePath) : IDataProvider<T>
     /// <inheritdoc />
     public virtual T Get()
     {
-        if (data != null) return data;
+        lock (sync)
+        {
+            if (data != null) return data;
 
-        var json = File.ReadAllText(filePath);
+            var json = File.ReadAllText(filePath);
 
-        data = JsonSerializer.Deserialize<T>(json)
-               ?? throw new FormatException($"Can't deserialize {typeof(T).Name}");
+            data = JsonSerializer.Deserialize<T>(json)
+                   ?? throw new FormatException($"Can't deserialize {typeof(T).Name}");
 
-        return data = Normalize(data);
+            return data = Normalize(data);
+        }
     }
 
     /// <inheritdoc />
-    public void Save(T newData)
+    public virtual void Save(T newData)
     {
-        var oldData = data;
-        DataChanging?.Invoke(this, data, newData);
-        data = newData;
+        lock (sync)
+        {
+            var oldData = data;
+            DataChanging?.Invoke(this, data, newData);
 
-        File.WriteAllText(filePath, SerializeForFile(newData));
-        DataChanged?.Invoke(this, oldData, newData);
+            var directory = Path.GetDirectoryName(filePath);
+            if (!string.IsNullOrEmpty(directory)) Directory.CreateDirectory(directory);
+
+            // Commit on the same volume: write and flush a sibling temporary file, then
+            // atomically replace the destination. The cache is published only after the
+            // filesystem commit succeeds, so failed writes cannot expose phantom state.
+            var tempPath = $"{filePath}.{Environment.ProcessId}.{Guid.NewGuid():N}.tmp";
+            try
+            {
+                var json = SerializeForFile(newData);
+                using (var stream = new FileStream(tempPath, FileMode.CreateNew, FileAccess.Write,
+                           FileShare.None, 4096, FileOptions.WriteThrough))
+                using (var writer = new StreamWriter(stream))
+                {
+                    writer.Write(json);
+                    writer.Flush();
+                    stream.Flush(flushToDisk: true);
+                }
+
+                if (File.Exists(filePath))
+                {
+                    try
+                    {
+                        File.Replace(tempPath, filePath, destinationBackupFileName: null, ignoreMetadataErrors: true);
+                    }
+                    catch (PlatformNotSupportedException)
+                    {
+                        File.Move(tempPath, filePath, overwrite: true);
+                    }
+                }
+                else
+                {
+                    File.Move(tempPath, filePath);
+                }
+                data = newData;
+            }
+            finally
+            {
+                try
+                {
+                    if (File.Exists(tempPath)) File.Delete(tempPath);
+                }
+                catch
+                {
+                    // Best-effort cleanup; the committed destination remains authoritative.
+                }
+            }
+
+            DataChanged?.Invoke(this, oldData, newData);
+        }
     }
 
     /// <summary>

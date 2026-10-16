@@ -11,6 +11,7 @@ using Avalonia.Threading;
 using Batteries.Locales;
 using Batteries.Models;
 using Batteries.Services;
+using DeskCanvas.Contracts;
 using DeskCanvas.Core.Interfaces;
 using DeskCanvas.Core.Models.Settings;
 using DeskCanvas.Core.Services;
@@ -119,6 +120,42 @@ public class BatteryDeviceItem : INotifyPropertyChanged
 
     public double StrokeDashOffset => FullCircleDash * (1.0 - ProgressFraction);
 
+    /// <summary>
+    /// Variant source override for the readout colours. The host view wires this to the
+    /// window's ActualThemeVariant so a widget honours the variant of the screen it sits on
+    /// (the per-screen policy writes the variant per window). Null keeps the historic
+    /// behaviour: the uniform Application variant.
+    /// </summary>
+    public Func<ThemeVariant?>? VariantProvider { get; set; }
+
+    /// <summary>The variant the brushes resolve against: the host window's variant when the
+    /// view wired <see cref="VariantProvider"/>, otherwise the uniform Application variant.</summary>
+    private ThemeVariant EffectiveVariant =>
+        ResolveVariant(VariantProvider?.Invoke(), Application.Current?.ActualThemeVariant);
+
+    /// <summary>
+    /// Pure seam: the effective variant for a readout. The host window's variant wins
+    /// (per-screen policy); a null window variant (control not attached / uniform host)
+    /// falls back to the uniform Application variant, then to the platform default.
+    /// </summary>
+    public static ThemeVariant ResolveVariant(ThemeVariant? hostWindowVariant, ThemeVariant? uniformVariant) =>
+        hostWindowVariant ?? uniformVariant ?? ThemeVariant.Default;
+
+    /// <summary>
+    /// Pure seam: the status ring colour for a present device — the pinned hex trio
+    /// (green / orange / red, each with a dark- and a light-mode pair). Carried over
+    /// byte-identical from the pre-refactor literals so the brush refactor cannot
+    /// silently drift the palette.
+    /// </summary>
+    public static Color StatusColor(bool isDark, bool isCharging, int percentage)
+    {
+        if (isCharging || percentage > 20)
+            return Color.Parse(isDark ? "#30D158" : "#34C759");
+        if (percentage > 10)
+            return Color.Parse(isDark ? "#FF9F0A" : "#FF9500");
+        return Color.Parse(isDark ? "#FF453A" : "#FF3B30");
+    }
+
     public IBrush StatusBrush
     {
         get
@@ -128,7 +165,7 @@ public class BatteryDeviceItem : INotifyPropertyChanged
             try { theme = appSettingsProvider?.Get()?.Theme; } catch { }
             if (theme != null && !theme.IsColorful && theme.Monochrome)
             {
-                var isDark = Application.Current?.ActualThemeVariant == ThemeVariant.Dark;
+                var isDark = EffectiveVariant == ThemeVariant.Dark;
                 // 黑白: the ring/badge fill is the accent itself — pure black (light) / white (dark).
                 if (theme.EffectiveMonochromeVariant == MonochromeStyle.BlackWhite)
                     return isDark ? Brushes.White : Brushes.Black;
@@ -136,7 +173,7 @@ public class BatteryDeviceItem : INotifyPropertyChanged
                 // must not leak, so resolve the themed brush the dictionaries use.
                 if (theme.EffectiveMonochromeVariant == MonochromeStyle.BackgroundColor)
                 {
-                    if (Application.Current != null && Application.Current.TryGetResource("SystemControlForegroundAccentBrush", Application.Current.ActualThemeVariant, out var themed) && themed is IBrush themedBrush)
+                    if (Application.Current != null && Application.Current.TryGetResource("SystemControlForegroundAccentBrush", EffectiveVariant, out var themed) && themed is IBrush themedBrush)
                         return themedBrush;
                     var hex = isDark ? theme.EffectiveSolidBackgroundLight : theme.EffectiveSolidBackgroundDark;
                     return new SolidColorBrush(Color.TryParse(hex, out var background)
@@ -146,16 +183,11 @@ public class BatteryDeviceItem : INotifyPropertyChanged
                 // 强调色: the hand-picked accent is honored.
                 if (!string.IsNullOrWhiteSpace(theme.AccentColor) && Color.TryParse(theme.AccentColor, out var parsedAccent))
                     return new SolidColorBrush(parsedAccent);
-                if (Application.Current != null && Application.Current.TryGetResource("SystemControlForegroundAccentBrush", Application.Current.ActualThemeVariant, out var res) && res is IBrush ab)
+                if (Application.Current != null && Application.Current.TryGetResource("SystemControlForegroundAccentBrush", EffectiveVariant, out var res) && res is IBrush ab)
                     return ab;
                 return isDark ? new SolidColorBrush(Color.Parse("#70A5FF")) : new SolidColorBrush(Color.Parse("#0078D4"));
             }
-            var isDarkVariant = Application.Current?.ActualThemeVariant == ThemeVariant.Dark;
-            if (IsCharging || Percentage > 20)
-                return new SolidColorBrush(Color.Parse(isDarkVariant ? "#30D158" : "#34C759"));
-            if (Percentage > 10)
-                return new SolidColorBrush(Color.Parse(isDarkVariant ? "#FF9F0A" : "#FF9500"));
-            return new SolidColorBrush(Color.Parse(isDarkVariant ? "#FF453A" : "#FF3B30"));
+            return new SolidColorBrush(StatusColor(EffectiveVariant == ThemeVariant.Dark, IsCharging, Percentage));
         }
     }
 
@@ -170,7 +202,7 @@ public class BatteryDeviceItem : INotifyPropertyChanged
         {
             if (hasDevice) return StatusBrush;
             if (Application.Current != null &&
-                Application.Current.TryGetResource("SystemControlForegroundBaseHighBrush", Application.Current.ActualThemeVariant, out var neutral) &&
+                Application.Current.TryGetResource("SystemControlForegroundBaseHighBrush", EffectiveVariant, out var neutral) &&
                 neutral is IBrush neutralBrush)
                 return neutralBrush;
             return Brushes.Gray;
@@ -184,7 +216,7 @@ public class BatteryDeviceItem : INotifyPropertyChanged
             var theme = appSettingsProvider?.Get()?.Theme;
             if (theme != null && !theme.IsColorful && theme.Monochrome)
             {
-                var isDark = Application.Current?.ActualThemeVariant == ThemeVariant.Dark;
+                var isDark = EffectiveVariant == ThemeVariant.Dark;
                 return theme.EffectiveMonochromeVariant switch
                 {
                     // 黑白: the badge fill is the black (light) / white (dark) accent — invert it.
@@ -235,9 +267,9 @@ public class BatteryDeviceItem : INotifyPropertyChanged
 
 public class BatteriesViewModel : INotifyPropertyChanged, IDisposable
 {
-    private readonly IAppSettingsProvider appSettingsProvider;
+    private readonly IAppSettingsProvider? appSettingsProvider;
     private BatteriesModel model;
-    private readonly DispatcherTimer timer;
+    private readonly IWidgetSession? session;
     private string summaryText = string.Empty;
 
     public ObservableCollection<BatteryDeviceItem> Items { get; }
@@ -245,12 +277,21 @@ public class BatteriesViewModel : INotifyPropertyChanged, IDisposable
     public ObservableCollection<BatteryDeviceItem> Devices => Items;
     public BatteryDeviceItem MainDevice => Items[0];
 
-    public BatteriesViewModel(BatteriesModel? initialModel = null, IAppSettingsProvider? settingsProvider = null)
+    public BatteriesViewModel(BatteriesModel? initialModel = null, IAppSettingsProvider? settingsProvider = null, IWidgetSession? session = null)
     {
         model = initialModel ?? new BatteriesModel();
-        appSettingsProvider = settingsProvider 
-            ?? (DeskCanvas.App.Services?.GetService(typeof(IAppSettingsProvider)) as IAppSettingsProvider) 
-            ?? new AppSettingsProvider();
+        // Two-tier resolution: an explicitly injected provider wins, then the app-level
+        // service. The historic third tier (a standalone provider instance built inside the
+        // component) is gone — with both tiers empty the widget runs on safe defaults (null
+        // here means "no theme info", which the readout items already treat as the colourful
+        // branch); no provider instance is ever created or cached inside the component.
+        appSettingsProvider = settingsProvider
+            ?? (DeskCanvas.App.Services?.GetService(typeof(IAppSettingsProvider)) as IAppSettingsProvider);
+
+        this.session = session;
+        // Session-less widgets (gallery preview, legacy layout entries) keep the historic
+        // always-on behaviour; with a session the poll is gated by RenderActive.
+        renderActive = session?.Activity.RenderActive ?? true;
 
         Items = [
             new BatteryDeviceItem(Locale.Batteries_MainDevice, DeviceKind.Computer, 100, true, true, appSettingsProvider),
@@ -259,16 +300,79 @@ public class BatteriesViewModel : INotifyPropertyChanged, IDisposable
             new BatteryDeviceItem(string.Empty, DeviceKind.Headphones, 0, false, false, appSettingsProvider)
         ];
 
-        timer = new DispatcherTimer
+        if (appSettingsProvider != null)
         {
-            Interval = TimeSpan.FromSeconds(3)
-        };
-        timer.Tick += (_, _) => PollPowerStatus();
-        timer.Start();
+            appSettingsProvider.DataChanged += OnSettingsChanged;
+        }
 
-        appSettingsProvider.DataChanged += OnSettingsChanged;
+        UpdatePollSubscription();
 
         PollPowerStatus();
+    }
+
+    // ------------------------------------------------------------------
+    //  Shared-timer polling (TimerService) with a 3-tick divider
+    // ------------------------------------------------------------------
+
+    /// <summary>
+    /// Pure seam: whether the poll runs on a shared 1 s tick. <paramref name="tickIndex"/> is
+    /// the 0-based tick count since the subscription went live; index 0 — the FIRST tick after
+    /// (re)subscribing — polls immediately ("subscribe means refresh"), then every third tick
+    /// (0, 3, 6, …), the same effective 3 s cadence the retired private UI-thread timer
+    /// delivered. This boundary is pinned by tests/BatteriesChecks; do not shift it.
+    /// </summary>
+    public static bool ShouldPollOnTick(int tickIndex) => tickIndex % 3 == 0;
+
+    // 0-based count of shared 1 s ticks since the subscription went live (see ShouldPollOnTick).
+    private int tickCounter;
+    // Reconciled poll state: subscribed to the shared timer exactly while both gates are open.
+    private bool pollSubscribed;
+    // Gate 1: the session's latest activity push (session-less widgets are always true).
+    private bool renderActive;
+    // Gate 2: the host's explicit fullscreen suspension (IWidgetSuspendable).
+    private bool suspended;
+
+    private void OnSharedTick()
+    {
+        var poll = ShouldPollOnTick(tickCounter);
+        tickCounter++;
+        if (poll) PollPowerStatus();
+    }
+
+    /// <summary>
+    /// Single subscription state machine over BOTH gates (reconciliation, not toggling): the
+    /// poll subscribes to the shared timer exactly while the session renders AND the host has
+    /// not suspended the widget. Ticks stop automatically during fullscreen because
+    /// TimerService.PauseAll pauses every shared timer; the explicit Suspend below is the
+    /// second, widget-owned gate. Either gate closed stops the poll; resuming requires BOTH
+    /// open again. Overlapping transitions cannot double-(un)subscribe.
+    /// </summary>
+    private void UpdatePollSubscription()
+    {
+        var wanted = renderActive && !suspended;
+        if (wanted && !pollSubscribed)
+        {
+            pollSubscribed = true;
+            tickCounter = 0; // the first tick after (re)subscribing polls immediately
+            DeskCanvas.Services.TimerService.Timer1Second.Subscribe(OnSharedTick);
+        }
+        else if (!wanted && pollSubscribed)
+        {
+            pollSubscribed = false;
+            DeskCanvas.Services.TimerService.Timer1Second.Unsubscribe(OnSharedTick);
+        }
+    }
+
+    /// <summary>
+    /// Host activity push (the <see cref="DeskCanvas.Runtime.IWidgetActivityConsumer"/> path,
+    /// invoked on the UI thread): the poll follows the snapshot's RenderActive. Session-less
+    /// view models ignore the push entirely (the host never sends one to them).
+    /// </summary>
+    public void OnSessionActivity(ActivitySnapshot activity)
+    {
+        if (session == null) return;
+        renderActive = activity.RenderActive;
+        UpdatePollSubscription();
     }
 
     private void OnSettingsChanged(object sender, AppSettings? oldData, AppSettings newData)
@@ -307,6 +411,7 @@ public class BatteriesViewModel : INotifyPropertyChanged, IDisposable
 
     public void PollPowerStatus()
     {
+        PollCountForChecks++;
         var info = PowerService.GetCurrentPowerInfo();
 
         Items[0].Percentage = info.Percentage;
@@ -372,38 +477,74 @@ public class BatteriesViewModel : INotifyPropertyChanged, IDisposable
 
     public void Dispose()
     {
-        timer.Stop();
-        appSettingsProvider.DataChanged -= OnSettingsChanged;
+        if (pollSubscribed)
+        {
+            pollSubscribed = false;
+            DeskCanvas.Services.TimerService.Timer1Second.Unsubscribe(OnSharedTick);
+        }
+        if (appSettingsProvider != null)
+        {
+            appSettingsProvider.DataChanged -= OnSettingsChanged;
+        }
     }
 
     // ------------------------------------------------------------------
     //  Fullscreen suspension (host: IWidgetSuspendable)
     // ------------------------------------------------------------------
 
-    private bool suspended;
-
     /// <summary>
     /// Called by the host when every attached screen is covered (see <c>IWidgetSuspendable</c>).
     /// The 3 s poll is the most expensive recurring work this widget owns — with ShowPeripherals
     /// on it walks the whole device tree through SetupAPI every tick — and the result cannot be
-    /// seen while covered. Idempotent.
+    /// seen while covered. Second gate beside the session activity; idempotent.
     /// </summary>
     public void Suspend()
     {
         if (suspended) return;
         suspended = true;
-        timer.Stop();
+        UpdatePollSubscription();
     }
 
     /// <summary>Undoes <see cref="Suspend"/>; polls once immediately so the readout is fresh
-    /// even if the suspension lasted longer than several poll intervals.</summary>
+    /// even if the suspension lasted longer than several poll intervals. The re-subscription
+    /// also resets the divider, so the first shared tick after resuming polls again — one
+    /// extra read within a second of resuming, harmless (the poll is idempotent).</summary>
     public void Resume()
     {
         if (!suspended) return;
         suspended = false;
         PollPowerStatus();
-        timer.Start();
+        UpdatePollSubscription();
     }
+
+    // ------------------------------------------------------------------
+    //  Check seams (tests/BatteriesChecks)
+    // ------------------------------------------------------------------
+
+    /// <summary>Check seam: whether the poll currently holds a shared-timer subscription.</summary>
+    public bool IsPollingForChecks => pollSubscribed;
+
+    /// <summary>Check seam: the latest session gate value.</summary>
+    public bool RenderActiveForChecks => renderActive;
+
+    /// <summary>Check seam: the latest explicit suspension gate value.</summary>
+    public bool SuspendedForChecks => suspended;
+
+    /// <summary>Check seam: the 0-based shared-tick counter driving the divider.</summary>
+    public int TickCounterForChecks => tickCounter;
+
+    /// <summary>Check seam: how many times the power status was actually polled.</summary>
+    public int PollCountForChecks { get; private set; }
+
+    /// <summary>Check seam: the injected session (null on the legacy path).</summary>
+    public IWidgetSession? SessionForChecks => session;
+
+    /// <summary>Check seam: the resolved settings provider (null on the safe-default path).</summary>
+    public IAppSettingsProvider? ProviderForChecks => appSettingsProvider;
+
+    /// <summary>Check seam: drives one shared 1 s tick by hand (the headless rig has no live
+    /// dispatcher ticks), exercising the divider exactly as <see cref="OnSharedTick"/> does.</summary>
+    public void SimulateTickForChecks() => OnSharedTick();
 
     public event PropertyChangedEventHandler? PropertyChanged;
     protected void OnPropertyChanged([CallerMemberName] string? propName = null) =>

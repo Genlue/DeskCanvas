@@ -1,0 +1,227 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:locales="clr-namespace:Shortcuts.Locales"
+        xmlns:controls="clr-namespace:DeskCanvas.Views.Controls;assembly=DeskCanvas"
+        xmlns:sc="clr-namespace:Shortcuts.Views.Controls"
+        x:Class="Shortcuts.Views.ShortcutsEditorWindow"
+        Title="{x:Static locales:Locale.Shortcuts_Editor_Title}"
+        Background="Transparent"
+        TransparencyLevelHint="AcrylicBlur, None"
+        TransparencyBackgroundFallback="{DynamicResource SettingsBackground}"
+        ExtendClientAreaToDecorationsHint="True"
+        ExtendClientAreaChromeHints="NoChrome"
+        ExtendClientAreaTitleBarHeightHint="52"
+        ShowInTaskbar="True"
+        CanResize="True"
+        Width="800" Height="660" MinWidth="580" MinHeight="480"
+        WindowStartupLocation="CenterScreen">
+
+    <Window.Styles>
+        <Style Selector="Button.chip-btn">
+            <Setter Property="Padding" Value="2,2" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="CornerRadius" Value="7" />
+            <Setter Property="Background" Value="#3DFFFFFF" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+        </Style>
+        <Style Selector="Button.chip-btn:pointerover">
+            <Setter Property="Background" Value="#5CFFFFFF" />
+        </Style>
+        <Style Selector="Button.chip-btn /template/ ContentPresenter">
+            <Setter Property="Background" Value="Transparent" />
+        </Style>
+        <Style Selector="Button.addbar-btn">
+            <Setter Property="HorizontalAlignment" Value="Stretch" />
+            <Setter Property="HorizontalContentAlignment" Value="Left" />
+            <Setter Property="Padding" Value="12,9" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="BorderBrush" Value="{DynamicResource MenuSurfaceBorder}" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="CornerRadius" Value="10" />
+            <Setter Property="Cursor" Value="Hand" />
+        </Style>
+        <Style Selector="Button.addbar-btn:pointerover">
+            <Setter Property="Background" Value="#15808080" />
+        </Style>
+        <Style Selector="Button.toolbar-icon">
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="Width" Value="30" />
+            <Setter Property="Height" Value="30" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+        </Style>
+        <Style Selector="Button.toolbar-icon:pointerover">
+            <Setter Property="Background" Value="#1F808080" />
+        </Style>
+        <!-- Disabled state follows the shared icon-button contract (transparent surface + 0.45
+             opacity) instead of Fluent's grey disabled pill, which read heavier than the
+             enabled button it belongs to. -->
+        <Style Selector="Button.toolbar-icon:disabled">
+            <Setter Property="Opacity" Value="0.45" />
+        </Style>
+        <Style Selector="Button.toolbar-icon:disabled /template/ ContentPresenter">
+            <Setter Property="Background" Value="Transparent" />
+        </Style>
+        <Style Selector="Button.library-item">
+            <Setter Property="Padding" Value="8,6" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="HorizontalContentAlignment" Value="Left" />
+        </Style>
+        <Style Selector="Button.library-item:pointerover">
+            <Setter Property="Background" Value="#1F808080" />
+        </Style>
+        <Style Selector="Button.glyph-cell">
+            <Setter Property="Width" Value="34" />
+            <Setter Property="Height" Value="34" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+        </Style>
+        <Style Selector="Button.glyph-cell:pointerover">
+            <Setter Property="Background" Value="#1F808080" />
+        </Style>
+        <Style Selector="Button.swatch-cell">
+            <Setter Property="Width" Value="26" />
+            <Setter Property="Height" Value="26" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="CornerRadius" Value="13" />
+            <Setter Property="Cursor" Value="Hand" />
+        </Style>
+    </Window.Styles>
+
+    <Border Background="{DynamicResource MenuSurfaceBackground}"
+            BorderBrush="{DynamicResource MenuSurfaceBorder}"
+            BorderThickness="{DynamicResource HostSurfaceBorderThickness}"
+            CornerRadius="{DynamicResource HostSurfaceCornerRadius}"
+            ClipToBounds="True">
+        <Grid RowDefinitions="Auto,Auto,*,Auto" Margin="16,10,16,14">
+
+            <!-- Title bar: drag area + Done -->
+            <Grid Grid.Row="0" Height="38" ColumnDefinitions="Auto,*,Auto"
+                  Background="Transparent"
+                  controls:PanelDragBehavior.IsDragHandle="True">
+                <TextBlock Grid.Column="0" VerticalAlignment="Center" FontSize="12" Opacity="0.55"
+                           Text="{x:Static locales:Locale.Shortcuts_Editor_Title}" />
+                <TextBlock x:Name="ActionCountText" Grid.Column="1" IsHitTestVisible="False"
+                           VerticalAlignment="Center" HorizontalAlignment="Center" FontSize="11"
+                           Opacity="0.45" />
+                <Button Grid.Column="2" x:Name="DoneButton"
+                        Content="{x:Static locales:Locale.Shortcuts_Done}"
+                        Click="OnDoneClicked"
+                        VerticalAlignment="Center" />
+            </Grid>
+
+            <!-- Toolbar: shortcut switcher + icon + name + undo/redo + run -->
+            <Grid Grid.Row="1" ColumnDefinitions="Auto,*,Auto" Margin="0,2,0,10">
+                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="2">
+                    <Button x:Name="SwitchButton" Classes="toolbar-icon"
+                            Click="OnSwitchShortcutClicked"
+                            ToolTip.Tip="{x:Static locales:Locale.Shortcuts_Switch}"
+                            AutomationProperties.Name="{x:Static locales:Locale.Shortcuts_Switch}">
+                        <sc:GlyphView Data="M5 6h14M5 12h9M5 18h11"
+                                      Stroke="{DynamicResource SystemControlForegroundBaseHighBrush}" StrokeThickness="1.8"
+                                      Width="16" Height="16" />
+                    </Button>
+                    <Button x:Name="IconButton"
+                            Classes="toolbar-icon" Width="34" Height="34"
+                            Click="OnIconButtonClicked"
+                            ToolTip.Tip="{x:Static locales:Locale.Shortcuts_IconPicker_Title}"
+                            AutomationProperties.Name="{x:Static locales:Locale.Shortcuts_IconPicker_Title}">
+                        <Border x:Name="HeaderGlyphSurface" Width="26" Height="26" CornerRadius="8">
+                            <sc:GlyphView x:Name="HeaderGlyphPath" Stroke="White" StrokeThickness="1.7"
+                                          Width="15" Height="15"
+                                          HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                    </Button>
+                </StackPanel>
+
+                <TextBox x:Name="NameBox" Grid.Column="1" Margin="10,0"
+                         FontSize="15" FontWeight="SemiBold" BorderThickness="0" Background="Transparent"
+                         Watermark="{x:Static locales:Locale.Shortcuts_Editor_NameWatermark}"
+                         VerticalContentAlignment="Center"
+                         LostFocus="OnNameCommitted" KeyDown="OnNameKeyDown" />
+
+                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="4">
+                    <Button x:Name="UndoButton" Classes="toolbar-icon" Click="OnUndoClicked"
+                            ToolTip.Tip="{x:Static locales:Locale.Shortcuts_Undo}"
+                            AutomationProperties.Name="{x:Static locales:Locale.Shortcuts_Undo}">
+                        <sc:GlyphView Data="M4.5 9.5h9.5a5 5 0 0 1 0 10H9M8.5 5.5l-4 4 4 4"
+                                      Stroke="{DynamicResource SystemControlForegroundBaseHighBrush}" StrokeThickness="1.8"
+                                      Width="16" Height="16" />
+                    </Button>
+                    <Button x:Name="RedoButton" Classes="toolbar-icon" Click="OnRedoClicked"
+                            ToolTip.Tip="{x:Static locales:Locale.Shortcuts_Redo}"
+                            AutomationProperties.Name="{x:Static locales:Locale.Shortcuts_Redo}">
+                        <sc:GlyphView Data="M19.5 9.5H10a5 5 0 0 0 0 10h5M15.5 5.5l4 4-4 4"
+                                      Stroke="{DynamicResource SystemControlForegroundBaseHighBrush}" StrokeThickness="1.8"
+                                      Width="16" Height="16" />
+                    </Button>
+                    <Button x:Name="RunButton" Classes="toolbar-icon" Width="36" Height="36"
+                            Click="OnRunClicked"
+                            ToolTip.Tip="{x:Static locales:Locale.Shortcuts_Menu_Run}"
+                            AutomationProperties.Name="{x:Static locales:Locale.Shortcuts_Menu_Run}">
+                        <Border x:Name="RunButtonSurface" Width="28" Height="28" CornerRadius="14"
+                                Background="#185FA5">
+                            <sc:GlyphView x:Name="RunGlyphPath" Data="M8 5.5v13l11-6.5z" Fill="White"
+                                          Width="13" Height="13"
+                                          HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                    </Button>
+                </StackPanel>
+            </Grid>
+
+            <!-- Action list -->
+            <ScrollViewer Grid.Row="2" HorizontalScrollBarVisibility="Disabled" Padding="0,2,0,10">
+                <Panel>
+                    <StackPanel x:Name="RowsHost" MaxWidth="470" HorizontalAlignment="Stretch" Spacing="6" />
+                    <TextBlock x:Name="EmptyHint" IsVisible="False"
+                               Text="{x:Static locales:Locale.Shortcuts_NoActions}"
+                               FontSize="12" Opacity="0.45" HorizontalAlignment="Center"
+                               VerticalAlignment="Center" />
+                </Panel>
+            </ScrollViewer>
+
+            <!-- Bottom: add action bar + library drawer -->
+            <StackPanel Grid.Row="3" MaxWidth="470" HorizontalAlignment="Stretch" Spacing="8">
+                <Button x:Name="AddActionButton" Classes="addbar-btn" Click="OnAddActionClicked">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <sc:GlyphView Data="M12 5.5v13M5.5 12h13" Stroke="{DynamicResource SystemControlForegroundBaseHighBrush}"
+                                      StrokeThickness="1.8" Width="14" Height="14"
+                                      VerticalAlignment="Center" />
+                        <TextBlock Text="{x:Static locales:Locale.Shortcuts_Add_Action}" FontSize="13"
+                                   VerticalAlignment="Center" />
+                    </StackPanel>
+                </Button>
+
+                <Border x:Name="LibraryPanel" IsVisible="False"
+                        Background="{DynamicResource MenuSurfaceBackground}"
+                        BorderBrush="{DynamicResource MenuSurfaceBorder}"
+                        BorderThickness="{DynamicResource HostSurfaceBorderThickness}"
+                        CornerRadius="{DynamicResource HostSurfaceCornerRadius}">
+                    <Grid RowDefinitions="Auto,*" Margin="10">
+                        <TextBox x:Name="LibrarySearchBox" FontSize="12"
+                                 Watermark="{x:Static locales:Locale.Shortcuts_Library_Search}"
+                                 TextChanged="OnLibrarySearchChanged" />
+                        <ScrollViewer Grid.Row="1" MaxHeight="230" Margin="0,8,0,0"
+                                      HorizontalScrollBarVisibility="Disabled">
+                            <StackPanel x:Name="LibraryHost" Spacing="2" />
+                        </ScrollViewer>
+                    </Grid>
+                </Border>
+            </StackPanel>
+        </Grid>
+    </Border>
+</Window>

@@ -1,0 +1,34 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="clr-namespace:DeskCanvas.Views.Controls;assembly=DeskCanvas"
+             xmlns:locales="clr-namespace:Habits.Locales"
+             x:Class="Habits.Views.Settings.HabitsSettings"
+             controls:SettingsPage.ScrollOwnership="Host">
+
+    <StackPanel Orientation="Vertical" Spacing="5" Margin="0 0 10 0">
+        <!-- 显示模式 -->
+        <controls:Setting Title="{x:Static locales:Locale.Habits_ViewMode}">
+            <ComboBox Name="ModeCombo" Width="200" SelectionChanged="OnSettingChanged" />
+        </controls:Setting>
+
+        <!-- 聚焦目标习惯 -->
+        <controls:Setting Name="FocusedHabitSetting" Title="{x:Static locales:Locale.Habits_FocusedHabit}">
+            <ComboBox Name="FocusedHabitCombo" Width="200" SelectionChanged="OnSettingChanged" />
+        </controls:Setting>
+
+        <!-- 每日重置时间 (夜猫子设置) -->
+        <controls:Setting Title="{x:Static locales:Locale.Habits_DayResetHour}">
+            <ComboBox Name="DayResetHourCombo" Width="200" SelectionChanged="OnDayResetChanged" />
+        </controls:Setting>
+
+        <!-- 显示连续天数 -->
+        <controls:Setting Title="{x:Static locales:Locale.Habits_ShowStreak}">
+            <ToggleSwitch Name="ShowStreakSwitch" IsCheckedChanged="OnToggleChanged" />
+        </controls:Setting>
+
+        <!-- 显示目标进度 -->
+        <controls:Setting Title="{x:Static locales:Locale.Habits_ShowTargetProgress}">
+            <ToggleSwitch Name="ShowTargetProgressSwitch" IsCheckedChanged="OnToggleChanged" />
+        </controls:Setting>
+    </StackPanel>
+</UserControl>

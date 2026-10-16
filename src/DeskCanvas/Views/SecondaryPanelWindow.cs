@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Runtime.InteropServices;
@@ -17,6 +16,9 @@ using Avalonia.Threading;
 using Avalonia.VisualTree;
 using DeskCanvas.Services;
 using DeskCanvas.Views.Controls;
+// The panel drives the glass through the shared port; the alias disambiguates it from the host
+// shell namespace, which also comes in via using above.
+using GlassSurfaceBase = global::DeskCanvas.UI.Controls.GlassSurfaceBase;
 
 namespace DeskCanvas.Views;
 
@@ -92,22 +94,10 @@ public abstract class SecondaryPanelWindow : Window, IFocusThemedWindow
     private const int WM_NCRBUTTONDOWN = 0x00A4;
     private const int WM_NCMBUTTONDOWN = 0x00A7;
 
-    private static readonly Dictionary<Type, SecondaryPanelWindow> ActivePanels = new();
-    private static readonly Dictionary<Type, DateTime> LastCloseTimes = new();
-
     /// <summary>A panel belongs to its opening display; dismiss it before Windows relocates it.</summary>
-    public static void CloseForDisplayChange()
-    {
-        foreach (var panel in ActivePanels.Values.ToList())
-        {
-            try
-            {
-                panel.Hide();
-                ((Window)panel).Close();
-            }
-            catch { /* Panels may already be closing because they lost focus. */ }
-        }
-    }
+    /// <remarks>State and identity live in <see cref="PanelService"/>; this forwards so the
+    /// public entry point the widget host calls stays unchanged.</remarks>
+    public static void CloseForDisplayChange() => PanelService.CloseForDisplayChange();
 
     // Material Design 3 motion tokens (https://m3.material.io/styles/motion/easing-and-duration/tokens-specs):
     // emphasized decelerate going in, emphasized accelerate going out.
@@ -145,7 +135,10 @@ public abstract class SecondaryPanelWindow : Window, IFocusThemedWindow
     // sampling was off; that strip lagged behind the surface, masked the animating glass with a
     // static bitmap, and fell back to a flat translucent scrim until it was ready.)
     private RelativePoint? spawnAnchor;
-    private LiquidGlassSurface? glassSurface;
+    // The panel drives the glass through the shared port (DeskCanvas.UI.GlassSurfaceBase) —
+    // render requests and animation-rate re-parameterisation — so the shell's slot surface and
+    // any legacy in-content surface are driven identically without casting to the host type.
+    private GlassSurfaceBase? glassSurface;
 
     // ---- W7: the shared shell -----------------------------------------------------------
     // A migrated panel declares no card/glass/title/close-button of its own: its AXAML root is a
@@ -175,12 +168,19 @@ public abstract class SecondaryPanelWindow : Window, IFocusThemedWindow
     /// </summary>
     protected double SpawnCornerRadius { get; private set; }
 
+    /// <summary>Whether this panel's own screen's state theme uses native blur. Instance on
+    /// purpose: with 失焦自动切换 live the panel follows its own screen, not the uniform state.</summary>
+    protected bool UsesNativeBlurTheme()
+    {
+        return PanelAppearanceResolver.ResolveEffectiveTheme(PanelAppearanceResolver.TryResolveSettingsProvider(), this).UsesNativeBlur;
+    }
+
     /// <summary>
     /// Whether the card may scale and rise. Must stay off when the panel clips itself with a
     /// native window region (SetWindowRgn): the region cannot follow a render transform, so
     /// the transition falls back to opacity only.
     /// </summary>
-    protected virtual bool TransformAnimationEnabled => true;
+    protected virtual bool TransformAnimationEnabled => !UsesNativeBlurTheme();
 
     /// <summary>How long the panel tolerates losing focus right after taking it before auto-closing.</summary>
     protected virtual int DeactivateCloseGraceMs => 300;
@@ -201,7 +201,8 @@ public abstract class SecondaryPanelWindow : Window, IFocusThemedWindow
     /// Called by derived constructors right after InitializeComponent. Two steps, because a
     /// ControlTheme's parts do not exist yet at this point:
     /// <list type="number">
-    /// <item>registration (idempotent): spawn radius, active-instance bookkeeping, window events;</item>
+    /// <item>registration (idempotent): spawn radius, window-role and PanelService registration
+    /// (legacy process/type key — <see cref="PanelService.Open"/> rebinds it), window events;</item>
     /// <item>connecting the visual shell — deferred to the shell's template application for a
     /// migrated panel, immediate for one that still declares its own card.</item>
     /// </list>
@@ -229,9 +230,15 @@ public abstract class SecondaryPanelWindow : Window, IFocusThemedWindow
 
         SpawnCornerRadius = cornerRadius ?? 0;
 
-        ActivePanels[GetType()] = this;
+        WindowRoles.Register(this, WindowRole.SecondaryPanel);
+
+        // Registration goes through the shared service: the panel starts under its legacy
+        // process/type key (bit-identical with the pre-service consumers) and
+        // PanelService.Open rebinds it to the requesting identity before it is shown.
+        PanelService.RegisterPanel(this);
 
         Loaded += OnPanelWindowLoaded;
+        Resized += (_, _) => ApplyWindowRegion();
         Activated += OnPanelWindowActivated;
         Deactivated += OnPanelWindowDeactivated;
         Closing += OnPanelWindowClosing;
@@ -376,8 +383,9 @@ public abstract class SecondaryPanelWindow : Window, IFocusThemedWindow
             glassSurface.RequestRender(immediate: true);
     }
 
-    /// <summary>Show + pin above the widget band + activate — the standard way every panel appears.</summary>
-    protected void ShowAsSecondaryPanel(Window? owner)
+    /// <summary>Show + pin above the widget band + activate — the standard way every panel appears.
+    /// <see cref="PanelService.Open"/> calls this for the panels it creates, hence the internal reach.</summary>
+    protected internal void ShowAsSecondaryPanel(Window? owner)
     {
         if (owner != null)
             Show(owner);
@@ -392,21 +400,14 @@ public abstract class SecondaryPanelWindow : Window, IFocusThemedWindow
 
     /// <summary>True within <paramref name="cooldownMs"/> after this panel type was last closed (re-open flicker guard).</summary>
     protected static bool PanelCoolingDown<T>(int cooldownMs = ReopenCooldownMs) where T : SecondaryPanelWindow
-    {
-        return LastCloseTimes.TryGetValue(typeof(T), out var closedAt)
-               && (DateTime.UtcNow - closedAt).TotalMilliseconds < cooldownMs;
-    }
+        => PanelService.IsCoolingDownFor(typeof(T), cooldownMs);
 
     /// <summary>
     /// Close this panel type's active instance (animated). Returns true when there was one,
     /// in which case the caller must not open a new panel — this is the "toggle" path.
     /// </summary>
     protected static bool TryCloseActivePanel<T>() where T : SecondaryPanelWindow
-    {
-        if (!ActivePanels.TryGetValue(typeof(T), out var panel)) return false;
-        try { panel.Close(); } catch { }
-        return true;
-    }
+        => PanelService.TryCloseFor(typeof(T));
 
     /// <summary>
     /// Drop a panel whose construction failed before it was ever shown. The active-panel map is how
@@ -415,11 +416,7 @@ public abstract class SecondaryPanelWindow : Window, IFocusThemedWindow
     /// a live panel existed.
     /// </summary>
     protected static void AbandonPanel(SecondaryPanelWindow panel)
-    {
-        var type = panel.GetType();
-        if (ActivePanels.TryGetValue(type, out var current) && ReferenceEquals(current, panel))
-            ActivePanels.Remove(type);
-    }
+        => PanelService.AbandonPanel(panel);
 
     private void OnPanelWindowLoaded(object? sender, RoutedEventArgs e)
     {
@@ -436,6 +433,7 @@ public abstract class SecondaryPanelWindow : Window, IFocusThemedWindow
         DesktopFurniture.Attach(this);
 
         PositionPanel();
+        ApplyWindowRegion();
         OnPanelLoaded();
         // The surface is mounted and laid out now: ask it for a real frame before the zoom starts.
         RequestGlassRender();
@@ -482,7 +480,46 @@ public abstract class SecondaryPanelWindow : Window, IFocusThemedWindow
     /// variant listener in <see cref="PanelAppearanceBinder"/> alone would miss a pure material
     /// swap.
     /// </remarks>
-    public void OnFocusThemeChanged() => appearanceBinder?.Refresh();
+    public void OnFocusThemeChanged()
+    {
+        appearanceBinder?.Refresh();
+        ApplyWindowRegion();
+    }
+
+    /// <summary>
+    /// Clip the native window to the panel card's rounded rectangle when OS-level Acrylic/Mica blur is used.
+    /// In non-native-blur modes (LiquidGlass, Solid), clear the region to allow smooth 32-bit alpha composition.
+    /// </summary>
+    public virtual void ApplyWindowRegion()
+    {
+        var handle = TryGetPlatformHandle()?.Handle;
+        if (handle == null || handle.Value == IntPtr.Zero) return;
+
+        var theme = PanelAppearanceResolver.ResolveEffectiveTheme(PanelAppearanceResolver.TryResolveSettingsProvider(), this);
+        if (theme.UsesNativeBlur)
+        {
+            var screen = Screens.ScreenFromWindow(this) ?? Screens.Primary;
+            double scaling = screen?.Scaling ?? (DesktopScaling > 0 ? DesktopScaling : 1.0);
+            if (scaling <= 0) scaling = 1.0;
+
+            int width = (int)Math.Round(ClientSize.Width * scaling);
+            int height = (int)Math.Round(ClientSize.Height * scaling);
+            double baseRadius = SpawnCornerRadius > 0
+                ? SpawnCornerRadius
+                : (connectedShell?.CornerRadius.TopLeft > 0 ? connectedShell.CornerRadius.TopLeft : (PanelCard is Border b ? b.CornerRadius.TopLeft : 18));
+            int radius = (int)Math.Round(baseRadius * scaling);
+
+            width = Math.Max(1, width);
+            height = Math.Max(1, height);
+            radius = Math.Clamp(radius, 0, Math.Min(width, height) / 2);
+
+            InteropService.SetWindowRegion(handle.Value, 0, 0, width, height, radius);
+        }
+        else
+        {
+            InteropService.ClearWindowRegion(handle.Value);
+        }
+    }
 
     private void OnPanelWindowClosed(object? sender, EventArgs e)
     {
@@ -507,10 +544,9 @@ public abstract class SecondaryPanelWindow : Window, IFocusThemedWindow
         openAnimationPlayed = false;
         panelShell = null;
 
-        var type = GetType();
-        if (ActivePanels.TryGetValue(type, out var current) && ReferenceEquals(current, this))
-            ActivePanels.Remove(type);
-        LastCloseTimes[type] = DateTime.UtcNow;
+        // Unregister + cooldown recording go through the service, under the panel's current
+        // identity key (the legacy type key, or the request key it was rebound to on open).
+        PanelService.UnregisterPanel(this);
     }
 
     private void InstallOutsideClickHook()
@@ -691,7 +727,7 @@ public abstract class SecondaryPanelWindow : Window, IFocusThemedWindow
     }
 
     /// <summary>The card-space anchor re-expressed inside the glass surface's bounds.</summary>
-    private Point AnchorRelativeToSurface(LiquidGlassSurface surface, Visual card)
+    private Point AnchorRelativeToSurface(GlassSurfaceBase surface, Visual card)
     {
         var anchor = spawnAnchor ?? new RelativePoint(0.5, 0.5, RelativeUnit.Relative);
         var point = anchor.ToPixels(card.Bounds.Size);

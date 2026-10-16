@@ -463,11 +463,8 @@ public class AggregateViewModel : ReactiveObject, IDisposable
     }
 
     /// <summary>
-    /// Release the process-lifetime timer subscriptions and the weather service's
-    /// <see cref="HttpClient"/>. Without this every abandoned view (each settings save
-    /// re-creates the widget, each Gallery visit creates a preview) would keep ticking and
-    /// holding a client alive forever. The view must build a fresh view model before using
-    /// this one again. Idempotent.
+    /// Release timer subscriptions and this weather owner's in-flight waits.
+    /// The view rebuilds a fresh model before reuse. Idempotent.
     /// </summary>
     public void Dispose()
     {

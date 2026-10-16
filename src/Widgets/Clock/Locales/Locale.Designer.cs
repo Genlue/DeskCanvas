@@ -114,6 +114,15 @@ namespace Clock.Locales {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Opaque Dial.
+        /// </summary>
+        public static string Clock_DialOpaque {
+            get {
+                return ResourceManager.GetString("Clock_DialOpaque", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Follow Background.
         /// </summary>
         public static string Clock_DialColor_Background {

@@ -1,0 +1,618 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+    <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+        <xsd:element name="root" msdata:IsDataSet="true" />
+    </xsd:schema>
+    <resheader name="resmimetype">
+        <value>text/microsoft-resx</value>
+    </resheader>
+    <resheader name="version">
+        <value>1.3</value>
+    </resheader>
+    <resheader name="reader">
+        <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    </resheader>
+    <resheader name="writer">
+        <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    </resheader>
+    <data name="Shortcuts" xml:space="preserve">
+        <value>Shortcuts</value>
+    </data>
+    <data name="Shortcuts_Title" xml:space="preserve">
+        <value>Shortcuts</value>
+    </data>
+    <data name="Shortcuts_Subtitle" xml:space="preserve">
+        <value>Compose multi-step workflows and run them with one tap</value>
+    </data>
+    <data name="Shortcuts_NewName" xml:space="preserve">
+        <value>New Shortcut</value>
+    </data>
+    <data name="Shortcuts_Unit_Percent" xml:space="preserve">
+        <value>{0}%</value>
+    </data>
+    <data name="Shortcuts_Unit_Times" xml:space="preserve">
+        <value>{0} times</value>
+    </data>
+    <data name="Shortcuts_Param_CopyOf" xml:space="preserve">
+        <value>{0} copy</value>
+    </data>
+    <data name="Shortcuts_Error_Timeout" xml:space="preserve">
+        <value>Timed out</value>
+    </data>
+    <data name="Shortcuts_Settings_Open" xml:space="preserve">
+        <value>Open</value>
+    </data>
+    <data name="Shortcuts_Tile_New" xml:space="preserve">
+        <value>New Shortcut</value>
+    </data>
+    <data name="Shortcuts_Tile_TapToRun" xml:space="preserve">
+        <value>Tap to run</value>
+    </data>
+    <data name="Shortcuts_Tile_TapToCreate" xml:space="preserve">
+        <value>Tap to create</value>
+    </data>
+    <data name="Shortcuts_Tile_Running" xml:space="preserve">
+        <value>Running</value>
+    </data>
+    <data name="Shortcuts_Tile_Step" xml:space="preserve">
+        <value>Step {0}/{1}</value>
+    </data>
+    <data name="Shortcuts_Tile_Done" xml:space="preserve">
+        <value>Done</value>
+    </data>
+    <data name="Shortcuts_Tile_Failed" xml:space="preserve">
+        <value>Failed</value>
+    </data>
+    <data name="Shortcuts_Tile_Cancelled" xml:space="preserve">
+        <value>Cancelled</value>
+    </data>
+    <data name="Shortcuts_Card_Empty" xml:space="preserve">
+        <value>No shortcuts yet</value>
+    </data>
+    <data name="Shortcuts_Card_EmptyHint" xml:space="preserve">
+        <value>Tap to create your first shortcut</value>
+    </data>
+    <data name="Shortcuts_Menu_Run" xml:space="preserve">
+        <value>Run</value>
+    </data>
+    <data name="Shortcuts_Menu_Edit" xml:space="preserve">
+        <value>Edit</value>
+    </data>
+    <data name="Shortcuts_Menu_Duplicate" xml:space="preserve">
+        <value>Duplicate</value>
+    </data>
+    <data name="Shortcuts_Menu_Delete" xml:space="preserve">
+        <value>Delete</value>
+    </data>
+    <data name="Shortcuts_Menu_New" xml:space="preserve">
+        <value>New Shortcut</value>
+    </data>
+    <data name="Shortcuts_Menu_Stop" xml:space="preserve">
+        <value>Stop</value>
+    </data>
+    <data name="Shortcuts_Delete_Message" xml:space="preserve">
+        <value>Delete "{0}"? This cannot be undone.</value>
+    </data>
+    <data name="Shortcuts_Delete_Ok" xml:space="preserve">
+        <value>Delete</value>
+    </data>
+    <data name="Shortcuts_Cancel" xml:space="preserve">
+        <value>Cancel</value>
+    </data>
+    <data name="Shortcuts_Popup_Title" xml:space="preserve">
+        <value>Shortcuts</value>
+    </data>
+    <data name="Shortcuts_Popup_Subtitle" xml:space="preserve">
+        <value>{0} shortcuts</value>
+    </data>
+    <data name="Shortcuts_Add" xml:space="preserve">
+        <value>New</value>
+    </data>
+    <data name="Shortcuts_Search_Placeholder" xml:space="preserve">
+        <value>Search shortcuts</value>
+    </data>
+    <data name="Shortcuts_Empty" xml:space="preserve">
+        <value>No shortcuts yet</value>
+    </data>
+    <data name="Shortcuts_EmptyHint" xml:space="preserve">
+        <value>Start from a template or a blank shortcut</value>
+    </data>
+    <data name="Shortcuts_Template_Header" xml:space="preserve">
+        <value>Start from a template</value>
+    </data>
+    <data name="Shortcuts_Template_Blank" xml:space="preserve">
+        <value>Blank Shortcut</value>
+    </data>
+    <data name="Shortcuts_Template_Lock" xml:space="preserve">
+        <value>Lock Screen</value>
+    </data>
+    <data name="Shortcuts_Template_Mute" xml:space="preserve">
+        <value>Quiet Focus</value>
+    </data>
+    <data name="Shortcuts_Template_Shot" xml:space="preserve">
+        <value>Screenshot Archive</value>
+    </data>
+    <data name="Shortcuts_Actions_Count" xml:space="preserve">
+        <value>{0} actions</value>
+    </data>
+    <data name="Shortcuts_Actions_CountOne" xml:space="preserve">
+        <value>1 action</value>
+    </data>
+    <data name="Shortcuts_NoMatch" xml:space="preserve">
+        <value>No matching shortcuts</value>
+    </data>
+    <data name="Shortcuts_Editor_Title" xml:space="preserve">
+        <value>Shortcut Editor</value>
+    </data>
+    <data name="Shortcuts_Done" xml:space="preserve">
+        <value>Done</value>
+    </data>
+    <data name="Shortcuts_Undo" xml:space="preserve">
+        <value>Undo</value>
+    </data>
+    <data name="Shortcuts_Redo" xml:space="preserve">
+        <value>Redo</value>
+    </data>
+    <data name="Shortcuts_Grip" xml:space="preserve">
+        <value>Drag to reorder</value>
+    </data>
+    <data name="Shortcuts_RowMenu" xml:space="preserve">
+        <value>More actions</value>
+    </data>
+    <data name="Shortcuts_Editor_NameWatermark" xml:space="preserve">
+        <value>Shortcut name</value>
+    </data>
+    <data name="Shortcuts_IconPicker_Title" xml:space="preserve">
+        <value>Icon &amp; Color</value>
+    </data>
+    <data name="Shortcuts_NoActions" xml:space="preserve">
+        <value>No actions yet - add one below</value>
+    </data>
+    <data name="Shortcuts_Add_Action" xml:space="preserve">
+        <value>Add Action</value>
+    </data>
+    <data name="Shortcuts_Library_Search" xml:space="preserve">
+        <value>Search actions</value>
+    </data>
+    <data name="Shortcuts_Library_Recent" xml:space="preserve">
+        <value>Recently used</value>
+    </data>
+    <data name="Shortcuts_Action_Delete" xml:space="preserve">
+        <value>Delete Action</value>
+    </data>
+    <data name="Shortcuts_Action_Duplicate" xml:space="preserve">
+        <value>Duplicate Action</value>
+    </data>
+    <data name="Shortcuts_Action_MoveUp" xml:space="preserve">
+        <value>Move Up</value>
+    </data>
+    <data name="Shortcuts_Action_MoveDown" xml:space="preserve">
+        <value>Move Down</value>
+    </data>
+    <data name="Shortcuts_InvalidValue" xml:space="preserve">
+        <value>Invalid value</value>
+    </data>
+    <data name="Shortcuts_EndRepeat" xml:space="preserve">
+        <value>End Repeat</value>
+    </data>
+    <data name="Shortcuts_EndIf" xml:space="preserve">
+        <value>End If</value>
+    </data>
+    <data name="Shortcuts_Else" xml:space="preserve">
+        <value>Otherwise</value>
+    </data>
+    <data name="Shortcuts_Collapse" xml:space="preserve">
+        <value>Collapse</value>
+    </data>
+    <data name="Shortcuts_Expand" xml:space="preserve">
+        <value>Expand</value>
+    </data>
+    <data name="Shortcuts_Param_Missing" xml:space="preserve">
+        <value>Not set</value>
+    </data>
+    <data name="Shortcuts_Param_Value" xml:space="preserve">
+        <value>Value</value>
+    </data>
+    <data name="Shortcuts_Param_Variable" xml:space="preserve">
+        <value>Variable</value>
+    </data>
+    <data name="Shortcuts_Param_UseValue" xml:space="preserve">
+        <value>Value</value>
+    </data>
+    <data name="Shortcuts_Param_UseVariable" xml:space="preserve">
+        <value>Insert variable</value>
+    </data>
+    <data name="Shortcuts_Param_LastResult" xml:space="preserve">
+        <value>Result of previous step</value>
+    </data>
+    <data name="Shortcuts_Param_ResultOf" xml:space="preserve">
+        <value>Result of "{0}"</value>
+    </data>
+    <data name="Shortcuts_Param_NoCandidates" xml:space="preserve">
+        <value>No previous step to reference</value>
+    </data>
+    <data name="Shortcuts_Param_Browse" xml:space="preserve">
+        <value>Browse</value>
+    </data>
+    <data name="Shortcuts_Param_PickFile" xml:space="preserve">
+        <value>Pick a file</value>
+    </data>
+    <data name="Shortcuts_Param_PickFolder" xml:space="preserve">
+        <value>Pick a folder</value>
+    </data>
+    <data name="Shortcuts_Param_PickApp" xml:space="preserve">
+        <value>Pick an application</value>
+    </data>
+    <data name="Shortcuts_Param_SecondsUnit" xml:space="preserve">
+        <value>{0} s</value>
+    </data>
+    <data name="Shortcuts_Param_target" xml:space="preserve">
+        <value>App</value>
+    </data>
+    <data name="Shortcuts_Param_args" xml:space="preserve">
+        <value>Arguments</value>
+    </data>
+    <data name="Shortcuts_Param_path" xml:space="preserve">
+        <value>Path</value>
+    </data>
+    <data name="Shortcuts_Param_url" xml:space="preserve">
+        <value>URL</value>
+    </data>
+    <data name="Shortcuts_Param_query" xml:space="preserve">
+        <value>Query</value>
+    </data>
+    <data name="Shortcuts_Param_engine" xml:space="preserve">
+        <value>Engine</value>
+    </data>
+    <data name="Shortcuts_Param_level" xml:space="preserve">
+        <value>Volume</value>
+    </data>
+    <data name="Shortcuts_Param_seconds" xml:space="preserve">
+        <value>Wait</value>
+    </data>
+    <data name="Shortcuts_Param_text" xml:space="preserve">
+        <value>Text</value>
+    </data>
+    <data name="Shortcuts_Param_message" xml:space="preserve">
+        <value>Message</value>
+    </data>
+    <data name="Shortcuts_Param_format" xml:space="preserve">
+        <value>Format</value>
+    </data>
+    <data name="Shortcuts_Param_min" xml:space="preserve">
+        <value>Minimum</value>
+    </data>
+    <data name="Shortcuts_Param_max" xml:space="preserve">
+        <value>Maximum</value>
+    </data>
+    <data name="Shortcuts_Param_left" xml:space="preserve">
+        <value>Value</value>
+    </data>
+    <data name="Shortcuts_Param_op" xml:space="preserve">
+        <value>Condition</value>
+    </data>
+    <data name="Shortcuts_Param_right" xml:space="preserve">
+        <value>Compared to</value>
+    </data>
+    <data name="Shortcuts_Param_count" xml:space="preserve">
+        <value>Times</value>
+    </data>
+    <data name="Shortcuts_Param_input" xml:space="preserve">
+        <value>Input</value>
+    </data>
+    <data name="Shortcuts_Param_operation" xml:space="preserve">
+        <value>Operation</value>
+    </data>
+    <data name="Shortcuts_Param_find" xml:space="preserve">
+        <value>Find</value>
+    </data>
+    <data name="Shortcuts_Param_replace_with" xml:space="preserve">
+        <value>Replace with</value>
+    </data>
+    <data name="Shortcuts_Param_note" xml:space="preserve">
+        <value>Note</value>
+    </data>
+    <data name="Shortcuts_Param_mode" xml:space="preserve">
+        <value>Action</value>
+    </data>
+    <data name="Shortcuts_Param_surface" xml:space="preserve">
+        <value>Material</value>
+    </data>
+    <data name="Shortcuts_Param_title" xml:space="preserve">
+        <value>Reminder</value>
+    </data>
+    <data name="Shortcuts_Choice_upper" xml:space="preserve">
+        <value>UPPERCASE</value>
+    </data>
+    <data name="Shortcuts_Choice_lower" xml:space="preserve">
+        <value>lowercase</value>
+    </data>
+    <data name="Shortcuts_Choice_trim" xml:space="preserve">
+        <value>Trim whitespace</value>
+    </data>
+    <data name="Shortcuts_Choice_replace" xml:space="preserve">
+        <value>Replace text</value>
+    </data>
+    <data name="Shortcuts_Op_equals" xml:space="preserve">
+        <value>equals</value>
+    </data>
+    <data name="Shortcuts_Op_notEquals" xml:space="preserve">
+        <value>is not</value>
+    </data>
+    <data name="Shortcuts_Op_contains" xml:space="preserve">
+        <value>contains</value>
+    </data>
+    <data name="Shortcuts_Op_startsWith" xml:space="preserve">
+        <value>starts with</value>
+    </data>
+    <data name="Shortcuts_Op_endsWith" xml:space="preserve">
+        <value>ends with</value>
+    </data>
+    <data name="Shortcuts_Op_greater" xml:space="preserve">
+        <value>is greater than</value>
+    </data>
+    <data name="Shortcuts_Op_less" xml:space="preserve">
+        <value>is less than</value>
+    </data>
+    <data name="Shortcuts_Op_isEmpty" xml:space="preserve">
+        <value>is empty</value>
+    </data>
+    <data name="Shortcuts_Op_isNotEmpty" xml:space="preserve">
+        <value>is not empty</value>
+    </data>
+    <data name="Shortcuts_Engine_bing" xml:space="preserve">
+        <value>Bing</value>
+    </data>
+    <data name="Shortcuts_Engine_baidu" xml:space="preserve">
+        <value>Baidu</value>
+    </data>
+    <data name="Shortcuts_Engine_google" xml:space="preserve">
+        <value>Google</value>
+    </data>
+    <data name="Shortcuts_Mode_hide" xml:space="preserve">
+        <value>Hide</value>
+    </data>
+    <data name="Shortcuts_Mode_show" xml:space="preserve">
+        <value>Show</value>
+    </data>
+    <data name="Shortcuts_Mode_toggle" xml:space="preserve">
+        <value>Toggle</value>
+    </data>
+    <data name="Shortcuts_Dark_dark" xml:space="preserve">
+        <value>Dark</value>
+    </data>
+    <data name="Shortcuts_Dark_light" xml:space="preserve">
+        <value>Light</value>
+    </data>
+    <data name="Shortcuts_Dark_system" xml:space="preserve">
+        <value>Follow system</value>
+    </data>
+    <data name="Shortcuts_Surface_cycle" xml:space="preserve">
+        <value>Cycle</value>
+    </data>
+    <data name="Shortcuts_Surface_acrylic" xml:space="preserve">
+        <value>Frosted Glass</value>
+    </data>
+    <data name="Shortcuts_Surface_solid" xml:space="preserve">
+        <value>Solid</value>
+    </data>
+    <data name="Shortcuts_Surface_liquidglass" xml:space="preserve">
+        <value>Liquid Glass</value>
+    </data>
+    <data name="Shortcuts_Surface_softglow" xml:space="preserve">
+        <value>Soft Glow</value>
+    </data>
+    <data name="Shortcuts_Surface_liquidglassv2" xml:space="preserve">
+        <value>Liquid Glass 2.0</value>
+    </data>
+    <data name="Shortcuts_Surface_colorful" xml:space="preserve">
+        <value>Colorful</value>
+    </data>
+    <data name="Shortcuts_Cat_Launch" xml:space="preserve">
+        <value>Launch</value>
+    </data>
+    <data name="Shortcuts_Cat_Media" xml:space="preserve">
+        <value>Media</value>
+    </data>
+    <data name="Shortcuts_Cat_System" xml:space="preserve">
+        <value>System &amp; Tools</value>
+    </data>
+    <data name="Shortcuts_Cat_Text" xml:space="preserve">
+        <value>Text &amp; Data</value>
+    </data>
+    <data name="Shortcuts_Cat_Flow" xml:space="preserve">
+        <value>Control Flow</value>
+    </data>
+    <data name="Shortcuts_Cat_DeskCanvas" xml:space="preserve">
+        <value>Widget Actions</value>
+    </data>
+    <data name="Shortcuts_Action_openApp" xml:space="preserve">
+        <value>Open App</value>
+    </data>
+    <data name="Shortcuts_Action_openFile" xml:space="preserve">
+        <value>Open File or Folder</value>
+    </data>
+    <data name="Shortcuts_Action_openUrl" xml:space="preserve">
+        <value>Open URL</value>
+    </data>
+    <data name="Shortcuts_Action_webSearch" xml:space="preserve">
+        <value>Search the Web</value>
+    </data>
+    <data name="Shortcuts_Action_mediaPlayPause" xml:space="preserve">
+        <value>Play / Pause</value>
+    </data>
+    <data name="Shortcuts_Action_mediaNext" xml:space="preserve">
+        <value>Next Track</value>
+    </data>
+    <data name="Shortcuts_Action_mediaPrevious" xml:space="preserve">
+        <value>Previous Track</value>
+    </data>
+    <data name="Shortcuts_Action_setVolume" xml:space="preserve">
+        <value>Set Volume</value>
+    </data>
+    <data name="Shortcuts_Action_muteToggle" xml:space="preserve">
+        <value>Toggle Mute</value>
+    </data>
+    <data name="Shortcuts_Action_lockScreen" xml:space="preserve">
+        <value>Lock Screen</value>
+    </data>
+    <data name="Shortcuts_Action_sleep" xml:space="preserve">
+        <value>Sleep</value>
+    </data>
+    <data name="Shortcuts_Action_screenshot" xml:space="preserve">
+        <value>Take Screenshot</value>
+    </data>
+    <data name="Shortcuts_Action_emptyRecycleBin" xml:space="preserve">
+        <value>Empty Recycle Bin</value>
+    </data>
+    <data name="Shortcuts_Action_wait" xml:space="preserve">
+        <value>Wait</value>
+    </data>
+    <data name="Shortcuts_Action_notify" xml:space="preserve">
+        <value>Show Notification</value>
+    </data>
+    <data name="Shortcuts_Action_getClipboard" xml:space="preserve">
+        <value>Get Clipboard</value>
+    </data>
+    <data name="Shortcuts_Action_setClipboard" xml:space="preserve">
+        <value>Copy to Clipboard</value>
+    </data>
+    <data name="Shortcuts_Action_textTransform" xml:space="preserve">
+        <value>Transform Text</value>
+    </data>
+    <data name="Shortcuts_Action_currentDate" xml:space="preserve">
+        <value>Current Date &amp; Time</value>
+    </data>
+    <data name="Shortcuts_Action_randomNumber" xml:space="preserve">
+        <value>Random Number</value>
+    </data>
+    <data name="Shortcuts_Action_if" xml:space="preserve">
+        <value>If</value>
+    </data>
+    <data name="Shortcuts_Action_repeat" xml:space="preserve">
+        <value>Repeat</value>
+    </data>
+    <data name="Shortcuts_Action_comment" xml:space="preserve">
+        <value>Comment</value>
+    </data>
+    <data name="Shortcuts_Action_themeSurface" xml:space="preserve">
+        <value>Switch Theme Material</value>
+    </data>
+    <data name="Shortcuts_Action_themeDarkMode" xml:space="preserve">
+        <value>Dark / Light Mode</value>
+    </data>
+    <data name="Shortcuts_Action_widgetsVisibility" xml:space="preserve">
+        <value>Show / Hide Widgets</value>
+    </data>
+    <data name="Shortcuts_Action_addReminder" xml:space="preserve">
+        <value>Add Reminder</value>
+    </data>
+    <data name="Shortcuts_Action_openDataFolder" xml:space="preserve">
+        <value>Open Data Folder</value>
+    </data>
+    <data name="Shortcuts_Output_Volume" xml:space="preserve">
+        <value>Volume {0}%</value>
+    </data>
+    <data name="Shortcuts_Output_Muted" xml:space="preserve">
+        <value>Muted</value>
+    </data>
+    <data name="Shortcuts_Output_Unmuted" xml:space="preserve">
+        <value>Unmuted</value>
+    </data>
+    <data name="Shortcuts_Output_Locked" xml:space="preserve">
+        <value>Screen locked</value>
+    </data>
+    <data name="Shortcuts_Output_Sleeping" xml:space="preserve">
+        <value>Going to sleep</value>
+    </data>
+    <data name="Shortcuts_Output_Screenshot" xml:space="preserve">
+        <value>Screenshot saved</value>
+    </data>
+    <data name="Shortcuts_Output_BinEmptied" xml:space="preserve">
+        <value>Recycle bin emptied</value>
+    </data>
+    <data name="Shortcuts_Output_BinAlreadyEmpty" xml:space="preserve">
+        <value>Recycle bin is already empty</value>
+    </data>
+    <data name="Shortcuts_Output_NotificationSent" xml:space="preserve">
+        <value>Notification sent</value>
+    </data>
+    <data name="Shortcuts_Output_Random" xml:space="preserve">
+        <value>Random: {0}</value>
+    </data>
+    <data name="Shortcuts_Output_NoMedia" xml:space="preserve">
+        <value>No media is playing</value>
+    </data>
+    <data name="Shortcuts_Output_Copied" xml:space="preserve">
+        <value>Copied</value>
+    </data>
+    <data name="Shortcuts_Output_ClipboardEmpty" xml:space="preserve">
+        <value>Clipboard is empty</value>
+    </data>
+    <data name="Shortcuts_Output_Theme" xml:space="preserve">
+        <value>Switched to {0}</value>
+    </data>
+    <data name="Shortcuts_Output_WidgetsHidden" xml:space="preserve">
+        <value>Desktop widgets hidden</value>
+    </data>
+    <data name="Shortcuts_Output_WidgetsShown" xml:space="preserve">
+        <value>Desktop widgets shown</value>
+    </data>
+    <data name="Shortcuts_Output_ReminderAdded" xml:space="preserve">
+        <value>Reminder added: {0}</value>
+    </data>
+    <data name="Shortcuts_Output_DataFolder" xml:space="preserve">
+        <value>Data folder opened</value>
+    </data>
+    <data name="Shortcuts_Error_EmptyParam" xml:space="preserve">
+        <value>Please fill in "{0}"</value>
+    </data>
+    <data name="Shortcuts_Error_Failed" xml:space="preserve">
+        <value>Failed: {0}</value>
+    </data>
+    <data name="Shortcuts_Error_NoApp" xml:space="preserve">
+        <value>Cannot start "{0}"</value>
+    </data>
+    <data name="Shortcuts_Error_UnknownAction" xml:space="preserve">
+        <value>Unknown action: {0}</value>
+    </data>
+    <data name="Shortcuts_Error_NoService" xml:space="preserve">
+        <value>Not available in this environment</value>
+    </data>
+    <data name="Shortcuts_Error_Notification" xml:space="preserve">
+        <value>Cannot show a notification</value>
+    </data>
+    <data name="Shortcuts_Error_ConfirmReject" xml:space="preserve">
+        <value>Cancelled by user</value>
+    </data>
+    <data name="Shortcuts_ConfirmDestructive" xml:space="preserve">
+        <value>This action deletes data and cannot be undone. Continue?</value>
+    </data>
+    <data name="Shortcuts_ConfirmRunMessage" xml:space="preserve">
+        <value>Run "{0}"?</value>
+    </data>
+    <data name="Shortcuts_ConfirmRunOk" xml:space="preserve">
+        <value>Run</value>
+    </data>
+    <data name="Shortcuts_Settings_MaxTiles" xml:space="preserve">
+        <value>Tiles on card</value>
+    </data>
+    <data name="Shortcuts_Settings_Confirm" xml:space="preserve">
+        <value>Confirm before running</value>
+    </data>
+    <data name="Shortcuts_Settings_Edit" xml:space="preserve">
+        <value>Edit Shortcut</value>
+    </data>
+    <data name="Shortcuts_Settings_OpenEditor" xml:space="preserve">
+        <value>Open Editor</value>
+    </data>
+    <data name="Shortcuts_Settings_OpenPanel" xml:space="preserve">
+        <value>Open Panel</value>
+    </data>
+    <data name="Shortcuts_Settings_Hint" xml:space="preserve">
+        <value>Compose actions in the editor; tap a tile on the card to run the shortcut.</value>
+    </data>
+    <data name="Shortcuts_Switch" xml:space="preserve">
+        <value>Switch Shortcut</value>
+    </data>
+</root>

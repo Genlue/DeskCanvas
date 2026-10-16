@@ -4,6 +4,8 @@ using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.LogicalTree;
 using DeskCanvas.Views.Controls;
+using ColorInputFormat = DeskCanvas.UI.Controls.ColorInputFormat;
+using ColorInputAlphaPolicy = DeskCanvas.UI.Controls.ColorInputAlphaPolicy;
 
 namespace UiFoundationChecks;
 

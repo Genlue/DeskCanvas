@@ -4,6 +4,7 @@ using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Layout;
 using Avalonia.Media;
+using DeskCanvas.Services;
 using Timetable.Locales;
 using Timetable.Models;
 using Timetable.Services;
@@ -31,6 +32,7 @@ public partial class ImportReviewWindow : Window
     {
         this.result = result;
         InitializeComponent();
+        WindowRoles.Register(this, WindowRole.Dialog);
         ApplyLocalization();
         Populate();
     }

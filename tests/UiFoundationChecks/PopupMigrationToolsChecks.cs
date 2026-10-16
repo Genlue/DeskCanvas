@@ -10,6 +10,7 @@ using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.LogicalTree;
 using Avalonia.Media;
+using Avalonia.VisualTree;
 using DeskCanvas.Views;
 using DeskCanvas.Views.Controls;
 using Tools.Views;
@@ -71,15 +72,16 @@ internal static partial class Program
         Check(popup.GetLogicalDescendants().OfType<SecondaryPanelShell>().Count() == 1,
             $"{label}: exactly one shell in the tree (no shell-in-shell, no wrapped old card)");
 
-        // No local chrome: the old names must not exist anywhere, and no LiquidGlassSurface
-        // outside the shell's template (template parts are visual, not logical children).
+        // No local chrome: the old names must not exist anywhere, and the ONLY glass surface in
+        // the tree is the one the shell's port slot hosts (no business-declared one).
         var names = popup.GetLogicalDescendants().OfType<Control>()
             .Select(c => c.Name).Where(n => n is not null).ToHashSet();
         Check(!names.Contains("CardBorder"), $"{label}: no local CardBorder");
         Check(!names.Contains("LiquidGlassSurfaceControl"), $"{label}: no local LiquidGlassSurfaceControl");
         Check(!names.Contains("CloseButton"), $"{label}: no local CloseButton");
-        Check(popup.GetLogicalDescendants().OfType<LiquidGlassSurface>().Count() == 0,
-            $"{label}: no LiquidGlassSurface in the logical tree (the shell's template part owns the glass)");
+        var glassInTree = popup.GetVisualDescendants().OfType<LiquidGlassSurface>().ToList();
+        Check(glassInTree.Count == 1 && ReferenceEquals(glassInTree[0], ((SecondaryPanelShell)popup.Content!).GlassSurface),
+            $"{label}: the shell's port slot owns the only glass surface in the tree");
 
         // No shell/glass/close-button styling left locally: every selector in the window's own
         // Styles is a business rule (pills, keypads, expression boxes, …), never shell chrome.

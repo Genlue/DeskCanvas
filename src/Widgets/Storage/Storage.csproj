@@ -15,6 +15,7 @@
         <Private>false</Private>
         <ExcludeAssets>runtime</ExcludeAssets>
       </ProjectReference>
+      <ProjectReference Include="..\..\DeskCanvas.Runtime\DeskCanvas.Runtime.csproj" Private="false" ExcludeAssets="runtime" />
     </ItemGroup>
 
     <ItemGroup>

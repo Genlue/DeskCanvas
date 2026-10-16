@@ -4,10 +4,12 @@ using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 using Avalonia.Controls;
+using DeskCanvas.Contracts;
 using DeskCanvas.Core.Interfaces;
 using DeskCanvas.Core.Models;
 using DeskCanvas.Core.Models.Attributes;
 using DeskCanvas.Core.Services;
+using DeskCanvas.Runtime;
 using DeskCanvas.Views;
 
 namespace DeskCanvas.Services;
@@ -156,6 +158,7 @@ public class WidgetFactory(IAssemblyProvider assemblyProvider, ILayoutProvider l
     /// <param name="widgetLayout">The widget layout to add.</param>
     public Window Add(ScreenLayout screen, WidgetLayout widgetLayout)
     {
+        widgetLayout = widgetLayout.EnsureIdentity();
         var stored = layoutProvider.Get();
         var current = stored.FindById(screen.Id) ?? screen;
         var withWidget = current with { Layout = [.. current.Layout, widgetLayout] };
@@ -185,8 +188,14 @@ public class WidgetFactory(IAssemblyProvider assemblyProvider, ILayoutProvider l
     /// </summary>
     public UserControl CreateControl(Type type)
     {
+        // The preview gets no session on purpose: every preview selection builds a fresh
+        // control under a throwaway Guid.NewGuid() identity and there is no teardown pass to
+        // release registry entries, so a session here would only leak per preview. A
+        // preview-capable consumer stays session-less (the pilot ignores activity without a
+        // session) and the preview's no-write semantics stay untouched.
         var previewScreenId = layoutProvider.Get().Screens.FirstOrDefault()?.Id ?? ScreensLayout.LegacyPrimaryId;
-        var defaultLayout = new WidgetLayout(type.Assembly.GetName().Name ?? "", type.Name, 0, 0, 200, 200, null);
+        var defaultLayout = new WidgetLayout(type.Assembly.GetName().Name ?? "", type.Name, 0, 0, 200, 200, null,
+            InstanceId: Guid.NewGuid(), Generation: 1);
         var widgetLayoutProvider = new WidgetLayoutProvider(layoutProvider, previewScreenId, defaultLayout);
         var control = CreateWidgetControl(type, widgetLayoutProvider, null);
         WidgetContentHost.Prepare(control);
@@ -197,9 +206,16 @@ public class WidgetFactory(IAssemblyProvider assemblyProvider, ILayoutProvider l
     {
         var widgetLayoutProvider = new WidgetLayoutProvider(layoutProvider, screen.Id, widgetLayout);
 
+        // One session per widget instance for the window's whole lifetime (recreations of the
+        // content reuse it through the same lambda). Legacy layout entries without a stable
+        // identity keep the session-less behaviour, exactly like the preview below.
+        var session = widgetLayout.HasStableIdentity
+            ? WidgetSessionRegistry.GetOrCreate(new WidgetInstanceId(widgetLayout.InstanceId))
+            : null;
+
         var assembly = assemblyProvider.LoadAssembly(widgetLayout.Type);
         var widgetInfo = GetWidgetInfo(assembly, widgetLayout.SubType);
-        var widgetControl = () => CreateWidgetControl(widgetInfo.ViewType, widgetLayoutProvider, widgetLayoutProvider.Get().GetModel(widgetInfo.ModelType));
+        var widgetControl = () => CreateWidgetControl(widgetInfo.ViewType, widgetLayoutProvider, widgetLayoutProvider.Get().GetModel(widgetInfo.ModelType), session);
 
         var editWidgetWindow = widgetInfo.EditModelViewType != null
             ? () => CreateEditWidgetWindow(widgetLayoutProvider, widgetInfo.EditModelViewType)
@@ -240,6 +256,8 @@ public class WidgetFactory(IAssemblyProvider assemblyProvider, ILayoutProvider l
         if (!activeWidgets.TryGetValue(screenId, out var list)) return;
         foreach (var widget in list.ToList())
         {
+            // The owner component is going away — its secondary panels must not outlive it.
+            PanelService.CloseForOwner(widget.InstanceId);
             widget.PrepareForTeardown();
             widget.Hide();
             widget.Close();
@@ -298,6 +316,8 @@ public class WidgetFactory(IAssemblyProvider assemblyProvider, ILayoutProvider l
             {
                 try
                 {
+                    // The owner component is going away — its secondary panels must not outlive it.
+                    PanelService.CloseForOwner(widget.InstanceId);
                     widget.PrepareForTeardown();
                     widget.Hide();
                     widget.Close();
@@ -354,6 +374,7 @@ public class WidgetFactory(IAssemblyProvider assemblyProvider, ILayoutProvider l
                 try
                 {
                     widget.SuspendContent();
+                    widget.Hide();
                 }
                 catch
                 {
@@ -375,10 +396,9 @@ public class WidgetFactory(IAssemblyProvider assemblyProvider, ILayoutProvider l
         LiquidGlassSourceCache.Clear();
 
         // Large native blocks were just released (the capture, the shared backdrops); hand the
-        // freed pages back promptly. The trimmer runs the compacting collection off the UI thread
-        // and applies its own single-flight / cooldown / hysteresis guards, so a fullscreen app
-        // toggling repeatedly cannot turn this into back-to-back trims.
-        MemoryTrimmerService.RequestTrim();
+        // freed pages back promptly. Force trim bypasses the floor and cooldown so working set
+        // and managed heap drop immediately when the desktop is covered.
+        MemoryTrimmerService.RequestTrim(TrimPriority.Force);
     }
 
     /// <summary>Resume the timers and let the widgets rebuild the released caches.</summary>
@@ -394,6 +414,7 @@ public class WidgetFactory(IAssemblyProvider assemblyProvider, ILayoutProvider l
             {
                 try
                 {
+                    widget.Show();
                     widget.ResumeContent();
                 }
                 catch
@@ -469,12 +490,18 @@ public class WidgetFactory(IAssemblyProvider assemblyProvider, ILayoutProvider l
         finally { reconcilingScreens = false; }
     }
 
-    private UserControl CreateWidgetControl(Type type, WidgetLayoutProvider? widgetLayoutProvider, object? model)
+    private UserControl CreateWidgetControl(Type type, WidgetLayoutProvider? widgetLayoutProvider, object? model, IWidgetSession? session = null)
     {
         List<object> args = [];
 
         if (NeedsWidgetLayoutProvider(type) && widgetLayoutProvider != null)
             args.Add(widgetLayoutProvider);
+
+        // Widgets that declare an IWidgetSession constructor parameter receive the host
+        // session (the P8 A1 pilot contract, probed like IWidgetLayoutProvider above);
+        // every other widget's activation is untouched.
+        if (session != null && NeedsSession(type))
+            args.Add(session);
 
         // A widget whose layout entry has no stored Settings yet (freshly added) — and every
         // 组件库 preview — arrives with model == null. Widgets whose constructors take the model
@@ -532,6 +559,20 @@ public class WidgetFactory(IAssemblyProvider assemblyProvider, ILayoutProvider l
             .Any(constructor => constructor
                 .GetParameters()
                 .Any(param => param.ParameterType == typeof(IWidgetLayoutProvider)));
+    }
+
+    /// <summary>
+    /// Whether the view declares an <see cref="IWidgetSession"/> constructor parameter and
+    /// therefore wants the host session injected. Views without the parameter are created
+    /// exactly as before.
+    /// </summary>
+    private static bool NeedsSession(Type type)
+    {
+        return type
+            .GetConstructors()
+            .Any(constructor => constructor
+                .GetParameters()
+                .Any(param => param.ParameterType == typeof(IWidgetSession)));
     }
 
     private static WidgetInfoAttribute GetWidgetInfo(Assembly assembly, string typeName)

@@ -16,24 +16,10 @@ public class ForecastViewModel : ReactiveObject, IDisposable
     /// <summary>Set once <see cref="Dispose"/> ran; keeps disposal (and late replies) harmless.</summary>
     private bool disposed;
 
-    private static readonly Dictionary<string, (ForecastResponse Forecast, DateTime FetchedAt)> StaticForecastCache = new();
-
-    private static string GetCacheKey(ForecastModel m) =>
-        $"{m.Latitude:F4}_{m.Longitude:F4}_{m.TemperatureUnit}";
-
     public ForecastViewModel(ForecastModel model)
     {
         provider = new OpenMeteoWeatherProvider();
         this.model = model;
-
-        var key = GetCacheKey(model);
-        lock (StaticForecastCache)
-        {
-            if (StaticForecastCache.TryGetValue(key, out var cached))
-            {
-                ApplyForecast(cached.Forecast);
-            }
-        }
 
         TimerService.Timer1Hour.Subscribe(UpdateForecast);
         UpdateForecast();
@@ -47,26 +33,10 @@ public class ForecastViewModel : ReactiveObject, IDisposable
 
     private async Task UpdateForecastAsync()
     {
-        var key = GetCacheKey(model);
-        lock (StaticForecastCache)
-        {
-            if (StaticForecastCache.TryGetValue(key, out var cached) &&
-                (DateTime.UtcNow - cached.FetchedAt).TotalMinutes < 15)
-            {
-                // Recent data (< 15 mins), already applied
-                return;
-            }
-        }
-
         var forecast = await provider.GetForecastAsync(model.Latitude, model.Longitude, model.TemperatureUnit);
         // A reply that arrives after disposal (the view was unloaded mid-request) must not
         // touch this view model any more, and must not revive it through its bindings.
         if (disposed || forecast is null) return;
-
-        lock (StaticForecastCache)
-        {
-            StaticForecastCache[key] = (forecast, DateTime.UtcNow);
-        }
 
         ApplyForecast(forecast);
     }
@@ -275,11 +245,8 @@ public class ForecastViewModel : ReactiveObject, IDisposable
     }
 
     /// <summary>
-    /// Detach from the process-lifetime hourly timer and dispose the provider's
-    /// <see cref="HttpClient"/>. The timer holds the tick delegate, so without this every
-    /// abandoned view (each settings save re-creates the views, each Gallery visit creates
-    /// a preview) would stay alive with its item view models and its HTTP client. The
-    /// view must rebuild a fresh view model before using this one again. Idempotent.
+    /// Detach from the process-lifetime hourly timer and release this owner's
+    /// in-flight provider waits. The view rebuilds a fresh owner before reuse.
     /// </summary>
     public void Dispose()
     {

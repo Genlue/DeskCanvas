@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace DeskCanvas.Core.Models;
 
@@ -14,9 +15,21 @@ namespace DeskCanvas.Core.Models;
 /// <param name="Settings">Widget's model as <see cref="JsonElement"/></param>
 /// <param name="ContentScale">This widget's content scale (0.5× – 2×).
 /// <c>null</c> falls back to the screen's scale, then to 1.0.</param>
+/// <param name="InstanceId">Stable identity persisted with the widget. Empty values are
+/// backfilled once while loading legacy layouts.</param>
+/// <param name="Generation">Monotonic session generation used to reject stale writes.</param>
 public record WidgetLayout(string Type, string SubType, int X, int Y, int Width, int Height, JsonElement? Settings,
-    double? ContentScale = null)
+    double? ContentScale = null, Guid InstanceId = default, long Generation = 0)
 {
+    /// <summary>Whether this entry carries the post-migration stable identity.</summary>
+    [JsonIgnore]
+    public bool HasStableIdentity => InstanceId != Guid.Empty;
+
+    /// <summary>Returns this entry with a new identity only when it is still legacy.</summary>
+    public WidgetLayout EnsureIdentity() => HasStableIdentity
+        ? this
+        : this with { InstanceId = Guid.NewGuid(), Generation = Generation <= 0 ? 1 : Generation };
+
     /// <summary>
     /// Get the widget's model.
     /// </summary>
@@ -31,9 +44,14 @@ public record WidgetLayout(string Type, string SubType, int X, int Y, int Width,
     /// a widget's stored entry when the original object reference is gone (legacy
     /// migration, screen hot-plug, ownership transfer) instead of appending a duplicate.
     /// </summary>
-    public bool SameWidgetAs(WidgetLayout other) =>
-        Type == other.Type && SubType == other.SubType &&
-        X == other.X && Y == other.Y && Width == other.Width && Height == other.Height;
+    public bool SameWidgetAs(WidgetLayout other)
+    {
+        if (HasStableIdentity && other.HasStableIdentity)
+            return InstanceId == other.InstanceId;
+
+        return Type == other.Type && SubType == other.SubType &&
+               X == other.X && Y == other.Y && Width == other.Width && Height == other.Height;
+    }
 
     /// <summary>
     /// Locate <paramref name="target"/> inside a stored layout list: by reference first

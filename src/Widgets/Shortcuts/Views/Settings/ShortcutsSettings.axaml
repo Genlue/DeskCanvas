@@ -1,0 +1,30 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="clr-namespace:DeskCanvas.Views.Controls;assembly=DeskCanvas"
+             xmlns:locales="clr-namespace:Shortcuts.Locales"
+             x:Class="Shortcuts.Views.Settings.ShortcutsSettings"
+             controls:SettingsPage.ScrollOwnership="Host">
+
+    <StackPanel Orientation="Vertical" Spacing="5" Margin="0,0,10,0">
+        <controls:Setting Title="{x:Static locales:Locale.Shortcuts_Settings_MaxTiles}">
+            <ComboBox x:Name="MaxTilesCombo" MinWidth="180" SelectionChanged="OnMaxTilesChanged" />
+        </controls:Setting>
+
+        <controls:Setting Title="{x:Static locales:Locale.Shortcuts_Settings_Confirm}">
+            <ToggleSwitch x:Name="ConfirmSwitch" IsCheckedChanged="OnConfirmChanged"
+                          OnContent="" OffContent="" />
+        </controls:Setting>
+
+        <controls:Setting Title="{x:Static locales:Locale.Shortcuts_Settings_Edit}">
+            <StackPanel Orientation="Horizontal" Spacing="6">
+                <ComboBox x:Name="ShortcutCombo" MinWidth="150" />
+                <Button x:Name="OpenEditorButton"
+                        Content="{x:Static locales:Locale.Shortcuts_Settings_Open}"
+                        Click="OnOpenEditorClicked" />
+            </StackPanel>
+        </controls:Setting>
+
+        <TextBlock Text="{x:Static locales:Locale.Shortcuts_Settings_Hint}"
+                   FontSize="11" Opacity="0.5" TextWrapping="Wrap" Margin="0,6,0,0" />
+    </StackPanel>
+</UserControl>

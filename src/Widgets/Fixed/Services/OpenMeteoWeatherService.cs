@@ -1,14 +1,14 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
-using System.Net.Http;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
 using Avalonia.Media;
 using FixedWidgets.Models;
-using DeskCanvas.Core.Services;
+using DeskCanvas.Runtime;
+using DeskCanvas.Services;
 
 namespace FixedWidgets.Services;
 
@@ -22,7 +22,12 @@ public record WeatherInfo(
 
 public class OpenMeteoWeatherService : IDisposable
 {
-    private readonly HttpClient httpClient = ProxySettings.CreateHttpClient();
+    private readonly OpenMeteoSharedProvider shared;
+    private readonly CancellationTokenSource lifetime = new();
+    private readonly string owner = $"fixed-weather-{Guid.NewGuid():N}";
+
+    public OpenMeteoWeatherService() : this(SharedDataServices.Weather) { }
+    public OpenMeteoWeatherService(OpenMeteoSharedProvider shared) => this.shared = shared ?? throw new ArgumentNullException(nameof(shared));
 
     /// <summary>Set once <see cref="Dispose"/> ran; makes disposal idempotent.</summary>
     private bool disposed;
@@ -35,14 +40,11 @@ public class OpenMeteoWeatherService : IDisposable
             var isZh = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName.Equals("zh", StringComparison.OrdinalIgnoreCase);
             var language = isZh ? "zh" : "en";
 
-            var url = $"https://geocoding-api.open-meteo.com/v1/search?" +
-                      $"name={Uri.EscapeDataString(query.Trim())}&" +
-                      $"count=10&language={language}&format=json";
-
-            using var resp = await httpClient.GetAsync(url, cancellationToken).ConfigureAwait(false);
-            if (!resp.IsSuccessStatusCode) return null;
-
-            var json = await resp.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+            if (disposed) return null;
+            using var linked = CancellationTokenSource.CreateLinkedTokenSource(lifetime.Token, cancellationToken);
+            using var lease = await shared.AcquireAsync(owner, new(default, WeatherResource.Geocoding, query.Trim(), language, 10), linked.Token).ConfigureAwait(false);
+            if (disposed) return null;
+            var json = lease.Snapshot.Value!;
             var data = JsonSerializer.Deserialize<GeocodingResponse>(json);
             return data?.Results;
         }
@@ -56,17 +58,10 @@ public class OpenMeteoWeatherService : IDisposable
     {
         try
         {
-            var latStr = string.Format(CultureInfo.InvariantCulture, "{0:F4}", latitude);
-            var lonStr = string.Format(CultureInfo.InvariantCulture, "{0:F4}", longitude);
-
-            var url = $"https://api.open-meteo.com/v1/forecast?latitude={latStr}&longitude={lonStr}" +
-                      $"&current=temperature_2m,weathercode&daily=temperature_2m_max,temperature_2m_min" +
-                      $"&temperature_unit={unit}&timezone=auto";
-
-            using var resp = await httpClient.GetAsync(url).ConfigureAwait(false);
-            if (!resp.IsSuccessStatusCode) return null;
-
-            var json = await resp.Content.ReadAsStringAsync().ConfigureAwait(false);
+            if (disposed) return null;
+            using var lease = await shared.AcquireAsync(owner, new(new WeatherRequest(latitude, longitude, unit)), lifetime.Token).ConfigureAwait(false);
+            if (disposed) return null;
+            var json = lease.Snapshot.Value!;
             var data = JsonSerializer.Deserialize<OpenMeteoResponse>(json);
             if (data?.Current == null) return null;
 
@@ -86,17 +81,13 @@ public class OpenMeteoWeatherService : IDisposable
         }
     }
 
-    /// <summary>
-    /// Release the service's own <see cref="HttpClient"/> (and through it the socket pool of
-    /// its handler). The widget drops its service when the view is unloaded, so without this
-    /// every view instance — each settings save, each Gallery visit — would keep a client and
-    /// its connections alive for the lifetime of the process. Idempotent.
-    /// </summary>
+    /// <summary>Release this owner's waits; shared fetches continue for other owners.</summary>
     public void Dispose()
     {
         if (disposed) return;
         disposed = true;
-        httpClient.Dispose();
+        lifetime.Cancel();
+        lifetime.Dispose();
         GC.SuppressFinalize(this);
     }
 

@@ -6,7 +6,7 @@ namespace DeskCanvas.Core.Models.Settings;
 /// </summary>
 public enum SurfaceStyle
 {
-    /// <summary>毛玻璃 / frosted glass: translucent background + blur.</summary>
+    /// <summary>Mica (原毛玻璃 / frosted glass): OS-level backdrop material.</summary>
     Acrylic = 0,
 
     /// <summary>纯色: fully opaque background.</summary>

@@ -27,6 +27,7 @@ class Program
         UpdateExistingEntry();
         NoResurrectionAfterLayoutReplacement();
         IdentityMatchAcrossParsedDocuments();
+        StableWidgetInstanceIdentity();
         RemoveByIdentityAcrossParsedDocuments();
         StableMonitorIdentity();
         IndependentTwinConfigurations();
@@ -101,6 +102,20 @@ class Program
         Check("reference match wins", WidgetLayout.IndexOfIdentity([stored, reloaded], stored) == 0);
         Check("a genuinely absent widget reports -1",
             WidgetLayout.IndexOfIdentity([stored], stored with { X = 12345 }) == -1);
+    }
+
+    /// <summary>Stable IDs distinguish identical widgets even when geometry changes.</summary>
+    private static void StableWidgetInstanceIdentity()
+    {
+        var id = Guid.NewGuid();
+        var stored = Widget("Clock", "Digital", 0, 0) with { InstanceId = id, Generation = 2 };
+        var moved = stored with { X = 500, Y = 300, Width = 400, Height = 220 };
+        var different = stored with { InstanceId = Guid.NewGuid() };
+
+        Check("stable instance identity survives geometry changes",
+            stored.SameWidgetAs(moved) && WidgetLayout.IndexOfIdentity([stored], moved) == 0);
+        Check("different instance IDs never alias",
+            !stored.SameWidgetAs(different) && WidgetLayout.IndexOfIdentity([stored], different) == -1);
     }
 
     /// <summary>Cross-screen transfer removes the old entry instead of leaving a stale copy.</summary>

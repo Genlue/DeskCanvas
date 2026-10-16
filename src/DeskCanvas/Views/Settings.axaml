@@ -187,6 +187,9 @@
             </SplitView.Content>
         </SplitView>
         <controls:TrafficLightTitleBar x:Name="TrafficBar" Grid.Row="0" Grid.RowSpan="2" VerticalAlignment="Top" IsVisible="False" />
+        <Border x:Name="NativeTitleBar" Grid.Row="0" Grid.RowSpan="2" VerticalAlignment="Top" Height="40"
+                Margin="0,0,140,0" Background="Transparent" IsVisible="False"
+                PointerPressed="OnNativeTitleBarPointerPressed" />
         <TextBlock Name="AppTitle" Grid.Row="0" Grid.RowSpan="2" VerticalAlignment="Top" IsHitTestVisible="False"
                    Margin="16 16 0 16" FontWeight="Bold" IsVisible="{Binding #SplitView.IsPaneOpen}">DeskCanvas</TextBlock>
         </Grid>

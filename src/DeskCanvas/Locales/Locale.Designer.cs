@@ -29,6 +29,10 @@ namespace DeskCanvas.Locales {
         public static string Settings_Appearance_V2_Refraction => ResourceManager.GetString("Settings_Appearance_V2_Refraction", resourceCulture);
         public static string Settings_Appearance_V2_RefractionHint => ResourceManager.GetString("Settings_Appearance_V2_RefractionHint", resourceCulture);
         public static string Settings_Appearance_V2_Dispersion => ResourceManager.GetString("Settings_Appearance_V2_Dispersion", resourceCulture);
+        public static string Settings_Appearance_SaveFailed => ResourceManager.GetString("Settings_Appearance_SaveFailed", resourceCulture);
+        public static string Settings_Appearance_SaveRetry => ResourceManager.GetString("Settings_Appearance_SaveRetry", resourceCulture);
+        public static string Settings_Appearance_SaveConflict => ResourceManager.GetString("Settings_Appearance_SaveConflict", resourceCulture);
+        public static string Settings_Appearance_SaveReload => ResourceManager.GetString("Settings_Appearance_SaveReload", resourceCulture);
         public static string Settings_Appearance_V2_DispersionHint => ResourceManager.GetString("Settings_Appearance_V2_DispersionHint", resourceCulture);
         public static string Settings_Appearance_V2_Highlight => ResourceManager.GetString("Settings_Appearance_V2_Highlight", resourceCulture);
         public static string Settings_Appearance_V2_HighlightHint => ResourceManager.GetString("Settings_Appearance_V2_HighlightHint", resourceCulture);

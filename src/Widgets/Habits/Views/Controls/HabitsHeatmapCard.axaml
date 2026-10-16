@@ -1,0 +1,91 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="clr-namespace:Habits.ViewModels"
+             xmlns:locales="clr-namespace:Habits.Locales"
+             xmlns:services="clr-namespace:Habits.Services"
+             x:Class="Habits.Views.Controls.HabitsHeatmapCard"
+             x:DataType="vm:HabitsViewModel"
+             Margin="10,8,10,8">
+
+    <UserControl.Styles>
+        <Style Selector="Button.action-btn">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="4" />
+            <Setter Property="Cursor" Value="Hand" />
+        </Style>
+        <Style Selector="Button.action-btn:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="#18808080" />
+        </Style>
+    </UserControl.Styles>
+
+    <Grid RowDefinitions="Auto, Auto, *, Auto">
+        <!-- Header -->
+        <Grid Grid.Row="0" ColumnDefinitions="*, Auto" Margin="0,0,0,4">
+            <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                <TextBlock Text="{Binding HeatmapMonthTitle}" FontSize="13" FontWeight="SemiBold"
+                           VerticalAlignment="Center" />
+                <Border Background="#2034C759" CornerRadius="8" Padding="6,1" VerticalAlignment="Center">
+                    <TextBlock Text="{x:Static locales:Locale.Habits_ViewMode_Heatmap}"
+                               FontSize="10" FontWeight="SemiBold"
+                               Foreground="#34C759" />
+                </Border>
+            </StackPanel>
+
+            <Button Grid.Column="1" Classes="action-btn" Width="22" Height="22"
+                    Click="OnOpenPopupClicked" ToolTip.Tip="{x:Static locales:Locale.Habits_Title}">
+                <Path Data="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z"
+                      Fill="{DynamicResource WidgetForeground}"
+                      Opacity="0.6" Stretch="Uniform" Width="12" Height="12"
+                      HorizontalAlignment="Center" VerticalAlignment="Center" />
+            </Button>
+        </Grid>
+
+        <!-- Week Day Headers (Mon - Sun) -->
+        <UniformGrid Grid.Row="1" Columns="7" Margin="0,2,0,4">
+            <TextBlock Text="{x:Static locales:Locale.Habits_Weekday_Mon}" FontSize="10" Opacity="0.4" HorizontalAlignment="Center" />
+            <TextBlock Text="{x:Static locales:Locale.Habits_Weekday_Tue}" FontSize="10" Opacity="0.4" HorizontalAlignment="Center" />
+            <TextBlock Text="{x:Static locales:Locale.Habits_Weekday_Wed}" FontSize="10" Opacity="0.4" HorizontalAlignment="Center" />
+            <TextBlock Text="{x:Static locales:Locale.Habits_Weekday_Thu}" FontSize="10" Opacity="0.4" HorizontalAlignment="Center" />
+            <TextBlock Text="{x:Static locales:Locale.Habits_Weekday_Fri}" FontSize="10" Opacity="0.4" HorizontalAlignment="Center" />
+            <TextBlock Text="{x:Static locales:Locale.Habits_Weekday_Sat}" FontSize="10" Opacity="0.4" HorizontalAlignment="Center" />
+            <TextBlock Text="{x:Static locales:Locale.Habits_Weekday_Sun}" FontSize="10" Opacity="0.4" HorizontalAlignment="Center" />
+        </UniformGrid>
+
+        <!-- Heatmap Grid -->
+        <ItemsControl Grid.Row="2" ItemsSource="{Binding HeatmapCells}" VerticalAlignment="Center">
+            <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <UniformGrid Columns="7" />
+                </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+                <DataTemplate DataType="services:HeatmapCell">
+                    <Border Margin="1.5" Height="15" CornerRadius="3"
+                            Background="{Binding BackgroundBrush}"
+                            Opacity="{Binding CellOpacity}"
+                            BorderBrush="{DynamicResource SystemAccentColor}"
+                            BorderThickness="{Binding BorderThicknessValue}">
+                        <ToolTip.Tip>
+                            <StackPanel Spacing="2">
+                                <TextBlock Text="{Binding DateString}" FontWeight="Bold" />
+                                <TextBlock Text="{Binding CompletedCount, StringFormat='完成: {0} 项'}" />
+                            </StackPanel>
+                        </ToolTip.Tip>
+                    </Border>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
+
+        <!-- Footer / Legend -->
+        <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="4" Margin="0,6,0,0">
+            <TextBlock Text="{x:Static locales:Locale.Habits_Legend_Less}" FontSize="9" Opacity="0.4" VerticalAlignment="Center" />
+            <Border Width="8" Height="8" CornerRadius="1.5" Background="#12808080" />
+            <Border Width="8" Height="8" CornerRadius="1.5" Background="#4034C759" />
+            <Border Width="8" Height="8" CornerRadius="1.5" Background="#7034C759" />
+            <Border Width="8" Height="8" CornerRadius="1.5" Background="#A534C759" />
+            <Border Width="8" Height="8" CornerRadius="1.5" Background="#FF34C759" />
+            <TextBlock Text="{x:Static locales:Locale.Habits_Legend_More}" FontSize="9" Opacity="0.4" VerticalAlignment="Center" />
+        </StackPanel>
+    </Grid>
+</UserControl>

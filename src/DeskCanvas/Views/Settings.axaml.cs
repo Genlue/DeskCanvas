@@ -61,6 +61,7 @@ public partial class Settings : Window
             ApplyTitleBarStyle();
         };
         InitializeComponent();
+        WindowRoles.Register(this, WindowRole.Settings);
         ListBox.SelectedItem = viewModel.DefaultItem;
         ApplyTransparencyHint();
         ApplyTitleBarStyle();
@@ -211,7 +212,24 @@ public partial class Settings : Window
         ExtendClientAreaTitleBarHeightHint = isTraffic ? 36 : 50;
         TrafficBar.IsVisible = isTraffic;
         TrafficBar.Size = settings.EffectiveTitleBarSize;
+        NativeTitleBar.IsVisible = !isTraffic;
         AppTitle.IsVisible = !isTraffic;
+    }
+
+    private void OnNativeTitleBarPointerPressed(object? sender, PointerPressedEventArgs e)
+    {
+        var point = e.GetCurrentPoint(this);
+        if (point.Properties.PointerUpdateKind != PointerUpdateKind.LeftButtonPressed) return;
+
+        if (e.ClickCount >= 2)
+        {
+            WindowState = WindowState == WindowState.Maximized
+                ? WindowState.Normal
+                : WindowState.Maximized;
+            return;
+        }
+
+        BeginMoveDrag(e);
     }
     
     /// <summary>

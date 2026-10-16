@@ -1,8 +1,11 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Linq;
+using DeskCanvas.Runtime;
+using DeskCanvas.Services;
 
 namespace Storage.Services;
 
@@ -23,6 +26,19 @@ public static class StorageService
         double UsageFraction,
         int UsagePercent
     );
+
+    /// <summary>
+    /// Shared drive-snapshot source for every enumeration entrypoint. Defaults to the host process
+    /// singleton so concurrent widget instances, view polls and settings pages share one
+    /// DriveInfo enumeration per TTL window. Tests replace it with a controlled provider; the
+    /// fallback stays lazy so an injected source never loads the host assembly.
+    /// </summary>
+    public static StorageDrivesSharedProvider DriveSource
+    {
+        get => driveSource ?? SharedDataServices.Storage;
+        set => driveSource = value;
+    }
+    private static StorageDrivesSharedProvider? driveSource;
 
     public static List<DriveStorageInfo> GetDrives(
         bool includeRemovable = true,
@@ -67,84 +83,74 @@ public static class StorageService
         }
         catch { }
 
-        DriveInfo[] drives;
+        IReadOnlyList<SharedDriveSnapshot>? snapshots;
         try
         {
-            drives = DriveInfo.GetDrives();
+            // One shared DriveInfo round serves every consumer; projection below stays equivalent
+            // to the legacy per-drive enumeration.
+            using var lease = DriveSource.AcquireAsync("storage-facade").GetAwaiter().GetResult();
+            snapshots = lease.Snapshot.Value;
         }
         catch
         {
             return list;
         }
 
-        foreach (var drive in drives)
+        if (snapshots == null)
+            return list;
+
+        foreach (var drive in snapshots)
         {
-            try
+            var type = drive.DriveType;
+            if (type != DriveType.Fixed &&
+                !(includeRemovable && type == DriveType.Removable) &&
+                !(includeNetwork && type == DriveType.Network))
             {
-                var type = drive.DriveType;
-                if (type != DriveType.Fixed &&
-                    !(includeRemovable && type == DriveType.Removable) &&
-                    !(includeNetwork && type == DriveType.Network))
+                continue;
+            }
+
+            var total = drive.TotalBytes;
+            if (total <= 0)
+                continue;
+
+            var free = Math.Clamp(drive.FreeBytes, 0L, total);
+            var used = Math.Clamp(total - free, 0L, total);
+            var fraction = Math.Clamp((double)used / total, 0.0, 1.0);
+            var percent = (int)Math.Round(fraction * 100.0);
+
+            var rootPath = drive.Name;
+            var driveLetter = rootPath.TrimEnd('\\', '/');
+            var isSystem = !string.IsNullOrEmpty(systemRoot) &&
+                           string.Equals(rootPath.TrimEnd('\\'), systemRoot.TrimEnd('\\'), StringComparison.OrdinalIgnoreCase);
+
+            var isZh = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName.Equals("zh", StringComparison.OrdinalIgnoreCase);
+            var fallbackLabel = isSystem
+                ? (isZh ? "系统" : "System")
+                : type switch
                 {
-                    continue;
-                }
+                    DriveType.Removable => isZh ? "可移动磁盘" : "Removable Disk",
+                    DriveType.Network => isZh ? "网络磁盘" : "Network Drive",
+                    _ => isZh ? "本地磁盘" : "Local Disk"
+                };
 
-                if (!drive.IsReady)
-                    continue;
+            var effectiveLabel = string.IsNullOrWhiteSpace(drive.VolumeLabel) ? fallbackLabel : drive.VolumeLabel;
+            var displayTitle = $"{driveLetter} {effectiveLabel}";
 
-                var total = drive.TotalSize;
-                if (total <= 0)
-                    continue;
-
-                var free = Math.Clamp(drive.AvailableFreeSpace, 0L, total);
-                var used = Math.Clamp(total - free, 0L, total);
-                var fraction = Math.Clamp((double)used / total, 0.0, 1.0);
-                var percent = (int)Math.Round(fraction * 100.0);
-
-                var rootPath = drive.Name;
-                var driveLetter = rootPath.TrimEnd('\\', '/');
-                var isSystem = !string.IsNullOrEmpty(systemRoot) &&
-                               string.Equals(rootPath.TrimEnd('\\'), systemRoot.TrimEnd('\\'), StringComparison.OrdinalIgnoreCase);
-
-                string label = string.Empty;
-                try { label = drive.VolumeLabel?.Trim() ?? string.Empty; } catch { }
-
-                string format = string.Empty;
-                try { format = drive.DriveFormat?.Trim() ?? string.Empty; } catch { }
-
-                var isZh = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName.Equals("zh", StringComparison.OrdinalIgnoreCase);
-                var fallbackLabel = isSystem
-                    ? (isZh ? "系统" : "System")
-                    : type switch
-                    {
-                        DriveType.Removable => isZh ? "可移动磁盘" : "Removable Disk",
-                        DriveType.Network => isZh ? "网络磁盘" : "Network Drive",
-                        _ => isZh ? "本地磁盘" : "Local Disk"
-                    };
-
-                var effectiveLabel = string.IsNullOrWhiteSpace(label) ? fallbackLabel : label;
-                var displayTitle = $"{driveLetter} {effectiveLabel}";
-
-                list.Add(new DriveStorageInfo(
-                    RootPath: rootPath,
-                    DriveLetter: driveLetter,
-                    VolumeLabel: effectiveLabel,
-                    DisplayTitle: displayTitle,
-                    ShortTitle: driveLetter,
-                    DriveType: type,
-                    DriveFormat: string.IsNullOrWhiteSpace(format) ? "NTFS" : format,
-                    IsSystemDrive: isSystem,
-                    TotalBytes: total,
-                    FreeBytes: free,
-                    UsedBytes: used,
-                    UsageFraction: fraction,
-                    UsagePercent: percent
-                ));
-            }
-            catch
-            {
-                // Skip inaccessible or disconnected drives without breaking enumeration
-            }
+            list.Add(new DriveStorageInfo(
+                RootPath: rootPath,
+                DriveLetter: driveLetter,
+                VolumeLabel: effectiveLabel,
+                DisplayTitle: displayTitle,
+                ShortTitle: driveLetter,
+                DriveType: type,
+                DriveFormat: string.IsNullOrWhiteSpace(drive.DriveFormat) ? "NTFS" : drive.DriveFormat,
+                IsSystemDrive: isSystem,
+                TotalBytes: total,
+                FreeBytes: free,
+                UsedBytes: used,
+                UsageFraction: fraction,
+                UsagePercent: percent
+            ));
         }
 
         return list

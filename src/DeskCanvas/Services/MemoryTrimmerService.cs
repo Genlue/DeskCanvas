@@ -2,6 +2,8 @@ using System;
 using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
+using DeskCanvas.Contracts;
+using DeskCanvas.Runtime;
 
 namespace DeskCanvas.Services;
 
@@ -23,6 +25,12 @@ public enum TrimPriority
     /// that arrives while another trim is running is still coalesced.
     /// </summary>
     Immediate,
+
+    /// <summary>
+    /// Fullscreen or maximized suspension: skips cooldown and floor, aggressively compacting
+    /// heap and emptying working set so background memory drops immediately.
+    /// </summary>
+    Force,
 }
 
 /// <summary>
@@ -97,6 +105,13 @@ public static class MemoryTrimmerService
     /// </param>
     public static void RequestTrim(TrimPriority priority = TrimPriority.Coalesced)
     {
+        // Pressure upgrade (§14.3, first graded tier): when the resource ledger reports High
+        // pressure, the requested priority is lifted one level so the existing maintenance
+        // action runs harder while the process is near its soft cap. This only strengthens a
+        // trim that was already requested — it never triggers one on its own, and observation
+        // failure degrades to "no pressure". Deferred follow-ups re-enter here and re-evaluate.
+        priority = EscalateForPressure(priority, ObservePressure());
+
         var run = false;
         long deferMs = -1;   // < 0: nothing to defer
 
@@ -116,7 +131,7 @@ public static class MemoryTrimmerService
                     ? 0L
                     : (long)Cooldown.TotalMilliseconds - (now - lastTrimCompletedAt);
 
-                if (remaining > 0 && priority != TrimPriority.Immediate)
+                if (remaining > 0 && priority == TrimPriority.Coalesced)
                 {
                     deferMs = remaining + 200;
                 }
@@ -132,7 +147,7 @@ public static class MemoryTrimmerService
                         return;
                     }
 
-                    if (privateBytes >= ActionableFloorBytes)
+                    if (priority == TrimPriority.Force || privateBytes >= ActionableFloorBytes)
                     {
                         inFlight = true;
                         run = true;
@@ -147,6 +162,39 @@ public static class MemoryTrimmerService
     }
 
     /// <summary>
+    /// Observes the process's rebuildable pixel memory against the middle experimental budget
+    /// tier (384 MiB, chosen as the observation cap because the pressure experiment is expected
+    /// to settle between the low and high tiers; see ResourcePressureEvaluator's calibration
+    /// note). Pure observation — any failure degrades to <see cref="ResourcePressureLevel.None"/>.
+    /// </summary>
+    private static ResourcePressureLevel ObservePressure()
+    {
+        try
+        {
+            var snapshot = ResourceLedger.Instance.Snapshot();
+            var cap = ResourceBudget.Tiers[1].SoftCapBytes;
+            return ResourcePressureEvaluator.Evaluate(new ResourcePressureState(
+                ResourcePressureEvaluator.TotalReclaimableBytes(snapshot), cap, Rising: false));
+        }
+        catch
+        {
+            return ResourcePressureLevel.None;
+        }
+    }
+
+    /// <summary>
+    /// Lifts the requested trim priority one level while pressure is High
+    /// (<see cref="TrimPriority.Coalesced"/> → <see cref="TrimPriority.Immediate"/> →
+    /// <see cref="TrimPriority.Force"/>); <see cref="TrimPriority.Force"/> stays Force.
+    /// Watch and None leave the request untouched.
+    /// </summary>
+    private static TrimPriority EscalateForPressure(TrimPriority requested, ResourcePressureLevel level)
+    {
+        if (level != ResourcePressureLevel.High || requested == TrimPriority.Force) return requested;
+        return requested == TrimPriority.Coalesced ? TrimPriority.Immediate : TrimPriority.Force;
+    }
+
+    /// <summary>
     /// Coalesces a suppressed request into one follow-up attempt (see RequestTrim). The most
     /// urgent priority among the suppressed requests is carried into the follow-up — an
     /// immediate release must stay immediate even when a timer was already pending for a
@@ -154,8 +202,8 @@ public static class MemoryTrimmerService
     /// </summary>
     private static void ScheduleDeferred(long delayMs, TrimPriority priority)
     {
-        if (priority == TrimPriority.Immediate)
-            Interlocked.Exchange(ref deferredPriority, (int)TrimPriority.Immediate);
+        if ((int)priority > Volatile.Read(ref deferredPriority))
+            Interlocked.Exchange(ref deferredPriority, (int)priority);
 
         if (Interlocked.Exchange(ref deferred, 1) == 1) return;
 

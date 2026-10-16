@@ -57,7 +57,7 @@ try {
         $Root = Split-Path -Parent $Root
     }
     $rootPath = (Resolve-Path -LiteralPath $Root -ErrorAction Stop).Path
-    $required = @('src', 'src/DeskCanvas', 'src/DeskCanvas.Core', 'src/Widgets', 'docs', 'scripts')
+    $required = @('src', 'src/DeskCanvas', 'src/DeskCanvas.Core', 'src/DeskCanvas.Contracts', 'src/DeskCanvas.UI', 'src/DeskCanvas.Runtime', 'src/Widgets', 'docs', 'scripts')
     $failures = [System.Collections.Generic.List[string]]::new()
 
     foreach ($relative in $required) {
@@ -68,6 +68,9 @@ try {
 
     $hostProject = Join-Path $rootPath 'src/DeskCanvas/DeskCanvas.csproj'
     $coreProject = Join-Path $rootPath 'src/DeskCanvas.Core/DeskCanvas.Core.csproj'
+    $runtimeProject = Join-Path $rootPath 'src/DeskCanvas.Runtime/DeskCanvas.Runtime.csproj'
+    $uiProject = Join-Path $rootPath 'src/DeskCanvas.UI/DeskCanvas.UI.csproj'
+    $contractsProject = Join-Path $rootPath 'src/DeskCanvas.Contracts/DeskCanvas.Contracts.csproj'
     if (-not (Test-Path -LiteralPath $hostProject -PathType Leaf)) { $failures.Add('Missing host project: src/DeskCanvas/DeskCanvas.csproj') }
     if (-not (Test-Path -LiteralPath $coreProject -PathType Leaf)) { $failures.Add('Missing SDK project: src/DeskCanvas.Core/DeskCanvas.Core.csproj') }
 
@@ -94,6 +97,34 @@ try {
             $referencePath = Get-ReferencePath $coreProject $reference
             if ($referencePath -eq $hostProject -or $referencePath.StartsWith($widgetRoot + [System.IO.Path]::DirectorySeparatorChar, [System.StringComparison]::OrdinalIgnoreCase)) {
                 $failures.Add('DeskCanvas.Core must not depend on host or widget projects.')
+            }
+        }
+    }
+
+    # The new libraries have a strict boundary even while Legacy widgets retain
+    # their registered host/Core compatibility references.
+    foreach ($library in @(
+        @{ Path = $contractsProject; Allowed = @() },
+        @{ Path = $runtimeProject; Allowed = @($contractsProject) },
+        @{ Path = $uiProject; Allowed = @($contractsProject) }
+    )) {
+        if (-not (Test-Path -LiteralPath $library.Path -PathType Leaf)) {
+            $failures.Add("Missing architecture project: $($library.Path)")
+            continue
+        }
+        $libraryXml = Read-ProjectXml $library.Path
+        $libraryName = [System.IO.Path]::GetFileNameWithoutExtension($library.Path)
+        foreach ($reference in (Get-ProjectNodes $libraryXml 'ProjectReference')) {
+            if ($library.Allowed -notcontains (Get-ReferencePath $library.Path $reference)) {
+                $failures.Add("${libraryName}: project dependency crosses the Contracts/UI/Runtime boundary.")
+            }
+        }
+        if ($library.Path -ne $uiProject) {
+            foreach ($package in (Get-ProjectNodes $libraryXml 'PackageReference')) {
+                $id = $package.GetAttribute('Include')
+                if ($id -match '^(Avalonia|SkiaSharp|System\.Management|Microsoft\.Windows)') {
+                    $failures.Add("${libraryName}: UI and Windows package $id belongs outside the runtime/contracts boundary.")
+                }
             }
         }
     }
@@ -152,7 +183,7 @@ try {
         if ($referencePaths -notcontains $coreProject) { $failures.Add("${name}: project does not reference DeskCanvas.Core.") }
         foreach ($reference in $references) {
             $referencePath = Get-ReferencePath $project $reference
-            if ($referencePath -ne $hostProject -and $referencePath -ne $coreProject) {
+            if ($referencePath -ne $hostProject -and $referencePath -ne $coreProject -and $referencePath -ne $runtimeProject -and $referencePath -ne $uiProject) {
                 $failures.Add("${name}: project reference must target host or Core: $($reference.GetAttribute('Include'))")
             }
             if ((Get-Metadata $reference 'Private') -ne 'false' -or @((Get-Metadata $reference 'ExcludeAssets') -split ';' | ForEach-Object { $_.Trim() }) -notcontains 'runtime') {
@@ -163,7 +194,7 @@ try {
         $expectedOutput = '..\..\DeskCanvas\bin\$(Configuration)\$(TargetFramework)\Widgets'
         # Platform-specific widgets (Windows APIs) keep a windows TFM but still output to the
         # host's net8.0\Widgets directory.
-        if ($name -eq 'Music' -or $name -eq 'ControlCenter') { $expectedOutput = '..\..\DeskCanvas\bin\$(Configuration)\net8.0\Widgets' }
+        if ($name -eq 'Music' -or $name -eq 'ControlCenter' -or $name -eq 'Shortcuts') { $expectedOutput = '..\..\DeskCanvas\bin\$(Configuration)\net8.0\Widgets' }
         if ($outputPath -ne $expectedOutput -or (Get-Property $projectXml 'AppendTargetFrameworkToOutputPath') -ne 'false') {
             $failures.Add("${name}: output must target the host Widgets directory without appending a framework.")
         }
@@ -188,7 +219,7 @@ try {
     }
 
     if (-not $Quiet) {
-        Write-Output ("Structure check passed: {0} widget projects; host/Core boundaries and plugin contracts are present." -f $widgets.Count)
+        Write-Output ("Structure check passed: {0} widget projects; host/Core and Contracts/UI/Runtime boundaries are present." -f $widgets.Count)
     }
     exit 0
 }

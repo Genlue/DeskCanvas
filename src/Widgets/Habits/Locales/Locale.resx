@@ -1,0 +1,196 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+    <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+        <xsd:element name="root" msdata:IsDataSet="true">
+        </xsd:element>
+    </xsd:schema>
+    <resheader name="resmimetype">
+        <value>text/microsoft-resx</value>
+    </resheader>
+    <resheader name="version">
+        <value>1.3</value>
+    </resheader>
+    <resheader name="reader">
+        <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    </resheader>
+    <resheader name="writer">
+        <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    </resheader>
+    <data name="Habits" xml:space="preserve">
+        <value>Habits</value>
+    </data>
+    <data name="Habits_Title" xml:space="preserve">
+        <value>Habits</value>
+    </data>
+    <data name="Habits_Subtitle" xml:space="preserve">
+        <value>Track your daily habits and build streaks</value>
+    </data>
+    <data name="Habits_ViewMode" xml:space="preserve">
+        <value>Display Mode</value>
+    </data>
+    <data name="Habits_ViewMode_List" xml:space="preserve">
+        <value>Habit List</value>
+    </data>
+    <data name="Habits_ViewMode_Focus" xml:space="preserve">
+        <value>Single Habit Focus</value>
+    </data>
+    <data name="Habits_ViewMode_Heatmap" xml:space="preserve">
+        <value>Heatmap Matrix</value>
+    </data>
+    <data name="Habits_FocusedHabit" xml:space="preserve">
+        <value>Focused Habit</value>
+    </data>
+    <data name="Habits_DayResetHour" xml:space="preserve">
+        <value>Day Reset Hour (Night Owl)</value>
+    </data>
+    <data name="Habits_ShowStreak" xml:space="preserve">
+        <value>Show Streak Count</value>
+    </data>
+    <data name="Habits_ShowTargetProgress" xml:space="preserve">
+        <value>Show Target Progress</value>
+    </data>
+    <data name="Habits_AddHabit" xml:space="preserve">
+        <value>Add Habit</value>
+    </data>
+    <data name="Habits_EditHabit" xml:space="preserve">
+        <value>Edit Habit</value>
+    </data>
+    <data name="Habits_DeleteHabit" xml:space="preserve">
+        <value>Delete Habit</value>
+    </data>
+    <data name="Habits_DeleteConfirm" xml:space="preserve">
+        <value>Are you sure you want to delete this habit?</value>
+    </data>
+    <data name="Habits_TitlePrompt" xml:space="preserve">
+        <value>Habit Name</value>
+    </data>
+    <data name="Habits_IconPrompt" xml:space="preserve">
+        <value>Icon / Emoji</value>
+    </data>
+    <data name="Habits_TypePrompt" xml:space="preserve">
+        <value>Check-in Type</value>
+    </data>
+    <data name="Habits_Type_Boolean" xml:space="preserve">
+        <value>Completion (Yes/No)</value>
+    </data>
+    <data name="Habits_Type_Numeric" xml:space="preserve">
+        <value>Numeric Target (e.g. Water)</value>
+    </data>
+    <data name="Habits_TargetValue" xml:space="preserve">
+        <value>Target Value</value>
+    </data>
+    <data name="Habits_StepValue" xml:space="preserve">
+        <value>Step per Click</value>
+    </data>
+    <data name="Habits_Unit" xml:space="preserve">
+        <value>Unit</value>
+    </data>
+    <data name="Habits_Frequency" xml:space="preserve">
+        <value>Frequency</value>
+    </data>
+    <data name="Habits_Freq_Daily" xml:space="preserve">
+        <value>Every Day</value>
+    </data>
+    <data name="Habits_Freq_Weekdays" xml:space="preserve">
+        <value>Weekdays (Mon-Fri)</value>
+    </data>
+    <data name="Habits_Freq_Weekends" xml:space="preserve">
+        <value>Weekends (Sat-Sun)</value>
+    </data>
+    <data name="Habits_CurrentStreak" xml:space="preserve">
+        <value>Streak</value>
+    </data>
+    <data name="Habits_BestStreak" xml:space="preserve">
+        <value>Best</value>
+    </data>
+    <data name="Habits_TotalCheckIns" xml:space="preserve">
+        <value>Total</value>
+    </data>
+    <data name="Habits_CompletionRate" xml:space="preserve">
+        <value>Rate</value>
+    </data>
+    <data name="Habits_TodayCompleted" xml:space="preserve">
+        <value>Done today</value>
+    </data>
+    <data name="Habits_AllDone" xml:space="preserve">
+        <value>All habits done today!</value>
+    </data>
+    <data name="Habits_Empty" xml:space="preserve">
+        <value>No habits yet</value>
+    </data>
+    <data name="Habits_Empty_Hint" xml:space="preserve">
+        <value>Click + above to add your first habit</value>
+    </data>
+    <data name="Habits_Tab_Today" xml:space="preserve">
+        <value>Today &amp; Manage</value>
+    </data>
+    <data name="Habits_Tab_Calendar" xml:space="preserve">
+        <value>Calendar &amp; History</value>
+    </data>
+    <data name="Habits_Tab_Stats" xml:space="preserve">
+        <value>Statistics</value>
+    </data>
+    <data name="Habits_Save" xml:space="preserve">
+        <value>Save</value>
+    </data>
+    <data name="Habits_Cancel" xml:space="preserve">
+        <value>Cancel</value>
+    </data>
+    <data name="Habits_CheckIn" xml:space="preserve">
+        <value>Check In</value>
+    </data>
+    <data name="Habits_Undo" xml:space="preserve">
+        <value>Undo</value>
+    </data>
+    <data name="Habits_Weekday_Mon" xml:space="preserve">
+        <value>Mon</value>
+    </data>
+    <data name="Habits_Weekday_Tue" xml:space="preserve">
+        <value>Tue</value>
+    </data>
+    <data name="Habits_Weekday_Wed" xml:space="preserve">
+        <value>Wed</value>
+    </data>
+    <data name="Habits_Weekday_Thu" xml:space="preserve">
+        <value>Thu</value>
+    </data>
+    <data name="Habits_Weekday_Fri" xml:space="preserve">
+        <value>Fri</value>
+    </data>
+    <data name="Habits_Weekday_Sat" xml:space="preserve">
+        <value>Sat</value>
+    </data>
+    <data name="Habits_Weekday_Sun" xml:space="preserve">
+        <value>Sun</value>
+    </data>
+    <data name="Habits_Stat_CurrentStreak_Value" xml:space="preserve">
+        <value>🔥 0 days</value>
+    </data>
+    <data name="Habits_Stat_BestStreak_Value" xml:space="preserve">
+        <value>🏆 0 days</value>
+    </data>
+    <data name="Habits_Stat_TotalCheckIns_Value" xml:space="preserve">
+        <value>0 times</value>
+    </data>
+    <data name="Habits_StatsBreakdown" xml:space="preserve">
+        <value>Per-Habit Breakdown</value>
+    </data>
+    <data name="Habits_PrevHabit" xml:space="preserve">
+        <value>Previous habit</value>
+    </data>
+    <data name="Habits_NextHabit" xml:space="preserve">
+        <value>Next habit</value>
+    </data>
+    <data name="Habits_ClickToCheckIn" xml:space="preserve">
+        <value>Tap to check in</value>
+    </data>
+    <data name="Habits_Achieved" xml:space="preserve">
+        <value>Goal reached ✔</value>
+    </data>
+    <data name="Habits_Legend_Less" xml:space="preserve">
+        <value>Less</value>
+    </data>
+    <data name="Habits_Legend_More" xml:space="preserve">
+        <value>More</value>
+    </data>
+</root>

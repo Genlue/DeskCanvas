@@ -1,0 +1,45 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <!-- The real widget assemblies under test are referenced directly; several widgets need the
+         Windows TFM, so the probe targets the same TFM as UiFoundationChecks. -->
+    <TargetFramework>net8.0-windows10.0.19041</TargetFramework>
+    <SupportedOSPlatform>windows</SupportedOSPlatform>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia" />
+    <PackageReference Include="Avalonia.Desktop" />
+    <PackageReference Include="Avalonia.Headless" />
+    <PackageReference Include="Avalonia.Fonts.Inter" />
+    <PackageReference Include="Avalonia.Themes.Fluent" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
+    <PackageReference Include="SkiaSharp" />
+    <ProjectReference Include="..\..\src\DeskCanvas.Core\DeskCanvas.Core.csproj" />
+    <ProjectReference Include="..\..\src\DeskCanvas\DeskCanvas.csproj" />
+    <!-- The full widget-type sweep needs every widget assembly. -->
+    <ProjectReference Include="..\..\src\Widgets\Batteries\Batteries.csproj" />
+    <ProjectReference Include="..\..\src\Widgets\Calendar\Calendar.csproj" />
+    <ProjectReference Include="..\..\src\Widgets\Clock\Clock.csproj" />
+    <ProjectReference Include="..\..\src\Widgets\ControlCenter\ControlCenter.csproj" />
+    <ProjectReference Include="..\..\src\Widgets\Fixed\Fixed.csproj" />
+    <ProjectReference Include="..\..\src\Widgets\Folders\Folders.csproj" />
+    <ProjectReference Include="..\..\src\Widgets\Hitokoto\Hitokoto.csproj" />
+    <ProjectReference Include="..\..\src\Widgets\Map\Map.csproj" />
+    <ProjectReference Include="..\..\src\Widgets\Monitor\Monitor.csproj" />
+    <ProjectReference Include="..\..\src\Widgets\Music\Music.csproj" />
+    <ProjectReference Include="..\..\src\Widgets\Notes\Notes.csproj" />
+    <ProjectReference Include="..\..\src\Widgets\Picture\Picture.csproj" />
+    <ProjectReference Include="..\..\src\Widgets\Pomodoro\Pomodoro.csproj" />
+    <ProjectReference Include="..\..\src\Widgets\Progress\Progress.csproj" />
+    <ProjectReference Include="..\..\src\Widgets\Reminders\Reminders.csproj" />
+    <ProjectReference Include="..\..\src\Widgets\Search\Search.csproj" />
+    <ProjectReference Include="..\..\src\Widgets\Stack\Stack.csproj" />
+    <ProjectReference Include="..\..\src\Widgets\Storage\Storage.csproj" />
+    <ProjectReference Include="..\..\src\Widgets\Timetable\Timetable.csproj" />
+    <ProjectReference Include="..\..\src\Widgets\Tools\Tools.csproj" />
+    <ProjectReference Include="..\..\src\Widgets\Weather\Weather.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -69,6 +69,30 @@ public static class Const
     /// </summary>
     public static readonly string TimetableFile = Path.Combine(DataFolder, TimetableFileName);
     /// <summary>
+    /// The path to the unified habits data file.
+    /// </summary>
+    public static readonly string HabitsFile = Path.Combine(DataFolder, HabitsFileName);
+    /// <summary>
+    /// The path to the unified shortcuts/workflow data file.
+    /// </summary>
+    public static readonly string ShortcutsFile = Path.Combine(DataFolder, ShortcutsFileName);
+    /// <summary>
+    /// The path to the unified countdown/events data file.
+    /// </summary>
+    public static readonly string CountdownFile = Path.Combine(DataFolder, CountdownFileName);
+    /// <summary>
+    /// The path to the dice roll history and settings data file.
+    /// </summary>
+    public static readonly string DiceFile = Path.Combine(DataFolder, DiceFileName);
+    /// <summary>
+    /// The path to the fortune records data file.
+    /// </summary>
+    public static readonly string FortuneFile = Path.Combine(DataFolder, FortuneFileName);
+    /// <summary>
+    /// The path to the decision wheel templates and history data file.
+    /// </summary>
+    public static readonly string WheelFile = Path.Combine(DataFolder, WheelFileName);
+    /// <summary>
     /// The folder for configuration profiles.
     /// </summary>
     public static readonly string ProfilesFolder = Path.Combine(DataFolder, ProfilesFolderName);
@@ -85,12 +109,20 @@ public static class Const
     public const string LayoutFileName = "layout.json";
     private const string RemindersFileName = "reminders.json";
     private const string TimetableFileName = "timetable.json";
+    /// <summary>Name of the habits data file inside the data folder.</summary>
+    public const string HabitsFileName = "habits.json";
+    /// <summary>Name of the unified shortcuts/workflow data file inside the data folder.</summary>
+    public const string ShortcutsFileName = "shortcuts.json";
+    private const string CountdownFileName = "countdown.json";
+    private const string DiceFileName = "dice.json";
+    private const string FortuneFileName = "fortune.json";
+    private const string WheelFileName = "wheel.json";
     private const string ProfilesFolderName = "Profiles";
 
     private static (string Folder, DataFolderSource Source, string? Pointer) ResolveDataFolder()
     {
         // Test/tool isolation: a process may redirect the whole data folder (settings, layout,
-        // timetable, reminders) away from the live user folder. The check/repro projects set
+        // timetable, reminders, habits) away from the live user folder. The check/repro projects set
         // DESCANVAS_DATA_FOLDER first thing in Main — without it, a process that is not the
         // packaged app resolves DataFolder to %LocalAppData%\DeskCanvas anyway and its store
         // saves stomp the user's real data (a check run overwrote timetable.json with the

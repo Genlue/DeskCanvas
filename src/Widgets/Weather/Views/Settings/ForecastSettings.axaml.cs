@@ -32,9 +32,8 @@ public partial class ForecastSettings : UserControl
     }
 
     /// <summary>
-    /// Release the provider's HTTP client — one per page instance would otherwise stay alive
-    /// for the lifetime of the process. A disposed provider is never used again; the next load
-    /// builds a fresh one. Idempotent.
+    /// Release this page's pending provider waits. A disposed provider is never used
+    /// again; the next load builds a fresh owner. Idempotent.
     /// </summary>
     private void OnUnloaded(object? sender, RoutedEventArgs e)
     {
@@ -47,7 +46,7 @@ public partial class ForecastSettings : UserControl
         var current = provider;
         if (current == null) return [];
 
-        return (await current.GetCitiesAsync(query ?? "") ?? []);
+        return (await current.GetCitiesAsync(query ?? "", token) ?? []);
     }
     
     private void Search_OnLostFocus(object? sender, RoutedEventArgs e)

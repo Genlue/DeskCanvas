@@ -1,0 +1,108 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="clr-namespace:Habits.ViewModels"
+             xmlns:locales="clr-namespace:Habits.Locales"
+             x:Class="Habits.Views.Controls.HabitsListCard"
+             x:DataType="vm:HabitsViewModel"
+             Margin="10,8,10,8">
+
+    <UserControl.Styles>
+        <!-- Ghost 图标按钮（规范 §4） -->
+        <Style Selector="Button.ghost-btn">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="4" />
+            <Setter Property="Cursor" Value="Hand" />
+        </Style>
+        <Style Selector="Button.ghost-btn:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="#18808080" />
+        </Style>
+
+        <!-- 行内勾选圈：24×24、1.5px 描边 -->
+        <Style Selector="Button.check-btn">
+            <Setter Property="Width" Value="24" />
+            <Setter Property="Height" Value="24" />
+            <Setter Property="CornerRadius" Value="12" />
+            <Setter Property="BorderThickness" Value="1.5" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+        </Style>
+        <Style Selector="Button.check-btn:pointerover">
+            <Setter Property="Opacity" Value="0.8" />
+        </Style>
+    </UserControl.Styles>
+
+    <Grid RowDefinitions="Auto, *">
+        <!-- Header：标题 13px SemiBold + 中性 pill + 右上 ghost 菜单 -->
+        <Grid Grid.Row="0" ColumnDefinitions="*, Auto" Margin="0,0,0,6">
+            <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                <TextBlock Text="{x:Static locales:Locale.Habits_Title}"
+                           FontSize="13" FontWeight="SemiBold"
+                           VerticalAlignment="Center" />
+                <Border Background="#14808080"
+                        CornerRadius="{DynamicResource WidgetPillCornerRadius}"
+                        Padding="8,2" VerticalAlignment="Center">
+                    <TextBlock Text="{Binding TodaySummaryText}"
+                               FontSize="11" FontWeight="SemiBold"
+                               Foreground="{DynamicResource WidgetForeground}" />
+                </Border>
+            </StackPanel>
+
+            <Button Grid.Column="1" Classes="ghost-btn" Width="22" Height="22"
+                    Click="OnOpenPopupClicked" ToolTip.Tip="{x:Static locales:Locale.Habits_Title}">
+                <Path Data="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z"
+                      Fill="{DynamicResource WidgetForeground}"
+                      Opacity="0.6" Stretch="Uniform" Width="12" Height="12"
+                      HorizontalAlignment="Center" VerticalAlignment="Center" />
+            </Button>
+        </Grid>
+
+        <!-- Habits List：行底 #0F808080 圆角 8，MinHeight 36，行距 3 -->
+        <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Hidden">
+            <ItemsControl ItemsSource="{Binding DisplayHabits}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate DataType="vm:HabitDisplayItem">
+                        <Border Background="#0F808080" CornerRadius="8"
+                                Padding="8,5" MinHeight="36" Margin="0,0,0,3">
+                            <Grid ColumnDefinitions="Auto, *, Auto">
+                                <!-- 图标容器 26×26 圆角 8 -->
+                                <Border Grid.Column="0" Width="26" Height="26" CornerRadius="8"
+                                        Background="#14808080" Margin="0,0,8,0"
+                                        VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding Icon}" FontSize="13"
+                                               HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                </Border>
+
+                                <!-- 标题 12px SemiBold + 副标题 10px Opacity 0.5，左对齐 -->
+                                <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2" Margin="0,0,8,0">
+                                    <TextBlock Text="{Binding Title}" FontSize="12" FontWeight="SemiBold"
+                                               TextTrimming="CharacterEllipsis" />
+                                    <TextBlock Text="{Binding CompactSubtitle}" FontSize="10" Opacity="0.5"
+                                               TextTrimming="CharacterEllipsis" />
+                                </StackPanel>
+
+                                <!-- 勾选圈 24×24：完成=勾，未完成=小圆点 -->
+                                <Button Grid.Column="2" Classes="check-btn" Click="OnCheckInClicked"
+                                        BorderBrush="{Binding ColorBrush}"
+                                        VerticalAlignment="Center">
+                                    <Panel>
+                                        <Path Data="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"
+                                              Fill="{Binding ColorBrush}"
+                                              IsVisible="{Binding IsCompleted}"
+                                              Stretch="Uniform" Width="12" Height="12" />
+                                        <Ellipse Width="5" Height="5" Fill="{Binding ColorBrush}"
+                                                 Opacity="0.35"
+                                                 IsVisible="{Binding !IsCompleted}" />
+                                    </Panel>
+                                </Button>
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </ScrollViewer>
+    </Grid>
+</UserControl>

@@ -3,6 +3,7 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using DeskCanvas.Core.Interfaces;
+using DeskCanvas.Services;
 using DeskCanvas.Core.Models.Settings;
 
 namespace DeskCanvas.Views;
@@ -23,6 +24,7 @@ public partial class WallpaperAlignDialog : Window
     {
         this.appSettingsProvider = appSettingsProvider;
         InitializeComponent();
+        WindowRoles.Register(this, WindowRole.Dialog);
         var glass = appSettingsProvider.Get().Theme.EffectiveGlass;
         OffsetX.Value = (decimal)glass.WallpaperOffsetX;
         OffsetY.Value = (decimal)glass.WallpaperOffsetY;

@@ -1,0 +1,30 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="DeskCanvas.UI.Controls.ColorInput">
+    <UserControl.Styles>
+        <!-- The picker's drop-down button chrome belongs to the compound control, not to the
+             page: every host gets the same affordance without repeating a local style. -->
+        <Styles>
+            <Style Selector="ColorPicker /template/ DropDownButton">
+                <Setter Property="Background" Value="{DynamicResource SystemControlBackgroundAltHighBrush}" />
+                <Setter Property="BorderBrush" Value="{DynamicResource SystemControlBackgroundBaseMediumBrush}" />
+                <Setter Property="BorderThickness" Value="1" />
+            </Style>
+        </Styles>
+    </UserControl.Styles>
+    <!-- ColorPicker + Hex draft + inline error (W6). The static visual tree only; the draft /
+         commit state machine lives in the code-behind. The error note takes real layout space
+         (row 2) instead of overlaying the input. -->
+    <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="Auto,Auto">
+        <ColorPicker x:Name="PickerPart" Grid.Row="0" Grid.Column="0"
+                     Width="72" Height="36" VerticalAlignment="Center"
+                     IsAlphaVisible="False" />
+        <TextBox x:Name="HexBoxPart" Grid.Row="0" Grid.Column="1"
+                 MinWidth="110" Margin="8 0 0 0" VerticalAlignment="Center" />
+        <TextBlock x:Name="ErrorTextPart" Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2"
+                   IsVisible="False" Margin="0 4 0 0"
+                   FontSize="{DynamicResource FontSizeCaption}"
+                   Foreground="{DynamicResource ValidationErrorBrush}"
+                   TextWrapping="Wrap" />
+    </Grid>
+</UserControl>

@@ -5,7 +5,7 @@
 
 <div align="center">
   <h3>🎨 macOS-Style Desktop Widgets Suite for Windows</h3>
-  <p>Built with Avalonia 11 + .NET 8 · Hardware Acrylic Blur · 3D Liquid Glass Optics · Lockscreen Art-Font Clock · Custom Snap Grid Engine</p>
+  <p>Built with Avalonia 11 + .NET 8 · Hardware Mica Backdrop · 3D Liquid Glass Optics · Lockscreen Art-Font Clock · Custom Snap Grid Engine</p>
 </div>
 
 <h3 align="center">
@@ -38,7 +38,7 @@
 - **Full font-weight spectrum** (100 Thin – 900 Black), per-widget theme override, color overlay with a native `ColorPicker` and live hex sync.
 
 ### 2. 💎 Four Deeply Adapted Visual Materials
-- 🪟 **Acrylic Blur (OS-level live hardware blur)** — Win32 `ExtCreateRegion` (`RGNDATA`) binds glyph scanline spans directly to the HWND region; DWM samples the desktop underneath at 60/144 fps with zero latency, tracking live wallpapers (Wallpaper Engine) and background video seamlessly;
+- 🪟 **Mica (OS-level live hardware backdrop)** — Win32 `ExtCreateRegion` (`RGNDATA`) binds glyph scanline spans directly to the HWND region; DWM samples the desktop underneath at 60/144 fps with zero latency, tracking live wallpapers (Wallpaper Engine) and background video seamlessly;
 - 💧 **Liquid Glass (3D optical refraction model)** — Euclidean Distance Transform computes surface normals across stroke contours for convex/concave lens displacement, chromatic dispersion and specular glints, with a GPU (Skia runtime shader) fast path and a CPU fallback;
 - 💎 **Liquid Glass 2.0** — a faithful GPU port of [Kyant0/AndroidLiquidGlass](https://github.com/Kyant0/AndroidLiquidGlass) 2.0's optical model: rounded-rect refraction lens with depth effect, diagonal chromatic aberration and hairline outline highlight; the refraction coefficients come from a single solver shared by the GPU shader and the CPU renderer, and the refraction band is capped at `0.8 × corner radius` so large cards keep clean corners;
 - 🎨 **Solid Fill** — pure anti-aliased vector fill with opacity slider and accent colors.

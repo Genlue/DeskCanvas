@@ -202,7 +202,7 @@ public class UpdateService
     private AppSettings RecordCheckOutcome(DateTime utcNow, string statusSummary)
     {
         // The network part intentionally stays context-free. Saving settings raises
-        // DataChanging, whose production subscribers update Avalonia theme/locale/resources;
+        // DataChanged, whose production subscribers update Avalonia theme/locale/resources;
         // marshal only that side effect back to the UI thread. Before this boundary existed,
         // the 3.7.0 ConfigureAwait(false) continuation made a successful request fail while
         // persisting its result and the UI reported the misleading network error.

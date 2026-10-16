@@ -17,6 +17,7 @@ using Avalonia.VisualTree;
 using SkiaSharp;
 using DeskCanvas.Core.Models.Settings;
 using DeskCanvas.Services;
+using DeskCanvas.UI.Controls;
 
 namespace DeskCanvas.Views.Controls;
 
@@ -24,8 +25,14 @@ namespace DeskCanvas.Views.Controls;
 /// A background-only glass surface. The optical model runs on the GPU whenever the platform gives
 /// us a real Ganesh context, and the original CPU renderer stays as the fallback; work is coalesced
 /// while moving, resizing or editing optics.
+/// <para>
+/// This is the single production implementation of the shared <see cref="GlassSurfaceBase"/> port
+/// (DeskCanvas.UI): the secondary-panel shell and the panel window drive the surface through that
+/// port (corner radius, render requests, animation-frame scale) while every optical property
+/// (material, sampling origin, preview flags) stays a host concern here.
+/// </para>
 /// </summary>
-public sealed class LiquidGlassSurface : Control
+public class LiquidGlassSurface : GlassSurfaceBase
 {
     private static readonly HashSet<LiquidGlassSurface> Active = new();
     private static readonly SemaphoreSlim RenderSlots = new(2);
@@ -187,7 +194,7 @@ public sealed class LiquidGlassSurface : Control
         AvaloniaProperty.Register<LiquidGlassSurface, bool>(nameof(IgnoresAncestorTransform), defaultValue: true);
 
     public Theme? Material { get => GetValue(MaterialProperty); set => SetValue(MaterialProperty, value); }
-    public CornerRadius CornerRadius { get => GetValue(CornerRadiusProperty); set => SetValue(CornerRadiusProperty, value); }
+    public override CornerRadius CornerRadius { get => GetValue(CornerRadiusProperty); set => SetValue(CornerRadiusProperty, value); }
     public bool Preview { get => GetValue(PreviewProperty); set => SetValue(PreviewProperty, value); }
     public bool SettingsSurface { get => GetValue(SettingsSurfaceProperty); set => SetValue(SettingsSurfaceProperty, value); }
     public bool IgnoresAncestorTransform { get => GetValue(IgnoresAncestorTransformProperty); set => SetValue(IgnoresAncestorTransformProperty, value); }
@@ -339,7 +346,7 @@ public sealed class LiquidGlassSurface : Control
     /// optics recomputed for the covered rect; the render pipeline itself (backdrop, debounce,
     /// prepare) is untouched.
     /// </summary>
-    public void SetAnimationFrameScale(double scale, Point anchorRelativeToSurface)
+    public override void SetAnimationFrameScale(double scale, Point anchorRelativeToSurface)
     {
         if (!attached || Material?.UsesRenderedGlass != true) return;
         var clamped = Math.Clamp(scale, 0.05, 1.0);
@@ -427,7 +434,10 @@ public sealed class LiquidGlassSurface : Control
         RenderMaterial();
     }
 
-    public void RequestRender(bool immediate = false)
+    /// <summary>Ask for a coalesced (debounced) render — the historic no-argument entry point.</summary>
+    public void RequestRender() => RequestRender(immediate: false);
+
+    public override void RequestRender(bool immediate)
     {
         revision++;
         if (!attached) return;

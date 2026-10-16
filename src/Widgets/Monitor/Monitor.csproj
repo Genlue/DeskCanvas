@@ -13,7 +13,6 @@
       <PackageReference Include="Avalonia" PrivateAssets="all" ExcludeAssets="runtime">
         <IncludeAssets>compile; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       </PackageReference>
-      <PackageReference Include="System.Management" />
     </ItemGroup>
 
     <ItemGroup>
@@ -43,5 +42,8 @@
         <AutoGen>True</AutoGen>
         <DependentUpon>Locale.resx</DependentUpon>
       </Compile>
+    </ItemGroup>
+    <ItemGroup>
+        <ProjectReference Include="..\..\DeskCanvas.Runtime\DeskCanvas.Runtime.csproj" Private="false" ExcludeAssets="runtime" />
     </ItemGroup>
 </Project>

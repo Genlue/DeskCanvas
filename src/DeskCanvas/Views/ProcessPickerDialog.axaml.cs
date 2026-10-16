@@ -19,6 +19,7 @@ public partial class ProcessPickerDialog : Window
     public ProcessPickerDialog()
     {
         InitializeComponent();
+        WindowRoles.Register(this, WindowRole.Dialog);
         Reload();
     }
 

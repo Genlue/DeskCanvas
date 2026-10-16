@@ -1,0 +1,106 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="clr-namespace:Shortcuts.ViewModels"
+             xmlns:sc="clr-namespace:Shortcuts.Views.Controls"
+             xmlns:locales="clr-namespace:Shortcuts.Locales"
+             x:Class="Shortcuts.Views.ShortcutsView"
+             x:DataType="vm:ShortcutsCardViewModel"
+             Background="Transparent">
+
+    <UserControl.Styles>
+        <Style Selector="Button.shortcut-tile">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="0" />
+            <!-- The Fluent button theme aligns buttons left/top: without these the tile hugs its
+                 content and every row's block ends at a different width. The tile must fill its
+                 grid cell so all blocks share one width and the side margins stay symmetric. -->
+            <Setter Property="HorizontalAlignment" Value="Stretch" />
+            <Setter Property="VerticalAlignment" Value="Stretch" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="VerticalContentAlignment" Value="Stretch" />
+            <Setter Property="Cursor" Value="Hand" />
+        </Style>
+        <Style Selector="Button.shortcut-tile:pointerover">
+            <Setter Property="Opacity" Value="0.85" />
+        </Style>
+        <Style Selector="Button.shortcut-tile:pressed">
+            <Setter Property="Opacity" Value="0.7" />
+        </Style>
+    </UserControl.Styles>
+
+    <Panel Cursor="Hand" PointerPressed="OnCardPointerPressed">
+        <ItemsControl x:Name="TilesControl" ItemsSource="{Binding Tiles}" Margin="2">
+            <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <UniformGrid Columns="{Binding Columns}" />
+                </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+                <DataTemplate DataType="vm:ShortcutTileViewModel">
+                    <Button Classes="shortcut-tile" Margin="3"
+                            Click="OnTileClicked"
+                            ToolTip.Tip="{Binding Name}">
+                        <Button.ContextMenu>
+                            <ContextMenu Classes="WidgetContextMenu" IsEnabled="{Binding !IsCreate}">
+                                <MenuItem Header="{x:Static locales:Locale.Shortcuts_Menu_Run}"
+                                          Click="OnTileMenuRun" />
+                                <MenuItem Header="{x:Static locales:Locale.Shortcuts_Menu_Edit}"
+                                          Click="OnTileMenuEdit" />
+                                <MenuItem Header="{x:Static locales:Locale.Shortcuts_Menu_Duplicate}"
+                                          Click="OnTileMenuDuplicate" />
+                                <Separator />
+                                <MenuItem Header="{x:Static locales:Locale.Shortcuts_Menu_Delete}"
+                                          Click="OnTileMenuDelete" />
+                            </ContextMenu>
+                        </Button.ContextMenu>
+                        <Border Background="{Binding TintBrush}" CornerRadius="10" Padding="9,6" ClipToBounds="True">
+                            <Panel>
+                                <!-- Icon + text sit as one group, centered both ways in the block,
+                                     so the block can stretch to any cell size without drifting. -->
+                                <Grid ColumnDefinitions="Auto,*" VerticalAlignment="Center">
+                                    <Border Grid.Column="0" Width="28" Height="28" CornerRadius="8"
+                                            Background="{Binding IconBrush}" VerticalAlignment="Center">
+                                        <sc:GlyphView Data="{Binding GlyphGeometry}" Stroke="White"
+                                                      StrokeThickness="1.7"
+                                                      Width="15" Height="15"
+                                                      HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                    </Border>
+                                    <!-- Explicit line heights keep the two text lines inside the tile's padding
+                                         box (28 = 15 + 1 + 12): the stack then centers evenly against the icon. -->
+                                    <StackPanel Grid.Column="1" Margin="8,0,0,0"
+                                                VerticalAlignment="Center" Spacing="1">
+                                        <TextBlock Text="{Binding Name}" FontSize="12.5" FontWeight="SemiBold"
+                                                   LineHeight="15"
+                                                   TextTrimming="CharacterEllipsis"
+                                                   Foreground="{Binding NameBrush}" />
+                                        <TextBlock Text="{Binding ActionCountText}" FontSize="10" Opacity="0.8"
+                                                   LineHeight="12"
+                                                   TextTrimming="CharacterEllipsis"
+                                                   Foreground="{Binding SubBrush}"
+                                                   IsVisible="{Binding SubtitleSlotVisible}" />
+                                        <TextBlock Text="{Binding StateText}" FontSize="10"
+                                                   LineHeight="12"
+                                                   TextTrimming="CharacterEllipsis"
+                                                   Foreground="{Binding StateBrush}"
+                                                   IsVisible="{Binding StateVisible}" />
+                                    </StackPanel>
+                                </Grid>
+                                <!-- Run progress is an overlay pinned near the bottom edge: the running
+                                     state changes nothing about the block's content height.
+                                     MinWidth/MinHeight reset the Fluent defaults (200/4), which would
+                                     otherwise push the bar right out of the block. -->
+                                <ProgressBar VerticalAlignment="Bottom" Margin="0,0,0,-4"
+                                             MinWidth="0" MinHeight="0"
+                                             Height="3" CornerRadius="1.5" Minimum="0" Maximum="1"
+                                             Value="{Binding Progress}"
+                                             Foreground="{Binding IconBrush}"
+                                             IsVisible="{Binding IsRunning}" />
+                            </Panel>
+                        </Border>
+                    </Button>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
+    </Panel>
+</UserControl>

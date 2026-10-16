@@ -1084,10 +1084,19 @@ public static class LiquidGlassRenderer
 /// </summary>
 public sealed class WallpaperLease : IDisposable
 {
+    private static int liveLeases;
+    private static long liveLeaseBytes;
+
     private int references = 1;
     private readonly SKBitmap? bitmap;
 
-    public WallpaperLease(SKBitmap? bitmap) => this.bitmap = bitmap;
+    public WallpaperLease(SKBitmap? bitmap)
+    {
+        this.bitmap = bitmap;
+        Interlocked.Increment(ref liveLeases);
+        if (bitmap is { } leased) Interlocked.Add(ref liveLeaseBytes, (long)leased.RowBytes * leased.Height);
+        ReportLeases();
+    }
 
     public SKBitmap? Bitmap => bitmap;
 
@@ -1096,8 +1105,18 @@ public sealed class WallpaperLease : IDisposable
     public void Dispose()
     {
         if (Interlocked.Decrement(ref references) > 0) return;
+        Interlocked.Decrement(ref liveLeases);
+        if (bitmap is { } released) Interlocked.Add(ref liveLeaseBytes, -((long)released.RowBytes * released.Height));
         try { bitmap?.Dispose(); } catch { }
+        ReportLeases();
     }
+
+    /// <summary>Observation only: the number of live leases and their pixel bytes, to the ledger.</summary>
+    private static void ReportLeases() =>
+        DeskCanvas.Runtime.ResourceLedger.Instance.Report("glass.wallpaper-lease",
+            DeskCanvas.Contracts.ResourceKind.GlassLease,
+            Volatile.Read(ref liveLeases), Interlocked.Read(ref liveLeaseBytes),
+            Environment.CurrentManagedThreadId.ToString());
 }
 
 public record WallpaperSnapshot(

@@ -3,21 +3,25 @@ using System.Text.Json;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
+using Avalonia.Styling;
 using Avalonia.VisualTree;
 using Batteries.Models;
 using Batteries.ViewModels;
+using DeskCanvas.Contracts;
 using DeskCanvas.Core.Interfaces;
 using DeskCanvas.Core.Models;
+using DeskCanvas.Runtime;
 using DeskCanvas.Services;
 
 namespace Batteries.Views;
 
-public partial class BatteriesView : UserControl, IWidgetSelfRefreshing, IWidgetSuspendable, IWidgetSurfaceHints
+public partial class BatteriesView : UserControl, IWidgetSelfRefreshing, IWidgetSuspendable, IWidgetSurfaceHints, IWidgetActivityConsumer, IFocusThemedContent
 {
     /// <inheritdoc />
     public string? ColorfulBackgroundResourceKey => "BatteriesCardBackground";
 
     private readonly IWidgetLayoutProvider? layoutProvider;
+    private readonly IWidgetSession? session;
     private BatteriesViewModel? viewModel;
     private BatteriesModel model;
 
@@ -27,15 +31,23 @@ public partial class BatteriesView : UserControl, IWidgetSelfRefreshing, IWidget
 
     public BatteriesView(BatteriesModel model) : this(model, null) { }
 
-    public BatteriesView(BatteriesModel model, IWidgetLayoutProvider? layoutProvider)
+    /// <summary>
+    /// <paramref name="session"/> is injected by WidgetFactory when the host runs the session
+    /// pipeline (a stable instance identity): the view model then gates its poll on the
+    /// session's activity. Null keeps the legacy always-on behaviour (preview, legacy layout
+    /// entries) — those hosts never push activity either.
+    /// </summary>
+    public BatteriesView(BatteriesModel model, IWidgetLayoutProvider? layoutProvider, IWidgetSession? session = null)
     {
         this.model = model;
         this.layoutProvider = layoutProvider;
-        viewModel = new BatteriesViewModel(model);
+        this.session = session;
+        viewModel = new BatteriesViewModel(model, session: session);
         DataContext = viewModel;
 
         InitializeComponent();
         BindItems(viewModel);
+        WireVariantProvider(viewModel);
 
         Loaded += OnLoaded;
         Unloaded += OnUnloaded;
@@ -52,6 +64,31 @@ public partial class BatteriesView : UserControl, IWidgetSelfRefreshing, IWidget
         Item3.DataContext = vm.Items[3];
     }
 
+    /// <summary>
+    /// Per-window variant wiring (the per-screen theme policy): every readout resolves its
+    /// light/dark decisions through the variant of the window it sits on — the same entry
+    /// FramelessDigital uses (<see cref="FocusThemeCoordinator.ResolveVisualTheme"/>'s window
+    /// scope) — instead of the uniform Application variant. Null (not attached to a window)
+    /// falls back to the uniform variant inside the item.
+    /// </summary>
+    private void WireVariantProvider(BatteriesViewModel vm)
+    {
+        foreach (var item in vm.Items)
+        {
+            item.VariantProvider = ResolveHostVariant;
+        }
+    }
+
+    /// <summary>The window's own variant; null while not attached (uniform fallback).</summary>
+    private ThemeVariant? ResolveHostVariant() =>
+        TopLevel.GetTopLevel(this)?.ActualThemeVariant;
+
+    /// <inheritdoc />
+    public void OnSessionActivity(ActivitySnapshot activity) => viewModel?.OnSessionActivity(activity);
+
+    /// <inheritdoc />
+    void IFocusThemedContent.OnFocusThemeChanged() => viewModel?.RefreshStatusBrushes();
+
     private void OnLoaded(object? sender, RoutedEventArgs e)
     {
         SizeChanged -= OnSizeChanged;
@@ -59,9 +96,10 @@ public partial class BatteriesView : UserControl, IWidgetSelfRefreshing, IWidget
 
         if (viewModel == null)
         {
-            viewModel = new BatteriesViewModel(model);
+            viewModel = new BatteriesViewModel(model, session: session);
             DataContext = viewModel;
             BindItems(viewModel);
+            WireVariantProvider(viewModel);
         }
         ApplyLayout();
     }

@@ -1,3 +1,4 @@
+using DeskCanvas.Services;
 using System.Threading.Tasks;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
@@ -15,6 +16,7 @@ public partial class ConfirmDialog : Window
     public ConfirmDialog()
     {
         InitializeComponent();
+        WindowRoles.Register(this, WindowRole.Dialog);
     }
 
     private void SetMessage(string? message) => MessageText.Text = message;

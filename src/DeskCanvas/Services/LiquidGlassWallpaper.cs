@@ -712,8 +712,21 @@ public static class LiquidGlassWallpaper
     // pipeline forever. The next render re-captures on demand — the same path a fullscreen resume
     // already takes — and because the surface keeps drawing its previous material until the new
     // one publishes, the recapture is never visible as a flash.
+    /// <summary>
+    /// True when the user pinned the grace explicitly with DESKCANVAS_GLASS_IDLE_RELEASE_MS.
+    /// An explicit configuration wins: pressure observation then never intervenes in the idle
+    /// release timing (only the default grace is pressure-aware).
+    /// </summary>
+    private static readonly bool IdleReleaseGraceUserLocked = HasExplicitIdleReleaseEnv();
+
     /// <summary>How long the capture is kept after the last render demand. Overridable for checks.</summary>
     private static readonly int IdleReleaseGraceMs = ReadIdleReleaseGrace();
+
+    private static bool HasExplicitIdleReleaseEnv()
+    {
+        var raw = Environment.GetEnvironmentVariable("DESKCANVAS_GLASS_IDLE_RELEASE_MS");
+        return int.TryParse(raw, out var ms) && ms >= 0;
+    }
 
     private static int ReadIdleReleaseGrace()
     {
@@ -726,6 +739,18 @@ public static class LiquidGlassWallpaper
 
     /// <summary>0/1 latch: at most one idle-release check is waiting at any time.</summary>
     private static int idleReleaseCheckArmed;
+
+    // Pressure-aware grace (§14.3, first graded tier): under High pressure the default idle
+    // grace shortens to a quarter so the largest single allocation is handed back sooner.
+    // Hysteresis is consumer-local (two consecutive rounds of the same level before the
+    // effective grace changes) — EvaluateIdleRelease runs only on the UI thread, so plain
+    // fields need no lock. This only retimes the idle hand-back of the capture; sampling
+    // cadence, rendering and every visible default stay untouched.
+    private static DeskCanvas.Contracts.ResourcePressureLevel idlePressureLevel =
+        DeskCanvas.Contracts.ResourcePressureLevel.None;
+    private static DeskCanvas.Contracts.ResourcePressureLevel idlePressurePending =
+        DeskCanvas.Contracts.ResourcePressureLevel.None;
+    private static int idlePressureStreak;
 
     /// <summary>Raised whenever the wallpaper is invalidated (system wallpaper change, display change, or manual refresh).</summary>
     public static event Action? WallpaperInvalidated;
@@ -757,8 +782,19 @@ public static class LiquidGlassWallpaper
     private static void NoteFrameDemand()
     {
         Volatile.Write(ref lastFrameDemandAt, Environment.TickCount64);
-        ScheduleIdleReleaseCheck(IdleReleaseGraceMs + 500);
+        // Arm at the shortest grace a pressure round can shorten the default to, so a
+        // High-pressure round actually releases the capture at the shortened time instead of
+        // waiting out the full default grace before the first evaluation. With no pressure the
+        // early check simply re-arms itself out to the full grace (one extra cheap tick).
+        ScheduleIdleReleaseCheck(ShortestIdleGraceMs() + 500);
     }
+
+    /// <summary>
+    /// The shortest grace any pressure round can produce: an explicit env override is never
+    /// shortened, otherwise the High tier's quarter of the default (floored at one second).
+    /// </summary>
+    private static int ShortestIdleGraceMs() =>
+        IdleReleaseGraceUserLocked ? IdleReleaseGraceMs : Math.Max(1000, IdleReleaseGraceMs / 4);
 
     private static void ScheduleIdleReleaseCheck(int delayMs)
     {
@@ -768,11 +804,12 @@ public static class LiquidGlassWallpaper
     }
 
     /// <summary>
-    /// Hand the desktop capture back once nothing has asked for a frame for
-    /// <see cref="IdleReleaseGraceMs"/>. Runs on the UI thread: the decision reads surface state
-    /// that only the UI thread may enumerate, and the release itself is thread-safe by design.
-    /// Live sampling (when the user enabled it) owns the capture lifecycle, and a demand that
-    /// arrives while the check waits simply re-arms it.
+    /// Hand the desktop capture back once nothing has asked for a frame for the effective idle
+    /// grace (<see cref="EffectiveIdleReleaseGraceMs"/>: the configured grace, shortened under
+    /// High ledger pressure unless the user pinned it via env). Runs on the UI thread: the
+    /// decision reads surface state that only the UI thread may enumerate, and the release
+    /// itself is thread-safe by design. Live sampling (when the user enabled it) owns the
+    /// capture lifecycle, and a demand that arrives while the check waits simply re-arms it.
     /// </summary>
     private static void RunIdleReleaseCheck()
     {
@@ -798,10 +835,11 @@ public static class LiquidGlassWallpaper
             if (liveSamplingEnabled || suspended)
                 return;
 
+            var grace = EffectiveIdleReleaseGraceMs();
             var idleFor = Environment.TickCount64 - Volatile.Read(ref lastFrameDemandAt);
-            if (idleFor < IdleReleaseGraceMs || LiquidGlassSurface.AnySurfaceRendering)
+            if (idleFor < grace || LiquidGlassSurface.AnySurfaceRendering)
             {
-                ScheduleIdleReleaseCheck((int)Math.Max(1000, IdleReleaseGraceMs - idleFor));
+                ScheduleIdleReleaseCheck((int)Math.Max(1000, grace - idleFor));
                 return;
             }
 
@@ -815,6 +853,65 @@ public static class LiquidGlassWallpaper
         {
             // See RunIdleReleaseCheck.
         }
+    }
+
+    /// <summary>
+    /// The idle grace this round actually honours. An explicit DESKCANVAS_GLASS_IDLE_RELEASE_MS
+    /// always wins; otherwise the ledger-derived pressure level may shorten the default grace
+    /// to a quarter under High pressure (Watch and None keep the default). Observation failure
+    /// degrades to the configured grace — a failing snapshot must never lengthen or disable the
+    /// idle release.
+    /// </summary>
+    private static int EffectiveIdleReleaseGraceMs()
+    {
+        if (IdleReleaseGraceUserLocked) return IdleReleaseGraceMs;
+        try
+        {
+            var snapshot = DeskCanvas.Runtime.ResourceLedger.Instance.Snapshot();
+            // Middle experimental budget tier as the observation cap (see MemoryTrimmerService).
+            var cap = DeskCanvas.Contracts.ResourceBudget.Tiers[1].SoftCapBytes;
+            var candidate = DeskCanvas.Contracts.ResourcePressureEvaluator.Evaluate(
+                new DeskCanvas.Contracts.ResourcePressureState(
+                    DeskCanvas.Contracts.ResourcePressureEvaluator.TotalReclaimableBytes(snapshot),
+                    cap,
+                    Rising: false));
+            return AdvanceIdlePressureHysteresis(candidate) == DeskCanvas.Contracts.ResourcePressureLevel.High
+                ? Math.Max(1000, IdleReleaseGraceMs / 4)
+                : IdleReleaseGraceMs;
+        }
+        catch
+        {
+            return IdleReleaseGraceMs;
+        }
+    }
+
+    /// <summary>
+    /// Consumer-local hysteresis for the pressure level stream: a level change is adopted only
+    /// after two consecutive rounds agree, so a metric hovering on a threshold cannot make the
+    /// idle grace oscillate. UI-thread only (called from <see cref="EvaluateIdleRelease"/>).
+    /// </summary>
+    private static DeskCanvas.Contracts.ResourcePressureLevel AdvanceIdlePressureHysteresis(
+        DeskCanvas.Contracts.ResourcePressureLevel candidate)
+    {
+        if (candidate == idlePressureLevel)
+        {
+            idlePressurePending = candidate;
+            idlePressureStreak = 0;
+            return idlePressureLevel;
+        }
+        if (candidate != idlePressurePending)
+        {
+            idlePressurePending = candidate;
+            idlePressureStreak = 1;
+            return idlePressureLevel;
+        }
+        idlePressureStreak++;
+        if (idlePressureStreak >= 2)
+        {
+            idlePressureLevel = candidate;
+            idlePressureStreak = 0;
+        }
+        return idlePressureLevel;
     }
 
     /// <summary>True while a capture (or its stale mask) is retained for rendering (diagnostics and checks).</summary>
@@ -843,6 +940,25 @@ public static class LiquidGlassWallpaper
                     bytes += (long)staleBitmap.RowBytes * staleBitmap.Height;
                 return bytes;
             }
+        }
+    }
+
+    /// <summary>
+    /// Reports the retained capture frames (<see cref="cached"/> plus the <see cref="stale"/>
+    /// mask) to the shared resource ledger. Observation only; reentrant on <see cref="Gate"/>
+    /// because Monitor locks are, so callers may hold the gate already.
+    /// </summary>
+    private static void ReportRetainedCapture()
+    {
+        lock (Gate)
+        {
+            var count = 0;
+            long bytes = 0;
+            if (cached?.CachedBitmap is { } cachedFrame) { count++; bytes += (long)cachedFrame.RowBytes * cachedFrame.Height; }
+            if (stale?.CachedBitmap is { } staleFrame) { count++; bytes += (long)staleFrame.RowBytes * staleFrame.Height; }
+            DeskCanvas.Runtime.ResourceLedger.Instance.Report("glass.wallpaper",
+                DeskCanvas.Contracts.ResourceKind.GlassCapture, count, bytes,
+                Environment.CurrentManagedThreadId.ToString());
         }
     }
 
@@ -940,6 +1056,7 @@ public static class LiquidGlassWallpaper
 
         Interlocked.Exchange(ref lastRoundAt, Environment.TickCount64);
         previousStale?.Dispose();
+        ReportRetainedCapture();
 
         NotifyInvalidated();
     }
@@ -973,6 +1090,7 @@ public static class LiquidGlassWallpaper
 
         old?.Dispose();
         oldStale?.Dispose();
+        ReportRetainedCapture();
     }
 
     private static void NotifyInvalidated()
@@ -1085,6 +1203,7 @@ public static class LiquidGlassWallpaper
             Interlocked.Increment(ref captureCount);
             // Only the cache's reference goes; a render still using the previous frame keeps it.
             old?.Dispose();
+            ReportRetainedCapture();
             return snapshot;
         }
         return null;
@@ -1230,6 +1349,7 @@ public static class LiquidGlassWallpaper
             Interlocked.Increment(ref captureCount);
             // Only the cache's reference goes; a render still using the previous frame keeps it.
             old?.Dispose();
+            ReportRetainedCapture();
             // The glyph glass (the clock) and the popups re-render against the newer frame; the
             // live tick used to raise this every round through Invalidate, so this keeps their
             // contract while only real change raises it now.
@@ -1342,6 +1462,7 @@ public static class LiquidGlassWallpaper
         var old = stale;
         stale = null;
         old?.Dispose();
+        ReportRetainedCapture();
     }
 
     /// <summary>Static file based fallback (Windows wallpaper image + registry placement).</summary>
@@ -1379,6 +1500,7 @@ public static class LiquidGlassWallpaper
         // The static file is the source of truth now, so the last live frame no longer masks
         // anything — release it.
         DropStale();
+        ReportRetainedCapture();
         return cached;
     }
 }

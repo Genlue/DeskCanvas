@@ -23,6 +23,10 @@ internal sealed class FramelessGlassFrameCache
 {
     private readonly Dictionary<string, Entry> frames = new();
 
+    /// <summary>Stable ledger owner index: keeps two frameless clocks apart without an unbounded id.</summary>
+    private static int instanceCounter;
+    private readonly int instanceIndex = Interlocked.Increment(ref instanceCounter);
+
     /// <summary>The frame currently on screen. Disposal paths must skip it.</summary>
     private Bitmap? displayed;
 
@@ -84,6 +88,7 @@ internal sealed class FramelessGlassFrameCache
         }
         frames[key] = new Entry(validTime, bitmap, bytes);
         totalBytes += bytes;
+        Report();
     }
 
     /// <summary>
@@ -140,6 +145,7 @@ internal sealed class FramelessGlassFrameCache
         {
             loggedOverage = 0;
         }
+        Report();
     }
 
     /// <summary>Drop every frame except the one on screen.</summary>
@@ -154,7 +160,17 @@ internal sealed class FramelessGlassFrameCache
         }
         frames.Clear();
         totalBytes = 0;
+        Report();
     }
+
+    /// <summary>
+    /// Observation only: reports the cache's absolute current usage to the shared resource
+    /// ledger. Never throws into the caller's path (the ledger swallows its own errors).
+    /// </summary>
+    private void Report() =>
+        DeskCanvas.Runtime.ResourceLedger.Instance.Report($"clock.frame-cache:{instanceIndex}",
+            DeskCanvas.Contracts.ResourceKind.GlyphMask, frames.Count, totalBytes,
+            Environment.CurrentManagedThreadId.ToString());
 
     private bool Remove(string key)
     {

@@ -295,7 +295,7 @@
     <value>背景色</value>
   </data>
   <data name="Settings_Appearance_Surface_Frosted" xml:space="preserve">
-    <value>毛玻璃</value>
+    <value>Mica</value>
   </data>
   <data name="Settings_Appearance_Surface_Solid" xml:space="preserve">
     <value>纯色</value>
@@ -1293,4 +1293,8 @@
     <data name="Settings_Advanced_DataFolder_OkButton" xml:space="preserve">
         <value>确定</value>
     </data>
+  <data name="Settings_Appearance_SaveFailed" xml:space="preserve"><value>无法保存设置。草稿已保留，请重试或重新加载以放弃草稿。</value></data>
+  <data name="Settings_Appearance_SaveRetry" xml:space="preserve"><value>重试保存</value></data>
+  <data name="Settings_Appearance_SaveConflict" xml:space="preserve"><value>设置已在其他窗口中更改。草稿已保留，请重新加载后继续编辑。</value></data>
+  <data name="Settings_Appearance_SaveReload" xml:space="preserve"><value>重新加载并放弃草稿</value></data>
 </root>

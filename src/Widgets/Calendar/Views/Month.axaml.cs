@@ -6,7 +6,9 @@ using Avalonia.Styling;
 using Avalonia.VisualTree;
 using Calendar.Models;
 using Calendar.ViewModels;
+using DeskCanvas.Contracts;
 using DeskCanvas.Core.Interfaces;
+using DeskCanvas.Runtime;
 using DeskCanvas.Services;
 
 namespace Calendar.Views;
@@ -14,7 +16,7 @@ namespace Calendar.Views;
 /// <summary>
 /// 月历小组件：通过 IWidgetSurfaceHints 声明 Colorful 模式下的专属卡片画刷。
 /// </summary>
-public partial class Month : UserControl, IWidgetSurfaceHints, IFocusThemedContent
+public partial class Month : UserControl, IWidgetSurfaceHints, IFocusThemedContent, IWidgetActivityConsumer
 {
     /// <inheritdoc />
     public string? ColorfulBackgroundResourceKey => "CalendarCardBackground";
@@ -22,16 +24,25 @@ public partial class Month : UserControl, IWidgetSurfaceHints, IFocusThemedConte
     /// <inheritdoc />
     public void OnFocusThemeChanged() => UpdateTodayBrush();
 
+    /// <inheritdoc />
+    public void OnSessionActivity(ActivitySnapshot activity) => viewModel.OnSessionActivity(activity);
+
     private readonly MonthCalendarModel monthCalendarModel;
 
     private readonly MonthCalendarViewModel viewModel;
 
     public Month() : this(new MonthCalendarModel(DayOfWeek.Monday)) {}
-    
-    public Month(MonthCalendarModel monthCalendarModel)
+
+    /// <summary>
+    /// <paramref name="session"/> is injected by WidgetFactory when the host runs the session
+    /// pipeline (a stable instance identity): the view model then gates its timer subscription
+    /// on the session's activity. Null keeps the legacy always-on behaviour (preview, legacy
+    /// layout entries) — those hosts never push activity either.
+    /// </summary>
+    public Month(MonthCalendarModel monthCalendarModel, IWidgetSession? session = null)
     {
         this.monthCalendarModel = monthCalendarModel;
-        viewModel = new MonthCalendarViewModel(monthCalendarModel);
+        viewModel = new MonthCalendarViewModel(monthCalendarModel, session);
         DataContext = viewModel;
         Loaded += OnLoaded;
         Unloaded += OnUnloaded;

@@ -2,73 +2,72 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:controls="clr-namespace:DeskCanvas.Views.Controls;assembly=DeskCanvas"
              xmlns:locales="clr-namespace:Progress.Locales"
-             x:Class="Progress.Views.Settings.ProgressSettings">
+             x:Class="Progress.Views.Settings.ProgressSettings"
+             controls:SettingsPage.ScrollOwnership="Host">
+    <!-- W9: no outer ScrollViewer — the EditWidget viewport is the single scroll owner. -->
+    <StackPanel Orientation="Vertical" Spacing="6" Margin="{DynamicResource SettingsPagePadding}">
+        <!-- 进度模式 -->
+        <controls:Setting Title="{x:Static locales:Locale.Progress_Mode}">
+            <ComboBox Name="ModeCombo" Width="200" SelectionChanged="OnSettingChanged" />
+        </controls:Setting>
 
-    <ScrollViewer>
-        <StackPanel Orientation="Vertical" Spacing="6" Margin="0 0 10 0">
-            <!-- 进度模式 -->
-            <controls:Setting Title="{x:Static locales:Locale.Progress_Mode}">
-                <ComboBox Name="ModeCombo" Width="200" SelectionChanged="OnSettingChanged" />
-            </controls:Setting>
+        <!-- 日进度粒度 (仅在日模式下显示) -->
+        <controls:Setting Name="DayGranularitySetting" Title="{x:Static locales:Locale.Progress_DayGranularity}">
+            <ComboBox Name="DayGranularityCombo" Width="200" SelectionChanged="OnSettingChanged" />
+        </controls:Setting>
 
-            <!-- 日进度粒度 (仅在日模式下显示) -->
-            <controls:Setting Name="DayGranularitySetting" Title="{x:Static locales:Locale.Progress_DayGranularity}">
-                <ComboBox Name="DayGranularityCombo" Width="200" SelectionChanged="OnSettingChanged" />
-            </controls:Setting>
+        <!-- 圆点形状 -->
+        <controls:Setting Title="{x:Static locales:Locale.Progress_DotShape}">
+            <ComboBox Name="DotShapeCombo" Width="200" SelectionChanged="OnSettingChanged" />
+        </controls:Setting>
 
-            <!-- 圆点形状 -->
-            <controls:Setting Title="{x:Static locales:Locale.Progress_DotShape}">
-                <ComboBox Name="DotShapeCombo" Width="200" SelectionChanged="OnSettingChanged" />
-            </controls:Setting>
+        <!-- 跟随系统强调色 -->
+        <controls:Setting Title="{x:Static locales:Locale.Progress_FollowAccent}">
+            <ToggleSwitch Name="FollowAccentSwitch" IsCheckedChanged="OnToggleChanged" />
+        </controls:Setting>
 
-            <!-- 跟随系统强调色 -->
-            <controls:Setting Title="{x:Static locales:Locale.Progress_FollowAccent}">
-                <ToggleSwitch Name="FollowAccentSwitch" IsCheckedChanged="OnToggleChanged" />
-            </controls:Setting>
+        <!-- 已过圆点颜色 -->
+        <controls:Setting Name="PassedColorSetting" Title="{x:Static locales:Locale.Progress_PassedColor}">
+            <controls:ColorInput Name="PassedColorInput" IsAlphaVisible="False" ValueCommitted="OnColorCommitted" />
+        </controls:Setting>
 
-            <!-- 已过圆点颜色 -->
-            <controls:Setting Name="PassedColorSetting" Title="{x:Static locales:Locale.Progress_PassedColor}">
-                <controls:ColorInput Name="PassedColorInput" IsAlphaVisible="False" ValueCommitted="OnColorCommitted" />
-            </controls:Setting>
+        <!-- 当前圆点高亮颜色 -->
+        <controls:Setting Title="{x:Static locales:Locale.Progress_CurrentColor}">
+            <controls:ColorInput Name="CurrentColorInput" IsAlphaVisible="False" ValueCommitted="OnColorCommitted" />
+        </controls:Setting>
 
-            <!-- 当前圆点高亮颜色 -->
-            <controls:Setting Title="{x:Static locales:Locale.Progress_CurrentColor}">
-                <controls:ColorInput Name="CurrentColorInput" IsAlphaVisible="False" ValueCommitted="OnColorCommitted" />
-            </controls:Setting>
+        <!-- 未过圆点颜色（带透明度） -->
+        <controls:Setting Title="{x:Static locales:Locale.Progress_RemainingColor}">
+            <controls:ColorInput Name="RemainingColorInput" IsAlphaVisible="True" ValueCommitted="OnColorCommitted" />
+        </controls:Setting>
 
-            <!-- 未过圆点颜色（带透明度） -->
-            <controls:Setting Title="{x:Static locales:Locale.Progress_RemainingColor}">
-                <controls:ColorInput Name="RemainingColorInput" IsAlphaVisible="True" ValueCommitted="OnColorCommitted" />
-            </controls:Setting>
+        <!-- 顶部信息栏 -->
+        <controls:Setting Title="{x:Static locales:Locale.Progress_ShowHeader}">
+            <ToggleSwitch Name="ShowHeaderSwitch" IsCheckedChanged="OnToggleChanged" />
+        </controls:Setting>
 
-            <!-- 顶部信息栏 -->
-            <controls:Setting Title="{x:Static locales:Locale.Progress_ShowHeader}">
-                <ToggleSwitch Name="ShowHeaderSwitch" IsCheckedChanged="OnToggleChanged" />
-            </controls:Setting>
+        <!-- 自定义标题 -->
+        <controls:Setting Title="{x:Static locales:Locale.Progress_CustomTitle}">
+            <TextBox Name="CustomTitleBox" MinWidth="180" Watermark="{x:Static locales:Locale.Progress_CustomTitle_Placeholder}" LostFocus="OnTitleLostFocus" />
+        </controls:Setting>
 
-            <!-- 自定义标题 -->
-            <controls:Setting Title="{x:Static locales:Locale.Progress_CustomTitle}">
-                <TextBox Name="CustomTitleBox" MinWidth="180" Watermark="{x:Static locales:Locale.Progress_CustomTitle_Placeholder}" LostFocus="OnTitleLostFocus" />
-            </controls:Setting>
+        <!-- 显示百分比 -->
+        <controls:Setting Title="{x:Static locales:Locale.Progress_ShowPercentage}">
+            <ToggleSwitch Name="ShowPercentageSwitch" IsCheckedChanged="OnToggleChanged" />
+        </controls:Setting>
 
-            <!-- 显示百分比 -->
-            <controls:Setting Title="{x:Static locales:Locale.Progress_ShowPercentage}">
-                <ToggleSwitch Name="ShowPercentageSwitch" IsCheckedChanged="OnToggleChanged" />
-            </controls:Setting>
+        <!-- 显示计数 -->
+        <controls:Setting Title="{x:Static locales:Locale.Progress_ShowCount}">
+            <ToggleSwitch Name="ShowCountSwitch" IsCheckedChanged="OnToggleChanged" />
+        </controls:Setting>
 
-            <!-- 显示计数 -->
-            <controls:Setting Title="{x:Static locales:Locale.Progress_ShowCount}">
-                <ToggleSwitch Name="ShowCountSwitch" IsCheckedChanged="OnToggleChanged" />
-            </controls:Setting>
+        <!-- 人生进度相关设置 (仅在人生模式下显示) -->
+        <controls:Setting Name="BirthDateSetting" Title="{x:Static locales:Locale.Progress_BirthDate}">
+            <TextBox Name="BirthDateBox" MinWidth="140" Watermark="2000-01-01" LostFocus="OnBirthDateLostFocus" />
+        </controls:Setting>
 
-            <!-- 人生进度相关设置 (仅在人生模式下显示) -->
-            <controls:Setting Name="BirthDateSetting" Title="{x:Static locales:Locale.Progress_BirthDate}">
-                <TextBox Name="BirthDateBox" MinWidth="140" Watermark="2000-01-01" LostFocus="OnBirthDateLostFocus" />
-            </controls:Setting>
-
-            <controls:Setting Name="LifeExpectancySetting" Title="{x:Static locales:Locale.Progress_LifeExpectancy}">
-                <NumericUpDown Name="LifeExpectancyInput" MinWidth="120" Minimum="10" Maximum="150" Increment="1" ValueChanged="OnLifeExpectancyChanged" />
-            </controls:Setting>
-        </StackPanel>
-    </ScrollViewer>
+        <controls:Setting Name="LifeExpectancySetting" Title="{x:Static locales:Locale.Progress_LifeExpectancy}">
+            <NumericUpDown Name="LifeExpectancyInput" MinWidth="120" Minimum="10" Maximum="150" Increment="1" ValueChanged="OnLifeExpectancyChanged" />
+        </controls:Setting>
+    </StackPanel>
 </UserControl>

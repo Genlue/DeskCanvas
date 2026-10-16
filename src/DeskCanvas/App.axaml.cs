@@ -4,6 +4,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
+using Avalonia.Media;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using Microsoft.Extensions.DependencyInjection;
@@ -81,17 +82,42 @@ public class App : Application
 
         Control.LoadedEvent.AddClassHandler<ContextMenu>((cm, _) =>
         {
-            Dispatcher.UIThread.Post(() =>
+            void ApplyMenuPopup()
             {
-                if (cm.GetVisualRoot() is WindowBase wb)
+                // The shell's own outward roundness must be clipped by the host (the template
+                // Border only rounds the fill, not the child menu items' hover highlights — see
+                // the same clip in Widget.axaml.cs). Mirrors the widget menu's Clip + region pair.
+                if (cm.Bounds.Width > 0 && cm.Bounds.Height > 0)
                 {
-                    var handle = wb.TryGetPlatformHandle()?.Handle;
-                    if (handle.HasValue && handle.Value != IntPtr.Zero)
-                    {
-                        InteropService.DisableWindowBorder(handle.Value);
-                    }
+                    cm.Clip = new RectangleGeometry(
+                        new Rect(0, 0, cm.Bounds.Width, cm.Bounds.Height),
+                        MenuPopupCornerRadius, MenuPopupCornerRadius);
                 }
-            }, DispatcherPriority.Render);
+
+                if (cm.GetVisualRoot() is WindowBase wb)
+                    ApplyMenuPopupRounding(wb);
+            }
+
+            ApplyMenuPopup();
+            Dispatcher.UIThread.Post(ApplyMenuPopup, DispatcherPriority.Render);
+            if (MenuPopupBoundsHooked.TryAdd(cm, MenuPopupBoundsHookedMarker))
+                cm.GetObservable(Visual.BoundsProperty).Subscribe(_ => ApplyMenuPopup());
+        });
+
+        // MenuFlyouts (editor row/overflow/variable menus, search, pomodoro, ...) open in their
+        // own acrylic PopupRoots too and need the same rounded native region as context menus.
+        Control.LoadedEvent.AddClassHandler<MenuFlyoutPresenter>((presenter, _) =>
+        {
+            void ApplyMenuPopup()
+            {
+                if (presenter.GetVisualRoot() is WindowBase wb)
+                    ApplyMenuPopupRounding(wb);
+            }
+
+            ApplyMenuPopup();
+            Dispatcher.UIThread.Post(ApplyMenuPopup, DispatcherPriority.Render);
+            if (MenuPopupBoundsHooked.TryAdd(presenter, MenuPopupBoundsHookedMarker))
+                presenter.GetObservable(Visual.BoundsProperty).Subscribe(_ => ApplyMenuPopup());
         });
 
         // Strip OS-level AcrylicBlur, window shadow and DWM capsule border from ToolTip PopupRoots
@@ -150,6 +176,7 @@ public class App : Application
         // list must be refreshed BEFORE widget creation so widgets are only
         // created for screens that are actually attached.
         var anchor = new WidgetAnchorWindow();
+        WindowRoles.Register(anchor, WindowRole.Anchor);
         anchor.ShowAnchored();
 
         // Wire the display pipeline BEFORE the first Refresh runs inside Attach: the
@@ -195,6 +222,7 @@ public class App : Application
         // wallpaper and fullscreen changes — widgets register themselves when they open.
         var focusWatch = services.GetRequiredService<FocusWatchService>();
         focusWatch.Attach(anchor);
+        focusWatch.StateChanged += (_, _) => fullscreenWatcher.Evaluate();
         services.GetRequiredService<FocusThemeCoordinator>();
 
         // The startup reconciliation (ScreensChanged → OnScreensChanged, now wired before
@@ -256,5 +284,47 @@ public class App : Application
         Resources["WidgetCardCornerRadius"] = cardRadius;
         Resources["WidgetInnerCornerRadius"] = innerRadius;
         Resources["WidgetPillCornerRadius"] = pillRadius;
+    }
+
+    /// <summary>
+    /// The shared menu surface radius (DesignTokens HostSurfaceCornerRadius), used to keep the
+    /// acrylic popup's native window region in sync with the menu card's rounded corners.
+    /// </summary>
+    private static double MenuPopupCornerRadius =>
+        ThemeScopeResolver.TryFindResource<CornerRadius>(null, "HostSurfaceCornerRadius", null, out var radius)
+            ? radius.TopLeft
+            : 12;
+
+    /// <summary>
+    /// Menu controls re-enter the visual tree on every open while the instance itself lives as
+    /// long as its owner — the size subscription above must be attached once per instance, the
+    /// per-open calls stay on the Loaded handler.
+    /// </summary>
+    private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<Visual, object> MenuPopupBoundsHooked = new();
+
+    private static readonly object MenuPopupBoundsHookedMarker = new();
+
+    /// <summary>
+    /// Rounds a menu popup's native window to the menu card corner radius. DWM paints the
+    /// AcrylicBlur backdrop over the whole square HWND, so without the region the frosted glass
+    /// bleeds past the menu's rounded corners. Only acrylic popups are clipped: ToolTip / tray
+    /// popups are Transparent windows that round their own content with anti-aliasing, and the
+    /// 1-bit GDI region would add hard aliased corners and cut their shadows.
+    /// </summary>
+    private static void ApplyMenuPopupRounding(WindowBase wb)
+    {
+        if (!wb.TransparencyLevelHint.Contains(WindowTransparencyLevel.AcrylicBlur)) return;
+
+        var handle = wb.TryGetPlatformHandle()?.Handle;
+        if (handle is null || handle.Value == IntPtr.Zero) return;
+
+        var scaling = wb.DesktopScaling;
+        var width = (int)Math.Round(wb.ClientSize.Width * scaling);
+        var height = (int)Math.Round(wb.ClientSize.Height * scaling);
+        if (width <= 0 || height <= 0) return;
+
+        InteropService.DisableWindowBorder(handle.Value);
+        InteropService.SetWindowRegion(handle.Value, 0, 0, width, height,
+            (int)Math.Round(MenuPopupCornerRadius * scaling));
     }
 }

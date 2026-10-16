@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net8.0</TargetFramework><ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable></PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Widgets\Weather\Weather.csproj" />
+    <ProjectReference Include="..\..\src\Widgets\Fixed\Fixed.csproj" />
+    <ProjectReference Include="..\..\src\Widgets\Monitor\Monitor.csproj" />
+    <ProjectReference Include="..\..\src\DeskCanvas.Runtime\DeskCanvas.Runtime.csproj" />
+  </ItemGroup>
+</Project>

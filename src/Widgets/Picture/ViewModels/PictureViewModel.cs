@@ -50,6 +50,10 @@ public class PictureViewModel : ReactiveObject, IDisposable
 
     private readonly Dictionary<string, DecodedPicture> pictureCache = new(StringComparer.OrdinalIgnoreCase);
 
+    /// <summary>Stable ledger owner index: keeps two picture widgets apart without an unbounded id.</summary>
+    private static int instanceCounter;
+    private readonly int instanceIndex = Interlocked.Increment(ref instanceCounter);
+
     /// <summary>Every decoded picture that has not been disposed yet (see the ownership rules).</summary>
     private readonly HashSet<DecodedPicture> allPictures = [];
 
@@ -217,7 +221,29 @@ public class PictureViewModel : ReactiveObject, IDisposable
         }
 
         pictureCache[path] = decoded;
+        ReportFrameCache();
         return decoded;
+    }
+
+    /// <summary>
+    /// Observation only: reports the frame cache's absolute current usage to the shared
+    /// resource ledger. Bytes are estimated BGRA (width × height × 4) per frame.
+    /// </summary>
+    private void ReportFrameCache()
+    {
+        var frames = 0;
+        long bytes = 0;
+        foreach (var cachedPicture in pictureCache.Values)
+        {
+            foreach (var frame in cachedPicture.Frames)
+            {
+                frames++;
+                bytes += (long)frame.Bitmap.PixelSize.Width * frame.Bitmap.PixelSize.Height * 4;
+            }
+        }
+        DeskCanvas.Runtime.ResourceLedger.Instance.Report($"picture:{instanceIndex}",
+            DeskCanvas.Contracts.ResourceKind.PictureFrame, frames, bytes,
+            Environment.CurrentManagedThreadId.ToString());
     }
 
     /// <summary>Diagnostics: decoded pictures created minus disposed. Should stay tiny (≈ cache size).</summary>
@@ -365,6 +391,7 @@ public class PictureViewModel : ReactiveObject, IDisposable
 
         SweepOrphans();
         RefreshDisposeTimer();
+        ReportFrameCache();
     }
 
     // ------------------------------------------------------------------
@@ -636,6 +663,7 @@ public class PictureViewModel : ReactiveObject, IDisposable
         allPictures.Clear();
         pictureCache.Clear();
         pendingDispose.Clear();
+        ReportFrameCache();
 
         // ClearSlots' property updates can re-arm the dispose timer through the slot setters,
         // so the timers are stopped last: after this nothing the widget owns may tick.
@@ -686,6 +714,7 @@ public class PictureViewModel : ReactiveObject, IDisposable
         allPictures.Clear();
         pictureCache.Clear();
         pendingDispose.Clear();
+        ReportFrameCache();
 
         // Deliberately no GC.Collect here: forcing a collection on every widget unload caused
         // a full blocking GC on the UI thread. Bitmaps release their native memory in Dispose().

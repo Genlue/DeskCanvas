@@ -1,0 +1,122 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="clr-namespace:Wheel.Views.Controls"
+             xmlns:models="clr-namespace:Wheel.Models"
+             xmlns:locales="clr-namespace:Wheel.Locales"
+             x:Class="Wheel.Views.WheelView"
+             Foreground="{DynamicResource WidgetForeground}">
+
+    <UserControl.Styles>
+        <Style Selector="Button.ghost-btn">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="4" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Foreground" Value="{DynamicResource WidgetForeground}" />
+        </Style>
+        <Style Selector="Button.ghost-btn PathIcon">
+            <Setter Property="Opacity" Value="0.6" />
+        </Style>
+        <Style Selector="Button.ghost-btn:pointerover">
+            <Setter Property="Background" Value="#18808080" />
+        </Style>
+        <Style Selector="Button.ghost-btn:pointerover PathIcon">
+            <Setter Property="Opacity" Value="1" />
+        </Style>
+        <Style Selector="Button.spin-pill">
+            <Setter Property="Background" Value="{DynamicResource SystemControlHighlightAccentBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource AccentContrastForegroundBrush}" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="14,5" />
+            <Setter Property="CornerRadius" Value="{DynamicResource WidgetPillCornerRadius}" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+        </Style>
+        <!--  结果 banner pill：统一信息 pill 规格  -->
+        <Style Selector="Border.result-pill">
+            <Setter Property="Background" Value="#14808080" />
+            <Setter Property="CornerRadius" Value="{DynamicResource WidgetPillCornerRadius}" />
+            <Setter Property="Padding" Value="8,2" />
+            <Setter Property="HorizontalAlignment" Value="Center" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+        <Style Selector="Border.result-pill TextBlock">
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Foreground" Value="{DynamicResource WidgetForeground}" />
+            <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+        </Style>
+    </UserControl.Styles>
+
+    <Grid Background="Transparent" PointerPressed="OnCardPointerPressed">
+        <!-- 1x1 Cell Layout -->
+        <Grid x:Name="CellLayout" RowDefinitions="*,Auto" Margin="4" IsVisible="False">
+            <controls:WheelControl x:Name="CellWheel" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                  Width="64" Height="64" CenterText="GO"/>
+            <TextBlock x:Name="CellResultText" Grid.Row="1" Text="{x:Static locales:Locale.Wheel_TapToStart}" FontSize="10" Opacity="0.55" HorizontalAlignment="Center" Margin="0,2,0,0"/>
+        </Grid>
+
+        <!-- 2x2 Small Layout -->
+        <Grid x:Name="SmallLayout" RowDefinitions="Auto,*,Auto" Margin="12,10" IsVisible="True">
+            <!-- Header -->
+            <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="0,0,0,4">
+                <TextBlock x:Name="SmallTemplateTitle" Text="{x:Static locales:Locale.Wheel_DefaultTemplateTitle}" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                <Button Grid.Column="1" Classes="ghost-btn" VerticalAlignment="Center" Click="OnExpandDetailsClicked" ToolTip.Tip="{x:Static locales:Locale.Wheel_ManageTooltip}">
+                    <PathIcon Data="M7 10l5 5 5-5z" Width="12" Height="12"/>
+                </Button>
+            </Grid>
+
+            <!-- Center Wheel -->
+            <controls:WheelControl x:Name="SmallWheel" Grid.Row="1" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                  Width="120" Height="120" CenterText="GO" Cursor="Hand" PointerPressed="OnWheelPointerPressed"/>
+
+            <!-- Bottom: Winner / Status Banner -->
+            <Border Grid.Row="2" Classes="result-pill" Margin="0,4,0,0" MaxWidth="180">
+                <TextBlock x:Name="SmallResultText" Text="{x:Static locales:Locale.Wheel_SpinHint}" HorizontalAlignment="Center"/>
+            </Border>
+        </Grid>
+
+        <!-- 4x2 Wide Layout -->
+        <Grid x:Name="WideLayout" ColumnDefinitions="1.1*,1,0.9*" Margin="14,10" IsVisible="False">
+            <!-- Left Side: Wheel -->
+            <Grid Grid.Column="0" RowDefinitions="Auto,*,Auto" Margin="0,0,8,0">
+                <TextBlock Grid.Row="0" x:Name="WideTemplateTitle" Text="{x:Static locales:Locale.Wheel_DefaultTemplateTitle}" FontSize="13" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" Margin="0,0,0,4"/>
+                <controls:WheelControl x:Name="WideWheel" Grid.Row="1" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                      Width="130" Height="130" CenterText="GO"/>
+                <Button Grid.Row="2" Classes="spin-pill" HorizontalAlignment="Center" Margin="0,8,0,0" Click="OnSpinActionClicked">
+                    <TextBlock x:Name="WideSpinBtnText" Text="{x:Static locales:Locale.Wheel_SpinNow}"/>
+                </Button>
+            </Grid>
+
+            <!-- Separator -->
+            <Rectangle Grid.Column="1" Fill="#14808080" VerticalAlignment="Stretch" Margin="0,4"/>
+
+            <!-- Right Side: Quick Options Checklist -->
+            <Grid Grid.Column="2" RowDefinitions="Auto,*,Auto" Margin="8,0,0,0">
+                <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="0,0,0,4">
+                    <TextBlock Text="{x:Static locales:Locale.Wheel_Options}" FontSize="11" FontWeight="SemiBold" Opacity="0.55" VerticalAlignment="Center"/>
+                    <Button Grid.Column="1" Classes="ghost-btn" VerticalAlignment="Center" Click="OnExpandDetailsClicked" ToolTip.Tip="{x:Static locales:Locale.Wheel_EditTooltip}">
+                        <PathIcon Data="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25z" Width="11" Height="11"/>
+                    </Button>
+                </Grid>
+
+                <ScrollViewer Grid.Row="1">
+                    <ItemsControl x:Name="WideOptionsList">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="models:WheelOption">
+                                <CheckBox IsChecked="{Binding IsEnabled}" Content="{Binding Text}" FontSize="11" MinHeight="24" Margin="0,0,0,2"/>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+
+                <!-- Winner notification -->
+                <Border Grid.Row="2" Classes="result-pill" Margin="0,4,0,0" HorizontalAlignment="Stretch">
+                    <TextBlock x:Name="WideResultBanner" Text="{x:Static locales:Locale.Wheel_ResultPending}" HorizontalAlignment="Center"/>
+                </Border>
+            </Grid>
+        </Grid>
+    </Grid>
+</UserControl>

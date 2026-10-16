@@ -5,7 +5,7 @@
 
 <div align="center">
   <h3>🎨 Windows 下一代 macOS 风格多功能桌面小组件套件</h3>
-  <p>基于 Avalonia 11 + .NET 8 打造 · 硬件级实时毛玻璃 · 3D 光学液态玻璃 · 手机锁屏艺术大字时钟 · 自定义吸附网格系统</p>
+  <p>基于 Avalonia 11 + .NET 8 打造 · 硬件级实时 Mica · 3D 光学液态玻璃 · 手机锁屏艺术大字时钟 · 自定义吸附网格系统</p>
 </div>
 
 <h3 align="center">
@@ -39,7 +39,7 @@
 - **全阶梯字重调节**（`100 Thin` – `900 Black`）、小组件级独立主题覆盖、官方 `ColorPicker` 遮罩选色与十六进制双向联动。
 
 ### 2. 💎 四大深度适配视觉材质
-- 🪟 **毛玻璃（Acrylic）· OS 硬件实时模糊**：Win32 原生 `ExtCreateRegion`（`RGNDATA`）把数字字形扫描线直接绑成 HWND Region；DWM 硬件级逐帧采样桌面，对动态壁纸（Wallpaper Engine）、视频壁纸实现 60/144fps 零延迟实时跟手；
+- 🪟 **Mica（云母）· OS 硬件实时材质**：Win32 原生 `ExtCreateRegion`（`RGNDATA`）把数字字形扫描线直接绑成 HWND Region；DWM 硬件级逐帧采样桌面，对动态壁纸（Wallpaper Engine）、视频壁纸实现 60/144fps 零延迟实时跟手；
 - 💧 **液态玻璃（Liquid Glass）· 3D 光学物理折射**：欧几里得距离场（EDT）精密计算字符轮廓法线，真实凹凸透镜折射、色散光斑与镜面高光，GPU（Skia 运行时着色器）加速 + CPU 回退双路径；
 - 💎 **液态玻璃 2.0**：对 [Kyant0/AndroidLiquidGlass](https://github.com/Kyant0/AndroidLiquidGlass) 2.0 光学模型的忠实 GPU 移植——圆角矩形折射透镜 + 深度效果 + 斜向色散 + 发丝级描边高光；折射系数由 GPU 着色器与 CPU 渲染器共享的单一求解器给出，折射带以 `0.8 × 圆角` 封顶，大卡片四角保持干净；
 - 🎨 **纯色（Solid）**：纯粹矢量抗锯齿填充，透明度滑块与强调色定制，零模糊、极度省电。

@@ -196,7 +196,7 @@
         <value>Background color</value>
     </data>
     <data name="Settings_Appearance_Surface_Frosted" xml:space="preserve">
-        <value>Frosted glass</value>
+        <value>Mica</value>
     </data>
     <data name="Settings_Appearance_Surface_Solid" xml:space="preserve">
         <value>Solid</value>
@@ -1194,4 +1194,8 @@ Migrate (copy) the current data there? Choosing "Switch without migrating" start
     <data name="Settings_Advanced_DataFolder_OkButton" xml:space="preserve">
         <value>OK</value>
     </data>
+  <data name="Settings_Appearance_SaveFailed" xml:space="preserve"><value>Settings could not be saved. Your draft is retained; retry or reload to discard it.</value></data>
+  <data name="Settings_Appearance_SaveRetry" xml:space="preserve"><value>Retry save</value></data>
+  <data name="Settings_Appearance_SaveConflict" xml:space="preserve"><value>Settings changed elsewhere. Your draft is retained; reload before editing again.</value></data>
+  <data name="Settings_Appearance_SaveReload" xml:space="preserve"><value>Reload and discard draft</value></data>
 </root>

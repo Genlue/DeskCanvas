@@ -3,8 +3,10 @@ using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Progress.Models;
 using Progress.ViewModels;
+using DeskCanvas.Contracts;
 using DeskCanvas.Core.Interfaces;
 using DeskCanvas.Core.Models;
+using DeskCanvas.Runtime;
 
 namespace Progress.Views;
 
@@ -12,13 +14,14 @@ namespace Progress.Views;
 /// 通过 <see cref="IWidgetSurfaceHints"/> 向宿主声明多彩模式下的专属卡片画刷
 /// （资源键按变体解析），宿主不再按视图类型名判断外观（W10 §9.1）。
 /// </summary>
-public partial class ProgressView : UserControl, IWidgetSelfRefreshing, IWidgetSurfaceHints
+public partial class ProgressView : UserControl, IWidgetSelfRefreshing, IWidgetSurfaceHints, IWidgetActivityConsumer
 {
     /// <inheritdoc />
     public string? ColorfulBackgroundResourceKey => "ProgressCardBackground";
 
     private readonly IWidgetLayoutProvider? widgetLayoutProvider;
     private readonly IAppSettingsProvider? appSettingsProvider;
+    private readonly IWidgetSession? session;
     private ProgressModel model;
     private ProgressViewModel? viewModel;
 
@@ -29,12 +32,19 @@ public partial class ProgressView : UserControl, IWidgetSelfRefreshing, IWidgetS
     public ProgressView(IWidgetLayoutProvider widgetLayoutProvider)
         : this(new ProgressModel(), widgetLayoutProvider, null) { }
 
-    public ProgressView(ProgressModel model, IWidgetLayoutProvider? widgetLayoutProvider, IAppSettingsProvider? appSettingsProvider)
+    /// <summary>
+    /// <paramref name="session"/> is injected by WidgetFactory when the host runs the session
+    /// pipeline (a stable instance identity): the view model then gates its five-second tick
+    /// on the session's activity. Null keeps the legacy always-on behaviour (preview, legacy
+    /// layout entries) — those hosts never push activity either.
+    /// </summary>
+    public ProgressView(ProgressModel model, IWidgetLayoutProvider? widgetLayoutProvider, IAppSettingsProvider? appSettingsProvider, IWidgetSession? session = null)
     {
         this.model = model;
         this.widgetLayoutProvider = widgetLayoutProvider;
         this.appSettingsProvider = appSettingsProvider;
-        viewModel = new ProgressViewModel(model, appSettingsProvider);
+        this.session = session;
+        viewModel = new ProgressViewModel(model, appSettingsProvider, session, themeAnchor: this);
         DataContext = viewModel;
 
         InitializeComponent();
@@ -43,6 +53,9 @@ public partial class ProgressView : UserControl, IWidgetSelfRefreshing, IWidgetS
         Unloaded += OnUnloaded;
         ActualThemeVariantChanged += (_, _) => viewModel?.UpdateProgress();
     }
+
+    /// <inheritdoc />
+    public void OnSessionActivity(ActivitySnapshot activity) => viewModel?.OnSessionActivity(activity);
 
     /// <summary>
     /// The view can be detached and re-added later (the settings window caches pages and the
@@ -55,7 +68,7 @@ public partial class ProgressView : UserControl, IWidgetSelfRefreshing, IWidgetS
         var vm = viewModel;
         if (vm == null)
         {
-            vm = new ProgressViewModel(model, appSettingsProvider);
+            vm = new ProgressViewModel(model, appSettingsProvider, session, themeAnchor: this);
             viewModel = vm;
             DataContext = vm;
         }

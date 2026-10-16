@@ -33,6 +33,7 @@ public partial class EditWidget : Window
         DataContext = this;
         Control = control;
         InitializeComponent();
+        WindowRoles.Register(this, WindowRole.Dialog);
 
         geometryKey = WindowGeometryStore.ComposeKey(control.GetType());
         ApplyScrollOwnership(control);

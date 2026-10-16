@@ -71,6 +71,8 @@
                     <SolidColorBrush x:Key="NotesUpdatedBrush" Color="{DynamicResource SystemAccentColorDark1}" />
                     <SolidColorBrush x:Key="ClockHandBrush" Color="{DynamicResource SystemAccentColorDark1}" />
                     <SolidColorBrush x:Key="WeatherForegroundBrush" Color="{DynamicResource SystemAccentColorDark1}" />
+                    <SolidColorBrush x:Key="HitokotoQuoteBrush" Color="{DynamicResource SystemAccentColorDark1}" />
+                    <SolidColorBrush x:Key="HitokotoAuthorBrush" Color="{DynamicResource SystemAccentColorDark1}" />
                     <SolidColorBrush x:Key="ProgressCardBackground" Color="Transparent" />
                     <SolidColorBrush x:Key="SearchPillBackground" Color="Transparent" />
                     <SolidColorBrush x:Key="WidgetCardBorderBrush" Color="#15000000" />
@@ -133,6 +135,8 @@
                     <SolidColorBrush x:Key="NotesUpdatedBrush" Color="{DynamicResource SystemAccentColorLight2}" />
                     <SolidColorBrush x:Key="ClockHandBrush" Color="{DynamicResource SystemAccentColorLight2}" />
                     <SolidColorBrush x:Key="WeatherForegroundBrush" Color="{DynamicResource SystemAccentColorLight2}" />
+                    <SolidColorBrush x:Key="HitokotoQuoteBrush" Color="{DynamicResource SystemAccentColorLight2}" />
+                    <SolidColorBrush x:Key="HitokotoAuthorBrush" Color="{DynamicResource SystemAccentColorLight2}" />
                     <SolidColorBrush x:Key="ProgressCardBackground" Color="Transparent" />
                     <SolidColorBrush x:Key="SearchPillBackground" Color="Transparent" />
                     <SolidColorBrush x:Key="WidgetCardBorderBrush" Color="#25FFFFFF" />

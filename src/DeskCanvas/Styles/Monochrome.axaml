@@ -8,9 +8,25 @@
             <ResourceDictionary.ThemeDictionaries>
                 <ResourceDictionary x:Key="Default">
                     <SolidColorBrush x:Key="SystemControlForegroundBaseHighBrush" Color="{DynamicResource SystemAccentColorDark1}" />
+                    <SolidColorBrush x:Key="WeatherForegroundBrush" Color="{DynamicResource SystemAccentColorDark1}" />
+                    <SolidColorBrush x:Key="NotesTextBrush" Color="{DynamicResource SystemAccentColorDark1}" />
+                    <SolidColorBrush x:Key="NotesTitleForegroundBrush" Color="{DynamicResource SystemAccentColorDark1}" />
+                    <SolidColorBrush x:Key="NotesDividerBrush" Color="{DynamicResource SystemAccentColorDark1}" />
+                    <SolidColorBrush x:Key="NotesUpdatedBrush" Color="{DynamicResource SystemAccentColorDark1}" />
+                    <SolidColorBrush x:Key="HitokotoQuoteBrush" Color="{DynamicResource SystemAccentColorDark1}" />
+                    <SolidColorBrush x:Key="HitokotoAuthorBrush" Color="{DynamicResource SystemAccentColorDark1}" />
+                    <SolidColorBrush x:Key="ClockHandBrush" Color="{DynamicResource SystemAccentColorDark1}" />
                 </ResourceDictionary>
                 <ResourceDictionary x:Key="Dark">
                     <SolidColorBrush x:Key="SystemControlForegroundBaseHighBrush" Color="{DynamicResource SystemAccentColorLight2}" />
+                    <SolidColorBrush x:Key="WeatherForegroundBrush" Color="{DynamicResource SystemAccentColorLight2}" />
+                    <SolidColorBrush x:Key="NotesTextBrush" Color="{DynamicResource SystemAccentColorLight2}" />
+                    <SolidColorBrush x:Key="NotesTitleForegroundBrush" Color="{DynamicResource SystemAccentColorLight2}" />
+                    <SolidColorBrush x:Key="NotesDividerBrush" Color="{DynamicResource SystemAccentColorLight2}" />
+                    <SolidColorBrush x:Key="NotesUpdatedBrush" Color="{DynamicResource SystemAccentColorLight2}" />
+                    <SolidColorBrush x:Key="HitokotoQuoteBrush" Color="{DynamicResource SystemAccentColorLight2}" />
+                    <SolidColorBrush x:Key="HitokotoAuthorBrush" Color="{DynamicResource SystemAccentColorLight2}" />
+                    <SolidColorBrush x:Key="ClockHandBrush" Color="{DynamicResource SystemAccentColorLight2}" />
                 </ResourceDictionary>
             </ResourceDictionary.ThemeDictionaries>
         </ResourceDictionary>

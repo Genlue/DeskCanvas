@@ -202,6 +202,11 @@ internal static class LiquidGlassSourceCache
                 (evicted ??= new List<GlassSource>()).Add(oldest);
             }
 
+            // Observation only: report the cache's absolute current usage to the shared ledger.
+            DeskCanvas.Runtime.ResourceLedger.Instance.Report("glass.source-cache",
+                DeskCanvas.Contracts.ResourceKind.GlassBackdrop, entries.Count, cachedBytes,
+                Environment.CurrentManagedThreadId.ToString());
+
             // The cache now holds its own reference; the caller gets one to own.
             built.AddRef();
         }
@@ -225,6 +230,9 @@ internal static class LiquidGlassSourceCache
             foreach (var entry in entries) dropped.Add(entry.Source);
             entries.Clear();
             cachedBytes = 0;
+            DeskCanvas.Runtime.ResourceLedger.Instance.Report("glass.source-cache",
+                DeskCanvas.Contracts.ResourceKind.GlassBackdrop, 0, 0,
+                Environment.CurrentManagedThreadId.ToString());
         }
         foreach (var source in dropped) source.Dispose();
     }

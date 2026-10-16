@@ -89,7 +89,7 @@ public class FullscreenWatcherService : IDisposable
     /// initial state — dials with no reading, numerals on the flat fallback wash — which reads as
     /// "the widget stopped working". Nothing is gained by suspending that early.
     /// </summary>
-    private static readonly TimeSpan StartupGrace = TimeSpan.FromSeconds(15);
+    private static readonly TimeSpan StartupGrace = TimeSpan.FromSeconds(5);
 
     /// <summary>Fraction of a screen a borderless window must cover to count as maximized.</summary>
     private const double CoverageThreshold = 0.98;

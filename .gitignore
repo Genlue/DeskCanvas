@@ -8,5 +8,10 @@ riderModule.iml
 .idea/
 DeskCanvas.sln.DotSettings.user
 /src/.vs
-/tests/
+# tests 源码需跟踪，仅忽略构建与输出产物（bin/obj 由顶部全局规则覆盖）
+/tests/**/dist/
+/tests/**/out/
+/tests/**/--nologo/
+# ShortcutsRender 探针运行截图产出（每轮运行重生成，不入库）
+/tests/ShortcutsRender/*.png
 .workbuddy/

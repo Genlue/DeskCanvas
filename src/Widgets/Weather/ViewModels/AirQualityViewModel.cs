@@ -45,11 +45,8 @@ public class AirQualityViewModel : ReactiveObject, IDisposable
     }
     
     /// <summary>
-    /// Detach from the process-lifetime hourly timer and dispose the provider's
-    /// <see cref="HttpClient"/>, so an abandoned air-quality view (each settings save
-    /// re-creates the view, each Gallery visit creates a preview) stops updating and
-    /// releases its connections. The view must rebuild a fresh view model before using
-    /// this one again. Idempotent.
+    /// Detach from the process-lifetime hourly timer and release this owner's
+    /// in-flight provider waits. The view rebuilds a fresh owner before reuse.
     /// </summary>
     public void Dispose()
     {

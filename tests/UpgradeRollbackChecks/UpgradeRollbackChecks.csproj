@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- The upgrade/rollback drills run on the real Core persistence pipeline
+         (LayoutProvider/JsonParser/WidgetLayoutProvider/AssemblyProvider), the same
+         sandbox pattern as IdentityStorageChecks: Core only, no host/Avalonia.
+         Runtime (pure .NET) is added for the session-generation contract. -->
+    <ProjectReference Include="..\..\src\DeskCanvas.Core\DeskCanvas.Core.csproj" />
+    <ProjectReference Include="..\..\src\DeskCanvas.Runtime\DeskCanvas.Runtime.csproj" />
+  </ItemGroup>
+</Project>

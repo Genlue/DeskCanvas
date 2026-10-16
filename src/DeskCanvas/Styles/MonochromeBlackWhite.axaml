@@ -72,6 +72,8 @@
                     <SolidColorBrush x:Key="NotesUpdatedBrush" Color="Black" />
                     <SolidColorBrush x:Key="ClockHandBrush" Color="Black" />
                     <SolidColorBrush x:Key="WeatherForegroundBrush" Color="Black" />
+                    <SolidColorBrush x:Key="HitokotoQuoteBrush" Color="Black" />
+                    <SolidColorBrush x:Key="HitokotoAuthorBrush" Color="Black" />
                     <SolidColorBrush x:Key="ProgressCardBackground" Color="Transparent" />
                     <SolidColorBrush x:Key="SearchPillBackground" Color="Transparent" />
                     <SolidColorBrush x:Key="WidgetCardBorderBrush" Color="#15000000" />
@@ -134,6 +136,8 @@
                     <SolidColorBrush x:Key="NotesUpdatedBrush" Color="White" />
                     <SolidColorBrush x:Key="ClockHandBrush" Color="White" />
                     <SolidColorBrush x:Key="WeatherForegroundBrush" Color="White" />
+                    <SolidColorBrush x:Key="HitokotoQuoteBrush" Color="White" />
+                    <SolidColorBrush x:Key="HitokotoAuthorBrush" Color="White" />
                     <SolidColorBrush x:Key="ProgressCardBackground" Color="Transparent" />
                     <SolidColorBrush x:Key="SearchPillBackground" Color="Transparent" />
                     <SolidColorBrush x:Key="WidgetCardBorderBrush" Color="#25FFFFFF" />

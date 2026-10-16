@@ -1,4 +1,4 @@
-﻿namespace Clock.Models;
+namespace Clock.Models;
 
 /// <summary>
 /// How the dial surface of 表盘-3 (AnalogIV) picks its background color.
@@ -31,9 +31,12 @@ public record ClockModel(
     bool ShowDate = false,
     bool Use24Hours = false, 
     string? TimeZoneId = null,
+    bool IsDialOpaque = false,
     ClockDialColorMode DialColorMode = ClockDialColorMode.BackgroundColor,
     string? DialColorLight = null,
-    string? DialColorDark = null)
+    string? DialColorDark = null,
+    bool? ShowSecondsTrail = null,
+    bool? ShowDateAndLunar = null)
 {
     /// <summary>Default dial color in light mode — 表盘-1's Colorful light dial face (the white dial).</summary>
     public const string DefaultDialColorLight = "#EDEDED";

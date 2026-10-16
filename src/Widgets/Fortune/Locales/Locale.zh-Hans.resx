@@ -1,0 +1,179 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+    <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+        <xsd:element name="root" msdata:IsDataSet="true" />
+    </xsd:schema>
+    <resheader name="resmimetype">
+        <value>text/microsoft-resx</value>
+    </resheader>
+    <resheader name="version">
+        <value>1.3</value>
+    </resheader>
+    <resheader name="reader">
+        <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    </resheader>
+    <resheader name="writer">
+        <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    </resheader>
+    <data name="Fortune" xml:space="preserve">
+        <value>抽签</value>
+    </data>
+    <data name="Fortune_Title" xml:space="preserve">
+        <value>今日灵签 · 查运气</value>
+    </data>
+    <data name="Fortune_Subtitle" xml:space="preserve">
+        <value>运势指引 · 每日一签 · 诗词解签</value>
+    </data>
+    <data name="Fortune_Draw" xml:space="preserve">
+        <value>求取灵签</value>
+    </data>
+    <data name="Fortune_Drawing" xml:space="preserve">
+        <value>祈福摇签中...</value>
+    </data>
+    <data name="Fortune_DrawnToday" xml:space="preserve">
+        <value>今日已定签</value>
+    </data>
+    <data name="Fortune_FreeDraw" xml:space="preserve">
+        <value>随心占问</value>
+    </data>
+    <data name="Fortune_Redraw" xml:space="preserve">
+        <value>再求一签</value>
+    </data>
+    <data name="Fortune_Suitable" xml:space="preserve">
+        <value>宜</value>
+    </data>
+    <data name="Fortune_Taboo" xml:space="preserve">
+        <value>忌</value>
+    </data>
+    <data name="Fortune_LuckyColor" xml:space="preserve">
+        <value>幸运色</value>
+    </data>
+    <data name="Fortune_LuckyNumber" xml:space="preserve">
+        <value>幸运数字</value>
+    </data>
+    <data name="Fortune_LuckyThing" xml:space="preserve">
+        <value>今日幸运物</value>
+    </data>
+    <data name="Fortune_History" xml:space="preserve">
+        <value>运势手账</value>
+    </data>
+    <data name="Fortune_Copy" xml:space="preserve">
+        <value>复制签文</value>
+    </data>
+    <data name="Fortune_Copied" xml:space="preserve">
+        <value>签文已复制到剪贴板！</value>
+    </data>
+    <data name="Fortune_PoolType" xml:space="preserve">
+        <value>签池主题</value>
+    </data>
+    <data name="Fortune_PoolTraditional" xml:space="preserve">
+        <value>古典文雅灵签 (精选名诗)</value>
+    </data>
+    <data name="Fortune_PoolCyberWorker" xml:space="preserve">
+        <value>赛博打工人解压神谕</value>
+    </data>
+    <data name="Fortune_PoolInspiration" xml:space="preserve">
+        <value>生活与文学治愈灵感</value>
+    </data>
+    <data name="Fortune_FreeDrawMode" xml:space="preserve">
+        <value>自由随心抽模式 (无限次)</value>
+    </data>
+    <data name="Fortune_PopupHeader" xml:space="preserve">
+        <value>🎋 今日灵签 · 查运气</value>
+    </data>
+    <data name="Fortune_SampleDate" xml:space="preserve">
+        <value>10月16日</value>
+    </data>
+    <data name="Fortune_SampleGrade" xml:space="preserve">
+        <value>大吉</value>
+    </data>
+    <data name="Fortune_SamplePoemTitle" xml:space="preserve">
+        <value>风帆顺水 · 第八签</value>
+    </data>
+    <data name="Fortune_SamplePoemName" xml:space="preserve">
+        <value>风帆顺水</value>
+    </data>
+    <data name="Fortune_SampleScore" xml:space="preserve">
+        <value>运气指数: 98 ★★★★★</value>
+    </data>
+    <data name="Fortune_SampleScoreShort" xml:space="preserve">
+        <value>运气 98</value>
+    </data>
+    <data name="Fortune_SamplePoemFull" xml:space="preserve">
+        <value>风帆顺水正相逢，万里行舟不用工。
+长天日色清如画，一任优游向碧空。</value>
+    </data>
+    <data name="Fortune_SamplePoemShort" xml:space="preserve">
+        <value>风帆顺水正相逢
+万里行舟不用工</value>
+    </data>
+    <data name="Fortune_SampleExplanationLong" xml:space="preserve">
+        <value>【解签】运势顺畅，天时地利俱全。所虑之事皆可迎刃而解，直管向前。</value>
+    </data>
+    <data name="Fortune_SampleExplanation" xml:space="preserve">
+        <value>运势顺畅，天时地利俱全。所虑之事皆可迎刃而解。</value>
+    </data>
+    <data name="Fortune_SampleSuitableLong" xml:space="preserve">
+        <value>宜: 乘胜追击、结交良友</value>
+    </data>
+    <data name="Fortune_SampleTabooLong" xml:space="preserve">
+        <value>忌: 瞻前顾后、犹豫不决</value>
+    </data>
+    <data name="Fortune_SampleSuitable" xml:space="preserve">
+        <value>宜: 专注深思</value>
+    </data>
+    <data name="Fortune_SampleTaboo" xml:space="preserve">
+        <value>忌: 犹豫不决</value>
+    </data>
+    <data name="Fortune_SampleAdvice" xml:space="preserve">
+        <value>宜 乘胜追击 · 忌 瞻前顾后</value>
+    </data>
+    <data name="Fortune_SampleLuckyColor" xml:space="preserve">
+        <value>天青色</value>
+    </data>
+    <data name="Fortune_SampleLuckyThing" xml:space="preserve">
+        <value>桌面绿植</value>
+    </data>
+    <data name="Fortune_LuckyColorLabel" xml:space="preserve">
+        <value>幸运色:</value>
+    </data>
+    <data name="Fortune_LuckyNumberLabel" xml:space="preserve">
+        <value>幸运数字:</value>
+    </data>
+    <data name="Fortune_LuckyThingLabel" xml:space="preserve">
+        <value>幸运物:</value>
+    </data>
+    <data name="Fortune_LuckyItem" xml:space="preserve">
+        <value>幸运物</value>
+    </data>
+    <data name="Fortune_DailyTitle" xml:space="preserve">
+        <value>今日灵签</value>
+    </data>
+    <data name="Fortune_ShakeDraw" xml:space="preserve">
+        <value>摇签问运</value>
+    </data>
+    <data name="Fortune_TooltipJournal" xml:space="preserve">
+        <value>签文与手账</value>
+    </data>
+    <data name="Fortune_DrawHint" xml:space="preserve">
+        <value>静心所思 · 摇取今日运势</value>
+    </data>
+    <data name="Fortune_DailyTip" xml:space="preserve">
+        <value>每日清晨定签 · 点击查看解签</value>
+    </data>
+    <data name="Fortune_GuidanceTitle" xml:space="preserve">
+        <value>运势指引</value>
+    </data>
+    <data name="Fortune_OpenJournal" xml:space="preserve">
+        <value>打开运势手账 →</value>
+    </data>
+    <data name="Fortune_FreeDrawButton" xml:space="preserve">
+        <value>随心再求一签 (诸事占问)</value>
+    </data>
+    <data name="Fortune_ResetNote" xml:space="preserve">
+        <value>每日零点自动重置首签</value>
+    </data>
+    <data name="Fortune_HistoryHeader" xml:space="preserve">
+        <value>📜 运势手账 (近期签文足迹)</value>
+    </data>
+</root>

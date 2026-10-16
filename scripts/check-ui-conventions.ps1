@@ -72,7 +72,7 @@ $SelectionColorExceptions = @(
     }
 )
 
-# 规则 3：允许在弹窗内声明外壳三件套的文件（当前为零——9 弹窗已全部迁移 SecondaryPanelShell）。
+# 规则 3：允许在弹窗内声明外壳三件套的文件（当前为零——全部弹窗已迁移 SecondaryPanelShell）。
 $ShellExceptions = @()
 
 # 规则 4：允许在 ScrollOwnership=Host 页面保留无界 ScrollViewer 的文件（当前为零）。
@@ -149,7 +149,8 @@ $PopupWindows = @(
     'src/Widgets/Reminders/Views/RemindersPopupWindow.axaml',
     'src/Widgets/Notes/Views/NotePopupWindow.axaml',
     'src/Widgets/Weather/Views/WeatherPopupWindow.axaml',
-    'src/Widgets/Folders/Views/BigFolderPopupWindow.axaml'
+    'src/Widgets/Folders/Views/BigFolderPopupWindow.axaml',
+    'src/Widgets/Shortcuts/Views/ShortcutsPopupWindow.axaml'
 )
 
 # 规则 5b 的强制范围：新共享 UI 文件（消费语义资源的站点；Styles 根下的资源定义字典豁免）。
@@ -272,7 +273,7 @@ try {
     foreach ($relative in $PopupWindows) {
         $path = Join-Path $rootPath ($relative -replace '/', '\')
         if (-not (Test-Path -LiteralPath $path -PathType Leaf)) {
-            $failures.Add("R3 $relative`: 弹窗文件缺失（9 弹窗清单与仓库不一致）")
+            $failures.Add("R3 $relative`: 弹窗文件缺失（弹窗清单与仓库不一致）")
             continue
         }
         if (Test-Exception $ShellExceptions $relative $null $null) { continue }

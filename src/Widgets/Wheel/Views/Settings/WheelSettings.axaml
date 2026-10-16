@@ -1,0 +1,24 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="clr-namespace:DeskCanvas.Views.Controls;assembly=DeskCanvas"
+             xmlns:locales="clr-namespace:Wheel.Locales"
+             x:Class="Wheel.Views.Settings.WheelSettings"
+             controls:SettingsPage.ScrollOwnership="Host">
+
+    <StackPanel Orientation="Vertical" Spacing="6" Margin="0,0,10,0">
+        <!-- 1. Default Template -->
+        <controls:Setting Title="{x:Static locales:Locale.Wheel_Templates}">
+            <ComboBox x:Name="TemplateComboBox" MinWidth="180" SelectionChanged="OnSettingChanged" />
+        </controls:Setting>
+
+        <!-- 2. Spin Duration -->
+        <controls:Setting Title="{x:Static locales:Locale.Wheel_Duration}">
+            <NumericUpDown x:Name="DurationNumeric" Minimum="1.0" Maximum="6.0" Increment="0.5" FormatString="0.0" Width="100" ValueChanged="OnDurationChanged" />
+        </controls:Setting>
+
+        <!-- 3. Elimination Mode -->
+        <controls:Setting Title="{x:Static locales:Locale.Wheel_EliminateWinner}">
+            <ToggleSwitch x:Name="EliminateToggle" IsCheckedChanged="OnToggleChanged" OnContent="" OffContent="" />
+        </controls:Setting>
+    </StackPanel>
+</UserControl>

@@ -1,0 +1,136 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:locales="clr-namespace:Shortcuts.Locales"
+        xmlns:vm="clr-namespace:Shortcuts.ViewModels"
+        xmlns:controls="clr-namespace:DeskCanvas.Views.Controls;assembly=DeskCanvas"
+        xmlns:sc="clr-namespace:Shortcuts.Views.Controls"
+        x:Class="Shortcuts.Views.ShortcutsPopupWindow"
+        Title="{x:Static locales:Locale.Shortcuts_Popup_Title}"
+        SystemDecorations="None"
+        Background="Transparent"
+        TransparencyLevelHint="Transparent"
+        ShowInTaskbar="False"
+        CanResize="False"
+        Width="400"
+        Height="540">
+
+    <Window.Styles>
+        <Style Selector="Button.pill-btn">
+            <Setter Property="Height" Value="26" />
+            <Setter Property="Padding" Value="10,2" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="CornerRadius" Value="13" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="Cursor" Value="Hand" />
+        </Style>
+        <Style Selector="Button.pill-btn:pointerover">
+            <Setter Property="Opacity" Value="0.85" />
+        </Style>
+        <Style Selector="Border.popup-row">
+            <Setter Property="Cursor" Value="Hand" />
+        </Style>
+        <Style Selector="Border.popup-row:pointerover">
+            <Setter Property="Opacity" Value="0.9" />
+        </Style>
+    </Window.Styles>
+
+    <controls:SecondaryPanelShell>
+        <controls:SecondaryPanelShell.HeaderContent>
+            <StackPanel VerticalAlignment="Center" Spacing="2">
+                <TextBlock Text="{x:Static locales:Locale.Shortcuts_Popup_Title}"
+                           FontSize="16" FontWeight="Bold" />
+                <TextBlock x:Name="SubtitleText" FontSize="11" Opacity="0.6" />
+            </StackPanel>
+        </controls:SecondaryPanelShell.HeaderContent>
+
+        <controls:SecondaryPanelShell.HeaderActions>
+            <Button x:Name="AddButton"
+                    Classes="pill-btn"
+                    Content="{x:Static locales:Locale.Shortcuts_Add}"
+                    Click="OnAddClicked"
+                    VerticalAlignment="Center" />
+        </controls:SecondaryPanelShell.HeaderActions>
+
+        <Grid RowDefinitions="Auto,*">
+            <TextBox x:Name="SearchBox"
+                     Margin="0,2,0,8"
+                     FontSize="12"
+                     Watermark="{x:Static locales:Locale.Shortcuts_Search_Placeholder}"
+                     TextChanged="OnSearchTextChanged" />
+
+            <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled" Padding="0,2,0,8">
+                <StackPanel Spacing="4">
+                    <ItemsControl x:Name="ListControl">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate DataType="vm:ShortcutTileViewModel">
+                                <Border Classes="popup-row"
+                                        Margin="0,2"
+                                        Padding="10,8"
+                                        CornerRadius="10"
+                                        Background="{Binding TintBrush}"
+                                        PointerPressed="OnRowPressed">
+                                    <Grid ColumnDefinitions="Auto,*,Auto,Auto">
+                                        <Border Grid.Column="0" Width="28" Height="28" CornerRadius="8"
+                                                Background="{Binding IconBrush}" VerticalAlignment="Center">
+                                            <sc:GlyphView Data="{Binding GlyphGeometry}" Stroke="White"
+                                                          StrokeThickness="1.7"
+                                                          Width="15" Height="15"
+                                                          HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                        </Border>
+                                        <StackPanel Grid.Column="1" Margin="10,0,8,0"
+                                                    VerticalAlignment="Center" Spacing="1">
+                                            <TextBlock Text="{Binding Name}" FontSize="13" FontWeight="SemiBold"
+                                                       TextTrimming="CharacterEllipsis"
+                                                       Foreground="{Binding NameBrush}" />
+                                            <TextBlock Text="{Binding ActionCountText}" FontSize="10" Opacity="0.8"
+                                                       TextTrimming="CharacterEllipsis"
+                                                       Foreground="{Binding SubBrush}"
+                                                       IsVisible="{Binding !StateVisible}" />
+                                            <TextBlock Text="{Binding StateText}" FontSize="10"
+                                                       TextTrimming="CharacterEllipsis"
+                                                       Foreground="{Binding StateBrush}"
+                                                       IsVisible="{Binding StateVisible}" />
+                                        </StackPanel>
+                                        <Button Grid.Column="2" Classes="dc-icon-button"
+                                                Click="OnRunClicked"
+                                                ToolTip.Tip="{x:Static locales:Locale.Shortcuts_Menu_Run}"
+                                                AutomationProperties.Name="{x:Static locales:Locale.Shortcuts_Menu_Run}"
+                                                VerticalAlignment="Center">
+                                            <sc:GlyphView Data="{Binding RunGlyphGeometry}"
+                                                          Stroke="{Binding SubBrush}"
+                                                          StrokeThickness="1.8"
+                                                          Width="14" Height="14" />
+                                        </Button>
+                                        <Button Grid.Column="3" Classes="dc-icon-button"
+                                                Click="OnEditClicked"
+                                                ToolTip.Tip="{x:Static locales:Locale.Shortcuts_Menu_Edit}"
+                                                AutomationProperties.Name="{x:Static locales:Locale.Shortcuts_Menu_Edit}"
+                                                VerticalAlignment="Center">
+                                            <sc:GlyphView Data="M4.5 19.5l1-4L16 5l3 3L8.5 18.5zM14 7l3 3"
+                                                          Stroke="{Binding SubBrush}"
+                                                          StrokeThickness="1.8"
+                                                          Width="14" Height="14" />
+                                        </Button>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <StackPanel x:Name="EmptyPanel" IsVisible="False" Spacing="8" HorizontalAlignment="Center"
+                                Margin="0,60">
+                        <sc:GlyphView Data="M13 2 3 14h7l-1 8 11-13h-8z" Stroke="#888780"
+                                      StrokeThickness="1.8" Width="34" Height="34"
+                                      HorizontalAlignment="Center" Opacity="0.5" />
+                        <TextBlock x:Name="EmptyTitleText"
+                                   Text="{x:Static locales:Locale.Shortcuts_Empty}" FontSize="12" Opacity="0.6"
+                                   HorizontalAlignment="Center" />
+                        <TextBlock Text="{x:Static locales:Locale.Shortcuts_EmptyHint}" FontSize="11" Opacity="0.45"
+                                   HorizontalAlignment="Center" />
+                    </StackPanel>
+                </StackPanel>
+            </ScrollViewer>
+        </Grid>
+    </controls:SecondaryPanelShell>
+</Window>

@@ -8,6 +8,8 @@ namespace Monitor.ViewModels;
 public class SingleMetricViewModel : ReactiveObject, IDisposable
 {
     private readonly SingleMetricModel model;
+    private readonly string owner = $"monitor-single-{Guid.NewGuid():N}";
+    private readonly CancellationTokenSource lifetime = new();
 
     /// <summary>Set once <see cref="Dispose"/> ran; keeps disposal (and late results) harmless.</summary>
     private bool disposed;
@@ -34,7 +36,9 @@ public class SingleMetricViewModel : ReactiveObject, IDisposable
 
     private async Task UpdateAsync()
     {
-        var value = await MetricService.GetMetricValue(model.Metric);
+        double? value;
+        try { value = await MetricService.GetMetricValue(model.Metric, owner, lifetime.Token); }
+        catch (OperationCanceledException) { return; }
         // A WMI query that returns after disposal (the view was unloaded meanwhile) must not
         // touch this view model any more, and must not revive it through its bindings.
         if (disposed) return;
@@ -54,6 +58,8 @@ public class SingleMetricViewModel : ReactiveObject, IDisposable
     {
         if (disposed) return;
         disposed = true;
+        lifetime.Cancel();
+        lifetime.Dispose();
         TimerService.Timer1Second.Unsubscribe(Update);
         GC.SuppressFinalize(this);
     }

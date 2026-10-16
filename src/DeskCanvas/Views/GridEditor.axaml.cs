@@ -54,6 +54,7 @@ public partial class GridEditor : Window
         this.screenId = screenId;
         this.targetScreen = targetScreen;
         InitializeComponent();
+        WindowRoles.Register(this, WindowRole.Dialog);
 
         Opened += OnOpened;
         KeyDown += OnKeyDown;

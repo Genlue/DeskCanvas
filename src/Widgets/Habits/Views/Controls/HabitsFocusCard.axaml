@@ -1,0 +1,229 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="clr-namespace:Habits.ViewModels"
+             xmlns:locales="clr-namespace:Habits.Locales"
+             xmlns:services="clr-namespace:Habits.Services"
+             x:Class="Habits.Views.Controls.HabitsFocusCard"
+             x:DataType="vm:HabitsViewModel"
+             Margin="10,8,10,8">
+
+    <UserControl.Styles>
+        <!-- Ghost 图标按钮（规范 §4） -->
+        <Style Selector="Button.ghost-btn">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="4" />
+            <Setter Property="Cursor" Value="Hand" />
+        </Style>
+        <Style Selector="Button.ghost-btn:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="#18808080" />
+        </Style>
+
+        <!-- 周切换 ghost 箭头 -->
+        <Style Selector="Button.cycle-btn">
+            <Setter Property="Width" Value="18" />
+            <Setter Property="Height" Value="18" />
+            <Setter Property="CornerRadius" Value="9" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Foreground" Value="{DynamicResource WidgetForeground}" />
+            <Setter Property="Opacity" Value="0.6" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+        </Style>
+        <Style Selector="Button.cycle-btn:pointerover">
+            <Setter Property="Opacity" Value="1" />
+            <Setter Property="Background" Value="#18808080" />
+        </Style>
+
+        <!-- 布尔型大打卡钮：50px 圆形 -->
+        <Style Selector="Button.circle-punch-btn">
+            <Setter Property="Width" Value="50" />
+            <Setter Property="Height" Value="50" />
+            <Setter Property="CornerRadius" Value="25" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+        </Style>
+        <Style Selector="Button.circle-punch-btn:pointerover">
+            <Setter Property="RenderTransform" Value="scale(1.05)" />
+        </Style>
+        <Style Selector="Button.circle-punch-btn:pressed">
+            <Setter Property="RenderTransform" Value="scale(0.95)" />
+        </Style>
+
+        <!-- 数字型步进按钮（中性） -->
+        <Style Selector="Button.step-btn">
+            <Setter Property="Width" Value="24" />
+            <Setter Property="Height" Value="24" />
+            <Setter Property="CornerRadius" Value="12" />
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Foreground" Value="{DynamicResource WidgetForeground}" />
+            <Setter Property="Background" Value="#14808080" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+        </Style>
+        <Style Selector="Button.step-btn:pointerover">
+            <Setter Property="Background" Value="#28808080" />
+        </Style>
+
+        <!-- +步进 主操作钮（用户习惯色） -->
+        <Style Selector="Button.step-add-btn">
+            <Setter Property="Height" Value="24" />
+            <Setter Property="CornerRadius" Value="{DynamicResource WidgetPillCornerRadius}" />
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="10,0" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+        </Style>
+        <Style Selector="Button.step-add-btn:pointerover">
+            <Setter Property="Opacity" Value="0.85" />
+        </Style>
+    </UserControl.Styles>
+
+    <Grid RowDefinitions="Auto, *, Auto">
+        <!-- Header：图标 + 标题 13px + 切换箭头 ghost + 连续天数 pill + 菜单 -->
+        <Grid Grid.Row="0" ColumnDefinitions="*, Auto" Margin="0,0,0,6">
+            <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                <TextBlock Text="{Binding FocusedHabit.Icon}" FontSize="15" VerticalAlignment="Center" />
+                <TextBlock Text="{Binding FocusedHabit.Title}" FontSize="13" FontWeight="SemiBold"
+                           TextTrimming="CharacterEllipsis" MaxWidth="80" VerticalAlignment="Center" />
+
+                <StackPanel Orientation="Horizontal" Spacing="2"
+                            IsVisible="{Binding CanCycleHabits}" VerticalAlignment="Center">
+                    <Button Classes="cycle-btn" Content="‹" Click="OnPrevHabitClicked" ToolTip.Tip="{x:Static locales:Locale.Habits_PrevHabit}" />
+                    <Button Classes="cycle-btn" Content="›" Click="OnNextHabitClicked" ToolTip.Tip="{x:Static locales:Locale.Habits_NextHabit}" />
+                </StackPanel>
+            </StackPanel>
+
+            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                <Border Background="#18FF9500"
+                        CornerRadius="{DynamicResource WidgetPillCornerRadius}"
+                        Padding="6,2" VerticalAlignment="Center">
+                    <TextBlock Text="{Binding FocusedHabit.StreakText}"
+                               FontSize="10" FontWeight="SemiBold"
+                               Foreground="#FF9500" />
+                </Border>
+
+                <Button Classes="ghost-btn" Width="22" Height="22"
+                        Click="OnOpenPopupClicked" ToolTip.Tip="{x:Static locales:Locale.Habits_Title}">
+                    <Path Data="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z"
+                          Fill="{DynamicResource WidgetForeground}"
+                          Opacity="0.6" Stretch="Uniform" Width="12" Height="12"
+                          HorizontalAlignment="Center" VerticalAlignment="Center" />
+                </Button>
+            </StackPanel>
+        </Grid>
+
+        <!-- 中部：布尔型大打卡钮 / 数字型值+进度+步进 -->
+        <Panel Grid.Row="1" VerticalAlignment="Center" Margin="0,4">
+            <!-- 布尔型：50px 圆钮（未完成=虚线圈+图标，完成=实底白勾） -->
+            <StackPanel IsVisible="{Binding !FocusedHabit.IsNumeric}"
+                        HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="6">
+                <Button Classes="circle-punch-btn" Click="OnPunchClicked">
+                    <Panel>
+                        <Panel IsVisible="{Binding !FocusedHabit.IsCompleted}">
+                            <Ellipse Width="48" Height="48" Stroke="{Binding FocusedHabit.ColorBrush}"
+                                     StrokeThickness="1.5" StrokeDashArray="2,2" Opacity="0.7" />
+                            <TextBlock Text="{Binding FocusedHabit.Icon}" FontSize="22"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Panel>
+
+                        <Panel IsVisible="{Binding FocusedHabit.IsCompleted}">
+                            <Ellipse Width="50" Height="50" Fill="{Binding FocusedHabit.ColorBrush}" />
+                            <Path Data="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"
+                                  Fill="White" Stretch="Uniform" Width="20" Height="20"
+                                  HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Panel>
+                    </Panel>
+                </Button>
+
+                <TextBlock Text="{x:Static locales:Locale.Habits_TodayCompleted}" FontSize="10" Opacity="0.5"
+                           HorizontalAlignment="Center"
+                           IsVisible="{Binding FocusedHabit.IsCompleted}" />
+                <TextBlock Text="{x:Static locales:Locale.Habits_ClickToCheckIn}" FontSize="10" FontWeight="SemiBold" Opacity="0.8"
+                           HorizontalAlignment="Center"
+                           IsVisible="{Binding !FocusedHabit.IsCompleted}" />
+            </StackPanel>
+
+            <!-- 数字型：值 20px Bold + 目标/单位基线对齐 + 3px 进度条 + 步进 -->
+            <StackPanel IsVisible="{Binding FocusedHabit.IsNumeric}"
+                        Margin="0,0" VerticalAlignment="Center" Spacing="8">
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="4">
+                    <TextBlock Text="{Binding FocusedHabit.TodayValue, StringFormat='{}{0:0.#}'}"
+                               FontSize="20" FontWeight="Bold"
+                               Foreground="{Binding FocusedHabit.ColorBrush}"
+                               VerticalAlignment="Bottom" />
+                    <TextBlock Text="{Binding FocusedHabit.TargetValue, StringFormat='{}/ {0:0.#}'}"
+                               FontSize="11" Opacity="0.5"
+                               VerticalAlignment="Bottom" Margin="0,0,0,2" />
+                    <TextBlock Text="{Binding FocusedHabit.Unit}"
+                               FontSize="11" Opacity="0.5"
+                               VerticalAlignment="Bottom" Margin="0,0,0,2" />
+                </StackPanel>
+
+                <ProgressBar Height="3" CornerRadius="1.5" Margin="8,0"
+                             Maximum="1" Minimum="0"
+                             Value="{Binding FocusedHabit.ProgressPercentage}"
+                             Foreground="{Binding FocusedHabit.ColorBrush}"
+                             Background="#14808080" />
+
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="8">
+                    <Button Classes="step-btn" Content="-" Click="OnStepMinusClicked" />
+                    <Button Classes="step-add-btn"
+                            Content="{Binding FocusedHabit.StepValueText}"
+                            Click="OnStepPlusClicked"
+                            Background="{Binding FocusedHabit.ColorBrush}"
+                            Foreground="White" />
+                    <Border Background="#2034C759"
+                            CornerRadius="{DynamicResource WidgetPillCornerRadius}"
+                            Padding="6,2" VerticalAlignment="Center"
+                            IsVisible="{Binding FocusedHabit.IsCompleted}">
+                        <TextBlock Text="{x:Static locales:Locale.Habits_Achieved}" FontSize="10" FontWeight="SemiBold" Foreground="#34C759" />
+                    </Border>
+                </StackPanel>
+            </StackPanel>
+        </Panel>
+
+        <!-- 底部周点阵：8px 点等距 UniformGrid，星期标签 8.5px -->
+        <ItemsControl Grid.Row="2" ItemsSource="{Binding WeeklyDays}" Margin="0,4,0,0">
+            <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <UniformGrid Columns="7" />
+                </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+                <DataTemplate DataType="services:DayCheckStatus">
+                    <StackPanel Spacing="2" HorizontalAlignment="Center">
+                        <TextBlock Text="{Binding Label}" FontSize="8.5" Opacity="0.4" HorizontalAlignment="Center" />
+                        <Panel Width="8" Height="8" HorizontalAlignment="Center">
+                            <Ellipse Width="8" Height="8"
+                                     Fill="{Binding ColorBrush}"
+                                     IsVisible="{Binding IsCompleted}" />
+                            <Ellipse Width="8" Height="8"
+                                     Stroke="{Binding ColorBrush}"
+                                     StrokeThickness="1.5"
+                                     IsVisible="{Binding IsTodayAndNotDone}" />
+                            <Ellipse Width="3" Height="3" Fill="#25808080"
+                                     IsVisible="{Binding IsMissedOrFuture}" />
+                        </Panel>
+                    </StackPanel>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
+    </Grid>
+</UserControl>

@@ -2,6 +2,7 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Threading;
+using DeskCanvas.Services;
 using Timetable.Locales;
 using Timetable.Services;
 
@@ -18,6 +19,7 @@ public partial class GuideWindow : Window
     public GuideWindow()
     {
         InitializeComponent();
+        WindowRoles.Register(this, WindowRole.Dialog);
 
         TitleText.Text = Locale.Timetable_Guide_Title;
         HintText.Text = Locale.Timetable_Guide_Hint;

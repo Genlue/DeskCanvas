@@ -25,7 +25,7 @@ public class ThemeService : IThemeService
     {
         this.appSettingsProvider = appSettingsProvider;
         this.wallpaperThemeService = wallpaperThemeService;
-        appSettingsProvider.DataChanging += (_, _, newSettings) =>
+        appSettingsProvider.DataChanged += (_, _, newSettings) =>
             Apply(newSettings);
         // Wallpaper changed while in auto mode: re-resolve the variant. With 失焦自动切换
         // enabled the app-level pair is the "聚焦时" pair, so that is what decides here.
@@ -34,7 +34,7 @@ public class ThemeService : IThemeService
             var settings = appSettingsProvider.Get();
             if (EffectiveAppMode(settings).AutoTheme) Apply(settings);
         };
-        // 跟随系统亮暗（DarkMode == null）时，系统切换深浅色既不走 DataChanging 也没有
+        // 跟随系统亮暗（DarkMode == null）时，系统切换深浅色既不走 DataChanged 也没有
         // 壁纸事件，但 ApplyAccent 写入的 SystemAccentColor 及整个 ramp 是按"当时的
         // ActualThemeVariant"算极性的——不重写，SystemControlHighlightAccentBrush（Fluent
         // 开关/复选/单选的选中底色取色源）等命令式键就停在旧变体的颜色上，切换后全部
@@ -49,7 +49,7 @@ public class ThemeService : IThemeService
             if (mode.AutoTheme || mode.DarkMode != null) return;
             Apply(settings);
         };
-        // System accent changes while the variant stays put trigger neither DataChanging nor
+        // System accent changes while the variant stays put trigger neither DataChanged nor
         // ActualThemeVariantChanged, yet the accent brush behind selected text changes — the
         // computed selection pair must follow. Post to the next dispatcher pass so the Fluent
         // accent resources have settled before re-resolving.

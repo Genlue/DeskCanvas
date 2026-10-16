@@ -243,4 +243,33 @@ public record ScreensLayout(List<ScreenLayout> Screens, int Version = 3)
     /// </summary>
     [JsonIgnore]
     public List<WidgetLayout> AllWidgets => Screens.SelectMany(screen => screen.Layout).ToList();
+
+    /// <summary>
+    /// Backfills stable widget identities for legacy entries. The returned value is the same
+    /// instance when every widget already has an identity, allowing callers to avoid needless
+    /// writes. IDs are generated once and then persisted with the layout document.
+    /// </summary>
+    public ScreensLayout EnsureWidgetIdentities(out bool changed)
+    {
+        changed = false;
+        var screens = new List<ScreenLayout>(Screens.Count);
+        foreach (var screen in Screens)
+        {
+            var layout = new List<WidgetLayout>(screen.Layout.Count);
+            var screenChanged = false;
+            foreach (var widget in screen.Layout)
+            {
+                var identified = widget.EnsureIdentity();
+                screenChanged |= !ReferenceEquals(identified, widget);
+                changed |= screenChanged;
+                layout.Add(identified);
+            }
+
+            screens.Add(screenChanged
+                ? screen with { Layout = layout }
+                : screen);
+        }
+
+        return changed ? this with { Screens = screens } : this;
+    }
 }

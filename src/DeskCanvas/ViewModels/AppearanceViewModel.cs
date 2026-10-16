@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using Avalonia.Media;
 using Avalonia.Threading;
 using ReactiveUI;
@@ -19,10 +20,31 @@ public class AppearanceViewModel : ReactiveObject
 {
     private readonly IAppSettingsProvider appSettingsProvider;
     private readonly FocusWatchService? focusWatch;
+    private readonly AppearanceSettingsSession themeSettings;
+    private readonly AppearanceSettingsSession sliderSettings;
+    private bool pendingThemeSave;
+    private bool pendingSliderSave;
+    private string? themeSaveError;
+    private string? sliderSaveError;
+    private Theme SliderTheme => pendingSliderSave ? sliderSettings.Draft : appSettingsProvider.Get().Theme;
+    private string? settingsError;
+    public string? SettingsError
+    {
+        get => settingsError;
+        private set
+        {
+            this.RaiseAndSetIfChanged(ref settingsError, value);
+            this.RaisePropertyChanged(nameof(HasSettingsError));
+        }
+    }
+    public bool HasSettingsError => !string.IsNullOrEmpty(SettingsError);
+    public Theme? PendingTheme => pendingThemeSave ? themeSettings.Draft : null;
 
     public AppearanceViewModel(IAppSettingsProvider appSettingsProvider, FocusWatchService? focusWatch = null)
     {
         this.appSettingsProvider = appSettingsProvider;
+        themeSettings = new AppearanceSettingsSession(appSettingsProvider);
+        sliderSettings = new AppearanceSettingsSession(appSettingsProvider);
         this.focusWatch = focusWatch;
         if (focusWatch != null)
         {
@@ -47,6 +69,7 @@ public class AppearanceViewModel : ReactiveObject
             this.RaisePropertyChanged(nameof(ShowSoftGlowSettings));
             this.RaisePropertyChanged(nameof(GlassOpticsTitle));
             this.RaisePropertyChanged(nameof(OpacityLevel));
+            this.RaisePropertyChanged(nameof(Font));
             this.RaisePropertyChanged(nameof(GlassBlur));
             this.RaisePropertyChanged(nameof(GlassRefraction));
             this.RaisePropertyChanged(nameof(GlassEdgeWidth));
@@ -171,60 +194,60 @@ public class AppearanceViewModel : ReactiveObject
 
     public double GlassBlur
     {
-        get => appSettingsProvider.Get().Theme.EffectiveLiquidGlass.Blur;
+        get => SliderTheme.EffectiveLiquidGlass.Blur;
         set => UpdateGlass(glass => glass with { Blur = value });
     }
     public double GlassRefraction
     {
-        get => appSettingsProvider.Get().Theme.EffectiveLiquidGlass.Refraction;
+        get => SliderTheme.EffectiveLiquidGlass.Refraction;
         set => UpdateGlass(glass => glass with { Refraction = value });
     }
     public double GlassEdgeWidth
     {
-        get => appSettingsProvider.Get().Theme.EffectiveLiquidGlass.EdgeWidth;
+        get => SliderTheme.EffectiveLiquidGlass.EdgeWidth;
         set => UpdateGlass(glass => glass with { EdgeWidth = value });
     }
     public double GlassHighlight
     {
-        get => appSettingsProvider.Get().Theme.EffectiveLiquidGlass.Highlight;
+        get => SliderTheme.EffectiveLiquidGlass.Highlight;
         set => UpdateGlass(glass => glass with { Highlight = value });
     }
     public double GlassDispersion
     {
-        get => appSettingsProvider.Get().Theme.EffectiveLiquidGlass.Dispersion;
+        get => SliderTheme.EffectiveLiquidGlass.Dispersion;
         set => UpdateGlass(glass => glass with { Dispersion = value });
     }
     public double GlassLightAngle
     {
-        get => appSettingsProvider.Get().Theme.EffectiveLiquidGlass.LightAngle;
+        get => SliderTheme.EffectiveLiquidGlass.LightAngle;
         set => UpdateGlass(glass => glass with { LightAngle = value });
     }
 
     /// <summary>边缘染色 strength (0-100%): the soft colored rim at the glass border.</summary>
     public double GlassEdgeTint
     {
-        get => appSettingsProvider.Get().Theme.EffectiveLiquidGlass.EdgeTint;
+        get => SliderTheme.EffectiveLiquidGlass.EdgeTint;
         set => UpdateGlass(glass => glass with { EdgeTint = value });
     }
 
     /// <summary>柔光晕 strength (0-100%) of 柔光玻璃: the diffused luminous bloom around the rim.</summary>
     public double GlassGlow
     {
-        get => appSettingsProvider.Get().Theme.EffectiveLiquidGlass.Glow;
+        get => SliderTheme.EffectiveLiquidGlass.Glow;
         set => UpdateGlass(glass => glass with { Glow = value });
     }
 
     /// <summary>光谱弥散 (0-100%) of 柔光玻璃: how far the dispersion blends towards a full spectrum.</summary>
     public double GlassSpectrum
     {
-        get => appSettingsProvider.Get().Theme.EffectiveLiquidGlass.Spectrum;
+        get => SliderTheme.EffectiveLiquidGlass.Spectrum;
         set => UpdateGlass(glass => glass with { Spectrum = value });
     }
 
     /// <summary>染色扩散 (0-100%) of 柔光玻璃: how far the edge dye reaches into the card (0 = rim only).</summary>
     public double GlassDyeSpread
     {
-        get => appSettingsProvider.Get().Theme.EffectiveLiquidGlass.DyeSpread;
+        get => SliderTheme.EffectiveLiquidGlass.DyeSpread;
         set => UpdateGlass(glass => glass with { DyeSpread = value });
     }
 
@@ -236,7 +259,7 @@ public class AppearanceViewModel : ReactiveObject
     /// </summary>
     public double GlassBackdropClarity
     {
-        get => appSettingsProvider.Get().Theme.EffectiveLiquidGlass.BackdropClarity;
+        get => SliderTheme.EffectiveLiquidGlass.BackdropClarity;
         set => UpdateGlass(glass => glass with { BackdropClarity = value });
     }
 
@@ -248,14 +271,14 @@ public class AppearanceViewModel : ReactiveObject
     public bool LiveSampling
     {
         get => appSettingsProvider.Get().Theme.EffectiveLiquidGlass.LiveSampling;
-        set => UpdateGlass(glass => glass with { LiveSampling = value });
+        set => UpdateGlass(glass => glass with { LiveSampling = value }, commitImmediately: true);
     }
 
     /// <summary>Sampling interval in milliseconds; shorter is smoother and more expensive.</summary>
     public int LiveSamplingInterval
     {
         get => appSettingsProvider.Get().Theme.EffectiveLiquidGlass.LiveSamplingInterval;
-        set => UpdateGlass(glass => glass with { LiveSamplingInterval = value });
+        set => UpdateGlass(glass => glass with { LiveSamplingInterval = value }, commitImmediately: true);
     }
 
     // ---------- 新液态玻璃 optics (LiquidGlassV2Settings) ----------
@@ -263,35 +286,35 @@ public class AppearanceViewModel : ReactiveObject
     /// <summary>模糊 (0-100): the light backdrop blur.</summary>
     public double V2Blur
     {
-        get => appSettingsProvider.Get().Theme.EffectiveLiquidGlassV2.Blur;
+        get => SliderTheme.EffectiveLiquidGlassV2.Blur;
         set => UpdateV2(glass => glass with { Blur = value });
     }
 
     /// <summary>折射 (0-100): the rim lens strength — quarter-circle displacement peaking at the outline.</summary>
     public double V2Refraction
     {
-        get => appSettingsProvider.Get().Theme.EffectiveLiquidGlassV2.Refraction;
+        get => SliderTheme.EffectiveLiquidGlassV2.Refraction;
         set => UpdateV2(glass => glass with { Refraction = value });
     }
 
     /// <summary>边缘高光 (0-100): the hairline rim stroke's alpha.</summary>
     public double V2Highlight
     {
-        get => appSettingsProvider.Get().Theme.EffectiveLiquidGlassV2.Highlight;
+        get => SliderTheme.EffectiveLiquidGlassV2.Highlight;
         set => UpdateV2(glass => glass with { Highlight = value });
     }
 
     /// <summary>活力 (0-100): the iOS vibrancy colour boost (33 ≈ the library's saturation ×1.5).</summary>
     public double V2Vibrancy
     {
-        get => appSettingsProvider.Get().Theme.EffectiveLiquidGlassV2.Vibrancy;
+        get => SliderTheme.EffectiveLiquidGlassV2.Vibrancy;
         set => UpdateV2(glass => glass with { Vibrancy = value });
     }
 
     /// <summary>色散 (0-100): the seven-tap spectral split along the rim displacement.</summary>
     public double V2Dispersion
     {
-        get => appSettingsProvider.Get().Theme.EffectiveLiquidGlassV2.Dispersion;
+        get => SliderTheme.EffectiveLiquidGlassV2.Dispersion;
         set => UpdateV2(glass => glass with { Dispersion = value });
     }
 
@@ -299,14 +322,14 @@ public class AppearanceViewModel : ReactiveObject
     public bool V2LiveSampling
     {
         get => appSettingsProvider.Get().Theme.EffectiveLiquidGlassV2.LiveSampling;
-        set => UpdateV2(glass => glass with { LiveSampling = value });
+        set => UpdateV2(glass => glass with { LiveSampling = value }, commitImmediately: true);
     }
 
     /// <summary>Sampling interval in milliseconds; shorter is smoother and more expensive.</summary>
     public int V2LiveSamplingInterval
     {
         get => appSettingsProvider.Get().Theme.EffectiveLiquidGlassV2.LiveSamplingInterval;
-        set => UpdateV2(glass => glass with { LiveSamplingInterval = value });
+        set => UpdateV2(glass => glass with { LiveSamplingInterval = value }, commitImmediately: true);
     }
 
     /// <summary>
@@ -315,31 +338,103 @@ public class AppearanceViewModel : ReactiveObject
     /// </summary>
     public double V2BackdropClarity
     {
-        get => appSettingsProvider.Get().Theme.EffectiveLiquidGlassV2.BackdropClarity;
+        get => SliderTheme.EffectiveLiquidGlassV2.BackdropClarity;
         set => UpdateV2(glass => glass with { BackdropClarity = value });
     }
 
-    private void UpdateV2(Func<LiquidGlassV2Settings, LiquidGlassV2Settings> update)
+    private void UpdateV2(Func<LiquidGlassV2Settings, LiquidGlassV2Settings> update,
+        bool commitImmediately = false, [CallerMemberName] string? propertyName = null)
     {
-        var settings = appSettingsProvider.Get();
-        var glass = update(settings.Theme.EffectiveLiquidGlassV2).Normalize();
-        if (glass == settings.Theme.EffectiveLiquidGlassV2) return;
-        SaveTheme(settings.Theme with { LiquidGlassV2 = glass });
+        var theme = commitImmediately ? appSettingsProvider.Get().Theme : SliderTheme;
+        var glass = update(theme.EffectiveLiquidGlassV2).Normalize();
+        if (glass == theme.EffectiveLiquidGlassV2) return;
+        if (commitImmediately) SaveTheme(theme with { LiquidGlassV2 = glass });
+        else StageSlider(draft => draft with { LiquidGlassV2 = glass }, propertyName);
     }
 
-    private void UpdateGlass(Func<LiquidGlassSettings, LiquidGlassSettings> update)
+    private void UpdateGlass(Func<LiquidGlassSettings, LiquidGlassSettings> update,
+        bool commitImmediately = false, [CallerMemberName] string? propertyName = null)
     {
-        var settings = appSettingsProvider.Get();
-        var glass = update(settings.Theme.EffectiveLiquidGlass).Normalize();
-        if (glass == settings.Theme.EffectiveLiquidGlass) return;
-        SaveTheme(settings.Theme with { LiquidGlass = glass });
+        var theme = commitImmediately ? appSettingsProvider.Get().Theme : SliderTheme;
+        var glass = update(theme.EffectiveLiquidGlass).Normalize();
+        if (glass == theme.EffectiveLiquidGlass) return;
+        if (commitImmediately) SaveTheme(theme with { LiquidGlass = glass });
+        else StageSlider(draft => draft with { LiquidGlass = glass }, propertyName);
+    }
+
+    private void StageSlider(Func<Theme, Theme> update, string? propertyName)
+    {
+        var next = update(SliderTheme);
+        if (next == SliderTheme) return;
+        if (!pendingSliderSave) sliderSettings.Reload();
+        sliderSettings.Stage(next);
+        pendingSliderSave = true;
+        this.RaisePropertyChanged(propertyName);
+    }
+
+    public bool CommitThemeSliders()
+    {
+        if (!pendingSliderSave) return true;
+        var result = sliderSettings.Commit();
+        pendingSliderSave = !result.Succeeded;
+        sliderSaveError = result.Error;
+        RefreshSettingsError();
+        RaiseSliderProperties();
+        return result.Succeeded;
+    }
+
+    private void RaiseSliderProperties()
+    {
+        foreach (var name in new[] { nameof(OpacityLevel), nameof(GlassBlur), nameof(GlassRefraction),
+            nameof(GlassEdgeWidth), nameof(GlassHighlight), nameof(GlassDispersion), nameof(GlassLightAngle),
+            nameof(GlassEdgeTint), nameof(GlassGlow), nameof(GlassSpectrum), nameof(GlassDyeSpread),
+            nameof(GlassBackdropClarity), nameof(V2Blur), nameof(V2Refraction), nameof(V2Highlight),
+            nameof(V2Vibrancy), nameof(V2Dispersion), nameof(V2BackdropClarity), nameof(TextShadowStrength) })
+            this.RaisePropertyChanged(name);
     }
 
     private void SaveTheme(Theme newTheme)
     {
-        var settings = appSettingsProvider.Get();
-        var next = settings.WithThemeForSurface(newTheme.EffectiveSurface, newTheme);
-        appSettingsProvider.Save(next with { Theme = newTheme });
+        // A failed durable write retains its complete draft until retry or explicit reload.
+        if (pendingThemeSave) return;
+        themeSettings.Reload();
+        themeSettings.Stage(newTheme);
+        var result = themeSettings.Commit();
+        pendingThemeSave = !result.Succeeded;
+        themeSaveError = result.Error;
+        RefreshSettingsError();
+    }
+
+    private void RefreshSettingsError() => SettingsError = (themeSaveError ?? sliderSaveError) switch
+    {
+        null => null,
+        "revision-conflict" => Locale.Settings_Appearance_SaveConflict,
+        _ => Locale.Settings_Appearance_SaveFailed
+    };
+
+    public void RetrySettingsSave()
+    {
+        if (pendingThemeSave)
+        {
+            var result = themeSettings.Commit();
+            pendingThemeSave = !result.Succeeded;
+            themeSaveError = result.Error;
+            RefreshSettingsError();
+            this.RaisePropertyChanged(nameof(Font));
+        }
+        else CommitThemeSliders();
+    }
+
+    public void ReloadSettings()
+    {
+        pendingThemeSave = false;
+        pendingSliderSave = false;
+        themeSaveError = sliderSaveError = null;
+        themeSettings.Reload();
+        sliderSettings.Reload();
+        SettingsError = null;
+        RaiseSliderProperties();
+        this.RaisePropertyChanged(nameof(Font));
     }
 
     /// <summary>
@@ -351,8 +446,8 @@ public class AppearanceViewModel : ReactiveObject
     /// </summary>
     public void ResetLiquidGlass()
     {
-        if (appSettingsProvider.Get().Theme.IsLiquidGlassV2) UpdateV2(_ => new LiquidGlassV2Settings());
-        else UpdateGlass(_ => new LiquidGlassSettings());
+        if (appSettingsProvider.Get().Theme.IsLiquidGlassV2) UpdateV2(_ => new LiquidGlassV2Settings(), commitImmediately: true);
+        else UpdateGlass(_ => new LiquidGlassSettings(), commitImmediately: true);
     }
 
     public void RefreshLiquidGlassWallpaper()
@@ -713,16 +808,16 @@ public class AppearanceViewModel : ReactiveObject
 
     public double OpacityLevel
     {
-        get => appSettingsProvider.Get().Theme.OpacityLevel;
+        get => SliderTheme.OpacityLevel;
         set
         {
-            var settings = appSettingsProvider.Get();
-            // Controls push their rendered value back on attach; only a real change is saved
-            // so that merely opening the settings window never touches the settings file.
-            if (settings.Theme.OpacityLevel.Equals(value)) return;
-            SaveTheme(settings.Theme with { OpacityLevel = value });
+            if (OpacityLevel.Equals(value)) return;
+            if (!double.IsFinite(value)) return;
+            StageSlider(theme => theme with { OpacityLevel = Math.Clamp(value, 0, 1) }, nameof(OpacityLevel));
         }
     }
+
+    public bool CommitOpacityLevel() => CommitThemeSliders();
 
     /// <summary>
     /// Highlight-ring colour of the outlined-glass theme, "#AARRGGBB" — the ring's alpha is part
@@ -793,13 +888,12 @@ public class AppearanceViewModel : ReactiveObject
     /// <summary>全局文字阴影 strength, 0-100 (scales the shadow's blur, depth and opacity).</summary>
     public double TextShadowStrength
     {
-        get => appSettingsProvider.Get().Theme.TextShadowStrength;
+        get => SliderTheme.TextShadowStrength;
         set
         {
-            var settings = appSettingsProvider.Get();
             var strength = Math.Clamp(value, 0, 100);
-            if (Math.Abs(settings.Theme.TextShadowStrength - strength) < 0.001) return;
-            SaveTheme(settings.Theme with { TextShadowStrength = strength });
+            if (Math.Abs(SliderTheme.TextShadowStrength - strength) < 0.001) return;
+            StageSlider(theme => theme with { TextShadowStrength = strength }, nameof(TextShadowStrength));
         }
     }
 
@@ -922,15 +1016,15 @@ public class AppearanceViewModel : ReactiveObject
 
     public string Font
     {
-        get => appSettingsProvider.Get().Theme.FontFamily;
+        get => PendingTheme?.FontFamily ?? appSettingsProvider.Get().Theme.FontFamily;
         set
         {
+            // Filtering the font list temporarily clears SelectedItem; this is not a user choice.
+            if (string.IsNullOrWhiteSpace(value)) return;
             var settings = appSettingsProvider.Get();
             // Idempotent: the font ComboBox writes its resolved item back on attach.
             if (settings.Theme.FontFamily == value) return;
-            var theme = settings.Theme with { FontFamily = value };
-            var newSettings = settings with { Theme = theme };
-            appSettingsProvider.Save(newSettings);
+            SaveTheme(settings.Theme with { FontFamily = value });
         }
     }
 

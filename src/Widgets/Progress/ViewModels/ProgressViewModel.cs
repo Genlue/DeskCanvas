@@ -1,8 +1,13 @@
 using System;
 using System.Globalization;
+using Avalonia;
+using Avalonia.Controls;
 using Avalonia.Media;
+using Avalonia.Styling;
+using Avalonia.VisualTree;
 using Progress.Models;
 using ReactiveUI;
+using DeskCanvas.Contracts;
 using DeskCanvas.Core.Interfaces;
 using DeskCanvas.Services;
 
@@ -12,16 +17,27 @@ public class ProgressViewModel : ReactiveObject, IDisposable
 {
     private ProgressModel model;
     private readonly IAppSettingsProvider? appSettingsProvider;
+    private readonly IWidgetSession? session;
+    private readonly Visual? themeAnchor;
     private readonly UpdateTimer timer;
     private bool isRunning;
+    private bool renderActive;
+    private int tickSubscriptions;
 
     /// <summary>Set once <see cref="Dispose"/> ran; a disposed view model must not restart.</summary>
     private bool disposed;
 
-    public ProgressViewModel(ProgressModel model, IAppSettingsProvider? appSettingsProvider = null)
+    public ProgressViewModel(
+        ProgressModel model,
+        IAppSettingsProvider? appSettingsProvider = null,
+        IWidgetSession? session = null,
+        Visual? themeAnchor = null)
     {
         this.model = model;
         this.appSettingsProvider = appSettingsProvider;
+        this.session = session;
+        this.themeAnchor = themeAnchor;
+        renderActive = session?.Activity.RenderActive ?? true;
         timer = TimerService.Timer5Seconds;
 
         if (this.appSettingsProvider != null)
@@ -50,7 +66,9 @@ public class ProgressViewModel : ReactiveObject, IDisposable
     {
         if (isRunning || disposed) return;
         isRunning = true;
-        timer.Subscribe(OnTimerTick);
+        UpdateTickSubscription();
+        // Always refresh once on activation, even when the session keeps the timer gated off:
+        // the derived state must not depend on whether a tick is about to arrive.
         UpdateProgress();
     }
 
@@ -58,8 +76,32 @@ public class ProgressViewModel : ReactiveObject, IDisposable
     {
         if (!isRunning) return;
         isRunning = false;
-        timer.Unsubscribe(OnTimerTick);
+        UpdateTickSubscription();
     }
+
+    /// <summary>
+    /// Host activity push (the <see cref="IWidgetActivityConsumer"/> path, invoked on the UI
+    /// thread): ticking follows the snapshot's <see cref="ActivitySnapshot.RenderActive"/>.
+    /// Session-less view models ignore the push entirely (the host never sends one to them).
+    /// </summary>
+    public void OnSessionActivity(ActivitySnapshot activity)
+    {
+        if (session == null) return;
+        renderActive = activity.RenderActive;
+        UpdateTickSubscription();
+    }
+
+    /// <summary>Check seam: the live subscription count over the shared timer (0 or 1).</summary>
+    public int TickSubscriptionCountForChecks => tickSubscriptions;
+
+    /// <summary>Check seam: the injected session (null on the legacy path).</summary>
+    public IWidgetSession? SessionForChecks => session;
+
+    /// <summary>Check seam: whether the shared timer subscription is currently live.</summary>
+    public bool IsTickingForChecks => tickSubscriptions > 0;
+
+    /// <summary>Check seam: the last activity gate value the view model reconciled against.</summary>
+    public bool RenderActiveForChecks => renderActive;
 
     /// <summary>
     /// Stop the five-second tick and detach from the process-lifetime app-settings event,
@@ -82,6 +124,30 @@ public class ProgressViewModel : ReactiveObject, IDisposable
     private void OnTimerTick()
     {
         UpdateProgress();
+    }
+
+    /// <summary>
+    /// Single subscription state machine: the shared timer subscription exists exactly while
+    /// the control is running AND the session renders. Session-less view models render always
+    /// (<paramref name="renderActive"/> starts true and nothing flips it). Overlapping
+    /// transitions (a covered screen while unloaded) cannot double-subscribe or
+    /// double-unsubscribe — the count is reconciled from both inputs on every change instead
+    /// of toggled from each.
+    /// </summary>
+    private void UpdateTickSubscription()
+    {
+        var wanted = isRunning && renderActive;
+        if (wanted && tickSubscriptions == 0)
+        {
+            tickSubscriptions++;
+            timer.Subscribe(OnTimerTick);
+            UpdateProgress();
+        }
+        else if (!wanted && tickSubscriptions > 0)
+        {
+            tickSubscriptions--;
+            timer.Unsubscribe(OnTimerTick);
+        }
     }
 
     private string titleText = "";
@@ -229,11 +295,14 @@ public class ProgressViewModel : ReactiveObject, IDisposable
         }
         CurrentBrush = new SolidColorBrush(curColor);
 
+        // Per-screen: the variant the anchor's window renders with. A missing theme flag
+        // (follow-the-system / AutoTheme) and an unresolvable anchor both fall through to
+        // ResolveProgressThemeVariant's uniform fallback — the pre-per-screen behaviour.
         bool isDark = theme?.DarkMode switch
         {
             true => true,
             false => false,
-            null => Avalonia.Application.Current?.ActualThemeVariant == Avalonia.Styling.ThemeVariant.Dark
+            null => ResolveProgressThemeVariant(themeAnchor) == ThemeVariant.Dark
         };
 
         Color remColor = isDark
@@ -244,6 +313,49 @@ public class ProgressViewModel : ReactiveObject, IDisposable
             remColor = parsedRem;
         }
         RemainingBrush = new SolidColorBrush(remColor);
+    }
+
+    // ---------- Per-screen theme seam (pure, testable) ----------
+
+    /// <summary>
+    /// Check seam: replaces the live visual→variant mapping so headless checks can exercise
+    /// the per-screen path without a window, a screen walk or host services. Production code
+    /// never touches this; the fixture sets and clears it around each assertion.
+    /// </summary>
+    internal static Func<Visual, ThemeVariant?>? WindowVariantResolverForChecks;
+
+    /// <summary>
+    /// The theme variant the given visual renders with, per screen: the effective theme's
+    /// explicit DarkMode flag when set (the focus-link feature themes screens independently),
+    /// otherwise the visual's live window variant — the same reading the uniform path took.
+    /// A visual that cannot resolve a theme or a window (null anchor, 组件库 preview,
+    /// headless context) falls back to the uniform application variant, which is exactly the
+    /// global reading this replaced.
+    /// </summary>
+    internal static ThemeVariant ResolveProgressThemeVariant(Visual? visual)
+    {
+        if (visual != null)
+        {
+            if (WindowVariantResolverForChecks?.Invoke(visual) is { } injected)
+            {
+                return injected;
+            }
+
+            var theme = FocusThemeCoordinator.ResolveVisualTheme(visual);
+            if (theme?.DarkMode is { } dark)
+            {
+                return dark ? ThemeVariant.Dark : ThemeVariant.Light;
+            }
+
+            if (visual.GetVisualRoot() is Control { ActualThemeVariant: { } root }
+                && root != ThemeVariant.Default)
+            {
+                return root;
+            }
+        }
+
+        // Uniform fallback: no window to resolve against — the old global application reading.
+        return Application.Current?.ActualThemeVariant ?? ThemeVariant.Light;
     }
 
     public void UpdateProgress()

@@ -6,6 +6,12 @@
              x:Class="DeskCanvas.Views.Pages.Appearance"
              x:DataType="viewModels:AppearanceViewModel">
     <StackPanel Orientation="Vertical" Spacing="3">
+        <TextBlock Text="{Binding SettingsError}" IsVisible="{Binding HasSettingsError}"
+                   TextWrapping="Wrap" Foreground="Crimson" Margin="0 0 0 8" />
+        <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding HasSettingsError}">
+            <Button Content="{x:Static locales:Locale.Settings_Appearance_SaveRetry}" Click="RetrySettingsSave" />
+            <Button Content="{x:Static locales:Locale.Settings_Appearance_SaveReload}" Click="ReloadSettings" />
+        </StackPanel>
         <!-- 失焦自动切换: the feature's settings live ABOVE the shared 应用主题 section — the
              section below configures the shared parameters, this block picks what each focus
              state shows (theme + light/dark mode). -->
@@ -162,7 +168,7 @@
                     <controls:LabeledSlider Width="264" Margin="14 0 0 0"
                                             Minimum="0" Maximum="100" Step="1"
                                             ShowEditableValue="True" DisplayFormat="F0"
-                                            Value="{Binding GlassBlur}"
+                                            Value="{Binding GlassBlur}" ValueCommitted="CommitThemeSliders"
                                             AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_Glass_Blur}" />
                 </controls:Setting>
                 <controls:Setting Title="{x:Static locales:Locale.Settings_Appearance_Glass_Refraction}"
@@ -170,7 +176,7 @@
                     <controls:LabeledSlider Width="264" Margin="14 0 0 0"
                                             Minimum="0" Maximum="100" Step="1"
                                             ShowEditableValue="True" DisplayFormat="F0"
-                                            Value="{Binding GlassRefraction}"
+                                            Value="{Binding GlassRefraction}" ValueCommitted="CommitThemeSliders"
                                             AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_Glass_Refraction}" />
                 </controls:Setting>
                 <controls:Setting Title="{x:Static locales:Locale.Settings_Appearance_Glass_EdgeWidth}"
@@ -178,7 +184,7 @@
                     <controls:LabeledSlider Width="264" Margin="14 0 0 0"
                                             Minimum="0" Maximum="80" Step="1"
                                             ShowEditableValue="True" DisplayFormat="F0"
-                                            Value="{Binding GlassEdgeWidth}"
+                                            Value="{Binding GlassEdgeWidth}" ValueCommitted="CommitThemeSliders"
                                             AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_Glass_EdgeWidth}" />
                 </controls:Setting>
                 <controls:Setting Title="{x:Static locales:Locale.Settings_Appearance_Glass_Highlight}"
@@ -186,7 +192,7 @@
                     <controls:LabeledSlider Width="264" Margin="14 0 0 0"
                                             Minimum="0" Maximum="100" Step="1"
                                             ShowEditableValue="True" DisplayFormat="F0"
-                                            Value="{Binding GlassHighlight}"
+                                            Value="{Binding GlassHighlight}" ValueCommitted="CommitThemeSliders"
                                             AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_Glass_Highlight}" />
                 </controls:Setting>
                 <controls:Setting Title="{x:Static locales:Locale.Settings_Appearance_Glass_Dispersion}"
@@ -194,7 +200,7 @@
                     <controls:LabeledSlider Width="264" Margin="14 0 0 0"
                                             Minimum="0" Maximum="100" Step="1"
                                             ShowEditableValue="True" DisplayFormat="F0"
-                                            Value="{Binding GlassDispersion}"
+                                            Value="{Binding GlassDispersion}" ValueCommitted="CommitThemeSliders"
                                             AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_Glass_Dispersion}" />
                 </controls:Setting>
                 <controls:Setting Title="{x:Static locales:Locale.Settings_Appearance_Glass_LightAngle}"
@@ -202,7 +208,7 @@
                     <controls:LabeledSlider Width="264" Margin="14 0 0 0"
                                             Minimum="0" Maximum="360" Step="5"
                                             ShowEditableValue="True" DisplayFormat="F0"
-                                            Value="{Binding GlassLightAngle}"
+                                            Value="{Binding GlassLightAngle}" ValueCommitted="CommitThemeSliders"
                                             AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_Glass_LightAngle}" />
                 </controls:Setting>
                 <controls:Setting Title="{x:Static locales:Locale.Settings_Appearance_Glass_EdgeTint}"
@@ -210,7 +216,7 @@
                     <controls:LabeledSlider Width="264" Margin="14 0 0 0"
                                             Minimum="0" Maximum="100" Step="1"
                                             ShowEditableValue="True" DisplayFormat="F0"
-                                            Value="{Binding GlassEdgeTint}"
+                                            Value="{Binding GlassEdgeTint}" ValueCommitted="CommitThemeSliders"
                                             AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_Glass_EdgeTint}" />
                 </controls:Setting>
                 <!-- 背景清晰度: the one setting that trades live-sampling *speed* against backdrop
@@ -220,7 +226,7 @@
                     <controls:LabeledSlider Width="264" Margin="14 0 0 0"
                                             Minimum="25" Maximum="100" Step="5"
                                             ShowEditableValue="True" DisplayFormat="F0"
-                                            Value="{Binding GlassBackdropClarity}"
+                                            Value="{Binding GlassBackdropClarity}" ValueCommitted="CommitThemeSliders"
                                             AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_Glass_BackdropClarity}" />
                 </controls:Setting>
                 <!-- The soft recipe's ingredients. 柔光玻璃 was merged into this theme, so these rows
@@ -232,7 +238,7 @@
                         <controls:LabeledSlider Width="264" Margin="14 0 0 0"
                                                 Minimum="0" Maximum="100" Step="1"
                                                 ShowEditableValue="True" DisplayFormat="F0"
-                                                Value="{Binding GlassGlow}"
+                                                Value="{Binding GlassGlow}" ValueCommitted="CommitThemeSliders"
                                                 AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_SoftGlow_Glow}" />
                     </controls:Setting>
                     <controls:Setting Title="{x:Static locales:Locale.Settings_Appearance_SoftGlow_Spectrum}"
@@ -240,7 +246,7 @@
                         <controls:LabeledSlider Width="264" Margin="14 0 0 0"
                                                 Minimum="0" Maximum="100" Step="1"
                                                 ShowEditableValue="True" DisplayFormat="F0"
-                                                Value="{Binding GlassSpectrum}"
+                                                Value="{Binding GlassSpectrum}" ValueCommitted="CommitThemeSliders"
                                                 AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_SoftGlow_Spectrum}" />
                     </controls:Setting>
                     <controls:Setting Title="{x:Static locales:Locale.Settings_Appearance_SoftGlow_DyeSpread}"
@@ -248,7 +254,7 @@
                         <controls:LabeledSlider Width="264" Margin="14 0 0 0"
                                                 Minimum="0" Maximum="100" Step="1"
                                                 ShowEditableValue="True" DisplayFormat="F0"
-                                                Value="{Binding GlassDyeSpread}"
+                                                Value="{Binding GlassDyeSpread}" ValueCommitted="CommitThemeSliders"
                                                 AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_SoftGlow_DyeSpread}" />
                     </controls:Setting>
                 </StackPanel>
@@ -273,7 +279,7 @@
                     <controls:LabeledSlider Width="264" Margin="14 0 0 0"
                                             Minimum="0" Maximum="100" Step="1"
                                             ShowEditableValue="True" DisplayFormat="F0"
-                                            Value="{Binding V2Blur}"
+                                            Value="{Binding V2Blur}" ValueCommitted="CommitThemeSliders"
                                             AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_V2_Blur}" />
                 </controls:Setting>
                 <controls:Setting Title="{x:Static locales:Locale.Settings_Appearance_V2_Refraction}"
@@ -281,7 +287,7 @@
                     <controls:LabeledSlider Width="264" Margin="14 0 0 0"
                                             Minimum="0" Maximum="100" Step="1"
                                             ShowEditableValue="True" DisplayFormat="F0"
-                                            Value="{Binding V2Refraction}"
+                                            Value="{Binding V2Refraction}" ValueCommitted="CommitThemeSliders"
                                             AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_V2_Refraction}" />
                 </controls:Setting>
                 <controls:Setting Title="{x:Static locales:Locale.Settings_Appearance_V2_Dispersion}"
@@ -289,7 +295,7 @@
                     <controls:LabeledSlider Width="264" Margin="14 0 0 0"
                                             Minimum="0" Maximum="100" Step="1"
                                             ShowEditableValue="True" DisplayFormat="F0"
-                                            Value="{Binding V2Dispersion}"
+                                            Value="{Binding V2Dispersion}" ValueCommitted="CommitThemeSliders"
                                             AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_V2_Dispersion}" />
                 </controls:Setting>
                 <controls:Setting Title="{x:Static locales:Locale.Settings_Appearance_V2_Highlight}"
@@ -297,7 +303,7 @@
                     <controls:LabeledSlider Width="264" Margin="14 0 0 0"
                                             Minimum="0" Maximum="100" Step="1"
                                             ShowEditableValue="True" DisplayFormat="F0"
-                                            Value="{Binding V2Highlight}"
+                                            Value="{Binding V2Highlight}" ValueCommitted="CommitThemeSliders"
                                             AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_V2_Highlight}" />
                 </controls:Setting>
                 <controls:Setting Title="{x:Static locales:Locale.Settings_Appearance_V2_Vibrancy}"
@@ -305,7 +311,7 @@
                     <controls:LabeledSlider Width="264" Margin="14 0 0 0"
                                             Minimum="0" Maximum="100" Step="1"
                                             ShowEditableValue="True" DisplayFormat="F0"
-                                            Value="{Binding V2Vibrancy}"
+                                            Value="{Binding V2Vibrancy}" ValueCommitted="CommitThemeSliders"
                                             AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_V2_Vibrancy}" />
                 </controls:Setting>
                 <controls:Setting Title="{x:Static locales:Locale.Settings_Appearance_Glass_BackdropClarity}"
@@ -313,7 +319,7 @@
                     <controls:LabeledSlider Width="264" Margin="14 0 0 0"
                                             Minimum="25" Maximum="100" Step="5"
                                             ShowEditableValue="True" DisplayFormat="F0"
-                                            Value="{Binding V2BackdropClarity}"
+                                            Value="{Binding V2BackdropClarity}" ValueCommitted="CommitThemeSliders"
                                             AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_Glass_BackdropClarity}" />
                 </controls:Setting>
             </StackPanel>
@@ -343,7 +349,10 @@
             Title="{x:Static locales:Locale.Settings_Appearance_OpacityLevel_Title}" 
             Subtitle="{x:Static locales:Locale.Settings_Appearance_OpacityLevel_Subtitle}"
             IsVisible="{Binding ShowOpacitySetting}">
-            <NumericUpDown MinWidth="130" Minimum="0" Maximum="1" Increment="0.05" Value="{Binding OpacityLevel}" />
+            <controls:LabeledSlider x:Name="OpacityEditor" Width="264" Minimum="0" Maximum="1" Step="0.05"
+                                    ShowEditableValue="True" DisplayFormat="F2"
+                                    Value="{Binding OpacityLevel}" ValueCommitted="CommitOpacityLevel"
+                                    AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_OpacityLevel_Title}" />
         </controls:Setting>
         <StackPanel IsVisible="{Binding ShowGlassSettings}">
             <controls:Setting Icon="{DynamicResource WidgetSize}"
@@ -367,7 +376,7 @@
                 <controls:LabeledSlider Width="264" Margin="14 0 0 0"
                                         Minimum="0" Maximum="100" Step="5"
                                         ShowEditableValue="True" DisplayFormat="F0"
-                                        Value="{Binding TextShadowStrength}"
+                                        Value="{Binding TextShadowStrength}" ValueCommitted="CommitThemeSliders"
                                         AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_TextShadow_Strength}" />
             </StackPanel>
         </controls:Setting>

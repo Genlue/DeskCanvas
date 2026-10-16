@@ -223,10 +223,13 @@
 
                     <!-- Card Border & Clock Dial / Strokes (Light) -->
                     <SolidColorBrush x:Key="WidgetCardBorderBrush" Color="#15000000" />
-                    <!-- 表盘-1 / 表盘-2 / 表盘-3 (AnalogI/AnalogIII/AnalogIV) 的组件卡片：
-                         多彩主题下两档变体都用 Apple 深灰黑（恒黑卡片，复刻 Apple 时钟小组件亮暗皆黑的卡片），由各
-                         时钟视图经 IWidgetSurfaceHints 声明；其余组件仍走 WidgetBackground。 -->
+                    <!-- 表盘-1 (AnalogI) 的组件卡片：
+                         多彩主题下两档变体都用 Apple 深灰黑（恒黑卡片，内圈有白盘）；
+                         表盘-2 (AnalogIII) 与表盘-3 (AnalogIV) 整个卡片即表盘（无内圈圆形），
+                         亮色档用白卡、暗色档用深灰黑，避免亮色模式下因卡片恒黑导致黑字黑针/刻度"一片黑"。 -->
                     <SolidColorBrush x:Key="ClockCardBackground" Color="#1C1C1E" />
+                    <SolidColorBrush x:Key="ClockAnalogIIICardBackground" Color="#FFFFFF" />
+                    <SolidColorBrush x:Key="ClockAnalogIVCardBackground" Color="#FFFFFF" />
                     <SolidColorBrush x:Key="FlipClockCardBackground" Color="#EFEFF4" />
                     <!-- 数字时钟卡片与元素画刷 (Light) -->
                     <SolidColorBrush x:Key="ClockDigitalCardBackground" Color="#FFFFFF" />
@@ -354,6 +357,12 @@
                     <SolidColorBrush x:Key="PomodoroButtonBackgroundBrush" Color="#0D000000" />
                     <SolidColorBrush x:Key="PomodoroButtonHoverBrush" Color="#1E000000" />
 
+                    <!-- Countdown: Days Matter pure card with dynamic semantic ring -->
+                    <SolidColorBrush x:Key="CountdownCardBackground" Color="#FFFFFF" />
+                    <SolidColorBrush x:Key="CountdownPillBackgroundBrush" Color="#10000000" />
+                    <SolidColorBrush x:Key="CountdownPillBorderBrush" Color="#14000000" />
+                    <SolidColorBrush x:Key="CountdownTrackBrush" Color="#15000000" />
+
                     <!-- Hitokoto: Apple Literary pure card with refined purple watermark & pill -->
                     <SolidColorBrush x:Key="HitokotoCardBackground" Color="#FFFFFF" />
                     <SolidColorBrush x:Key="HitokotoWatermarkBrush" Color="#16AF52DE" />
@@ -474,10 +483,12 @@
 
                     <!-- Card Border & Clock Dial / Strokes (Light) -->
                     <SolidColorBrush x:Key="WidgetCardBorderBrush" Color="#15000000" />
-                    <!-- 表盘-1 / 表盘-2 / 表盘-3 (AnalogI/AnalogIII/AnalogIV) 的组件卡片：
-                         多彩主题下两档变体都用 Apple 深灰黑（恒黑卡片，复刻 Apple 时钟小组件亮暗皆黑的卡片），由各
-                         时钟视图经 IWidgetSurfaceHints 声明；其余组件仍走 WidgetBackground。 -->
+                    <!-- 表盘-1 (AnalogI) 的组件卡片：
+                         多彩主题下两档变体都用 Apple 深灰黑（恒黑卡片，内圈有白盘）；
+                         表盘-2 (AnalogIII) 与表盘-3 (AnalogIV) 整个卡片即表盘，亮色档用白卡。 -->
                     <SolidColorBrush x:Key="ClockCardBackground" Color="#1C1C1E" />
+                    <SolidColorBrush x:Key="ClockAnalogIIICardBackground" Color="#FFFFFF" />
+                    <SolidColorBrush x:Key="ClockAnalogIVCardBackground" Color="#FFFFFF" />
                     <SolidColorBrush x:Key="FlipClockCardBackground" Color="#EFEFF4" />
                     <!-- 数字时钟卡片与元素画刷 (Light) -->
                     <SolidColorBrush x:Key="ClockDigitalCardBackground" Color="#FFFFFF" />
@@ -605,6 +616,12 @@
                     <SolidColorBrush x:Key="PomodoroButtonBackgroundBrush" Color="#16FFFFFF" />
                     <SolidColorBrush x:Key="PomodoroButtonHoverBrush" Color="#28FFFFFF" />
 
+                    <!-- Countdown: Days Matter dark card with dynamic semantic ring -->
+                    <SolidColorBrush x:Key="CountdownCardBackground" Color="#1C1C1E" />
+                    <SolidColorBrush x:Key="CountdownPillBackgroundBrush" Color="#18FFFFFF" />
+                    <SolidColorBrush x:Key="CountdownPillBorderBrush" Color="#20FFFFFF" />
+                    <SolidColorBrush x:Key="CountdownTrackBrush" Color="#20FFFFFF" />
+
                     <!-- Hitokoto: Apple Literary dark card with luminous purple watermark & pill -->
                     <SolidColorBrush x:Key="HitokotoCardBackground" Color="#1C1C1E" />
                     <SolidColorBrush x:Key="HitokotoWatermarkBrush" Color="#20BF5AF2" />
@@ -725,8 +742,11 @@
 
                     <!-- Card Border & Clock Dial / Strokes (Dark) -->
                     <SolidColorBrush x:Key="WidgetCardBorderBrush" Color="#25FFFFFF" />
-                    <!-- 表盘-1 / 表盘-2 / 表盘-3 的卡片：与亮色档一致，恒为 Apple 深灰黑（恒黑卡片）。 -->
+                    <!-- 表盘-1 的卡片：与亮色档一致，恒为 Apple 深灰黑（恒黑卡片）；
+                         表盘-2 (AnalogIII) 与表盘-3 (AnalogIV) 暗色档深灰黑。 -->
                     <SolidColorBrush x:Key="ClockCardBackground" Color="#1C1C1E" />
+                    <SolidColorBrush x:Key="ClockAnalogIIICardBackground" Color="#1C1C1E" />
+                    <SolidColorBrush x:Key="ClockAnalogIVCardBackground" Color="#1C1C1E" />
                     <SolidColorBrush x:Key="FlipClockCardBackground" Color="#1C1C1E" />
                     <!-- 数字时钟卡片与元素画刷 (Dark) -->
                     <SolidColorBrush x:Key="ClockDigitalCardBackground" Color="#1C1C1E" />

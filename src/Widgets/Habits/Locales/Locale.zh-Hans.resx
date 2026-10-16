@@ -1,0 +1,210 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Habits" xml:space="preserve">
+    <value>打卡</value>
+  </data>
+  <data name="Habits_Title" xml:space="preserve">
+    <value>打卡</value>
+  </data>
+  <data name="Habits_Subtitle" xml:space="preserve">
+    <value>追踪每日习惯与打卡连击</value>
+  </data>
+  <data name="Habits_ViewMode" xml:space="preserve">
+    <value>显示模式</value>
+  </data>
+  <data name="Habits_ViewMode_List" xml:space="preserve">
+    <value>多习惯列表</value>
+  </data>
+  <data name="Habits_ViewMode_Focus" xml:space="preserve">
+    <value>单习惯聚焦</value>
+  </data>
+  <data name="Habits_ViewMode_Heatmap" xml:space="preserve">
+    <value>热力图矩阵</value>
+  </data>
+  <data name="Habits_FocusedHabit" xml:space="preserve">
+    <value>聚焦目标习惯</value>
+  </data>
+  <data name="Habits_DayResetHour" xml:space="preserve">
+    <value>每日重置时间 (夜猫子防断签)</value>
+  </data>
+  <data name="Habits_ShowStreak" xml:space="preserve">
+    <value>显示连续打卡天数</value>
+  </data>
+  <data name="Habits_ShowTargetProgress" xml:space="preserve">
+    <value>显示目标进度条</value>
+  </data>
+  <data name="Habits_AddHabit" xml:space="preserve">
+    <value>添加习惯</value>
+  </data>
+  <data name="Habits_EditHabit" xml:space="preserve">
+    <value>编辑习惯</value>
+  </data>
+  <data name="Habits_DeleteHabit" xml:space="preserve">
+    <value>删除习惯</value>
+  </data>
+  <data name="Habits_DeleteConfirm" xml:space="preserve">
+    <value>确定要删除该习惯及其打卡记录吗？</value>
+  </data>
+  <data name="Habits_TitlePrompt" xml:space="preserve">
+    <value>习惯名称</value>
+  </data>
+  <data name="Habits_IconPrompt" xml:space="preserve">
+    <value>图标 / Emoji</value>
+  </data>
+  <data name="Habits_TypePrompt" xml:space="preserve">
+    <value>打卡类型</value>
+  </data>
+  <data name="Habits_Type_Boolean" xml:space="preserve">
+    <value>完成打卡 (是/否)</value>
+  </data>
+  <data name="Habits_Type_Numeric" xml:space="preserve">
+    <value>定量目标 (如喝水/运动)</value>
+  </data>
+  <data name="Habits_TargetValue" xml:space="preserve">
+    <value>目标数值</value>
+  </data>
+  <data name="Habits_StepValue" xml:space="preserve">
+    <value>单次步进</value>
+  </data>
+  <data name="Habits_Unit" xml:space="preserve">
+    <value>单位</value>
+  </data>
+  <data name="Habits_Frequency" xml:space="preserve">
+    <value>打卡频次</value>
+  </data>
+  <data name="Habits_Freq_Daily" xml:space="preserve">
+    <value>每天</value>
+  </data>
+  <data name="Habits_Freq_Weekdays" xml:space="preserve">
+    <value>工作日 (周一至周五)</value>
+  </data>
+  <data name="Habits_Freq_Weekends" xml:space="preserve">
+    <value>周末 (周六至周日)</value>
+  </data>
+  <data name="Habits_CurrentStreak" xml:space="preserve">
+    <value>当前连击</value>
+  </data>
+  <data name="Habits_BestStreak" xml:space="preserve">
+    <value>最高纪录</value>
+  </data>
+  <data name="Habits_TotalCheckIns" xml:space="preserve">
+    <value>总打卡</value>
+  </data>
+  <data name="Habits_CompletionRate" xml:space="preserve">
+    <value>完成率</value>
+  </data>
+  <data name="Habits_TodayCompleted" xml:space="preserve">
+    <value>今日已打卡</value>
+  </data>
+  <data name="Habits_AllDone" xml:space="preserve">
+    <value>今日习惯已全部完成！🎉</value>
+  </data>
+  <data name="Habits_Empty" xml:space="preserve">
+    <value>暂无打卡习惯</value>
+  </data>
+  <data name="Habits_Empty_Hint" xml:space="preserve">
+    <value>点击上方 + 按钮添加您的第一个习惯</value>
+  </data>
+  <data name="Habits_Tab_Today" xml:space="preserve">
+    <value>今日与管理</value>
+  </data>
+  <data name="Habits_Tab_Calendar" xml:space="preserve">
+    <value>打卡日历</value>
+  </data>
+  <data name="Habits_Tab_Stats" xml:space="preserve">
+    <value>统计分析</value>
+  </data>
+  <data name="Habits_Save" xml:space="preserve">
+    <value>保存</value>
+  </data>
+  <data name="Habits_Cancel" xml:space="preserve">
+    <value>取消</value>
+  </data>
+  <data name="Habits_CheckIn" xml:space="preserve">
+    <value>打卡</value>
+  </data>
+  <data name="Habits_Undo" xml:space="preserve">
+    <value>撤销</value>
+  </data>
+  <data name="Habits_Weekday_Mon" xml:space="preserve">
+    <value>一</value>
+  </data>
+  <data name="Habits_Weekday_Tue" xml:space="preserve">
+    <value>二</value>
+  </data>
+  <data name="Habits_Weekday_Wed" xml:space="preserve">
+    <value>三</value>
+  </data>
+  <data name="Habits_Weekday_Thu" xml:space="preserve">
+    <value>四</value>
+  </data>
+  <data name="Habits_Weekday_Fri" xml:space="preserve">
+    <value>五</value>
+  </data>
+  <data name="Habits_Weekday_Sat" xml:space="preserve">
+    <value>六</value>
+  </data>
+  <data name="Habits_Weekday_Sun" xml:space="preserve">
+    <value>日</value>
+  </data>
+  <data name="Habits_Stat_CurrentStreak_Value" xml:space="preserve">
+    <value>🔥 0 天</value>
+  </data>
+  <data name="Habits_Stat_BestStreak_Value" xml:space="preserve">
+    <value>🏆 0 天</value>
+  </data>
+  <data name="Habits_Stat_TotalCheckIns_Value" xml:space="preserve">
+    <value>0 次</value>
+  </data>
+  <data name="Habits_StatsBreakdown" xml:space="preserve">
+    <value>各习惯数据一览</value>
+  </data>
+  <data name="Habits_PrevHabit" xml:space="preserve">
+    <value>上一个习惯</value>
+  </data>
+  <data name="Habits_NextHabit" xml:space="preserve">
+    <value>下一个习惯</value>
+  </data>
+  <data name="Habits_ClickToCheckIn" xml:space="preserve">
+    <value>点击打卡</value>
+  </data>
+  <data name="Habits_Achieved" xml:space="preserve">
+    <value>已达成 ✔</value>
+  </data>
+  <data name="Habits_Legend_Less" xml:space="preserve">
+    <value>少</value>
+  </data>
+  <data name="Habits_Legend_More" xml:space="preserve">
+    <value>多</value>
+  </data>
+</root>

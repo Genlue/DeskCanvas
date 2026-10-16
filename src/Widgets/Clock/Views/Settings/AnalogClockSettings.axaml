@@ -14,6 +14,19 @@
             <ToggleSwitch IsChecked="{Binding ShowSeconds}"/>
         </controls:Setting>
 
+        <controls:Setting IsVisible="{Binding Show24HoursSetting}" Title="{x:Static locales:Locale.Clock_Use24Hours}">
+            <ToggleSwitch IsChecked="{Binding Use24Hours}"/>
+        </controls:Setting>
+
+        <controls:Setting IsVisible="{Binding ShowDateSetting}" Title="{x:Static locales:Locale.Clock_ShowDate}">
+            <ToggleSwitch IsChecked="{Binding ShowDate}"/>
+        </controls:Setting>
+
+        <controls:Setting IsVisible="{Binding ShowDialOpaqueSetting}"
+                          Title="{x:Static locales:Locale.Clock_DialOpaque}">
+            <ToggleSwitch IsChecked="{Binding IsDialOpaque}"/>
+        </controls:Setting>
+
         <StackPanel Orientation="Vertical" Spacing="5" IsVisible="{Binding ShowDialColorSetting}">
             <!-- 表盘颜色模式：跟随背景 / 黑白 / 自定义 -->
             <controls:Setting Title="{x:Static locales:Locale.Clock_DialColor_Title}">

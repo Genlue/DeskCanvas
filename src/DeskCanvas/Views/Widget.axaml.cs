@@ -16,7 +16,9 @@ using Avalonia.VisualTree;
 using DeskCanvas.Core.Interfaces;
 using DeskCanvas.Core.Models;
 using DeskCanvas.Core.Models.Settings;
+using DeskCanvas.Contracts;
 using DeskCanvas.Locales;
+using DeskCanvas.Runtime;
 using DeskCanvas.Services;
 using DeskCanvas.Views.Controls;
 
@@ -77,10 +79,13 @@ public partial class Widget : Window, INotifyPropertyChanged, IFocusThemedWindow
     public string ScreenId => widgetLayoutProvider.ScreenId;
     public ScreenLayout? ScreenConfig => layoutProvider.Get().FindById(ScreenId);
     public Avalonia.Platform.Screen? OwningScreen => displayMonitor.FindByConfigId(ScreenId)?.Screen;
-    private double ScreenScaling => OwningScreen?.Scaling ?? 1.0;
+    private double ScreenScaling => OwningScreen?.Scaling ?? (DesktopScaling > 0 ? DesktopScaling : 1.0);
 
     /// <summary>True while the host suspended the widgets (fullscreen application active).</summary>
     private bool suspended;
+
+    /// <summary>The final activity of a tearing-down widget: its display is going away.</summary>
+    private static readonly ActivitySnapshot TeardownActivity = new(ActivityReason.DisplayDetached);
 
     public bool IsFrameless => isFrameless;
 
@@ -101,6 +106,15 @@ public partial class Widget : Window, INotifyPropertyChanged, IFocusThemedWindow
         layoutProvider.DataChanged -= OnLayoutDataUpdated;
         profileService.ActiveProfileChanged -= OnProfilesChanged;
         profileService.ProfilesListChanged -= OnProfilesChanged;
+
+        // Session teardown (A0): record the detach on the session and drop its registry entry.
+        // Both run fire-and-forget inside the registry — the close sequence must never await.
+        var instanceId = new WidgetInstanceId(widgetLayoutProvider.Get().InstanceId);
+        if (!instanceId.IsEmpty)
+        {
+            (ContentPresenter.Content as IWidgetActivityConsumer)?.OnSessionActivity(TeardownActivity);
+            WidgetSessionRegistry.Remove(instanceId, TeardownActivity);
+        }
     }
 
     /// <summary>
@@ -113,6 +127,7 @@ public partial class Widget : Window, INotifyPropertyChanged, IFocusThemedWindow
         if (suspended) return;
         suspended = true;
         (ContentPresenter.Content as IWidgetSuspendable)?.Suspend();
+        ReportSessionActivity(ActivityReason.ScreenCovered);
     }
 
     /// <summary>Rebuild whatever <see cref="SuspendContent"/> released.</summary>
@@ -121,6 +136,21 @@ public partial class Widget : Window, INotifyPropertyChanged, IFocusThemedWindow
         if (!suspended) return;
         suspended = false;
         (ContentPresenter.Content as IWidgetSuspendable)?.Resume();
+        ReportSessionActivity(ActivityReason.DesktopVisible);
+    }
+
+    /// <summary>
+    /// Push a host activity transition into this widget's session and to the hosted content.
+    /// Widgets on legacy layout entries without a stable identity have no session and are
+    /// skipped here, exactly like the session-less preview.
+    /// </summary>
+    private void ReportSessionActivity(ActivityReason reason)
+    {
+        var instanceId = new WidgetInstanceId(widgetLayoutProvider.Get().InstanceId);
+        if (instanceId.IsEmpty) return;
+        var snapshot = new ActivitySnapshot(reason);
+        WidgetSessionRegistry.ReportActivity(instanceId, snapshot);
+        (ContentPresenter.Content as IWidgetActivityConsumer)?.OnSessionActivity(snapshot);
     }
 
     /// <summary>
@@ -243,6 +273,7 @@ public partial class Widget : Window, INotifyPropertyChanged, IFocusThemedWindow
         // as such (clicking a widget never flips the theme), and the coordinator assigns this
         // window's per-screen light/dark variant.
         DesktopFurniture.Attach(this);
+        WindowRoles.Register(this, WindowRole.DesktopWidget);
         ApplyTransparencyHint();
         UpdateContentSize();
         ApplyWidgetRegion();
@@ -252,6 +283,9 @@ public partial class Widget : Window, INotifyPropertyChanged, IFocusThemedWindow
         // raise it above ordinary application windows. Secondary panels (weather
         // forecast & co.) are pinned just above the widget band instead.
         WidgetZOrder.PinWidgetToBottom(this);
+
+        // The window's "loaded" signal: the widget is visible on the desktop (A0 wiring).
+        ReportSessionActivity(ActivityReason.DesktopVisible);
     }
 
     private void OnResized(object? sender, WindowResizedEventArgs e)
@@ -259,7 +293,7 @@ public partial class Widget : Window, INotifyPropertyChanged, IFocusThemedWindow
         if (tornDown || displayMonitor.IsTopologyChanging) return;
         UpdateContentSize();
         ApplyWidgetRegion();
-        if (appSettingsProvider.Get().Theme.UseNativeFrame)
+        if (GlassMaterial.UseNativeFrame)
             AfterResize();
     }
 
@@ -457,7 +491,7 @@ public partial class Widget : Window, INotifyPropertyChanged, IFocusThemedWindow
         ScreenConfig?.Radius
         ?? appSettingsProvider.Get().Dimensions.Radius;
 
-    public CornerRadius Radius => (isFrameless || appSettingsProvider.Get().Theme.UseNativeFrame)
+    public CornerRadius Radius => (isFrameless || GlassMaterial.UseNativeFrame)
         ? new(0)
         : new(ResolveEffectiveRadius(EffectiveBaseRadius) / ScreenScaling);
 
@@ -512,15 +546,17 @@ public partial class Widget : Window, INotifyPropertyChanged, IFocusThemedWindow
 
     /// <summary>
     /// The theme this window renders with. Usually the shared theme; while 失焦自动切换 is
-    /// enabled it is the shared parameters with this screen's state substituted (light/dark
-    /// pair + optional surface material) — so two screens can show two materials at once.
+    /// enabled it is the shared parameters with <b>this window's own screen's</b> state
+    /// substituted (light/dark pair + optional surface material) — so two screens can show
+    /// two materials at once, and a window whose screen cannot be resolved falls back to the
+    /// uniform state theme.
     /// </summary>
     public Theme GlassMaterial
     {
         get
         {
             var settings = appSettingsProvider.Get();
-            return FocusCoordinator?.ResolveWindowTheme(settings) ?? settings.Theme;
+            return FocusCoordinator?.ResolveWindowTheme(settings, this) ?? settings.Theme;
         }
     }
 
@@ -891,11 +927,11 @@ public partial class Widget : Window, INotifyPropertyChanged, IFocusThemedWindow
     /// <summary>Target span of an in-flight preset resize animation (null when idle).</summary>
     private (int Columns, int Rows)? pendingSpan;
 
-    public SystemDecorations WidgetSystemDecorations => appSettingsProvider.Get().Theme.UseNativeFrame
+    public SystemDecorations WidgetSystemDecorations => GlassMaterial.UseNativeFrame
         ? SystemDecorations.BorderOnly
         : SystemDecorations.None;
 
-    public bool WidgetExtendClientArea => appSettingsProvider.Get().Theme.UseNativeFrame;
+    public bool WidgetExtendClientArea => GlassMaterial.UseNativeFrame;
     public void EditWidget() => editWidgetWindow?.Invoke().Show();
 
     private IFixedSizeWidget? FixedSizeWidget => ContentPresenter.Content as IFixedSizeWidget;
@@ -1186,7 +1222,7 @@ public partial class Widget : Window, INotifyPropertyChanged, IFocusThemedWindow
         if (isFrameless) return;
 
         // Native frame: no custom clipping.
-        if (appSettingsProvider.Get().Theme.UseNativeFrame)
+        if (GlassMaterial.UseNativeFrame)
         {
             if (lastAppliedRegion != null)
             {
@@ -1201,7 +1237,7 @@ public partial class Widget : Window, INotifyPropertyChanged, IFocusThemedWindow
         // Liquid glass and solid surfaces do NOT use native blur; their transparent
         // margins and anti-aliased rounded corners composite via 32-bit per-pixel alpha,
         // so applying a 1-bit GDI region truncates the anti-aliased curved edge and creates jaggedness.
-        bool needsClipping = appSettingsProvider.Get().Theme.UsesNativeBlur;
+        bool needsClipping = GlassMaterial.UsesNativeBlur;
 
         if (!needsClipping)
         {
@@ -1220,7 +1256,7 @@ public partial class Widget : Window, INotifyPropertyChanged, IFocusThemedWindow
 
         var cardWidth = Math.Max(1, width - 2 * margin);
         var cardHeight = Math.Max(1, height - 2 * margin);
-        var cardRadius = (int) Math.Round(ResolveEffectiveRadius(appSettingsProvider.Get().Dimensions.Radius));
+        var cardRadius = (int) Math.Round(ResolveEffectiveRadius(EffectiveBaseRadius));
 
         // The decoration overlay (IWidgetOverlayProvider, e.g. the Stack pagination dots that
         // moved into the plugin) is placed inside the card on this surface per its
@@ -1315,9 +1351,15 @@ public partial class Widget : Window, INotifyPropertyChanged, IFocusThemedWindow
     {
         if (isFrameless) return;
 
-        TransparencyLevelHint = GlassMaterial.UsesNativeBlur
+        WindowTransparencyLevel[] target = GlassMaterial.UsesNativeBlur
             ? [WindowTransparencyLevel.AcrylicBlur]
             : [WindowTransparencyLevel.Transparent];
+
+        if (TransparencyLevelHint == null || !TransparencyLevelHint.SequenceEqual(target))
+        {
+            TransparencyLevelHint = target;
+            lastAppliedRegion = null;
+        }
     }
 
     private void SetMinMaxSize(bool lockSize)
@@ -1425,6 +1467,11 @@ public partial class Widget : Window, INotifyPropertyChanged, IFocusThemedWindow
         profileService.ProfilesListChanged -= OnProfilesChanged;
         ActualThemeVariantChanged -= OnActualThemeVariantChanged;
         AttachStackWidget(null);
+
+        // Off the desktop (A0 wiring). On the normal close path the session entry was already
+        // released by PrepareForTeardown, so this report is a no-op; it only matters for a
+        // window that leaves the visual tree without the teardown pass.
+        ReportSessionActivity(ActivityReason.TrayHidden);
     }
 
     private void OnActualThemeVariantChanged(object? sender, EventArgs e)

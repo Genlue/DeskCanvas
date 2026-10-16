@@ -1,0 +1,37 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="Dice.Views.Controls.DiceFaceControl">
+    <!--  中性玻璃骰面：无描边、圆角 12、极轻投影，46~56px 下均协调  -->
+    <Border x:Name="FaceBorder"
+            Background="#14808080"
+            CornerRadius="12"
+            BoxShadow="0 2 8 0 #1F000000"
+            HorizontalAlignment="Stretch"
+            VerticalAlignment="Stretch">
+        <Panel x:Name="ContentPanel" Margin="6">
+            <!-- Numbers mode -->
+            <TextBlock x:Name="NumberText"
+                       HorizontalAlignment="Center"
+                       VerticalAlignment="Center"
+                       FontWeight="Bold"
+                       FontSize="24"
+                       Foreground="{DynamicResource WidgetForeground}" />
+
+            <!-- D6 Dots Grid -->
+            <Grid x:Name="DotsGrid" IsVisible="False"
+                  RowDefinitions="*,*,*" ColumnDefinitions="*,*,*">
+                <Ellipse x:Name="DotTL" Grid.Row="0" Grid.Column="0" Width="9" Height="9" Fill="{DynamicResource WidgetForeground}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                <Ellipse x:Name="DotML" Grid.Row="1" Grid.Column="0" Width="9" Height="9" Fill="{DynamicResource WidgetForeground}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                <Ellipse x:Name="DotBL" Grid.Row="2" Grid.Column="0" Width="9" Height="9" Fill="{DynamicResource WidgetForeground}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+
+                <!--  中式传统红：仅 1 点显示（由 code-behind 控制可见性）  -->
+                <Ellipse x:Name="DotCenterAccent" Grid.Row="1" Grid.Column="1" Width="10" Height="10" Fill="{DynamicResource MacosRedBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" IsVisible="False" />
+                <Ellipse x:Name="DotCenter" Grid.Row="1" Grid.Column="1" Width="10" Height="10" Fill="{DynamicResource WidgetForeground}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+
+                <Ellipse x:Name="DotTR" Grid.Row="0" Grid.Column="2" Width="9" Height="9" Fill="{DynamicResource WidgetForeground}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                <Ellipse x:Name="DotMR" Grid.Row="1" Grid.Column="2" Width="9" Height="9" Fill="{DynamicResource WidgetForeground}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                <Ellipse x:Name="DotBR" Grid.Row="2" Grid.Column="2" Width="9" Height="9" Fill="{DynamicResource WidgetForeground}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+            </Grid>
+        </Panel>
+    </Border>
+</UserControl>
