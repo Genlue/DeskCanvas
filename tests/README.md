@@ -36,7 +36,7 @@
 | ClockFamilySessionChecks | 正式门禁（已验证套件） | P8-D Clock 家族（Analog/Flip/Frameless/TickDial）：SharedTimeZone 第二消费者落地（四视图时区样板收敛）、私有定时器收敛+门控、主题逐屏、非法 id 回退 Utc 契约 |
 | MediaWidgetSessionChecks | 正式门禁（已验证套件） | P8-E 媒体类（Picture/Music/Map/Pomodoro/Dice/Wheel）：轮播/进度/计时门控（状态不丢）、Pomodoro 墙钟补放、SMTC 共享引擎不变、交互驱动组件 N/A 决策 |
 | ToolsWidgetSessionChecks | 正式门禁（已验证套件） | P8-F 工具杂项（Tools/Stack/Search/ControlCenter）：3 弹窗 PanelService 迁移（13 个待迁弹窗清单清零）、剪贴板监听/防抖语义不变、ControlCenter N/A 决策 |
-| ProfileStorageChecks | 正式门禁（已验证套件） | P12 数据 Profile 化：默认 Default 解析、activeProfile.json 指针读写、组件数据跨 Profile 完全隔离、ProfileService 增删重命名克隆热切换；P15 新建方案播种契约：出厂默认外观（不继承当前样式）、零组件/零组件数据、仅应用级偏好沿用、热切换读回 |
+| ProfileStorageChecks | 正式门禁（已验证套件） | P12 数据 Profile 化：默认 Default 解析、activeProfile.json 指针读写、组件数据跨 Profile 完全隔离、ProfileService 增删重命名克隆热切换；P15 新建方案播种契约：出厂默认外观（不继承当前样式）、零组件/零组件数据、仅应用级偏好沿用；热切换必须真正从磁盘 reload（接口 `IDataProvider.Reload` 曾因签名不匹配退化成空实现，导致内存仍用旧方案、旧桌面被回写进新方案目录）；残缺方案目录切换前自动补齐文件 |
 | UninstallerChecks | 正式门禁（已验证套件） | P13 独立卸载与 Setup 安装程序：动态数据路径决议与自动跟随、默认保留数据（未勾选）、彻底清理（勾选）、只读文件鲁棒删除、自启动归属判定、Inno Setup 编译与内置卸载契约（35 项） |
 | ThemeSettingsChecks | 正式门禁（已验证套件） | P4 ThemeSnapshot、draft/commit、revision 冲突与影响域 |
 | SettingsIntegrationChecks | 正式门禁（已验证套件） | P4 真实 Appearance 设置页与原子 JSON 保存、失败/冲突重试、窗口资源隔离、Avalonia 文字预编辑与滑块完成提交 |

@@ -72,6 +72,21 @@ public class JsonParser<T> : IDataProvider<T>
         }
     }
 
+    /// <summary>
+    /// Explicit interface implementation of <see cref="IDataProvider{T}.Reload"/>.
+    /// <para>
+    /// <b>Required, not decorative.</b> The interface member is <c>void Reload()</c> with a
+    /// no-op default body ("if supported"), while <see cref="Reload"/> returns <c>T</c> — a
+    /// returning method cannot implicitly implement a void one, so without this mapping every
+    /// interface-typed call (<c>ProfileService.SwitchProfile</c>/<c>RenameProfile</c> reloading
+    /// through <see cref="IAppSettingsProvider"/>/<see cref="ILayoutProvider"/>)
+    /// silently kept the previous data cached. That made a profile switch a no-op in memory:
+    /// the new profile's seeded files were on disk, but the desktop kept the outgoing profile's
+    /// widgets and the first layout save then wrote them into the new profile directory.
+    /// </para>
+    /// </summary>
+    void IDataProvider<T>.Reload() => Reload();
+
     /// <inheritdoc />
     public virtual void Save(T newData)
     {

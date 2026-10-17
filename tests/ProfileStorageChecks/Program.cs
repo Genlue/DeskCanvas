@@ -140,6 +140,13 @@ internal static class Program
             };
             appSettingsProvider.Save(styledSettings);
 
+            // …and give the active profile one widget, so "the new desktop is empty" is a real
+            // difference rather than two empty fixtures looking alike.
+            layoutProvider.Save(new ScreensLayout([
+                new ScreenLayout(ScreensLayout.LegacyPrimaryId, null, null, null, null, null,
+                    [new WidgetLayout("Clock", "AnalogI", 10, 10, 200, 180, null)])
+            ]));
+
             var created = profileService.CreateProfile("Study", copyCurrent: false);
             Check(created, "CreateProfile 'Study' succeeded");
             var studyDir = Path.Combine(Const.ProfilesFolder, "Study");
@@ -170,15 +177,39 @@ internal static class Program
                 "Widget data is not copied into the new profile");
             Check(studyFiles.Count == 2, $"New profile seeds exactly appSettings.json + layout.json (got {string.Join(", ", studyFiles)})");
 
-            appSettingsProvider.Save(activeSettings);
-
-            // 3b. 热切换到新方案: 播种文件必须能被读回, 外观为默认, 桌面无组件
+            // 3b. 热切换: 必须真的从新方案目录重新读取(接口 Reload 若是空实现, 内存里会留着旧方案)
+            Check(layoutProvider.Get().Screens.Sum(s => s.Layout.Count) == 1,
+                "Active profile really owns one widget before the switch");
             Check(profileService.SwitchProfile("Study"), "SwitchProfile to the new empty profile succeeds");
             Check(Const.ActiveProfile == "Study", "ActiveProfile follows the switch");
             Check(Math.Abs(appSettingsProvider.Get().Theme.OpacityLevel - 0.4) < 1e-9,
-                $"Switched profile reads the default appearance back from disk (got {appSettingsProvider.Get().Theme.OpacityLevel})");
-            Check(layoutProvider.Get().Screens.All(s => s.Layout.Count == 0), "Switched profile's desktop has no widgets");
-            profileService.SwitchProfile("Default");
+                $"Switch reloads the appearance from disk — 0.93 of the outgoing profile is gone (got {appSettingsProvider.Get().Theme.OpacityLevel})");
+            Check(appSettingsProvider.Get().Theme.AccentColor == null,
+                "Switch drops the outgoing profile's accent color from the in-memory settings");
+            Check(layoutProvider.Get().Screens.All(s => s.Layout.Count == 0),
+                "Switch reloads the layout — the in-memory desktop is empty, not the outgoing one");
+            Check(ReadWidgetCount(Path.Combine(Const.ProfilesFolder, "Default", Const.LayoutFileName)) == 1,
+                "The outgoing profile's layout file keeps its widget (snapshot untouched by the switch)");
+
+            Check(profileService.SwitchProfile("Default"), "Switch back to the styled profile succeeds");
+            Check(Math.Abs(appSettingsProvider.Get().Theme.OpacityLevel - 0.93) < 1e-9,
+                $"Switching back restores the styled settings (got {appSettingsProvider.Get().Theme.OpacityLevel})");
+            Check(layoutProvider.Get().Screens.Sum(s => s.Layout.Count) == 1,
+                "Switching back restores the stored widget");
+
+            appSettingsProvider.Save(activeSettings);
+
+            // 3c. 残缺方案目录(手工建的/残缺导入): 切换前补齐文件, 不能"半切换"
+            var partialDir = Path.Combine(Const.ProfilesFolder, "Partial");
+            Directory.CreateDirectory(partialDir);
+            Check(profileService.SwitchProfile("Partial"), "SwitchProfile seeds a profile folder that has no files");
+            Check(File.Exists(Path.Combine(partialDir, Const.AppSettingsFileName)) &&
+                  File.Exists(Path.Combine(partialDir, Const.LayoutFileName)),
+                "Missing profile files are seeded before the switch (no half-switched state)");
+            Check(Math.Abs(appSettingsProvider.Get().Theme.OpacityLevel - 0.4) < 1e-9,
+                "Seeded profile opens on the default appearance");
+            Check(layoutProvider.Get().Screens.All(s => s.Layout.Count == 0), "Seeded profile opens with an empty desktop");
+            Check(profileService.SwitchProfile("Default"), "Switch back to Default after repairing the partial profile");
 
             // Duplicate profile "Study" to "StudyCopy"
             var duplicated = profileService.DuplicateProfile("Study", "StudyCopy");
@@ -223,6 +254,13 @@ internal static class Program
         Console.WriteLine($"ProfileStorageChecks FAILED: {failures.Count} check(s) failed.");
         foreach (var f in failures) Console.WriteLine($"  - {f}");
         return 1;
+    }
+
+    private static int ReadWidgetCount(string layoutFile)
+    {
+        if (!File.Exists(layoutFile)) return -1;
+        var layout = JsonSerializer.Deserialize<ScreensLayout>(File.ReadAllText(layoutFile));
+        return layout?.Screens.Sum(s => s.Layout.Count) ?? -1;
     }
 
     private sealed class DummyThemeService : IThemeService

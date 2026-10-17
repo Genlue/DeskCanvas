@@ -173,6 +173,12 @@ public class ProfileService
 
         try
         {
+            // 0. A profile folder may exist without its files (hand-made folder, partial import,
+            // an older build's leftover). Reloading such a folder would throw and leave the app
+            // half-switched — active pointer moved, widgets already closed. Seed what is missing
+            // first, from the same defaults a brand-new profile gets.
+            SeedMissingProfileFiles(targetName, path);
+
             // 1. Save current profile snapshot
             var currentName = GetActiveProfile();
             SaveCurrentProfile(currentName);
@@ -275,10 +281,7 @@ public class ProfileService
             }
             else
             {
-                var emptySettings = CreateEmptyProfileSettings(name);
-                var emptyScreens = new ScreensLayout([new ScreenLayout(ScreensLayout.LegacyPrimaryId, null, null, null, null, null, [])]);
-                File.WriteAllText(Path.Combine(path, Const.AppSettingsFileName), AppSettingsProvider.ToFileJson(emptySettings));
-                File.WriteAllText(Path.Combine(path, Const.LayoutFileName), JsonSerializer.Serialize(emptyScreens));
+                SeedMissingProfileFiles(name, path);
             }
 
             ProfilesListChanged?.Invoke(this, EventArgs.Empty);
@@ -288,6 +291,28 @@ public class ProfileService
         {
             Debug.WriteLine($"[ProfileService] CreateProfile '{name}' failed: {ex.Message}");
             return false;
+        }
+    }
+
+    /// <summary>
+    /// Write the files a profile cannot work without, when they are missing: an empty
+    /// <c>layout.json</c> and the settings of a brand-new profile (see
+    /// <see cref="CreateEmptyProfileSettings"/>). Existing files are never touched.
+    /// </summary>
+    private void SeedMissingProfileFiles(string name, string path)
+    {
+        if (!File.Exists(Path.Combine(path, Const.AppSettingsFileName)))
+        {
+            var settings = CreateEmptyProfileSettings(name);
+            File.WriteAllText(Path.Combine(path, Const.AppSettingsFileName), AppSettingsProvider.ToFileJson(settings));
+        }
+
+        if (!File.Exists(Path.Combine(path, Const.LayoutFileName)))
+        {
+            var emptyScreens = new ScreensLayout([
+                new ScreenLayout(ScreensLayout.LegacyPrimaryId, null, null, null, null, null, [])
+            ]);
+            File.WriteAllText(Path.Combine(path, Const.LayoutFileName), JsonSerializer.Serialize(emptyScreens));
         }
     }
 
