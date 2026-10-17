@@ -30,6 +30,9 @@
     <data name="Settings_Appearance_Colors" xml:space="preserve">
         <value>Colors</value>
     </data>
+    <data name="Settings_Appearance_Highlight" xml:space="preserve">
+        <value>Highlight</value>
+    </data>
     <data name="Settings_Appearance_DarkMode_Title" xml:space="preserve">
         <value>Choose your mode</value>
     </data>
@@ -168,6 +171,15 @@
     <data name="Settings_About_OriginalReportBug" xml:space="preserve">
         <value>Report a bug to the original author</value>
     </data>
+    <data name="Settings_About_Uninstall_Title" xml:space="preserve">
+        <value>Uninstall DeskCanvas</value>
+    </data>
+    <data name="Settings_About_Uninstall_Subtitle" xml:space="preserve">
+        <value>Launch uninstaller to remove DeskCanvas and its shortcuts</value>
+    </data>
+    <data name="Settings_About_Uninstall_Action" xml:space="preserve">
+        <value>Uninstall...</value>
+    </data>
     <data name="Widgets" xml:space="preserve">
         <value>Widgets</value>
     </data>
@@ -196,13 +208,13 @@
         <value>Background color</value>
     </data>
     <data name="Settings_Appearance_Surface_Frosted" xml:space="preserve">
-        <value>Mica</value>
+        <value>Acrylic</value>
     </data>
     <data name="Settings_Appearance_Surface_Solid" xml:space="preserve">
         <value>Solid</value>
     </data>
     <data name="Settings_Appearance_Surface_Colorful" xml:space="preserve">
-        <value>Colorful</value>
+        <value>Full Color</value>
     </data>
     <data name="Settings_Appearance_SolidBackground_Title" xml:space="preserve">
         <value>Background color</value>
@@ -362,18 +374,6 @@
     </data>
     <data name="Settings_Appearance_OpacityLevel_Subtitle" xml:space="preserve">
         <value>Opacity level of widget's background</value>
-    </data>
-    <data name="Settings_Appearance_OutlineColor_Title" xml:space="preserve">
-        <value>Outline color</value>
-    </data>
-    <data name="Settings_Appearance_OutlineColor_Subtitle" xml:space="preserve">
-        <value>Highlight ring color when the outline is on (alpha included); strongest at the top-left and bottom-right corners, fading toward the top-right and bottom-left</value>
-    </data>
-    <data name="Settings_Appearance_OutlineWidth_Title" xml:space="preserve">
-        <value>Outline width</value>
-    </data>
-    <data name="Settings_Appearance_OutlineWidth_Subtitle" xml:space="preserve">
-        <value>Highlight ring thickness in DIPs; 0 hides the outline (default)</value>
     </data>
     <data name="Settings_Appearance_TextShadow_Title" xml:space="preserve">
         <value>Global element shadows</value>
@@ -607,7 +607,7 @@
         <value>Widgets: {0}</value>
     </data>
     <data name="Settings_Appearance_Surface_LiquidGlass" xml:space="preserve">
-        <value>Soft glow glass</value>
+        <value>Liquid glass</value>
     </data>
     <data name="Settings_Appearance_Surface_LiquidGlassV2" xml:space="preserve">
         <value>Liquid glass</value>
@@ -695,6 +695,18 @@
     </data>
     <data name="Settings_Appearance_Glass_HighlightHint" xml:space="preserve">
         <value>0–100% · rim light and inner reflections</value>
+    </data>
+    <data name="Settings_Appearance_Glass_HighlightAngle" xml:space="preserve">
+        <value>Highlight angle</value>
+    </data>
+    <data name="Settings_Appearance_Glass_HighlightAngleHint" xml:space="preserve">
+        <value>Specular highlight incident angle (0° - 360°), default 90°.</value>
+    </data>
+    <data name="Settings_Appearance_Glass_Vibrancy" xml:space="preserve">
+        <value>Vibrancy</value>
+    </data>
+    <data name="Settings_Appearance_Glass_VibrancyHint" xml:space="preserve">
+        <value>Colour vibrancy boost (0-100).</value>
     </data>
     <data name="Settings_Appearance_Glass_BackdropClarity" xml:space="preserve">
         <value>Backdrop clarity</value>

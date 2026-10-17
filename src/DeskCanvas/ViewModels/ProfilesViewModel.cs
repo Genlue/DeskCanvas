@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Avalonia.Controls;
 using Avalonia.Platform.Storage;
 using ReactiveUI;
+using DeskCanvas.Core;
 using DeskCanvas.Locales;
 using DeskCanvas.Services;
 using DeskCanvas.Views;
@@ -102,9 +103,11 @@ public class ProfilesViewModel : ReactiveObject
             try
             {
                 var p = profileService.GetProfilePath(name);
-                if (File.Exists(p))
+                if (Directory.Exists(p))
                 {
-                    var dt = File.GetLastWriteTime(p).ToString("yyyy-MM-dd HH:mm");
+                    var settingsFile = Path.Combine(p, Const.AppSettingsFileName);
+                    var dt = (File.Exists(settingsFile) ? File.GetLastWriteTime(settingsFile) : Directory.GetLastWriteTime(p))
+                        .ToString("yyyy-MM-dd HH:mm");
                     modStr = IsZh ? $"修改时间：{dt}" : $"Modified: {dt}";
                 }
             }

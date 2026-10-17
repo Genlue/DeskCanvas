@@ -10,7 +10,7 @@
         ShowInTaskbar="False"
         CanResize="False"
         Width="480"
-        Height="580">
+        Height="540">
 
     <Window.Styles>
         <Style Selector="ComboBox.panel-combo">
@@ -35,12 +35,6 @@
         <Style Selector="TextBox.trans-box:pointerover /template/ Border#PART_BorderElement">
             <Setter Property="Background" Value="Transparent" />
             <Setter Property="BorderThickness" Value="0" />
-        </Style>
-        <Style Selector="Border.card-box">
-            <Setter Property="Background" Value="#12808080" />
-            <Setter Property="BorderBrush" Value="#15ffffff" />
-            <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="CornerRadius" Value="12" />
         </Style>
     </Window.Styles>
 
@@ -103,8 +97,7 @@
                         Background="{DynamicResource TranslateAccentBrush}" Foreground="{DynamicResource AccentContrastForegroundBrush}"
                         FontSize="12" FontWeight="SemiBold" Cursor="Hand"
                         Click="OnTranslateClicked" Content="{x:Static locales:Locale.Tools_Translator_Translate}" />
-                <Button x:Name="CopyButton" Grid.Column="1" Height="30" Margin="8,0,0,0" Padding="14,4" CornerRadius="9"
-                        Background="#20808080" BorderThickness="0" FontSize="12" Cursor="Hand"
+                <Button x:Name="CopyButton" Grid.Column="1" Classes="dc-pill" Height="30" Margin="8,0,0,0" Padding="14,4"
                         Click="OnCopyOutputClicked" Content="{x:Static locales:Locale.Tools_Translator_Copy}" />
                 <TextBlock x:Name="StatusText" Grid.Column="3" FontSize="10" Opacity="0.5" VerticalAlignment="Center"
                            HorizontalAlignment="Right" Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}" />

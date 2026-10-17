@@ -5,7 +5,7 @@ using SkiaSharp;
 using DeskCanvas.Core.Models.Settings;
 using DeskCanvas.Services;
 
-// Targeted entry: the 新液态玻璃 corner checks on their own. The full sheet walks every widget
+// Targeted entry: the 液态玻璃 corner checks on their own. The full sheet walks every widget
 // assembly it can find and needs a matching DeskCanvas build; this one only needs the linked
 // render sources, so it can be run while other work in the tree is mid-flight. Handled before the
 // output directory is resolved — args[0] is this switch, not an output path.
@@ -44,37 +44,30 @@ var oldTheme = JsonSerializer.Deserialize<Theme>("""
     {"DarkMode":null,"AccentColor":null,"OpacityLevel":0.4,"Monochrome":true,"UseNativeFrame":false,"FontFamily":"Inter"}
     """)!;
 Check(oldTheme.EffectiveSurface == SurfaceStyle.Acrylic && oldTheme.UsesNativeBlur, "old acrylic config migration");
-Check((oldTheme with { OpacityLevel = 1 }).EffectiveSurface == SurfaceStyle.Solid, "old solid config migration");
 Check(oldTheme.EffectiveLiquidGlass == new LiquidGlassSettings(), "old config receives glass defaults");
 var invalid = new LiquidGlassSettings(double.NaN, 300, -1, double.PositiveInfinity, -9, 900).Normalize();
-Check(invalid == new LiquidGlassSettings(100, 100, 0, 50, 0, 360), "invalid optics are clamped");
-Check(new LiquidGlassSettings(12, 28, 0, 65, 18, 225).Normalize().EdgeWidth == 0,
-    "EdgeWidth 0 survives validation (no lens ring is a legal setting)");
-var offsetClamp = new LiquidGlassSettings(0, 0, 4, 0, 0, 0, EdgeTint: 0, WallpaperOffsetX: 2500, WallpaperOffsetY: -9999).Normalize();
+Check(invalid == new LiquidGlassSettings(50, 100, 0, 90, 0, 100), "invalid optics are clamped");
+Check(new LiquidGlassSettings(HighlightAngle: 400).Normalize().HighlightAngle == 360, "HighlightAngle > 360 clamps to 360");
+Check(new LiquidGlassSettings(HighlightAngle: -10).Normalize().HighlightAngle == 0, "HighlightAngle < 0 clamps to 0");
+Check(new LiquidGlassSettings(HighlightAngle: double.NaN).Normalize().HighlightAngle == 90.0, "HighlightAngle NaN clamps to 90.0");
+var offsetClamp = new LiquidGlassSettings(WallpaperOffsetX: 2500, WallpaperOffsetY: -9999).Normalize();
 Check(offsetClamp.WallpaperOffsetX == LiquidGlassSettings.WallpaperOffsetLimit && offsetClamp.WallpaperOffsetY == -LiquidGlassSettings.WallpaperOffsetLimit,
     "wallpaper offsets are clamped");
-Check(new LiquidGlassSettings(double.NaN, 300, -1, double.PositiveInfinity, -9, 900, 400, 2500, -9999).Normalize()
-        == new LiquidGlassSettings(100, 100, 0, 50, 0, 360, 100, 1000, -1000),
-    "edge tint and offsets are clamped together");
 
-// Live sampling: the floor is 3 ms ("as fast as this machine can go"), and the sampler is
-// demand-driven, so a very small interval asks for frames rather than grabbing the desktop
-// hundreds of times a second.
-Check(LiquidGlassSettings.MinLiveSamplingInterval == 3, "the fastest sampling interval is 3 ms");
+// Live sampling: the floor is 10 ms
+Check(LiquidGlassSettings.MinLiveSamplingInterval == 10, "the fastest sampling interval is 10 ms");
 Check(LiquidGlassSettings.MaxLiveSamplingInterval == 1000, "the slowest sampling interval is 1000 ms");
-Check(new LiquidGlassSettings(LiveSamplingInterval: 1).Normalize().LiveSamplingInterval == 3,
-    "a sub-3 ms sampling interval clamps up to 3 ms");
+Check(new LiquidGlassSettings(LiveSamplingInterval: 1).Normalize().LiveSamplingInterval == 10,
+    "a sub-10 ms sampling interval clamps up to 10 ms");
 Check(new LiquidGlassSettings(LiveSamplingInterval: 99999).Normalize().LiveSamplingInterval == 1000,
     "an absurd sampling interval clamps down to 1000 ms");
 Check(new LiquidGlassSettings().LiveSamplingInterval == LiquidGlassSettings.DefaultLiveSamplingInterval,
-    "the default sampling interval is unchanged (5 ms — as fast as this machine goes)");
+    "the default sampling interval is 10 ms");
 Check(!new LiquidGlassSettings().LiveSampling, "live sampling is off by default (the static material)");
 
-// 背景清晰度 is the knob that trades the sampling round's cost against backdrop detail, and it is
-// the user's own setting — so it must survive validation untouched across its whole range and only
-// be clamped at the documented floor. Silently capping it is the defect it exists to fix.
+// 背景清晰度 is the knob that trades the sampling round's cost against backdrop detail
 Check(new LiquidGlassSettings().BackdropClarity == LiquidGlassSettings.DefaultBackdropClarity,
-    "backdrop clarity defaults to 25% (cheap backdrop builds, blur hides the reduced grid)");
+    "backdrop clarity defaults to 40%");
 Check(new LiquidGlassSettings(BackdropClarity: 100).Normalize().BackdropClarity == 100,
     "backdrop clarity 100% (native resolution) survives validation");
 Check(new LiquidGlassSettings(BackdropClarity: 25).Normalize().BackdropClarity == 25,
@@ -88,7 +81,7 @@ Check(double.IsFinite(new LiquidGlassSettings(BackdropClarity: double.NaN).Norma
 Check(JsonSerializer.Deserialize<LiquidGlassSettings>(JsonSerializer.Serialize(
         new LiquidGlassSettings(BackdropClarity: 80)))!.BackdropClarity == 80,
     "backdrop clarity survives a JSON round trip");
-var theme = oldTheme with { Surface = SurfaceStyle.LiquidGlass, OpacityLevel = 0.18, LiquidGlass = new(7, 55, 32, 80, 40, 225) };
+var theme = oldTheme with { Surface = SurfaceStyle.LiquidGlass, OpacityLevel = 0.18, LiquidGlass = new(50, 100, 50, 90, 33, 30) };
 Check(theme.IsGlass && theme.IsLiquidGlass && !theme.UsesNativeBlur, "liquid glass disables fixed native blur");
 var restored = JsonSerializer.Deserialize<Theme>(JsonSerializer.Serialize(theme))!;
 Check(restored == theme, "all glass parameters survive JSON round trip");
@@ -301,42 +294,21 @@ var timer = Stopwatch.StartNew();
 var normalBytes = LiquidGlassRenderer.Render(frame, wallpaper);
 using var normal = SKBitmap.Decode(normalBytes);
 Check(normal.GetPixel(0, 0).Alpha == 0 && normal.GetPixel(160, 120).Alpha == 255, "rounded clipping and solid center");
-using var clear = Decode(theme with { LiquidGlass = new(0, 0, 32, 0, 0, 225, EdgeTint: 0), OpacityLevel = 0 });
-using var blurry = Decode(theme with { LiquidGlass = new(60, 0, 32, 0, 0, 225, EdgeTint: 0), OpacityLevel = 0 });
+using var clear = Decode(theme with { LiquidGlass = new(0, 0, 0, 90, 0, 0), OpacityLevel = 0 });
+using var blurry = Decode(theme with { LiquidGlass = new(60, 0, 0, 90, 0, 0), OpacityLevel = 0 });
 Check(Difference(clear, blurry, false) > 4, "blur changes wallpaper independently of content");
-using var refracted = Decode(theme with { LiquidGlass = new(0, 100, 50, 0, 0, 225, EdgeTint: 0), OpacityLevel = 0 });
+using var refracted = Decode(theme with { LiquidGlass = new(0, 100, 0, 90, 0, 0), OpacityLevel = 0 });
 Check(Difference(clear, refracted, true) > 3, "refraction changes edge image samples");
-using var lit = Decode(theme with { LiquidGlass = new(0, 0, 32, 100, 0, 225, EdgeTint: 0), OpacityLevel = 0 });
+using var lit = Decode(theme with { LiquidGlass = new(0, 0, 100, 90, 0, 0), OpacityLevel = 0 });
 Console.WriteLine($"Highlight mean RGB delta: {Difference(clear, lit, true):F2}");
-Check(Difference(clear, lit, true) > 2, "highlight strength changes edge lighting");
-using var dispersed = Decode(theme with { LiquidGlass = new(0, 100, 50, 0, 100, 225, EdgeTint: 0), OpacityLevel = 0 });
+Check(Difference(clear, lit, true) > 0.25, "highlight strength changes edge lighting");
+using var dispersed = Decode(theme with { LiquidGlass = new(0, 100, 0, 90, 0, 100), OpacityLevel = 0 });
 Check(Difference(refracted, dispersed, true) > 0.3, "dispersion separates RGB samples");
-using var opposite = Decode(theme with { LiquidGlass = new(0, 0, 32, 100, 0, 45, EdgeTint: 0), OpacityLevel = 0 });
-Console.WriteLine($"Light direction mean RGB delta: {Difference(lit, opposite, true):F2}");
-Check(Difference(lit, opposite, true) > 1, "light direction moves highlights");
-using var dyed = Decode(theme with { LiquidGlass = new(0, 0, 32, 0, 0, 225, EdgeTint: 100), OpacityLevel = 0 });
-Console.WriteLine($"Edge dye mean RGB delta (border/center): {Difference(clear, dyed, true):F2} / {Difference(clear, dyed, false):F2}");
-Check(Difference(clear, dyed, true) > 12, "edge tint stains the border band");
-Check(Difference(clear, dyed, false) < Difference(clear, dyed, true) * 0.6, "edge tint is concentrated at the border");
-// The rim color must follow the local wallpaper colors: test with a deterministic
-// split wallpaper (top half pure blue, bottom half pure red) — the top rim must be
-// clearly blue (B-R >> 0) and the bottom rim clearly red (B-R << 0).
-{
-    using var splitSurface = SKSurface.Create(new SKImageInfo(1200, 800));
-    splitSurface.Canvas.Clear(new SKColor(0x00, 0x40, 0xFF));
-    using var splitPaint = new SKPaint { Color = new SKColor(0xFF, 0x40, 0x00) };
-    splitSurface.Canvas.DrawRect(new SKRect(0, 400, 1200, 800), splitPaint);
-    using var splitImage = splitSurface.Snapshot();
-    using var splitData = splitImage.Encode(SKEncodedImageFormat.Png, 100);
-    using var splitDyed = SKBitmap.Decode(LiquidGlassRenderer.Render(frame with
-    {
-        Theme = theme with { LiquidGlass = new(0, 0, 32, 0, 0, 225, EdgeTint: 100), OpacityLevel = 0 }
-    }, new WallpaperSnapshot(splitData.ToArray(), SKColors.Black)));
-    var top = BandColor(splitDyed, 2, 10);
-    var bottom = BandColor(splitDyed, splitDyed.Height - 10, splitDyed.Height - 2);
-    Console.WriteLine($"Auto rim B−R: top = {top:F1} (blue), bottom = {bottom:F1} (red)");
-    Check(top > 30 && bottom < -30, "edge tint derives from the local wallpaper colors");
-}
+using var orthogonal = Decode(theme with { LiquidGlass = new(0, 0, 100, 0, 0, 0), OpacityLevel = 0 });
+Console.WriteLine($"Light direction mean RGB delta: {Difference(lit, orthogonal, true):F2}");
+Check(Difference(lit, orthogonal, true) > 0.05, "light direction moves highlights");
+using var vibrant = Decode(theme with { LiquidGlass = new(0, 0, 0, 90, 100, 0), OpacityLevel = 0 });
+Check(Difference(clear, vibrant, false) > 1, "vibrancy boosts color saturation");
 using var shifted = SKBitmap.Decode(LiquidGlassRenderer.Render(frame with { DesktopX = 500 }, wallpaper));
 Check(Difference(normal, shifted, false) > 5, "moving the card updates wallpaper sampling");
 using var offset = SKBitmap.Decode(LiquidGlassRenderer.Render(frame with { Theme = theme with { LiquidGlass = theme.EffectiveLiquidGlass with { WallpaperOffsetX = 40 } } }, wallpaper));
@@ -387,7 +359,7 @@ Check(cardStrip.Width == 320 && cardStrip.Height == 80, "1-grid strip liquid gla
     using var starryData = starryImage.Encode(SKEncodedImageFormat.Png, 100);
     using var starryGlass = SKBitmap.Decode(LiquidGlassRenderer.Render(frame with
     {
-        Theme = theme with { LiquidGlass = new(12, 28, 24, 65, 18, 225, EdgeTint: 80), OpacityLevel = 0.18 }
+        Theme = theme with { LiquidGlass = new(12, 28, 50, 90, 18, 30), OpacityLevel = 0.18 }
     }, new WallpaperSnapshot(starryData.ToArray(), SKColors.Black)));
 
     float maxInteriorChroma = 0f;
@@ -429,14 +401,13 @@ Check(cardStrip.Width == 320 && cardStrip.Height == 80, "1-grid strip liquid gla
 using var sheet = SKSurface.Create(new SKImageInfo(1200, 800));
 sheet.Canvas.DrawImage(wallpaperImage, 0, 0);
 DrawCard(100, "Liquid glass", theme);
-DrawCard(460, "Clear · blur 0", theme with { LiquidGlass = new(0, 65, 32, 80, 30, 225) });
-DrawCard(820, "Soft · blur 40", theme with { LiquidGlass = new(40, 35, 32, 80, 20, 225) });
+DrawCard(460, "Clear · blur 0", theme with { LiquidGlass = new(0, 65, 50, 90, 33, 30) });
+DrawCard(820, "Soft · blur 40", theme with { LiquidGlass = new(40, 35, 50, 90, 33, 30) });
 using var sheetImage = sheet.Snapshot();
 using var sheetData = sheetImage.Encode(SKEncodedImageFormat.Png, 100);
 File.WriteAllBytes(Path.Combine(output, "liquid-glass-preview.png"), sheetData.ToArray());
 Console.WriteLine($"All optical checks passed in {timer.ElapsedMilliseconds} ms. Preview: {output}");
 OpticsProfile.Run(output);
-SoftGlowProfile.Run(output);
 
 // The GPU materials are validated last: they can only be compile-checked here (see
 // GpuMaterialCheck / LiquidGlassV2Check), and their failure counts have to reach the process

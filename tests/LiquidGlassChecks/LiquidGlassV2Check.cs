@@ -5,12 +5,12 @@ using DeskCanvas.Services;
 using SkiaSharp;
 
 /// <summary>
-/// Validation for the 新液态玻璃 material (<see cref="DeskCanvas.Services.LiquidGlassV2Effect"/>).
+/// Validation for the 液态玻璃 material (<see cref="DeskCanvas.Services.LiquidGlassEffect"/>).
 /// <para>
 /// The GPU SkSL can only be compile-checked headless (see <see cref="GpuMaterialCheck"/> for why
 /// drawing a runtime shader here is out of scope), so three things carry the corner-defect
 /// regression: the refraction <i>direction field</i>, which is shared verbatim with the CPU twin
-/// (<see cref="DeskCanvas.Services.LiquidGlassV2Renderer.GradSd"/>) and can be walked numerically;
+/// (<see cref="DeskCanvas.Services.LiquidGlassRenderer.GradSd"/>) and can be walked numerically;
 /// the shared coefficient solver (<see cref="LiquidGlassV2Lens"/>), which both render paths call;
 /// and the structure of the SkSL itself, which is checked for the seam-causing patterns rather
 /// than drawn.
@@ -51,16 +51,16 @@ internal static class LiquidGlassV2Check
 
     public static int Run()
     {
-        Console.WriteLine("=== 新液态玻璃 (LiquidGlassV2) ===");
+        Console.WriteLine("=== 液态玻璃 (LiquidGlass) ===");
 
-        Check(LiquidGlassV2Effect.IsSupported,
+        Check(LiquidGlassEffect.IsSupported,
             "optical shader compiles on this Skia" +
-            (LiquidGlassV2Effect.IsSupported ? "" : $" :: {LiquidGlassV2Effect.CompileError}"));
-        if (LiquidGlassV2Effect.IsSupported)
+            (LiquidGlassEffect.IsSupported ? "" : $" :: {LiquidGlassEffect.CompileError}"));
+        if (LiquidGlassEffect.IsSupported)
         {
             // The dialect patterns are about language constructs — scan the code, not the
             // comments (which may legitimately name the constructs they replaced).
-            var source = LineCommentPattern.Replace(LiquidGlassV2Effect.SourceForDiagnostics, "");
+            var source = LineCommentPattern.Replace(LiquidGlassEffect.SourceForDiagnostics, "");
             Check(!OutParameterPattern.IsMatch(source), "the optical shader declares no out/inout parameters");
             Check(!LoopOrSwitchPattern.IsMatch(source), "the optical shader has no loops, switch or discard");
         }
@@ -72,10 +72,11 @@ internal static class LiquidGlassV2Check
         CheckSmoothCap();
         CheckShaderTakesSharedCoefficients();
         CheckCpuRender();
+        CheckHighlightAngle();
 
         Console.WriteLine(failures == 0
-            ? "All 新液态玻璃 checks passed."
-            : $"{failures} 新液态玻璃 CHECK(S) FAILED");
+            ? "All 液态玻璃 checks passed."
+            : $"{failures} 液态玻璃 CHECK(S) FAILED");
         return failures;
     }
 
@@ -101,8 +102,8 @@ internal static class LiquidGlassV2Check
             "corner: the refraction direction is continuous across the arc-centre lines");
 
         // The blend keeps the library's edge normals where the deep band hugs an edge.
-        var left = LiquidGlassV2Renderer.GradSd(-105f, -40f, Half, Half, GradRadius);
-        var top = LiquidGlassV2Renderer.GradSd(-40f, -105f, Half, Half, GradRadius);
+        var left = LiquidGlassRenderer.GradSd(-105f, -40f, Half, Half, GradRadius);
+        var top = LiquidGlassRenderer.GradSd(-40f, -105f, Half, Half, GradRadius);
         Check(MathF.Abs(left.X + 1f) < 0.05f && MathF.Abs(left.Y) < 0.1f,
             "corner: deep field stays the left-edge normal near the left edge");
         Check(MathF.Abs(top.Y + 1f) < 0.05f && MathF.Abs(top.X) < 0.1f,
@@ -117,7 +118,7 @@ internal static class LiquidGlassV2Check
         for (var t = from; t <= to; t += 0.5f)
         {
             var (x, y) = point(t);
-            var grad = LiquidGlassV2Renderer.GradSd(x, y, Half, Half, GradRadius);
+            var grad = LiquidGlassRenderer.GradSd(x, y, Half, Half, GradRadius);
             if (previous is { } p)
             {
                 var dot = Math.Clamp(grad.X * p.X + grad.Y * p.Y, -1f, 1f);
@@ -152,21 +153,21 @@ internal static class LiquidGlassV2Check
                      (Inner, -Inner - 10f), (-Inner, -Inner - 10f)
                  })
         {
-            var g = LiquidGlassV2Renderer.GradSd(x, y, Half, Half, GradRadius);
+            var g = LiquidGlassRenderer.GradSd(x, y, Half, Half, GradRadius);
             Check(MathF.Abs(g.X) < 1e-3f && MathF.Abs(MathF.Abs(g.Y) - 1f) < 1e-3f,
                 $"field on the arc-centre line ({x:F0},{y:F0}) is the strip normal, not the 90°-flipped one");
         }
 
         // ...and it agrees with both one-sided limits, so there is no spike across that line.
-        var below = LiquidGlassV2Renderer.GradSd(Inner - 0.5f, Inner + 10f, Half, Half, GradRadius);
-        var on = LiquidGlassV2Renderer.GradSd(Inner, Inner + 10f, Half, Half, GradRadius);
-        var above = LiquidGlassV2Renderer.GradSd(Inner + 0.5f, Inner + 10f, Half, Half, GradRadius);
+        var below = LiquidGlassRenderer.GradSd(Inner - 0.5f, Inner + 10f, Half, Half, GradRadius);
+        var on = LiquidGlassRenderer.GradSd(Inner, Inner + 10f, Half, Half, GradRadius);
+        var above = LiquidGlassRenderer.GradSd(Inner + 0.5f, Inner + 10f, Half, Half, GradRadius);
         Console.WriteLine($"Arc-centre line: turn {Turn(on, below):F2}° / {Turn(on, above):F2}° per 0.5 px");
         Check(Turn(on, below) < 5f && Turn(on, above) < 5f,
             "no direction spike across the arc-centre line");
 
         // The horizontal mirror of the same boundary, to pin the other branch order.
-        var cornerSide = LiquidGlassV2Renderer.GradSd(Inner + 10f, Inner, Half, Half, GradRadius);
+        var cornerSide = LiquidGlassRenderer.GradSd(Inner + 10f, Inner, Half, Half, GradRadius);
         Check(MathF.Abs(cornerSide.X - 1f) < 1e-3f && MathF.Abs(cornerSide.Y) < 1e-3f,
             "field on the horizontal arc-centre line is the horizontal strip normal");
 
@@ -174,7 +175,7 @@ internal static class LiquidGlassV2Check
         // max(..., 1e-5) floor the shader uses. It must be finite and unit in both paths.
         foreach (var (x, y) in new[] { (Inner, Inner), (-Inner, Inner), (Inner, -Inner), (-Inner, -Inner) })
         {
-            var g = LiquidGlassV2Renderer.GradSd(x, y, Half, Half, GradRadius);
+            var g = LiquidGlassRenderer.GradSd(x, y, Half, Half, GradRadius);
             var length = MathF.Sqrt(g.X * g.X + g.Y * g.Y);
             Check(float.IsFinite(g.X) && float.IsFinite(g.Y) && MathF.Abs(length - 1f) < 1e-4f,
                 $"inflated arc centre ({x:F0},{y:F0}) falls back to a finite unit direction");
@@ -187,7 +188,7 @@ internal static class LiquidGlassV2Check
         for (var y = 0f; y <= Half * 2f; y += 2f)
         for (var x = 0f; x <= Half * 2f; x += 2f)
         {
-            var g = LiquidGlassV2Renderer.GradSd(x - Half, y - Half, Half, Half, GradRadius);
+            var g = LiquidGlassRenderer.GradSd(x - Half, y - Half, Half, Half, GradRadius);
             if (!float.IsFinite(g.X) || !float.IsFinite(g.Y)) { nonFinite++; continue; }
             worstLength = MathF.Max(worstLength, MathF.Abs(MathF.Sqrt(g.X * g.X + g.Y * g.Y) - 1f));
         }
@@ -265,7 +266,7 @@ internal static class LiquidGlassV2Check
         var lensX = 1f - depth01;
         var d = (1f - MathF.Sqrt(MathF.Max(0f, 1f - lensX * lensX))) * lens.Amount;
 
-        var grad = LiquidGlassV2Renderer.GradSd(cx, cy, half, half, lens.GradRadius);
+        var grad = LiquidGlassRenderer.GradSd(cx, cy, half, half, lens.GradRadius);
         var radialLength = MathF.Sqrt(cx * cx + cy * cy);
         var gx = grad.X + lens.DepthEffect * cx / MathF.Max(radialLength, 1e-4f);
         var gy = grad.Y + lens.DepthEffect * cy / MathF.Max(radialLength, 1e-4f);
@@ -410,8 +411,8 @@ internal static class LiquidGlassV2Check
     /// </summary>
     private static void CheckShaderTakesSharedCoefficients()
     {
-        if (!LiquidGlassV2Effect.IsSupported) return;
-        var source = LineCommentPattern.Replace(LiquidGlassV2Effect.SourceForDiagnostics, "");
+        if (!LiquidGlassEffect.IsSupported) return;
+        var source = LineCommentPattern.Replace(LiquidGlassEffect.SourceForDiagnostics, "");
         Check(source.Contains("uniform float gradRadius"),
             "the shader takes the gradient radius from the shared solver, not a local literal");
         Check(!source.Contains("radius * 1.5"),
@@ -450,8 +451,8 @@ internal static class LiquidGlassV2Check
         // The report's 4×4 case: a 352 px card, radius 24, refraction at its default 100.
         var frame = new LiquidGlassRenderer.Frame(352, 352, 1f, 24f, 0f, 0f, 1200f, 800f, 0f, 0f, 1200f, 800f, theme, false);
 
-        using var full = LiquidGlassV2Renderer.RenderBitmap(frame, wallpaper);
-        using var flat = LiquidGlassV2Renderer.RenderBitmap(
+        using var full = LiquidGlassRenderer.RenderBitmap(frame, wallpaper);
+        using var flat = LiquidGlassRenderer.RenderBitmap(
             frame with { Theme = theme with { LiquidGlassV2 = new LiquidGlassV2Settings(Refraction: 0) } }, wallpaper);
         Check(full != null && flat != null, "the 4×4 CPU render produces a bitmap");
         if (full == null || flat == null) return;
@@ -463,6 +464,37 @@ internal static class LiquidGlassV2Check
         var rimDelta = RimDifference(full, flat);
         Console.WriteLine($"4×4 CPU rim delta, 折射 100 vs 0: {rimDelta:F2}");
         Check(rimDelta > 1.5, "the capped lens still refracts visibly along a large card's rim");
+    }
+
+    private static void CheckHighlightAngle()
+    {
+        var defaultOptics = new LiquidGlassSettings();
+        Check(defaultOptics.HighlightAngle == 90.0, "default specular highlight angle is 90.0 degrees");
+        Check(new LiquidGlassSettings(HighlightAngle: 45.0).Normalize().HighlightAngle == 45.0, "highlight angle 45.0 survives normalization");
+
+        using var surface = SKSurface.Create(new SKImageInfo(800, 600));
+        surface.Canvas.Clear(new SKColor(40, 50, 60));
+        using var image = surface.Snapshot();
+        using var encoded = image.Encode(SKEncodedImageFormat.Png, 100);
+        var wallpaper = new WallpaperSnapshot(encoded.ToArray(), SKColors.Black);
+
+        var theme0 = new Theme(null, null, 0.2, false, false, "Inter", SurfaceStyle.LiquidGlass,
+            LiquidGlass: new LiquidGlassSettings(Highlight: 100, HighlightAngle: 0.0));
+        var theme90 = new Theme(null, null, 0.2, false, false, "Inter", SurfaceStyle.LiquidGlass,
+            LiquidGlass: new LiquidGlassSettings(Highlight: 100, HighlightAngle: 90.0));
+
+        var frame0 = new LiquidGlassRenderer.Frame(200, 200, 1f, 20f, 0f, 0f, 800f, 600f, 0f, 0f, 800f, 600f, theme0, false);
+        var frame90 = frame0 with { Theme = theme90 };
+
+        using var bmp0 = SKBitmap.Decode(LiquidGlassRenderer.Render(frame0, wallpaper));
+        using var bmp90 = SKBitmap.Decode(LiquidGlassRenderer.Render(frame90, wallpaper));
+        Check(bmp0 != null && bmp90 != null, "highlight angle renders valid bitmaps");
+        if (bmp0 != null && bmp90 != null)
+        {
+            var diff = RimDifference(bmp0, bmp90);
+            Console.WriteLine($"Highlight angle 0° vs 90° rim delta: {diff:F2}");
+            Check(diff > 0.5, "rotating highlight angle alters specular highlight rim output");
+        }
     }
 
     /// <summary>Mean absolute RGB difference over the rim band, where the lens acts.</summary>

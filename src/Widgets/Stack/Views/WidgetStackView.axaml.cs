@@ -371,12 +371,11 @@ public partial class WidgetStackView : UserControl, IWidgetSelfRefreshing, IStac
                 VerticalAlignment = Avalonia.Layout.VerticalAlignment.Stretch,
                 CornerRadius = ResolveCornerRadius(),
                 Background = ResolveCardBackground(entry.ViewTypeName),
-                BorderThickness = ResolveOutlineThickness(entry.ViewTypeName),
-                BorderBrush = ResolveOutlineBrush(entry.ViewTypeName),
                 ClipToBounds = true,
-                Child = control
+                Child = WrapWithHighlight(control)
             };
 
+            UpdateHighlight(card);
             childCards[index] = card;
             if (!WidgetsHost.Children.Contains(card))
             {
@@ -486,19 +485,18 @@ public partial class WidgetStackView : UserControl, IWidgetSelfRefreshing, IStac
             VerticalAlignment = Avalonia.Layout.VerticalAlignment.Stretch,
             CornerRadius = ResolveCornerRadius(),
             Background = ResolveDefaultCardBackground(),
-            BorderThickness = ResolveOutlineThickness(null),
-            BorderBrush = ResolveOutlineBrush(null),
             ClipToBounds = true,
-            Child = panel
+            Child = WrapWithHighlight(panel)
         };
+
+        UpdateHighlight(emptyCard);
     }
 
     private void UpdateCardStyle(Border card, string? viewTypeName)
     {
         card.CornerRadius = ResolveCornerRadius();
         card.Background = viewTypeName != null ? ResolveCardBackground(viewTypeName) : ResolveDefaultCardBackground();
-        card.BorderThickness = ResolveOutlineThickness(viewTypeName);
-        card.BorderBrush = ResolveOutlineBrush(viewTypeName);
+        UpdateHighlight(card);
     }
 
     private void UpdateAllCardStyles()
@@ -632,55 +630,35 @@ public partial class WidgetStackView : UserControl, IWidgetSelfRefreshing, IStac
     private static Color ParseColor(string hex, string fallbackHex) =>
         Color.TryParse(hex, out var color) ? color : Color.Parse(fallbackHex);
 
-    private Thickness ResolveOutlineThickness(string? viewTypeName)
+    /// <summary>
+    /// Puts the card content and its specular rim in one panel, in the same order as the host
+    /// card (content first, rim above). The rim itself is resolved by <see cref="UpdateHighlight"/>
+    /// — it stays in the tree for every material so switching themes never rebuilds a card.
+    /// </summary>
+    private static Panel WrapWithHighlight(Control content)
     {
-        var theme = appSettingsProvider?.Get()?.Theme;
-        if (theme == null || theme.UseNativeFrame) return new Thickness(0);
-
-        if (!theme.IsGlass || theme.OutlineWidth <= 0) return new Thickness(0);
-
-        var width = Math.Clamp(theme.OutlineWidth, 0, 6);
-        return new Thickness(width);
+        var panel = new Panel();
+        panel.Children.Add(content);
+        panel.Children.Add(new SpecularHighlight());
+        return panel;
     }
 
-    private IBrush? ResolveOutlineBrush(string? viewTypeName)
+    /// <summary>
+    /// Applies the shared 高光 optics to one child card: 毛玻璃 / 全彩 draw the host's rim,
+    /// 液态玻璃 leaves it to its wallpaper-sampled shader, and a native frame draws no card rim.
+    /// </summary>
+    private void UpdateHighlight(Border card)
     {
-        var theme = appSettingsProvider?.Get()?.Theme;
-        if (theme == null || theme.UseNativeFrame) return null;
+        if (card.Child is not Panel panel) return;
+        var highlight = panel.Children.OfType<SpecularHighlight>().FirstOrDefault();
+        if (highlight == null) return;
 
-        if (!theme.IsGlass || theme.OutlineWidth <= 0) return null;
-
-        var size = new Size(
-            Bounds.Width > 0 ? Bounds.Width : (widgetLayoutProvider?.Get()?.Width ?? 150),
-            Bounds.Height > 0 ? Bounds.Height : (widgetLayoutProvider?.Get()?.Height ?? 150)
-        );
-        return BuildConicOutlineBrush(theme, size);
-    }
-
-    private static ConicGradientBrush BuildConicOutlineBrush(Theme theme, Size size)
-    {
-        var width = Math.Max(1, size.Width);
-        var height = Math.Max(1, size.Height);
-        var cornerAngle = Math.Atan2(width / 2.0, height / 2.0) * 180.0 / Math.PI;
-        var startAngle = 360.0 - cornerAngle;
-        var color = Color.TryParse(theme.EffectiveOutlineColor, out var parsed)
-            ? parsed
-            : Color.Parse(DeskCanvas.Core.Models.Settings.Theme.DefaultOutlineColor);
-        var clear = Colors.Transparent;
-
-        return new ConicGradientBrush
-        {
-            Angle = startAngle,
-            Center = RelativePoint.Center,
-            GradientStops =
-            {
-                new GradientStop(color, 0),
-                new GradientStop(clear, 2 * cornerAngle / 360.0),
-                new GradientStop(color, 0.5),
-                new GradientStop(clear, 0.5 + 2 * cornerAngle / 360.0),
-                new GradientStop(color, 1.0)
-            }
-        };
+        var theme = FocusThemeCoordinator.ResolveVisualTheme(this) ?? appSettingsProvider?.Get()?.Theme;
+        var glass = theme?.EffectiveLiquidGlass;
+        highlight.CornerRadius = card.CornerRadius;
+        highlight.Strength = glass?.Highlight ?? 0;
+        highlight.Angle = glass?.HighlightAngle ?? 90;
+        highlight.IsVisible = theme != null && !theme.UseNativeFrame && !theme.UsesRenderedGlass;
     }
 
     private static bool NeedsWidgetLayoutProvider(Type type) =>

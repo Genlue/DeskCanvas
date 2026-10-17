@@ -2,7 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.IO.Compression;
 using System.Linq;
+using System.Text.Json;
 using Avalonia.Controls;
 using Avalonia.Threading;
 using DeskCanvas.Core;
@@ -14,7 +16,7 @@ namespace DeskCanvas.Services;
 
 /// <summary>
 /// Service managing multi-profile configuration and layout switching.
-/// Profiles are saved as versioned <see cref="BackupData"/> JSON documents in <see cref="Const.ProfilesFolder"/>.
+/// Each profile is stored as an independent directory in <see cref="Const.ProfilesFolder"/>.
 /// </summary>
 public class ProfileService
 {
@@ -61,18 +63,20 @@ public class ProfileService
                 Directory.CreateDirectory(Const.ProfilesFolder);
             }
 
-            var profiles = GetProfiles();
-            var activeName = GetActiveProfile();
+            var defaultFolder = Path.Combine(Const.ProfilesFolder, Const.DefaultProfileName);
+            if (!Directory.Exists(defaultFolder))
+            {
+                Directory.CreateDirectory(defaultFolder);
+            }
 
-            if (profiles.Count == 0)
+            var activeName = GetActiveProfile();
+            var activeFolder = Path.Combine(Const.ProfilesFolder, activeName);
+            if (!Directory.Exists(activeFolder))
             {
-                SaveCurrentProfile(AppSettings.DefaultProfileName);
+                Directory.CreateDirectory(activeFolder);
             }
-            else if (!File.Exists(GetProfilePath(activeName)))
-            {
-                // Active profile points to a nonexistent file: save current state as that profile
-                SaveCurrentProfile(activeName);
-            }
+
+            SaveCurrentProfile(activeName);
         }
         catch (Exception ex)
         {
@@ -88,59 +92,49 @@ public class ProfileService
         try
         {
             if (!Directory.Exists(Const.ProfilesFolder))
-                return [AppSettings.DefaultProfileName];
+                return [Const.DefaultProfileName];
 
-            var files = Directory.GetFiles(Const.ProfilesFolder, "*.json");
-            var names = files
-                .Select(Path.GetFileNameWithoutExtension)
+            var dirs = Directory.GetDirectories(Const.ProfilesFolder)
+                .Select(Path.GetFileName)
                 .Where(n => !string.IsNullOrWhiteSpace(n))
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .OrderBy(n => n)
                 .ToList();
 
-            if (names.Count == 0)
-                names.Add(AppSettings.DefaultProfileName);
+            if (dirs.Count == 0)
+                dirs.Add(Const.DefaultProfileName);
 
-            return names!;
+            return dirs!;
         }
         catch (Exception ex)
         {
             Debug.WriteLine($"[ProfileService] GetProfiles failed: {ex.Message}");
-            return [AppSettings.DefaultProfileName];
+            return [Const.DefaultProfileName];
         }
     }
 
     /// <summary>
     /// Gets the name of the currently active configuration profile.
     /// </summary>
-    public string GetActiveProfile()
-    {
-        try
-        {
-            return appSettingsProvider.Get().EffectiveActiveProfile;
-        }
-        catch
-        {
-            return AppSettings.DefaultProfileName;
-        }
-    }
+    public string GetActiveProfile() => Const.ActiveProfile;
 
     /// <summary>
-    /// Get the absolute file path for a profile.
+    /// Get the absolute directory path for a profile.
     /// </summary>
     public string GetProfilePath(string profileName) =>
-        Path.Combine(Const.ProfilesFolder, $"{SanitizeProfileName(profileName)}.json");
+        Path.Combine(Const.ProfilesFolder, SanitizeProfileName(profileName));
 
     /// <summary>
-    /// Saves the current configuration and layout snapshot into the profile file.
+    /// Saves the current configuration and layout snapshot into the profile directory.
     /// </summary>
     public void SaveCurrentProfile(string? profileName = null)
     {
         var targetName = string.IsNullOrWhiteSpace(profileName) ? GetActiveProfile() : profileName;
         try
         {
-            if (!Directory.Exists(Const.ProfilesFolder))
-                Directory.CreateDirectory(Const.ProfilesFolder);
+            var targetDir = GetProfilePath(targetName);
+            if (!Directory.Exists(targetDir))
+                Directory.CreateDirectory(targetDir);
 
             var currentSettings = appSettingsProvider.Get();
             if (currentSettings.ActiveProfile != targetName)
@@ -156,10 +150,8 @@ public class ProfileService
                 currentSettings = currentSettings with { Grid = primaryGrid };
             }
 
-            var snapshot = new BackupData(BackupData.CurrentVersion, currentSettings, currentScreens);
-            var json = BackupService.ToJson(snapshot);
-            var path = GetProfilePath(targetName);
-            File.WriteAllText(path, json);
+            appSettingsProvider.Save(currentSettings);
+            layoutProvider.Save(currentScreens);
         }
         catch (Exception ex)
         {
@@ -174,43 +166,29 @@ public class ProfileService
     {
         if (string.IsNullOrWhiteSpace(targetProfileName)) return false;
 
-        var path = GetProfilePath(targetProfileName);
-        if (!File.Exists(path)) return false;
+        var targetName = SanitizeProfileName(targetProfileName);
+        var path = GetProfilePath(targetName);
+        if (!Directory.Exists(path)) return false;
 
         try
         {
-            // 1. Save current profile snapshot so changes made during this session aren't lost
+            // 1. Save current profile snapshot
             var currentName = GetActiveProfile();
             SaveCurrentProfile(currentName);
 
-            // 2. Tear the outgoing widgets down BEFORE the stored layout is replaced.
-            //    A live widget keeps its layout subscriptions until it is really gone;
-            //    if the layout is swapped first, that widget writes its own entry into
-            //    the incoming layout (the provider no longer finds the entry, and the
-            //    old append-on-missing path re-created it) — which showed the previous
-            //    profile's widgets on top of the new ones, persisted to disk, so the
-            //    duplicate set also survived a restart.
+            // 2. Tear the outgoing widgets down BEFORE changing the active profile directory
             OnUi(widgetFactory.CloseAll);
 
-            // 3. Read and parse target profile
-            var json = File.ReadAllText(path);
-            var backup = BackupService.Parse(json);
+            // 3. Switch active profile pointer and notify all stores
+            Const.SetActiveProfile(targetName);
 
-            // 4. Mark target profile as active & synchronize primary grid
-            var targetScreens = backup.Screens;
-            var targetGrid = targetScreens.Screens.FirstOrDefault(s => s.Id == ScreensLayout.LegacyPrimaryId || s.Key == null)?.Grid
-                             ?? targetScreens.Screens.FirstOrDefault()?.Grid
-                             ?? backup.AppSettings.Grid;
+            // 4. Reload data providers from the new profile folder
+            appSettingsProvider.Reload();
+            layoutProvider.Reload();
 
-            var targetSettings = backup.AppSettings with
-            {
-                ActiveProfile = targetProfileName,
-                Grid = targetGrid ?? backup.AppSettings.Grid
-            };
-
-            // 5. Update data providers (persists to appSettings.json and layout.json)
+            // 5. Update settings to match target name
+            var targetSettings = appSettingsProvider.Get() with { ActiveProfile = targetName };
             appSettingsProvider.Save(targetSettings);
-            layoutProvider.Save(targetScreens);
 
             // 6. Immediately refresh display monitor so internal screen configs match the newly loaded layout
             displayMonitor.Refresh();
@@ -225,9 +203,7 @@ public class ProfileService
             // 9. Notify listeners
             ActiveProfileChanged?.Invoke(this, EventArgs.Empty);
 
-            // 10. The old widget set's native resources were just torn down; request the guarded
-            // maintenance trim (off the UI thread, single-flighted, cooled down — see
-            // MemoryTrimmerService) once the new widgets have settled.
+            // 10. Maintenance trim once settled
             System.Threading.Tasks.Task.Delay(1500).ContinueWith(_ => MemoryTrimmerService.RequestTrim());
 
             return true;
@@ -240,8 +216,7 @@ public class ProfileService
     }
 
     /// <summary>
-    /// Run a widget-window operation on the UI thread (window creation/teardown must
-    /// happen there; profile switches can also be triggered from background paths).
+    /// Run a widget-window operation on the UI thread.
     /// </summary>
     private static void OnUi(Action action)
     {
@@ -250,10 +225,10 @@ public class ProfileService
     }
 
     /// <summary>
-    /// Create a new configuration profile.
+    /// Create a new configuration profile directory.
     /// </summary>
     /// <param name="name">Profile name.</param>
-    /// <param name="copyCurrent">Whether to copy current configuration and layout into the new profile.</param>
+    /// <param name="copyCurrent">Whether to copy current configuration, layout and widget data into the new profile.</param>
     /// <returns>True if created successfully.</returns>
     public bool CreateProfile(string name, bool copyCurrent = true)
     {
@@ -261,40 +236,44 @@ public class ProfileService
         if (string.IsNullOrWhiteSpace(name)) return false;
 
         var path = GetProfilePath(name);
-        if (File.Exists(path)) return false;
+        if (Directory.Exists(path)) return false;
 
         try
         {
-            if (!Directory.Exists(Const.ProfilesFolder))
-                Directory.CreateDirectory(Const.ProfilesFolder);
+            Directory.CreateDirectory(path);
 
-            BackupData snapshot;
-            if (copyCurrent)
+            if (copyCurrent && Directory.Exists(Const.ActiveProfileFolder))
             {
-                var currentSettings = appSettingsProvider.Get() with { ActiveProfile = name };
-                var currentScreens = layoutProvider.Get();
-                var primaryGrid = currentScreens.Screens.FirstOrDefault(s => s.Id == ScreensLayout.LegacyPrimaryId || s.Key == null)?.Grid
-                                  ?? currentScreens.Screens.FirstOrDefault()?.Grid;
-                if (primaryGrid != null)
+                foreach (var file in Directory.GetFiles(Const.ActiveProfileFolder, "*.json"))
                 {
-                    currentSettings = currentSettings with { Grid = primaryGrid };
+                    var dest = Path.Combine(path, Path.GetFileName(file));
+                    File.Copy(file, dest, overwrite: true);
                 }
 
-                snapshot = new BackupData(
-                    BackupData.CurrentVersion,
-                    currentSettings,
-                    currentScreens);
+                var newSettingsFile = Path.Combine(path, Const.AppSettingsFileName);
+                if (File.Exists(newSettingsFile))
+                {
+                    try
+                    {
+                        var json = File.ReadAllText(newSettingsFile);
+                        var settings = JsonSerializer.Deserialize<AppSettings>(json);
+                        if (settings != null)
+                        {
+                            settings = settings with { ActiveProfile = name };
+                            File.WriteAllText(newSettingsFile, JsonSerializer.Serialize(settings));
+                        }
+                    }
+                    catch { }
+                }
             }
             else
             {
-                // Default clean profile
-                snapshot = new BackupData(
-                    BackupData.CurrentVersion,
-                    appSettingsProvider.Get() with { ActiveProfile = name },
-                    new ScreensLayout([new ScreenLayout(ScreensLayout.LegacyPrimaryId, null, null, null, null, null, [])]));
+                var cleanSettings = appSettingsProvider.Get() with { ActiveProfile = name };
+                var cleanScreens = new ScreensLayout([new ScreenLayout(ScreensLayout.LegacyPrimaryId, null, null, null, null, null, [])]);
+                File.WriteAllText(Path.Combine(path, Const.AppSettingsFileName), JsonSerializer.Serialize(cleanSettings));
+                File.WriteAllText(Path.Combine(path, Const.LayoutFileName), JsonSerializer.Serialize(cleanScreens));
             }
 
-            File.WriteAllText(path, BackupService.ToJson(snapshot));
             ProfilesListChanged?.Invoke(this, EventArgs.Empty);
             return true;
         }
@@ -322,28 +301,39 @@ public class ProfileService
         var oldPath = GetProfilePath(oldName);
         var newPath = GetProfilePath(newName);
 
-        if (!File.Exists(oldPath) || File.Exists(newPath))
+        if (!Directory.Exists(oldPath) || Directory.Exists(newPath))
             return false;
 
         try
         {
-            // If active, save current state first
             var isActive = string.Equals(oldName, GetActiveProfile(), StringComparison.OrdinalIgnoreCase);
             if (isActive)
             {
                 SaveCurrentProfile(oldName);
             }
 
-            // Read, update active profile field inside JSON, and write to new path
-            var json = File.ReadAllText(oldPath);
-            var backup = BackupService.Parse(json);
-            backup = backup with { AppSettings = backup.AppSettings with { ActiveProfile = newName } };
-            File.WriteAllText(newPath, BackupService.ToJson(backup));
-            File.Delete(oldPath);
+            Directory.Move(oldPath, newPath);
+
+            var settingsFile = Path.Combine(newPath, Const.AppSettingsFileName);
+            if (File.Exists(settingsFile))
+            {
+                try
+                {
+                    var json = File.ReadAllText(settingsFile);
+                    var settings = JsonSerializer.Deserialize<AppSettings>(json);
+                    if (settings != null)
+                    {
+                        settings = settings with { ActiveProfile = newName };
+                        File.WriteAllText(settingsFile, JsonSerializer.Serialize(settings));
+                    }
+                }
+                catch { }
+            }
 
             if (isActive)
             {
-                appSettingsProvider.Save(appSettingsProvider.Get() with { ActiveProfile = newName });
+                Const.SetActiveProfile(newName);
+                appSettingsProvider.Reload();
                 ActiveProfileChanged?.Invoke(this, EventArgs.Empty);
             }
 
@@ -358,7 +348,7 @@ public class ProfileService
     }
 
     /// <summary>
-    /// Delete an existing profile. Cannot delete the active profile or the last remaining profile.
+    /// Delete an existing profile directory. Cannot delete the active profile or the last remaining profile.
     /// </summary>
     public bool DeleteProfile(string name)
     {
@@ -372,11 +362,11 @@ public class ProfileService
             return false; // Must switch away first
 
         var path = GetProfilePath(name);
-        if (!File.Exists(path)) return false;
+        if (!Directory.Exists(path)) return false;
 
         try
         {
-            File.Delete(path);
+            Directory.Delete(path, recursive: true);
             ProfilesListChanged?.Invoke(this, EventArgs.Empty);
             return true;
         }
@@ -388,7 +378,7 @@ public class ProfileService
     }
 
     /// <summary>
-    /// Duplicate a profile.
+    /// Duplicate a profile directory.
     /// </summary>
     public bool DuplicateProfile(string sourceName, string newName)
     {
@@ -398,15 +388,34 @@ public class ProfileService
         var sourcePath = GetProfilePath(sourceName);
         var targetPath = GetProfilePath(newName);
 
-        if (!File.Exists(sourcePath) || File.Exists(targetPath))
+        if (!Directory.Exists(sourcePath) || Directory.Exists(targetPath))
             return false;
 
         try
         {
-            var json = File.ReadAllText(sourcePath);
-            var backup = BackupService.Parse(json);
-            backup = backup with { AppSettings = backup.AppSettings with { ActiveProfile = newName } };
-            File.WriteAllText(targetPath, BackupService.ToJson(backup));
+            Directory.CreateDirectory(targetPath);
+            foreach (var file in Directory.GetFiles(sourcePath, "*.json"))
+            {
+                var dest = Path.Combine(targetPath, Path.GetFileName(file));
+                File.Copy(file, dest, overwrite: true);
+            }
+
+            var settingsFile = Path.Combine(targetPath, Const.AppSettingsFileName);
+            if (File.Exists(settingsFile))
+            {
+                try
+                {
+                    var json = File.ReadAllText(settingsFile);
+                    var settings = JsonSerializer.Deserialize<AppSettings>(json);
+                    if (settings != null)
+                    {
+                        settings = settings with { ActiveProfile = newName };
+                        File.WriteAllText(settingsFile, JsonSerializer.Serialize(settings));
+                    }
+                }
+                catch { }
+            }
+
             ProfilesListChanged?.Invoke(this, EventArgs.Empty);
             return true;
         }
@@ -418,25 +427,36 @@ public class ProfileService
     }
 
     /// <summary>
-    /// Export a profile to an external JSON file.
+    /// Export a profile directory (as a zip archive or json file).
     /// </summary>
     public void ExportProfile(string profileName, string destinationFilePath)
     {
         var path = GetProfilePath(profileName);
-        if (!File.Exists(path))
-            throw new FileNotFoundException($"Profile file '{profileName}' not found.");
+        if (!Directory.Exists(path))
+            throw new DirectoryNotFoundException($"Profile folder '{profileName}' not found.");
 
-        File.Copy(path, destinationFilePath, true);
+        if (destinationFilePath.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
+        {
+            if (File.Exists(destinationFilePath)) File.Delete(destinationFilePath);
+            ZipFile.CreateFromDirectory(path, destinationFilePath);
+        }
+        else
+        {
+            // Backward-compatible single json export
+            var settingsFile = Path.Combine(path, Const.AppSettingsFileName);
+            var layoutFile = Path.Combine(path, Const.LayoutFileName);
+            var settings = File.Exists(settingsFile) ? JsonSerializer.Deserialize<AppSettings>(File.ReadAllText(settingsFile)) : appSettingsProvider.Get();
+            var layout = File.Exists(layoutFile) ? JsonSerializer.Deserialize<ScreensLayout>(File.ReadAllText(layoutFile)) : layoutProvider.Get();
+            var backup = new BackupData(BackupData.CurrentVersion, settings ?? appSettingsProvider.Get(), layout ?? layoutProvider.Get());
+            File.WriteAllText(destinationFilePath, BackupService.ToJson(backup));
+        }
     }
 
     /// <summary>
-    /// Import a profile from an external JSON file.
+    /// Import a profile from an external zip or JSON file.
     /// </summary>
     public string ImportProfile(string sourceFilePath)
     {
-        var json = File.ReadAllText(sourceFilePath);
-        var backup = BackupService.Parse(json);
-
         var baseName = Path.GetFileNameWithoutExtension(sourceFilePath);
         if (string.IsNullOrWhiteSpace(baseName))
         {
@@ -447,13 +467,27 @@ public class ProfileService
         baseName = SanitizeProfileName(baseName);
         var targetName = baseName;
         int counter = 1;
-        while (File.Exists(GetProfilePath(targetName)))
+        while (Directory.Exists(GetProfilePath(targetName)))
         {
             targetName = $"{baseName}_{counter++}";
         }
 
-        backup = backup with { AppSettings = backup.AppSettings with { ActiveProfile = targetName } };
-        File.WriteAllText(GetProfilePath(targetName), BackupService.ToJson(backup));
+        var targetPath = GetProfilePath(targetName);
+        Directory.CreateDirectory(targetPath);
+
+        if (sourceFilePath.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
+        {
+            ZipFile.ExtractToDirectory(sourceFilePath, targetPath);
+        }
+        else
+        {
+            var json = File.ReadAllText(sourceFilePath);
+            var backup = BackupService.Parse(json);
+            backup = backup with { AppSettings = backup.AppSettings with { ActiveProfile = targetName } };
+            File.WriteAllText(Path.Combine(targetPath, Const.AppSettingsFileName), JsonSerializer.Serialize(backup.AppSettings));
+            File.WriteAllText(Path.Combine(targetPath, Const.LayoutFileName), JsonSerializer.Serialize(backup.Screens));
+        }
+
         ProfilesListChanged?.Invoke(this, EventArgs.Empty);
         return targetName;
     }

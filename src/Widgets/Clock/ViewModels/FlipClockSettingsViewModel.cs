@@ -5,6 +5,7 @@ using System.Text.Json;
 using Clock.Locales;
 using Clock.Models;
 using DeskCanvas.Core.Interfaces;
+using DeskCanvas.Runtime;
 using ReactiveUI;
 
 namespace Clock.ViewModels;
@@ -107,9 +108,7 @@ public class FlipClockSettingsViewModel : ReactiveObject
 
     public TimeZoneInfo TimeZone
     {
-        get => model.TimeZoneId != null
-            ? SafeFindTimeZone(model.TimeZoneId)
-            : TimeZoneInfo.Local;
+        get => SharedTimeZone.Resolve(model.TimeZoneId);
         set
         {
             if (value == null) return;
@@ -119,12 +118,6 @@ public class FlipClockSettingsViewModel : ReactiveObject
     }
 
     public TimeZoneInfo[] TimeZones => TimeZoneInfo.GetSystemTimeZones().Append(TimeZone).Distinct().ToArray();
-
-    private static TimeZoneInfo SafeFindTimeZone(string id)
-    {
-        try { return TimeZoneInfo.FindSystemTimeZoneById(id); }
-        catch { return TimeZoneInfo.Local; }
-    }
 
     private void UpdateModel(FlipClockModel newModel)
     {

@@ -84,8 +84,7 @@ public record FocusLinkSettings(
     /// The surface override of a state, normalized: 柔光玻璃 folds into 液态玻璃 (the historic
     /// merge), and a null stays null ("follow the shared theme").
     /// </summary>
-    public static SurfaceStyle? NormalizeSurface(SurfaceStyle? surface) =>
-        surface == SurfaceStyle.SoftGlow ? SurfaceStyle.LiquidGlass : surface;
+    public static SurfaceStyle? NormalizeSurface(SurfaceStyle? surface) => surface;
 
     /// <summary>
     /// The settings a first-time enable starts from: both states seeded with the theme's

@@ -1,26 +1,35 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
+using DeskCanvas.Contracts;
 using DeskCanvas.Core.Interfaces;
+using DeskCanvas.Runtime;
 using Monitor.Models;
 using Monitor.ViewModels;
 
 namespace Monitor.Views;
 
-public partial class SingleMetric : UserControl, IWidgetSurfaceHints
+public partial class SingleMetric : UserControl, IWidgetSurfaceHints, IWidgetActivityConsumer
 {
     /// <inheritdoc />
     public string? ColorfulBackgroundResourceKey => "MonitorCardBackground";
     private readonly SingleMetricModel model;
+    private readonly IWidgetSession? session;
     private SingleMetricViewModel? viewModel;
 
     public SingleMetric() :
         this(new SingleMetricModel(MetricType.CpuUsage)) {}
-    
-    public SingleMetric(SingleMetricModel model)
+
+    /// <summary>
+    /// <paramref name="session"/> is injected by WidgetFactory when the host runs the session
+    /// pipeline: the view model then gates its polling subscription on the session's activity.
+    /// Null keeps the legacy always-on behaviour (preview, legacy layout entries).
+    /// </summary>
+    public SingleMetric(SingleMetricModel model, IWidgetSession? session = null)
     {
         this.model = model;
-        viewModel = new SingleMetricViewModel(model);
+        this.session = session;
+        viewModel = new SingleMetricViewModel(model, session);
         DataContext = viewModel;
         SizeChanged += OnSizeChanged;
         Loaded += OnLoaded;
@@ -29,6 +38,9 @@ public partial class SingleMetric : UserControl, IWidgetSurfaceHints
         Ring.ApplyMetricType(model.Metric);
         LandscapeRing.ApplyMetricType(model.Metric);
     }
+
+    /// <inheritdoc />
+    public void OnSessionActivity(ActivitySnapshot activity) => viewModel?.OnSessionActivity(activity);
 
     /// <summary>
     /// The view can be detached and re-added later (the settings window caches pages and the
@@ -41,7 +53,7 @@ public partial class SingleMetric : UserControl, IWidgetSurfaceHints
         SizeChanged += OnSizeChanged;
 
         if (viewModel != null) return;
-        viewModel = new SingleMetricViewModel(model);
+        viewModel = new SingleMetricViewModel(model, session);
         DataContext = viewModel;
     }
 

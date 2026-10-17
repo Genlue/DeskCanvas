@@ -277,8 +277,6 @@ internal static partial class Program
             ?? throw new InvalidOperationException("busy field not found");
         var pendingField = surfaceType.GetField("pendingSampledFrame", BindingFlags.Instance | BindingFlags.NonPublic)
             ?? throw new InvalidOperationException("pendingSampledFrame field not found");
-        var auraType = surfaceType.GetNestedType("AuraTexture", BindingFlags.NonPublic)
-            ?? throw new InvalidOperationException("AuraTexture not found");
         var sweepField = surfaceType.GetField("SweepRenderOverride", BindingFlags.Static | BindingFlags.NonPublic)
             ?? throw new InvalidOperationException("SweepRenderOverride not found");
 
@@ -290,10 +288,10 @@ internal static partial class Program
         var theme = new Theme(true, null, 0.8, false, false, "Inter", SurfaceStyle.LiquidGlassV2);
         var frame = new LiquidGlassRenderer.Frame(10, 10, 1f, 4f, 0, 0, 1920, 1080, 0, 0, 1920, 1080, theme, false);
         var preparedCtor = preparedType.GetConstructors(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
-            .First(c => c.GetParameters().Length == 5);
+            .First(c => c.GetParameters().Length == 4);
 
         object MakePrepared(long captureId) =>
-            preparedCtor.Invoke(new[] { null, Activator.CreateInstance(auraType), frame, null, captureId });
+            preparedCtor.Invoke(new object?[] { null, frame, null, captureId });
 
         var host = new Window { Width = 400, Height = 300, SystemDecorations = SystemDecorations.None };
         var fresh = new LiquidGlassSurface { Material = theme, Width = 80, Height = 60 };

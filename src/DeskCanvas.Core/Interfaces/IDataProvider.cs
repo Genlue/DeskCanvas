@@ -1,4 +1,4 @@
-﻿namespace DeskCanvas.Core.Interfaces;
+namespace DeskCanvas.Core.Interfaces;
 
 /// <summary>
 /// Service for reading and writing data.
@@ -27,6 +27,11 @@ public interface IDataProvider<T>
     /// Event that is raised after the data is changed.
     /// </summary>
     public event DataChangedEvent<T> DataChanged;
+
+    /// <summary>
+    /// Invalidate cached data and reload from underlying storage if supported.
+    /// </summary>
+    public void Reload() { }
 }
 
 /// <summary>

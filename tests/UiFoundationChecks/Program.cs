@@ -110,6 +110,7 @@ internal static partial class Program
         CheckSettingsPagesBatchOne();
         CheckSettingsPagesBatchTwo();
         CheckHostDecoupling();
+        CheckSpecularRim();
         CheckRedundancyGuard();
 
         Console.WriteLine();
@@ -164,7 +165,7 @@ internal static partial class Program
         Console.WriteLine("--- accent resolution + per-variant writes (real App styles) ---");
 
         var settings = new StubSettings(new AppSettings(
-            new Theme(false, "#FFD700", 1, false, false, "Inter", SurfaceStyle.Solid),
+            new Theme(false, "#FFD700", 1, false, false, "Inter", SurfaceStyle.Acrylic),
             [], new Layout(GridMode.Manual, true, false, true, false),
             new Dimensions(80, 12, 16), new Region("zh-Hans"), false, null));
         themeService = new ThemeService(settings, new WallpaperThemeService());
@@ -237,7 +238,7 @@ internal static partial class Program
             Monochrome: false,
             UseNativeFrame: false,
             FontFamily: "Inter",
-            Surface: SurfaceStyle.Solid));
+            Surface: SurfaceStyle.Acrylic));
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
         Check(BrushColor(inner.SelectionBrush) == Color.Parse("#FFD700")
               && BrushColor(inner.SelectionForegroundBrush) == Colors.Black,
@@ -271,7 +272,7 @@ internal static partial class Program
 
         var layout = new StubLayout();
         var editor = new GridEditor(new StubSettings(new AppSettings(
-            new Theme(false, "#FFD700", 1, false, false, "Inter", SurfaceStyle.Solid),
+            new Theme(false, "#FFD700", 1, false, false, "Inter", SurfaceStyle.Acrylic),
             [], new Layout(GridMode.Manual, true, false, true, false),
             new Dimensions(80, 12, 16), new Region("zh-Hans"), false, null)),
             layout, new DisplayMonitorService(layout));
@@ -1104,15 +1105,17 @@ internal static partial class Program
                 new Dimensions(80, 12, 16), new Region("zh-Hans"), false, null)));
         var sliders = appearance.GetLogicalDescendants().OfType<LabeledSlider>().Count();
         var colors = appearance.GetLogicalDescendants().OfType<ColorInput>().Count();
-        Check(sliders == 19, $"Appearance: 18 optics rows plus opacity are LabeledSliders ({sliders})");
-        Check(colors == 4, $"Appearance: all 4 colour rows are ColorInputs ({colors})");
+        Check(sliders == 9, $"Appearance: 8 optics rows plus opacity are LabeledSliders ({sliders})");
+        // 描边颜色 was removed with the 描边 feature; the only colour row left is 纯色背景.
+        Check(colors == 1, $"Appearance: the one remaining colour row is a ColorInput ({colors})");
         Check(CountStray<Slider, LabeledSlider>(appearance) == 0 && CountStray<ColorPicker, ColorInput>(appearance) == 0,
             "Appearance: no bare Slider / ColorPicker left");
-        // The remaining numeric boxes are real single-value rows (interval / opacity / width),
-        // not the value column of a slider — they must not have been absorbed.
+        // The remaining numeric boxes are real single-value rows (interval / delay),
+        // not the value column of a slider — they must not have been absorbed. 描边粗细 was
+        // removed together with the outline ring.
         Check(appearance.GetLogicalDescendants().OfType<NumericUpDown>()
-                .Count(n => !n.GetLogicalAncestors().OfType<LabeledSlider>().Any()) == 4,
-            "Appearance: the four remaining non-slider numeric rows are untouched");
+                .Count(n => !n.GetLogicalAncestors().OfType<LabeledSlider>().Any()) == 2,
+            "Appearance: the two remaining non-slider numeric rows are untouched");
     }
 
     // ---- W6 helpers ----------------------------------------------------------------------
@@ -1183,7 +1186,7 @@ internal static partial class Program
         Monochrome: true,
         UseNativeFrame: false,
         FontFamily: "Inter",
-        Surface: SurfaceStyle.Solid,
+        Surface: SurfaceStyle.Acrylic,
         SolidBackgroundDark: "#112233",
         SolidBackgroundLight: "#FEDCBA",
         MonochromeVariant: variant);

@@ -268,8 +268,79 @@ Check(catalog.GetLogicalDescendants().OfType<SharedSlider>().Count() == 4,
     "catalog renders percentage, editable, disabled and stacked-row slider examples");
 Check(catalog.GetLogicalDescendants().OfType<SharedSetting>().Count() == 2, "catalog renders shared setting rows");
 Check(catalog.GetLogicalDescendants().OfType<SharedColorInput>().Count() == 2, "catalog renders shared colour inputs");
+
+// ---- Unified Widget Controls & Tokens (P10 contract) -------------------------------------
+Check(Application.Current!.TryGetResource("CardSubtleCornerRadius", ThemeVariant.Default, out var cscr) && Equals(cscr, new CornerRadius(11)), "CardSubtleCornerRadius token resolves 11");
+Check(Application.Current!.TryGetResource("PillHeight", ThemeVariant.Default, out var ph) && Equals(ph, 26.0), "PillHeight token resolves 26.0");
+Check(Application.Current!.TryGetResource("CardSubtleFill", ThemeVariant.Default, out var csf) && csf is Avalonia.Media.IBrush, "CardSubtleFill resolves as brush in Default theme");
+Check(Application.Current!.TryGetResource("CardSubtleFill", ThemeVariant.Dark, out var csfd) && csfd is Avalonia.Media.IBrush, "CardSubtleFill resolves as brush in Dark theme");
+Check(Application.Current!.TryGetResource("PillBackground", ThemeVariant.Default, out var pb) && pb is Avalonia.Media.IBrush, "PillBackground resolves as brush in Default theme");
+Check(Application.Current!.TryGetResource("BadgeBackground", ThemeVariant.Default, out var bb) && bb is Avalonia.Media.IBrush, "BadgeBackground resolves as brush in Default theme");
+
+var testWindow = new Window { Width = 400, Height = 400 };
+var testPanel = new StackPanel();
+testWindow.Content = testPanel;
+
+var pillBtn = new Button { Classes = { "dc-pill" } };
+var capsuleBtn = new Button { Classes = { "dc-pill", "capsule" } };
+var toolbarBtn = new Button { Classes = { "dc-toolbar-button" } };
+var iconBtn = new Button { Classes = { "dc-icon-button" } };
+var cardBox = new Border { Classes = { "dc-card-box" } };
+var badge = new Border { Classes = { "dc-badge" } };
+
+testPanel.Children.Add(pillBtn);
+testPanel.Children.Add(capsuleBtn);
+testPanel.Children.Add(toolbarBtn);
+testPanel.Children.Add(iconBtn);
+testPanel.Children.Add(cardBox);
+testPanel.Children.Add(badge);
+
+testWindow.Show();
+Flush();
+
+Check(pillBtn.Height == 26 && pillBtn.CornerRadius == new CornerRadius(8), "dc-pill style applies height 26 and radius 8");
+Check(capsuleBtn.CornerRadius == new CornerRadius(999), "dc-pill.capsule applies radius 999");
+Check(toolbarBtn.CornerRadius == new CornerRadius(6), "dc-toolbar-button applies radius 6");
+Check(iconBtn.Width == 28 && iconBtn.Height == 28 && iconBtn.CornerRadius == new CornerRadius(14), "dc-icon-button applies 28x28 circle");
+Check(cardBox.CornerRadius == new CornerRadius(11) && cardBox.Padding == new Thickness(12, 10), "dc-card-box applies radius 11 and padding 12,10");
+Check(badge.CornerRadius == new CornerRadius(6) && badge.Padding == new Thickness(7, 2), "dc-badge applies radius 6 and padding 7,2");
+
+testWindow.Close();
+
+// ---- 1280x800 display constraint: all 15 widget popup windows Height <= 560 DIP -----------
+var repoRoot = FindRepoRoot();
+var popupFiles = Directory.GetFiles(Path.Combine(repoRoot, "src", "Widgets"), "*Popup*.axaml", SearchOption.AllDirectories)
+    .Concat(Directory.GetFiles(Path.Combine(repoRoot, "src", "Widgets"), "*PanelWindow*.axaml", SearchOption.AllDirectories))
+    .ToList();
+
+Check(popupFiles.Count == 15, $"found all 15 widget popup windows (count={popupFiles.Count})");
+foreach (var popupPath in popupFiles)
+{
+    var pName = Path.GetFileName(popupPath);
+    var pContent = File.ReadAllText(popupPath);
+    var heightMatch = System.Text.RegularExpressions.Regex.Match(pContent, @"Height=""(\d+)""");
+    Check(heightMatch.Success, $"{pName} specifies explicit Height in XAML");
+    if (heightMatch.Success)
+    {
+        var height = int.Parse(heightMatch.Groups[1].Value);
+        Check(height <= 560, $"{pName} height {height} <= 560 DIP (1280x800 display constraint)");
+    }
+}
+
 Console.WriteLine(failures.Count == 0 ? $"UiSharedAvaloniaChecks {checks}/{checks} PASS" : $"FAILED: {string.Join(", ", failures)}");
 return failures.Count == 0 ? 0 : 1;
+
+static string FindRepoRoot()
+{
+    var current = AppContext.BaseDirectory;
+    while (!string.IsNullOrEmpty(current))
+    {
+        if (File.Exists(Path.Combine(current, "DeskCanvas.sln")) || Directory.Exists(Path.Combine(current, "src")))
+            return current;
+        current = Directory.GetParent(current)?.FullName;
+    }
+    return Directory.GetCurrentDirectory();
+}
 
 sealed class ProbeApp : Application
 {
@@ -279,6 +350,8 @@ sealed class ProbeApp : Application
         // ColorInput embeds a ColorPicker; its control theme ships in the ColorPicker package.
         var colorPickerStyles = new Uri("avares://Avalonia.Controls.ColorPicker/Themes/Fluent/Fluent.xaml");
         Styles.Add(new StyleInclude(colorPickerStyles) { Source = colorPickerStyles });
+        var controlsStyles = new Uri("avares://DeskCanvas.UI/Styles/Controls.axaml");
+        Styles.Add(new StyleInclude(controlsStyles) { Source = controlsStyles });
         Resources.MergedDictionaries.Add(new ResourceInclude(new Uri("avares://DeskCanvas.UI/"))
         { Source = new Uri("avares://DeskCanvas.UI/Styles/DesignTokens.axaml") });
     }

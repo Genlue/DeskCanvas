@@ -8,21 +8,25 @@ using Avalonia.Interactivity;
 using Avalonia.Layout;
 using Avalonia.Markup.Xaml.MarkupExtensions;
 using Avalonia.Media;
+using Avalonia.Styling;
 using Avalonia.VisualTree;
 using DeskCanvas.Core.Interfaces;
 using DeskCanvas.Core.Models;
+using DeskCanvas.Contracts;
+using DeskCanvas.Runtime;
 using Storage.Models;
 using Storage.Services;
 using Storage.ViewModels;
 
 namespace Storage.Views;
 
-public partial class StorageView : UserControl, IWidgetSelfRefreshing, IWidgetSuspendable, IWidgetSurfaceHints
+public partial class StorageView : UserControl, IWidgetSelfRefreshing, IWidgetSuspendable, IWidgetSurfaceHints, IWidgetActivityConsumer
 {
     /// <inheritdoc />
     public string? ColorfulBackgroundResourceKey => "StorageCardBackground";
 
     private readonly IWidgetLayoutProvider? layoutProvider;
+    private readonly IWidgetSession? session;
     private StorageViewModel? viewModel;
     private StorageModel model;
 
@@ -36,23 +40,47 @@ public partial class StorageView : UserControl, IWidgetSelfRefreshing, IWidgetSu
 
     public StorageView(StorageModel model) : this(model, null) { }
 
-    public StorageView(StorageModel model, IWidgetLayoutProvider? layoutProvider)
+    /// <summary>
+    /// <paramref name="session"/> is injected by WidgetFactory when the host runs the session
+    /// pipeline: the view model then gates its ten-second poll on the session's activity. Null
+    /// keeps the legacy always-on behaviour (preview, legacy layout entries).
+    /// </summary>
+    public StorageView(StorageModel model, IWidgetLayoutProvider? layoutProvider, IWidgetSession? session = null)
     {
         this.model = model ?? new StorageModel();
         this.layoutProvider = layoutProvider;
-        viewModel = new StorageViewModel(this.model);
+        this.session = session;
+        viewModel = new StorageViewModel(this.model, session: session);
         viewModel.DrivesUpdated += OnDrivesUpdated;
         DataContext = viewModel;
 
         InitializeComponent();
         BindRingItems(viewModel);
         AttachRingDoubleClickHandlers();
+        WireVariantProviders();
 
         Loaded += OnLoaded;
         Unloaded += OnUnloaded;
         SizeChanged += OnSizeChanged;
         ActualThemeVariantChanged += (_, _) => viewModel?.RefreshBrushes();
         ApplyLayout();
+    }
+
+    /// <inheritdoc />
+    public void OnSessionActivity(ActivitySnapshot activity) => viewModel?.OnSessionActivity(activity);
+
+    /// <summary>
+    /// Per-screen wiring: every drive readout resolves its colours against the variant of the
+    /// window this control sits in, not the uniform Application variant. The lambda is stable;
+    /// the readouts re-invoke it on every brush evaluation.
+    /// </summary>
+    private void WireVariantProviders()
+    {
+        if (viewModel == null) return;
+        foreach (var drive in viewModel.Drives)
+            drive.VariantProvider = () => ActualThemeVariant;
+        foreach (var slot in viewModel.RingSlots)
+            slot.VariantProvider = () => ActualThemeVariant;
     }
 
     private void BindRingItems(StorageViewModel vm)
@@ -117,10 +145,11 @@ public partial class StorageView : UserControl, IWidgetSelfRefreshing, IWidgetSu
 
         if (viewModel == null)
         {
-            viewModel = new StorageViewModel(model);
+            viewModel = new StorageViewModel(model, session: session);
             viewModel.DrivesUpdated += OnDrivesUpdated;
             DataContext = viewModel;
             BindRingItems(viewModel);
+            WireVariantProviders();
         }
         ApplyLayout();
     }
@@ -136,7 +165,13 @@ public partial class StorageView : UserControl, IWidgetSelfRefreshing, IWidgetSu
         }
     }
 
-    private void OnDrivesUpdated() => ApplyLayout();
+    private void OnDrivesUpdated()
+    {
+        // A poll can add drive rows (new DriveItemViewModel instances) — they must pick up
+        // the per-screen variant wiring like the slots did at construction.
+        WireVariantProviders();
+        ApplyLayout();
+    }
 
     private void OnSizeChanged(object? sender, SizeChangedEventArgs e) => ApplyLayout();
 
@@ -860,7 +895,7 @@ public partial class StorageView : UserControl, IWidgetSelfRefreshing, IWidgetSu
         return banner;
     }
 
-    private static (Border Track, Action<double, IBrush> Update) BuildProgressBar(double fraction, IBrush fillBrush, double trackWidth, double barHeight)
+    private (Border Track, Action<double, IBrush> Update) BuildProgressBar(double fraction, IBrush fillBrush, double trackWidth, double barHeight)
     {
         var clamped = Math.Clamp(fraction, 0.0, 1.0);
         var radius = new CornerRadius(barHeight / 2.0);
@@ -910,7 +945,7 @@ public partial class StorageView : UserControl, IWidgetSelfRefreshing, IWidgetSu
     // (alpha-baked brushes like the old #30808080 scrubber track always rendered correctly).
     private const byte TrackTintAlpha = 38; // 15% of 255
 
-    private static IBrush CreateTrackBrush(IBrush fillBrush)
+    private IBrush CreateTrackBrush(IBrush fillBrush)
     {
         // A fully transparent fill (drive-less slot, StatusBrush = Transparent) falls back to
         // a neutral foreground tint so the empty track stays visible instead of vanishing.
@@ -920,10 +955,15 @@ public partial class StorageView : UserControl, IWidgetSelfRefreshing, IWidgetSu
         return new SolidColorBrush(Color.FromArgb(TrackTintAlpha, color.R, color.G, color.B));
     }
 
-    private static Color NeutralTrackColor()
+    private Color NeutralTrackColor()
     {
+        // Per-screen: this control's live window variant wins; the uniform Application
+        // variant is only the fallback for a control outside any themed window.
+        var variant = ActualThemeVariant != ThemeVariant.Default
+            ? ActualThemeVariant
+            : (Application.Current?.ActualThemeVariant ?? ThemeVariant.Default);
         if (Application.Current != null &&
-            Application.Current.TryGetResource("SystemControlForegroundBaseHighBrush", Application.Current.ActualThemeVariant, out var neutral) &&
+            Application.Current.TryGetResource("SystemControlForegroundBaseHighBrush", variant, out var neutral) &&
             neutral is SolidColorBrush neutralSolid)
             return neutralSolid.Color;
         return Colors.Gray;

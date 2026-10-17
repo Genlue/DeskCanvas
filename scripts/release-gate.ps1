@@ -41,6 +41,12 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
+# Child gates run under PowerShell 7 (pwsh) per the repo shell policy; fall back to the host
+# executable only when pwsh is unavailable so a clean checkout still gates.
+$pwsh = Get-Command pwsh -ErrorAction SilentlyContinue
+$childShell = if ($pwsh) { $pwsh.Source } else { 'powershell' }
+Write-Output ("child shell: {0}" -f $childShell)
+
 try {
     if ([string]::IsNullOrWhiteSpace($Root)) {
         $Root = Split-Path -Parent $PSScriptRoot
@@ -73,7 +79,7 @@ try {
             '-NoProfile', '-ExecutionPolicy', 'Bypass',
             '-File', (Join-Path $Root 'scripts/verify.ps1'), '-Root', $Root)
         if ($NoRestore) { $verifyArgs += '-NoRestore' }
-        Invoke-Step 'verify.ps1 (full pipeline)' 'powershell' $verifyArgs
+        Invoke-Step 'verify.ps1 (full pipeline)' $childShell $verifyArgs
 
         # The API snapshot must always verify against the committed baseline inside
         # the gate; a leftover RECORD flag in the environment must not leak in.

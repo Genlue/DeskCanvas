@@ -57,16 +57,12 @@ public record AppSettings(
     /// </summary>
     public Theme GetThemeForSurface(SurfaceStyle surface)
     {
-        if (surface == SurfaceStyle.SoftGlow) surface = SurfaceStyle.LiquidGlass;
         var key = surface.ToString();
         if (SurfaceThemes != null && SurfaceThemes.TryGetValue(key, out var savedTheme))
         {
             var withSurface = savedTheme.Surface == null ? savedTheme with { Surface = surface } : savedTheme;
             return withSurface.NormalizeForSurface();
         }
-        if (surface == SurfaceStyle.LiquidGlass && SurfaceThemes != null &&
-            SurfaceThemes.TryGetValue(nameof(SurfaceStyle.SoftGlow), out var legacy))
-            return legacy.NormalizeForSurface();
 
         return surface switch
         {
@@ -76,24 +72,10 @@ public record AppSettings(
                 Surface: SurfaceStyle.LiquidGlass, MonochromeVariant: MonochromeStyle.BlackWhite,
                 AutoTheme: Theme.AutoTheme, LiquidGlass: new LiquidGlassSettings()),
 
-            // 新液态玻璃 factory recipe: a hair more neutral light than 液态玻璃 (the material's
-            // subtle 中性漫射层), everything else lives in LiquidGlassV2Settings' spec-aligned defaults.
-            SurfaceStyle.LiquidGlassV2 => new Theme(
-                DarkMode: Theme.DarkMode, AccentColor: null, OpacityLevel: 0.20, Monochrome: true,
-                UseNativeFrame: Theme.UseNativeFrame, FontFamily: Theme.FontFamily,
-                Surface: SurfaceStyle.LiquidGlassV2, MonochromeVariant: MonochromeStyle.BlackWhite,
-                AutoTheme: Theme.AutoTheme, LiquidGlassV2: new LiquidGlassV2Settings()),
-
-            SurfaceStyle.Solid => new Theme(
-                DarkMode: Theme.DarkMode, AccentColor: null, OpacityLevel: 1.0, Monochrome: true,
-                UseNativeFrame: Theme.UseNativeFrame, FontFamily: Theme.FontFamily,
-                Surface: SurfaceStyle.Solid, MonochromeVariant: MonochromeStyle.BlackWhite,
-                AutoTheme: Theme.AutoTheme),
-
-            SurfaceStyle.Colorful => new Theme(
+            SurfaceStyle.FullColor => new Theme(
                 DarkMode: Theme.DarkMode, AccentColor: null, OpacityLevel: 1.0, Monochrome: false,
                 UseNativeFrame: Theme.UseNativeFrame, FontFamily: Theme.FontFamily,
-                Surface: SurfaceStyle.Colorful,
+                Surface: SurfaceStyle.FullColor,
                 AutoTheme: Theme.AutoTheme),
 
             _ => new Theme(
@@ -110,7 +92,6 @@ public record AppSettings(
     /// </summary>
     public AppSettings WithThemeForSurface(SurfaceStyle surface, Theme theme)
     {
-        if (surface == SurfaceStyle.SoftGlow) surface = SurfaceStyle.LiquidGlass;
         theme = (theme with { Surface = surface }).NormalizeForSurface();
         var dict = SurfaceThemes != null 
             ? new Dictionary<string, Theme>(SurfaceThemes, StringComparer.OrdinalIgnoreCase) 

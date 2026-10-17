@@ -7,6 +7,7 @@ using Avalonia.Controls;
 using Avalonia.Controls.Shapes;
 using Avalonia.Interactivity;
 using Avalonia.Media;
+using DeskCanvas.Services;
 using DeskCanvas.Views;
 using Habits.Locales;
 using Habits.Models;
@@ -74,14 +75,15 @@ public partial class HabitsPopupWindow : SecondaryPanelWindow
         Action<HabitsDataModel>? onDataChanged = null,
         double? cornerRadius = null)
     {
-        if (PanelCoolingDown<HabitsPopupWindow>())
-            return;
-
-        if (TryCloseActivePanel<HabitsPopupWindow>())
-            return;
-
-        var popup = new HabitsPopupWindow(model, screenCenter, onDataChanged, cornerRadius);
-        popup.ShowAsSecondaryPanel(owner);
+        // PerOwner identity (the weather panel precedent): every habits widget owns its own
+        // panel. The service handles the cooldown, the toggle-close and the pinned show — the
+        // decision is deliberately ignored, mirroring the old bare early returns.
+        PanelService.Open(new PanelRequest(
+            owner is Widget widget ? widget.InstanceId : default,
+            owner,
+            "habits.popup",
+            PanelScope.PerOwner,
+            () => new HabitsPopupWindow(model, screenCenter, onDataChanged, cornerRadius)));
     }
 
     private void OnStoreModelChanged(HabitsDataModel newData, object? sender)

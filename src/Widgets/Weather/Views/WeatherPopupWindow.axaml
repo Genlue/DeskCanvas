@@ -11,15 +11,15 @@
         ShowInTaskbar="False"
         CanResize="False"
         Width="460"
-        Height="580">
+        Height="540">
 
     <Window.Styles>
         <Style Selector="TextBlock">
             <Setter Property="Foreground" Value="{DynamicResource WeatherForegroundBrush}" />
         </Style>
         <Style Selector="Border.metric-card">
-            <Setter Property="Background" Value="#15808080" />
-            <Setter Property="CornerRadius" Value="12" />
+            <Setter Property="Background" Value="{DynamicResource CardSubtleFill}" />
+            <Setter Property="CornerRadius" Value="{DynamicResource CardSubtleCornerRadius}" />
             <Setter Property="Padding" Value="12,10" />
         </Style>
     </Window.Styles>
@@ -28,7 +28,7 @@
          the drag area and the shared close button, and the backdrop-dismiss rule. This window
          declares ONLY the weather content: the current-conditions block is the HeaderContent,
          the hourly strip / 7-day forecast / environment metrics are the shell Content. The
-         weather palette and the 多彩 card colour stay plugin-owned brushes (see the code
+         weather palette and the 全彩 card colour stay plugin-owned brushes (see the code
          behind); the shell's default ContentPadding replaces the old content grid margin. -->
     <controls:SecondaryPanelShell>
         <controls:SecondaryPanelShell.HeaderContent>
@@ -50,7 +50,7 @@
         <!-- Content: hourly strip, 7-day forecast, environment metrics. -->
         <Grid RowDefinitions="Auto,Auto,*">
             <!-- Hourly Forecast Strip -->
-            <Border Grid.Row="0" Background="#12808080" CornerRadius="14" Padding="10,8" Margin="0,0,0,10">
+            <Border Grid.Row="0" Background="{DynamicResource CardSubtleFill}" CornerRadius="{DynamicResource CardSubtleCornerRadius}" Padding="10,8" Margin="0,0,0,10">
                 <StackPanel Spacing="6">
                     <TextBlock Text="{x:Static locales:Locale.Weather_Popup_HourlyTitle}" FontSize="11" FontWeight="SemiBold" Opacity="0.5" />
                     <ScrollViewer x:Name="HourlyScroll" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Disabled">
@@ -80,7 +80,7 @@
             </Border>
 
             <!-- 7-Day Forecast -->
-            <Border Grid.Row="1" Background="#12808080" CornerRadius="14" Padding="12,8" Margin="0,0,0,10">
+            <Border Grid.Row="1" Background="{DynamicResource CardSubtleFill}" CornerRadius="{DynamicResource CardSubtleCornerRadius}" Padding="12,8" Margin="0,0,0,10">
                 <Grid RowDefinitions="Auto,*">
                     <TextBlock Grid.Row="0" Text="{x:Static locales:Locale.Weather_Popup_DailyTitle}" FontSize="11" FontWeight="SemiBold" Opacity="0.5" Margin="0,0,0,4" />
                     <ScrollViewer Grid.Row="1">

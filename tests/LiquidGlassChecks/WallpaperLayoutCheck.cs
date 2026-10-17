@@ -145,8 +145,6 @@ public static class WallpaperLayoutCheck
         theme.GetProperty("UseNativeFrame").GetBoolean(),
         theme.GetProperty("FontFamily").GetString() ?? "Inter",
         GetNullable<SurfaceStyle>(theme, "Surface"),
-        theme.TryGetProperty("OutlineColor", out var oc) ? oc.GetString() : null,
-        theme.TryGetProperty("OutlineWidth", out var ow) ? ow.GetDouble() : 0,
         theme.TryGetProperty("SolidBackgroundDark", out var sbd) ? sbd.GetString() : null,
         theme.TryGetProperty("SolidBackgroundLight", out var sbl) ? sbl.GetString() : null,
         GetNullable<MonochromeStyle>(theme, "MonochromeVariant"),

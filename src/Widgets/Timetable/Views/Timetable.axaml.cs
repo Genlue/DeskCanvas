@@ -5,6 +5,8 @@ using Avalonia.Layout;
 using Avalonia.Media;
 using DeskCanvas.Core.Interfaces;
 using DeskCanvas.Core.Models;
+using DeskCanvas.Contracts;
+using DeskCanvas.Runtime;
 using DeskCanvas.Services;
 using Timetable.Locales;
 using Timetable.Models;
@@ -26,18 +28,28 @@ namespace Timetable.Views;
 /// <see cref="IWidgetSelfRefreshing"/> so settings changes rebind in place
 /// instead of recreating the whole view.
 /// </para>
+/// <para>
+/// Session gating (P8): with a host-injected <see cref="IWidgetSession"/> the shared timer
+/// subscription additionally follows the session's <see cref="ActivitySnapshot.RenderActive"/>
+/// (the view implements <see cref="IWidgetActivityConsumer"/> and reconciles
+/// <c>attached AND renderActive</c>). Without a session the historic always-on behaviour
+/// holds — that host never pushes activity either.
+/// </para>
 /// </summary>
-public partial class Timetable : UserControl, IWidgetSelfRefreshing, IWidgetSurfaceHints
+public partial class Timetable : UserControl, IWidgetSelfRefreshing, IWidgetSurfaceHints, IWidgetActivityConsumer
 {
     /// <inheritdoc />
     public string? ColorfulBackgroundResourceKey => "TimetableCardBackground";
 
     private readonly Action liveTick;
+    private readonly IWidgetSession? session;
 
     private TimetableModel model;
     private TimetableRuntime runtime;
 
     private bool attached;
+    private bool renderActive = true;
+    private int tickSubscriptions;
     private WidgetTier tier = WidgetTier.Small;
     private double builtWidth = -1;
     private double builtHeight = -1;
@@ -110,8 +122,10 @@ public partial class Timetable : UserControl, IWidgetSelfRefreshing, IWidgetSurf
     /// what let a stale Settings snapshot mask — or get masked by — the store after an update,
     /// which surfaced as "时间设置还在，课程全丢".
     /// </summary>
-    public Timetable(TimetableModel? model)
+    public Timetable(TimetableModel? model, IWidgetSession? session = null)
     {
+        this.session = session;
+        renderActive = session?.Activity.RenderActive ?? true;
         // Get() already returns a normalized model on every path into the cache
         // (Save / LoadFromFile / migration / test reset all Normalize) — a second
         // Normalize here only deep-copied the whole model per widget construction.
@@ -135,16 +149,29 @@ public partial class Timetable : UserControl, IWidgetSelfRefreshing, IWidgetSurf
         RebuildAll();
     }
 
+    /// <summary>Check seam: the live subscription count over the shared minute timer (0 or 1).</summary>
+    public int TickSubscriptionCountForChecks => tickSubscriptions;
+
+    /// <summary>Check seam: the injected session (null on the legacy path).</summary>
+    public IWidgetSession? SessionForChecks => session;
+
+    /// <summary>Check seam: the latest activity snapshot's render flag as reconciled.</summary>
+    public bool RenderActiveForChecks => renderActive;
+
+    /// <summary>The host's activity push: reconcile the timer subscription with the snapshot.</summary>
+    public void OnSessionActivity(ActivitySnapshot activity)
+    {
+        if (session == null) return;
+        renderActive = activity.RenderActive;
+        UpdateTickSubscription();
+    }
+
     // ---------- Lifecycle ----------
 
     private void OnLoaded(object? sender, RoutedEventArgs e)
     {
         attached = true;
-        // Defensive unsubscribe first: Loaded can fire again after a detach/attach cycle
-        // (widget moved between screens, host re-attach), and a double subscription would
-        // double every tick.
-        TimerService.Timer1Minute.Unsubscribe(liveTick);
-        TimerService.Timer1Minute.Subscribe(liveTick);
+        UpdateTickSubscription();
         TimetableStore.ModelChanged -= OnStoreModelChanged;
         TimetableStore.ModelChanged += OnStoreModelChanged;
         UpdateLiveState();
@@ -153,8 +180,32 @@ public partial class Timetable : UserControl, IWidgetSelfRefreshing, IWidgetSurf
     private void OnUnloaded(object? sender, RoutedEventArgs e)
     {
         attached = false;
-        TimerService.Timer1Minute.Unsubscribe(liveTick);
+        UpdateTickSubscription();
         TimetableStore.ModelChanged -= OnStoreModelChanged;
+    }
+
+    /// <summary>
+    /// Single subscription state machine: the shared minute-timer subscription exists exactly
+    /// while the control is loaded AND the session renders. Overlapping transitions (a covered
+    /// screen while unloaded — the settings window caches pages, the Gallery keeps live
+    /// previews) cannot double-subscribe or double-unsubscribe — the subscription is
+    /// reconciled from both inputs on every change, exactly like the clock/calendar view
+    /// models' gate.
+    /// </summary>
+    private void UpdateTickSubscription()
+    {
+        var wanted = attached && renderActive;
+        if (wanted && tickSubscriptions == 0)
+        {
+            tickSubscriptions++;
+            TimerService.Timer1Minute.Subscribe(liveTick);
+            UpdateLiveState();
+        }
+        else if (!wanted && tickSubscriptions > 0)
+        {
+            tickSubscriptions--;
+            TimerService.Timer1Minute.Unsubscribe(liveTick);
+        }
     }
 
     private void OnStoreModelChanged(TimetableModel newModel, object? sender)
@@ -167,7 +218,7 @@ public partial class Timetable : UserControl, IWidgetSelfRefreshing, IWidgetSurf
 
     private void OnLiveTick()
     {
-        if (!attached) return;
+        if (!attached || !renderActive) return;
         UpdateLiveState();
     }
 

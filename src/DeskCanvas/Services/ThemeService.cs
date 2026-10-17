@@ -64,11 +64,6 @@ public class ThemeService : IThemeService
     {
         Source = new Uri("avares://DeskCanvas/Styles/Transparent.axaml")
     };
-    
-    private readonly StyleInclude solidStyle = new(new Uri("avares://DeskCanvas/"))
-    {
-        Source = new Uri("avares://DeskCanvas/Styles/Solid.axaml")
-    };
 
     private readonly StyleInclude liquidGlassStyle = new(new Uri("avares://DeskCanvas/"))
     {
@@ -353,7 +348,6 @@ public class ThemeService : IThemeService
 
         // Surface material background styles.
         ThemeResourceHelper.SwitchStyle(transparentStyle, surfaces.Contains(SurfaceStyle.Acrylic) && !appTheme.IsColorful);
-        ThemeResourceHelper.SwitchStyle(solidStyle, surfaces.Contains(SurfaceStyle.Solid) && !appTheme.IsColorful);
         ThemeResourceHelper.SwitchStyle(liquidGlassStyle, surfaces.Contains(SurfaceStyle.LiquidGlass));
 
         // Text selection pair (W1): refresh only after every style switch above has landed, so

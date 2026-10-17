@@ -8,7 +8,7 @@ namespace DeskCanvas.UI.Controls;
 /// <summary>
 /// The glass-surface port a panel shell hosts: the control contract the shared
 /// <see cref="SecondaryPanelShell"/> and the host panel window drive without knowing the
-/// host's platform pipeline (wallpaper sampling, GPU/CPU renderers, LiquidGlassDispatch).
+/// host's platform pipeline (wallpaper sampling, GPU/CPU renderers).
 /// <para>
 /// Exactly one production implementation exists — the host's <c>LiquidGlassSurface</c>,
 /// which derives from this port and keeps every optical property it owns. The port

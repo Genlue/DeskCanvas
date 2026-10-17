@@ -1,0 +1,9 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!-- DeskCanvas.UI Unified Control Library (P10) -->
+    <StyleInclude Source="avares://DeskCanvas.UI/Styles/Controls/IconButton.axaml" />
+    <StyleInclude Source="avares://DeskCanvas.UI/Styles/Controls/PillButton.axaml" />
+    <StyleInclude Source="avares://DeskCanvas.UI/Styles/Controls/CardBox.axaml" />
+    <StyleInclude Source="avares://DeskCanvas.UI/Styles/Controls/StatusBadge.axaml" />
+    <StyleInclude Source="avares://DeskCanvas.UI/Styles/Controls/SecondaryPanelShell.axaml" />
+</Styles>

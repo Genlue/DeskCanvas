@@ -34,4 +34,44 @@ public static class GridMetrics
         var y = originY + (int) Math.Round(height * grid.YPercent / 100.0);
         return (Math.Max(cell, 8), x, y);
     }
+
+    /// <summary>
+    /// Resolve a stored widget size into a whole number of grid cells.
+    /// <para>
+    /// Stored sizes are DIPs in the current format, but layouts written by older
+    /// builds carry physical pixels (e.g. 575 px on a 125% display for a 5-cell
+    /// span) and are never rewritten until the widget happens to be moved or
+    /// resized. Every consumer that turns a stored size back into a span — the
+    /// widget's own restore path and the gallery's occupancy test for a new
+    /// widget — must therefore read it through this one heuristic, or the two
+    /// disagree about how much of the grid is taken.
+    /// </para>
+    /// <para>
+    /// The DIP reading is trusted whenever it lands close to a whole number of
+    /// cells; the physical reading is only used when the DIP one clearly is not a
+    /// whole span. Taking whichever is closer used to report the wrong span when
+    /// both readings were equidistant (5 cells on a 125% display: 460 DIP = 4.0
+    /// cells physical = 5.0 cells DIP), so the size steppers showed 4 and setting
+    /// 4 was a no-op ("adjusting columns 5 to 4 does nothing").
+    /// </para>
+    /// </summary>
+    /// <param name="size">Stored size (DIPs, or physical pixels in legacy layouts).</param>
+    /// <param name="cellPx">Cell edge in physical pixels.</param>
+    /// <param name="scaling">Scaling of the screen the size was stored for.</param>
+    /// <returns>Span in cells, never less than 1.</returns>
+    public static int ResolveSpan(double size, double cellPx, double scaling)
+    {
+        var cellDip = cellPx / scaling;
+        if (cellDip <= 0) return 1;
+
+        var dip = size / cellDip;
+        var dipError = Math.Abs(dip - Math.Round(dip));
+        if (dipError <= 0.15) return Math.Max(1, (int) Math.Round(dip));
+
+        var physical = size / cellPx;
+        if (Math.Abs(physical - Math.Round(physical)) <= 0.05)
+            return Math.Max(1, (int) Math.Round(physical));
+
+        return Math.Max(1, (int) Math.Round(dip));
+    }
 }

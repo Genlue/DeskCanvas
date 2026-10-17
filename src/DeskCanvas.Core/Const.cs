@@ -53,49 +53,141 @@ public static class Const
     /// </summary>
     public static readonly string WidgetsFolder = GetWidgetsFolder();
     /// <summary>
-    /// The path to the application settings file.
-    /// </summary>
-    public static readonly string AppSettingsFile = Path.Combine(DataFolder, AppSettingsFileName);
-    /// <summary>
-    /// The path to the layout file.
-    /// </summary>
-    public static readonly string LayoutFile = Path.Combine(DataFolder, LayoutFileName);
-    /// <summary>
-    /// The path to the unified reminders/checklist data file.
-    /// </summary>
-    public static readonly string RemindersFile = Path.Combine(DataFolder, RemindersFileName);
-    /// <summary>
-    /// The path to the unified timetable/schedule data file.
-    /// </summary>
-    public static readonly string TimetableFile = Path.Combine(DataFolder, TimetableFileName);
-    /// <summary>
-    /// The path to the unified habits data file.
-    /// </summary>
-    public static readonly string HabitsFile = Path.Combine(DataFolder, HabitsFileName);
-    /// <summary>
-    /// The path to the unified shortcuts/workflow data file.
-    /// </summary>
-    public static readonly string ShortcutsFile = Path.Combine(DataFolder, ShortcutsFileName);
-    /// <summary>
-    /// The path to the unified countdown/events data file.
-    /// </summary>
-    public static readonly string CountdownFile = Path.Combine(DataFolder, CountdownFileName);
-    /// <summary>
-    /// The path to the dice roll history and settings data file.
-    /// </summary>
-    public static readonly string DiceFile = Path.Combine(DataFolder, DiceFileName);
-    /// <summary>
-    /// The path to the fortune records data file.
-    /// </summary>
-    public static readonly string FortuneFile = Path.Combine(DataFolder, FortuneFileName);
-    /// <summary>
-    /// The path to the decision wheel templates and history data file.
-    /// </summary>
-    public static readonly string WheelFile = Path.Combine(DataFolder, WheelFileName);
-    /// <summary>
     /// The folder for configuration profiles.
     /// </summary>
     public static readonly string ProfilesFolder = Path.Combine(DataFolder, ProfilesFolderName);
+
+    /// <summary>Name of the active configuration profile pointer file.</summary>
+    public const string ActiveProfilePointerFileName = "activeProfile.json";
+    /// <summary>JSON property holding the active profile name inside <see cref="ActiveProfilePointerFileName"/>.</summary>
+    public const string ActiveProfilePointerPropertyName = "ActiveProfile";
+    /// <summary>The canonical default profile name.</summary>
+    public const string DefaultProfileName = "Default";
+
+    private static string activeProfile = ResolveActiveProfile();
+
+    /// <summary>
+    /// The name of the currently active configuration profile.
+    /// </summary>
+    public static string ActiveProfile => activeProfile;
+
+    /// <summary>
+    /// The absolute directory of the currently active configuration profile.
+    /// All profile-specific widget data, layout, and settings live under this folder.
+    /// </summary>
+    public static string ActiveProfileFolder => Path.Combine(ProfilesFolder, activeProfile);
+
+    /// <summary>
+    /// Path to the <c>activeProfile.json</c> pointer file in the data root.
+    /// </summary>
+    public static string ActiveProfilePointerPath => Path.Combine(DataFolder, ActiveProfilePointerFileName);
+
+    /// <summary>
+    /// Raised when the active configuration profile changes.
+    /// </summary>
+    public static event Action<string>? ActiveProfileChanged;
+
+    /// <summary>
+    /// Sets the active configuration profile, updates the pointer file, and raises <see cref="ActiveProfileChanged"/>.
+    /// </summary>
+    public static void SetActiveProfile(string profileName)
+    {
+        if (string.IsNullOrWhiteSpace(profileName))
+            profileName = DefaultProfileName;
+        profileName = profileName.Trim();
+        activeProfile = profileName;
+
+        try
+        {
+            Directory.CreateDirectory(DataFolder);
+            var pointerFile = ActiveProfilePointerPath;
+            var tempFile = $"{pointerFile}.{Environment.ProcessId}.{Guid.NewGuid():N}.tmp";
+            var json = JsonSerializer.Serialize(new Dictionary<string, string>
+            {
+                [ActiveProfilePointerPropertyName] = profileName
+            });
+            File.WriteAllText(tempFile, json);
+            File.Move(tempFile, pointerFile, overwrite: true);
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[Const] Failed to write activeProfile.json: {ex.Message}");
+        }
+
+        try
+        {
+            Directory.CreateDirectory(ActiveProfileFolder);
+        }
+        catch { }
+
+        ActiveProfileChanged?.Invoke(profileName);
+    }
+
+    private static string ResolveActiveProfile()
+    {
+        try
+        {
+            var pointerFile = Path.Combine(DataFolder, ActiveProfilePointerFileName);
+            if (File.Exists(pointerFile))
+            {
+                using var document = JsonDocument.Parse(File.ReadAllText(pointerFile));
+                if (document.RootElement.ValueKind == JsonValueKind.Object &&
+                    document.RootElement.TryGetProperty(ActiveProfilePointerPropertyName, out var prop) &&
+                    prop.ValueKind == JsonValueKind.String)
+                {
+                    var val = prop.GetString();
+                    if (!string.IsNullOrWhiteSpace(val))
+                        return val.Trim();
+                }
+            }
+        }
+        catch
+        {
+            // A corrupt pointer must never prevent startup: fall back to default.
+        }
+        return DefaultProfileName;
+    }
+
+    /// <summary>
+    /// The path to the application settings file for the currently active profile.
+    /// </summary>
+    public static string AppSettingsFile => Path.Combine(ActiveProfileFolder, AppSettingsFileName);
+    /// <summary>
+    /// The path to the layout file for the currently active profile.
+    /// </summary>
+    public static string LayoutFile => Path.Combine(ActiveProfileFolder, LayoutFileName);
+    /// <summary>
+    /// The path to the unified reminders/checklist data file for the currently active profile.
+    /// </summary>
+    public static string RemindersFile => Path.Combine(ActiveProfileFolder, RemindersFileName);
+    /// <summary>
+    /// The path to the unified timetable/schedule data file for the currently active profile.
+    /// </summary>
+    public static string TimetableFile => Path.Combine(ActiveProfileFolder, TimetableFileName);
+    /// <summary>
+    /// The path to the unified habits data file for the currently active profile.
+    /// </summary>
+    public static string HabitsFile => Path.Combine(ActiveProfileFolder, HabitsFileName);
+    /// <summary>
+    /// The path to the unified shortcuts/workflow data file for the currently active profile.
+    /// </summary>
+    public static string ShortcutsFile => Path.Combine(ActiveProfileFolder, ShortcutsFileName);
+    /// <summary>
+    /// The path to the unified countdown/events data file for the currently active profile.
+    /// </summary>
+    public static string CountdownFile => Path.Combine(ActiveProfileFolder, CountdownFileName);
+    /// <summary>
+    /// The path to the dice roll history and settings data file for the currently active profile.
+    /// </summary>
+    public static string DiceFile => Path.Combine(ActiveProfileFolder, DiceFileName);
+    /// <summary>
+    /// The path to the fortune records data file for the currently active profile.
+    /// </summary>
+    public static string FortuneFile => Path.Combine(ActiveProfileFolder, FortuneFileName);
+    /// <summary>
+    /// The path to the decision wheel templates and history data file for the currently active profile.
+    /// </summary>
+    public static string WheelFile => Path.Combine(ActiveProfileFolder, WheelFileName);
 
     /// <summary>Name of the folder holding widget assemblies (portable: next to the exe).</summary>
     public const string WidgetsFolderName = "Widgets";
@@ -119,42 +211,54 @@ public static class Const
     private const string WheelFileName = "wheel.json";
     private const string ProfilesFolderName = "Profiles";
 
-    private static (string Folder, DataFolderSource Source, string? Pointer) ResolveDataFolder()
+    /// <summary>
+    /// Resolves the runtime data folder for the given application directory (or current process directory if null).
+    /// </summary>
+    /// <param name="appDirectory">The base directory of the DeskCanvas installation, or null for current folder.</param>
+    /// <param name="ignoreEnvironment">Whether to bypass environment variable and test-harness sandbox overrides.</param>
+    public static (string Folder, DataFolderSource Source, string? Pointer) ResolveDataFolder(
+        string? appDirectory = null,
+        bool ignoreEnvironment = false)
     {
-        // Test/tool isolation: a process may redirect the whole data folder (settings, layout,
-        // timetable, reminders, habits) away from the live user folder. The check/repro projects set
-        // DESCANVAS_DATA_FOLDER first thing in Main — without it, a process that is not the
-        // packaged app resolves DataFolder to %LocalAppData%\DeskCanvas anyway and its store
-        // saves stomp the user's real data (a check run overwrote timetable.json with the
-        // "测试学期" sample twice this way).
-        var overrideFolder = Environment.GetEnvironmentVariable("DESCANVAS_DATA_FOLDER");
-        if (!string.IsNullOrWhiteSpace(overrideFolder))
-            return (overrideFolder.Trim(), Models.DataFolderSource.EnvironmentVariable, null);
+        var targetFolder = string.IsNullOrWhiteSpace(appDirectory) ? CurrentFolder : Path.GetFullPath(appDirectory.Trim());
 
-        // Structural sandbox: every check/repro harness builds into tests\<Name>\bin\..., so
-        // any process whose exe path carries a "tests" segment is a harness — give it its own
-        // disposable data folder instead of the packaged app's live %LocalAppData%\DeskCanvas.
-        // (Without this, a harness that constructs real widget views saves its stores straight
-        // into the user's data — a TimetableChecks run overwrote timetable.json with the
-        // "测试学期" sample twice.) The explicit override above wins when a check wants to
-        // pin the folder itself.
-        // It also wins over a user pointer: a harness must never read the live user data.
-        var harness = TestHarnessSandboxName();
-        if (harness != null)
-            return (Path.Combine(Path.GetTempPath(), "DeskCanvas-TestHarnesses", harness),
-                Models.DataFolderSource.TestHarness, null);
+        if (!ignoreEnvironment)
+        {
+            // Test/tool isolation: a process may redirect the whole data folder (settings, layout,
+            // timetable, reminders, habits) away from the live user folder.
+            // Accepts the standard DESKCANVAS_DATA_FOLDER first, falling back to the historical
+            // DESCANVAS_DATA_FOLDER spelling for backward compatibility.
+            var overrideFolder = Environment.GetEnvironmentVariable("DESKCANVAS_DATA_FOLDER");
+            if (string.IsNullOrWhiteSpace(overrideFolder))
+                overrideFolder = Environment.GetEnvironmentVariable("DESCANVAS_DATA_FOLDER");
+            if (!string.IsNullOrWhiteSpace(overrideFolder))
+                return (overrideFolder.Trim(), Models.DataFolderSource.EnvironmentVariable, null);
+
+            // Structural sandbox: every check/repro harness builds into tests\<Name>\bin\..., so
+            // any process whose exe path carries a "tests" segment is a harness — give it its own
+            // disposable data folder instead of the packaged app's live %LocalAppData%\DeskCanvas.
+            // (Without this, a harness that constructs real widget views saves its stores straight
+            // into the user's data — a TimetableChecks run overwrote timetable.json with the
+            // "测试学期" sample twice.) The explicit override above wins when a check wants to
+            // pin the folder itself.
+            // It also wins over a user pointer: a harness must never read the live user data.
+            var harness = TestHarnessSandboxName();
+            if (harness != null)
+                return (Path.Combine(Path.GetTempPath(), "DeskCanvas-TestHarnesses", harness),
+                    Models.DataFolderSource.TestHarness, null);
+        }
 
         // User choice, portable form: a dataFolder.json next to the exe pins the folder. It wins
         // over the portable-layout rule below so a portable install can keep its data out of the
         // build/dist folder it happens to live in (the dist\win-x64 publish output, which
         // build.ps1 wipes on every publish).
-        var exePointer = Path.Combine(CurrentFolder, DataFolderPointerFileName);
+        var exePointer = Path.Combine(targetFolder, DataFolderPointerFileName);
         var exeTarget = ReadPointerFolder(exePointer);
         if (exeTarget != null)
             return (exeTarget, Models.DataFolderSource.ExePointer, exePointer);
 
         // Portable mode: a Widgets folder next to the exe (official layout / dev output).
-        if (Directory.Exists(Path.Combine(CurrentFolder, WidgetsFolderName)))
+        if (Directory.Exists(Path.Combine(targetFolder, WidgetsFolderName)))
         {
 #if DEBUG
             // Dev builds keep the classic portable layout for the widget DLLs (they hot-load
@@ -169,7 +273,7 @@ public static class Const
                     AppName + "-dev"),
                 Models.DataFolderSource.PortableDev, null);
 #else
-            return (CurrentFolder, Models.DataFolderSource.Portable, null);
+            return (targetFolder, Models.DataFolderSource.Portable, null);
 #endif
         }
 
@@ -215,7 +319,7 @@ public static class Const
     /// the file is missing, unreadable, malformed or carries an empty value — every failure mode
     /// falls through to the next resolution rule rather than crashing at startup.
     /// </summary>
-    private static string? ReadPointerFolder(string pointerFile)
+    public static string? ReadPointerFolder(string pointerFile)
     {
         try
         {

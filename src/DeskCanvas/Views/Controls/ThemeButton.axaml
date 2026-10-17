@@ -32,6 +32,11 @@
                 <controls:LiquidGlassSurface Canvas.Left="70" Canvas.Top="40" Width="45" Height="45"
                                             Preview="True" Material="{Binding GlassMaterial}"
                                             CornerRadius="10" IsVisible="{Binding IsRenderedGlass}" />
+                <controls:SpecularHighlight Canvas.Left="70" Canvas.Top="40" Width="45" Height="45"
+                                            CornerRadius="{Binding WidgetCornerRadius}"
+                                            Strength="{Binding PreviewHighlightStrength}"
+                                            Angle="{Binding PreviewHighlightAngle}"
+                                            IsVisible="{Binding PreviewShowsHighlight}" />
                 <TextBlock Canvas.Left="70" Canvas.Top="48" Width="45"
                            TextAlignment="Center" VerticalAlignment="Center"
                            FontSize="28" LineHeight="24" Text="Aa"

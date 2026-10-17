@@ -62,16 +62,20 @@ public partial class TimetablePanelWindow : SecondaryPanelWindow
         }
     }
 
-    /// <summary>One panel of this type at a time; re-triggering toggles the open one (base handles cooldown).</summary>
+    /// <summary>One panel per owning widget at a time; re-triggering toggles the open one (the service handles cooldown).</summary>
     public static void ShowPanel(TimetableModel model, Point? screenCenter, Window? owner = null, double? cornerRadius = null)
     {
         if (model == null || !model.HasData) return;
 
-        if (PanelCoolingDown<TimetablePanelWindow>()) return;
-        if (TryCloseActivePanel<TimetablePanelWindow>()) return;
-
-        var panel = new TimetablePanelWindow(model, screenCenter, cornerRadius);
-        panel.ShowAsSecondaryPanel(owner);
+        // PerOwner identity (the weather panel precedent): every timetable widget owns its own
+        // panel. The service handles the cooldown, the toggle-close and the pinned show — the
+        // decision is deliberately ignored, mirroring the old bare early returns.
+        PanelService.Open(new PanelRequest(
+            owner is Widget widget ? widget.InstanceId : default,
+            owner,
+            "timetable.panel",
+            PanelScope.PerOwner,
+            () => new TimetablePanelWindow(model, screenCenter, cornerRadius)));
     }
 
     private void ApplyLocalization()

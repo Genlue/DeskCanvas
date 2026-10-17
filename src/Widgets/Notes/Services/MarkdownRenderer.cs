@@ -108,7 +108,7 @@ public static class MarkdownRenderer
     /// palette matching the current light/dark theme); <c>null</c> renders with theme defaults.</param>
     public static Control Render(StyledElement scope, string? markdown, double fontSize = 14, MarkdownTypography? typography = null)
     {
-        var palette = Palette.From(typography);
+        var palette = Palette.From(typography, scope);
         var panel = new StackPanel { Spacing = Math.Round(fontSize * 0.38) };
 
         if (string.IsNullOrWhiteSpace(markdown))
@@ -138,12 +138,19 @@ public static class MarkdownRenderer
 
         public bool HasQuote => Quote != null;
 
-        /// <summary>Pick the palette of the theme currently active, if styling is enabled.</summary>
-        public static Palette From(MarkdownTypography? typography)
+        /// <summary>Pick the palette of the theme currently active, if styling is enabled.
+        /// The variant is resolved per screen: the scope element's effective variant (each
+        /// window can run light/dark independently) first, falling back to the app-wide
+        /// variant when the scope has not resolved one yet (the historic behaviour).</summary>
+        public static Palette From(MarkdownTypography? typography, StyledElement? scope)
         {
             if (typography is not { Enabled: true }) return new Palette();
 
-            var isDark = Application.Current?.ActualThemeVariant == ThemeVariant.Dark;
+            var scopeVariant = scope?.ActualThemeVariant;
+            var variant = scopeVariant == ThemeVariant.Dark || scopeVariant == ThemeVariant.Light
+                ? scopeVariant
+                : Application.Current?.ActualThemeVariant;
+            var isDark = variant == ThemeVariant.Dark;
             var colors = isDark ? typography.Dark : typography.Light;
             if (colors == null) return new Palette { Font = ResolveFont(typography.Font) };
 

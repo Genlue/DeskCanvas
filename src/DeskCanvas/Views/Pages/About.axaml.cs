@@ -78,4 +78,38 @@ public partial class About : UserControl
         Process.Start(
             new ProcessStartInfo("https://github.com/creewick/uWidgets/issues") { UseShellExecute = true });
     }
+
+    private void OnUninstallClicked(object? sender, RoutedEventArgs e)
+    {
+        // 1. Check for standard Inno Setup uninstaller (unins000.exe)
+        var uninsPath = System.IO.Path.Combine(DeskCanvas.Core.Const.CurrentFolder, "unins000.exe");
+        if (System.IO.File.Exists(uninsPath))
+        {
+            try
+            {
+                Process.Start(new ProcessStartInfo(uninsPath) { UseShellExecute = true });
+                return;
+            }
+            catch { }
+        }
+
+        // 2. Check for standalone uninstaller fallback if present
+        var customUninstaller = System.IO.Path.Combine(DeskCanvas.Core.Const.CurrentFolder, "DeskCanvasUninstaller.exe");
+        if (System.IO.File.Exists(customUninstaller))
+        {
+            try
+            {
+                Process.Start(new ProcessStartInfo(customUninstaller) { UseShellExecute = true });
+                return;
+            }
+            catch { }
+        }
+
+        // 3. Fallback: open Windows Apps & Features
+        try
+        {
+            Process.Start(new ProcessStartInfo("ms-settings:appsfeatures") { UseShellExecute = true });
+        }
+        catch { }
+    }
 }

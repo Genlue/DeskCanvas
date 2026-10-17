@@ -1,4 +1,5 @@
 using System.Text.Json;
+using DeskCanvas.Core;
 using DeskCanvas.Core.Models;
 using DeskCanvas.Core.Services;
 
@@ -12,16 +13,19 @@ void Check(string name, bool ok)
 
 var root = Path.Combine(Path.GetTempPath(), "DeskCanvas-IdentityStorageChecks", Guid.NewGuid().ToString("N"));
 Directory.CreateDirectory(root);
+Environment.SetEnvironmentVariable("DESKCANVAS_DATA_FOLDER", root);
 Environment.SetEnvironmentVariable("DESCANVAS_DATA_FOLDER", root);
 try
 {
+    var layoutPath = Const.LayoutFile;
+    Directory.CreateDirectory(Path.GetDirectoryName(layoutPath)!);
     var legacy = new WidgetLayout("Clock", "Digital", 10, 20, 200, 120, null);
-    File.WriteAllText(Path.Combine(root, "layout.json"), JsonSerializer.Serialize(new List<WidgetLayout> { legacy }));
+    File.WriteAllText(layoutPath, JsonSerializer.Serialize(new List<WidgetLayout> { legacy }));
 
     var provider = new LayoutProvider();
     var first = provider.Get().AllWidgets.Single();
     Check("legacy layout receives a stable InstanceId", first.HasStableIdentity);
-    var persisted = JsonSerializer.Deserialize<ScreensLayout>(File.ReadAllText(Path.Combine(root, "layout.json")))!;
+    var persisted = JsonSerializer.Deserialize<ScreensLayout>(File.ReadAllText(layoutPath))!;
     var persistedId = persisted.AllWidgets.Single().InstanceId;
     Check("migration is persisted", persistedId == first.InstanceId);
 
@@ -43,6 +47,7 @@ try
 }
 finally
 {
+    Environment.SetEnvironmentVariable("DESKCANVAS_DATA_FOLDER", null);
     Environment.SetEnvironmentVariable("DESCANVAS_DATA_FOLDER", null);
     try { Directory.Delete(root, recursive: true); } catch { }
 }

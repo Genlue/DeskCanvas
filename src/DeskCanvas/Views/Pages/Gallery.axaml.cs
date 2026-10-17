@@ -321,7 +321,7 @@ public partial class Gallery : UserControl, INotifyPropertyChanged
             {
                 var x = gridX + col * cell;
                 var y = gridY + row * cell;
-                if (!IntersectsAnyWidget(screenConfig.Layout, area, scaling, x, y, widthPhys, heightPhys))
+                if (!IntersectsAnyWidget(screenConfig.Layout, area, scaling, cell, x, y, widthPhys, heightPhys))
                     return (x - area.X, y - area.Y, width, height);
             }
         }
@@ -331,18 +331,32 @@ public partial class Gallery : UserControl, INotifyPropertyChanged
         return (gridX - area.X, gridY - area.Y, width, height);
     }
 
-    /// <summary>Whether a candidate rectangle (physical pixels) intersects any widget
-    /// already stored on this screen (stored positions are working-area-relative).</summary>
+    /// <summary>
+    /// Whether a candidate rectangle (physical pixels) intersects any widget already
+    /// stored on this screen (stored positions are working-area-relative).
+    /// <para>
+    /// A stored size is turned back into cells through <see cref="GridMetrics.ResolveSpan"/>
+    /// — the same heuristic the widget itself uses to restore its span. Reading it as
+    /// DIPs unconditionally (plain <c>Width * scaling</c>) inflated every entry written by
+    /// a pre-DIP build by the display scaling factor: on a 125% screen a stored 2-cell
+    /// widget covered 2.5 cells, so the scan saw the neighbouring cell as taken and either
+    /// skipped a free slot or declared the whole grid full and fell back to the grid
+    /// origin — a new widget then landed on top of the existing ones no matter its size.
+    /// </para>
+    /// </summary>
     private static bool IntersectsAnyWidget(
-        IReadOnlyList<WidgetLayout> layout, PixelRect area, double scaling,
+        IReadOnlyList<WidgetLayout> layout, PixelRect area, double scaling, int cell,
         int x, int y, int widthPhys, int heightPhys)
     {
         foreach (var widget in layout)
         {
             var wx = widget.X + area.X;
             var wy = widget.Y + area.Y;
-            var ww = (int) Math.Round(widget.Width * scaling);
-            var wh = (int) Math.Round(widget.Height * scaling);
+            // Snap the stored size onto its cells: widgets are grid-aligned, and a
+            // pixel-exact box would let rounding gaps of a pixel or two admit a
+            // candidate that visually overlaps.
+            var ww = Math.Max(1, GridMetrics.ResolveSpan(widget.Width, cell, scaling)) * cell;
+            var wh = Math.Max(1, GridMetrics.ResolveSpan(widget.Height, cell, scaling)) * cell;
             if (x < wx + ww && wx < x + widthPhys && y < wy + wh && wy < y + heightPhys)
                 return true;
         }

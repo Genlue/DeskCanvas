@@ -275,6 +275,19 @@ public partial class Widget : Window, INotifyPropertyChanged, IFocusThemedWindow
         DesktopFurniture.Attach(this);
         WindowRoles.Register(this, WindowRole.DesktopWidget);
         ApplyTransparencyHint();
+
+        // Restore the stored geometry HERE, not only on activation. A widget added from
+        // the 组件库 is opened while the settings window owns the foreground, and this
+        // very handler pins it to the bottom band — Windows then routinely never
+        // activates it, so the activation path (OnActivated → RefreshDisplayMetrics)
+        // never ran: the new window kept the OS cascade position instead of the free
+        // cell Gallery.ComputePlacement had picked, so the card showed up outside the
+        // grid (upper middle of the screen) and SnapPosition never ran either.
+        // Restoring on every open is idempotent — ApplyPosition reads the stored entry,
+        // SnapPosition lands on the same cell, and ClampRestoredPosition only pulls a
+        // stranded window back onto its own working area.
+        RefreshDisplayMetrics();
+
         UpdateContentSize();
         ApplyWidgetRegion();
 
@@ -766,80 +779,19 @@ public partial class Widget : Window, INotifyPropertyChanged, IFocusThemedWindow
     }
 
     /// <summary>
-    /// True when the card should render the outline highlight ring: glass surface
-    /// with the outline width &gt; 0, no native frame.
+    /// True when the card should draw the specular outline itself instead of leaving it to the
+    /// wallpaper-sampled renderer: every material except 液态玻璃, on the rounded card, with no
+    /// native frame. 毛玻璃 (OS acrylic) and 全彩 (solid fill) have no shader to light their rim,
+    /// so the host overlays the same highlight they used to get from 描边.
     /// </summary>
-    private bool IsOutlined
-    {
-        get
-        {
-            var theme = GlassMaterial;
-            return !isFrameless && theme.IsGlass && theme.OutlineWidth > 0 && !theme.UseNativeFrame;
-        }
-    }
+    public bool ShowsSpecularHighlight =>
+        !isFrameless && !IsStackWidget && !GlassMaterial.UsesRenderedGlass && !GlassMaterial.UseNativeFrame;
 
-    /// <summary>Highlight ring thickness (DIPs), 0 when the surface is not outlined glass.</summary>
-    public Thickness WidgetOutlineThickness
-    {
-        get
-        {
-            if (!IsOutlined || IsStackWidget) return new Thickness(0);
-            var width = Math.Clamp(GlassMaterial.OutlineWidth, 0, 6);
-            return new Thickness(width);
-        }
-    }
+    /// <summary>Rim strength, the same 0-100 高光 value the liquid-glass shader reads.</summary>
+    public double HighlightStrength => GlassMaterial.EffectiveLiquidGlass.Highlight;
 
-    /// <summary>
-    /// Highlight ring brush for outlined glass. The ring is strongest at the
-    /// top-left and bottom-right corners and fades linearly along every edge to
-    /// nothing at the top-right and bottom-left corners (无→最浓 gradient over
-    /// the whole edge, not just a short notch near the corner). Built as a conic
-    /// gradient whose sweep starts at the actual top-left corner, so the fades
-    /// follow the real corners for any aspect ratio.
-    /// </summary>
-    public IBrush? WidgetOutlineBrush
-    {
-        get
-        {
-            if (!IsOutlined || IsStackWidget) return null;
-            if (GlassMaterial.OutlineWidth > 0)
-                return BuildOutlineBrush();
-            return null;
-        }
-    }
-
-    private ConicGradientBrush BuildOutlineBrush()
-    {
-        var width = Math.Max(1, (ClientSize.Width > 0 ? ClientSize.Width : Width) - 2 * WidgetMargin.Left);
-        var height = Math.Max(1, (ClientSize.Height > 0 ? ClientSize.Height : Height) - 2 * WidgetMargin.Top);
-
-        var theme = GlassMaterial;
-        var cornerAngle = Math.Atan2(width / 2.0, height / 2.0) * 180.0 / Math.PI;   // top-right corner direction
-        var startAngle = 360.0 - cornerAngle;                                        // top-left corner direction
-        var color = Color.TryParse(theme.EffectiveOutlineColor, out var parsed)
-            ? parsed
-            : Color.Parse(DeskCanvas.Core.Models.Settings.Theme.DefaultOutlineColor);
-        var clear = Colors.Transparent;
-
-        // Conic gradients: 0° = above center (top), clockwise (CSS convention);
-        // the Angle property rotates offset 0 to the given direction (here: top-left).
-        // Offsets are 0..1 fractions of the full 360° sweep. Segment widths in angle:
-        //   TL→TR = 2·cornerAngle (top edge), TR→BR = 180−2·cornerAngle (right edge),
-        //   BR→BL = 2·cornerAngle (bottom edge), BL→TL = 180−2·cornerAngle (left edge).
-        return new ConicGradientBrush
-        {
-            Angle = startAngle,
-            Center = RelativePoint.Center,
-            GradientStops =
-            {
-                new GradientStop(color, 0),
-                new GradientStop(clear, 2 * cornerAngle / 360.0),
-                new GradientStop(color, 0.5),
-                new GradientStop(clear, 0.5 + 2 * cornerAngle / 360.0),
-                new GradientStop(color, 1.0)
-            }
-        };
-    }
+    /// <summary>Rim light direction in degrees, shared with the liquid-glass shader.</summary>
+    public double HighlightAngle => GlassMaterial.EffectiveLiquidGlass.HighlightAngle;
 
     /// <summary>
     /// Margin between the widget content and the grid lines (manual grid mode).
@@ -1176,34 +1128,25 @@ public partial class Widget : Window, INotifyPropertyChanged, IFocusThemedWindow
             return;
         }
 
-        var outline = WidgetOutlineThickness;
-        var innerW = Math.Max(1, cardW - outline.Left - outline.Right);
-        var innerH = Math.Max(1, cardH - outline.Top - outline.Bottom);
-
-        ContentPresenter.Width = innerW;
-        ContentPresenter.Height = innerH;
+        ContentPresenter.Width = cardW;
+        ContentPresenter.Height = cardH;
 
         UpdateAdaptiveRadiusResources();
         var r = Radius.TopLeft;
-        var innerR = Math.Max(0, r - outline.Left);
-        ContentPresenter.Clip = new RectangleGeometry(new Rect(0, 0, innerW, innerH), innerR, innerR);
-
-        // Outlined glass: the corner-fade notches follow the card aspect ratio.
-        Notify(nameof(WidgetOutlineThickness));
-        Notify(nameof(WidgetOutlineBrush));
+        ContentPresenter.Clip = new RectangleGeometry(new Rect(0, 0, cardW, cardH), r, r);
     }
 
     /// <summary>
     /// Smallest window that fits the content's measured minimum: the content
     /// DesiredSize already includes the view's own margin, so the window just adds
-    /// the card margin and the outline ring. Kept side-effect-free so
-    /// <c>WidgetAdaptiveChecks</c> can pin the math via reflection.
+    /// the card margin. Kept side-effect-free so <c>WidgetAdaptiveChecks</c> can pin
+    /// the math via reflection.
     /// </summary>
     internal static (double Width, double Height) ComputeContentMinWindowSize(
-        Size contentDesired, Thickness windowMargin, Thickness outline, double floor = 48)
+        Size contentDesired, Thickness windowMargin, double floor = 48)
     {
-        var w = Math.Ceiling(contentDesired.Width + windowMargin.Left + windowMargin.Right + outline.Left + outline.Right);
-        var h = Math.Ceiling(contentDesired.Height + windowMargin.Top + windowMargin.Bottom + outline.Top + outline.Bottom);
+        var w = Math.Ceiling(contentDesired.Width + windowMargin.Left + windowMargin.Right);
+        var h = Math.Ceiling(contentDesired.Height + windowMargin.Top + windowMargin.Bottom);
         return (Math.Max(floor, w), Math.Max(floor, h));
     }
 
@@ -1307,7 +1250,7 @@ public partial class Widget : Window, INotifyPropertyChanged, IFocusThemedWindow
 
         // Make bound properties reactive so style changes apply immediately
         // (margin from grid lines, corner radius, context menu, and the
-        // outlined-glass highlight ring…).
+        // 高光 specular rim…).
         if (oldData?.Dimensions != newData.Dimensions || oldData?.Theme != newData.Theme)
         {
             RefreshThemeVisuals();
@@ -1319,7 +1262,7 @@ public partial class Widget : Window, INotifyPropertyChanged, IFocusThemedWindow
     /// and the focus path (<see cref="OnFocusThemeChanged"/>) — kept as one method so a
     /// focus-state material swap re-resolves exactly what switching the same theme by
     /// hand re-resolves: the native transparency hint, the card brush, the glass layer,
-    /// the outline, the overlay placement, the content size and the native window region.
+    /// the specular rim, the overlay placement, the content size and the native window region.
     /// </summary>
     private void RefreshThemeVisuals()
     {
@@ -1333,8 +1276,9 @@ public partial class Widget : Window, INotifyPropertyChanged, IFocusThemedWindow
         Notify(nameof(InnerRadius));
         Notify(nameof(PillRadius));
         Notify(nameof(SizeMenuTitle));
-        Notify(nameof(WidgetOutlineThickness));
-        Notify(nameof(WidgetOutlineBrush));
+        Notify(nameof(ShowsSpecularHighlight));
+        Notify(nameof(HighlightStrength));
+        Notify(nameof(HighlightAngle));
         UpdateContentSize();
         ApplyWidgetRegion();
     }
@@ -1477,7 +1421,6 @@ public partial class Widget : Window, INotifyPropertyChanged, IFocusThemedWindow
     private void OnActualThemeVariantChanged(object? sender, EventArgs e)
     {
         Notify(nameof(WidgetCardBackground));
-        Notify(nameof(WidgetOutlineBrush));
     }
 
     /// <inheritdoc />
@@ -1571,8 +1514,9 @@ public partial class Widget : Window, INotifyPropertyChanged, IFocusThemedWindow
         Notify(nameof(Radius));
         Notify(nameof(InnerRadius));
         Notify(nameof(PillRadius));
-        Notify(nameof(WidgetOutlineThickness));
-        Notify(nameof(WidgetOutlineBrush));
+        Notify(nameof(ShowsSpecularHighlight));
+        Notify(nameof(HighlightStrength));
+        Notify(nameof(HighlightAngle));
         UpdateContentSize();
         ApplyWidgetRegion();
     }
@@ -1932,34 +1876,13 @@ public partial class Widget : Window, INotifyPropertyChanged, IFocusThemedWindow
     }
     
     /// <summary>
-    /// Resolve a stored pixel size into a whole number of grid cells.
-    /// <para>
-    /// The current build always stores window sizes in DIPs, so the DIP
-    /// interpretation is trusted whenever it lands close to a whole number of
-    /// cells. Sizes saved by older builds were physical pixels (e.g. 575 px on a
-    /// 125% display for a 5-cell span) — those are only used when the DIP reading
-    /// is clearly not a whole span. Comparing both and taking the closer one used
-    /// to report the wrong span whenever both readings were equidistant (5 cells
-    /// on a 125% display: 460 DIP = 4.0 cells physical = 5.0 cells DIP), so the
-    /// size steppers showed 4 and setting 4 was a no-op ("adjusting columns
-    /// 5 to 4 does nothing").
-    /// </para>
+    /// Resolve a stored pixel size into a whole number of grid cells
+    /// (see <see cref="GridMetrics.ResolveSpan"/> — the gallery's occupancy test reads
+    /// stored sizes through the very same heuristic, so placement and restore agree
+    /// on how much of the grid a widget takes).
     /// </summary>
     private static int ResolveSpan(double size, double cellPx, double scaling)
-    {
-        var cellDip = cellPx / scaling;
-        if (cellDip <= 0) return 1;
-
-        var dip = size / cellDip;
-        var dipError = Math.Abs(dip - Math.Round(dip));
-        if (dipError <= 0.15) return Math.Max(1, (int) Math.Round(dip));
-
-        var physical = size / cellPx;
-        if (Math.Abs(physical - Math.Round(physical)) <= 0.05)
-            return Math.Max(1, (int) Math.Round(physical));
-
-        return Math.Max(1, (int) Math.Round(dip));
-    }
+        => GridMetrics.ResolveSpan(size, cellPx, scaling);
 
     /// <summary>
     /// Resolve the manual grid metrics for the current screen (fallback: primary screen).

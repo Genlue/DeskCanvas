@@ -9,6 +9,7 @@ using Avalonia;
 using Avalonia.Media;
 using Avalonia.Styling;
 using Avalonia.Threading;
+using DeskCanvas.Contracts;
 using DeskCanvas.Core.Interfaces;
 using DeskCanvas.Core.Models.Settings;
 using DeskCanvas.Core.Services;
@@ -36,6 +37,27 @@ public class DriveItemViewModel : INotifyPropertyChanged
     private int usagePercent;
     private StorageTextFormat textFormat = StorageTextFormat.FreeSpace;
     private bool useWarningColors = true;
+
+    /// <summary>
+    /// Variant source override for the readout colours. The host view wires this to the
+    /// window's ActualThemeVariant so a drive ring honours the variant of the screen it sits
+    /// on (the per-screen policy writes the variant per window). Null keeps the historic
+    /// behaviour: the uniform Application variant.
+    /// </summary>
+    public Func<ThemeVariant?>? VariantProvider { get; set; }
+
+    /// <summary>The variant the brushes resolve against: the host window's variant when the
+    /// view wired <see cref="VariantProvider"/>, otherwise the uniform Application variant.</summary>
+    private ThemeVariant EffectiveVariant =>
+        ResolveVariant(VariantProvider?.Invoke(), Application.Current?.ActualThemeVariant);
+
+    /// <summary>
+    /// Pure seam: the effective variant for a readout. The host window's variant wins
+    /// (per-screen policy); a null window variant (control not attached / uniform host)
+    /// falls back to the uniform Application variant, then to the platform default.
+    /// </summary>
+    public static ThemeVariant ResolveVariant(ThemeVariant? hostWindowVariant, ThemeVariant? uniformVariant) =>
+        hostWindowVariant ?? uniformVariant ?? ThemeVariant.Default;
 
     public DriveItemViewModel(IAppSettingsProvider? appSettingsProvider = null)
     {
@@ -164,7 +186,7 @@ public class DriveItemViewModel : INotifyPropertyChanged
             if (!hasDrive) return Brushes.Transparent;
             Theme? theme = null;
             try { theme = appSettingsProvider?.Get()?.Theme; } catch { }
-            var isDark = Application.Current?.ActualThemeVariant == ThemeVariant.Dark;
+            var isDark = EffectiveVariant == ThemeVariant.Dark;
 
             if (theme != null && !theme.IsColorful && theme.Monochrome)
             {
@@ -174,7 +196,7 @@ public class DriveItemViewModel : INotifyPropertyChanged
                 if (theme.EffectiveMonochromeVariant == MonochromeStyle.BackgroundColor)
                 {
                     if (Application.Current != null &&
-                        Application.Current.TryGetResource("SystemControlForegroundAccentBrush", Application.Current.ActualThemeVariant, out var themed) &&
+                        Application.Current.TryGetResource("SystemControlForegroundAccentBrush", EffectiveVariant, out var themed) &&
                         themed is IBrush themedBrush)
                     {
                         return themedBrush;
@@ -188,7 +210,7 @@ public class DriveItemViewModel : INotifyPropertyChanged
                 if (!string.IsNullOrWhiteSpace(theme.AccentColor) && Color.TryParse(theme.AccentColor, out var parsedAccent))
                     return new SolidColorBrush(parsedAccent);
                 if (Application.Current != null &&
-                    Application.Current.TryGetResource("SystemControlForegroundAccentBrush", Application.Current.ActualThemeVariant, out var res) &&
+                    Application.Current.TryGetResource("SystemControlForegroundAccentBrush", EffectiveVariant, out var res) &&
                     res is IBrush ab)
                 {
                     return ab;
@@ -236,7 +258,7 @@ public class DriveItemViewModel : INotifyPropertyChanged
         {
             if (hasDrive) return StatusBrush;
             if (Application.Current != null &&
-                Application.Current.TryGetResource("SystemControlForegroundBaseHighBrush", Application.Current.ActualThemeVariant, out var neutral) &&
+                Application.Current.TryGetResource("SystemControlForegroundBaseHighBrush", EffectiveVariant, out var neutral) &&
                 neutral is IBrush neutralBrush)
                 return neutralBrush;
             return Brushes.Gray;
@@ -287,9 +309,16 @@ public class DriveItemViewModel : INotifyPropertyChanged
 public class StorageViewModel : INotifyPropertyChanged, IDisposable
 {
     private readonly IAppSettingsProvider appSettingsProvider;
+    private readonly IWidgetSession? session;
     private StorageModel model;
     private readonly DispatcherTimer timer;
     private bool disposed;
+    private bool renderActive = true;
+    private bool suspended;
+
+    // Gates reconciled on every change: the ten-second poll runs exactly while the session
+    // renders, the host has not suspended the widget and the view model is not disposed.
+    private int pollStartsForChecks;
 
     private long totalCapacityBytes;
     private long totalFreeBytes;
@@ -302,9 +331,17 @@ public class StorageViewModel : INotifyPropertyChanged, IDisposable
 
     public event Action? DrivesUpdated;
 
-    public StorageViewModel(StorageModel? initialModel = null, IAppSettingsProvider? settingsProvider = null)
+    /// <summary>
+    /// <paramref name="session"/> is injected by WidgetFactory when the host runs the session
+    /// pipeline: the ten-second poll is then gated on the session's activity (besides the
+    /// host's explicit <see cref="Suspend"/>). Null keeps the legacy always-on behaviour
+    /// (preview, legacy layout entries) — those hosts never push activity either.
+    /// </summary>
+    public StorageViewModel(StorageModel? initialModel = null, IAppSettingsProvider? settingsProvider = null, IWidgetSession? session = null)
     {
         model = initialModel ?? new StorageModel();
+        this.session = session;
+        renderActive = session?.Activity.RenderActive ?? true;
         appSettingsProvider = settingsProvider
             ?? (DeskCanvas.App.Services?.GetService(typeof(IAppSettingsProvider)) as IAppSettingsProvider)
             ?? new AppSettingsProvider();
@@ -322,7 +359,7 @@ public class StorageViewModel : INotifyPropertyChanged, IDisposable
             Interval = TimeSpan.FromSeconds(10)
         };
         timer.Tick += (_, _) => PollDrives();
-        timer.Start();
+        UpdateTimerSubscription();
 
         appSettingsProvider.DataChanged += OnSettingsChanged;
 
@@ -424,26 +461,81 @@ public class StorageViewModel : INotifyPropertyChanged, IDisposable
         DrivesUpdated?.Invoke();
     }
 
+    /// <summary>
+    /// Host activity push (the <see cref="DeskCanvas.Runtime.IWidgetActivityConsumer"/> path,
+    /// invoked on the UI thread): the poll follows the snapshot's RenderActive. Session-less
+    /// view models ignore the push entirely (the host never sends one to them).
+    /// </summary>
+    public void OnSessionActivity(ActivitySnapshot activity)
+    {
+        if (session == null) return;
+        renderActive = activity.RenderActive;
+        UpdateTimerSubscription();
+    }
+
+    /// <summary>
+    /// Single subscription state machine over all three gates (reconciliation, not toggling):
+    /// the ten-second DispatcherTimer runs exactly while the session renders AND the host has
+    /// not suspended the widget AND the view model is not disposed. Either gate closed stops
+    /// the poll; resuming requires all open again. Overlapping transitions cannot leave the
+    /// timer in a state the gates do not describe.
+    /// </summary>
+    private void UpdateTimerSubscription()
+    {
+        var wanted = renderActive && !suspended && !disposed;
+        if (wanted && !timer.IsEnabled)
+        {
+            timer.Start();
+            pollStartsForChecks++;
+        }
+        else if (!wanted && timer.IsEnabled)
+        {
+            timer.Stop();
+        }
+    }
+
     public void Suspend()
     {
-        if (disposed) return;
-        timer.Stop();
+        if (suspended || disposed) return;
+        suspended = true;
+        UpdateTimerSubscription();
     }
 
     public void Resume()
     {
-        if (disposed) return;
+        if (!suspended || disposed) return;
+        suspended = false;
         PollDrives();
-        timer.Start();
+        UpdateTimerSubscription();
     }
 
     public void Dispose()
     {
         if (disposed) return;
         disposed = true;
-        timer.Stop();
+        UpdateTimerSubscription();
         appSettingsProvider.DataChanged -= OnSettingsChanged;
     }
+
+    // ------------------------------------------------------------------
+    //  Check seams (tests/DataWidgetSessionChecks)
+    // ------------------------------------------------------------------
+
+    /// <summary>Check seam: whether the ten-second poll timer is currently running.</summary>
+    public bool IsPollingForChecks => timer.IsEnabled;
+
+    /// <summary>Check seam: the latest session gate value.</summary>
+    public bool RenderActiveForChecks => renderActive;
+
+    /// <summary>Check seam: the latest explicit suspension gate value.</summary>
+    public bool SuspendedForChecks => suspended;
+
+    /// <summary>Check seam: the injected session (null on the legacy path).</summary>
+    public IWidgetSession? SessionForChecks => session;
+
+    /// <summary>Check seam: how many times the poll actually (re)started — a covered session
+    /// must not start it, and overlapping transitions must not double-start it.</summary>
+    public int PollStartsForChecks => pollStartsForChecks;
 
     public event PropertyChangedEventHandler? PropertyChanged;
     protected void OnPropertyChanged([CallerMemberName] string? propName = null) =>

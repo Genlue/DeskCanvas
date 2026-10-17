@@ -44,6 +44,20 @@ public static class RemindersStore
     static RemindersStore()
     {
         InitializeWatcher();
+        Const.ActiveProfileChanged += _ =>
+        {
+            lock (FileLock)
+            {
+                cachedModel = null;
+                InitializeWatcher();
+            }
+            try
+            {
+                var updated = Get();
+                NotifyModelChanged(updated, null);
+            }
+            catch { }
+        };
     }
 
     /// <summary>
@@ -198,6 +212,8 @@ public static class RemindersStore
     {
         try
         {
+            fileWatcher?.Dispose();
+            fileWatcher = null;
             var path = FilePath;
             var dir = Path.GetDirectoryName(path);
             if (string.IsNullOrEmpty(dir)) return;

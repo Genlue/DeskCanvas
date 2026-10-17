@@ -2,6 +2,8 @@ using System;
 using System.Globalization;
 using System.Threading;
 using Clock.Models;
+using DeskCanvas.Contracts;
+using DeskCanvas.Runtime;
 using DeskCanvas.Services;
 using ReactiveUI;
 
@@ -28,14 +30,24 @@ public class TickDialClockViewModel : ReactiveObject, IDisposable
 
     private readonly ClockModel clockModel;
     private readonly UpdateTimer timer;
+    private readonly IWidgetSession? session;
     private bool isRunning;
-    private TimeZoneInfo? cachedTimeZone;
+    private bool renderActive = true;
+    private int tickSubscriptions;
 
     public event Action? SecondTicked;
 
-    public TickDialClockViewModel(ClockModel clockModel)
+    /// <summary>
+    /// Session-less widgets (the gallery preview, legacy layout entries without identity) pass
+    /// no session and keep the historic always-on behaviour: ticking then only follows
+    /// <see cref="Start"/>/<see cref="Stop"/>. With a session, the subscription is gated by
+    /// the latest activity snapshot's <see cref="ActivitySnapshot.RenderActive"/>.
+    /// </summary>
+    public TickDialClockViewModel(ClockModel clockModel, IWidgetSession? session = null)
     {
         this.clockModel = clockModel;
+        this.session = session;
+        renderActive = session?.Activity.RenderActive ?? true;
         timer = ShowSeconds ? TimerService.Timer1Second : TimerService.Timer1Minute;
         Start();
     }
@@ -44,16 +56,36 @@ public class TickDialClockViewModel : ReactiveObject, IDisposable
     {
         if (isRunning) return;
         isRunning = true;
-        timer.Subscribe(UpdateTime);
-        UpdateTime();
+        UpdateTickSubscription();
     }
 
     public void Stop()
     {
         if (!isRunning) return;
         isRunning = false;
-        timer.Unsubscribe(UpdateTime);
+        UpdateTickSubscription();
     }
+
+    /// <summary>
+    /// Host activity push (the <see cref="IWidgetActivityConsumer"/> path, invoked on the UI
+    /// thread): ticking follows the snapshot's <see cref="ActivitySnapshot.RenderActive"/>.
+    /// Session-less view models ignore the push entirely (the host never sends one to them).
+    /// </summary>
+    public void OnSessionActivity(ActivitySnapshot activity)
+    {
+        if (session == null) return;
+        renderActive = activity.RenderActive;
+        UpdateTickSubscription();
+    }
+
+    /// <summary>Check seam: the live subscription count over the shared timer (0 or 1).</summary>
+    public int TickSubscriptionCountForChecks => tickSubscriptions;
+
+    /// <summary>Check seam: the injected session (null on the legacy path).</summary>
+    public IWidgetSession? SessionForChecks => session;
+
+    /// <summary>Check seam: whether the shared timer subscription is currently live.</summary>
+    public bool IsTickingForChecks => tickSubscriptions > 0;
 
     public void Dispose()
     {
@@ -73,14 +105,30 @@ public class TickDialClockViewModel : ReactiveObject, IDisposable
         SecondTicked?.Invoke();
     }
 
-    private TimeZoneInfo TimeZoneInfo => cachedTimeZone ??= (clockModel.TimeZoneId != null
-        ? SafeFindTimeZone(clockModel.TimeZoneId)
-        : TimeZoneInfo.Local);
+    /// <summary>
+    /// Shared timezone resolution (the Runtime copy): a null id is the unset timezone (local),
+    /// an unknown id falls back to Utc instead of throwing (the SharedTimeZone contract).
+    /// </summary>
+    private TimeZoneInfo TimeZoneInfo => SharedTimeZone.Resolve(clockModel.TimeZoneId);
 
-    private static TimeZoneInfo SafeFindTimeZone(string id)
+    /// <summary>
+    /// Single subscription state machine (the Digital pilot's shape): the shared timer
+    /// subscription exists exactly while the control is running AND the session renders.
+    /// </summary>
+    private void UpdateTickSubscription()
     {
-        try { return TimeZoneInfo.FindSystemTimeZoneById(id); }
-        catch { return TimeZoneInfo.Local; }
+        var wanted = isRunning && renderActive;
+        if (wanted && tickSubscriptions == 0)
+        {
+            tickSubscriptions++;
+            timer.Subscribe(UpdateTime);
+            UpdateTime();
+        }
+        else if (!wanted && tickSubscriptions > 0)
+        {
+            tickSubscriptions--;
+            timer.Unsubscribe(UpdateTime);
+        }
     }
 
     private DateTime time;

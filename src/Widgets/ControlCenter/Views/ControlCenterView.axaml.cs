@@ -11,16 +11,20 @@ using Avalonia.VisualTree;
 using ControlCenter.Models;
 using ControlCenter.Services;
 using ControlCenter.Views.Controls;
+using DeskCanvas.Contracts;
 using DeskCanvas.Core.Interfaces;
 using DeskCanvas.Core.Models;
+using DeskCanvas.Runtime;
 
 namespace ControlCenter.Views;
 
-public partial class ControlCenterView : UserControl, IWidgetSelfRefreshing, IWidgetSuspendable, IDisposable, IWidgetSurfaceHints
+public partial class ControlCenterView : UserControl, IWidgetSelfRefreshing, IWidgetSuspendable, IDisposable, IWidgetSurfaceHints, IWidgetActivityConsumer
 {
     public string? ColorfulBackgroundResourceKey => "ControlCenterCardBackground";
 
     private ControlCenterModel model;
+    private readonly IWidgetSession? session;
+    private bool renderActive;
     private readonly DispatcherTimer pollTimer;
     private readonly List<ControlCapsuleView> activeCapsules = [];
     private int currentGridCols = -1;
@@ -30,9 +34,18 @@ public partial class ControlCenterView : UserControl, IWidgetSelfRefreshing, IWi
 
     public ControlCenterView() : this(new ControlCenterModel()) { }
 
-    public ControlCenterView(ControlCenterModel model)
+    /// <summary>
+    /// <paramref name="session"/> is injected by WidgetFactory when the host runs the session
+    /// pipeline: the 1.5 s system-state poll then follows the session's
+    /// <see cref="ActivitySnapshot.RenderActive"/> — a covered card stops polling (and
+    /// refreshes once on re-emergence). Null keeps the legacy always-on behaviour (preview,
+    /// legacy layout entries) — those hosts never push activity either.
+    /// </summary>
+    public ControlCenterView(ControlCenterModel model, IWidgetSession? session = null)
     {
         this.model = model ?? new ControlCenterModel();
+        this.session = session;
+        renderActive = session?.Activity.RenderActive ?? true;
         InitializeComponent();
 
         pollTimer = new DispatcherTimer
@@ -50,8 +63,7 @@ public partial class ControlCenterView : UserControl, IWidgetSelfRefreshing, IWi
     {
         RebuildGridIfNeeded(force: true);
         RefreshStates(forceSlowQueries: true);
-        if (!isSuspended)
-            pollTimer.Start();
+        UpdatePollTimer();
     }
 
     private void OnUnloaded(object? sender, RoutedEventArgs e)
@@ -171,18 +183,63 @@ public partial class ControlCenterView : UserControl, IWidgetSelfRefreshing, IWi
         RefreshStates(forceSlowQueries: false);
     }
 
+    /// <summary>
+    /// Host activity push (the <see cref="IWidgetActivityConsumer"/> path, invoked on the UI
+    /// thread): the 1.5 s poll follows the snapshot's <see cref="ActivitySnapshot.RenderActive"/>.
+    /// On re-emergence the capsules refresh once so the first visible frame is not stale.
+    /// Session-less views ignore the push entirely (the host never sends one to them).
+    /// </summary>
+    public void OnSessionActivity(ActivitySnapshot activity)
+    {
+        if (session == null) return;
+        var wasActive = renderActive;
+        renderActive = activity.RenderActive;
+        UpdatePollTimer();
+        if (!wasActive && renderActive)
+        {
+            RefreshStates(forceSlowQueries: false);
+        }
+    }
+
+    /// <summary>Check seam: the injected session (null on the legacy path).</summary>
+    public IWidgetSession? SessionForChecks => session;
+
+    /// <summary>Check seam: the last activity gate value the view reconciled against.</summary>
+    public bool RenderActiveForChecks => renderActive;
+
+    /// <summary>Check seam: whether the 1.5 s system-state poll is currently running.</summary>
+    public bool IsPollingForChecks => pollTimer.IsEnabled;
+
+    /// <summary>
+    /// Single run-state machine for the shared poll timer: wanted = loaded AND not fullscreen-
+    /// suspended AND the session renders. Overlapping transitions cannot double-start or
+    /// double-stop — the state is reconciled from all three inputs on every change instead of
+    /// toggled from each.
+    /// </summary>
+    private void UpdatePollTimer()
+    {
+        var wanted = IsLoaded && !isSuspended && renderActive;
+        if (wanted && !pollTimer.IsEnabled)
+        {
+            pollTimer.Start();
+        }
+        else if (!wanted && pollTimer.IsEnabled)
+        {
+            pollTimer.Stop();
+        }
+    }
+
     public void Suspend()
     {
         isSuspended = true;
-        pollTimer.Stop();
+        UpdatePollTimer();
     }
 
     public void Resume()
     {
         isSuspended = false;
         RefreshStates(forceSlowQueries: true);
-        if (IsLoaded)
-            pollTimer.Start();
+        UpdatePollTimer();
     }
 
     public void Dispose()

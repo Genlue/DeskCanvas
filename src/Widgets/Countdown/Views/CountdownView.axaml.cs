@@ -9,16 +9,19 @@ using Countdown.Services;
 using Countdown.ViewModels;
 using DeskCanvas.Core.Interfaces;
 using DeskCanvas.Core.Models;
+using DeskCanvas.Contracts;
+using DeskCanvas.Runtime;
 using DeskCanvas.Services;
 using DeskCanvas.UI;
 
 namespace Countdown.Views;
 
-public partial class CountdownView : UserControl, IWidgetSelfRefreshing, IWidgetSurfaceHints
+public partial class CountdownView : UserControl, IWidgetSelfRefreshing, IWidgetSurfaceHints, IWidgetActivityConsumer
 {
     public string? ColorfulBackgroundResourceKey => "CountdownCardBackground";
 
     private readonly IWidgetLayoutProvider? layoutProvider;
+    private readonly IWidgetSession? session;
     private readonly CountdownStatusPresenter statusPresenter = new();
     private CountdownModel model;
     private CountdownViewModel? viewModel;
@@ -30,11 +33,17 @@ public partial class CountdownView : UserControl, IWidgetSelfRefreshing, IWidget
 
     public CountdownView(CountdownModel model) : this(model, null) { }
 
-    public CountdownView(CountdownModel model, IWidgetLayoutProvider? layoutProvider)
+    /// <summary>
+    /// <paramref name="session"/> is injected by WidgetFactory when the host runs the session
+    /// pipeline (a stable instance identity): the view model then gates its tick subscription
+    /// on the session's activity. Null keeps the legacy always-on behaviour.
+    /// </summary>
+    public CountdownView(CountdownModel model, IWidgetLayoutProvider? layoutProvider, IWidgetSession? session = null)
     {
         this.layoutProvider = layoutProvider;
+        this.session = session;
         this.model = model;
-        viewModel = new CountdownViewModel(model);
+        viewModel = new CountdownViewModel(model, session);
         DataContext = viewModel;
 
         InitializeComponent();
@@ -44,11 +53,14 @@ public partial class CountdownView : UserControl, IWidgetSelfRefreshing, IWidget
         SizeChanged += OnSizeChanged;
     }
 
+    /// <summary>The host's activity push, forwarded to the view model's gate.</summary>
+    public void OnSessionActivity(ActivitySnapshot activity) => viewModel?.OnSessionActivity(activity);
+
     private void OnLoaded(object? sender, RoutedEventArgs e)
     {
         if (viewModel is { IsDisposed: true } or null)
         {
-            viewModel = new CountdownViewModel(model);
+            viewModel = new CountdownViewModel(model, session);
             DataContext = viewModel;
         }
 

@@ -13,37 +13,6 @@
         Width="460"
         Height="540">
 
-    <Window.Styles>
-        <Style Selector="Button.action-pill">
-            <Setter Property="Background" Value="#1C808080" />
-            <Setter Property="BorderThickness" Value="0" />
-            <Setter Property="Padding" Value="10,4" />
-            <Setter Property="FontSize" Value="12" />
-            <Setter Property="CornerRadius" Value="12" />
-            <Setter Property="Cursor" Value="Hand" />
-            <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}" />
-        </Style>
-        <Style Selector="Button.action-pill:pointerover">
-            <Setter Property="Background" Value="#32808080" />
-        </Style>
-        <Style Selector="Button.count-btn">
-            <Setter Property="Background" Value="#18808080" />
-            <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="BorderBrush" Value="#20ffffff" />
-            <Setter Property="Padding" Value="12,6" />
-            <Setter Property="FontSize" Value="13" />
-            <Setter Property="CornerRadius" Value="8" />
-            <Setter Property="Cursor" Value="Hand" />
-            <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}" />
-        </Style>
-        <Style Selector="Button.count-btn.active">
-            <Setter Property="Background" Value="{DynamicResource SystemControlHighlightAccentBrush}" />
-            <Setter Property="Foreground" Value="{DynamicResource AccentContrastForegroundBrush}" />
-            <Setter Property="BorderThickness" Value="0" />
-            <Setter Property="FontWeight" Value="SemiBold" />
-        </Style>
-    </Window.Styles>
-
     <controls:SecondaryPanelShell>
         <controls:SecondaryPanelShell.HeaderContent>
             <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
@@ -54,8 +23,7 @@
 
         <Grid RowDefinitions="Auto,Auto,*" Margin="0,4,0,0">
             <!-- Controls Card -->
-            <Border Grid.Row="0" Background="#14808080" BorderBrush="#1Cffffff" BorderThickness="1"
-                    CornerRadius="12" Padding="14,10" Margin="0,0,0,10">
+            <Border Grid.Row="0" Classes="dc-card-box" Margin="0,0,0,10">
                 <StackPanel Spacing="10">
                     <!-- Dice Count Row -->
                     <Grid ColumnDefinitions="Auto,*">
@@ -100,7 +68,7 @@
             </Border>
 
             <!-- Result Banner -->
-            <Border Grid.Row="1" Background="#16808080" CornerRadius="10" Padding="12,8" Margin="0,0,0,10">
+            <Border Grid.Row="1" Background="{DynamicResource CardSubtleFill}" CornerRadius="{DynamicResource CardSubtleCornerRadius}" Padding="12,8" Margin="0,0,0,10">
                 <Grid ColumnDefinitions="Auto,*,Auto">
                     <TextBlock Text="{x:Static locales:Locale.Dice_LatestResult}" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center"/>
                     <TextBlock x:Name="LatestValuesText" Grid.Column="1" Text="[ 3, 5 ]" FontSize="14" FontWeight="Bold" Margin="10,0" VerticalAlignment="Center"

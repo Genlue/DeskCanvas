@@ -12,6 +12,7 @@ using Countdown.Locales;
 using Countdown.Models;
 using Countdown.Services;
 using Countdown.ViewModels;
+using DeskCanvas.Services;
 using DeskCanvas.Views;
 
 namespace Countdown.Views;
@@ -103,11 +104,15 @@ public partial class CountdownPopupWindow : SecondaryPanelWindow
 
     public static void ShowPopup(Point? screenCenter = null, Window? owner = null, double? cornerRadius = null)
     {
-        if (PanelCoolingDown<CountdownPopupWindow>()) return;
-        if (TryCloseActivePanel<CountdownPopupWindow>()) return;
-
-        var popup = new CountdownPopupWindow(screenCenter, cornerRadius);
-        popup.ShowAsSecondaryPanel(owner);
+        // PerOwner identity (the weather panel precedent): every countdown widget owns its own
+        // panel. The service handles the cooldown, the toggle-close and the pinned show — the
+        // decision is deliberately ignored, mirroring the old bare early returns.
+        PanelService.Open(new PanelRequest(
+            owner is Widget widget ? widget.InstanceId : default,
+            owner,
+            "countdown.popup",
+            PanelScope.PerOwner,
+            () => new CountdownPopupWindow(screenCenter, cornerRadius)));
     }
 
     private void PopulateItems()

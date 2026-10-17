@@ -7,14 +7,17 @@ using Avalonia.Interactivity;
 using Avalonia.Media;
 using FixedWidgets.Models;
 using FixedWidgets.ViewModels;
+using DeskCanvas.Contracts;
 using DeskCanvas.Core.Interfaces;
 using DeskCanvas.Core.Models;
+using DeskCanvas.Runtime;
 
 namespace FixedWidgets.Views;
 
-public partial class AggregateView : UserControl, IFixedSizeWidget, IWidgetSelfRefreshing
+public partial class AggregateView : UserControl, IFixedSizeWidget, IWidgetSelfRefreshing, IWidgetActivityConsumer
 {
     private AggregateModel model;
+    private readonly IWidgetSession? session;
     private AggregateViewModel? viewModel;
 
     // IFixedSizeWidget implementation: the card is a fixed-aspect vector design (312×136 inside a
@@ -55,10 +58,16 @@ public partial class AggregateView : UserControl, IFixedSizeWidget, IWidgetSelfR
     {
     }
 
-    public AggregateView(AggregateModel model)
+    /// <summary>
+    /// <paramref name="session"/> is injected by WidgetFactory when the host runs the session
+    /// pipeline: the view model then gates its timer subscriptions on the session's activity.
+    /// Null keeps the legacy always-on behaviour (preview, legacy layout entries).
+    /// </summary>
+    public AggregateView(AggregateModel model, IWidgetSession? session = null)
     {
         this.model = model;
-        viewModel = new AggregateViewModel(model, this);
+        this.session = session;
+        viewModel = new AggregateViewModel(model, this, session);
         DataContext = viewModel;
         InitializeComponent();
         Classes.Add("Flush");
@@ -66,6 +75,9 @@ public partial class AggregateView : UserControl, IFixedSizeWidget, IWidgetSelfR
         Loaded += OnLoaded;
         Unloaded += OnUnloaded;
     }
+
+    /// <inheritdoc />
+    public void OnSessionActivity(ActivitySnapshot activity) => viewModel?.OnSessionActivity(activity);
 
     /// <summary>
     /// The view can be detached and re-added later (the settings window caches pages and the
@@ -76,7 +88,7 @@ public partial class AggregateView : UserControl, IFixedSizeWidget, IWidgetSelfR
     private void OnLoaded(object? sender, RoutedEventArgs e)
     {
         if (viewModel != null) return;
-        viewModel = new AggregateViewModel(model, this);
+        viewModel = new AggregateViewModel(model, this, session);
         DataContext = viewModel;
     }
 

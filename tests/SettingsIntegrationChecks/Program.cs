@@ -190,7 +190,7 @@ internal static class Program
         var cases = new (string Label, Func<double> Preview, Func<AppSettings, double> Saved)[]
         {
             (Locale.Settings_Appearance_Glass_Blur, () => vm.GlassBlur, s => s.Theme.EffectiveLiquidGlass.Blur),
-            (Locale.Settings_Appearance_V2_Blur, () => vm.V2Blur, s => s.Theme.EffectiveLiquidGlassV2.Blur),
+            (Locale.Settings_Appearance_Glass_HighlightAngle, () => vm.GlassHighlightAngle, s => s.Theme.EffectiveLiquidGlass.HighlightAngle),
             (Locale.Settings_Appearance_TextShadow_Strength, () => vm.TextShadowStrength, s => s.Theme.TextShadowStrength)
         };
         foreach (var (label, preview, saved) in cases)

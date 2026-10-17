@@ -308,7 +308,7 @@ public class WidgetFactory(IAssemblyProvider assemblyProvider, ILayoutProvider l
     /// into the layout that is being replaced.
     /// </para>
     /// </summary>
-    public void CloseAll()
+    public virtual void CloseAll()
     {
         foreach (var list in activeWidgets.Values)
         {
@@ -335,7 +335,7 @@ public class WidgetFactory(IAssemblyProvider assemblyProvider, ILayoutProvider l
     /// <summary>
     /// Create and show the widget windows for every screen in the current layout.
     /// </summary>
-    public void CreateFromLayout()
+    public virtual void CreateFromLayout()
     {
         displayMonitor.Refresh();
 

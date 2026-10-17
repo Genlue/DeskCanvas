@@ -52,19 +52,12 @@ public static class FramelessThemeResolver
         {
             return explicitSurface switch
             {
-                SurfaceStyle.Solid => baseTheme with { Surface = SurfaceStyle.Solid, OpacityLevel = 1.0 },
                 SurfaceStyle.Colorful => baseTheme with { Surface = SurfaceStyle.Colorful, OpacityLevel = 1.0, Monochrome = false },
                 SurfaceStyle.LiquidGlass => baseTheme with
                 {
                     Surface = SurfaceStyle.LiquidGlass,
                     OpacityLevel = baseTheme.OpacityLevel >= 0.9 ? 0.18 : baseTheme.OpacityLevel,
                     LiquidGlass = baseTheme.LiquidGlass ?? new LiquidGlassSettings()
-                },
-                SurfaceStyle.LiquidGlassV2 => baseTheme with
-                {
-                    Surface = SurfaceStyle.LiquidGlassV2,
-                    OpacityLevel = baseTheme.OpacityLevel >= 0.9 ? 0.20 : baseTheme.OpacityLevel,
-                    LiquidGlassV2 = baseTheme.LiquidGlassV2 ?? new LiquidGlassV2Settings()
                 },
                 _ => baseTheme with
                 {
@@ -108,10 +101,10 @@ public static class FramelessThemeResolver
         var effective = EffectiveTheme(globalTheme, surfaceOverride);
         var surface = effective.EffectiveSurface;
         var acrylic = effective.UsesNativeBlur;
-        var liquidGlass = effective.IsLiquidGlass || effective.IsLiquidGlassV2;
+        var liquidGlass = effective.IsLiquidGlass;
         var colorful = effective.IsColorful;
-        var solid = !acrylic && !liquidGlass;
-        var softGlow = effective.IsSoftGlow;
+        var solid = false;
+        var softGlow = false;
 
         return new FramelessMaterial(
             IsAcrylic: acrylic,

@@ -9,6 +9,7 @@ using Avalonia.Threading;
 using Picture.Models;
 using Picture.Services;
 using ReactiveUI;
+using DeskCanvas.Contracts;
 
 namespace Picture.ViewModels;
 
@@ -43,6 +44,7 @@ public class PictureViewModel : ReactiveObject, IDisposable
     private const int DisposeDelayMs = 250;
 
     private PictureModel model;
+    private readonly IWidgetSession? session;
     private readonly DispatcherTimer slideshowTimer;
     private readonly DispatcherTimer transitionTimer;
     private readonly DispatcherTimer gifAnimationTimer;
@@ -63,10 +65,18 @@ public class PictureViewModel : ReactiveObject, IDisposable
     private DecodedPicture? activePicture;
     private int currentGifFrameIndex;
     private bool isDisposed;
+    // Session gate (see OnSessionActivity): false while the widget's screens are covered.
+    // Session-less widgets (gallery preview, legacy layout entries) stay always-on.
+    private bool renderActive;
+    // Set when a load/decode was skipped because the widget was gated; replayed on reopen so
+    // a settings change during the covered stretch is not lost.
+    private bool pendingReload;
 
-    public PictureViewModel(PictureModel model)
+    public PictureViewModel(PictureModel model, IWidgetSession? session = null)
     {
         this.model = model;
+        this.session = session;
+        renderActive = session?.Activity.RenderActive ?? true;
 
         slideshowTimer = new DispatcherTimer();
         slideshowTimer.Tick += OnSlideshowTick;
@@ -110,6 +120,9 @@ public class PictureViewModel : ReactiveObject, IDisposable
 
         // Suspended (desktop covered): Resume() calls this again once the desktop is back.
         if (isSuspended) return;
+
+        // Gated by the session (screens covered): UpdatePlaybackGating re-arms on reopen.
+        if (!renderActive) return;
 
         if (model.Interval == SlideshowInterval.Manual || model.Order == PlayOrder.Fixed)
             return;
@@ -412,7 +425,19 @@ public class PictureViewModel : ReactiveObject, IDisposable
 
         // Suspended (desktop covered): nothing may decode or re-arm a timer. The model was
         // already updated, so Resume() reloads whatever is current when the desktop returns.
-        if (isSuspended) return;
+        if (isSuspended)
+        {
+            pendingReload = true;
+            return;
+        }
+
+        // Gated by the session (screens covered): same contract, no decode, no timer re-arm.
+        // The pending flag replays the newest model on the reopen push.
+        if (!renderActive)
+        {
+            pendingReload = true;
+            return;
+        }
 
         var items = model.GetItems();
         if (items.Count == 0)
@@ -616,6 +641,69 @@ public class PictureViewModel : ReactiveObject, IDisposable
     public bool DoubleClickToOpen => model.DoubleClickToOpen;
 
     // ------------------------------------------------------------------
+    //  Session gating (host: IWidgetActivityConsumer)
+    // ------------------------------------------------------------------
+
+    /// <summary>
+    /// Host activity push (the <see cref="DeskCanvas.Runtime.IWidgetActivityConsumer"/> path,
+    /// invoked on the UI thread): the playback beats (slideshow, cross-fade, GIF animation)
+    /// follow the snapshot's <see cref="ActivitySnapshot.RenderActive"/>. Session-less view
+    /// models ignore the push entirely (the host never sends one to them). Unlike
+    /// <see cref="Suspend"/> this stops ticks ONLY — the decoded pictures, the rendering
+    /// slots and the slideshow index stay intact, so the reopen continues exactly where the
+    /// gate closed.
+    /// </summary>
+    public void OnSessionActivity(ActivitySnapshot activity)
+    {
+        if (session == null) return;
+        renderActive = activity.RenderActive;
+        UpdatePlaybackGating();
+    }
+
+    /// <summary>
+    /// Single gating state machine over BOTH inputs (reconciliation, not toggling): the
+    /// timers run exactly while the host has not suspended the widget AND the session
+    /// renders. Overlapping transitions cannot double-start or double-stop a timer.
+    /// </summary>
+    private void UpdatePlaybackGating()
+    {
+        if (isDisposed) return;
+
+        if (isSuspended || !renderActive)
+        {
+            // Tick stop only: decoded state, slots and the slideshow index stay untouched.
+            slideshowTimer.Stop();
+            transitionTimer.Stop();
+            gifAnimationTimer.Stop();
+            return;
+        }
+
+        ConfigureSlideshowTimer();
+
+        if (pendingReload)
+        {
+            pendingReload = false;
+            LoadCurrentPicture(immediate: true);
+            return;
+        }
+
+        ResumeGifAnimation();
+    }
+
+    /// <summary>Restarts the GIF frame loop where it stopped (the frame index is preserved);
+    /// a no-op for still pictures or an already-running loop.</summary>
+    private void ResumeGifAnimation()
+    {
+        if (gifAnimationTimer.IsEnabled) return;
+        if (activePicture is { IsAnimated: true } pic && pic.Frames.Count > 1)
+        {
+            currentGifFrameIndex %= pic.Frames.Count;
+            gifAnimationTimer.Interval = TimeSpan.FromMilliseconds(pic.Frames[currentGifFrameIndex].DurationMs);
+            gifAnimationTimer.Start();
+        }
+    }
+
+    // ------------------------------------------------------------------
     //  Fullscreen suspension (host: IWidgetSuspendable)
     // ------------------------------------------------------------------
 
@@ -682,10 +770,28 @@ public class PictureViewModel : ReactiveObject, IDisposable
         isSuspended = false;
 
         // Same path as a freshly created widget: everything the suspension released is
-        // rebuilt from the stored model here.
-        ConfigureSlideshowTimer();
-        LoadCurrentPicture(immediate: true);
+        // rebuilt from the stored model here. The reload is requested through the pending
+        // flag so the session gate (which may still be closed) is honoured by the shared
+        // gating state machine instead of bypassing it.
+        pendingReload = true;
+        UpdatePlaybackGating();
     }
+
+    // ------------------------------------------------------------------
+    //  Check seams (tests/MediaWidgetSessionChecks)
+    // ------------------------------------------------------------------
+
+    /// <summary>Check seam: the latest session gate value.</summary>
+    public bool RenderActiveForChecks => renderActive;
+
+    /// <summary>Check seam: whether a load was skipped while gated and is pending.</summary>
+    public bool PendingReloadForChecks => pendingReload;
+
+    /// <summary>Check seam: whether the cross-fade transition timer is armed.</summary>
+    public bool IsTransitionRunning => transitionTimer.IsEnabled;
+
+    /// <summary>Check seam: the injected session (null on the legacy path).</summary>
+    public IWidgetSession? SessionForChecks => session;
 
     // ------------------------------------------------------------------
     //  Teardown

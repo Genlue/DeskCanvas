@@ -9,6 +9,7 @@ using Avalonia.Styling;
 using FixedWidgets.Models;
 using FixedWidgets.Services;
 using ReactiveUI;
+using DeskCanvas.Contracts;
 using DeskCanvas.Services;
 
 namespace FixedWidgets.ViewModels;
@@ -25,7 +26,10 @@ public class AggregateViewModel : ReactiveObject, IDisposable
         CultureInfo.CurrentUICulture.TwoLetterISOLanguageName.Equals("zh", StringComparison.OrdinalIgnoreCase);
 
     private readonly OpenMeteoWeatherService weatherService = new();
+    private readonly IWidgetSession? session;
     private AggregateModel model;
+    private bool renderActive = true;
+    private int tickSubscriptions;
 
     /// <summary>Set once <see cref="Dispose"/> ran; keeps disposal (and late replies) harmless.</summary>
     private bool disposed;
@@ -155,8 +159,12 @@ public class AggregateViewModel : ReactiveObject, IDisposable
             return;
         }
 
-        var dark = (resourceHost as StyledElement)?.ActualThemeVariant == ThemeVariant.Dark
-            || Application.Current?.ActualThemeVariant == ThemeVariant.Dark;
+        // Per-screen: the variant the marker's window renders with (the view is the resource
+        // host). The Application variant is only the uniform fallback for a host-less view
+        // model — the pre-per-screen behaviour — never an OR-ed second vote.
+        var dark = ResolveEffectiveVariant(
+            (resourceHost as StyledElement)?.ActualThemeVariant,
+            Application.Current?.ActualThemeVariant) == ThemeVariant.Dark;
         var hex = dark ? model.TodayColorDark : model.TodayColorLight;
 
         IBrush? brush = null;
@@ -168,6 +176,17 @@ public class AggregateViewModel : ReactiveObject, IDisposable
 
         SetTodayDotBrush(brush ?? ResolveAccentBrush());
     }
+
+    // ---------- Per-screen theme seam (pure, testable) ----------
+
+    /// <summary>
+    /// Pure seam: the effective variant for a themed readout. The host window's variant wins
+    /// (per-screen policy); a null host variant (control not attached / uniform host) falls
+    /// back to the uniform Application variant, then to the platform default. Same shape as
+    /// the Batteries readout seam.
+    /// </summary>
+    public static ThemeVariant ResolveEffectiveVariant(ThemeVariant? hostVariant, ThemeVariant? uniformVariant) =>
+        hostVariant ?? uniformVariant ?? ThemeVariant.Default;
 
     /// <summary>
     /// Assigns the marker brush only when the colour really changed: the accent resource is
@@ -265,14 +284,21 @@ public class AggregateViewModel : ReactiveObject, IDisposable
         UpdateTodayBrush();
     }
 
-    public AggregateViewModel(AggregateModel model, IResourceHost? host = null)
+    /// <summary>
+    /// <paramref name="session"/> is injected by WidgetFactory when the host runs the session
+    /// pipeline: both timer subscriptions (the one-second clock and the hourly weather/calendar
+    /// refresh) are then gated on the session's activity. Null keeps the legacy always-on
+    /// behaviour (preview, legacy layout entries) — those hosts never push activity either.
+    /// </summary>
+    public AggregateViewModel(AggregateModel model, IResourceHost? host = null, IWidgetSession? session = null)
     {
         this.model = model;
         this.resourceHost = host;
+        this.session = session;
+        renderActive = session?.Activity.RenderActive ?? true;
         ApplyModel(model);
 
-        TimerService.Timer1Second.Subscribe(OnSecondTick);
-        TimerService.Timer1Hour.Subscribe(OnHourTick);
+        UpdateTickSubscription();
 
         if (Application.Current != null)
             Application.Current.ActualThemeVariantChanged += OnActualThemeVariantChanged;
@@ -293,6 +319,29 @@ public class AggregateViewModel : ReactiveObject, IDisposable
         _ = UpdateWeather();
     }
 
+    /// <summary>
+    /// Host activity push (the <see cref="DeskCanvas.Runtime.IWidgetActivityConsumer"/> path,
+    /// invoked on the UI thread): both refresh loops follow the snapshot's RenderActive.
+    /// Session-less view models ignore the push entirely (the host never sends one to them).
+    /// </summary>
+    public void OnSessionActivity(ActivitySnapshot activity)
+    {
+        if (session == null) return;
+        renderActive = activity.RenderActive;
+        UpdateTickSubscription();
+    }
+
+    /// <summary>Check seam: the live subscription count over the shared timers (0 or 2 —
+    /// the one-second and the hourly timer subscribe and unsubscribe together).</summary>
+    public int TickSubscriptionCountForChecks => tickSubscriptions;
+
+    /// <summary>Check seam: the injected session (null on the legacy path).</summary>
+    public IWidgetSession? SessionForChecks => session;
+
+    /// <summary>Check seam: the latest session gate value.</summary>
+    public bool RenderActiveForChecks => renderActive;
+
+    /// <summary>Swap the model and refresh everything it drives (the view's refresh path).</summary>
     public void UpdateModel(AggregateModel newModel)
     {
         model = newModel;
@@ -476,9 +525,33 @@ public class AggregateViewModel : ReactiveObject, IDisposable
             se.ActualThemeVariantChanged -= OnActualThemeVariantChanged;
         if (accentHost != null)
             accentHost.ResourcesChanged -= OnAccentResourcesChanged;
-        TimerService.Timer1Second.Unsubscribe(OnSecondTick);
-        TimerService.Timer1Hour.Unsubscribe(OnHourTick);
+        UpdateTickSubscription();
         weatherService.Dispose();
         GC.SuppressFinalize(this);
+    }
+
+    /// <summary>
+    /// Single subscription state machine over both shared timers: they subscribe and
+    /// unsubscribe together, exactly while the session renders AND the view model is not
+    /// disposed. Session-less view models render always (<paramref name="renderActive"/>
+    /// starts true and nothing flips it). Overlapping transitions cannot double-subscribe or
+    /// double-unsubscribe — the count is reconciled from both inputs on every change instead
+    /// of toggled from each.
+    /// </summary>
+    private void UpdateTickSubscription()
+    {
+        var wanted = renderActive && !disposed;
+        if (wanted && tickSubscriptions == 0)
+        {
+            tickSubscriptions = 2;
+            TimerService.Timer1Second.Subscribe(OnSecondTick);
+            TimerService.Timer1Hour.Subscribe(OnHourTick);
+        }
+        else if (!wanted && tickSubscriptions > 0)
+        {
+            tickSubscriptions = 0;
+            TimerService.Timer1Second.Unsubscribe(OnSecondTick);
+            TimerService.Timer1Hour.Unsubscribe(OnHourTick);
+        }
     }
 }

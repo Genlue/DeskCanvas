@@ -5,7 +5,7 @@ using DeskCanvas.Core.Models;
 namespace DeskCanvas.Core.Services;
 
 /// <inheritdoc cref="ILayoutProvider" />
-public class LayoutProvider() : JsonParser<ScreensLayout>(Const.LayoutFile), ILayoutProvider
+public class LayoutProvider() : JsonParser<ScreensLayout>(() => Const.LayoutFile), ILayoutProvider
 {
     /// <inheritdoc />
     public override ScreensLayout Get()

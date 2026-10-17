@@ -2,11 +2,13 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using DeskCanvas.Contracts;
 using DeskCanvas.Core.Interfaces;
+using DeskCanvas.Runtime;
+using DeskCanvas.Services;
 using Weather.Models;
 using Weather.ViewModels;
 using Weather.Views.Controls;
-using DeskCanvas.Services;
 
 namespace Weather.Views;
 
@@ -14,19 +16,26 @@ namespace Weather.Views;
 /// 通过 <see cref="IWidgetSurfaceHints"/> 向宿主声明多彩模式下的专属卡片画刷
 /// （资源键按变体解析），宿主不再按视图类型名判断外观（W10 §9.1）。
 /// </summary>
-public partial class Forecast : UserControl, IWidgetSurfaceHints
+public partial class Forecast : UserControl, IWidgetSurfaceHints, IWidgetActivityConsumer
 {
     /// <inheritdoc />
     public string? ColorfulBackgroundResourceKey => "WeatherCardBackground";
     private readonly ForecastModel model;
+    private readonly IWidgetSession? session;
     private ForecastViewModel? viewModel;
 
     public Forecast() : this(new ForecastModel("Beijing", 39.9042, 116.4074, "celsius")) {}
-    
-    public Forecast(ForecastModel model)
+
+    /// <summary>
+    /// <paramref name="session"/> is injected by WidgetFactory when the host runs the session
+    /// pipeline: the view model then gates its hourly refresh on the session's activity. Null
+    /// keeps the legacy always-on behaviour (preview, legacy layout entries).
+    /// </summary>
+    public Forecast(ForecastModel model, IWidgetSession? session = null)
     {
         this.model = model;
-        viewModel = new ForecastViewModel(model);
+        this.session = session;
+        viewModel = new ForecastViewModel(model, session);
         Content = new ForecastSmall(viewModel, this);
         SizeChanged += OnSizeChanged;
         Loaded += OnLoaded;
@@ -34,6 +43,9 @@ public partial class Forecast : UserControl, IWidgetSurfaceHints
         DoubleTapped += OnCardDoubleTapped;
         InitializeComponent();
     }
+
+    /// <inheritdoc />
+    public void OnSessionActivity(ActivitySnapshot activity) => viewModel?.OnSessionActivity(activity);
 
     private void OnCardDoubleTapped(object? sender, RoutedEventArgs e)
     {
@@ -91,7 +103,7 @@ public partial class Forecast : UserControl, IWidgetSurfaceHints
 
         if (viewModel != null) return;
 
-        var vm = new ForecastViewModel(model);
+        var vm = new ForecastViewModel(model, session);
         viewModel = vm;
 
         currentTier = null;

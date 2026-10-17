@@ -68,6 +68,10 @@ namespace DeskCanvas.Locales {
         public static string Settings_Appearance_Glass_LightAngleHint => ResourceManager.GetString("Settings_Appearance_Glass_LightAngleHint", resourceCulture);
         public static string Settings_Appearance_Glass_EdgeTint => ResourceManager.GetString("Settings_Appearance_Glass_EdgeTint", resourceCulture);
         public static string Settings_Appearance_Glass_EdgeTintHint => ResourceManager.GetString("Settings_Appearance_Glass_EdgeTintHint", resourceCulture);
+        public static string Settings_Appearance_Glass_HighlightAngle => ResourceManager.GetString("Settings_Appearance_Glass_HighlightAngle", resourceCulture);
+        public static string Settings_Appearance_Glass_HighlightAngleHint => ResourceManager.GetString("Settings_Appearance_Glass_HighlightAngleHint", resourceCulture);
+        public static string Settings_Appearance_Glass_Vibrancy => ResourceManager.GetString("Settings_Appearance_Glass_Vibrancy", resourceCulture);
+        public static string Settings_Appearance_Glass_VibrancyHint => ResourceManager.GetString("Settings_Appearance_Glass_VibrancyHint", resourceCulture);
         public static string Settings_Appearance_Glass_Align => ResourceManager.GetString("Settings_Appearance_Glass_Align", resourceCulture);
         public static string Settings_Appearance_Glass_Align_Title => ResourceManager.GetString("Settings_Appearance_Glass_Align_Title", resourceCulture);
         public static string Settings_Appearance_Glass_Align_Hint => ResourceManager.GetString("Settings_Appearance_Glass_Align_Hint", resourceCulture);
@@ -243,6 +247,33 @@ namespace DeskCanvas.Locales {
         public static string Settings_About_OriginalReportBug {
             get {
                 return ResourceManager.GetString("Settings_About_OriginalReportBug", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Uninstall DeskCanvas.
+        /// </summary>
+        public static string Settings_About_Uninstall_Title {
+            get {
+                return ResourceManager.GetString("Settings_About_Uninstall_Title", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Launch uninstaller to remove DeskCanvas and its shortcuts.
+        /// </summary>
+        public static string Settings_About_Uninstall_Subtitle {
+            get {
+                return ResourceManager.GetString("Settings_About_Uninstall_Subtitle", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Uninstall....
+        /// </summary>
+        public static string Settings_About_Uninstall_Action {
+            get {
+                return ResourceManager.GetString("Settings_About_Uninstall_Action", resourceCulture);
             }
         }
         
@@ -634,6 +665,15 @@ namespace DeskCanvas.Locales {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Highlight.
+        /// </summary>
+        public static string Settings_Appearance_Highlight {
+            get {
+                return ResourceManager.GetString("Settings_Appearance_Highlight", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Auto.
         /// </summary>
         public static string Settings_Appearance_DarkMode_Auto {
@@ -751,33 +791,6 @@ namespace DeskCanvas.Locales {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Highlight ring color when the outline is on (alpha included); strongest at the top-left and bottom-right corners, fading toward the top-right and bottom-left.
-        /// </summary>
-        public static string Settings_Appearance_OutlineColor_Subtitle {
-            get {
-                return ResourceManager.GetString("Settings_Appearance_OutlineColor_Subtitle", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to Outline color.
-        /// </summary>
-        public static string Settings_Appearance_OutlineColor_Title {
-            get {
-                return ResourceManager.GetString("Settings_Appearance_OutlineColor_Title", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to Highlight ring thickness in DIPs; 0 hides the outline (default).
-        /// </summary>
-        public static string Settings_Appearance_OutlineWidth_Subtitle {
-            get {
-                return ResourceManager.GetString("Settings_Appearance_OutlineWidth_Subtitle", resourceCulture);
-            }
-        }
-
-        /// <summary>
         ///   Looks up a localized string similar to 全局文字阴影.
         /// </summary>
         public static string Settings_Appearance_TextShadow_Title {
@@ -801,15 +814,6 @@ namespace DeskCanvas.Locales {
         public static string Settings_Appearance_TextShadow_Strength {
             get {
                 return ResourceManager.GetString("Settings_Appearance_TextShadow_Strength", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to Outline width.
-        /// </summary>
-        public static string Settings_Appearance_OutlineWidth_Title {
-            get {
-                return ResourceManager.GetString("Settings_Appearance_OutlineWidth_Title", resourceCulture);
             }
         }
         

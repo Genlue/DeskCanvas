@@ -3,27 +3,36 @@ using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Layout;
 using Avalonia.VisualTree;
+using DeskCanvas.Contracts;
+using DeskCanvas.Core.Interfaces;
+using DeskCanvas.Runtime;
+using DeskCanvas.Services;
 using Monitor.Models;
 using Monitor.ViewModels;
-using DeskCanvas.Core.Interfaces;
-using DeskCanvas.Services;
 
 namespace Monitor.Views;
 
-public partial class MultiDashboard : UserControl, IWidgetSurfaceHints
+public partial class MultiDashboard : UserControl, IWidgetSurfaceHints, IWidgetActivityConsumer
 {
     /// <inheritdoc />
     public string? ColorfulBackgroundResourceKey => "MonitorCardBackground";
     private readonly MultiDashboardModel model;
+    private readonly IWidgetSession? session;
     private MultiDashboardViewModel? viewModel;
 
     public MultiDashboard() :
         this(new MultiDashboardModel(MultiDashboardModel.DefaultMetrics)) {}
 
-    public MultiDashboard(MultiDashboardModel model)
+    /// <summary>
+    /// <paramref name="session"/> is injected by WidgetFactory when the host runs the session
+    /// pipeline: the view model then gates its polling subscription on the session's activity.
+    /// Null keeps the legacy always-on behaviour (preview, legacy layout entries).
+    /// </summary>
+    public MultiDashboard(MultiDashboardModel model, IWidgetSession? session = null)
     {
         this.model = model;
-        var vm = new MultiDashboardViewModel(model);
+        this.session = session;
+        var vm = new MultiDashboardViewModel(model, session);
         viewModel = vm;
         DataContext = vm;
         InitializeComponent();
@@ -36,6 +45,9 @@ public partial class MultiDashboard : UserControl, IWidgetSurfaceHints
         ApplyLayout();
     }
 
+    /// <inheritdoc />
+    public void OnSessionActivity(ActivitySnapshot activity) => viewModel?.OnSessionActivity(activity);
+
     /// <summary>
     /// The view can be detached and re-added later (the settings window caches pages and the
     /// Gallery keeps a live preview control), so everything <see cref="OnUnloaded"/> released
@@ -47,7 +59,7 @@ public partial class MultiDashboard : UserControl, IWidgetSurfaceHints
         SizeChanged += OnSizeChanged;
 
         if (viewModel != null) return;
-        var vm = new MultiDashboardViewModel(model);
+        var vm = new MultiDashboardViewModel(model, session);
         viewModel = vm;
         DataContext = vm;
         BindItems(vm);

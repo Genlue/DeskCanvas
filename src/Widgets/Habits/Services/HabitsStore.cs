@@ -55,6 +55,20 @@ public static class HabitsStore
     static HabitsStore()
     {
         InitializeWatcher();
+        Const.ActiveProfileChanged += _ =>
+        {
+            lock (FileLock)
+            {
+                cachedModel = null;
+                InitializeWatcher();
+            }
+            try
+            {
+                var updated = Get();
+                NotifyModelChanged(updated, null);
+            }
+            catch { }
+        };
     }
 
     /// <summary>
@@ -202,6 +216,8 @@ public static class HabitsStore
     {
         try
         {
+            fileWatcher?.Dispose();
+            fileWatcher = null;
             var path = FilePath;
             var dir = Path.GetDirectoryName(path);
             if (string.IsNullOrEmpty(dir)) return;

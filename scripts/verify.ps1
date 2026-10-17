@@ -7,8 +7,9 @@
       1. scripts/check-structure.ps1
       2. scripts/check-ui-conventions.ps1
       3. dotnet build src/DeskCanvas.sln -c Debug
-      4. dotnet run --project <suite> -c Release for the verified check suites,
-         including P1-P5 architecture gates and the six existing UI/layout suites.
+      4. dotnet run --project <suite> -c Release for the 36 verified check suites,
+         including the P1-P8 architecture gates, the P10/P11 UI and material gates,
+         P12 profile storage and P13 uninstaller/setup contracts.
 
     Every step's exit code is collected; a summary table is printed at the end and
     the script exits 1 if any step was non-zero (0 = all pass, 2 = runtime error).
@@ -17,8 +18,8 @@
     own location unless -Root is given. Child check scripts are invoked in a
     separate powershell process so their `exit` statements cannot abort this script.
 
-    The full gate list beyond the six verified suites is registered in
-    tests/README.md; add them here as they are validated.
+    The full gate list beyond the verified suites is registered in tests/README.md;
+    add them here as they are validated.
 .PARAMETER Root
     Repository root. Defaults to the parent of this script directory.
 .PARAMETER NoRestore
@@ -32,6 +33,10 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
+# Decode child-process output as UTF-8 so Chinese diagnostic lines survive console redirection
+# (dotnet emits UTF-8; a legacy code page turns the summary into mojibake in CI logs).
+try { [Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false) } catch { }
+
 try {
     if ([string]::IsNullOrWhiteSpace($Root)) {
         $Root = Split-Path -Parent $PSScriptRoot
@@ -40,6 +45,12 @@ try {
 
     $restoreArgs = @()
     if ($NoRestore) { $restoreArgs = @('--no-restore') }
+
+    # Child guards run under PowerShell 7 (pwsh) per the repo shell policy; fall back to
+    # the host executable only when pwsh is unavailable so a clean checkout still verifies.
+    $pwsh = Get-Command pwsh -ErrorAction SilentlyContinue
+    $childShell = if ($pwsh) { $pwsh.Source } else { 'powershell' }
+    Write-Output ("child shell: {0}" -f $childShell)
 
     $steps = New-Object System.Collections.Generic.List[object]
 
@@ -59,11 +70,11 @@ try {
 
     Push-Location $Root
     try {
-        Invoke-Step 'check-structure' 'powershell' @(
+        Invoke-Step 'check-structure' $childShell @(
             '-NoProfile', '-ExecutionPolicy', 'Bypass',
             '-File', (Join-Path $Root 'scripts/check-structure.ps1'), '-Root', $Root)
 
-        Invoke-Step 'check-ui-conventions' 'powershell' @(
+        Invoke-Step 'check-ui-conventions' $childShell @(
             '-NoProfile', '-ExecutionPolicy', 'Bypass',
             '-File', (Join-Path $Root 'scripts/check-ui-conventions.ps1'), '-Root', $Root)
 
@@ -92,12 +103,21 @@ try {
             'ProgressChecks',
             'BatteriesChecks',
             'ApiSnapshotChecks',
+            'DataWidgetSessionChecks',
+            'ListWidgetSessionChecks',
+            'QuickAccessSessionChecks',
+            'ClockFamilySessionChecks',
+            'MediaWidgetSessionChecks',
+            'ToolsWidgetSessionChecks',
+            'ProfileStorageChecks',
             'UiFoundationChecks',
             'LayoutOwnershipChecks',
             'FocusSwitchChecks',
             'MonochromeAccentChecks',
             'WidgetAdaptiveChecks',
-            'FullscreenChecks'
+            'FullscreenChecks',
+            'LiquidGlassChecks',
+            'UninstallerChecks'
         )
         foreach ($suite in $verifiedSuites) {
             Invoke-Step ("run " + $suite + " (Release)") 'dotnet' (@(

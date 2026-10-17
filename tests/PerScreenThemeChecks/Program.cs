@@ -44,7 +44,7 @@ class Program
     /// carrying no surface override — so the unfocused theme follows this shared surface.</summary>
     private static readonly Theme Shared = new(
         DarkMode: false, AccentColor: null, OpacityLevel: 0.4, Monochrome: true,
-        UseNativeFrame: false, FontFamily: "Inter", Surface: SurfaceStyle.Solid,
+        UseNativeFrame: false, FontFamily: "Inter", Surface: SurfaceStyle.Acrylic,
         MonochromeVariant: MonochromeStyle.BlackWhite);
 
     /// <summary>The focused state's material snapshot: liquid glass with its own accent.</summary>
@@ -120,7 +120,7 @@ class Program
         Check("matrix: the occupied screen shows the unfocused state's surface override",
             onFocusedScreen.EffectiveSurface == SurfaceStyle.LiquidGlass);
         Check("matrix: the clear screen follows the shared surface (no override)",
-            onUnfocusedScreen.EffectiveSurface == SurfaceStyle.Solid);
+            onUnfocusedScreen.EffectiveSurface == SurfaceStyle.Acrylic);
         Check("matrix: the focused state's material snapshot brings its own accent",
             onFocusedScreen.AccentColor == "#FF5500");
         Check("matrix: the unfocused state keeps the shared monochrome",

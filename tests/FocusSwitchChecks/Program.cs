@@ -202,7 +202,7 @@ class Program
 
         var shared = new Theme(
             DarkMode: false, AccentColor: null, OpacityLevel: 0.4, Monochrome: true,
-            UseNativeFrame: false, FontFamily: "Inter", Surface: SurfaceStyle.Solid);
+            UseNativeFrame: false, FontFamily: "Inter", Surface: SurfaceStyle.Acrylic);
         var settings = TestSettings(shared);
         var stateLink = FocusLinkSettings.CreateDefault(null, false) with
         {
@@ -223,22 +223,22 @@ class Program
 
         var unfocusedTheme = FocusThemeCoordinator.ResolveStateTheme(stateLink, focused: false, settings);
         Check("state theme: a null override follows the shared theme's surface",
-            unfocusedTheme.EffectiveSurface == SurfaceStyle.Solid);
+            unfocusedTheme.EffectiveSurface == SurfaceStyle.Acrylic);
         Check("state theme: following keeps the shared opacity",
             Math.Abs(unfocusedTheme.OpacityLevel - 0.4) < 0.001);
         Check("state theme: the unfocused pair applies", unfocusedTheme.DarkMode == false);
 
-        var sameSurfaceLink = stateLink with { FocusedSurface = SurfaceStyle.Solid };
+        var sameSurfaceLink = stateLink with { FocusedSurface = SurfaceStyle.Acrylic };
         Check("state theme: re-selecting the shared surface keeps the shared opacity (no stale snapshot)",
             Math.Abs(FocusThemeCoordinator.ResolveStateTheme(sameSurfaceLink, focused: true, settings).OpacityLevel - 0.4) < 0.001);
 
-        var acrylicShared = shared with { Surface = SurfaceStyle.Acrylic };
-        Check("state theme: 纯色 override is opaque — no longer looks like 毛玻璃",
-            FocusThemeCoordinator.ResolveStateTheme(sameSurfaceLink, focused: true, TestSettings(acrylicShared)).OpacityLevel >= 0.999);
+        var fullColorShared = shared with { Surface = SurfaceStyle.FullColor };
+        Check("state theme: 全彩 override is opaque",
+            FocusThemeCoordinator.ResolveStateTheme(stateLink with { FocusedSurface = SurfaceStyle.FullColor }, focused: true, TestSettings(fullColorShared)).OpacityLevel >= 0.999);
 
-        var softGlowLink = stateLink with { FocusedSurface = SurfaceStyle.SoftGlow };
-        Check("state theme: 柔光玻璃 folds into 液态玻璃",
-            FocusThemeCoordinator.ResolveStateTheme(softGlowLink, focused: true, settings).EffectiveSurface == SurfaceStyle.LiquidGlass);
+        var liquidGlassLink = stateLink with { FocusedSurface = SurfaceStyle.LiquidGlass };
+        Check("state theme: 液态玻璃 resolves to LiquidGlass",
+            FocusThemeCoordinator.ResolveStateTheme(liquidGlassLink, focused: true, settings).EffectiveSurface == SurfaceStyle.LiquidGlass);
 
         var colorfulLink = stateLink with { FocusedSurface = SurfaceStyle.Colorful };
         var colorfulTheme = FocusThemeCoordinator.ResolveStateTheme(colorfulLink, focused: true, settings);
@@ -327,12 +327,12 @@ class Program
             && normColorful.TextShadowEnabled
             && normColorful.FontFamily == "Segoe UI");
 
-        var softGlowTheme = new Theme(false, "#FF0000", 0.14, false, false, "Inter", SurfaceStyle.SoftGlow);
-        var normSoftGlow = softGlowTheme.NormalizeForSurface();
-        Check("normalization: non-colorful (soft glow) runs NormalizeMaterial and preserves accent",
-            normSoftGlow.EffectiveSurface == SurfaceStyle.LiquidGlass
-            && normSoftGlow.Surface == SurfaceStyle.LiquidGlass
-            && normSoftGlow.AccentColor == "#FF0000");
+        var liquidGlassTheme = new Theme(false, "#FF0000", 0.14, false, false, "Inter", SurfaceStyle.LiquidGlass);
+        var normLiquidGlass = liquidGlassTheme.NormalizeForSurface();
+        Check("normalization: non-colorful (liquid glass) runs NormalizeMaterial and preserves accent",
+            normLiquidGlass.EffectiveSurface == SurfaceStyle.LiquidGlass
+            && normLiquidGlass.Surface == SurfaceStyle.LiquidGlass
+            && normLiquidGlass.AccentColor == "#FF0000");
 
         var colorfulProfile = ThemeProfileResolver.Resolve(rawColorful, ThemeVariant.Dark);
         Check("resolver: colorful resolves to ColorfulFixed policy",
@@ -342,7 +342,7 @@ class Program
         Check("resolver: colorful scope signature contains no accent or mono tokens",
             !colorfulProfile.ScopeSignature.Contains("accent=")
             && !colorfulProfile.ScopeSignature.Contains("mono=")
-            && colorfulProfile.ScopeSignature == "ColorfulFixed:Dark:Colorful:rev1");
+            && colorfulProfile.ScopeSignature == $"ColorfulFixed:Dark:{SurfaceStyle.FullColor}:rev1");
 
         // 2. Modifying accent in Colorful leaves ScopeSignature constant; normal theme modifies signature
         var colorfulMod1 = rawColorful with { AccentColor = "#112233" };
@@ -359,7 +359,7 @@ class Program
             Monochrome: false,
             UseNativeFrame: false,
             FontFamily: "Inter",
-            Surface: SurfaceStyle.Solid);
+            Surface: SurfaceStyle.Acrylic);
         var normalTheme2 = normalTheme1 with { AccentColor = "#AABBCC" };
         var normalSig1 = ThemeProfileResolver.Resolve(normalTheme1, ThemeVariant.Light).ScopeSignature;
         var normalSig2 = ThemeProfileResolver.Resolve(normalTheme2, ThemeVariant.Light).ScopeSignature;
@@ -843,7 +843,7 @@ class Program
             Monochrome: false,
             UseNativeFrame: false,
             FontFamily: "Inter",
-            Surface: SurfaceStyle.Solid);
+            Surface: SurfaceStyle.Acrylic);
         var profileB = ThemeProfileResolver.Resolve(themeB, ThemeVariant.Light);
 
         // Apply scopes concurrently in memory

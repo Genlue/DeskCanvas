@@ -6,7 +6,10 @@ using Avalonia.Interactivity;
 using Avalonia.Media;
 using Avalonia.Styling;
 using Clock.Models;
+using Clock.Services;
 using Clock.ViewModels;
+using DeskCanvas.Contracts;
+using DeskCanvas.Runtime;
 using DeskCanvas.Core.Interfaces;
 
 namespace Clock.Views;
@@ -17,7 +20,7 @@ namespace Clock.Views;
 /// 资源键按变体解析，宿主不按视图类型名判断外观）。其余主题不消费该键。
 /// 支持“表盘不透明”切换与表盘颜色定制（跟随背景、黑白、自定义）。
 /// </summary>
-public partial class AnalogI : UserControl, IFixedSizeWidget, IWidgetSurfaceHints
+public partial class AnalogI : UserControl, IFixedSizeWidget, IWidgetSurfaceHints, IWidgetActivityConsumer
 {
     /// <inheritdoc />
     public string? ColorfulBackgroundResourceKey => "ClockCardBackground";
@@ -46,17 +49,26 @@ public partial class AnalogI : UserControl, IFixedSizeWidget, IWidgetSurfaceHint
     }
 
     public AnalogI() : this(new ClockModel()) {}
-    
-    public AnalogI(ClockModel clockModel)
+
+    /// <summary>
+    /// <paramref name="session"/> is injected by WidgetFactory when the host runs the session
+    /// pipeline (a stable instance identity): the view model then gates its timer subscription
+    /// on the session's activity. Null keeps the legacy always-on behaviour (preview, legacy
+    /// layout entries) — those hosts never push activity either.
+    /// </summary>
+    public AnalogI(ClockModel clockModel, IWidgetSession? session = null)
     {
         this.clockModel = clockModel;
-        viewModel = new AnalogClockViewModel(clockModel);
+        viewModel = new AnalogClockViewModel(clockModel, session);
         DataContext = viewModel;
         Loaded += (_, _) => viewModel.Start();
         Unloaded += (_, _) => viewModel.Stop();
         SizeChanged += OnSizeChanged;
         InitializeComponent();
     }
+
+    /// <inheritdoc />
+    public void OnSessionActivity(ActivitySnapshot activity) => viewModel.OnSessionActivity(activity);
 
     protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
     {
@@ -87,7 +99,9 @@ public partial class AnalogI : UserControl, IFixedSizeWidget, IWidgetSurfaceHint
             return;
         }
 
-        if (ResolveDialColor(clockModel, ActualThemeVariant == ThemeVariant.Dark) is { } color)
+        // Per-screen: the variant the window this dial renders with (the A3 seam), not a
+        // uniform application-wide one.
+        if (ResolveDialColor(clockModel, ClockPerScreenTheme.IsDarkVariant(this)) is { } color)
         {
             Resources[DialBackgroundBrushKey] = new SolidColorBrush(color);
         }

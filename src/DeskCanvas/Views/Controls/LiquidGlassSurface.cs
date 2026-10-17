@@ -43,8 +43,6 @@ public class LiquidGlassSurface : GlassSurfaceBase
     /// <summary>Set when the first GPU frame is actually drawn, so the trace records it once.</summary>
     private static int drewGpuFrame;
 
-    /// <summary>Set after the one-off shader readback, so it only runs once.</summary>
-    private static int probedShader;
 
     /// <summary>Set once the material has proved it renders on this device.</summary>
     private static int selfTested;
@@ -220,17 +218,15 @@ public class LiquidGlassSurface : GlassSurfaceBase
     {
         private int references = 1;
 
-        public Prepared(GlassSource? source, AuraTexture aura, LiquidGlassRenderer.Frame frame, SKBitmap? cpu, long captureId)
+        public Prepared(GlassSource? source, LiquidGlassRenderer.Frame frame, SKBitmap? cpu, long captureId)
         {
             Source = source;
-            Aura = aura;
             Frame = frame;
             Cpu = cpu;
             CaptureId = captureId;
         }
 
         public GlassSource? Source { get; }
-        public AuraTexture Aura { get; }
         public LiquidGlassRenderer.Frame Frame { get; }
         public SKBitmap? Cpu { get; }
 
@@ -249,7 +245,6 @@ public class LiquidGlassSurface : GlassSurfaceBase
         {
             if (Interlocked.Decrement(ref references) > 0) return;
             Cpu?.Dispose();
-            Aura.Bitmap?.Dispose();
             Source?.Dispose();
         }
     }
@@ -266,12 +261,6 @@ public class LiquidGlassSurface : GlassSurfaceBase
     // follow-up the glass would sit on the previous wallpaper until the next real change.
     // Consumed by exactly one render in RenderMaterial's finally.
     private int pendingSampledFrame;
-
-    /// <summary>The dye bloom grid and the metadata the shader needs to address it.</summary>
-    private readonly record struct AuraTexture(SKBitmap? Bitmap, float Columns, float Rows, float Step, float Margin)
-    {
-        public bool IsUsable => Bitmap != null;
-    }
 
     public LiquidGlassSurface()
     {
@@ -302,7 +291,6 @@ public class LiquidGlassSurface : GlassSurfaceBase
         debounce.Stop();
         if (window != null) window.PositionChanged -= OnPositionChanged;
         window = null;
-        ClearAnimationAuras();
         animationScale = 1.0;
         ReleasePrepared();
         LiquidGlassWallpaper.RefreshSamplerState();
@@ -312,33 +300,8 @@ public class LiquidGlassSurface : GlassSurfaceBase
     private void OnPositionChanged(object? sender, PixelPointEventArgs e) => RequestRender();
 
     // ---- Panel open/close animation ----
-    // While a SecondaryPanelWindow's card transition animates its scale, the window reports the
-    // interpolated factor here. The glass is then drawn for the rect the card actually covers at
-    // that moment — refraction width, lens and dye field sized to the scaled frame, sampling the
-    // wallpaper where the scaled rect really sits — instead of being a stretched picture of the
-    // final frame. The shared backdrop covers the whole desktop, so re-parameterising costs one
-    // shader build; only the soft recipe's dye field has to be rebuilt per scale.
     private double animationScale = 1.0;
     private Point animationAnchor;
-    private readonly Dictionary<int, AnimationAura> animationAuras = new();
-
-    /// <summary>Ref-counted scaled-frame dye field, so a queued draw op keeps its bitmap alive after the animation moved on and the per-scale cache dropped it (same contract as <see cref="Prepared"/>).</summary>
-    private sealed class AnimationAura : IDisposable
-    {
-        private int references = 1;
-
-        public AnimationAura(AuraTexture texture) { Texture = texture; }
-
-        public AuraTexture Texture { get; }
-
-        public void AddRef() => Interlocked.Increment(ref references);
-
-        public void Dispose()
-        {
-            if (Interlocked.Decrement(ref references) > 0) return;
-            try { Texture.Bitmap?.Dispose(); } catch { }
-        }
-    }
 
     /// <summary>
     /// Report the panel card's current animated scale (1.0 = at rest) and the scale anchor as a
@@ -354,7 +317,6 @@ public class LiquidGlassSurface : GlassSurfaceBase
         {
             if (animationScale >= 0.999) return;
             animationScale = 1.0;
-            ClearAnimationAuras();
             InvalidateVisual();
             return;
         }
@@ -363,19 +325,12 @@ public class LiquidGlassSurface : GlassSurfaceBase
         InvalidateVisual();
     }
 
-    private void ClearAnimationAuras()
-    {
-        if (animationAuras.Count == 0) return;
-        foreach (var aura in animationAuras.Values) aura.Dispose();
-        animationAuras.Clear();
-    }
-
-    /// <summary>The frame geometry for the card rect the transition currently covers. The returned aura (soft recipe only) is handed to the draw operation, which takes its own reference.</summary>
-    private LiquidGlassRenderer.Frame BuildAnimationFrame(Prepared snapshot, out AnimationAura? aura)
+    /// <summary>The frame geometry for the card rect the transition currently covers.</summary>
+    private LiquidGlassRenderer.Frame BuildAnimationFrame(Prepared snapshot)
     {
         var t = animationScale;
         var frame = snapshot.Frame;
-        var scaled = frame with
+        return frame with
         {
             Width = Math.Max(1, (int)MathF.Round(frame.Width * (float)t)),
             Height = Math.Max(1, (int)MathF.Round(frame.Height * (float)t)),
@@ -383,17 +338,6 @@ public class LiquidGlassSurface : GlassSurfaceBase
             DesktopX = frame.DesktopX + (float)(animationAnchor.X * (1 - t) * frame.Width),
             DesktopY = frame.DesktopY + (float)(animationAnchor.Y * (1 - t) * frame.Height),
         };
-
-        aura = null;
-        if (!frame.Theme.IsSoftGlow || snapshot.Source == null) return scaled;
-
-        var key = (int)MathF.Round((float)t * 100);
-        if (!animationAuras.TryGetValue(key, out aura))
-        {
-            aura = new AnimationAura(BuildAura(scaled, snapshot.Source));
-            animationAuras[key] = aura;
-        }
-        return scaled;
     }
 
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
@@ -480,7 +424,6 @@ public class LiquidGlassSurface : GlassSurfaceBase
             var frame = BuildFrame();
             SKBitmap? nextCpu = null;
             GlassSource? nextSource = null;
-            var nextAura = default(AuraTexture);
             var path = "none";
 
             if (!attached || revision != current) return;
@@ -488,7 +431,7 @@ public class LiquidGlassSurface : GlassSurfaceBase
             // Compiling the runtime shader is a one-off cost, so it is resolved off the UI
             // thread together with the first backdrop.
             var wantGpu = Volatile.Read(ref gpuState) != 2;
-            var result = await Task.Run<(GlassSource? Source, WallpaperSnapshot Wallpaper, AuraTexture Aura, int CaptureMs, int BackdropMs)>(() =>
+            var result = await Task.Run<(GlassSource? Source, WallpaperSnapshot Wallpaper, int CaptureMs, int BackdropMs)>(() =>
             {
                 // Split the two stages that actually cost: grabbing the desktop, and building the
                 // shared blurred backdrop from it. Both are per capture, not per pixel of the card.
@@ -501,27 +444,17 @@ public class LiquidGlassSurface : GlassSurfaceBase
                 if (preview) snapshot.Dispose();
                 try
                 {
-                    if (wantGpu && LiquidGlassGpuEffect.IsSupported)
+                    if (wantGpu && LiquidGlassEffect.IsSupported)
                     {
                         var backdropStarted = Environment.TickCount64;
                         var shared = LiquidGlassSourceCache.Get(frame, sampled);
                         var backdropMs = (int)(Environment.TickCount64 - backdropStarted);
                         if (shared != null)
                         {
-                            // Already an owned reference — the cache handed one over, so it cannot
-                            // be evicted and freed out from under the dye-field build below.
-                            try
-                            {
-                                return (shared, sampled, BuildAura(frame, shared), captureMs, backdropMs);
-                            }
-                            catch
-                            {
-                                shared.Dispose();
-                                throw;
-                            }
+                            return (shared, sampled, captureMs, backdropMs);
                         }
                     }
-                    return (null, sampled, default(AuraTexture), captureMs, 0);
+                    return (null, sampled, captureMs, 0);
                 }
                 catch
                 {
@@ -532,7 +465,6 @@ public class LiquidGlassSurface : GlassSurfaceBase
 
             // That own reference becomes the surface's; RetirePrepared releases it later.
             nextSource = result.Source;
-            nextAura = result.Aura;
             wallpaper = result.Wallpaper;
 
             // A snapshot with no pixels anywhere — the capture failed and the wallpaper file is
@@ -562,7 +494,7 @@ public class LiquidGlassSurface : GlassSurfaceBase
                 try
                 {
                     if (!attached || revision != current) return;
-                    nextCpu = await Task.Run(() => LiquidGlassDispatch.RenderBitmap(frame, wallpaper!));
+                    nextCpu = await Task.Run(() => LiquidGlassRenderer.RenderBitmap(frame, wallpaper!));
                 }
                 finally { RenderSlots.Release(); }
             }
@@ -570,7 +502,7 @@ public class LiquidGlassSurface : GlassSurfaceBase
             if (!attached || revision != current)
             {
                 GlassDiagnostics.Note($"discarded ({path}: geometry changed)", started, frame);
-                RetirePrepared(new Prepared(nextSource, nextAura, frame, null, wallpaper.CaptureId));
+                RetirePrepared(new Prepared(nextSource, frame, null, wallpaper.CaptureId));
                 return;
             }
 
@@ -579,11 +511,11 @@ public class LiquidGlassSurface : GlassSurfaceBase
             if (nextSource == null && nextCpu == null)
             {
                 GlassDiagnostics.Note($"empty ({path}) — keeping the previous material", started, frame);
-                RetirePrepared(new Prepared(null, nextAura, frame, null, wallpaper.CaptureId));
+                RetirePrepared(new Prepared(null, frame, null, wallpaper.CaptureId));
                 return;
             }
 
-            var previous = Interlocked.Exchange(ref prepared, new Prepared(nextSource, nextAura, frame, nextCpu, wallpaper.CaptureId));
+            var previous = Interlocked.Exchange(ref prepared, new Prepared(nextSource, frame, nextCpu, wallpaper.CaptureId));
             RetirePrepared(previous);
             GlassDiagnostics.Published(Environment.TickCount64 - started,
                 $"{path} {frame.Width}x{frame.Height} capture {result.CaptureMs}ms backdrop {result.BackdropMs}ms " +
@@ -629,7 +561,7 @@ public class LiquidGlassSurface : GlassSurfaceBase
         // runs at native window bounds; only the CPU fallback path needs per-card quality
         // downscaling. Keeping quality = 1 on GPU ensures large cards stay in physical desktop
         // coordinates and share the same GlassSource as normal cards.
-        var useGpu = Volatile.Read(ref gpuState) != 2 && LiquidGlassGpuEffect.IsSupported;
+        var useGpu = Volatile.Read(ref gpuState) != 2 && LiquidGlassEffect.IsSupported;
         var quality = useGpu
             ? 1.0
             : Math.Min(1, Math.Min(2048 / (Math.Max(Bounds.Width, Bounds.Height) * scaling),
@@ -649,40 +581,30 @@ public class LiquidGlassSurface : GlassSurfaceBase
         var geometry = GlassSamplingOrigin.FrameDesktopGeometry(window, this, quality);
         var widget = window as Widget;
         var (cols, rows) = widget?.CurrentSpan ?? (0, 0);
-        var material = Material ?? new Theme(null, null, 0.18, true, false, "Inter", SurfaceStyle.LiquidGlass);
+        var material = Material ?? new Theme(null, null, 0.18, true, false, "Microsoft YaHei UI", SurfaceStyle.LiquidGlass);
         var frame = new LiquidGlassRenderer.Frame(width, height, renderScale, (float)CornerRadius.TopLeft,
             geometry.DesktopX, geometry.DesktopY, geometry.DesktopWidth, geometry.DesktopHeight,
             geometry.ScreenX, geometry.ScreenY, geometry.ScreenWidth, geometry.ScreenHeight,
             material, ActualThemeVariant == ThemeVariant.Dark, SettingsSurface, (float)quality,
             Columns: cols, Rows: rows, BackdropScale: backdropScale);
         if (!Preview) return frame;
-        // The preview card is tiny (45×45 in the theme button): calm both materials down so the
-        // miniature shows the recipe rather than a bloated lens / flooded diffusion.
-        return frame.Theme.IsLiquidGlassV2
-            ? frame with
+        // The preview card is tiny (45×45 in the theme button): calm the material down so the
+        // miniature shows the recipe rather than a bloated lens.
+        return frame with
+        {
+            DesktopX = 70 * renderScale, DesktopY = 40 * renderScale, ScreenX = 0, ScreenY = 0,
+            DesktopWidth = 120 * renderScale, DesktopHeight = 90 * renderScale,
+            ScreenWidth = 120 * renderScale, ScreenHeight = 90 * renderScale,
+            BackdropScale = renderScale,
+            Theme = frame.Theme with
             {
-                DesktopX = 70 * renderScale, DesktopY = 40 * renderScale, ScreenX = 0, ScreenY = 0,
-                DesktopWidth = 120 * renderScale, DesktopHeight = 90 * renderScale,
-                ScreenWidth = 120 * renderScale, ScreenHeight = 90 * renderScale,
-                BackdropScale = renderScale,
-                Theme = frame.Theme with
+                LiquidGlass = frame.Theme.EffectiveLiquidGlass with
                 {
-                    LiquidGlassV2 = frame.Theme.EffectiveLiquidGlassV2 with
-                    { Blur = frame.Theme.EffectiveLiquidGlassV2.Blur * 0.35, Refraction = frame.Theme.EffectiveLiquidGlassV2.Refraction * 0.35 }
+                    Blur = frame.Theme.EffectiveLiquidGlass.Blur * 0.35,
+                    Refraction = frame.Theme.EffectiveLiquidGlass.Refraction * 0.35
                 }
             }
-            : frame with
-            {
-                DesktopX = 70 * renderScale, DesktopY = 40 * renderScale, ScreenX = 0, ScreenY = 0,
-                DesktopWidth = 120 * renderScale, DesktopHeight = 90 * renderScale,
-                ScreenWidth = 120 * renderScale, ScreenHeight = 90 * renderScale,
-                BackdropScale = renderScale,
-                Theme = material with
-                {
-                    LiquidGlass = material.EffectiveLiquidGlass with
-                    { Blur = material.EffectiveLiquidGlass.Blur * 0.35, EdgeWidth = material.EffectiveLiquidGlass.EdgeWidth * 0.35 }
-                }
-            };
+        };
     }
 
     /// <summary>
@@ -693,36 +615,6 @@ public class LiquidGlassSurface : GlassSurfaceBase
     /// </summary>
     private PixelPoint DesktopPositionIgnoringRenderTransforms()
         => GlassSamplingOrigin.Resolve(this, window);
-
-    /// <summary>
-    /// The soft recipe's dye bloom, built from the shared backdrop. Cell-centre sampling keeps this
-    /// O(cells) rather than O(area) — the backdrop is already blurred, so a cell's average is its
-    /// centre value.
-    /// </summary>
-    private static AuraTexture BuildAura(LiquidGlassRenderer.Frame frame, GlassSource shared)
-    {
-        if (!frame.Theme.IsSoftGlow) return default;
-        try
-        {
-            // The 对齐 offset is already baked into the backdrop by DrawWallpaper, so the card's
-            // desktop origin alone maps a card pixel to a backdrop texel.
-            var originX = frame.DesktopX;
-            var originY = frame.DesktopY;
-            var backdrop = shared.Backdrop;
-            var field = LiquidGlassRenderer.AuraField.BuildFromSampler((x, y) =>
-            {
-                var sx = Math.Clamp((int)((x + originX) * shared.Scale), 0, backdrop.Width - 1);
-                var sy = Math.Clamp((int)((y + originY) * shared.Scale), 0, backdrop.Height - 1);
-                return backdrop.GetPixel(sx, sy);
-            }, frame.Width, frame.Height);
-            return new AuraTexture(field.ToBitmap(), field.Columns, field.Rows, field.Step, field.Margin);
-        }
-        catch (Exception ex)
-        {
-            Debug.WriteLine($"Glass dye field failed: {ex.Message}");
-            return default;
-        }
-    }
 
     public override void Render(DrawingContext context)
     {
@@ -742,14 +634,13 @@ public class LiquidGlassSurface : GlassSurfaceBase
                 // exception over: on any surprise, draw the at-rest material.
                 try
                 {
-                    var animatedFrame = BuildAnimationFrame(current, out var aura);
-                    context.Custom(new GlassDrawOperation(current, Material, rect, animatedFrame, aura));
+                    var animatedFrame = BuildAnimationFrame(current);
+                    context.Custom(new GlassDrawOperation(current, Material, rect, animatedFrame));
                     return;
                 }
                 catch (Exception ex)
                 {
                     Debug.WriteLine($"Animated glass frame failed: {ex}");
-                    ClearAnimationAuras();
                     animationScale = 1.0;
                 }
             }
@@ -773,26 +664,11 @@ public class LiquidGlassSurface : GlassSurfaceBase
 
     /// <summary>
     /// Runs the optical shader on the render thread.
-    /// <para>
-    /// It holds one reference on the <see cref="Prepared"/> snapshot it draws, taken in the
-    /// constructor and given back from <see cref="Dispose"/>. Avalonia keeps a custom draw
-    /// operation in its composition tree and re-invokes it on later frames, so without that
-    /// reference a backdrop could be freed while a queued operation still pointed at it — which is
-    /// a use-after-free inside Skia, not a recoverable exception.
-    /// </para>
-    /// <para>
-    /// <b>The GrContext check is not optional.</b> SkRuntimeEffect shaders are GPU-only in this
-    /// Skia: drawing one onto a raster canvas kills the process with an SEHException that managed
-    /// code cannot catch. When there is no GrContext the surface is switched permanently to the CPU
-    /// material (one frame of the plain blurred backdrop covers the gap) and the widgets re-render.
-    /// </para>
     /// </summary>
     private sealed class GlassDrawOperation : ICustomDrawOperation
     {
         private readonly Prepared prepared;
         private readonly GlassSource source;
-        private readonly AuraTexture aura;
-        private readonly AnimationAura? animationAura;
         private readonly LiquidGlassRenderer.Frame frame;
         private readonly Theme material;
         private int disposed;
@@ -800,21 +676,11 @@ public class LiquidGlassSurface : GlassSurfaceBase
         public Rect Bounds { get; }
 
         public GlassDrawOperation(Prepared prepared, Theme material, Rect bounds,
-            LiquidGlassRenderer.Frame? frameOverride = null, AnimationAura? auraOverride = null)
+            LiquidGlassRenderer.Frame? frameOverride = null)
         {
             this.prepared = prepared;
             source = prepared.Source!;
             frame = frameOverride ?? prepared.Frame;
-            if (auraOverride != null)
-            {
-                animationAura = auraOverride;
-                auraOverride.AddRef();
-                aura = auraOverride.Texture;
-            }
-            else
-            {
-                aura = prepared.Aura;
-            }
             this.material = material;
             Bounds = bounds;
             prepared.AddRef();
@@ -832,7 +698,6 @@ public class LiquidGlassSurface : GlassSurfaceBase
         {
             if (Interlocked.Exchange(ref disposed, 1) == 0)
             {
-                animationAura?.Dispose();
                 prepared.Dispose();
             }
         }
@@ -861,37 +726,14 @@ public class LiquidGlassSurface : GlassSurfaceBase
                 return;
             }
 
-            // The 新液态玻璃 material runs its own shader; the lens materials share the older one.
-            var isV2 = material.EffectiveSurface == SurfaceStyle.LiquidGlassV2;
-            var v2Parameters = default(LiquidGlassV2Effect.Params);
-            var parameters = default(LiquidGlassGpuEffect.Params);
-            if (isV2)
+            var parameters = LiquidGlassEffect.BuildParams(frame, source.Scale,
+                (float)Bounds.Width, (float)Bounds.Height) with
             {
-                v2Parameters = LiquidGlassV2Effect.BuildParams(frame, source.Scale,
-                    (float)Bounds.Width, (float)Bounds.Height) with
-                {
-                    DestOriginX = (float)Bounds.X,
-                    DestOriginY = (float)Bounds.Y
-                };
-            }
-            else
-            {
-                parameters = LiquidGlassGpuEffect.BuildParams(frame, source.Scale,
-                    (float)Bounds.Width, (float)Bounds.Height) with
-                {
-                    DestOriginX = (float)Bounds.X,
-                    DestOriginY = (float)Bounds.Y,
-                    AuraEnabled = aura.IsUsable,
-                    AuraColumns = aura.Columns,
-                    AuraRows = aura.Rows,
-                    AuraStep = aura.Step,
-                    AuraMargin = aura.Margin
-                };
-            }
+                DestOriginX = (float)Bounds.X,
+                DestOriginY = (float)Bounds.Y
+            };
 
-            using var shader = isV2
-                ? LiquidGlassV2Effect.Create(source.Backdrop, v2Parameters)
-                : LiquidGlassGpuEffect.Create(source.Backdrop, aura.Bitmap, parameters);
+            using var shader = LiquidGlassEffect.Create(source.Backdrop, parameters);
             if (shader == null)
             {
                 GlassDiagnostics.Event("draw: runtime shader could not be built — drawing the plain backdrop");
@@ -903,23 +745,6 @@ public class LiquidGlassSurface : GlassSurfaceBase
                 GlassDiagnostics.Event($"draw: first GPU frame at {destination.Width:F0}x{destination.Height:F0} " +
                                        $"(bounds {Bounds.X:F0},{Bounds.Y:F0}), backdrop {source.Backdrop.Width}x{source.Backdrop.Height} scale={source.Scale:F3}");
 
-            // One-off readback of what the shader actually produces. The GPU path cannot be
-            // validated offline, so this is the only way to tell "the shader drew nothing" apart
-            // from "the shader drew something that never reached the screen". The staged walk is
-            // tuned to the lens material; only run the 12-stage compile/readback walk when
-            // explicitly requested via DESKCANVAS_GLASS_PROBE=1, since RendersOpaque below covers
-            // the production self-test.
-            if (!isV2 && Environment.GetEnvironmentVariable("DESKCANVAS_GLASS_PROBE") == "1"
-                && Interlocked.Exchange(ref probedShader, 1) == 0)
-            {
-                Probe(lease, shader, destination);
-            }
-
-            // A runtime-effect program is only built for the device at draw time, from a narrower
-            // dialect than SKRuntimeEffect.Create accepts, and a program that fails to build there
-            // draws nothing at all instead of reporting an error — the card simply renders
-            // transparent. Nothing offline can catch that, so the material proves itself once:
-            // render it offscreen, and if it comes back empty, use the CPU renderer from here on.
             if (Interlocked.Exchange(ref selfTested, 1) == 0 && !RendersOpaque(lease, shader, destination))
             {
                 Interlocked.Exchange(ref gpuState, 2);
@@ -935,259 +760,6 @@ public class LiquidGlassSurface : GlassSurfaceBase
 
             using var paint = new SKPaint { Shader = shader, IsAntialias = true };
             lease.SkCanvas.DrawRect(destination, paint);
-        }
-
-        /// <summary>Render the material into an offscreen GPU surface and report a few pixels.</summary>
-        private void Probe(ISkiaSharpApiLease lease, SKShader shader, SKRect destination)
-        {
-            try
-            {
-                var matrix = lease.SkCanvas.TotalMatrix;
-                GlassDiagnostics.Event(
-                    $"probe: canvas ctm scale=({matrix.ScaleX:F3},{matrix.ScaleY:F3}) trans=({matrix.TransX:F1},{matrix.TransY:F1}) " +
-                    $"opacity={lease.CurrentOpacity:F2} dest=({destination.Left:F1},{destination.Top:F1})-({destination.Right:F1},{destination.Bottom:F1}) " +
-                    $"frame={frame.Width}x{frame.Height} radius={frame.Radius:F1}");
-
-                var width = Math.Max(1, (int)destination.Width);
-                var height = Math.Max(1, (int)destination.Height);
-                var info = new SKImageInfo(width, height, SKColorType.Bgra8888, SKAlphaType.Premul);
-                using var surface = SKSurface.Create(lease.GrContext!, false, info);
-                if (surface == null)
-                {
-                    GlassDiagnostics.Event("probe: could not create an offscreen GPU surface");
-                    return;
-                }
-
-                // Control: the backdrop bitmap itself, to prove the texture carries the wallpaper.
-                surface.Canvas.Clear(SKColors.Transparent);
-                surface.Canvas.DrawBitmap(source.Backdrop, new SKRect(0, 0, width, height));
-                GlassDiagnostics.Event($"probe: backdrop centre={ReadPixel(surface, width / 2, height / 2)}");
-
-                // Walk the material's building blocks from trivial to complete. A transparent result
-                // at every pixel is what a failed GPU program looks like — and it is the same
-                // picture whether the program was rejected or the maths came out empty, so the only
-                // way to tell is to find the first stage that stops producing colour.
-                var rect = new SKRect(0, 0, width, height);
-                using var contentChild = source.Backdrop.ToShader(SKShaderTileMode.Clamp, SKShaderTileMode.Clamp);
-                var fullSource = LiquidGlassGpuEffect.SourceForDiagnostics;
-
-                Stage("a constant colour", "half4 main(float2 p) { return half4(0.2, 0.8, 0.4, 1.0); }",
-                    null, null, surface, rect);
-                Stage("b one-tap child sample",
-                    "uniform shader content; half4 main(float2 p) { return sample(content, p); }",
-                    contentChild, null, surface, rect);
-                Stage("c four-tap bilinear", BilinearStage, contentChild, null, surface, rect);
-                var uniforms = new (string, object)[]
-                {
-                    ("size", new[] { (float)frame.Width, (float)frame.Height }),
-                    ("radius", frame.Radius * frame.Scale),
-                    ("destOrigin", new[] { 0f, 0f }),
-                    ("destToRender", frame.Width / Math.Max(1f, (float)rect.Width))
-                };
-
-                Stage("a constant colour", "half4 main(float2 p) { return half4(0.2, 0.8, 0.4, 1.0); }",
-                    null, null, surface, rect);
-                Stage("b one-tap child sample",
-                    "uniform shader content; half4 main(float2 p) { return sample(content, p); }",
-                    contentChild, null, surface, rect);
-                Stage("c four-tap bilinear", BilinearStage, contentChild, null, surface, rect);
-                Stage("d0 uniforms echoed", UniformEchoStage, null, uniforms, surface, rect);
-                Stage("d1 rounded-rect mask, no out param", MaskStage, null, uniforms, surface, rect);
-                Stage("d2 same mask, WITH out param", MaskOutParamStage, null, uniforms, surface, rect);
-                // The full model, then with the seven-tap spectrum removed. If one of these starts
-                // producing colour while the other does not, the blocker is that group of texture
-                // fetches rather than any single construct.
-                Stage("e0 full model (unchanged)", fullSource, contentChild, uniforms, surface, rect);
-                Stage("e1 full model, no 7-tap spectrum",
-                    StripMarked(fullSource, "spectrum", ""), contentChild, uniforms, surface, rect);
-                // Two constructs the full model uses that no passing stage above does.
-                Stage("f1 global const", GlobalConstStage, contentChild, null, surface, rect);
-                Stage("f2 two child shaders", TwoChildrenStage, contentChild, null, surface, rect);
-
-                using var probePaint = new SKPaint { Shader = shader, IsAntialias = true };
-                surface.Canvas.Clear(SKColors.Transparent);
-                surface.Canvas.DrawRect(rect, probePaint);
-                GlassDiagnostics.Event(
-                    $"probe: real shader centre={ReadPixel(surface, width / 2, height / 2)} " +
-                    $"topEdge={ReadPixel(surface, width / 2, 2)} leftEdge={ReadPixel(surface, 2, height / 2)} " +
-                    $"corner={ReadPixel(surface, 1, 1)}");
-            }
-            catch (Exception ex)
-            {
-                GlassDiagnostics.Failure(ex);
-            }
-        }
-
-        private const string BilinearStage = @"
-uniform shader content;
-float3 texel(float2 c) { return float3(sample(content, c + float2(0.5)).rgb) * 255.0; }
-half4 main(float2 p) {
-  float2 b = floor(p);
-  float2 f = p - b;
-  float3 c = mix(mix(texel(b), texel(b + float2(1.0, 0.0)), f.x),
-                 mix(texel(b + float2(0.0, 1.0)), texel(b + float2(1.0, 1.0)), f.x), f.y);
-  return half4(half3(c / 255.0), 1.0);
-}";
-
-        /// <summary>A global <c>const</c> plus a child sample, as the full model has.</summary>
-        private const string GlobalConstStage = @"
-uniform shader content;
-const float PI = 3.14159265;
-half4 main(float2 p) {
-  return sample(content, p) * half(PI / PI);
-}";
-
-        /// <summary>Two declared child shaders, both sampled — the full model's other trait.</summary>
-        private const string TwoChildrenStage = @"
-uniform shader content;
-uniform shader aura;
-half4 main(float2 p) {
-  half4 a = sample(content, p);
-  half4 b = sample(aura, p);
-  return half4(a.rgb, 1.0) * b.a + half4(a.rgb * half(0.5), 1.0);
-}";
-
-        /// <summary>Writes the uniforms straight out, so a zero means the binding never arrived.</summary>
-        private const string UniformEchoStage = @"
-uniform float2 size;
-uniform float radius;
-uniform float destToRender;
-half4 main(float2 p) {
-  return half4(half(size.x / 1024.0), half(size.y / 1024.0), half(destToRender / 4.0), 1.0);
-}";
-
-        /// <summary>Rounded-rect coverage and the bevel, with plain return values.</summary>
-        private const string MaskStage = @"
-uniform float2 size;
-uniform float radius;
-uniform float destToRender;
-float3 bevelOf(float2 p, float2 h, float r) {
-  float2 v = p - h;
-  float2 s = float2(v.x >= 0.0 ? 1.0 : -1.0, v.y >= 0.0 ? 1.0 : -1.0);
-  float2 a = abs(v);
-  float2 q = a - (h - float2(r));
-  if (q.x > 0.0 && q.y > 0.0) {
-    float len = length(q);
-    return float3(q.x / max(len, 1e-5) * s.x, q.y / max(len, 1e-5) * s.y, r - len);
-  }
-  return float3(s.x, s.y, min(h.x - a.x, h.y - a.y));
-}
-half4 main(float2 xy) {
-  float2 rxy = xy * destToRender;
-  float2 h = size * 0.5;
-  float2 p = rxy - h;
-  float2 q = abs(p) - h + float2(radius);
-  float sd = length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - radius;
-  float mask = clamp(1.0 - sd, 0.0, 1.0);
-  float3 b = bevelOf(rxy, h, radius);
-  return half4(half(b.x * 0.5 + 0.5), half(b.y * 0.5 + 0.5), half(b.z / max(size.x, 1.0)), half(mask));
-}";
-
-        /// <summary>The same bevel through an <c>out</c>-parameter helper, which is the suspect.</summary>
-        private const string MaskOutParamStage = @"
-uniform float2 size;
-uniform float radius;
-uniform float destToRender;
-void bevelOf(float2 p, float2 h, float r, out float2 n, out float depth) {
-  float2 v = p - h;
-  float2 s = float2(v.x >= 0.0 ? 1.0 : -1.0, v.y >= 0.0 ? 1.0 : -1.0);
-  float2 a = abs(v);
-  float2 q = a - (h - float2(r));
-  if (q.x > 0.0 && q.y > 0.0) {
-    float len = length(q);
-    n = float2(q.x / max(len, 1e-5) * s.x, q.y / max(len, 1e-5) * s.y);
-    depth = r - len;
-    return;
-  }
-  n = s;
-  depth = min(h.x - a.x, h.y - a.y);
-}
-half4 main(float2 xy) {
-  float2 rxy = xy * destToRender;
-  float2 h = size * 0.5;
-  float2 p = rxy - h;
-  float2 q = abs(p) - h + float2(radius);
-  float sd = length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - radius;
-  float mask = clamp(1.0 - sd, 0.0, 1.0);
-  float2 n;
-  float depth;
-  bevelOf(rxy, h, radius, n, depth);
-  return half4(half(n.x * 0.5 + 0.5), half(n.y * 0.5 + 0.5), half(depth / max(size.x, 1.0)), half(mask));
-}";
-
-        /// <summary>
-        /// Replace a <c>//#probe:name:begin … :end</c> marked region of the shader, so the diagnostic
-        /// can measure how the material behaves with one group of work removed.
-        /// </summary>
-        private static string StripMarked(string source, string name, string replacement)
-        {
-            var begin = $"//#probe:{name}:begin";
-            var end = $"//#probe:{name}:end";
-            var start = source.IndexOf(begin, StringComparison.Ordinal);
-            if (start < 0) return source;
-            var stop = source.IndexOf(end, start, StringComparison.Ordinal);
-            if (stop < 0) return source;
-            return source.Remove(start, stop + end.Length - start).Insert(start, replacement);
-        }
-
-        /// <summary>Compile, bind and draw one stage offscreen, reporting the centre pixel.</summary>
-        private void Stage(string label, string source, SKShader? content, (string Name, object Value)[]? values,
-            SKSurface surface, SKRect rect)
-        {
-            try
-            {
-                var effect = SKRuntimeEffect.Create(source, out var errors);
-                if (effect == null)
-                {
-                    GlassDiagnostics.Event($"stage {label}: COMPILE FAILED — {errors.Trim()}");
-                    return;
-                }
-
-                var uniforms = new SKRuntimeEffectUniforms(effect);
-                foreach (var (name, value) in values ?? [])
-                {
-                    var uniform = value switch
-                    {
-                        float single => (SKRuntimeEffectUniform)single,
-                        float[] many => many,
-                        _ => SKRuntimeEffectUniform.Empty
-                    };
-                    if (uniforms.Contains(name)) uniforms[name] = uniform;
-                }
-
-                SKShader? shader;
-                if (content != null && effect.Children.Contains("content"))
-                {
-                    // Every declared child must be bound: leaving one out makes the whole program
-                    // fail to build, which looks exactly like the failure being measured.
-                    var children = new SKRuntimeEffectChildren(effect);
-                    foreach (var child in effect.Children) children[child] = content;
-                    shader = effect.ToShader(false, uniforms, children);
-                }
-                else
-                {
-                    shader = effect.ToShader(false, uniforms);
-                }
-
-                if (shader == null)
-                {
-                    GlassDiagnostics.Event($"stage {label}: ToShader returned null");
-                    return;
-                }
-
-                using (shader)
-                using (var paint = new SKPaint { Shader = shader, IsAntialias = false })
-                {
-                    surface.Canvas.Clear(SKColors.Transparent);
-                    surface.Canvas.DrawRect(rect, paint);
-                    GlassDiagnostics.Event(
-                        $"stage {label}: centre={ReadPixel(surface, (int)(rect.Width / 2f), (int)(rect.Height / 2f))}");
-                }
-            }
-            catch (Exception ex)
-            {
-                GlassDiagnostics.Failure(ex);
-            }
         }
 
         /// <summary>

@@ -36,8 +36,10 @@ void Check(string name, bool ok, string? detail = null)
 // Sandbox must be pinned before any Const static initializer runs.
 var root = Path.Combine(Path.GetTempPath(), "DeskCanvas-UpgradeRollbackChecks", Guid.NewGuid().ToString("N"));
 Directory.CreateDirectory(root);
+Environment.SetEnvironmentVariable("DESKCANVAS_DATA_FOLDER", root);
 Environment.SetEnvironmentVariable("DESCANVAS_DATA_FOLDER", root);
-var layoutPath = Path.Combine(root, "layout.json");
+var layoutPath = DeskCanvas.Core.Const.LayoutFile;
+Directory.CreateDirectory(Path.GetDirectoryName(layoutPath)!);
 
 try
 {
@@ -211,6 +213,7 @@ try
 }
 finally
 {
+    Environment.SetEnvironmentVariable("DESKCANVAS_DATA_FOLDER", null);
     Environment.SetEnvironmentVariable("DESCANVAS_DATA_FOLDER", null);
     try { Directory.Delete(root, recursive: true); } catch { }
 }

@@ -38,6 +38,20 @@ public static class CountdownStore
     static CountdownStore()
     {
         InitializeWatcher();
+        Const.ActiveProfileChanged += _ =>
+        {
+            lock (FileLock)
+            {
+                cachedEvents = null;
+                InitializeWatcher();
+            }
+            try
+            {
+                var updated = Get();
+                NotifyModelChanged(updated, null);
+            }
+            catch { }
+        };
     }
 
     public static List<CountdownItem> Get()

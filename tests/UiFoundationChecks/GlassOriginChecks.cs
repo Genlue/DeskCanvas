@@ -118,7 +118,7 @@ internal static partial class Program
         // SurfaceOverride = Solid keeps the render pipeline out of the headless run; this check is
         // about the frame's geometry, not its pixels.
         var host = new Window { Width = 420, Height = 200, SystemDecorations = SystemDecorations.None };
-        var clock = new FramelessDigital(new FramelessClockModel(SurfaceOverride: SurfaceStyle.Solid))
+        var clock = new FramelessDigital(new FramelessClockModel(SurfaceOverride: SurfaceStyle.Acrylic))
         {
             Width = 380,
             Height = 160,

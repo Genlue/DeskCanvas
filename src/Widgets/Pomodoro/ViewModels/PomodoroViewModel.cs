@@ -5,6 +5,7 @@ using Avalonia.Media;
 using Avalonia.Threading;
 using Pomodoro.Locales;
 using Pomodoro.Models;
+using DeskCanvas.Contracts;
 
 namespace Pomodoro.ViewModels;
 
@@ -17,11 +18,24 @@ public class PomodoroViewModel : INotifyPropertyChanged
     private int totalSeconds;
     private int completedSessions;
     private readonly DispatcherTimer timer;
+    private readonly IWidgetSession? session;
     private bool disposed;
 
-    public PomodoroViewModel(PomodoroModel? initialModel = null)
+    // Session gate (see OnSessionActivity): false while the widget's screens are covered.
+    // Session-less widgets (gallery preview, legacy layout entries) stay always-on.
+    private bool renderActive;
+
+    // The wall-clock boundary recorded when a RUNNING countdown is gated (screens covered).
+    // The 1 s tick drives the countdown itself, so the gated stretch is replayed from this
+    // boundary on reopen — the countdown is user data and must neither lose progress nor
+    // silently pause in wall-clock terms. Null while the countdown is not gated.
+    private DateTime? gateClosedAtUtc;
+
+    public PomodoroViewModel(PomodoroModel? initialModel = null, IWidgetSession? session = null)
     {
         model = initialModel ?? new PomodoroModel();
+        this.session = session;
+        renderActive = session?.Activity.RenderActive ?? true;
         totalSeconds = model.FocusMinutes * 60;
         remainingSeconds = totalSeconds;
 
@@ -208,7 +222,6 @@ public class PomodoroViewModel : INotifyPropertyChanged
     {
         if (IsRunning)
         {
-            timer.Stop();
             State = PomodoroState.Paused;
         }
         else
@@ -218,17 +231,17 @@ public class PomodoroViewModel : INotifyPropertyChanged
                 TotalSeconds = GetPhaseMinutes(Phase) * 60;
                 RemainingSeconds = TotalSeconds;
             }
-            timer.Start();
             State = PomodoroState.Running;
         }
+        SyncTimerRunState();
     }
 
     public void Reset()
     {
-        timer.Stop();
         State = PomodoroState.Idle;
         TotalSeconds = GetPhaseMinutes(Phase) * 60;
         RemainingSeconds = TotalSeconds;
+        SyncTimerRunState();
     }
 
     public void Skip()
@@ -238,11 +251,11 @@ public class PomodoroViewModel : INotifyPropertyChanged
 
     public void SwitchPhase(PomodoroPhase next)
     {
-        timer.Stop();
         State = PomodoroState.Idle;
         Phase = next;
         TotalSeconds = GetPhaseMinutes(Phase) * 60;
         RemainingSeconds = TotalSeconds;
+        SyncTimerRunState();
     }
 
     private void OnTimerTick(object? sender, EventArgs e)
@@ -301,8 +314,6 @@ public class PomodoroViewModel : INotifyPropertyChanged
 
     private void AdvanceToNextPhase(bool autoStart)
     {
-        timer.Stop();
-
         if (Phase == PomodoroPhase.Focus)
         {
             int interval = Math.Max(1, model.LongBreakInterval);
@@ -323,15 +334,134 @@ public class PomodoroViewModel : INotifyPropertyChanged
         TotalSeconds = GetPhaseMinutes(Phase) * 60;
         RemainingSeconds = TotalSeconds;
 
-        if (autoStart)
+        State = autoStart ? PomodoroState.Running : PomodoroState.Idle;
+        SyncTimerRunState();
+    }
+
+    // ------------------------------------------------------------------
+    //  Session gating (host: IWidgetActivityConsumer)
+    // ------------------------------------------------------------------
+
+    /// <summary>
+    /// Host activity push (the <see cref="DeskCanvas.Runtime.IWidgetActivityConsumer"/> path,
+    /// invoked on the UI thread). The countdown is USER FUNCTION DATA: the gate never resets,
+    /// pauses or loses it — a running countdown only stops its 1 s tick while the screens are
+    /// covered, the wall-clock boundary is recorded, and the reopen replays the gated stretch
+    /// (phase completions included) before the tick resumes. Session-less view models ignore
+    /// the push entirely (the host never sends one to them).
+    /// </summary>
+    public void OnSessionActivity(ActivitySnapshot activity)
+    {
+        if (session == null) return;
+        renderActive = activity.RenderActive;
+        ReconcileSessionGating();
+    }
+
+    /// <summary>
+    /// Reconciles the tick subscription against the session gate for a RUNNING countdown:
+    /// gate close → stop the tick and record the boundary (once); gate open → replay the
+    /// gated stretch from the boundary, then restart the tick if the countdown is still
+    /// running. Non-running states simply stop the tick and drop any stale boundary.
+    /// </summary>
+    private void ReconcileSessionGating()
+    {
+        if (disposed) return;
+
+        if (State != PomodoroState.Running)
         {
-            timer.Start();
-            State = PomodoroState.Running;
+            gateClosedAtUtc = null;
+            timer.Stop();
+            return;
+        }
+
+        if (!renderActive)
+        {
+            timer.Stop();
+            gateClosedAtUtc ??= DateTime.UtcNow;
+            return;
+        }
+
+        var closedAt = gateClosedAtUtc;
+        gateClosedAtUtc = null;
+        if (closedAt.HasValue)
+        {
+            var gatedSeconds = (int)(DateTime.UtcNow - closedAt.Value).TotalSeconds;
+            if (gatedSeconds > 0)
+            {
+                CompensateGatedSeconds(gatedSeconds);
+                if (disposed) return;
+            }
+        }
+
+        SyncTimerRunState();
+    }
+
+    /// <summary>Replays <paramref name="seconds"/> of wall-clock countdown through the regular
+    /// tick handler, so phase completions, session counters and auto-starts behave exactly as
+    /// they would have live. Stops early once the countdown is no longer running.</summary>
+    private void CompensateGatedSeconds(int seconds)
+    {
+        for (int i = 0; i < seconds; i++)
+        {
+            if (disposed || State != PomodoroState.Running) break;
+            OnTimerTick(timer, EventArgs.Empty);
+        }
+    }
+
+    /// <summary>
+    /// Plain run-state sync for user transitions (start/pause/reset/skip/phase switch and the
+    /// auto-advance inside the tick): the 1 s DispatcherTimer runs exactly while the countdown
+    /// is Running AND the session renders. A start issued while gated records its wall-clock
+    /// boundary here (the press), so the reopen replays the stretch from the right point; the
+    /// heavy boundary bookkeeping for gate pushes belongs to <see cref="ReconcileSessionGating"/>.
+    /// </summary>
+    private void SyncTimerRunState()
+    {
+        if (disposed) return;
+        if (State != PomodoroState.Running)
+        {
+            gateClosedAtUtc = null;
+            timer.Stop();
+            return;
+        }
+
+        if (renderActive)
+        {
+            if (!timer.IsEnabled) timer.Start();
         }
         else
         {
-            State = PomodoroState.Idle;
+            timer.Stop();
+            gateClosedAtUtc ??= DateTime.UtcNow;
         }
+    }
+
+    // ------------------------------------------------------------------
+    //  Check seams (tests/MediaWidgetSessionChecks)
+    // ------------------------------------------------------------------
+
+    /// <summary>Check seam: whether the 1 s countdown timer is currently running.</summary>
+    public bool IsTimerEnabledForChecks => timer.IsEnabled;
+
+    /// <summary>Check seam: the latest session gate value.</summary>
+    public bool RenderActiveForChecks => renderActive;
+
+    /// <summary>Check seam: the recorded gate boundary of a gated RUNNING countdown.</summary>
+    public DateTime? GateClosedAtForChecks => gateClosedAtUtc;
+
+    /// <summary>Check seam: the injected session (null on the legacy path).</summary>
+    public IWidgetSession? SessionForChecks => session;
+
+    /// <summary>Check seam: drives <paramref name="seconds"/> of countdown by hand, exercising
+    /// the replay path exactly as the reopen push does.</summary>
+    public void CompensateGatedSecondsForChecks(int seconds) => CompensateGatedSeconds(seconds);
+
+    /// <summary>Check seam: backdates the recorded gate boundary, so a reopen push replays a
+    /// deterministic number of gated seconds.</summary>
+    public void BackdateGateBoundaryForChecks(TimeSpan age)
+    {
+        if (gateClosedAtUtc.HasValue)
+            gateClosedAtUtc = gateClosedAtUtc.Value - age;
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;

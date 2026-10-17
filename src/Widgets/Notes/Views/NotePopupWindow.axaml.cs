@@ -77,14 +77,16 @@ public partial class NotePopupWindow : SecondaryPanelWindow
         Action<NoteModel>? onModelChanged = null,
         double? cornerRadius = null)
     {
-        if (PanelCoolingDown<NotePopupWindow>())
-            return;
-
-        if (TryCloseActivePanel<NotePopupWindow>())
-            return;
-
-        var popup = new NotePopupWindow(model, screenCenter, onModelChanged, cornerRadius);
-        popup.ShowAsSecondaryPanel(owner);
+        // The PanelService owns the single-instance state: cooldown, toggle-close and the
+        // pinned show — the same contract the historic PanelCoolingDown/TryCloseActivePanel
+        // pair enforced through the process/type key, now keyed per owner component instance
+        // (two note widgets no longer evict each other's editor).
+        PanelService.Open(new PanelRequest(
+            owner is Widget widget ? widget.InstanceId : default,
+            owner,
+            "Notes.Editor",
+            PanelScope.PerOwner,
+            () => new NotePopupWindow(model, screenCenter, onModelChanged, cornerRadius)));
     }
 
     protected override void OnPanelLoaded()

@@ -5,7 +5,7 @@ using DeskCanvas.Core.Models.Settings;
 namespace DeskCanvas.Core.Services;
 
 /// <inheritdoc cref="IAppSettingsProvider"/>
-public class AppSettingsProvider() : JsonParser<AppSettings>(Const.AppSettingsFile), IAppSettingsProvider
+public class AppSettingsProvider() : JsonParser<AppSettings>(() => Const.AppSettingsFile), IAppSettingsProvider
 {
     /// <inheritdoc />
     protected override AppSettings Normalize(AppSettings settings)
@@ -24,12 +24,6 @@ public class AppSettingsProvider() : JsonParser<AppSettings>(Const.AppSettingsFi
             ? new Dictionary<string, Theme>(settings.SurfaceThemes, StringComparer.OrdinalIgnoreCase)
             : new Dictionary<string, Theme>(StringComparer.OrdinalIgnoreCase);
 
-        if (surfaceThemes.Remove(nameof(SurfaceStyle.SoftGlow), out var legacy) &&
-            !surfaceThemes.ContainsKey(nameof(SurfaceStyle.LiquidGlass)))
-            surfaceThemes[nameof(SurfaceStyle.LiquidGlass)] = legacy.NormalizeForSurface();
-        // The currently selected soft-glow customization wins over an older saved lens preset.
-        if (settings.Theme.Surface == SurfaceStyle.SoftGlow)
-            surfaceThemes[nameof(SurfaceStyle.LiquidGlass)] = theme;
 
         if (!surfaceThemes.ContainsKey(surface.ToString()))
         {

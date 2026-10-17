@@ -29,7 +29,8 @@ public record Grid(
     double CellPercent)
 {
     /// <summary>
-    /// Default grid: 8×6 cells of 5% width, X centered on the desktop.
+    /// Default grid: a full-width 20×10 lattice of 5% cells, top-aligned in the working
+    /// area (X is therefore already centred — 20 × 5% spans exactly 100% of the width).
     /// </summary>
-    public static Grid Default { get; } = new(8, 6, 30, 10, 5);
+    public static Grid Default { get; } = new(20, 10, 0, 0, 5);
 }

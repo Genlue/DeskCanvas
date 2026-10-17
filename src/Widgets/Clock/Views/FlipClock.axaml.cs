@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using Avalonia.Controls;
 using Clock.Models;
 using Clock.ViewModels;
+using DeskCanvas.Contracts;
+using DeskCanvas.Runtime;
 using DeskCanvas.Core.Interfaces;
 using DeskCanvas.Core.Models;
 
@@ -12,7 +14,7 @@ namespace Clock.Views;
 /// Mechanical split-flap clock widget locked to the 2:1 proportion lattice (<c>4×2</c>, <c>6×3</c>, <c>8×4</c>).
 /// Declares <see cref="IWidgetSurfaceHints"/> for Colorful theme card background (<c>FlipClockCardBackground</c>).
 /// </summary>
-public partial class FlipClock : UserControl, IFixedSizeWidget, IWidgetSelfRefreshing, IWidgetSurfaceHints
+public partial class FlipClock : UserControl, IFixedSizeWidget, IWidgetSelfRefreshing, IWidgetSurfaceHints, IWidgetActivityConsumer
 {
     /// <inheritdoc />
     public string? ColorfulBackgroundResourceKey => "FlipClockCardBackground";
@@ -43,15 +45,24 @@ public partial class FlipClock : UserControl, IFixedSizeWidget, IWidgetSelfRefre
     {
     }
 
-    public FlipClock(FlipClockModel flipClockModel)
+    /// <summary>
+    /// <paramref name="session"/> is injected by WidgetFactory when the host runs the session
+    /// pipeline (a stable instance identity): the view model then gates its timer subscription
+    /// on the session's activity. Null keeps the legacy always-on behaviour (preview, legacy
+    /// layout entries) — those hosts never push activity either.
+    /// </summary>
+    public FlipClock(FlipClockModel flipClockModel, IWidgetSession? session = null)
     {
         model = flipClockModel;
-        viewModel = new FlipClockViewModel(model);
+        viewModel = new FlipClockViewModel(model, session);
         DataContext = viewModel;
         Loaded += (_, _) => viewModel.Start();
         Unloaded += (_, _) => viewModel.Stop();
         InitializeComponent();
     }
+
+    /// <inheritdoc />
+    public void OnSessionActivity(ActivitySnapshot activity) => viewModel.OnSessionActivity(activity);
 
     public void Refresh(WidgetLayout layout)
     {

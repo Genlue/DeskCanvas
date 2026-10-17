@@ -52,6 +52,20 @@ public static class TimetableStore
     static TimetableStore()
     {
         InitializeWatcher();
+        Const.ActiveProfileChanged += _ =>
+        {
+            lock (FileLock)
+            {
+                cachedModel = null;
+                InitializeWatcher();
+            }
+            try
+            {
+                var updated = Get();
+                NotifyModelChanged(updated, null);
+            }
+            catch { }
+        };
     }
 
     /// <summary>
@@ -244,6 +258,8 @@ public static class TimetableStore
     {
         try
         {
+            fileWatcher?.Dispose();
+            fileWatcher = null;
             var path = FilePath;
             var dir = Path.GetDirectoryName(path);
             if (string.IsNullOrEmpty(dir)) return;

@@ -422,12 +422,13 @@ public partial class Note : UserControl, IWidgetSelfRefreshing, IWidgetSurfaceHi
 
     private IBrush ResolveBaseHighBrush()
     {
-        // Explicit active variant: an ambient lookup can freeze on the light
-        // theme dictionary of the app's style overrides (dark-mode divider
-        // drawn in the light accent shade).
+        // Explicit THIS-VIEW variant: an ambient Application.Current lookup freezes on the
+        // app-wide variant (and on the light theme dictionary of the app's style overrides —
+        // dark-mode divider drawn in the light accent shade). The card follows the variant of
+        // the screen it actually sits on (per-window light/dark).
         var app = Application.Current;
         if (app is not null &&
-            ((IResourceHost)app).TryGetResource("SystemControlForegroundBaseHighBrush", app.ActualThemeVariant, out var brush) &&
+            ((IResourceHost)app).TryGetResource("SystemControlForegroundBaseHighBrush", this.ActualThemeVariant, out var brush) &&
             brush is IBrush baseHigh)
             return baseHigh;
         return new SolidColorBrush(Color.Parse("#808080"));

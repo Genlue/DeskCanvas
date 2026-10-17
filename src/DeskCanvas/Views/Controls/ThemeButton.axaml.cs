@@ -24,13 +24,11 @@ public partial class ThemeButton : UserControl, INotifyPropertyChanged
     public bool IsRenderedGlass => AppTheme.UsesRenderedGlass;
     public bool IsColorful => AppTheme.IsColorful;
     public bool IsFrosted => AppTheme.UsesNativeBlur;
-    public bool IsSelected => appSettingsProvider.Get().Theme.EffectiveSurface == AppTheme.EffectiveSurface
-        || (IsFrosted && !IsColorful && appSettingsProvider.Get().Theme.EffectiveSurface == SurfaceStyle.OutlinedAcrylic);
+    public bool IsSelected => appSettingsProvider.Get().Theme.EffectiveSurface == AppTheme.EffectiveSurface;
     public IBrush SelectionBrush => IsSelected ? Brushes.DodgerBlue : Brushes.Transparent;
     /// <summary>
     /// Material handed to the preview <see cref="LiquidGlassSurface"/>: the preset's own
-    /// surface (the two liquid glass materials are different recipes of the same pipeline)
-    /// and — unless this button is the active one — the preset's own optics, so the preview
+    /// surface and — unless this button is the active one — the preset's own optics, so the preview
     /// shows what choosing the preset will actually look like rather than the current settings.
     /// </summary>
     public Theme GlassMaterial
@@ -38,16 +36,12 @@ public partial class ThemeButton : UserControl, INotifyPropertyChanged
         get
         {
             var current = appSettingsProvider.Get().Theme;
-            var theme = current with
+            return current with
             {
                 Surface = AppTheme.UsesRenderedGlass ? AppTheme.EffectiveSurface : SurfaceStyle.LiquidGlass,
-                OpacityLevel = IsSelected ? current.OpacityLevel : AppTheme.OpacityLevel
+                OpacityLevel = IsSelected ? current.OpacityLevel : AppTheme.OpacityLevel,
+                LiquidGlass = IsSelected ? current.EffectiveLiquidGlass : AppTheme.EffectiveLiquidGlass
             };
-            if (AppTheme.EffectiveSurface == SurfaceStyle.LiquidGlassV2)
-                theme = theme with { LiquidGlassV2 = IsSelected ? current.EffectiveLiquidGlassV2 : AppTheme.EffectiveLiquidGlassV2 };
-            else
-                theme = theme with { LiquidGlass = IsSelected ? current.EffectiveLiquidGlass : AppTheme.EffectiveLiquidGlass };
-            return theme;
         }
     }
     public Brush WidgetBackground
@@ -92,44 +86,26 @@ public partial class ThemeButton : UserControl, INotifyPropertyChanged
         Color.TryParse(hex, out var color) ? color : Color.Parse(fallbackHex);
 
     /// <summary>
-    /// Highlight ring of the preset preview: the outline is an option of the glass
-    /// theme (drawn when <see cref="Theme.OutlineWidth"/> &gt; 0), with the live
-    /// color/width so the preview reflects what the user configured. Strongest at
-    /// the top-left and bottom-right corners, fading along every edge to nothing at
-    /// the top-right and bottom-left (conic gradient; square card → 315° start).
+    /// Optional 1 px edge for presets drawn with a native frame; every other preview shows the
+    /// shared 高光 rim instead (see <see cref="PreviewShowsHighlight"/>). The old 描边 ring no
+    /// longer exists, so the preview carries no live colour/width any more.
     /// </summary>
     public IBrush? PreviewBorderBrush =>
-        AppTheme.IsGlass && appSettingsProvider.Get().Theme.OutlineWidth > 0
-            ? BuildPreviewOutline()
-            : AppTheme.UseNativeFrame ? new SolidColorBrush(Color.Parse("#60808080")) : null;
+        AppTheme.UseNativeFrame ? new SolidColorBrush(Color.Parse("#60808080")) : null;
 
-    private ConicGradientBrush BuildPreviewOutline()
-    {
-        var theme = appSettingsProvider.Get().Theme;
-        var color = Color.TryParse(theme.EffectiveOutlineColor, out var parsed)
-            ? parsed
-            : Color.Parse(DeskCanvas.Core.Models.Settings.Theme.DefaultOutlineColor);
+    public Thickness PreviewBorderThickness => AppTheme.UseNativeFrame ? new Thickness(1) : new Thickness(0);
 
-        return new ConicGradientBrush
-        {
-            Angle = 315,
-            Center = RelativePoint.Center,
-            GradientStops =
-            {
-                new GradientStop(color, 0),
-                new GradientStop(Colors.Transparent, 0.25),
-                new GradientStop(color, 0.5),
-                new GradientStop(Colors.Transparent, 0.75),
-                new GradientStop(color, 1.0)
-            }
-        };
-    }
+    /// <summary>
+    /// 高光 preview: 毛玻璃 / 全彩 presets draw the same rim the host overlays on their cards
+    /// (液态玻璃's preview is the rendered glass surface, which lights its own rim).
+    /// </summary>
+    public bool PreviewShowsHighlight => !IsRenderedGlass && !AppTheme.UseNativeFrame;
 
-    public Thickness PreviewBorderThickness => AppTheme.UseNativeFrame
-        ? new Thickness(1)
-        : AppTheme.IsGlass && appSettingsProvider.Get().Theme.OutlineWidth > 0
-            ? new Thickness(Math.Clamp(appSettingsProvider.Get().Theme.OutlineWidth, 0, 6))
-            : new Thickness(0);
+    /// <summary>Rim strength of the live theme, shared with the liquid-glass shader.</summary>
+    public double PreviewHighlightStrength => appSettingsProvider.Get().Theme.EffectiveLiquidGlass.Highlight;
+
+    /// <summary>Rim light direction of the live theme.</summary>
+    public double PreviewHighlightAngle => appSettingsProvider.Get().Theme.EffectiveLiquidGlass.HighlightAngle;
 
     public SolidColorBrush? WidgetForeground
     {
@@ -167,7 +143,8 @@ public partial class ThemeButton : UserControl, INotifyPropertyChanged
     private void RefreshPreview()
     {
         foreach (var property in new[] { nameof(IsSelected), nameof(SelectionBrush), nameof(GlassMaterial),
-            nameof(IsRenderedGlass), nameof(WidgetBackground), nameof(WidgetForeground), nameof(PreviewBorderBrush), nameof(PreviewBorderThickness) })
+            nameof(IsRenderedGlass), nameof(WidgetBackground), nameof(WidgetForeground), nameof(PreviewBorderBrush), nameof(PreviewBorderThickness),
+            nameof(PreviewShowsHighlight), nameof(PreviewHighlightStrength), nameof(PreviewHighlightAngle) })
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(property));
     }
     

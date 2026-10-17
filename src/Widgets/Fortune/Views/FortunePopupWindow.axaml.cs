@@ -3,6 +3,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Media;
+using DeskCanvas.Services;
 using DeskCanvas.Views;
 using Fortune.Models;
 using Fortune.Services;
@@ -12,7 +13,6 @@ namespace Fortune.Views;
 
 public partial class FortunePopupWindow : SecondaryPanelWindow
 {
-    private static FortunePopupWindow? activeInstance;
     private readonly Point? spawnScreenCenter;
     private readonly FortuneViewModel viewModel;
 
@@ -39,20 +39,22 @@ public partial class FortunePopupWindow : SecondaryPanelWindow
 
     public static void ShowPopup(FortuneViewModel vm, Point? screenCenter = null, Window? owner = null, double? cornerRadius = null)
     {
-        if (PanelCoolingDown<FortunePopupWindow>()) return;
-        if (TryCloseActivePanel<FortunePopupWindow>()) return;
-
-        var popup = new FortunePopupWindow(vm, screenCenter, cornerRadius);
-        activeInstance = popup;
-        // Pinned above the widget band + activated (the bare Show() skipped both).
-        popup.ShowAsSecondaryPanel(owner);
+        // The PanelService owns the single-instance state: cooldown, toggle-close and the
+        // pinned show — including the z-band pinning the old bare Show() skipped. PerOwner
+        // keys each fortune widget's panel to its own component instance (two widgets no
+        // longer evict each other's panel), the same rule the weather panels follow.
+        PanelService.Open(new PanelRequest(
+            owner is Widget widget ? widget.InstanceId : default,
+            owner,
+            "Fortune.Details",
+            PanelScope.PerOwner,
+            () => new FortunePopupWindow(vm, screenCenter, cornerRadius)));
     }
 
     private void OnWindowClosed(object? sender, EventArgs e)
     {
         FortuneStore.FortuneDrawn -= OnFortuneDrawn;
         Closed -= OnWindowClosed;
-        if (ReferenceEquals(activeInstance, this)) activeInstance = null;
     }
 
     private void OnFortuneDrawn(DailyFortuneRecord record)

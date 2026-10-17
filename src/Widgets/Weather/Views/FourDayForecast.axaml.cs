@@ -3,8 +3,10 @@ using System.Collections.Generic;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
+using DeskCanvas.Contracts;
 using DeskCanvas.Core.Interfaces;
 using DeskCanvas.Core.Models;
+using DeskCanvas.Runtime;
 using Weather.Models;
 using Weather.ViewModels;
 
@@ -14,12 +16,13 @@ namespace Weather.Views;
 /// 通过 <see cref="IWidgetSurfaceHints"/> 向宿主声明多彩模式下的专属卡片画刷
 /// （资源键按变体解析），宿主不再按视图类型名判断外观（W10 §9.1）。
 /// </summary>
-public partial class FourDayForecast : UserControl, IFixedSizeWidget, IWidgetSelfRefreshing, IDisposable, IWidgetSurfaceHints
+public partial class FourDayForecast : UserControl, IFixedSizeWidget, IWidgetSelfRefreshing, IDisposable, IWidgetSurfaceHints, IWidgetActivityConsumer
 {
     /// <inheritdoc />
     public string? ColorfulBackgroundResourceKey => "WeatherCardBackground";
 
     private ForecastModel model;
+    private readonly IWidgetSession? session;
     private ForecastViewModel? viewModel;
 
     public static readonly IReadOnlyList<(int Columns, int Rows)> AllowedBaseSpansOf = [(2, 2)];
@@ -44,15 +47,24 @@ public partial class FourDayForecast : UserControl, IFixedSizeWidget, IWidgetSel
 
     public FourDayForecast() : this(new ForecastModel(IsZh ? "杭州" : "Hangzhou", 30.2741, 120.1551, "celsius")) {}
 
-    public FourDayForecast(ForecastModel model)
+    /// <summary>
+    /// <paramref name="session"/> is injected by WidgetFactory when the host runs the session
+    /// pipeline: the view model then gates its hourly refresh on the session's activity. Null
+    /// keeps the legacy always-on behaviour (preview, legacy layout entries).
+    /// </summary>
+    public FourDayForecast(ForecastModel model, IWidgetSession? session = null)
     {
         this.model = model;
-        viewModel = new ForecastViewModel(model);
+        this.session = session;
+        viewModel = new ForecastViewModel(model, session);
         DataContext = viewModel;
         Loaded += OnLoaded;
         Unloaded += OnUnloaded;
         InitializeComponent();
     }
+
+    /// <inheritdoc />
+    public void OnSessionActivity(ActivitySnapshot activity) => viewModel?.OnSessionActivity(activity);
 
     public void OpenPopup(object? sender, RoutedEventArgs e)
     {
@@ -96,7 +108,7 @@ public partial class FourDayForecast : UserControl, IFixedSizeWidget, IWidgetSel
     {
         if (viewModel != null) return;
 
-        viewModel = new ForecastViewModel(model);
+        viewModel = new ForecastViewModel(model, session);
         DataContext = viewModel;
     }
 
@@ -113,7 +125,7 @@ public partial class FourDayForecast : UserControl, IFixedSizeWidget, IWidgetSel
         if (viewModel != null)
         {
             viewModel.Dispose();
-            viewModel = new ForecastViewModel(model);
+            viewModel = new ForecastViewModel(model, session);
             DataContext = viewModel;
         }
     }

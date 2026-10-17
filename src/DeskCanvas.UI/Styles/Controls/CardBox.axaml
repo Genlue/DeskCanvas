@@ -1,0 +1,18 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!-- Shared Inner Card Box Container (P10)
+         Canonical variants:
+           - Border.dc-card-box
+           - Border.dc-inner-card
+         Transition aliases:
+           - Border.card-box
+           - Border.inner-card -->
+
+    <Style Selector="Border.dc-card-box, Border.dc-inner-card, Border.card-box, Border.inner-card">
+        <Setter Property="Background" Value="{DynamicResource CardSubtleFill}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource CardSubtleBorder}" />
+        <Setter Property="BorderThickness" Value="{DynamicResource CardSubtleBorderThickness}" />
+        <Setter Property="CornerRadius" Value="{DynamicResource CardSubtleCornerRadius}" />
+        <Setter Property="Padding" Value="{DynamicResource CardSubtlePadding}" />
+    </Style>
+</Styles>

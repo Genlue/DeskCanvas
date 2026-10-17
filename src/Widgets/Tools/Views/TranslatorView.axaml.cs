@@ -16,13 +16,15 @@ using Avalonia.VisualTree;
 using Tools.Models;
 using Tools.Services;
 using Tools.Services.Translation;
+using DeskCanvas.Contracts;
 using DeskCanvas.Core.Interfaces;
 using DeskCanvas.Core.Models;
+using DeskCanvas.Runtime;
 using DeskCanvas.Services;
 
 namespace Tools.Views;
 
-public partial class TranslatorView : UserControl, IWidgetSelfRefreshing, IWidgetSurfaceHints
+public partial class TranslatorView : UserControl, IWidgetSelfRefreshing, IWidgetSurfaceHints, IWidgetActivityConsumer
 {
     public string? ColorfulBackgroundResourceKey => "TranslatorCardBackground";
 
@@ -65,6 +67,8 @@ public partial class TranslatorView : UserControl, IWidgetSelfRefreshing, IWidge
     ];
 
     private TranslatorModel model;
+    private readonly IWidgetSession? session;
+    private bool renderActive;
     private readonly DispatcherTimer debounceTimer;
     private readonly DispatcherTimer toastTimer;
     private CancellationTokenSource? cts;
@@ -76,9 +80,17 @@ public partial class TranslatorView : UserControl, IWidgetSelfRefreshing, IWidge
 
     public TranslatorView() : this(new TranslatorModel()) { }
 
-    public TranslatorView(TranslatorModel model)
+    /// <summary>
+    /// <paramref name="session"/> is injected by WidgetFactory when the host runs the session
+    /// pipeline: a covered card must not fire the pending auto-translate debounce (its 600 ms
+    /// tick would spend a network request on an unseen result). Null keeps the legacy
+    /// always-on behaviour — the session-less path never receives an activity push.
+    /// </summary>
+    public TranslatorView(TranslatorModel model, IWidgetSession? session = null)
     {
         this.model = model;
+        this.session = session;
+        renderActive = session?.Activity.RenderActive ?? true;
         currentSourceLang = model.SourceLanguage;
         currentTargetLang = model.TargetLanguage;
         currentEngine = model.Engine;
@@ -678,6 +690,32 @@ public partial class TranslatorView : UserControl, IWidgetSelfRefreshing, IWidge
         debounceTimer.Stop();
         _ = ExecuteTranslateAsync();
     }
+
+    /// <summary>
+    /// Host activity push (the <see cref="IWidgetActivityConsumer"/> path, invoked on the UI
+    /// thread): a covered card stops the pending auto-translate debounce — the request is
+    /// re-armed only from the next user input, never resurrected by a resume push (which
+    /// would spend a network request the user did not trigger while the card was hidden).
+    /// Session-less views ignore the push entirely (the host never sends one to them).
+    /// </summary>
+    public void OnSessionActivity(ActivitySnapshot activity)
+    {
+        if (session == null) return;
+        renderActive = activity.RenderActive;
+        if (!renderActive)
+        {
+            debounceTimer.Stop();
+        }
+    }
+
+    /// <summary>Check seam: the injected session (null on the legacy path).</summary>
+    public IWidgetSession? SessionForChecks => session;
+
+    /// <summary>Check seam: the last activity gate value the view reconciled against.</summary>
+    public bool RenderActiveForChecks => renderActive;
+
+    /// <summary>Check seam: whether the auto-translate debounce is currently pending.</summary>
+    public bool IsDebouncePendingForChecks => debounceTimer.IsEnabled;
 
     private void OnInputKeyUp(object? sender, KeyEventArgs e)
     {

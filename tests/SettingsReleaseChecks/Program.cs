@@ -496,7 +496,7 @@ internal static class Program
     }
 
     private static AppSettings DefaultSettings() => new(
-        new Theme(true, null, 1, false, false, "Segoe UI", Surface: SurfaceStyle.Solid), [],
+        new Theme(true, null, 1, false, false, "Segoe UI", Surface: SurfaceStyle.Acrylic), [],
         new Layout(GridMode.Manual, false, false, false, false), new Dimensions(100, 10, 16),
         new Region("en"), false, null);
 

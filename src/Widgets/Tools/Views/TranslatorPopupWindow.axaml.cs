@@ -10,6 +10,7 @@ using Avalonia.Threading;
 using Tools.Models;
 using Tools.Services;
 using Tools.Services.Translation;
+using DeskCanvas.Services;
 using DeskCanvas.Views;
 
 namespace Tools.Views;
@@ -71,14 +72,16 @@ public partial class TranslatorPopupWindow : SecondaryPanelWindow
 
     public static void ShowPopup(Point? screenCenter, Window? owner = null, double? cornerRadius = null, TranslatorView? ownerView = null)
     {
-        if (PanelCoolingDown<TranslatorPopupWindow>())
-            return;
-
-        if (TryCloseActivePanel<TranslatorPopupWindow>())
-            return;
-
-        var popup = new TranslatorPopupWindow(screenCenter, cornerRadius, ownerView);
-        popup.ShowAsSecondaryPanel(owner);
+        // PerOwner identity (P8 batch F): every translator widget owns its own panel, and the
+        // ownerView sync (preferences/result hand-back) stays per pair. The service handles
+        // the cooldown, the toggle-close and the pinned show (the decision mirrors the old
+        // early returns and is deliberately ignored).
+        PanelService.Open(new PanelRequest(
+            owner is DeskCanvas.Views.Widget widget ? widget.InstanceId : default,
+            owner,
+            "tools.translator",
+            PanelScope.PerOwner,
+            () => new TranslatorPopupWindow(screenCenter, cornerRadius, ownerView)));
     }
 
     protected override void OnPanelLoaded()

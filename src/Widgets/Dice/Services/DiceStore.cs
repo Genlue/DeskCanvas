@@ -17,6 +17,17 @@ public static class DiceStore
     public static event Action<DiceRollRecord>? RollCompleted;
     public static event Action? HistoryCleared;
 
+    static DiceStore()
+    {
+        Const.ActiveProfileChanged += _ =>
+        {
+            lock (FileLock)
+            {
+                cachedData = null;
+            }
+        };
+    }
+
     public static string FilePath
     {
         get

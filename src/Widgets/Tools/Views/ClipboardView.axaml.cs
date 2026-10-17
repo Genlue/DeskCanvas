@@ -8,18 +8,21 @@ using Avalonia.Interactivity;
 using Avalonia.Threading;
 using Tools.Models;
 using Tools.Services;
+using DeskCanvas.Contracts;
 using DeskCanvas.Core.Interfaces;
 using DeskCanvas.Core.Models;
+using DeskCanvas.Runtime;
 using DeskCanvas.Services;
 
 namespace Tools.Views;
 
-public partial class ClipboardView : UserControl, IWidgetSelfRefreshing, IWidgetSurfaceHints
+public partial class ClipboardView : UserControl, IWidgetSelfRefreshing, IWidgetSurfaceHints, IWidgetActivityConsumer
 {
     public string? ColorfulBackgroundResourceKey => "ClipboardCardBackground";
 
     private readonly ClipboardMonitorService monitor;
     private ClipboardModel model;
+    private readonly IWidgetSession? session;
     private string currentFilter = "All";
     private readonly DispatcherTimer toastTimer;
     private WidgetTier currentTier = (WidgetTier)(-1);
@@ -32,11 +35,19 @@ public partial class ClipboardView : UserControl, IWidgetSelfRefreshing, IWidget
     /// </summary>
     public ClipboardView() : this(new ClipboardModel(), applySettingsToMonitor: false) { }
 
-    public ClipboardView(ClipboardModel model) : this(model, applySettingsToMonitor: true) { }
+    /// <summary>
+    /// <paramref name="session"/> is injected by WidgetFactory when the host runs the session
+    /// pipeline: the view then relays the session's activity into the monitor's polling gate,
+    /// so the shared 400 ms clipboard poll runs only while a clipboard card actually renders.
+    /// Null keeps the legacy always-on behaviour (preview, legacy layout entries) — those
+    /// hosts never push activity either.
+    /// </summary>
+    public ClipboardView(ClipboardModel model, IWidgetSession? session = null) : this(model, applySettingsToMonitor: true, session) { }
 
-    private ClipboardView(ClipboardModel model, bool applySettingsToMonitor)
+    private ClipboardView(ClipboardModel model, bool applySettingsToMonitor, IWidgetSession? session = null)
     {
         this.model = model;
+        this.session = session;
         monitor = ClipboardMonitorService.Instance;
         if (applySettingsToMonitor)
         {
@@ -73,6 +84,10 @@ public partial class ClipboardView : UserControl, IWidgetSelfRefreshing, IWidget
         SizeChanged -= OnSizeChanged;
         SizeChanged += OnSizeChanged;
 
+        // Enter the monitor's polling gate: a session-gated view counts only while it renders,
+        // a session-less view is an always-on consumer (the historic behaviour).
+        monitor.AttachView(this, sessionGated: session != null, initialRenderActive: session?.Activity.RenderActive ?? true);
+
         if (Bounds.Width > 0 && Bounds.Height > 0)
         {
             var initialTier = ResolveTier(Bounds.Size);
@@ -92,10 +107,34 @@ public partial class ClipboardView : UserControl, IWidgetSelfRefreshing, IWidget
         monitor.HistoryChanged -= OnHistoryChanged;
         SizeChanged -= OnSizeChanged;
 
+        // Leave the polling gate: with every gated view unloaded (and no always-on view left)
+        // the monitor's 400 ms clipboard poll stops.
+        monitor.DetachView(this);
+
         // Same teardown as TranslatorView: a toast caught mid-display would otherwise keep
         // this detached view alive (and hold its bindings) for up to the toast interval.
         toastTimer.Stop();
     }
+
+    /// <summary>
+    /// Host activity push (the <see cref="IWidgetActivityConsumer"/> path, invoked on the UI
+    /// thread): the monitor's polling timer follows the snapshot's
+    /// <see cref="ActivitySnapshot.RenderActive"/>. The relay only runs while the view is
+    /// loaded — a teardown push racing the Unloaded detach must not re-enter the detached
+    /// view into the monitor's gate sets. Session-less views ignore the push entirely (the
+    /// host never sends one to them).
+    /// </summary>
+    public void OnSessionActivity(ActivitySnapshot activity)
+    {
+        if (session == null || !IsLoaded) return;
+        monitor.OnViewRenderActivity(this, activity.RenderActive);
+    }
+
+    /// <summary>Check seam: the injected session (null on the legacy path).</summary>
+    public IWidgetSession? SessionForChecks => session;
+
+    /// <summary>Check seam: the monitor singleton this view pushes its render state into.</summary>
+    public ClipboardMonitorService MonitorForChecks => monitor;
 
     private void OnSizeChanged(object? sender, SizeChangedEventArgs e)
     {

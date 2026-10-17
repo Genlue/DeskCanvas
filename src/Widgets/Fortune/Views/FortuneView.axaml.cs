@@ -5,8 +5,10 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Media;
+using DeskCanvas.Contracts;
 using DeskCanvas.Core.Interfaces;
 using DeskCanvas.Core.Models;
+using DeskCanvas.Runtime;
 using DeskCanvas.Services;
 using Fortune.Models;
 using Fortune.Services;
@@ -14,7 +16,7 @@ using Fortune.ViewModels;
 
 namespace Fortune.Views;
 
-public partial class FortuneView : UserControl, IWidgetSelfRefreshing, IWidgetSurfaceHints
+public partial class FortuneView : UserControl, IWidgetSelfRefreshing, IWidgetSurfaceHints, IWidgetActivityConsumer
 {
     public string? ColorfulBackgroundResourceKey => "FortuneCardBackground";
 
@@ -30,11 +32,21 @@ public partial class FortuneView : UserControl, IWidgetSelfRefreshing, IWidgetSu
 
     public FortuneView(FortuneModel model, IWidgetLayoutProvider? layoutProvider) : this(layoutProvider, model) { }
 
-    public FortuneView(IWidgetLayoutProvider? layoutProvider, FortuneModel? model)
+    public FortuneView(FortuneModel model, IWidgetLayoutProvider? layoutProvider, IWidgetSession? session)
+        : this(layoutProvider, model, session) { }
+
+    /// <summary>
+    /// <paramref name="session"/> is injected by WidgetFactory when the host runs the session
+    /// pipeline (declared as a trailing optional constructor parameter). The view forwards the
+    /// session and every activity push to the view model, which gates its daily-rollover
+    /// watch on the snapshot's RenderActive. Null keeps the legacy always-on behaviour
+    /// (preview, legacy layout entries without identity).
+    /// </summary>
+    public FortuneView(IWidgetLayoutProvider? layoutProvider, FortuneModel? model, IWidgetSession? session = null)
     {
         this.layoutProvider = layoutProvider;
         var resolvedModel = ResolveModel(layoutProvider, model);
-        viewModel = new FortuneViewModel(resolvedModel);
+        viewModel = new FortuneViewModel(resolvedModel, session);
         DataContext = viewModel;
 
         InitializeComponent();
@@ -75,8 +87,12 @@ public partial class FortuneView : UserControl, IWidgetSelfRefreshing, IWidgetSu
         return new FortuneModel();
     }
 
+    /// <inheritdoc />
+    public void OnSessionActivity(ActivitySnapshot activity) => viewModel.OnSessionActivity(activity);
+
     private void OnLoaded(object? sender, RoutedEventArgs e)
     {
+        viewModel.Start();
         if (Bounds.Width > 0 && Bounds.Height > 0)
         {
             ApplySize(Bounds.Size);
@@ -86,6 +102,7 @@ public partial class FortuneView : UserControl, IWidgetSelfRefreshing, IWidgetSu
 
     private void OnUnloaded(object? sender, RoutedEventArgs e)
     {
+        viewModel.Stop();
         FortuneStore.FortuneDrawn -= OnFortuneDrawn;
     }
 

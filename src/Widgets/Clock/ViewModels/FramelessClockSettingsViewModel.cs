@@ -10,6 +10,7 @@ using ReactiveUI;
 using DeskCanvas.Core.Interfaces;
 using DeskCanvas.Core.Models;
 using DeskCanvas.Core.Models.Settings;
+using DeskCanvas.Runtime;
 using DeskCanvas.Services;
 using DeskCanvas.ViewModels;
 
@@ -306,10 +307,8 @@ public class FramelessClockSettingsViewModel : ReactiveObject
     /// </summary>
     private static string MaterialDescription(SurfaceStyle surface) => surface switch
     {
-        SurfaceStyle.LiquidGlassV2 => Locale.Clock_Material_LiquidGlassV2_Desc,
-        SurfaceStyle.LiquidGlass or SurfaceStyle.SoftGlow => Locale.Clock_Material_LiquidGlass_Desc,
-        SurfaceStyle.Colorful => Locale.Clock_Material_Colorful_Desc,
-        SurfaceStyle.Solid => Locale.Clock_Material_Solid_Desc,
+        SurfaceStyle.LiquidGlass => Locale.Clock_Material_LiquidGlass_Desc,
+        SurfaceStyle.FullColor => Locale.Clock_Material_Colorful_Desc,
         _ => Locale.Clock_Material_Acrylic_Desc
     };
 
@@ -490,9 +489,7 @@ public class FramelessClockSettingsViewModel : ReactiveObject
 
     public TimeZoneInfo TimeZone
     {
-        get => model.TimeZoneId != null
-            ? TimeZoneInfo.FindSystemTimeZoneById(model.TimeZoneId)
-            : TimeZoneInfo.Local;
+        get => SharedTimeZone.Resolve(model.TimeZoneId);
         set => UpdateModel(model with { TimeZoneId = value.Id });
     }
 

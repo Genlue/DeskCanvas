@@ -1,6 +1,7 @@
 using Avalonia.Controls;
 using Avalonia.Media;
 using ReactiveUI;
+using DeskCanvas.Contracts;
 using DeskCanvas.Services;
 using Weather.Models;
 using Weather.Models.Forecast;
@@ -12,18 +13,50 @@ public class ForecastViewModel : ReactiveObject, IDisposable
 {
     private readonly ForecastModel model;
     private readonly OpenMeteoWeatherProvider provider;
+    private readonly IWidgetSession? session;
+    private bool renderActive = true;
+    private int tickSubscriptions;
 
     /// <summary>Set once <see cref="Dispose"/> ran; keeps disposal (and late replies) harmless.</summary>
     private bool disposed;
 
-    public ForecastViewModel(ForecastModel model)
+    /// <summary>
+    /// <paramref name="session"/> is injected by WidgetFactory when the host runs the session
+    /// pipeline: the hourly refresh subscription is then gated on the session's activity. Null
+    /// keeps the legacy always-on behaviour (preview, legacy layout entries) — those hosts
+    /// never push activity either.
+    /// </summary>
+    public ForecastViewModel(ForecastModel model, IWidgetSession? session = null)
     {
         provider = new OpenMeteoWeatherProvider();
         this.model = model;
+        this.session = session;
+        renderActive = session?.Activity.RenderActive ?? true;
 
-        TimerService.Timer1Hour.Subscribe(UpdateForecast);
+        UpdateTickSubscription();
         UpdateForecast();
     }
+
+    /// <summary>
+    /// Host activity push (the <see cref="DeskCanvas.Runtime.IWidgetActivityConsumer"/> path,
+    /// invoked on the UI thread): the hourly refresh follows the snapshot's RenderActive.
+    /// Session-less view models ignore the push entirely (the host never sends one to them).
+    /// </summary>
+    public void OnSessionActivity(ActivitySnapshot activity)
+    {
+        if (session == null) return;
+        renderActive = activity.RenderActive;
+        UpdateTickSubscription();
+    }
+
+    /// <summary>Check seam: the live subscription count over the shared timer (0 or 1).</summary>
+    public int TickSubscriptionCountForChecks => tickSubscriptions;
+
+    /// <summary>Check seam: the injected session (null on the legacy path).</summary>
+    public IWidgetSession? SessionForChecks => session;
+
+    /// <summary>Check seam: the latest session gate value.</summary>
+    public bool RenderActiveForChecks => renderActive;
 
     private void UpdateForecast()
     {
@@ -252,8 +285,30 @@ public class ForecastViewModel : ReactiveObject, IDisposable
     {
         if (disposed) return;
         disposed = true;
-        TimerService.Timer1Hour.Unsubscribe(UpdateForecast);
+        UpdateTickSubscription();
         provider.Dispose();
         GC.SuppressFinalize(this);
+    }
+
+    /// <summary>
+    /// Single subscription state machine: the shared timer subscription exists exactly while
+    /// the session renders AND the view model is not disposed. Session-less view models render
+    /// always (<paramref name="renderActive"/> starts true and nothing flips it). Overlapping
+    /// transitions cannot double-subscribe or double-unsubscribe — the count is reconciled
+    /// from both inputs on every change instead of toggled from each.
+    /// </summary>
+    private void UpdateTickSubscription()
+    {
+        var wanted = renderActive && !disposed;
+        if (wanted && tickSubscriptions == 0)
+        {
+            tickSubscriptions++;
+            TimerService.Timer1Hour.Subscribe(UpdateForecast);
+        }
+        else if (!wanted && tickSubscriptions > 0)
+        {
+            tickSubscriptions--;
+            TimerService.Timer1Hour.Unsubscribe(UpdateForecast);
+        }
     }
 }

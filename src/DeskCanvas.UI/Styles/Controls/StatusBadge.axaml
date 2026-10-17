@@ -1,0 +1,21 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!-- Shared Status Badge (P10)
+         Canonical variants:
+           - Border.dc-badge
+           - Border.dc-status-badge
+         Transition aliases:
+           - Border.pill-badge -->
+
+    <Style Selector="Border.dc-badge, Border.dc-status-badge, Border.pill-badge">
+        <Setter Property="Background" Value="{DynamicResource BadgeBackground}" />
+        <Setter Property="CornerRadius" Value="{DynamicResource BadgeCornerRadius}" />
+        <Setter Property="Padding" Value="{DynamicResource BadgePadding}" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Border.dc-badge TextBlock, Border.dc-status-badge TextBlock, Border.pill-badge TextBlock">
+        <Setter Property="FontSize" Value="{DynamicResource BadgeFontSize}" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Foreground" Value="{DynamicResource BadgeForeground}" />
+    </Style>
+</Styles>

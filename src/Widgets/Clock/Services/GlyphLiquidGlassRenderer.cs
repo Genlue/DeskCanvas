@@ -23,16 +23,8 @@ public static class GlyphLiquidGlassRenderer
     /// <summary>7-tap separable smoothing kernel (radius 3) for the normal field.</summary>
     private static readonly float[] Weights = [1f, 3f, 6f, 8f, 6f, 3f, 1f];
 
-    private static LiquidGlassSettings ResolveGlyphOptics(Theme theme)
-    {
-        if (!theme.IsLiquidGlassV2) return theme.EffectiveLiquidGlass;
-        var current = theme.EffectiveLiquidGlassV2;
-        // Project only this material's controls into the stroke-sized lens model.
-        // Retained settings for the older soft material cannot affect V2 numerals.
-        return new LiquidGlassSettings(Blur: current.Blur, Refraction: current.Refraction,
-            Highlight: current.Highlight, Dispersion: current.Dispersion,
-            EdgeWidth: 10, EdgeTint: LiquidGlassSettings.DefaultEdgeTint, LightAngle: 225);
-    }
+    private static LiquidGlassSettings ResolveGlyphOptics(Theme theme) =>
+        theme.EffectiveLiquidGlass;
 
     public static byte[] Render(LiquidGlassRenderer.Frame frame, WallpaperSnapshot wallpaper, byte[] glyphMask, double? refractionWidth = null)
     {
@@ -103,16 +95,16 @@ public static class GlyphLiquidGlassRenderer
         // instead of the crisp hairline, a single wide sheen instead of the water-bead glint,
         // and the edge dye reads a *bloomed* colour field so a coloured patch spreads along the
         // strokes like a light source instead of stopping where the patch ends.
-        var modern = frame.Theme.IsLiquidGlassV2;
-        var soft = !modern && frame.Theme.IsSoftGlow;
-        var glowStrength = soft ? (float)Math.Clamp(optics.Glow, 0, 100) / 100f : 0f;
-        var spectrumStrength = soft ? (float)Math.Clamp(optics.Spectrum, 0, 100) / 100f : 0f;
+        var modern = true;
+        var soft = false;
+        var glowStrength = 0f;
+        var spectrumStrength = 0f;
 
         // Refraction width calculation — see ResolveLens.
         var lens = ResolveLens(optics, scale, strokeRadius, glyphEdgeScale, glyphShiftScale, refractionWidth, soft);
         var lensWidth = lens.LensWidth;
         var lensShift = lens.LensShift;
-        if (modern && optics.Refraction <= 0) lensShift = 0f;
+        if (optics.Refraction <= 0) lensShift = 0f;
         var dispStrength = lens.Dispersion;
 
         // Numeral strokes are thin: a blur wider than the lens ring erases the very detail
@@ -191,22 +183,17 @@ public static class GlyphLiquidGlassRenderer
                     : 0.22f + 0.78f * (frame.GlyphOpacity - 1f))
                 : 1f;
             var tint = (float)opacity * Math.Clamp(coatingStrength, 0f, 1f);
-            var edgeTint = (float)(optics.EdgeTint / 100.0);
-            var highlightFactor = (float)(optics.Highlight / (modern ? LiquidGlassV2Settings.HighlightReference : HighlightReference));
-            var saturation = modern ? 1f + 0.12f * (float)(frame.Theme.EffectiveLiquidGlassV2.Vibrancy / 100f) : Saturation;
+            var edgeTint = (float)(optics.Vibrancy / 100.0);
+            var highlightFactor = (float)(optics.Highlight / LiquidGlassSettings.HighlightReference);
+            var saturation = 1f + 0.12f * (float)(optics.Vibrancy / 100f);
 
-            var angle = optics.LightAngle * Math.PI / 180.0;
+            var angle = optics.HighlightAngle * Math.PI / 180.0;
             var lx = (float)Math.Cos(angle);
             var ly = (float)Math.Sin(angle);
             var l3x = lx * 0.65f;
             var l3y = ly * 0.65f;
             var l3z = 0.76f;
 
-            // 柔光玻璃: the dye reads a bloomed colour field (see LiquidGlassRenderer.AuraField), so a
-            // coloured patch spreads along the strokes instead of dyeing the pixels right above it.
-            var aura = soft ? LiquidGlassRenderer.AuraField.Build(sourcePixels, sourceW, sourceH, pad, width, height) : null;
-            // Environment colour follows the unbent backdrop. Low-pass it separately
-            // from the lens so fine leaves cannot turn the rim into coloured dashes.
             SKColor[]? environment = null;
             var environmentStep = Math.Max(1f, 4f * scale);
             var environmentWidth = Math.Max(1, (int)Math.Ceiling(sourceW / environmentStep));
@@ -322,8 +309,7 @@ public static class GlyphLiquidGlassRenderer
                 {
                     // The legacy soft recipe uses its bloom; V2 uses the smooth
                     // environment field at the unbent position of the contour.
-                    var dyeSource = !modern ? aura?.Sample(sx - pad, sy - pad) ?? middle
-                        : SamplePixel(environment!, environmentWidth, environmentHeight,
+                    var dyeSource = SamplePixel(environment!, environmentWidth, environmentHeight,
                             (x + pad + 0.5f) * environmentWidth / sourceW - 0.5f,
                             (y + pad + 0.5f) * environmentHeight / sourceH - 0.5f);
 
@@ -546,11 +532,9 @@ public static class GlyphLiquidGlassRenderer
             return (width, shift, (float)(optics.Dispersion / 100.0));
         }
 
-        // EdgeWidth 0 = the lens ring is switched off globally: the numerals keep their
-        // diffusion, dye and rim light, but nothing is bent.
-        if (optics.EdgeWidth <= 0.0) return (0f, 0f, (float)(optics.Dispersion / 100.0));
+        if (optics.Refraction <= 0.0) return (0f, 0f, (float)(optics.Dispersion / 100.0));
 
-        var edgeFrac = (float)Math.Clamp((optics.EdgeWidth / 24.0) * 0.38f * glyphEdgeScale, 0.18f, 0.46f);
+        var edgeFrac = (float)Math.Clamp(0.38f * glyphEdgeScale, 0.18f, 0.46f);
         var adaptiveWidth = SoftClamp(strokeRadius * edgeFrac, 1.2f * scale, strokeRadius * 0.46f);
         var adaptiveShift = SoftClamp((float)(optics.Refraction / 100.0) * adaptiveWidth * 1.85f * glyphShiftScale, 0.8f * scale, adaptiveWidth * 2.5f);
 

@@ -639,7 +639,7 @@ internal static partial class Program
         new Dimensions(80, 12, 16), new Region("zh-Hans"), false, null));
 
     private static IAppSettingsProvider SolidTheme() => new StubSettings(new AppSettings(
-        new Theme(false, null, 1.0, false, false, "Inter", SurfaceStyle.Solid),
+        new Theme(false, null, 1.0, false, false, "Inter", SurfaceStyle.FullColor),
         [], new Layout(GridMode.Manual, true, false, true, false),
         new Dimensions(80, 12, 16), new Region("zh-Hans"), false, null));
 

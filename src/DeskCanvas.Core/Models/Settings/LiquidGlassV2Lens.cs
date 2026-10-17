@@ -15,13 +15,13 @@ public readonly record struct LiquidGlassRefractionLens(
 
 /// <summary>
 /// The single source of truth for the 新液态玻璃 (V2) refraction coefficients, shared by the GPU
-/// shader (<c>LiquidGlassV2Effect</c>) and the CPU fallback (<c>LiquidGlassV2Renderer</c>) so the
+/// shader (<c>LiquidGlassEffect</c>) and the CPU fallback (<c>LiquidGlassRenderer</c>) so the
 /// two paths cannot drift apart — the previous duplicate blocks could, and did.
 /// <para>
 /// The library's own relation is <c>band = amount / 2</c>, both measured against the card's short
 /// side. That scales the lens with the card but leaves the corner geometry fixed, so on a large
 /// card the band eventually swallows the corner: see
-/// <see cref="LiquidGlassV2Settings.CornerBandCapFactor"/> for what breaks and why the band is
+/// <see cref="LiquidGlassSettings.CornerBandCapFactor"/> for what breaks and why the band is
 /// capped against the corner radius instead. The cap closes the band <i>and</i> the displacement
 /// together — shrinking the band while keeping the displacement would only steepen the same
 /// derivatives inside a narrower rim.

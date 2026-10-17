@@ -58,11 +58,11 @@ public class AppearanceViewModel : ReactiveObject
                     Dispatcher.UIThread.Post(() => this.RaisePropertyChanged(nameof(FocusStatusText)));
             };
         }
-        // Surface-dependent rows (glass outline) and the monochrome color picker
+        // Surface-dependent rows (高光) and the monochrome color picker
         // appear/disappear when the settings change.
         appSettingsProvider.DataChanged += (_, oldData, newData) =>
         {
-            this.RaisePropertyChanged(nameof(ShowGlassSettings));
+            this.RaisePropertyChanged(nameof(ShowHighlightSettings));
             this.RaisePropertyChanged(nameof(ShowGlassOpticsSettings));
             this.RaisePropertyChanged(nameof(ShowLegacyOptics));
             this.RaisePropertyChanged(nameof(ShowV2Settings));
@@ -72,20 +72,17 @@ public class AppearanceViewModel : ReactiveObject
             this.RaisePropertyChanged(nameof(Font));
             this.RaisePropertyChanged(nameof(GlassBlur));
             this.RaisePropertyChanged(nameof(GlassRefraction));
-            this.RaisePropertyChanged(nameof(GlassEdgeWidth));
             this.RaisePropertyChanged(nameof(GlassHighlight));
+            this.RaisePropertyChanged(nameof(GlassHighlightAngle));
             this.RaisePropertyChanged(nameof(GlassDispersion));
-            this.RaisePropertyChanged(nameof(GlassLightAngle));
-            this.RaisePropertyChanged(nameof(GlassEdgeTint));
-            this.RaisePropertyChanged(nameof(GlassGlow));
-            this.RaisePropertyChanged(nameof(GlassSpectrum));
-            this.RaisePropertyChanged(nameof(GlassDyeSpread));
+            this.RaisePropertyChanged(nameof(GlassVibrancy));
             this.RaisePropertyChanged(nameof(GlassBackdropClarity));
             this.RaisePropertyChanged(nameof(LiveSampling));
             this.RaisePropertyChanged(nameof(LiveSamplingInterval));
             this.RaisePropertyChanged(nameof(V2Blur));
             this.RaisePropertyChanged(nameof(V2Refraction));
             this.RaisePropertyChanged(nameof(V2Highlight));
+            this.RaisePropertyChanged(nameof(V2HighlightAngle));
             this.RaisePropertyChanged(nameof(V2Vibrancy));
             this.RaisePropertyChanged(nameof(V2Dispersion));
             this.RaisePropertyChanged(nameof(V2LiveSampling));
@@ -96,10 +93,6 @@ public class AppearanceViewModel : ReactiveObject
             this.RaisePropertyChanged(nameof(ShowMonochromeVariant));
             this.RaisePropertyChanged(nameof(ShowTitleBarSize));
             this.RaisePropertyChanged(nameof(TitleBarSize));
-            this.RaisePropertyChanged(nameof(SolidBackgroundDarkHex));
-            this.RaisePropertyChanged(nameof(SolidBackgroundLightHex));
-            this.RaisePropertyChanged(nameof(OutlineColorHex));
-            this.RaisePropertyChanged(nameof(OutlineWidth));
             this.RaisePropertyChanged(nameof(DarkMode));
             // The shadow row has a slider *and* a numeric box side by side, so both have to be
             // told about a change: the slider moves this property two-way, and without the
@@ -114,7 +107,6 @@ public class AppearanceViewModel : ReactiveObject
             this.RaisePropertyChanged(nameof(ShowAccentSetting));
             this.RaisePropertyChanged(nameof(ShowOpacitySetting));
             this.RaisePropertyChanged(nameof(ShowMonochromeSetting));
-            this.RaisePropertyChanged(nameof(ShowSolidBackgroundSetting));
             this.RaisePropertyChanged(nameof(AccentColorHex));
             // Only re-resolve the combo when the manual/system choice itself changed: a plain
             // colour change must not touch the selection, or the closed combo would flicker on
@@ -148,10 +140,12 @@ public class AppearanceViewModel : ReactiveObject
     public ThemeButton[] Themes { get; }
 
     /// <summary>
-    /// True when the theme is a glass surface — the blur-strength and outline
-    /// settings are hidden (and ignored) for the solid preset.
+    /// True when the 高光 rows apply: every material that is not drawn inside a native frame
+    /// (液态玻璃 reads them in its shader; 毛玻璃 and 全彩 draw the same rim in the host). The
+    /// rows write <see cref="Theme.EffectiveLiquidGlass"/>'s shared highlight optics, so the
+    /// look cannot drift between materials.
     /// </summary>
-    public bool ShowGlassSettings => appSettingsProvider.Get().Theme.IsGlass;
+    public bool ShowHighlightSettings => !appSettingsProvider.Get().Theme.UseNativeFrame;
 
     /// <summary>
     /// True for the wallpaper-sampled materials: 液态玻璃 and 新液态玻璃 expose an optics section;
@@ -159,31 +153,19 @@ public class AppearanceViewModel : ReactiveObject
     /// </summary>
     public bool ShowGlassOpticsSettings => appSettingsProvider.Get().Theme.UsesRenderedGlass;
 
-    /// <summary>True while the older lens material (液态玻璃, incl. its 柔光 recipe) is active:
-    /// the optics rows below bind to <see cref="LiquidGlassSettings"/>.</summary>
-    public bool ShowLegacyOptics => appSettingsProvider.Get().Theme.UsesRenderedGlass && !appSettingsProvider.Get().Theme.IsLiquidGlassV2;
+    public bool ShowLegacyOptics => false;
 
-    /// <summary>True while 新液态玻璃 is active: its own spec-aligned rows are shown instead.</summary>
-    public bool ShowV2Settings => appSettingsProvider.Get().Theme.IsLiquidGlassV2;
+    public bool ShowV2Settings => false;
+
+    public bool ShowSoftGlowSettings => false;
 
     /// <summary>
-    /// The soft-recipe rows (halo / spectrum / dye spread). They belong to the merged theme now,
-    /// so they are always offered alongside the other optics.
+    /// Section title of the optics block: 液态玻璃.
     /// </summary>
-    public bool ShowSoftGlowSettings => ShowLegacyOptics;
+    public string GlassOpticsTitle => Locale.Settings_Appearance_Surface_LiquidGlass;
 
     /// <summary>
-    /// Section title of the optics block, named after the active material: 液态玻璃 (the
-    /// LiquidGlassV2 recipe) or 柔光玻璃 (the older lens recipe).
-    /// </summary>
-    public string GlassOpticsTitle => appSettingsProvider.Get().Theme.IsLiquidGlassV2
-        ? Locale.Settings_Appearance_Surface_LiquidGlassV2
-        : Locale.Settings_Appearance_Surface_LiquidGlass;
-
-    /// <summary>
-    /// Whether the optics rows (实时采样 → 染色扩散) are unfolded. They are collapsed by
-    /// default — expert knobs behind a working out-of-the-box theme — and the state is
-    /// session-local on purpose: it is a reading aid, not a preference.
+    /// Whether the optics rows are unfolded.
     /// </summary>
     public bool OpticsExpanded
     {
@@ -202,154 +184,70 @@ public class AppearanceViewModel : ReactiveObject
         get => SliderTheme.EffectiveLiquidGlass.Refraction;
         set => UpdateGlass(glass => glass with { Refraction = value });
     }
-    public double GlassEdgeWidth
-    {
-        get => SliderTheme.EffectiveLiquidGlass.EdgeWidth;
-        set => UpdateGlass(glass => glass with { EdgeWidth = value });
-    }
     public double GlassHighlight
     {
         get => SliderTheme.EffectiveLiquidGlass.Highlight;
         set => UpdateGlass(glass => glass with { Highlight = value });
+    }
+    public double GlassHighlightAngle
+    {
+        get => SliderTheme.EffectiveLiquidGlass.HighlightAngle;
+        set => UpdateGlass(glass => glass with { HighlightAngle = value });
     }
     public double GlassDispersion
     {
         get => SliderTheme.EffectiveLiquidGlass.Dispersion;
         set => UpdateGlass(glass => glass with { Dispersion = value });
     }
-    public double GlassLightAngle
+    public double GlassVibrancy
     {
-        get => SliderTheme.EffectiveLiquidGlass.LightAngle;
-        set => UpdateGlass(glass => glass with { LightAngle = value });
+        get => SliderTheme.EffectiveLiquidGlass.Vibrancy;
+        set => UpdateGlass(glass => glass with { Vibrancy = value });
     }
-
-    /// <summary>边缘染色 strength (0-100%): the soft colored rim at the glass border.</summary>
-    public double GlassEdgeTint
-    {
-        get => SliderTheme.EffectiveLiquidGlass.EdgeTint;
-        set => UpdateGlass(glass => glass with { EdgeTint = value });
-    }
-
-    /// <summary>柔光晕 strength (0-100%) of 柔光玻璃: the diffused luminous bloom around the rim.</summary>
-    public double GlassGlow
-    {
-        get => SliderTheme.EffectiveLiquidGlass.Glow;
-        set => UpdateGlass(glass => glass with { Glow = value });
-    }
-
-    /// <summary>光谱弥散 (0-100%) of 柔光玻璃: how far the dispersion blends towards a full spectrum.</summary>
-    public double GlassSpectrum
-    {
-        get => SliderTheme.EffectiveLiquidGlass.Spectrum;
-        set => UpdateGlass(glass => glass with { Spectrum = value });
-    }
-
-    /// <summary>染色扩散 (0-100%) of 柔光玻璃: how far the edge dye reaches into the card (0 = rim only).</summary>
-    public double GlassDyeSpread
-    {
-        get => SliderTheme.EffectiveLiquidGlass.DyeSpread;
-        set => UpdateGlass(glass => glass with { DyeSpread = value });
-    }
-
-    /// <summary>
-    /// 背景清晰度 (25-100%): the resolution the shared backdrop is built at, relative to the
-    /// desktop's long side. This is the knob that actually moves the live-sampling rate — the
-    /// backdrop's downscale + blur is the half of a sampling round that is not the desktop grab,
-    /// and it costs roughly the square of this value. 100% = native pixels, no compression.
-    /// </summary>
     public double GlassBackdropClarity
     {
         get => SliderTheme.EffectiveLiquidGlass.BackdropClarity;
         set => UpdateGlass(glass => glass with { BackdropClarity = value });
     }
 
-    /// <summary>
-    /// Sample the desktop continuously so animated wallpapers stay live behind the glass.
-    /// Switching this off freezes the last captured frame — the static material — which is what a
-    /// still wallpaper or a battery-saving session wants.
-    /// </summary>
+    /// <summary>Legacy compatibility aliases</summary>
+    public double GlassEdgeWidth { get => 0; set { } }
+    public double GlassLightAngle { get => GlassHighlightAngle; set => GlassHighlightAngle = value; }
+    public double GlassEdgeTint { get => 0; set { } }
+    public double GlassGlow { get => 0; set { } }
+    public double GlassSpectrum { get => 0; set { } }
+    public double GlassDyeSpread { get => 0; set { } }
+
+    /// <summary>Sample the desktop continuously so animated wallpapers stay live behind the glass.</summary>
     public bool LiveSampling
     {
         get => appSettingsProvider.Get().Theme.EffectiveLiquidGlass.LiveSampling;
         set => UpdateGlass(glass => glass with { LiveSampling = value }, commitImmediately: true);
     }
 
-    /// <summary>Sampling interval in milliseconds; shorter is smoother and more expensive.</summary>
+    /// <summary>Sampling interval in milliseconds.</summary>
     public int LiveSamplingInterval
     {
         get => appSettingsProvider.Get().Theme.EffectiveLiquidGlass.LiveSamplingInterval;
         set => UpdateGlass(glass => glass with { LiveSamplingInterval = value }, commitImmediately: true);
     }
 
-    // ---------- 新液态玻璃 optics (LiquidGlassV2Settings) ----------
+    // ---------- V2 forwarding aliases for backward compatibility ----------
 
-    /// <summary>模糊 (0-100): the light backdrop blur.</summary>
-    public double V2Blur
-    {
-        get => SliderTheme.EffectiveLiquidGlassV2.Blur;
-        set => UpdateV2(glass => glass with { Blur = value });
-    }
-
-    /// <summary>折射 (0-100): the rim lens strength — quarter-circle displacement peaking at the outline.</summary>
-    public double V2Refraction
-    {
-        get => SliderTheme.EffectiveLiquidGlassV2.Refraction;
-        set => UpdateV2(glass => glass with { Refraction = value });
-    }
-
-    /// <summary>边缘高光 (0-100): the hairline rim stroke's alpha.</summary>
-    public double V2Highlight
-    {
-        get => SliderTheme.EffectiveLiquidGlassV2.Highlight;
-        set => UpdateV2(glass => glass with { Highlight = value });
-    }
-
-    /// <summary>活力 (0-100): the iOS vibrancy colour boost (33 ≈ the library's saturation ×1.5).</summary>
-    public double V2Vibrancy
-    {
-        get => SliderTheme.EffectiveLiquidGlassV2.Vibrancy;
-        set => UpdateV2(glass => glass with { Vibrancy = value });
-    }
-
-    /// <summary>色散 (0-100): the seven-tap spectral split along the rim displacement.</summary>
-    public double V2Dispersion
-    {
-        get => SliderTheme.EffectiveLiquidGlassV2.Dispersion;
-        set => UpdateV2(glass => glass with { Dispersion = value });
-    }
-
-    /// <summary>Sample the desktop continuously so animated wallpapers stay live behind the glass.</summary>
-    public bool V2LiveSampling
-    {
-        get => appSettingsProvider.Get().Theme.EffectiveLiquidGlassV2.LiveSampling;
-        set => UpdateV2(glass => glass with { LiveSampling = value }, commitImmediately: true);
-    }
-
-    /// <summary>Sampling interval in milliseconds; shorter is smoother and more expensive.</summary>
-    public int V2LiveSamplingInterval
-    {
-        get => appSettingsProvider.Get().Theme.EffectiveLiquidGlassV2.LiveSamplingInterval;
-        set => UpdateV2(glass => glass with { LiveSamplingInterval = value }, commitImmediately: true);
-    }
-
-    /// <summary>
-    /// 背景清晰度 (25-100%): the resolution the shared backdrop is built at. The material leans
-    /// on the lens rather than a heavy pre-blur, so its factory default is richer than 液态玻璃's.
-    /// </summary>
-    public double V2BackdropClarity
-    {
-        get => SliderTheme.EffectiveLiquidGlassV2.BackdropClarity;
-        set => UpdateV2(glass => glass with { BackdropClarity = value });
-    }
+    public double V2Blur { get => GlassBlur; set => GlassBlur = value; }
+    public double V2Refraction { get => GlassRefraction; set => GlassRefraction = value; }
+    public double V2Highlight { get => GlassHighlight; set => GlassHighlight = value; }
+    public double V2HighlightAngle { get => GlassHighlightAngle; set => GlassHighlightAngle = value; }
+    public double V2Vibrancy { get => GlassVibrancy; set => GlassVibrancy = value; }
+    public double V2Dispersion { get => GlassDispersion; set => GlassDispersion = value; }
+    public bool V2LiveSampling { get => LiveSampling; set => LiveSampling = value; }
+    public int V2LiveSamplingInterval { get => LiveSamplingInterval; set => LiveSamplingInterval = value; }
+    public double V2BackdropClarity { get => GlassBackdropClarity; set => GlassBackdropClarity = value; }
 
     private void UpdateV2(Func<LiquidGlassV2Settings, LiquidGlassV2Settings> update,
         bool commitImmediately = false, [CallerMemberName] string? propertyName = null)
     {
-        var theme = commitImmediately ? appSettingsProvider.Get().Theme : SliderTheme;
-        var glass = update(theme.EffectiveLiquidGlassV2).Normalize();
-        if (glass == theme.EffectiveLiquidGlassV2) return;
-        if (commitImmediately) SaveTheme(theme with { LiquidGlassV2 = glass });
-        else StageSlider(draft => draft with { LiquidGlassV2 = glass }, propertyName);
+        UpdateGlass(glass => update(new LiquidGlassV2Settings(glass)), commitImmediately, propertyName);
     }
 
     private void UpdateGlass(Func<LiquidGlassSettings, LiquidGlassSettings> update,
@@ -358,8 +256,9 @@ public class AppearanceViewModel : ReactiveObject
         var theme = commitImmediately ? appSettingsProvider.Get().Theme : SliderTheme;
         var glass = update(theme.EffectiveLiquidGlass).Normalize();
         if (glass == theme.EffectiveLiquidGlass) return;
-        if (commitImmediately) SaveTheme(theme with { LiquidGlass = glass });
-        else StageSlider(draft => draft with { LiquidGlass = glass }, propertyName);
+        var v2 = new LiquidGlassV2Settings(glass);
+        if (commitImmediately) SaveTheme(theme with { LiquidGlass = glass, LiquidGlassV2 = v2 });
+        else StageSlider(draft => draft with { LiquidGlass = glass, LiquidGlassV2 = v2 }, propertyName);
     }
 
     private void StageSlider(Func<Theme, Theme> update, string? propertyName)
@@ -386,10 +285,10 @@ public class AppearanceViewModel : ReactiveObject
     private void RaiseSliderProperties()
     {
         foreach (var name in new[] { nameof(OpacityLevel), nameof(GlassBlur), nameof(GlassRefraction),
-            nameof(GlassEdgeWidth), nameof(GlassHighlight), nameof(GlassDispersion), nameof(GlassLightAngle),
-            nameof(GlassEdgeTint), nameof(GlassGlow), nameof(GlassSpectrum), nameof(GlassDyeSpread),
+            nameof(GlassHighlight), nameof(GlassHighlightAngle), nameof(GlassDispersion), nameof(GlassVibrancy),
             nameof(GlassBackdropClarity), nameof(V2Blur), nameof(V2Refraction), nameof(V2Highlight),
-            nameof(V2Vibrancy), nameof(V2Dispersion), nameof(V2BackdropClarity), nameof(TextShadowStrength) })
+            nameof(V2HighlightAngle), nameof(V2Vibrancy), nameof(V2Dispersion), nameof(V2BackdropClarity),
+            nameof(TextShadowStrength) })
             this.RaisePropertyChanged(name);
     }
 
@@ -438,16 +337,11 @@ public class AppearanceViewModel : ReactiveObject
     }
 
     /// <summary>
-    /// Reset the active rendered material's optics to its factory recipe: 新液态玻璃 goes back
-    /// to <see cref="LiquidGlassV2Settings"/>' spec-aligned defaults, the merged 液态玻璃 theme
-    /// to <see cref="LiquidGlassSettings"/>. 柔光玻璃 has no separate defaults any more: its look
-    /// is a set of knob positions on the lens theme, and 柔光晕 / 光谱弥散 are what switch it
-    /// back on.
+    /// Reset the active rendered material's optics to its factory recipe.
     /// </summary>
     public void ResetLiquidGlass()
     {
-        if (appSettingsProvider.Get().Theme.IsLiquidGlassV2) UpdateV2(_ => new LiquidGlassV2Settings(), commitImmediately: true);
-        else UpdateGlass(_ => new LiquidGlassSettings(), commitImmediately: true);
+        UpdateGlass(_ => new LiquidGlassSettings(), commitImmediately: true);
     }
 
     public void RefreshLiquidGlassWallpaper()
@@ -511,10 +405,6 @@ public class AppearanceViewModel : ReactiveObject
     /// </summary>
     public bool ShowMonochromeSetting => CurrentColorPolicy == ThemeColorPolicy.Normal;
 
-    /// <summary>
-    /// Custom background colors are hidden in Colorful mode, which strictly uses Apple HIG light/dark backgrounds.
-    /// </summary>
-    public bool ShowSolidBackgroundSetting => CurrentColorPolicy == ThemeColorPolicy.Normal;
 
     public bool ShowColorPalette => appSettingsProvider.Get().Theme.AccentColor != null;
     
@@ -819,40 +709,6 @@ public class AppearanceViewModel : ReactiveObject
 
     public bool CommitOpacityLevel() => CommitThemeSliders();
 
-    /// <summary>
-    /// Highlight-ring colour of the outlined-glass theme, "#AARRGGBB" — the ring's alpha is part
-    /// of the colour, so it is stored and edited here.
-    /// <para>
-    /// Reads the <i>effective</i> value so the row shows the default while nothing is stored,
-    /// and writing that same value back does not materialize it.
-    /// </para>
-    /// </summary>
-    public string? OutlineColorHex
-    {
-        get => appSettingsProvider.Get().Theme.EffectiveOutlineColor;
-        set
-        {
-            var settings = appSettingsProvider.Get();
-            if (settings.Theme.EffectiveOutlineColor == value) return;
-            SaveTheme(settings.Theme with { OutlineColor = value });
-        }
-    }
-
-    /// <summary>
-    /// Highlight-ring thickness of the outlined-glass theme in DIPs; 0 hides the ring.
-    /// </summary>
-    public double OutlineWidth
-    {
-        get => appSettingsProvider.Get().Theme.OutlineWidth;
-        set
-        {
-            var settings = appSettingsProvider.Get();
-            var width = Math.Clamp(value, 0, 6);
-            if (Math.Abs(settings.Theme.OutlineWidth - width) < 0.001) return;
-            SaveTheme(settings.Theme with { OutlineWidth = width });
-        }
-    }
-    
     public bool Monochrome
     {
         get => appSettingsProvider.Get().Theme.Monochrome;
@@ -923,62 +779,6 @@ public class AppearanceViewModel : ReactiveObject
         }
     }
 
-    /// <summary>
-    /// Widget card background color in dark mode (HEX, alpha is the global opacity slider's job).
-    /// Applies to both 毛玻璃 and 纯色 surfaces.
-    /// </summary>
-    public string? SolidBackgroundDarkHex
-    {
-        get => appSettingsProvider.Get().Theme.EffectiveSolidBackgroundDark;
-        set
-        {
-            if (appSettingsProvider.Get().Theme.EffectiveSolidBackgroundDark == value) return;
-            SaveSolidBackground(SolidBackgroundDark: value);
-        }
-    }
-
-    /// <summary>
-    /// Widget card background color in light mode (HEX, alpha is the global opacity slider's job).
-    /// Applies to both 毛玻璃 and 纯色 surfaces.
-    /// </summary>
-    public string? SolidBackgroundLightHex
-    {
-        get => appSettingsProvider.Get().Theme.EffectiveSolidBackgroundLight;
-        set
-        {
-            if (appSettingsProvider.Get().Theme.EffectiveSolidBackgroundLight == value) return;
-            SaveSolidBackground(SolidBackgroundLight: value);
-        }
-    }
-
-    /// <summary>
-    /// Apply the currently selected dark-mode color to the light-mode color.
-    /// </summary>
-    public void ApplySolidToLight()
-    {
-        SaveSolidBackground(SolidBackgroundLight: SolidBackgroundDarkHex);
-        this.RaisePropertyChanged(nameof(SolidBackgroundLightHex));
-    }
-
-    /// <summary>
-    /// Apply the currently selected light-mode color to the dark-mode color.
-    /// </summary>
-    public void ApplySolidToDark()
-    {
-        SaveSolidBackground(SolidBackgroundDark: SolidBackgroundLightHex);
-        this.RaisePropertyChanged(nameof(SolidBackgroundDarkHex));
-    }
-
-    private void SaveSolidBackground(string? SolidBackgroundDark = null, string? SolidBackgroundLight = null)
-    {
-        var settings = appSettingsProvider.Get();
-        var theme = settings.Theme with
-        {
-            SolidBackgroundDark = SolidBackgroundDark ?? settings.Theme.SolidBackgroundDark,
-            SolidBackgroundLight = SolidBackgroundLight ?? settings.Theme.SolidBackgroundLight
-        };
-        SaveTheme(theme);
-    }
     
     /// <summary>
     /// Every font available: all fonts installed on the system, plus the bundled Inter font.

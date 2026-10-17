@@ -9,6 +9,7 @@ using Avalonia.Interactivity;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Threading;
+using DeskCanvas.Services;
 using DeskCanvas.Views;
 using Tools.Locales;
 using Tools.Models;
@@ -81,14 +82,16 @@ public partial class CalculatorPopupWindow : SecondaryPanelWindow
 
     public static void ShowPopup(Point? screenCenter, Window? owner = null, double? cornerRadius = null, CalculatorView? ownerView = null)
     {
-        if (PanelCoolingDown<CalculatorPopupWindow>())
-            return;
-
-        if (TryCloseActivePanel<CalculatorPopupWindow>())
-            return;
-
-        var popup = new CalculatorPopupWindow(screenCenter, cornerRadius, ownerView);
-        popup.ShowAsSecondaryPanel(owner);
+        // PerOwner identity (P8 batch F): every calculator widget owns its own panel. The
+        // service handles the cooldown, the toggle-close and the pinned show (the decision
+        // mirrors the old early returns and is deliberately ignored). The calculator keeps a
+        // process-wide store, so the panels still share one history/memory state.
+        PanelService.Open(new PanelRequest(
+            owner is DeskCanvas.Views.Widget widget ? widget.InstanceId : default,
+            owner,
+            "tools.calculator",
+            PanelScope.PerOwner,
+            () => new CalculatorPopupWindow(screenCenter, cornerRadius, ownerView)));
     }
 
     protected override void OnPanelLoaded()

@@ -2,6 +2,8 @@ using System;
 using System.Globalization;
 using System.Threading;
 using Clock.Models;
+using DeskCanvas.Contracts;
+using DeskCanvas.Runtime;
 using DeskCanvas.Services;
 using ReactiveUI;
 
@@ -11,8 +13,10 @@ public class FlipClockViewModel : ReactiveObject, IDisposable
 {
     private FlipClockModel model;
     private readonly UpdateTimer timer;
+    private readonly IWidgetSession? session;
     private bool isRunning;
-    private TimeZoneInfo? cachedTimeZone;
+    private bool renderActive = true;
+    private int tickSubscriptions;
 
     private string hourText = "00";
     private string minuteText = "00";
@@ -22,9 +26,17 @@ public class FlipClockViewModel : ReactiveObject, IDisposable
     private string cardDateBadgeText = string.Empty;
     private string barRightText = string.Empty;
 
-    public FlipClockViewModel(FlipClockModel model)
+    /// <summary>
+    /// Session-less widgets (the gallery preview, legacy layout entries without identity) pass
+    /// no session and keep the historic always-on behaviour: ticking then only follows
+    /// <see cref="Start"/>/<see cref="Stop"/>. With a session, the subscription is gated by
+    /// the latest activity snapshot's <see cref="ActivitySnapshot.RenderActive"/>.
+    /// </summary>
+    public FlipClockViewModel(FlipClockModel model, IWidgetSession? session = null)
     {
         this.model = model;
+        this.session = session;
+        renderActive = session?.Activity.RenderActive ?? true;
         // Always subscribe to Timer1Second so minute flips happen on the exact :00 second boundary.
         timer = TimerService.Timer1Second;
         Start();
@@ -34,16 +46,36 @@ public class FlipClockViewModel : ReactiveObject, IDisposable
     {
         if (isRunning) return;
         isRunning = true;
-        timer.Subscribe(UpdateTime);
-        UpdateTime();
+        UpdateTickSubscription();
     }
 
     public void Stop()
     {
         if (!isRunning) return;
         isRunning = false;
-        timer.Unsubscribe(UpdateTime);
+        UpdateTickSubscription();
     }
+
+    /// <summary>
+    /// Host activity push (the <see cref="IWidgetActivityConsumer"/> path, invoked on the UI
+    /// thread): ticking follows the snapshot's <see cref="ActivitySnapshot.RenderActive"/>.
+    /// Session-less view models ignore the push entirely (the host never sends one to them).
+    /// </summary>
+    public void OnSessionActivity(ActivitySnapshot activity)
+    {
+        if (session == null) return;
+        renderActive = activity.RenderActive;
+        UpdateTickSubscription();
+    }
+
+    /// <summary>Check seam: the live subscription count over the shared timer (0 or 1).</summary>
+    public int TickSubscriptionCountForChecks => tickSubscriptions;
+
+    /// <summary>Check seam: the injected session (null on the legacy path).</summary>
+    public IWidgetSession? SessionForChecks => session;
+
+    /// <summary>Check seam: whether the shared timer subscription is currently live.</summary>
+    public bool IsTickingForChecks => tickSubscriptions > 0;
 
     public void Dispose()
     {
@@ -54,7 +86,6 @@ public class FlipClockViewModel : ReactiveObject, IDisposable
     public void UpdateModel(FlipClockModel newModel)
     {
         model = newModel;
-        cachedTimeZone = null;
         UpdateTime();
 
         this.RaisePropertyChanged(nameof(ShowTopBar));
@@ -72,14 +103,30 @@ public class FlipClockViewModel : ReactiveObject, IDisposable
         this.RaisePropertyChanged(nameof(MinuteBottomRightBadge));
     }
 
-    private TimeZoneInfo ActiveTimeZone => cachedTimeZone ??= (model.TimeZoneId != null
-        ? SafeFindTimeZone(model.TimeZoneId)
-        : TimeZoneInfo.Local);
+    /// <summary>
+    /// Shared timezone resolution (the Runtime copy): a null id is the unset timezone (local),
+    /// an unknown id falls back to Utc instead of throwing (the SharedTimeZone contract).
+    /// </summary>
+    private TimeZoneInfo ActiveTimeZone => SharedTimeZone.Resolve(model.TimeZoneId);
 
-    private static TimeZoneInfo SafeFindTimeZone(string id)
+    /// <summary>
+    /// Single subscription state machine (the Digital pilot's shape): the shared timer
+    /// subscription exists exactly while the control is running AND the session renders.
+    /// </summary>
+    private void UpdateTickSubscription()
     {
-        try { return TimeZoneInfo.FindSystemTimeZoneById(id); }
-        catch { return TimeZoneInfo.Local; }
+        var wanted = isRunning && renderActive;
+        if (wanted && tickSubscriptions == 0)
+        {
+            tickSubscriptions++;
+            timer.Subscribe(UpdateTime);
+            UpdateTime();
+        }
+        else if (!wanted && tickSubscriptions > 0)
+        {
+            tickSubscriptions--;
+            timer.Unsubscribe(UpdateTime);
+        }
     }
 
     private void UpdateTime()

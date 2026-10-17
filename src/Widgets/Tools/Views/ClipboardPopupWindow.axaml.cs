@@ -53,14 +53,16 @@ public partial class ClipboardPopupWindow : SecondaryPanelWindow
 
     public static void ShowPopup(Point? screenCenter, Window? owner = null, double? cornerRadius = null)
     {
-        if (PanelCoolingDown<ClipboardPopupWindow>())
-            return;
-
-        if (TryCloseActivePanel<ClipboardPopupWindow>())
-            return;
-
-        var popup = new ClipboardPopupWindow(screenCenter, cornerRadius);
-        popup.ShowAsSecondaryPanel(owner);
+        // PerOwner identity (P8 batch F): every clipboard widget owns its own panel — two
+        // clipboard components no longer evict each other's panel. The service handles the
+        // cooldown, the toggle-close and the pinned show (the decision mirrors the old early
+        // returns and is deliberately ignored).
+        PanelService.Open(new PanelRequest(
+            owner is DeskCanvas.Views.Widget widget ? widget.InstanceId : default,
+            owner,
+            "tools.clipboard",
+            PanelScope.PerOwner,
+            () => new ClipboardPopupWindow(screenCenter, cornerRadius)));
     }
 
     protected override void OnPanelLoaded()

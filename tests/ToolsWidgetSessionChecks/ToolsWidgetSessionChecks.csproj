@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <!-- ControlCenter targets the Windows TFM, so the probe targets the same TFM as
+         WidgetReleaseChecks / UiFoundationChecks. -->
+    <TargetFramework>net8.0-windows10.0.19041</TargetFramework>
+    <SupportedOSPlatform>windows</SupportedOSPlatform>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia" />
+    <PackageReference Include="Avalonia.Desktop" />
+    <PackageReference Include="Avalonia.Headless" />
+    <PackageReference Include="Avalonia.Themes.Fluent" />
+    <ProjectReference Include="..\..\src\DeskCanvas.Contracts\DeskCanvas.Contracts.csproj" />
+    <ProjectReference Include="..\..\src\DeskCanvas.Runtime\DeskCanvas.Runtime.csproj" />
+    <ProjectReference Include="..\..\src\DeskCanvas\DeskCanvas.csproj" />
+    <!-- The components under test (P8 batch F: Tools / Stack / Search / ControlCenter). -->
+    <ProjectReference Include="..\..\src\Widgets\Tools\Tools.csproj" />
+    <ProjectReference Include="..\..\src\Widgets\ControlCenter\ControlCenter.csproj" />
+  </ItemGroup>
+
+</Project>

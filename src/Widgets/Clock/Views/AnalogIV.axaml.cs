@@ -4,6 +4,8 @@ using Avalonia.Controls;
 using Avalonia.Media;
 using Clock.Models;
 using Clock.ViewModels;
+using DeskCanvas.Contracts;
+using DeskCanvas.Runtime;
 using DeskCanvas.Core.Interfaces;
 
 namespace Clock.Views;
@@ -14,7 +16,7 @@ namespace Clock.Views;
 /// 通过 <see cref="IWidgetSurfaceHints"/> 声明 Colorful 模式下的专属卡片画刷
 /// （ClockAnalogIVCardBackground —— 亮色白卡、暗色黑卡，表盘全域即卡片，避免亮色模式下因卡片恒黑导致黑字黑线"一片黑"）。
 /// </summary>
-public partial class AnalogIV : UserControl, IFixedSizeWidget, IWidgetSurfaceHints
+public partial class AnalogIV : UserControl, IFixedSizeWidget, IWidgetSurfaceHints, IWidgetActivityConsumer
 {
     /// <inheritdoc />
     public string? ColorfulBackgroundResourceKey => "ClockAnalogIVCardBackground";
@@ -30,16 +32,25 @@ public partial class AnalogIV : UserControl, IFixedSizeWidget, IWidgetSurfaceHin
 
     public AnalogIV() : this(new ClockModel()) {}
 
-    public AnalogIV(ClockModel clockModel)
+    /// <summary>
+    /// <paramref name="session"/> is injected by WidgetFactory when the host runs the session
+    /// pipeline (a stable instance identity): the view model then gates its timer subscription
+    /// on the session's activity. Null keeps the legacy always-on behaviour (preview, legacy
+    /// layout entries) — those hosts never push activity either.
+    /// </summary>
+    public AnalogIV(ClockModel clockModel, IWidgetSession? session = null)
     {
         this.clockModel = clockModel;
-        viewModel = new TickDialClockViewModel(clockModel);
+        viewModel = new TickDialClockViewModel(clockModel, session);
         DataContext = viewModel;
         Loaded += (_, _) => viewModel.Start();
         Unloaded += (_, _) => viewModel.Stop();
         SizeChanged += OnSizeChanged;
         InitializeComponent();
     }
+
+    /// <inheritdoc />
+    public void OnSessionActivity(ActivitySnapshot activity) => viewModel.OnSessionActivity(activity);
 
     /// <summary>
     /// 表盘颜色解析纯函数，委托给 <see cref="AnalogI.ResolveDialColor"/>，保持测试与迁移契约向下兼容。

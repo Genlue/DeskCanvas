@@ -29,6 +29,11 @@
             <Private>false</Private>
             <ExcludeAssets>runtime</ExcludeAssets>
         </ProjectReference>
+        <!-- IWidgetActivityConsumer (the host activity push the views forward to their VMs). -->
+        <ProjectReference Include="..\..\DeskCanvas.Runtime\DeskCanvas.Runtime.csproj">
+            <Private>false</Private>
+            <ExcludeAssets>runtime</ExcludeAssets>
+        </ProjectReference>
     </ItemGroup>
 
     <ItemGroup>

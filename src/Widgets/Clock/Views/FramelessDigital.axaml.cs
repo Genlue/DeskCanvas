@@ -16,9 +16,11 @@ using Avalonia.Styling;
 using Avalonia.Threading;
 using Clock.Models;
 using Clock.Services;
+using DeskCanvas.Contracts;
 using DeskCanvas.Core.Interfaces;
 using DeskCanvas.Core.Models;
 using DeskCanvas.Core.Models.Settings;
+using DeskCanvas.Runtime;
 using DeskCanvas.Services;
 using DeskCanvas.Views.Controls;
 
@@ -39,11 +41,12 @@ namespace Clock.Views;
 /// </list>
 /// </para>
 /// </summary>
-public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSelfRefreshing, IWidgetSuspendable, IFocusThemedContent
+public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSelfRefreshing, IWidgetSuspendable, IFocusThemedContent, IWidgetActivityConsumer
 {
     private FramelessClockModel model;
     private readonly IWidgetLayoutProvider? widgetLayoutProvider;
     private readonly IAppSettingsProvider? appSettingsProvider;
+    private readonly IWidgetSession? session;
 
     /// <summary>The resolved material, snapshotted by <see cref="ApplyCurrentMaterial"/>.</summary>
     private FramelessMaterial material;
@@ -82,6 +85,20 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
     private bool hasRegionSet;
     private bool suspended;
 
+    // Tick gating (the Digital pilot's reconciliation, mirrored on the view because the
+    // frameless clock keeps its tick logic in code-behind): the shared timer subscription
+    // exists exactly while the control is loaded AND the session renders. Session-less
+    // instances keep the historic always-on behaviour.
+    private bool isRunning = true;
+    private bool renderActive = true;
+    private bool isSubscribed;
+
+    /// <summary>Check seam: the injected session (null on the legacy path).</summary>
+    public IWidgetSession? SessionForChecks => session;
+
+    /// <summary>Check seam: whether the shared timer subscription is currently live.</summary>
+    public bool IsTickingForChecks => isSubscribed;
+
     private static readonly Theme FallbackTheme = new(
         DarkMode: null,
         AccentColor: null,
@@ -105,11 +122,13 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
     public FramelessDigital(FramelessClockModel model, IWidgetLayoutProvider? widgetLayoutProvider)
         : this(model, widgetLayoutProvider, null) { }
 
-    public FramelessDigital(FramelessClockModel model, IWidgetLayoutProvider? widgetLayoutProvider, IAppSettingsProvider? appSettingsProvider)
+    public FramelessDigital(FramelessClockModel model, IWidgetLayoutProvider? widgetLayoutProvider, IAppSettingsProvider? appSettingsProvider, IWidgetSession? session = null)
     {
         this.model = model;
         this.widgetLayoutProvider = widgetLayoutProvider;
         this.appSettingsProvider = appSettingsProvider;
+        this.session = session;
+        renderActive = session?.Activity.RenderActive ?? true;
 
         material = FramelessThemeResolver.Resolve(this.model, appSettingsProvider?.Get().Theme);
 
@@ -168,6 +187,7 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
 
         lastRegionKey = null;
         hasRegionSet = false;
+        isRunning = true;
         ApplyCurrentMaterial();
     }
 
@@ -195,8 +215,10 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
             appSettingsProvider.DataChanged -= OnAppSettingsChanged;
         }
 
+        isRunning = false;
         currentTimer?.Unsubscribe(OnTimerTick);
         currentTimer = null;
+        isSubscribed = false;
 
         ClearLiquidGlassCache();
         SetDisplayedFrame(null);
@@ -307,14 +329,52 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
         }
     }
 
+    /// <summary>
+    /// Host activity push (the <see cref="IWidgetActivityConsumer"/> path, invoked on the UI
+    /// thread): ticking follows the snapshot's <see cref="ActivitySnapshot.RenderActive"/>.
+    /// Session-less instances ignore the push entirely (the host never sends one to them).
+    /// </summary>
+    public void OnSessionActivity(ActivitySnapshot activity)
+    {
+        if (session == null) return;
+        renderActive = activity.RenderActive;
+        SetupTimer();
+    }
+
+    /// <summary>
+    /// Reconcile the shared timer subscription and its tier (the Digital pilot's shape): the
+    /// tier follows the current model (1 s while ShowSeconds renders on the desktop, 1 min
+    /// otherwise) and the subscription exists exactly while loaded AND rendering. A tier
+    /// switch re-subscribes atomically; a gate resume ticks once so the display catches up
+    /// without waiting the interval.
+    /// </summary>
     private void SetupTimer()
     {
+        var wanted = isRunning && renderActive;
         var targetTimer = IsDesktopWidget && model.ShowSeconds ? TimerService.Timer1Second : TimerService.Timer1Minute;
+
         if (currentTimer != targetTimer)
         {
             currentTimer?.Unsubscribe(OnTimerTick);
             currentTimer = targetTimer;
+            isSubscribed = false;
+            if (wanted)
+            {
+                currentTimer.Subscribe(OnTimerTick);
+                isSubscribed = true;
+                OnTimerTick();
+            }
+        }
+        else if (wanted && !isSubscribed)
+        {
             currentTimer.Subscribe(OnTimerTick);
+            isSubscribed = true;
+            OnTimerTick();
+        }
+        else if (!wanted && isSubscribed)
+        {
+            currentTimer!.Unsubscribe(OnTimerTick);
+            isSubscribed = false;
         }
     }
 
@@ -501,7 +561,7 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
             effectiveTheme = effectiveTheme with { AccentColor = overlayHex };
         }
 
-        var isDark = ActualThemeVariant == ThemeVariant.Dark;
+        var isDark = ClockPerScreenTheme.IsDarkVariant(this);
 
         // Shared glass geometry (sampling origin walk + desktop extent), the one source of truth
         // LiquidGlassSurface.BuildFrame uses too. The clock has no quality concept — originScale 1
@@ -675,7 +735,7 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
     }
 
     private string CacheKey(DateTime dt) =>
-        $"{FormatTime(dt)}@{Math.Round(model.LiquidGlassOpacity)}_{material.EffectiveSurface}_{model.FontFamily}_{model.FontWeight}_{model.StretchFill}_{model.FixedWidthDigits}_{ActualThemeVariant == ThemeVariant.Dark}";
+        $"{FormatTime(dt)}@{Math.Round(model.LiquidGlassOpacity)}_{material.EffectiveSurface}_{model.FontFamily}_{model.FontWeight}_{model.StretchFill}_{model.FixedWidthDigits}_{ClockPerScreenTheme.IsDarkVariant(this)}";
 
     public override void Render(DrawingContext context)
     {
@@ -699,7 +759,7 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
             effectiveTheme, model.FixedWidthDigits);
         if (stretchedGeometry == null) return;
 
-        var isDark = ActualThemeVariant == ThemeVariant.Dark;
+        var isDark = ClockPerScreenTheme.IsDarkVariant(this);
 
         // Theme 1: 毛玻璃 (OS-level Acrylic blur confined to the glyph region)
         if (material.IsAcrylic)
@@ -950,7 +1010,7 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
     private void DrawSpecularRim(DrawingContext context, Geometry geometry, double targetW, double targetH, bool isDark, FramelessClockModel model, Theme? theme)
     {
         var edgeTint = (float)Math.Clamp(
-            (theme?.EffectiveLiquidGlass.EdgeTint ?? LiquidGlassSettings.DefaultEdgeTint) / 100.0, 0.0, 1.0);
+            (theme?.EffectiveLiquidGlass.Highlight ?? 50.0) / 100.0, 0.0, 1.0);
 
         Color dye = isDark ? Color.FromRgb(200, 220, 245) : Color.FromRgb(240, 240, 245);
         bool hasDye = false;
@@ -998,22 +1058,15 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
         context.DrawGeometry(null, rimPen, geometry);
     }
 
+    /// <summary>
+    /// Shared timezone resolution (the Runtime copy): a null/empty id keeps the local reading
+    /// (<c>DateTime.Now</c>), a known id converts, an unknown id falls back to Utc instead of
+    /// throwing (the SharedTimeZone contract — previously it silently fell back to local).
+    /// </summary>
     private DateTime GetCurrentTime()
     {
-        var now = DateTime.UtcNow;
-        if (!string.IsNullOrEmpty(model.TimeZoneId))
-        {
-            try
-            {
-                var tz = TimeZoneInfo.FindSystemTimeZoneById(model.TimeZoneId);
-                return TimeZoneInfo.ConvertTimeFromUtc(now, tz);
-            }
-            catch
-            {
-                return DateTime.Now;
-            }
-        }
-        return DateTime.Now;
+        if (string.IsNullOrEmpty(model.TimeZoneId)) return DateTime.Now;
+        return TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, SharedTimeZone.Resolve(model.TimeZoneId));
     }
 
     private static readonly Color DefaultOverlayColor = Color.FromRgb(0, 120, 215);
@@ -1035,7 +1088,7 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
         if (!achromaticMonochrome && ParseHex(theme?.AccentColor) is { } picked)
             return picked;
 
-        if (ThemeScopeResolver.TryFindResource<Color>(this, "SystemAccentColor", ActualThemeVariant, out var systemAccent))
+        if (ThemeScopeResolver.TryFindResource<Color>(this, "SystemAccentColor", ClockPerScreenTheme.Resolve(this), out var systemAccent))
             return systemAccent;
 
         return null;

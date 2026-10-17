@@ -153,21 +153,21 @@ if (facadeShell.CloseButton is { } facadeCloseButton)
     Check(AutomationProperties.GetName(facadeCloseButton) == DeskCanvas.Locales.Locale.SecondaryPanel_Close,
         "the facade injects the host locale for the close button at template time");
 
-// Solid appearance decomposition (pure resolution, no window/theme service needed).
-var solidTheme = new DeskCanvas.Core.Models.Settings.Theme(
+// Acrylic appearance decomposition (pure resolution, no window/theme service needed).
+var acrylicTheme = new DeskCanvas.Core.Models.Settings.Theme(
     DarkMode: true, AccentColor: null, OpacityLevel: 0.9, Monochrome: false, UseNativeFrame: false, FontFamily: "Inter",
-    Surface: DeskCanvas.Core.Models.Settings.SurfaceStyle.Solid);
-var solidAppearance = PanelAppearanceResolver.Resolve(solidTheme, isDark: true, PanelAppearanceResolver.DefaultCornerRadius);
-facadeShell.SurfaceAppearance = solidAppearance;
+    Surface: DeskCanvas.Core.Models.Settings.SurfaceStyle.Acrylic);
+var acrylicAppearance = PanelAppearanceResolver.Resolve(acrylicTheme, isDark: true, PanelAppearanceResolver.DefaultCornerRadius);
+facadeShell.SurfaceAppearance = acrylicAppearance;
 Flush();
 Check(!facadeShell.UseRenderedGlass && facadeShell.GlassMaterial is null,
-    "solid appearance: no rendered glass and no material");
-Check(facadeShell.CardBackground is SolidColorBrush { Color: { A: 230, R: 46, G: 46, B: 46 } },
-    "solid appearance: the card fill alpha is the clamped opacity result");
+    "acrylic appearance: no rendered glass and no material");
+Check(facadeShell.CardBackground is SolidColorBrush { Color: { A: 198, R: 28, G: 28, B: 32 } },
+    "acrylic appearance: the card fill alpha is the clamped opacity result");
 Check(facadeShell.CornerRadius == new CornerRadius(PanelAppearanceResolver.DefaultCornerRadius),
-    "solid appearance: the resolver radius reaches the shared shell card");
+    "acrylic appearance: the resolver radius reaches the shared shell card");
 Check(((LegacyGlass)facadeShell.GlassSurface!).Material is null,
-    "solid appearance: the port surface material stays null");
+    "acrylic appearance: the port surface material stays null");
 
 // Glass appearance decomposition: material flows to the port surface through the facade.
 var glassTheme = new DeskCanvas.Core.Models.Settings.Theme(

@@ -321,7 +321,7 @@ internal static class Program
 
         settings.Save(new AppSettings(
             new Theme(false, null, 1, false, false, "Inter",
-                Surface: !forSweep && realMode ? SurfaceStyle.LiquidGlass : SurfaceStyle.Solid),
+                Surface: !forSweep && realMode ? SurfaceStyle.LiquidGlass : SurfaceStyle.Acrylic),
             [], new Layout(GridMode.Manual, false, false, false, false), new Dimensions(100, 10, 16),
             new Region("en"), false, null, ActiveProfile: AppSettings.DefaultProfileName));
 

@@ -102,7 +102,7 @@ public class DisplayMonitorService(ILayoutProvider layoutProvider)
     }
 
     /// <summary>Recalculate the attached screen list and raise <see cref="ScreensChanged"/> on any change.</summary>
-    public void Refresh()
+    public virtual void Refresh()
     {
         if (anchor == null || refreshing) return;
         refreshing = true;

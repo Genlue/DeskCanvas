@@ -58,6 +58,7 @@ class Program
         TestPerScreenGridIsolation();
         TestResetToDefault();
         TestGridMetricsResolution();
+        TestStoredSizeSpanResolution();
         TestNegativeCoordinatesPlacement();
         TestButtonHandlerWiring();
         TestScreenTargetResolution();
@@ -219,8 +220,10 @@ class Program
         Assert(x1 == 384, $"Screen 1 X expected 384px, got {x1}px");
         Assert(y1 == 106, $"Screen 1 Y expected 106px, got {y1}px");
 
-        // Display 2: 1080p at (3840, 0), working area 1920x1040, default grid 8x6, cell 5%, X=30%, Y=10%
-        var grid2 = GridSettings.Default;
+        // Display 2: 1080p at (3840, 0), working area 1920x1040, grid 8x6, cell 5%, X=30%, Y=10%
+        // (an explicit grid, not Grid.Default — this check pins the percentage math, and the
+        // shipped default is deliberately free to change)
+        var grid2 = new GridSettings(8, 6, 30, 10, 5);
         var (cell2, x2, y2) = GridMetrics.Resolve(grid2, originX: 3840, originY: 0, width: 1920, height: 1040);
 
         // cell = 1920 * 0.05 = 96 px; X = 3840 + 1920 * 0.30 = 4416 px; Y = 1040 * 0.10 = 104 px
@@ -229,9 +232,54 @@ class Program
         Assert(y2 == 104, $"Screen 2 Y expected 104px, got {y2}px");
     }
 
-    private static void TestNegativeCoordinatesPlacement()
+    /// <summary>
+    /// Stored widget sizes are DIPs today, but layouts written by pre-DIP builds carry
+    /// physical pixels and are never rewritten until the widget is moved or resized.
+    /// The gallery's occupancy test for a newly placed widget reads stored sizes through
+    /// <see cref="GridMetrics.ResolveSpan"/>, so both formats must resolve to the same
+    /// span — otherwise an upgraded install reports free cells as taken (new widgets skip
+    /// them or fall back to the grid origin, i.e. on top of the existing ones).
+    /// </summary>
+    private static void TestStoredSizeSpanResolution()
     {
-        Console.WriteLine("--- 5. Secondary monitor with negative coordinates (left of primary) ---");
+        Console.WriteLine("--- 4b. Stored size -> span resolution (DIP vs legacy physical) ---");
+
+        // 125% display, 5% of a 2560px-wide working area: 128px cells = 102.4 DIP.
+        const double scaling = 1.25;
+        const int cell = 128;
+
+        Assert(GridMetrics.ResolveSpan(205, cell, scaling) == 2,
+            "DIP size for a 2-cell span resolves to 2");
+        Assert(GridMetrics.ResolveSpan(256, cell, scaling) == 2,
+            "legacy physical size for the same 2-cell span resolves to 2");
+        Assert(GridMetrics.ResolveSpan(410, cell, scaling) == 4,
+            "DIP size for a 4-cell span resolves to 4");
+        Assert(GridMetrics.ResolveSpan(102, cell, scaling) == 1,
+            "DIP size for a 1-cell span resolves to 1");
+        Assert(GridMetrics.ResolveSpan(0, cell, scaling) == 1,
+            "degenerate stored size still occupies one cell");
+
+        // The heuristic is inherently ambiguous when a legacy physical size is also a whole
+        // number of DIP cells: 512px on a 125% display is 4 physical cells but exactly 5 DIP
+        // cells. The DIP reading wins by contract — and that is what the widget's own restore
+        // uses too, so the gallery and the widget disagree about nothing.
+        Assert(GridMetrics.ResolveSpan(512, cell, scaling) == 5,
+            "ambiguous legacy size follows the DIP reading (same answer the widget restores to)");
+
+        // Unambiguous spans must agree between the two storage formats cell for cell
+        // (span 4 and 8 are the ambiguous ones above and are deliberately excluded).
+        foreach (var span in new[] { 1, 2, 3, 5, 6, 7 })
+        {
+            var dip = (int) Math.Round(span * cell / scaling);
+            var physical = span * cell;
+            Assert(GridMetrics.ResolveSpan(dip, cell, scaling) == span
+                   && GridMetrics.ResolveSpan(physical, cell, scaling) == span,
+                $"span {span}: DIP ({dip}) and legacy physical ({physical}) agree");
+        }
+    }
+
+    private static void TestNegativeCoordinatesPlacement()
+    {        Console.WriteLine("--- 5. Secondary monitor with negative coordinates (left of primary) ---");
 
         // Secondary display placed to the left: X = -1920, Y = 0, Width = 1920, Height = 1080
         var grid = new GridSettings(6, 6, 20, 10, 5);

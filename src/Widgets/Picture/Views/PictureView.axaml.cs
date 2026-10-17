@@ -7,13 +7,16 @@ using Avalonia.Input;
 using Avalonia.Interactivity;
 using Picture.Models;
 using Picture.ViewModels;
+using DeskCanvas.Contracts;
 using DeskCanvas.Core.Interfaces;
 using DeskCanvas.Core.Models;
+using DeskCanvas.Runtime;
 
 namespace Picture.Views;
 
-public partial class PictureView : UserControl, IWidgetSelfRefreshing, IWidgetSuspendable
+public partial class PictureView : UserControl, IWidgetSelfRefreshing, IWidgetSuspendable, IWidgetActivityConsumer
 {
+    private readonly IWidgetSession? session;
     private readonly PictureViewModel viewModel;
     private readonly IWidgetLayoutProvider? widgetLayoutProvider;
     private DateTime lastClickTime = DateTime.MinValue;
@@ -26,9 +29,19 @@ public partial class PictureView : UserControl, IWidgetSelfRefreshing, IWidgetSu
         : this(new PictureModel(), widgetLayoutProvider) { }
 
     public PictureView(PictureModel model, IWidgetLayoutProvider? widgetLayoutProvider)
+        : this(model, widgetLayoutProvider, null) { }
+
+    /// <summary>
+    /// <paramref name="session"/> is injected by WidgetFactory when the host runs the session
+    /// pipeline (a stable instance identity): the view model then gates its playback beats on
+    /// the session's activity. Null keeps the legacy always-on behaviour (preview, legacy
+    /// layout entries) — those hosts never push activity either.
+    /// </summary>
+    public PictureView(PictureModel model, IWidgetLayoutProvider? widgetLayoutProvider, IWidgetSession? session)
     {
         this.widgetLayoutProvider = widgetLayoutProvider;
-        viewModel = new PictureViewModel(model);
+        this.session = session;
+        viewModel = new PictureViewModel(model, session);
         DataContext = viewModel;
 
         Classes.Add("Frameless");
@@ -90,6 +103,9 @@ public partial class PictureView : UserControl, IWidgetSelfRefreshing, IWidgetSu
             e.Handled = true;
         }
     }
+
+    /// <inheritdoc />
+    public void OnSessionActivity(ActivitySnapshot activity) => viewModel.OnSessionActivity(activity);
 
     public void Refresh(WidgetLayout layout)
     {

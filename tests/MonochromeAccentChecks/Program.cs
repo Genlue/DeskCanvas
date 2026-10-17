@@ -81,7 +81,7 @@ internal class Program
         Console.WriteLine("=== Monochrome Accent Checks ===");
 
         var settings = new StubSettings(new AppSettings(
-            new Theme(false, "#007AFF", 1, false, false, "Inter", SurfaceStyle.Solid),
+            new Theme(false, "#007AFF", 1, false, false, "Inter", SurfaceStyle.Acrylic),
             [], new Layout(GridMode.Manual, true, false, true, false),
             new Dimensions(80, 12, 16), new Region("zh-Hans"), false, null));
         var themeService = new ThemeService(settings, new WallpaperThemeService());
@@ -100,7 +100,7 @@ internal class Program
             Monochrome: true,
             UseNativeFrame: false,
             FontFamily: "Inter",
-            Surface: SurfaceStyle.Solid,
+            Surface: SurfaceStyle.Acrylic,
             SolidBackgroundDark: darkBackground,
             SolidBackgroundLight: lightBackground,
             MonochromeVariant: variant);
@@ -199,7 +199,7 @@ internal class Program
             Monochrome: true,
             UseNativeFrame: false,
             FontFamily: "Inter",
-            Surface: SurfaceStyle.Solid,
+            Surface: SurfaceStyle.Acrylic,
             MonochromeVariant: MonochromeStyle.Accent));
 
         Assert(BrushOf("SystemControlForegroundAccentBrush", ThemeVariant.Dark) == Colors.Red,
@@ -280,7 +280,7 @@ internal class Program
             Monochrome: false,
             UseNativeFrame: false,
             FontFamily: "Inter",
-            Surface: SurfaceStyle.Solid));
+            Surface: SurfaceStyle.Acrylic));
 
         Assert(!Application.Current!.Resources.ContainsKey("SystemAccentColor"),
             "关闭单色后 SystemAccentColor 的覆写已移除（归还 Fluent/系统强调色）");
@@ -312,7 +312,7 @@ internal class Program
             Monochrome: false,
             UseNativeFrame: false,
             FontFamily: "Inter",
-            Surface: SurfaceStyle.Solid));
+            Surface: SurfaceStyle.Acrylic));
         Assert(Resource("SystemAccentColor") == Colors.Red,
             "关闭单色且手选强调色 → SystemAccentColor == 手选红（黑白残留被覆盖）");
         Assert(BrushOf("SystemControlHighlightAccentBrush", ThemeVariant.Dark) == Colors.Red,

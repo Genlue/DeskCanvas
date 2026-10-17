@@ -13,6 +13,8 @@ using Avalonia.Threading;
 using Avalonia.VisualTree;
 using DeskCanvas.Core.Interfaces;
 using DeskCanvas.Core.Models;
+using DeskCanvas.Contracts;
+using DeskCanvas.Runtime;
 using DeskCanvas.Views;
 using Hitokoto.Locales;
 using Hitokoto.Models;
@@ -25,13 +27,14 @@ namespace Hitokoto.Views;
 /// Supports double-click to switch quotes, configurable auto-refresh intervals,
 /// setting-switched frameless desktop watermark mode, and a Material 3 secondary panel.
 /// </summary>
-public partial class HitokotoView : UserControl, IFramelessWidget, IWidgetSelfRefreshing, IWidgetSuspendable, IDisposable, IWidgetSurfaceHints
+public partial class HitokotoView : UserControl, IFramelessWidget, IWidgetSelfRefreshing, IWidgetSuspendable, IWidgetActivityConsumer, IDisposable, IWidgetSurfaceHints
 {
     /// <inheritdoc />
     public string? ColorfulBackgroundResourceKey => "HitokotoCardBackground";
 
     private readonly IAppSettingsProvider? appSettingsProvider;
     private readonly IWidgetLayoutProvider? widgetLayoutProvider;
+    private readonly IWidgetSession? session;
     private HitokotoModel model;
     private HitokotoItem currentItem;
 
@@ -41,6 +44,7 @@ public partial class HitokotoView : UserControl, IFramelessWidget, IWidgetSelfRe
     private bool isFetching;
     private bool suspended;
     private bool disposed;
+    private bool renderActive = true;
 
     /// <summary>True between Loaded and Unloaded — the store subscription and the refresh timer are bound to this.</summary>
     private bool attached;
@@ -69,13 +73,22 @@ public partial class HitokotoView : UserControl, IFramelessWidget, IWidgetSelfRe
     {
     }
 
+    /// <summary>
+    /// <paramref name="session"/> is injected by WidgetFactory when the host runs the session
+    /// pipeline: the auto-refresh timer is then additionally gated on the session's activity
+    /// (besides attach/suspend). Null keeps the legacy always-on behaviour (preview, legacy
+    /// layout entries) — those hosts never push activity either.
+    /// </summary>
     public HitokotoView(
         IAppSettingsProvider? appSettingsProvider,
         IWidgetLayoutProvider? widgetLayoutProvider,
-        HitokotoModel model)
+        HitokotoModel model,
+        IWidgetSession? session = null)
     {
         this.appSettingsProvider = appSettingsProvider;
         this.widgetLayoutProvider = widgetLayoutProvider;
+        this.session = session;
+        renderActive = session?.Activity.RenderActive ?? true;
         this.model = model.Normalize();
         currentItem = HitokotoStore.Instance.GetCurrentOrFallback(this.model);
 
@@ -351,7 +364,7 @@ public partial class HitokotoView : UserControl, IFramelessWidget, IWidgetSelfRe
     private void ConfigureAutoRefreshTimer()
     {
         autoRefreshTimer?.Stop();
-        if (!attached || suspended || disposed || model.RefreshIntervalMinutes <= 0)
+        if (!attached || suspended || disposed || !renderActive || model.RefreshIntervalMinutes <= 0)
             return;
 
         autoRefreshTimer ??= new DispatcherTimer();
@@ -363,9 +376,35 @@ public partial class HitokotoView : UserControl, IFramelessWidget, IWidgetSelfRe
 
     private void OnAutoRefreshTick(object? sender, EventArgs e)
     {
-        if (suspended || disposed) return;
+        if (suspended || disposed || !renderActive) return;
         _ = FetchNextQuoteAsync(showLoadingHint: false);
     }
+
+    /// <summary>
+    /// Host activity push (the <see cref="IWidgetActivityConsumer"/> path, invoked on the UI
+    /// thread): the auto-refresh timer follows the snapshot's RenderActive, beside the
+    /// attach/suspend gates the legacy paths already had. Session-less views ignore the push
+    /// entirely (the host never sends one to them).
+    /// </summary>
+    public void OnSessionActivity(ActivitySnapshot activity)
+    {
+        if (session == null) return;
+        renderActive = activity.RenderActive;
+        if (renderActive)
+        {
+            ConfigureAutoRefreshTimer();
+        }
+        else
+        {
+            autoRefreshTimer?.Stop();
+        }
+    }
+
+    /// <summary>Check seam: the injected session (null on the legacy path).</summary>
+    public IWidgetSession? SessionForChecks => session;
+
+    /// <summary>Check seam: the latest session gate value.</summary>
+    public bool RenderActiveForChecks => renderActive;
 
     public async Task FetchNextQuoteAsync(bool showLoadingHint = true)
     {

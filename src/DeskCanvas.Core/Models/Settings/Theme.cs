@@ -28,14 +28,10 @@ namespace DeskCanvas.Core.Models.Settings;
 /// material is then derived from <see cref="OpacityLevel"/>. Preferred over the
 /// raw <see cref="OpacityLevel"/>&gt;1 heuristic once liquid glass is added.
 /// </param>
-/// <param name="OutlineColor">
-/// Highlight ring color of the glass outline, in HEX format (RGBA, alpha is kept).
-/// <c>null</c> uses <see cref="DefaultOutlineColor"/>.
-/// </param>
-/// <param name="OutlineWidth">
-/// Highlight ring thickness in DIPs for the frosted glass; <c>0</c> (default)
-/// hides the ring. The outline is part of the 毛玻璃 theme — any glass surface
-/// draws it when this is greater than 0.
+/// <param name="AutoTheme">
+/// Should the light/dark mode be chosen automatically from the desktop wallpaper
+/// (dark wallpaper → dark mode, light wallpaper → light mode). When enabled,
+/// <see cref="DarkMode"/> is ignored.
 /// </param>
 /// <param name="SolidBackgroundDark">
 /// 纯色 surface background color in dark mode, HEX format. <c>null</c> uses
@@ -73,8 +69,6 @@ namespace DeskCanvas.Core.Models.Settings;
         bool UseNativeFrame, 
         string FontFamily,
         SurfaceStyle? Surface = null,
-        string? OutlineColor = null,
-        double OutlineWidth = 0,
         string? SolidBackgroundDark = null,
         string? SolidBackgroundLight = null,
         MonochromeStyle? MonochromeVariant = null,
@@ -84,13 +78,6 @@ namespace DeskCanvas.Core.Models.Settings;
         bool TextShadowEnabled = false,
         double TextShadowStrength = 50)
 {
-    /// <summary>Default highlight-ring color when <see cref="OutlineColor"/> is not set
-    /// (soft gray-white, less stark than pure white).</summary>
-    public const string DefaultOutlineColor = "#B3FFFFFF";
-
-    /// <summary>Default highlight-ring thickness (DIPs): 0 = outline hidden.</summary>
-    public const double DefaultOutlineWidth = 0;
-
     /// <summary>Default 纯色 background in dark mode (dark gray, the historic look).</summary>
     public const string DefaultSolidBackgroundDark = "#2E2E2E";
 
@@ -104,88 +91,68 @@ namespace DeskCanvas.Core.Models.Settings;
     public const double DefaultSoftGlowOpacity = 0.14;
 
     /// <summary>
-    /// The effective surface material. Falls back to deriving it from
-    /// <see cref="OpacityLevel"/> when <see cref="Surface"/> is not set
-    /// (migrates old configurations that predate the <see cref="SurfaceStyle"/> field).
+    /// The effective surface material.
     /// </summary>
-    public SurfaceStyle EffectiveSurface =>
-        Surface == SurfaceStyle.SoftGlow ? SurfaceStyle.LiquidGlass :
-        Surface ?? (OpacityLevel < 1 ? SurfaceStyle.Acrylic : SurfaceStyle.Solid);
+    public SurfaceStyle EffectiveSurface => Surface ?? SurfaceStyle.Acrylic;
 
     /// <summary>
     /// True for surfaces that use a translucent, blur-capable backdrop
-    /// (frosted glass, its outlined variant and the two wallpaper-sampled
-    /// liquid glass materials); false for <see cref="SurfaceStyle.Solid"/> and
-    /// <see cref="SurfaceStyle.Colorful"/>.
+    /// (acrylic or liquid glass); false for <see cref="SurfaceStyle.FullColor"/>.
     /// </summary>
-    public bool IsGlass => EffectiveSurface is SurfaceStyle.Acrylic or SurfaceStyle.LiquidGlass or SurfaceStyle.LiquidGlassV2;
+    public bool IsGlass => EffectiveSurface is SurfaceStyle.Acrylic or SurfaceStyle.LiquidGlass;
 
-    /// <summary>Static refractive wallpaper material, with independently adjustable blur.</summary>
+    /// <summary>Static refractive wallpaper material (Kyant0 optical model).</summary>
     public bool IsLiquidGlass => EffectiveSurface == SurfaceStyle.LiquidGlass;
 
-    /// <summary>
-    /// True for 新液态玻璃 (<see cref="SurfaceStyle.LiquidGlassV2"/>): the second, independent
-    /// optical recipe drawn from the same wallpaper sampling pipeline.
-    /// </summary>
-    public bool IsLiquidGlassV2 => EffectiveSurface == SurfaceStyle.LiquidGlassV2;
+    /// <summary>Legacy alias for IsLiquidGlass.</summary>
+    public bool IsLiquidGlassV2 => IsLiquidGlass;
+
+    /// <summary>SoftGlow legacy flag, always false after P11.</summary>
+    public bool IsSoftGlow => false;
 
     /// <summary>
-    /// True while the <b>soft recipe</b> of the liquid-glass pipeline is active: the legacy
-    /// <see cref="SurfaceStyle.SoftGlow"/> material, or its two signature ingredients turned up on
-    /// the merged 液态玻璃 theme.
-    /// <para>
-    /// 柔光玻璃 was merged into 液态玻璃: both are the same surface and the same pipeline, and the
-    /// soft look is now reached through the 柔光晕 (<see cref="LiquidGlassSettings.Glow"/>) and
-    /// 光谱弥散 (<see cref="LiquidGlassSettings.Spectrum"/>) knobs instead of a separate theme.
-    /// At the factory defaults both are 0, so the merged theme is the crisp, macOS-faithful
-    /// material and stored configurations keep the optics they were saved with.
-    /// </para>
+    /// True for the materials drawn by the app from a desktop snapshot (<see cref="SurfaceStyle.LiquidGlass"/>).
     /// </summary>
-    public bool IsSoftGlow => Surface == SurfaceStyle.SoftGlow || EffectiveLiquidGlass.IsSoftRecipe;
+    public bool UsesRenderedGlass => EffectiveSurface == SurfaceStyle.LiquidGlass;
 
-    /// <summary>
-    /// True for the materials drawn by the app from a desktop snapshot
-    /// (<see cref="SurfaceStyle.LiquidGlass"/>, which absorbed 柔光玻璃, and
-    /// <see cref="SurfaceStyle.LiquidGlassV2"/>): widgets use this to know
-    /// that the card itself must stay transparent so the rendered material shows through.
-    /// </summary>
-    public bool UsesRenderedGlass => EffectiveSurface is SurfaceStyle.LiquidGlass or SurfaceStyle.LiquidGlassV2;
-
-    /// <summary>Only frosted glass (毛玻璃) uses the native, fixed-radius acrylic backdrop.</summary>
+    /// <summary>Only acrylic uses the native, fixed-radius acrylic backdrop.</summary>
     public bool UsesNativeBlur => EffectiveSurface == SurfaceStyle.Acrylic;
 
-    /// <summary>True for the 多彩 / macOS flat opaque widget theme.</summary>
-    public bool IsColorful => EffectiveSurface == SurfaceStyle.Colorful;
+    /// <summary>True for the 全彩 / FullColor theme.</summary>
+    public bool IsFullColor => EffectiveSurface is SurfaceStyle.FullColor or SurfaceStyle.Colorful;
 
-    /// <summary>Defaults and validated ranges for old or manually edited configurations.</summary>
+    /// <summary>Alias for IsFullColor.</summary>
+    public bool IsColorful => IsFullColor;
+
+    /// <summary>Defaults and validated ranges of the liquid glass optics.</summary>
     public LiquidGlassSettings EffectiveLiquidGlass =>
-        (LiquidGlass ?? (Surface == SurfaceStyle.SoftGlow ? LiquidGlassSettings.SoftGlowPreset : new())).Normalize();
+        (LiquidGlass ?? (LiquidGlassSettings?)LiquidGlassV2 ?? new LiquidGlassSettings()).Normalize();
 
-    /// <summary>Defaults and validated ranges of the 新液态玻璃 optics.</summary>
+    /// <summary>Alias for backward compatibility.</summary>
     public LiquidGlassV2Settings EffectiveLiquidGlassV2 =>
-        (LiquidGlassV2 ?? new LiquidGlassV2Settings()).Normalize();
+        new(EffectiveLiquidGlass.Blur, EffectiveLiquidGlass.Refraction, EffectiveLiquidGlass.Highlight,
+            EffectiveLiquidGlass.HighlightAngle, EffectiveLiquidGlass.Vibrancy, EffectiveLiquidGlass.Dispersion,
+            EffectiveLiquidGlass.WallpaperOffsetX, EffectiveLiquidGlass.WallpaperOffsetY,
+            EffectiveLiquidGlass.LiveSampling, EffectiveLiquidGlass.LiveSamplingInterval,
+            EffectiveLiquidGlass.BackdropClarity);
 
     /// <summary>
-    /// The sampling-pipeline settings of the active wallpaper-sampled material — the backdrop
-    /// cache, the wallpaper alignment offsets and the live sampler all read through this so they
-    /// never branch per surface. Only meaningful when <see cref="UsesRenderedGlass"/> is true.
+    /// The sampling-pipeline settings of the active wallpaper-sampled material.
     /// </summary>
-    public IRenderedGlassSettings EffectiveGlass => IsLiquidGlassV2 ? EffectiveLiquidGlassV2 : EffectiveLiquidGlass;
+    public IRenderedGlassSettings EffectiveGlass => EffectiveLiquidGlass;
 
-    /// <summary>Merge the legacy soft material while preserving its optical settings.</summary>
-    public Theme NormalizeMaterial() => Surface == SurfaceStyle.SoftGlow
-        ? this with { Surface = SurfaceStyle.LiquidGlass, LiquidGlass = EffectiveLiquidGlass }
-        : this;
+    /// <summary>Normalize material.</summary>
+    public Theme NormalizeMaterial() => this;
 
     /// <summary>
     /// Normalizes theme settings for its effective surface material.
-    /// Colorful enforces fixed colors (AccentColor=null, Monochrome=false, MonochromeVariant=null, OpacityLevel=1.0).
+    /// FullColor enforces fixed colors (AccentColor=null, Monochrome=false, MonochromeVariant=null, OpacityLevel=1.0).
     /// Other surfaces preserve accent color and monochrome customizations.
     /// </summary>
     public Theme NormalizeForSurface()
     {
         var theme = NormalizeMaterial();
-        return theme.EffectiveSurface == SurfaceStyle.Colorful
+        return theme.IsFullColor
             ? theme with
             {
                 AccentColor = null,
@@ -195,12 +162,6 @@ namespace DeskCanvas.Core.Models.Settings;
             }
             : theme;
     }
-
-    /// <summary>
-    /// The highlighted glass ring color; falls back to <see cref="DefaultOutlineColor"/>
-    /// when <see cref="OutlineColor"/> is not set.
-    /// </summary>
-    public string EffectiveOutlineColor => OutlineColor ?? DefaultOutlineColor;
 
     /// <summary>
     /// The 纯色 background color in dark mode; falls back to

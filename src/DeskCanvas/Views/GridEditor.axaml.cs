@@ -388,6 +388,10 @@ public partial class GridEditor : Window
         {
             SaveGrid(newGrid);
             ApplyGrid();
+            // The panel must show the percentage that was just written: leaving the old
+            // value in the X input made the centering look like it did nothing, and the
+            // next Y edit wrote the stale X back over it.
+            SyncParamInputs();
         }
     }
 
@@ -400,6 +404,7 @@ public partial class GridEditor : Window
         {
             SaveGrid(newGrid);
             ApplyGrid();
+            SyncParamInputs();
         }
     }
 
@@ -417,7 +422,21 @@ public partial class GridEditor : Window
             var heightPercent = grid.Rows * grid.CellPercent * area.Width / area.Height;
             return Math.Clamp((100 - heightPercent) / 2.0, 0, 100);
         }
-        return Math.Clamp((100 - grid.Rows * grid.CellPercent) / 2.0, 0, 100);
+
+        // No screen model (very early open): the editor window itself already covers the
+        // target screen, so its own aspect ratio is the honest fallback. Treating the
+        // width-based cell percentage as if it were height-based (the old fallback) put
+        // the grid noticeably too low on any non-square display.
+        var width = Bounds.Width > 0 ? Bounds.Width : ClientSize.Width;
+        var height = Bounds.Height > 0 ? Bounds.Height : ClientSize.Height;
+        if (width > 0 && height > 0)
+        {
+            var heightPercent = grid.Rows * grid.CellPercent * width / height;
+            return Math.Clamp((100 - heightPercent) / 2.0, 0, 100);
+        }
+
+        // Nothing measurable: pin to the top rather than centre against a guessed ratio.
+        return 0;
     }
 
     private void OnNudgeLeftClicked(object? sender, RoutedEventArgs e) => Nudge(-1, 0);
@@ -441,6 +460,8 @@ public partial class GridEditor : Window
         {
             SaveGrid(newGrid);
             ApplyGrid();
+            // Same contract as the centering buttons: the inputs show what was just saved.
+            SyncParamInputs();
         }
     }
 

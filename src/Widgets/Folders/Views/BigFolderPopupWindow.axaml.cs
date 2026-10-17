@@ -245,14 +245,16 @@ public partial class BigFolderPopupWindow : SecondaryPanelWindow
         Action<BigFolderModel>? onModelChanged = null,
         double? cornerRadius = null)
     {
-        if (PanelCoolingDown<BigFolderPopupWindow>())
-            return;
-
-        if (TryCloseActivePanel<BigFolderPopupWindow>())
-            return;
-
-        var popup = new BigFolderPopupWindow(model, screenCenter, onModelChanged, cornerRadius);
-        popup.ShowAsSecondaryPanel(owner);
+        // The PanelService owns the single-instance state: cooldown, toggle-close and the
+        // pinned show — the same contract the historic PanelCoolingDown/TryCloseActivePanel
+        // pair enforced through the process/type key, now keyed per owner component instance
+        // (two big-folder widgets no longer evict each other's grid).
+        PanelService.Open(new PanelRequest(
+            owner is Widget widget ? widget.InstanceId : default,
+            owner,
+            "Folders.BigFolderGrid",
+            PanelScope.PerOwner,
+            () => new BigFolderPopupWindow(model, screenCenter, onModelChanged, cornerRadius)));
     }
 
     /// <summary>Every binder Refresh assigns a fresh <see cref="PanelAppearance"/> record, so

@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Avalonia" />
+    <PackageReference Include="Avalonia.Desktop" />
+    <PackageReference Include="Avalonia.Headless" />
+    <PackageReference Include="Avalonia.Themes.Fluent" />
+    <ProjectReference Include="..\..\src\DeskCanvas.Contracts\DeskCanvas.Contracts.csproj" />
+    <ProjectReference Include="..\..\src\DeskCanvas.Runtime\DeskCanvas.Runtime.csproj" />
+    <ProjectReference Include="..\..\src\DeskCanvas\DeskCanvas.csproj" />
+    <!-- The B3 slice widgets: Folders / Fortune / Shortcuts / Notes. -->
+    <ProjectReference Include="..\..\src\Widgets\Folders\Folders.csproj" />
+    <ProjectReference Include="..\..\src\Widgets\Fortune\Fortune.csproj" />
+    <ProjectReference Include="..\..\src\Widgets\Notes\Notes.csproj" />
+    <ProjectReference Include="..\..\src\Widgets\Shortcuts\Shortcuts.csproj" />
+  </ItemGroup>
+</Project>

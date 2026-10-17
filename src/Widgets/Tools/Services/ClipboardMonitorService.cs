@@ -58,7 +58,81 @@ public class ClipboardMonitorService
             Interval = TimeSpan.FromMilliseconds(400)
         };
         timer.Tick += OnTimerTick;
-        timer.Start();
+        // The timer is started by ReconcilePolling, not here: it runs exactly while an
+        // attached clipboard view renders (session-gated views) or while any session-less
+        // view (the gallery preview, legacy layout entries) keeps the always-on contract.
+    }
+
+    // ---- polling gate (P8 batch F) ------------------------------------------------------
+    // The monitor is a process-lifetime singleton, so the gate is reference-counted across
+    // the attached views instead of a single boolean: the timer runs exactly while at least
+    // one view wants it. The capture logic itself (OnTimerTick → CheckAndCaptureClipboard)
+    // is untouched — only the run state of the polling timer is reconciled.
+
+    private readonly HashSet<object> legacyViews = [];
+    private readonly HashSet<object> renderActiveViews = [];
+
+    /// <summary>Check seam: whether the polling timer is currently running.</summary>
+    public bool IsPollingForChecks => timer.IsEnabled;
+
+    /// <summary>
+    /// Attach a clipboard view to the polling gate (on <c>Loaded</c>). Session-gated views
+    /// enter with the render state their host session carries; session-less views
+    /// (<paramref name="sessionGated"/> false — the gallery preview, legacy layout entries)
+    /// are always-on consumers: while one is attached the monitor keeps the historic
+    /// always-polling behaviour. Idempotent per view.
+    /// </summary>
+    public void AttachView(object view, bool sessionGated, bool initialRenderActive)
+    {
+        if (sessionGated)
+        {
+            if (initialRenderActive) renderActiveViews.Add(view);
+            else renderActiveViews.Remove(view);
+        }
+        else
+        {
+            legacyViews.Add(view);
+        }
+        ReconcilePolling();
+    }
+
+    /// <summary>Detach a view (on <c>Unloaded</c>). Idempotent.</summary>
+    public void DetachView(object view)
+    {
+        legacyViews.Remove(view);
+        renderActiveViews.Remove(view);
+        ReconcilePolling();
+    }
+
+    /// <summary>
+    /// Host activity push relayed by a gated view (the <see cref="DeskCanvas.Runtime.IWidgetActivityConsumer"/>
+    /// path): the view's render state flips its entry, and the timer follows the majority rule —
+    /// any rendering view (or any session-less view) keeps it alive.
+    /// </summary>
+    public void OnViewRenderActivity(object view, bool renderActive)
+    {
+        if (renderActive) renderActiveViews.Add(view);
+        else renderActiveViews.Remove(view);
+        ReconcilePolling();
+    }
+
+    /// <summary>
+    /// Single run-state machine over the shared 400 ms timer: wanted = any session-less view
+    /// attached OR any gated view currently rendering. Overlapping transitions cannot
+    /// double-start or double-stop — the state is reconciled from the two view sets on every
+    /// change instead of toggled from each.
+    /// </summary>
+    private void ReconcilePolling()
+    {
+        var wanted = legacyViews.Count > 0 || renderActiveViews.Count > 0;
+        if (wanted && !timer.IsEnabled)
+        {
+            timer.Start();
+        }
+        else if (!wanted && timer.IsEnabled)
+        {
+            timer.Stop();
+        }
     }
 
     public void UpdateSettings(ClipboardModel model)

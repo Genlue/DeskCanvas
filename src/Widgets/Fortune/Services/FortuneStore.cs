@@ -13,6 +13,17 @@ public static class FortuneStore
 
     public static event Action<DailyFortuneRecord>? FortuneDrawn;
 
+    static FortuneStore()
+    {
+        Const.ActiveProfileChanged += _ =>
+        {
+            lock (FileLock)
+            {
+                cachedData = null;
+            }
+        };
+    }
+
     public static string FilePath
     {
         get

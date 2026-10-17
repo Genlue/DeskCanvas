@@ -4,9 +4,33 @@ using DeskCanvas.Core.Interfaces;
 namespace DeskCanvas.Core.Services;
 
 /// <inheritdoc />
-public class JsonParser<T>(string filePath) : IDataProvider<T>
+public class JsonParser<T> : IDataProvider<T>
 {
     private readonly object sync = new();
+    private readonly Func<string>? filePathAccessor;
+    private string? filePath;
+
+    /// <summary>
+    /// Constructs a parser with a static file path.
+    /// </summary>
+    public JsonParser(string filePath)
+    {
+        this.filePath = filePath;
+    }
+
+    /// <summary>
+    /// Constructs a parser with a dynamic file path accessor.
+    /// </summary>
+    public JsonParser(Func<string> filePathAccessor)
+    {
+        this.filePathAccessor = filePathAccessor;
+    }
+
+    /// <summary>
+    /// Gets the current file path, evaluated dynamically if accessor was provided.
+    /// </summary>
+    protected string CurrentFilePath => filePathAccessor != null ? filePathAccessor() : (filePath ?? string.Empty);
+
     /// <summary>
     /// Cached deserialized data; <c>null</c> until the first <see cref="Get"/> call.
     /// </summary>
@@ -23,12 +47,28 @@ public class JsonParser<T>(string filePath) : IDataProvider<T>
         {
             if (data != null) return data;
 
-            var json = File.ReadAllText(filePath);
+            var path = CurrentFilePath;
+            var json = File.ReadAllText(path);
 
             data = JsonSerializer.Deserialize<T>(json)
                    ?? throw new FormatException($"Can't deserialize {typeof(T).Name}");
 
             return data = Normalize(data);
+        }
+    }
+
+    /// <summary>
+    /// Invalidate in-memory cached data and re-read from the current file path.
+    /// </summary>
+    public virtual T Reload()
+    {
+        lock (sync)
+        {
+            var oldData = data;
+            data = default;
+            var reloaded = Get();
+            DataChanged?.Invoke(this, oldData, reloaded);
+            return reloaded;
         }
     }
 
@@ -40,13 +80,14 @@ public class JsonParser<T>(string filePath) : IDataProvider<T>
             var oldData = data;
             DataChanging?.Invoke(this, data, newData);
 
-            var directory = Path.GetDirectoryName(filePath);
+            var path = CurrentFilePath;
+            var directory = Path.GetDirectoryName(path);
             if (!string.IsNullOrEmpty(directory)) Directory.CreateDirectory(directory);
 
             // Commit on the same volume: write and flush a sibling temporary file, then
             // atomically replace the destination. The cache is published only after the
             // filesystem commit succeeds, so failed writes cannot expose phantom state.
-            var tempPath = $"{filePath}.{Environment.ProcessId}.{Guid.NewGuid():N}.tmp";
+            var tempPath = $"{path}.{Environment.ProcessId}.{Guid.NewGuid():N}.tmp";
             try
             {
                 var json = SerializeForFile(newData);
@@ -59,20 +100,20 @@ public class JsonParser<T>(string filePath) : IDataProvider<T>
                     stream.Flush(flushToDisk: true);
                 }
 
-                if (File.Exists(filePath))
+                if (File.Exists(path))
                 {
                     try
                     {
-                        File.Replace(tempPath, filePath, destinationBackupFileName: null, ignoreMetadataErrors: true);
+                        File.Replace(tempPath, path, destinationBackupFileName: null, ignoreMetadataErrors: true);
                     }
                     catch (PlatformNotSupportedException)
                     {
-                        File.Move(tempPath, filePath, overwrite: true);
+                        File.Move(tempPath, path, overwrite: true);
                     }
                 }
                 else
                 {
-                    File.Move(tempPath, filePath);
+                    File.Move(tempPath, path);
                 }
                 data = newData;
             }

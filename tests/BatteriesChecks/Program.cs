@@ -190,16 +190,16 @@ Func<ThemeVariant?> dark = () => ThemeVariant.Dark;
 IAppSettingsProvider ProviderWith(Theme theme) => new StubSettingsProvider(
     new AppSettings(theme, [], new Layout(GridMode.Manual, false, false, false, false),
         new Dimensions(100, 10, 16), new Region("en"), false, null));
-var blackWhite = new Theme(false, null, 1, true, false, "Inter", Surface: SurfaceStyle.Solid, MonochromeVariant: MonochromeStyle.BlackWhite);
+var blackWhite = new Theme(false, null, 1, true, false, "Inter", Surface: SurfaceStyle.Acrylic, MonochromeVariant: MonochromeStyle.BlackWhite);
 var bwDark = new BatteryDeviceItem("d", DeviceKind.Computer, 60, false, true, ProviderWith(blackWhite)) { VariantProvider = dark };
 Check(bwDark.StatusBrush == Brushes.White, "7.1 BlackWhite + dark window: the ring is White (accent itself)");
 var bwLight = new BatteryDeviceItem("l", DeviceKind.Computer, 60, false, true, ProviderWith(blackWhite)) { VariantProvider = () => ThemeVariant.Light };
 Check(bwLight.StatusBrush == Brushes.Black, "7.2 BlackWhite + light window: the ring is Black");
 Check(bwDark.ChargingBadgeForeground == Brushes.Black, "7.3 BlackWhite + dark window: the badge inverts to Black");
-var accentPicked = new Theme(false, "#A1B2C3", 1, true, false, "Inter", Surface: SurfaceStyle.Solid, MonochromeVariant: MonochromeStyle.Accent);
+var accentPicked = new Theme(false, "#A1B2C3", 1, true, false, "Inter", Surface: SurfaceStyle.Acrylic, MonochromeVariant: MonochromeStyle.Accent);
 var accentItem = new BatteryDeviceItem("a", DeviceKind.Computer, 60, false, true, ProviderWith(accentPicked)) { VariantProvider = dark };
 Check(((SolidColorBrush)accentItem.StatusBrush).Color == Color.Parse("#A1B2C3"), "7.4 the hand-picked monochrome accent is honored");
-var accentDefaultTheme = new Theme(false, null, 1, true, false, "Inter", Surface: SurfaceStyle.Solid, MonochromeVariant: MonochromeStyle.Accent);
+var accentDefaultTheme = new Theme(false, null, 1, true, false, "Inter", Surface: SurfaceStyle.Acrylic, MonochromeVariant: MonochromeStyle.Accent);
 var accentResourceItem = new BatteryDeviceItem("r", DeviceKind.Computer, 60, false, true, ProviderWith(accentDefaultTheme)) { VariantProvider = dark };
 var accentLightItem = new BatteryDeviceItem("l2", DeviceKind.Computer, 60, false, true, ProviderWith(accentDefaultTheme)) { VariantProvider = () => ThemeVariant.Light };
 object? resourceAccent = null;
@@ -219,8 +219,8 @@ Check(((SolidColorBrush)accentLightItem.StatusBrush).Color == Color.Parse("#0078
 // 8. Settings provider resolution: injected → App.Services → safe defaults (no third tier)
 // =========================================================================================
 Console.WriteLine("--- Settings provider resolution ---");
-var injected = ProviderWith(new Theme(false, null, 1, false, false, "Inter", Surface: SurfaceStyle.Solid));
-var appLevel = ProviderWith(new Theme(false, null, 1, false, false, "Inter", Surface: SurfaceStyle.Solid));
+var injected = ProviderWith(new Theme(false, null, 1, false, false, "Inter", Surface: SurfaceStyle.Acrylic));
+var appLevel = ProviderWith(new Theme(false, null, 1, false, false, "Inter", Surface: SurfaceStyle.Acrylic));
 // App.Services is an IServiceProvider — publish the probe provider through a minimal
 // service container so the widget's second resolution tier can find it.
 typeof(DeskCanvas.App).GetProperty("Services")!.GetSetMethod(true)!.Invoke(null,

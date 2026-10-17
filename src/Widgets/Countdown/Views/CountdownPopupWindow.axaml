@@ -15,20 +15,6 @@
         Height="540">
 
     <Window.Styles>
-        <Style Selector="Button.pill-btn">
-            <Setter Property="Height" Value="26" />
-            <Setter Property="Padding" Value="10,2" />
-            <Setter Property="FontSize" Value="12" />
-            <Setter Property="CornerRadius" Value="13" />
-            <Setter Property="Background" Value="{DynamicResource CountdownPillBackgroundBrush}" />
-            <Setter Property="BorderThickness" Value="0" />
-            <Setter Property="VerticalContentAlignment" Value="Center" />
-            <Setter Property="Cursor" Value="Hand" />
-        </Style>
-        <Style Selector="Button.pill-btn:pointerover">
-            <Setter Property="Opacity" Value="0.85" />
-        </Style>
-
         <Style Selector="Button.action-icon-btn">
             <Setter Property="Width" Value="24" />
             <Setter Property="Height" Value="24" />
@@ -105,8 +91,8 @@
                         <ItemsControl x:Name="EventsItemsControl">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate DataType="local:CountdownPopupItemViewModel">
-                                    <Border Margin="0,3" Padding="12,10" CornerRadius="10"
-                                            Background="{DynamicResource CountdownPillBackgroundBrush}">
+                                    <Border Margin="0,3" Padding="12,10" CornerRadius="{DynamicResource CardSubtleCornerRadius}"
+                                            Background="{DynamicResource CardSubtleFill}">
                                         <Grid ColumnDefinitions="Auto,*,Auto,Auto">
                                             <!-- Color Pill / Dot -->
                                             <Ellipse Grid.Column="0" Width="10" Height="10" Fill="{Binding ColorBrush}"
@@ -116,10 +102,10 @@
                                             <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
                                                 <StackPanel Orientation="Horizontal" Spacing="6">
                                                     <TextBlock Text="{Binding Title}" FontSize="13" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
-                                                    <Border Background="{DynamicResource CountdownPillBackgroundBrush}" CornerRadius="4" Padding="4,1" VerticalAlignment="Center">
+                                                    <Border Background="{DynamicResource PillBackground}" CornerRadius="4" Padding="4,1" VerticalAlignment="Center">
                                                         <TextBlock Text="{Binding Category}" FontSize="9" Opacity="0.75" />
                                                     </Border>
-                                                    <Border Background="{DynamicResource CountdownPillBackgroundBrush}" CornerRadius="4" Padding="4,1" VerticalAlignment="Center"
+                                                    <Border Background="{DynamicResource PillBackground}" CornerRadius="4" Padding="4,1" VerticalAlignment="Center"
                                                             IsVisible="{Binding IsLunar}">
                                                         <TextBlock Text="{x:Static locales:Locale.Countdown_IsLunar}" FontSize="9" Opacity="0.75" />
                                                     </Border>
@@ -129,7 +115,7 @@
 
                                             <!-- Days Badge -->
                                             <Border Grid.Column="2" CornerRadius="8" Padding="8,4" Margin="8,0"
-                                                    Background="{DynamicResource CountdownPillBackgroundBrush}" VerticalAlignment="Center">
+                                                    Background="{DynamicResource PillBackground}" VerticalAlignment="Center">
                                                 <StackPanel Orientation="Horizontal" Spacing="4">
                                                     <TextBlock Text="{Binding MainDisplayNumber}" FontSize="15" FontWeight="Bold"
                                                                Foreground="{Binding ColorBrush}" />

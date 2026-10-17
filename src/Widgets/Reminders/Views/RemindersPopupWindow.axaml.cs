@@ -13,6 +13,7 @@ using Avalonia.Threading;
 using Reminders.Locales;
 using Reminders.Models;
 using Reminders.Services;
+using DeskCanvas.Services;
 using DeskCanvas.Views;
 
 namespace Reminders.Views;
@@ -125,14 +126,15 @@ public partial class RemindersPopupWindow : SecondaryPanelWindow
         Action<RemindersListModel>? onModelChanged = null,
         double? cornerRadius = null)
     {
-        if (PanelCoolingDown<RemindersPopupWindow>())
-            return;
-
-        if (TryCloseActivePanel<RemindersPopupWindow>())
-            return;
-
-        var popup = new RemindersPopupWindow(model, screenCenter, onModelChanged, cornerRadius);
-        popup.ShowAsSecondaryPanel(owner);
+        // PerOwner identity (the weather panel precedent): every reminders widget owns its own
+        // panel. The service handles the cooldown, the toggle-close and the pinned show — the
+        // decision is deliberately ignored, mirroring the old bare early returns.
+        PanelService.Open(new PanelRequest(
+            owner is Widget widget ? widget.InstanceId : default,
+            owner,
+            "reminders.popup",
+            PanelScope.PerOwner,
+            () => new RemindersPopupWindow(model, screenCenter, onModelChanged, cornerRadius)));
     }
 
     protected override void OnPanelLoaded()

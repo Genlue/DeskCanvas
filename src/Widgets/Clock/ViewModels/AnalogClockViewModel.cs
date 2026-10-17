@@ -1,5 +1,7 @@
 using Clock.Models;
 using ReactiveUI;
+using DeskCanvas.Contracts;
+using DeskCanvas.Runtime;
 using DeskCanvas.Services;
 using Locale = Clock.Locales.Locale;
 
@@ -9,36 +11,88 @@ public class AnalogClockViewModel : ReactiveObject, IDisposable
 {
     private readonly ClockModel clockModel;
     private readonly UpdateTimer timer;
+    private readonly IWidgetSession? session;
     private bool isRunning;
-    private TimeZoneInfo? cachedTimeZone;
+    private bool renderActive = true;
+    private int tickSubscriptions;
 
-    public AnalogClockViewModel(ClockModel clockModel)
+    /// <summary>
+    /// Session-less widgets (the gallery preview, legacy layout entries without identity) pass
+    /// no session and keep the historic always-on behaviour: ticking then only follows
+    /// <see cref="Start"/>/<see cref="Stop"/>. With a session, the subscription is gated by
+    /// the latest activity snapshot's <see cref="ActivitySnapshot.RenderActive"/>.
+    /// </summary>
+    public AnalogClockViewModel(ClockModel clockModel, IWidgetSession? session = null)
     {
         this.clockModel = clockModel;
+        this.session = session;
+        renderActive = session?.Activity.RenderActive ?? true;
 
         timer = clockModel.ShowSeconds ? TimerService.Timer100Ms : TimerService.Timer5Seconds;
         Start();
     }
-    
+
     public void Start()
     {
         if (isRunning) return;
         isRunning = true;
-        timer.Subscribe(UpdateTime);
-        UpdateTime();
+        UpdateTickSubscription();
     }
 
     public void Stop()
     {
         if (!isRunning) return;
         isRunning = false;
-        timer.Unsubscribe(UpdateTime);
+        UpdateTickSubscription();
     }
+
+    /// <summary>
+    /// Host activity push (the <see cref="IWidgetActivityConsumer"/> path, invoked on the UI
+    /// thread): ticking follows the snapshot's <see cref="ActivitySnapshot.RenderActive"/>.
+    /// Session-less view models ignore the push entirely (the host never sends one to them).
+    /// </summary>
+    public void OnSessionActivity(ActivitySnapshot activity)
+    {
+        if (session == null) return;
+        renderActive = activity.RenderActive;
+        UpdateTickSubscription();
+    }
+
+    /// <summary>Check seam: the live subscription count over the shared timer (0 or 1).</summary>
+    public int TickSubscriptionCountForChecks => tickSubscriptions;
+
+    /// <summary>Check seam: the injected session (null on the legacy path).</summary>
+    public IWidgetSession? SessionForChecks => session;
+
+    /// <summary>Check seam: whether the shared timer subscription is currently live.</summary>
+    public bool IsTickingForChecks => tickSubscriptions > 0;
 
     public void Dispose()
     {
         Stop();
         GC.SuppressFinalize(this);
+    }
+
+    /// <summary>
+    /// Single subscription state machine (the Digital pilot's shape): the shared timer
+    /// subscription exists exactly while the control is running AND the session renders.
+    /// Overlapping transitions cannot double-subscribe or double-unsubscribe — the count is
+    /// reconciled from both inputs on every change instead of toggled from each.
+    /// </summary>
+    private void UpdateTickSubscription()
+    {
+        var wanted = isRunning && renderActive;
+        if (wanted && tickSubscriptions == 0)
+        {
+            tickSubscriptions++;
+            timer.Subscribe(UpdateTime);
+            UpdateTime();
+        }
+        else if (!wanted && tickSubscriptions > 0)
+        {
+            tickSubscriptions--;
+            timer.Unsubscribe(UpdateTime);
+        }
     }
 
     private void UpdateTime()
@@ -57,15 +111,11 @@ public class AnalogClockViewModel : ReactiveObject, IDisposable
     /// </summary>
     public string DigitalTimeText => Time.ToString("HH:mm");
     
-    private TimeZoneInfo TimeZoneInfo => cachedTimeZone ??= (clockModel.TimeZoneId != null
-        ? SafeFindTimeZone(clockModel.TimeZoneId)
-        : TimeZoneInfo.Local);
-
-    private static TimeZoneInfo SafeFindTimeZone(string id)
-    {
-        try { return TimeZoneInfo.FindSystemTimeZoneById(id); }
-        catch { return TimeZoneInfo.Local; }
-    }
+    /// <summary>
+    /// Shared timezone resolution (the Runtime copy): a null id is the unset timezone (local),
+    /// an unknown id falls back to Utc instead of throwing (the SharedTimeZone contract).
+    /// </summary>
+    private TimeZoneInfo TimeZoneInfo => SharedTimeZone.Resolve(clockModel.TimeZoneId);
 
     private DateTime Time => TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, TimeZoneInfo);
         

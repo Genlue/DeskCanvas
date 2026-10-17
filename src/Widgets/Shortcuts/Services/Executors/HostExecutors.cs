@@ -14,10 +14,7 @@ internal sealed class ThemeSurfaceExecutor : IActionExecutor
     [
         SurfaceStyle.Acrylic,
         SurfaceStyle.LiquidGlass,
-        SurfaceStyle.LiquidGlassV2,
-        SurfaceStyle.SoftGlow,
-        SurfaceStyle.Solid,
-        SurfaceStyle.Colorful,
+        SurfaceStyle.FullColor,
     ];
 
     public Task<string?> ExecuteAsync(ShortcutAction action, RunContext context)
@@ -31,11 +28,8 @@ internal sealed class ThemeSurfaceExecutor : IActionExecutor
         SurfaceStyle? next = mode switch
         {
             "acrylic" => SurfaceStyle.Acrylic,
-            "solid" => SurfaceStyle.Solid,
-            "liquidglass" => SurfaceStyle.LiquidGlass,
-            "softglow" => SurfaceStyle.SoftGlow,
-            "liquidglassv2" => SurfaceStyle.LiquidGlassV2,
-            "colorful" => SurfaceStyle.Colorful,
+            "liquidglass" or "liquidglassv2" => SurfaceStyle.LiquidGlass,
+            "colorful" or "fullcolor" => SurfaceStyle.FullColor,
             _ => CycleNext(settings.Theme.Surface),
         };
 
@@ -52,11 +46,8 @@ internal sealed class ThemeSurfaceExecutor : IActionExecutor
     internal static string SurfaceLabelKey(SurfaceStyle? style) => style switch
     {
         SurfaceStyle.Acrylic => "Shortcuts_Surface_acrylic",
-        SurfaceStyle.Solid => "Shortcuts_Surface_solid",
         SurfaceStyle.LiquidGlass => "Shortcuts_Surface_liquidglass",
-        SurfaceStyle.SoftGlow => "Shortcuts_Surface_softglow",
-        SurfaceStyle.LiquidGlassV2 => "Shortcuts_Surface_liquidglassv2",
-        SurfaceStyle.Colorful => "Shortcuts_Surface_colorful",
+        SurfaceStyle.FullColor => "Shortcuts_Surface_colorful",
         _ => "Shortcuts_Surface_acrylic",
     };
 }

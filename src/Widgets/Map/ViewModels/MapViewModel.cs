@@ -214,10 +214,10 @@ public class MapViewModel : INotifyPropertyChanged
         }
     }
 
-    public bool IsAcrylicTheme => Surface is SurfaceStyle.Acrylic or SurfaceStyle.OutlinedAcrylic;
-    public bool IsLiquidGlassTheme => Surface is SurfaceStyle.LiquidGlass or SurfaceStyle.SoftGlow or SurfaceStyle.LiquidGlassV2;
-    public bool IsSolidTheme => Surface == SurfaceStyle.Solid;
-    public bool IsVibrantTheme => Surface == SurfaceStyle.Colorful;
+    public bool IsAcrylicTheme => Surface == SurfaceStyle.Acrylic;
+    public bool IsLiquidGlassTheme => Surface == SurfaceStyle.LiquidGlass;
+    public bool IsSolidTheme => false;
+    public bool IsVibrantTheme => Surface == SurfaceStyle.FullColor;
 
     // ---------- 尺寸分级适配 (2x2, 4x2, 4x4) ----------
 

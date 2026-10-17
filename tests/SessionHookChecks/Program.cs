@@ -283,7 +283,7 @@ Rig SetupRig()
     monitor.Attach(screenHostWindow);
 
     settings.Save(new AppSettings(
-        new Theme(false, null, 1, false, false, "Inter", Surface: SurfaceStyle.Solid),
+        new Theme(false, null, 1, false, false, "Inter", Surface: SurfaceStyle.Acrylic),
         [], new Layout(GridMode.Manual, false, false, false, false), new Dimensions(100, 10, 16),
         new Region("en"), false, null, ActiveProfile: AppSettings.DefaultProfileName));
 

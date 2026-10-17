@@ -51,5 +51,10 @@
                           Subtitle="creewick/uWidgets/issues">
             <Button MinWidth="130" HorizontalContentAlignment="Center" Content="{x:Static locales:Locale.Settings_About_Repository_Action}" Click="GoToIssues" />
         </controls:Setting>
+        <controls:Setting Icon="{DynamicResource Delete}" 
+                          Title="{x:Static locales:Locale.Settings_About_Uninstall_Title}"
+                          Subtitle="{x:Static locales:Locale.Settings_About_Uninstall_Subtitle}">
+            <Button MinWidth="130" HorizontalContentAlignment="Center" Content="{x:Static locales:Locale.Settings_About_Uninstall_Action}" Click="OnUninstallClicked" />
+        </controls:Setting>
     </StackPanel>
 </UserControl>

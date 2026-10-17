@@ -1,26 +1,39 @@
 using Avalonia.Controls;
 using Avalonia.Interactivity;
+using DeskCanvas.Contracts;
+using DeskCanvas.Core.Interfaces;
+using DeskCanvas.Runtime;
 using Weather.Models;
 using Weather.ViewModels;
 
 namespace Weather.Views;
 
-public partial class AirQuality : UserControl
+public partial class AirQuality : UserControl, IWidgetActivityConsumer
 {
     private readonly ForecastModel model;
+    private readonly IWidgetSession? session;
     private AirQualityViewModel? viewModel;
 
     public AirQuality() : this(new ForecastModel("Beijing", 39.9042, 116.4074, "celsius")) {}
 
-    public AirQuality(ForecastModel model)
+    /// <summary>
+    /// <paramref name="session"/> is injected by WidgetFactory when the host runs the session
+    /// pipeline: the view model then gates its hourly refresh on the session's activity. Null
+    /// keeps the legacy always-on behaviour (preview, legacy layout entries).
+    /// </summary>
+    public AirQuality(ForecastModel model, IWidgetSession? session = null)
     {
         this.model = model;
-        viewModel = new AirQualityViewModel(model);
+        this.session = session;
+        viewModel = new AirQualityViewModel(model, session);
         DataContext = viewModel;
         Loaded += OnLoaded;
         Unloaded += OnUnloaded;
         InitializeComponent();
     }
+
+    /// <inheritdoc />
+    public void OnSessionActivity(ActivitySnapshot activity) => viewModel?.OnSessionActivity(activity);
 
     /// <summary>
     /// The view can be detached and re-added later (the settings window caches pages and the
@@ -30,7 +43,7 @@ public partial class AirQuality : UserControl
     private void OnLoaded(object? sender, RoutedEventArgs e)
     {
         if (viewModel != null) return;
-        viewModel = new AirQualityViewModel(model);
+        viewModel = new AirQualityViewModel(model, session);
         DataContext = viewModel;
     }
 

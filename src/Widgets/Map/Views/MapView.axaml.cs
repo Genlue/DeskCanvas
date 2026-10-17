@@ -158,7 +158,9 @@ public partial class MapView : UserControl, IWidgetSelfRefreshing, IWidgetSurfac
         {
             if (theme.AutoTheme)
             {
-                isDark = Application.Current?.ActualThemeVariant == ThemeVariant.Dark;
+                // Per-screen policy: the host window's variant wins; the uniform Application
+                // variant is only the fallback for a control not attached to a themed window.
+                isDark = ResolveAutoIsDark(ActualThemeVariant, Application.Current?.ActualThemeVariant);
             }
             else if (theme.DarkMode.HasValue)
             {
@@ -206,9 +208,8 @@ public partial class MapView : UserControl, IWidgetSelfRefreshing, IWidgetSurfac
         // 4 种主题卡片与悬浮按钮样式类切换（柔光玻璃与液态玻璃同属自绘材质，共用透明卡片样式）
         string themeClass = surface switch
         {
-            SurfaceStyle.LiquidGlass or SurfaceStyle.SoftGlow => "LiquidGlass",
-            SurfaceStyle.Solid => "Solid",
-            SurfaceStyle.Colorful => "Vibrant",
+            SurfaceStyle.LiquidGlass => "LiquidGlass",
+            SurfaceStyle.FullColor => "Vibrant",
             _ => "Acrylic"
         };
 
@@ -238,6 +239,20 @@ public partial class MapView : UserControl, IWidgetSelfRefreshing, IWidgetSurfac
         }
 
         Canvas.InvalidateVisual();
+    }
+
+    /// <summary>
+    /// Pure seam (pinned by tests/MediaWidgetSessionChecks): the isDark decision for the
+    /// auto (follow-system) theme. The per-screen policy writes the variant per window, so
+    /// the host window's variant wins; a control not attached to a themed window (variant
+    /// == Default) falls back to the uniform Application variant, then the platform default.
+    /// </summary>
+    public static bool ResolveAutoIsDark(ThemeVariant? windowVariant, ThemeVariant? uniformVariant)
+    {
+        var effective = windowVariant is { } window && window != ThemeVariant.Default
+            ? window
+            : uniformVariant ?? ThemeVariant.Default;
+        return effective == ThemeVariant.Dark;
     }
 
     private static void UpdateCardTheme(Border card, string themeClass)

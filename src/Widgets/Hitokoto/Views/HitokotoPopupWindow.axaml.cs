@@ -10,6 +10,7 @@ using Avalonia.Interactivity;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Threading;
+using DeskCanvas.Services;
 using DeskCanvas.Views;
 using Hitokoto.Locales;
 using Hitokoto.Models;
@@ -109,14 +110,17 @@ public partial class HitokotoPopupWindow : SecondaryPanelWindow
         Func<Task>? onRequestNextQuote = null,
         double? cornerRadius = null)
     {
-        if (PanelCoolingDown<HitokotoPopupWindow>())
-            return;
-
-        if (TryCloseActivePanel<HitokotoPopupWindow>())
-            return;
-
-        var popup = new HitokotoPopupWindow(model, currentItem, screenCenter, onRequestNextQuote, cornerRadius);
-        popup.ShowAsSecondaryPanel(owner);
+        // Per-owner identity (the P6 weather precedent): every hitokoto widget owns its own
+        // panel instead of the process-wide type-key toggle the bare legacy helpers gave —
+        // two quote widgets no longer evict each other's panel. Cooldown, toggle-close and
+        // the pinned show are the PanelService's contract now; the decision (mirroring the
+        // old early returns) is deliberately ignored.
+        PanelService.Open(new PanelRequest(
+            owner is Widget widget ? widget.InstanceId : default,
+            owner,
+            "hitokoto",
+            PanelScope.PerOwner,
+            () => new HitokotoPopupWindow(model, currentItem, screenCenter, onRequestNextQuote, cornerRadius)));
     }
 
     private void OnStoreChanged(object? sender, EventArgs e)

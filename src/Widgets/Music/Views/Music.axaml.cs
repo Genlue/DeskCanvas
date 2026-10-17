@@ -7,8 +7,10 @@ using Avalonia.VisualTree;
 using Music.Models;
 using Music.ViewModels;
 using Music.Views.Controls;
+using DeskCanvas.Contracts;
 using DeskCanvas.Core.Interfaces;
 using DeskCanvas.Core.Models;
+using DeskCanvas.Runtime;
 
 namespace Music.Views;
 
@@ -21,7 +23,7 @@ public enum MusicTier
     Large4x4
 }
 
-public partial class Music : UserControl, IWidgetSelfRefreshing, IWidgetSuspendable, IWidgetSurfaceHints
+public partial class Music : UserControl, IWidgetSelfRefreshing, IWidgetSuspendable, IWidgetSurfaceHints, IWidgetActivityConsumer
 {
     /// <inheritdoc />
     public string? ColorfulBackgroundResourceKey => "MusicCardBackground";
@@ -29,6 +31,7 @@ public partial class Music : UserControl, IWidgetSelfRefreshing, IWidgetSuspenda
     /// <summary>The layout model is kept outside the view model so a fresh view model can be built
     /// with the same settings when the view is re-added to the visual tree after an unload.</summary>
     private readonly MusicModel model;
+    private readonly IWidgetSession? session;
 
     // Not readonly: the view model is disposed on Unloaded and re-created on the next Loaded, because
     // a widget view may legitimately be unloaded and re-added (cached settings pages, Gallery previews).
@@ -37,10 +40,17 @@ public partial class Music : UserControl, IWidgetSelfRefreshing, IWidgetSuspenda
 
     public Music() : this(new MusicModel()) { }
 
-    public Music(MusicModel model)
+    /// <summary>
+    /// <paramref name="session"/> is injected by WidgetFactory when the host runs the session
+    /// pipeline (a stable instance identity): the view model then gates its 250 ms progress
+    /// tick on the session's activity. Null keeps the legacy always-on behaviour (preview,
+    /// legacy layout entries) — those hosts never push activity either.
+    /// </summary>
+    public Music(MusicModel model, IWidgetSession? session = null)
     {
         this.model = model;
-        viewModel = new MusicViewModel(model);
+        this.session = session;
+        viewModel = new MusicViewModel(model, session);
         DataContext = viewModel;
         InitializeComponent();
 
@@ -49,6 +59,9 @@ public partial class Music : UserControl, IWidgetSelfRefreshing, IWidgetSuspenda
         Unloaded += OnUnloaded;
     }
 
+    /// <inheritdoc />
+    public void OnSessionActivity(ActivitySnapshot activity) => viewModel.OnSessionActivity(activity);
+
     private void OnLoaded(object? sender, RoutedEventArgs e)
     {
         // The view model was torn down on the previous Unloaded (its DispatcherTimer, the SMTC media
@@ -56,7 +69,7 @@ public partial class Music : UserControl, IWidgetSelfRefreshing, IWidgetSuspenda
         // still works after being re-added to the visual tree.
         if (viewModel.IsDisposed)
         {
-            viewModel = new MusicViewModel(model);
+            viewModel = new MusicViewModel(model, session);
             DataContext = viewModel;
 
             // The tier controls render from the view model instance passed to their constructors, so

@@ -86,7 +86,8 @@ public static class PanelAppearanceResolver
         OpacityLevel: 1.0,
         Monochrome: false,
         UseNativeFrame: false,
-        FontFamily: "Inter");
+        FontFamily: "Microsoft YaHei UI",
+        Surface: SurfaceStyle.FullColor);
 
     /// <summary>
     /// The shared settings provider, when the host has wired one up. Optional by design: a plugin
@@ -161,16 +162,14 @@ public static class PanelAppearanceResolver
             return Glass(theme, isDark, cornerRadius, surface);
         if (theme.IsColorful)
             return Colorful(theme, isDark, cornerRadius);
-        if (surface == SurfaceStyle.Solid)
-            return Solid(theme, isDark, cornerRadius);
 
         return Acrylic(theme, isDark, cornerRadius);
     }
 
-    // ---- the four material branches, in the order the popups tested them -------------------
+    // ---- the material branches -------------------
 
     /// <summary>
-    /// 液态玻璃 / 新液态玻璃: the card itself stays transparent and the live surface paints it.
+    /// 液态玻璃: the card itself stays transparent and the live surface paints it.
     /// The surface is fed the zoom's interpolated scale by SecondaryPanelWindow, so the animation
     /// shows real glass per tick.
     /// </summary>
@@ -188,7 +187,7 @@ public static class PanelAppearanceResolver
             IconBrush: SubTextBrush(isDark),
             CornerRadius: cornerRadius);
 
-    /// <summary>多彩: the flat opaque macOS-style card.</summary>
+    /// <summary>全彩: the flat opaque macOS-style card.</summary>
     private static PanelAppearance Colorful(Theme theme, bool isDark, double cornerRadius)
         => new(
             Surface: SurfaceStyle.Colorful,
@@ -202,29 +201,6 @@ public static class PanelAppearanceResolver
             SubtitleBrush: SubTextBrush(isDark),
             IconBrush: SubTextBrush(isDark),
             CornerRadius: cornerRadius);
-
-    /// <summary>纯色: the user's solid colour, coated by the opacity slider (alpha 40–255).</summary>
-    private static PanelAppearance Solid(Theme theme, bool isDark, double cornerRadius)
-    {
-        var hex = isDark ? theme.EffectiveSolidBackgroundDark : theme.EffectiveSolidBackgroundLight;
-        var baseColor = Color.TryParse(hex, out var parsed)
-            ? parsed
-            : (isDark ? Color.FromRgb(46, 46, 46) : Colors.White);
-        byte alpha = (byte)Math.Clamp(Math.Round(theme.OpacityLevel * 255), 40, 255);
-
-        return new PanelAppearance(
-            Surface: SurfaceStyle.Solid,
-            IsDark: isDark,
-            TransparencyLevels: [WindowTransparencyLevel.Transparent, WindowTransparencyLevel.None],
-            CardBackground: new SolidColorBrush(Color.FromArgb(alpha, baseColor.R, baseColor.G, baseColor.B)),
-            CardBorderBrush: new SolidColorBrush(isDark ? Color.FromArgb(40, 255, 255, 255) : Color.FromArgb(30, 0, 0, 0)),
-            UseRenderedGlass: false,
-            GlassMaterial: null,
-            TitleBrush: TextBrush(isDark),
-            SubtitleBrush: SubTextBrush(isDark),
-            IconBrush: SubTextBrush(isDark),
-            CornerRadius: cornerRadius);
-    }
 
     /// <summary>毛玻璃: the native acrylic backdrop under a translucent fill (alpha 40–240).</summary>
     private static PanelAppearance Acrylic(Theme theme, bool isDark, double cornerRadius)

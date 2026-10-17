@@ -6,6 +6,7 @@ using Avalonia.Threading;
 using Music.Locales;
 using Music.Models;
 using Music.Services;
+using DeskCanvas.Contracts;
 
 namespace Music.ViewModels;
 
@@ -17,8 +18,12 @@ public class MusicViewModel : INotifyPropertyChanged, IDisposable
 
     private readonly MediaManagerService mediaService;
     private readonly DispatcherTimer timer;
+    private readonly IWidgetSession? session;
     private MusicModel model;
     private bool isDisposed;
+    // Session gate (see OnSessionActivity): false while the widget's screens are covered.
+    // Session-less widgets (gallery preview, legacy layout entries) stay always-on.
+    private bool renderActive;
 
     // High-resolution clock & smooth timeline synchronization
     private TimeSpan basePosition = TimeSpan.Zero;
@@ -160,9 +165,14 @@ public class MusicViewModel : INotifyPropertyChanged, IDisposable
     public bool AmbientGlow => model.AmbientGlow;
     public bool ShowProgressBar => model.ShowProgressBar;
 
-    public MusicViewModel(MusicModel model)
+    public MusicViewModel(MusicModel model, IWidgetSession? session = null)
     {
         this.model = model;
+        this.session = session;
+        // Session-less widgets keep the historic always-on behaviour; with a session the
+        // 250 ms progress tick is gated by RenderActive.
+        renderActive = session?.Activity.RenderActive ?? true;
+
         lastSyncTimestamp = Stopwatch.GetTimestamp();
         mediaService = new MediaManagerService();
         mediaService.UpdateRules(model.PlayerRules);
@@ -175,7 +185,7 @@ public class MusicViewModel : INotifyPropertyChanged, IDisposable
             Interval = TimeSpan.FromMilliseconds(250)
         };
         timer.Tick += OnTimerTick;
-        timer.Start();
+        UpdateProgressTimer();
     }
 
     public void UpdateModel(MusicModel newModel)
@@ -392,6 +402,53 @@ public class MusicViewModel : INotifyPropertyChanged, IDisposable
     public bool IsDisposed => isDisposed;
 
     // ------------------------------------------------------------------
+    //  Session gating (host: IWidgetActivityConsumer)
+    // ------------------------------------------------------------------
+
+    /// <summary>
+    /// Host activity push (the <see cref="DeskCanvas.Runtime.IWidgetActivityConsumer"/> path,
+    /// invoked on the UI thread): the 250 ms progress tick follows the snapshot's
+    /// <see cref="ActivitySnapshot.RenderActive"/>. Session-less view models ignore the push
+    /// entirely (the host never sends one to them).
+    /// <para>
+    /// The SMTC polling engine is deliberately NOT touched here: it is a process-shared
+    /// engine (P5) whose poll also feeds other consumers (settings pages, other widgets) —
+    /// gating it per widget session would be wrong. Only the widget-local UI tick stops.
+    /// </para>
+    /// </summary>
+    public void OnSessionActivity(ActivitySnapshot activity)
+    {
+        if (session == null) return;
+        renderActive = activity.RenderActive;
+        if (renderActive)
+        {
+            // Re-anchor the Stopwatch delta so the gated stretch does not surface as a
+            // position jump on the first tick after reopen (same contract as Resume()).
+            lastSyncTimestamp = Stopwatch.GetTimestamp();
+        }
+        UpdateProgressTimer();
+    }
+
+    /// <summary>
+    /// Single subscription state machine over BOTH gates (reconciliation, not toggling): the
+    /// 250 ms progress timer runs exactly while the host has not suspended the widget AND the
+    /// session renders. Overlapping transitions cannot double-start or double-stop.
+    /// </summary>
+    private void UpdateProgressTimer()
+    {
+        if (isDisposed) return;
+        var wanted = !suspended && renderActive;
+        if (wanted && !timer.IsEnabled)
+        {
+            timer.Start();
+        }
+        else if (!wanted && timer.IsEnabled)
+        {
+            timer.Stop();
+        }
+    }
+
+    // ------------------------------------------------------------------
     //  Fullscreen suspension (host: IWidgetSuspendable)
     // ------------------------------------------------------------------
 
@@ -409,7 +466,7 @@ public class MusicViewModel : INotifyPropertyChanged, IDisposable
         if (isDisposed || suspended) return;
         suspended = true;
 
-        timer.Stop();
+        UpdateProgressTimer();
         mediaService.PausePolling();
     }
 
@@ -424,6 +481,22 @@ public class MusicViewModel : INotifyPropertyChanged, IDisposable
         lastSyncTimestamp = Stopwatch.GetTimestamp();
 
         mediaService.ResumePolling();
-        timer.Start();
+        UpdateProgressTimer();
     }
+
+    // ------------------------------------------------------------------
+    //  Check seams (tests/MediaWidgetSessionChecks)
+    // ------------------------------------------------------------------
+
+    /// <summary>Check seam: whether the 250 ms progress timer is currently running.</summary>
+    public bool IsProgressTimerRunningForChecks => timer.IsEnabled;
+
+    /// <summary>Check seam: the latest session gate value.</summary>
+    public bool RenderActiveForChecks => renderActive;
+
+    /// <summary>Check seam: the latest explicit suspension gate value.</summary>
+    public bool SuspendedForChecks => suspended;
+
+    /// <summary>Check seam: the injected session (null on the legacy path).</summary>
+    public IWidgetSession? SessionForChecks => session;
 }

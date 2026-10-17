@@ -70,11 +70,11 @@ internal static partial class Program
 
     private static void CheckResolverMatrix()
     {
-        Console.WriteLine("--- PanelAppearanceResolver: 5 materials × 2 variants ---");
+        Console.WriteLine("--- PanelAppearanceResolver: 3 materials × 2 variants ---");
 
         const double radius = 22.0;
         var darkFollow = new Theme(DarkMode: null, AccentColor: null, OpacityLevel: 0.8, Monochrome: false,
-            UseNativeFrame: false, FontFamily: "Inter", Surface: SurfaceStyle.Solid);
+            UseNativeFrame: false, FontFamily: "Inter", Surface: SurfaceStyle.Acrylic);
 
         // "Follow system" (DarkMode == null) must resolve to the LIVE variant, not to dark.
         Check(!PanelAppearanceResolver.IsDark(darkFollow, ThemeVariant.Light),
@@ -116,28 +116,6 @@ internal static partial class Program
                 $"Colorful {suffix}: hairline matches the popup baseline");
             CheckLevels(colorful, WindowTransparencyLevel.Transparent, $"Colorful {suffix}");
             CheckSemanticBrushes(colorful, isDark, $"Colorful {suffix}");
-
-            // 纯色: user colour × the opacity slider (alpha clamped to 40–255).
-            var solidTheme = new Theme(
-                DarkMode: isDark, AccentColor: null, OpacityLevel: 0.5, Monochrome: false,
-                UseNativeFrame: false, FontFamily: "Inter", Surface: SurfaceStyle.Solid,
-                SolidBackgroundDark: "#334455", SolidBackgroundLight: "#DDEEFF");
-            var solid = PanelAppearanceResolver.Resolve(solidTheme, isDark, radius);
-            var solidBase = Color.Parse(isDark ? "#334455" : "#DDEEFF");
-            Check(IsColor(solid.CardBackground, Color.FromArgb(128, solidBase.R, solidBase.G, solidBase.B)),
-                $"Solid {suffix}: fill = base colour at round(0.5×255)=128 alpha");
-            Check(IsColor(solid.CardBorderBrush, isDark
-                      ? Color.FromArgb(40, 255, 255, 255)
-                      : Color.FromArgb(30, 0, 0, 0)),
-                $"Solid {suffix}: hairline matches the popup baseline");
-            CheckLevels(solid, WindowTransparencyLevel.Transparent, $"Solid {suffix}");
-
-            var solidSaturated = PanelAppearanceResolver.Resolve(solidTheme with { OpacityLevel = 0.1 }, isDark, radius);
-            Check(BrushColor(solidSaturated.CardBackground).A == 40,
-                $"Solid {suffix}: the slider never pushes the fill below the alpha-40 floor");
-            var solidOpaque = PanelAppearanceResolver.Resolve(solidTheme with { OpacityLevel = 1.0 }, isDark, radius);
-            Check(BrushColor(solidOpaque.CardBackground).A == 255,
-                $"Solid {suffix}: opacity 1.0 keeps the fully opaque fill");
 
             // 毛玻璃: native acrylic blur + translucent fill (alpha clamped to 40–240).
             var acrylicTheme = ThemeOf(SurfaceStyle.Acrylic, isDark) with { OpacityLevel = 0.7 };
@@ -289,7 +267,7 @@ internal static partial class Program
         shell.TitleForeground = titleBrush;               // a plugin-specific colour…
         shell.HeaderActions = new Button { Content = "act" };
         shell.FooterContent = new TextBlock { Text = "foot" };
-        var appearance = PanelAppearanceResolver.Resolve(ThemeOf(SurfaceStyle.Solid, isDark: true), true, 18);
+        var appearance = PanelAppearanceResolver.Resolve(ThemeOf(SurfaceStyle.Acrylic, isDark: true), true, 18);
         shell.SurfaceAppearance = appearance;
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
         Check(ReferenceEquals(shell.CardBackground, appearance.CardBackground)

@@ -782,7 +782,6 @@ property DeskCanvas.Core.Models.Settings.Theme EffectiveGlass -> DeskCanvas.Core
 property DeskCanvas.Core.Models.Settings.Theme EffectiveLiquidGlass -> DeskCanvas.Core.Models.Settings.LiquidGlassSettings
 property DeskCanvas.Core.Models.Settings.Theme EffectiveLiquidGlassV2 -> DeskCanvas.Core.Models.Settings.LiquidGlassV2Settings
 property DeskCanvas.Core.Models.Settings.Theme EffectiveMonochromeVariant -> DeskCanvas.Core.Models.Settings.MonochromeStyle
-property DeskCanvas.Core.Models.Settings.Theme EffectiveOutlineColor -> System.String
 property DeskCanvas.Core.Models.Settings.Theme EffectiveSolidBackgroundDark -> System.String
 property DeskCanvas.Core.Models.Settings.Theme EffectiveSolidBackgroundLight -> System.String
 property DeskCanvas.Core.Models.Settings.Theme EffectiveSurface -> DeskCanvas.Core.Models.Settings.SurfaceStyle
@@ -798,8 +797,6 @@ property DeskCanvas.Core.Models.Settings.Theme LiquidGlassV2 -> DeskCanvas.Core.
 property DeskCanvas.Core.Models.Settings.Theme Monochrome -> System.Boolean
 property DeskCanvas.Core.Models.Settings.Theme MonochromeVariant -> System.Nullable<DeskCanvas.Core.Models.Settings.MonochromeStyle>
 property DeskCanvas.Core.Models.Settings.Theme OpacityLevel -> System.Double
-property DeskCanvas.Core.Models.Settings.Theme OutlineColor -> System.String
-property DeskCanvas.Core.Models.Settings.Theme OutlineWidth -> System.Double
 property DeskCanvas.Core.Models.Settings.Theme SolidBackgroundDark -> System.String
 property DeskCanvas.Core.Models.Settings.Theme SolidBackgroundLight -> System.String
 property DeskCanvas.Core.Models.Settings.Theme Surface -> System.Nullable<DeskCanvas.Core.Models.Settings.SurfaceStyle>
@@ -809,8 +806,6 @@ property DeskCanvas.Core.Models.Settings.Theme UseNativeFrame -> System.Boolean
 property DeskCanvas.Core.Models.Settings.Theme UsesNativeBlur -> System.Boolean
 property DeskCanvas.Core.Models.Settings.Theme UsesRenderedGlass -> System.Boolean
 field DeskCanvas.Core.Models.Settings.Theme DefaultMonochromeVariant -> DeskCanvas.Core.Models.Settings.MonochromeStyle
-field DeskCanvas.Core.Models.Settings.Theme DefaultOutlineColor -> System.String
-field DeskCanvas.Core.Models.Settings.Theme DefaultOutlineWidth -> System.Double
 field DeskCanvas.Core.Models.Settings.Theme DefaultSoftGlowOpacity -> System.Double
 field DeskCanvas.Core.Models.Settings.Theme DefaultSolidBackgroundDark -> System.String
 field DeskCanvas.Core.Models.Settings.Theme DefaultSolidBackgroundLight -> System.String

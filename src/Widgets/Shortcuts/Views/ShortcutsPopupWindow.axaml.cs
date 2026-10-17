@@ -5,6 +5,7 @@ using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Styling;
 using Avalonia.Threading;
+using DeskCanvas.Services;
 using DeskCanvas.Views;
 using Shortcuts.Models;
 using Shortcuts.Services;
@@ -47,11 +48,16 @@ public partial class ShortcutsPopupWindow : SecondaryPanelWindow
 
     public static void ShowPopup(Point? screenCenter = null, Window? owner = null, double? cornerRadius = null)
     {
-        if (PanelCoolingDown<ShortcutsPopupWindow>()) return;
-        if (TryCloseActivePanel<ShortcutsPopupWindow>()) return;
-
-        var popup = new ShortcutsPopupWindow(screenCenter, cornerRadius);
-        popup.ShowAsSecondaryPanel(owner);
+        // The PanelService owns the single-instance state: cooldown, toggle-close and the
+        // pinned show. PerOwner keys each shortcuts widget's panel to its own component
+        // instance (two cards no longer evict each other's panel), the same rule the
+        // weather panels follow since P6.
+        PanelService.Open(new PanelRequest(
+            owner is Widget widget ? widget.InstanceId : default,
+            owner,
+            "Shortcuts.QuickPanel",
+            PanelScope.PerOwner,
+            () => new ShortcutsPopupWindow(screenCenter, cornerRadius)));
     }
 
     // ---- events ------------------------------------------------------------------

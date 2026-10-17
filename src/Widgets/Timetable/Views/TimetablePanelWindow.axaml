@@ -9,7 +9,7 @@
         ShowInTaskbar="False"
         CanResize="False"
         Width="580"
-        Height="670">
+        Height="540">
 
     <!-- The shared secondary-panel shell (W7) owns the card, the glass, the header with the
          drag area and the shared close button, and the backdrop-dismiss rule. This window
@@ -24,9 +24,8 @@
             <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                 <TextBlock x:Name="HeaderTitleText" FontSize="15" FontWeight="Bold"
                            TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
-                <Border Background="#20808080" CornerRadius="8" Padding="7,2" VerticalAlignment="Center">
-                    <TextBlock x:Name="WeekBadgeText" FontSize="11" FontWeight="SemiBold"
-                               Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}" />
+                <Border Classes="dc-badge" VerticalAlignment="Center">
+                    <TextBlock x:Name="WeekBadgeText" Text="1" />
                 </Border>
             </StackPanel>
         </controls:SecondaryPanelShell.HeaderContent>
@@ -35,7 +34,7 @@
         <ScrollViewer VerticalScrollBarVisibility="Auto">
             <StackPanel Orientation="Vertical" Spacing="12" Margin="0,0,6,0">
                 <Grid x:Name="PanelGridHost" />
-                <Border x:Name="NotesCard" Background="#12808080" CornerRadius="10"
+                <Border x:Name="NotesCard" Classes="dc-card-box"
                         Padding="12,9" IsVisible="False">
                     <StackPanel Orientation="Vertical" Spacing="5">
                         <TextBlock x:Name="NotesHeaderText" FontSize="12" FontWeight="SemiBold" Opacity="0.75" />

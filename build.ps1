@@ -33,6 +33,8 @@ param(
 
     [switch]$Portable,
 
+    [switch]$Setup,
+
     [switch]$Msi
 )
 
@@ -184,6 +186,49 @@ try {
         if (Test-Path $zip) { Remove-Item $zip -Force }
         Compress-Archive -Path "$portableDir\*" -DestinationPath $zip
         Write-Host "==> Portable zip: $zip" -ForegroundColor Green
+    }
+
+    # --- Optional: Setup installer packaging via Inno Setup ---
+    if ($Setup) {
+        Write-Host "==> Building Setup Installer ($Runtime)..." -ForegroundColor Cyan
+        $assemblyInfo = Get-Content (Join-Path $root "src\DeskCanvas\AssemblyInfo.cs") -Raw
+        $appVerMatch = [regex]::Match($assemblyInfo, 'AssemblyVersion\("([0-9\.]+)"\)')
+        $appVer = if ($appVerMatch.Success) { $appVerMatch.Groups[1].Value } else { "3.8.3" }
+
+        $arch = switch ($Runtime) {
+            "win-x64" { "x64" }
+            "win-x86" { "x86" }
+            "win-arm64" { "arm64" }
+            default { "x64" }
+        }
+
+        $isccCandidates = @(
+            (Join-Path $env:LOCALAPPDATA "Programs\Inno Setup 6\ISCC.exe"),
+            "C:\Program Files (x86)\Inno Setup 6\ISCC.exe",
+            "C:\Program Files\Inno Setup 6\ISCC.exe"
+        )
+        $iscc = $null
+        foreach ($candidate in $isccCandidates) {
+            if (Test-Path $candidate) { $iscc = $candidate; break }
+        }
+        if (-not $iscc) {
+            $cmd = Get-Command iscc.exe -ErrorAction SilentlyContinue
+            if ($cmd) { $iscc = $cmd.Source }
+        }
+
+        if (-not $iscc) {
+            throw "Inno Setup compiler (ISCC.exe) not found. Install it via 'winget install JRSoftware.InnoSetup'."
+        }
+
+        $issPath = Join-Path $root "installer\DeskCanvas.iss"
+        $installerDir = Join-Path $root "dist\installer"
+        if (-not (Test-Path $installerDir)) { New-Item -ItemType Directory -Path $installerDir -Force | Out-Null }
+
+        & $iscc $issPath "/DMyAppVersion=$appVer" "/DMyRuntime=$Runtime" "/DMyArch=$arch"
+        if ($LASTEXITCODE -ne 0) { throw "Inno Setup build failed (exit code $LASTEXITCODE)" }
+
+        $setupExe = Join-Path $installerDir "DeskCanvas-$appVer-$arch-Setup.exe"
+        Write-Host "==> Setup installer created: $setupExe ($([math]::Round((Get-Item $setupExe).Length / 1MB, 1)) MB)" -ForegroundColor Green
     }
 
     # --- Optional: MSI installer packaging via WiX v5 ---

@@ -5,6 +5,7 @@ using Clock.Models;
 using Clock.Locales;
 using ReactiveUI;
 using DeskCanvas.Core.Interfaces;
+using DeskCanvas.Runtime;
 
 namespace Clock.ViewModels;
 
@@ -55,9 +56,7 @@ public class AnalogClockSettingsViewModel(IWidgetLayoutProvider widgetLayoutProv
 
     public TimeZoneInfo TimeZone
     {
-        get => clockModel.TimeZoneId != null
-                ? TimeZoneInfo.FindSystemTimeZoneById(clockModel.TimeZoneId)
-                : TimeZoneInfo.Local;
+        get => SharedTimeZone.Resolve(clockModel.TimeZoneId);
         set => UpdateClockModel(clockModel with { TimeZoneId = value.Id });
     }
 

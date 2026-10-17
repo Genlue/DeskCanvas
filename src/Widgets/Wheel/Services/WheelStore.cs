@@ -16,6 +16,17 @@ public static class WheelStore
     public static event Action? TemplatesChanged;
     public static event Action<WheelDecisionRecord>? DecisionRecorded;
 
+    static WheelStore()
+    {
+        Const.ActiveProfileChanged += _ =>
+        {
+            lock (FileLock)
+            {
+                cachedData = null;
+            }
+        };
+    }
+
     public static string FilePath
     {
         get

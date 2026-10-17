@@ -22,6 +22,7 @@ internal static class Program
     {
         var sandbox = Path.Combine(Path.GetTempPath(),
             "DeskCanvas-ShortcutsSmoke-" + Guid.NewGuid().ToString("N")[..8]);
+        Environment.SetEnvironmentVariable("DESKCANVAS_DATA_FOLDER", sandbox);
         Environment.SetEnvironmentVariable("DESCANVAS_DATA_FOLDER", sandbox);
 
         // The headless platform provides the render interface the geometry parser needs —

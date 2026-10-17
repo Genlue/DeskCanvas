@@ -1,0 +1,100 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!-- Shared Pill Button Family (P10)
+         Canonical variants:
+           - Button.dc-pill             Subtle tinted pill
+           - Button.dc-pill.capsule     Fully rounded capsule (radius 999)
+           - Button.dc-pill.primary     Accent colored primary action
+           - Button.dc-pill.ghost       Transparent background until hovered
+           - Button.dc-pill.active      Selected state in segmented tab/bar
+         Transition aliases:
+           - Button.pill-btn, Button.action-pill, Button.primary-pill, Button.ghost-btn -->
+
+    <!-- Base subtle pill -->
+    <Style Selector="Button.dc-pill, Button.pill-btn, Button.action-pill, Button.count-btn, Button.seg-tab, Button.tier-tab, Button.tab-pill">
+        <Setter Property="Height" Value="{DynamicResource PillHeight}" />
+        <Setter Property="Padding" Value="{DynamicResource PillPadding}" />
+        <Setter Property="FontSize" Value="{DynamicResource PillFontSize}" />
+        <Setter Property="CornerRadius" Value="{DynamicResource PillCornerRadius}" />
+        <Setter Property="Background" Value="{DynamicResource PillBackground}" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="HorizontalContentAlignment" Value="Center" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}" />
+    </Style>
+    <Style Selector="Button.dc-pill:pointerover, Button.pill-btn:pointerover, Button.action-pill:pointerover, Button.count-btn:pointerover, Button.seg-tab:pointerover, Button.tier-tab:pointerover, Button.tab-pill:pointerover">
+        <Setter Property="Background" Value="{DynamicResource PillHoverBackground}" />
+    </Style>
+    <Style Selector="Button.dc-pill:pressed, Button.pill-btn:pressed, Button.action-pill:pressed, Button.count-btn:pressed, Button.seg-tab:pressed, Button.tier-tab:pressed, Button.tab-pill:pressed">
+        <Setter Property="Background" Value="{DynamicResource PillPressedBackground}" />
+    </Style>
+    <Style Selector="Button.dc-pill:pointerover /template/ ContentPresenter#PART_ContentPresenter, Button.pill-btn:pointerover /template/ ContentPresenter#PART_ContentPresenter, Button.action-pill:pointerover /template/ ContentPresenter#PART_ContentPresenter, Button.count-btn:pointerover /template/ ContentPresenter#PART_ContentPresenter, Button.seg-tab:pointerover /template/ ContentPresenter#PART_ContentPresenter, Button.tier-tab:pointerover /template/ ContentPresenter#PART_ContentPresenter, Button.tab-pill:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource PillHoverBackground}" />
+    </Style>
+    <Style Selector="Button.dc-pill:pressed /template/ ContentPresenter#PART_ContentPresenter, Button.pill-btn:pressed /template/ ContentPresenter#PART_ContentPresenter, Button.action-pill:pressed /template/ ContentPresenter#PART_ContentPresenter, Button.count-btn:pressed /template/ ContentPresenter#PART_ContentPresenter, Button.seg-tab:pressed /template/ ContentPresenter#PART_ContentPresenter, Button.tier-tab:pressed /template/ ContentPresenter#PART_ContentPresenter, Button.tab-pill:pressed /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource PillPressedBackground}" />
+    </Style>
+
+    <!-- Compact pill variant -->
+    <Style Selector="Button.dc-pill.compact, Button.pill-btn.compact, Button.action-pill.compact">
+        <Setter Property="Height" Value="{DynamicResource PillCompactHeight}" />
+        <Setter Property="Padding" Value="{DynamicResource PillCompactPadding}" />
+    </Style>
+
+    <!-- Capsule pill variant -->
+    <Style Selector="Button.dc-pill.capsule">
+        <Setter Property="CornerRadius" Value="{DynamicResource CapsulePillCornerRadius}" />
+    </Style>
+
+    <!-- Primary pill variant -->
+    <Style Selector="Button.dc-pill.primary, Button.primary-pill">
+        <Setter Property="Background" Value="{DynamicResource SystemControlHighlightAccentBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource AccentContrastForegroundBrush}" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+    <Style Selector="Button.dc-pill.primary:pointerover, Button.primary-pill:pointerover">
+        <Setter Property="Background" Value="{DynamicResource SystemControlHighlightAccentBrush}" />
+        <Setter Property="Opacity" Value="0.9" />
+    </Style>
+    <Style Selector="Button.dc-pill.primary:pressed, Button.primary-pill:pressed">
+        <Setter Property="Background" Value="{DynamicResource SystemControlHighlightAccentBrush}" />
+        <Setter Property="Opacity" Value="0.8" />
+    </Style>
+    <Style Selector="Button.dc-pill.primary:pointerover /template/ ContentPresenter#PART_ContentPresenter, Button.primary-pill:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource SystemControlHighlightAccentBrush}" />
+        <Setter Property="Opacity" Value="0.9" />
+    </Style>
+    <Style Selector="Button.dc-pill.primary:pressed /template/ ContentPresenter#PART_ContentPresenter, Button.primary-pill:pressed /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource SystemControlHighlightAccentBrush}" />
+        <Setter Property="Opacity" Value="0.8" />
+    </Style>
+
+    <!-- Ghost pill variant -->
+    <Style Selector="Button.dc-pill.ghost, Button.ghost-btn">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+    </Style>
+    <Style Selector="Button.dc-pill.ghost:pointerover, Button.ghost-btn:pointerover">
+        <Setter Property="Background" Value="{DynamicResource PillHoverBackground}" />
+    </Style>
+    <Style Selector="Button.dc-pill.ghost:pointerover /template/ ContentPresenter#PART_ContentPresenter, Button.ghost-btn:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource PillHoverBackground}" />
+    </Style>
+
+    <!-- Active segmented pill variant -->
+    <Style Selector="Button.dc-pill.active, Button.action-pill.active, Button.count-btn.active, Button.tier-tab.active, Button.tab-pill.active">
+        <Setter Property="Background" Value="{DynamicResource SystemControlHighlightAccentBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource AccentContrastForegroundBrush}" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+    <Style Selector="Button.dc-pill.active /template/ ContentPresenter#PART_ContentPresenter, Button.action-pill.active /template/ ContentPresenter#PART_ContentPresenter, Button.count-btn.active /template/ ContentPresenter#PART_ContentPresenter, Button.tier-tab.active /template/ ContentPresenter#PART_ContentPresenter, Button.tab-pill.active /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource SystemControlHighlightAccentBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource AccentContrastForegroundBrush}" />
+    </Style>
+
+    <!-- Shared disabled feedback -->
+    <Style Selector="Button.dc-pill:disabled, Button.pill-btn:disabled, Button.action-pill:disabled, Button.primary-pill:disabled, Button.ghost-btn:disabled">
+        <Setter Property="Opacity" Value="0.45" />
+    </Style>
+</Styles>

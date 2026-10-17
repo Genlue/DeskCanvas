@@ -118,14 +118,12 @@
              live. The native window region is clipped to the same rectangle (see
              ApplyWidgetRegion) so the OS blur follows the card and the transparent
              margin stays click-through.
-             The outline option adds a highlight ring that fades from the top-left /
-             bottom-right corners (see WidgetOutlineBrush). -->
+             The specular rim is a separate overlay (see below): this card no longer
+             carries a 描边 border. -->
         <Border Name="Border"
                 Classes="widget-content-host"
                 CornerRadius="{Binding Radius, RelativeSource={RelativeSource AncestorType=views:Widget}}"
                 Background="{Binding WidgetCardBackground, RelativeSource={RelativeSource AncestorType=views:Widget}}"
-                BorderThickness="{Binding WidgetOutlineThickness, RelativeSource={RelativeSource AncestorType=views:Widget}}"
-                BorderBrush="{Binding WidgetOutlineBrush, RelativeSource={RelativeSource AncestorType=views:Widget}}"
                 Margin="{Binding WidgetMargin, RelativeSource={RelativeSource AncestorType=views:Widget}}">
             <!-- Content: sized by the card only; the content scale (Scale()) is a
                  render transform on this presenter, so it never resizes the card. -->
@@ -143,6 +141,16 @@
                 </ContentPresenter.ContentTemplate>
             </ContentPresenter>
         </Border>
+
+        <!-- Specular rim for the materials the wallpaper-sampled renderer does not draw
+             (毛玻璃 / 全彩): the same |dot(edge normal, light)| hairline as 液态玻璃's shader
+             highlight, with 高光 strength and 高光角度 shared from the theme. -->
+        <controls:SpecularHighlight
+                Margin="{Binding WidgetMargin, RelativeSource={RelativeSource AncestorType=views:Widget}}"
+                CornerRadius="{Binding Radius, RelativeSource={RelativeSource AncestorType=views:Widget}}"
+                Strength="{Binding HighlightStrength, RelativeSource={RelativeSource AncestorType=views:Widget}}"
+                Angle="{Binding HighlightAngle, RelativeSource={RelativeSource AncestorType=views:Widget}}"
+                IsVisible="{Binding ShowsSpecularHighlight, RelativeSource={RelativeSource AncestorType=views:Widget}}" />
 
         <!-- Generic decoration overlay slot (W10): the hosted content may provide a decoration
              control via IWidgetOverlayProvider (e.g. the Stack widget's pagination dots, which

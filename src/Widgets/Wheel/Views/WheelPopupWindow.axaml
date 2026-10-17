@@ -13,31 +13,6 @@
         Width="460"
         Height="560">
 
-    <Window.Styles>
-        <Style Selector="Button.action-pill">
-            <Setter Property="Background" Value="#1C808080" />
-            <Setter Property="BorderThickness" Value="0" />
-            <Setter Property="Padding" Value="10,4" />
-            <Setter Property="FontSize" Value="12" />
-            <Setter Property="CornerRadius" Value="12" />
-            <Setter Property="Cursor" Value="Hand" />
-            <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}" />
-        </Style>
-        <Style Selector="Button.action-pill:pointerover">
-            <Setter Property="Background" Value="#32808080" />
-        </Style>
-        <Style Selector="Button.primary-pill">
-            <Setter Property="Background" Value="{DynamicResource SystemControlHighlightAccentBrush}" />
-            <Setter Property="Foreground" Value="{DynamicResource AccentContrastForegroundBrush}" />
-            <Setter Property="BorderThickness" Value="0" />
-            <Setter Property="Padding" Value="14,6" />
-            <Setter Property="CornerRadius" Value="10" />
-            <Setter Property="FontWeight" Value="SemiBold" />
-            <Setter Property="FontSize" Value="12" />
-            <Setter Property="Cursor" Value="Hand" />
-        </Style>
-    </Window.Styles>
-
     <controls:SecondaryPanelShell>
         <controls:SecondaryPanelShell.HeaderContent>
             <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
@@ -48,8 +23,7 @@
 
         <Grid RowDefinitions="Auto,*,Auto,Auto" Margin="0,4,0,0">
             <!-- 1. Template Select Bar -->
-            <Border Grid.Row="0" Background="#14808080" BorderBrush="#1Cffffff" BorderThickness="1"
-                    CornerRadius="12" Padding="12,10" Margin="0,0,0,10">
+            <Border Grid.Row="0" Classes="dc-card-box" Margin="0,0,0,10">
                 <Grid ColumnDefinitions="Auto,*,Auto,Auto">
                     <TextBlock Text="{x:Static locales:Locale.Wheel_CurrentTemplate}" VerticalAlignment="Center" FontSize="13" Opacity="0.8" Margin="0,0,8,0"/>
                     <ComboBox x:Name="TemplateComboBox" Grid.Column="1" HorizontalAlignment="Stretch" Margin="0,0,8,0"
@@ -70,8 +44,8 @@
                     <ItemsControl x:Name="OptionsItemsControl">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate x:DataType="models:WheelOption">
-                                <Border Background="#10808080" BorderBrush="#14ffffff" BorderThickness="1"
-                                        CornerRadius="8" Padding="10,6" Margin="0,0,0,6">
+                                <Border Background="{DynamicResource CardSubtleFill}" BorderBrush="{DynamicResource CardSubtleBorder}" BorderThickness="1"
+                                        CornerRadius="{DynamicResource PillCornerRadius}" Padding="10,6" Margin="0,0,0,6">
                                     <Grid ColumnDefinitions="Auto,*,Auto,Auto">
                                         <Border Width="14" Height="14" CornerRadius="7" Background="{Binding ColorHex}" VerticalAlignment="Center" Margin="0,0,8,0"/>
                                         <TextBox Grid.Column="1" Text="{Binding Text}" FontSize="12" VerticalAlignment="Center" Margin="0,0,8,0"/>
@@ -95,7 +69,7 @@
             </Grid>
 
             <!-- 3. Decision History -->
-            <Border Grid.Row="3" Background="#10808080" CornerRadius="10" Padding="10,8" MaxHeight="110">
+            <Border Grid.Row="3" Background="{DynamicResource CardSubtleFill}" CornerRadius="{DynamicResource CardSubtleCornerRadius}" Padding="10,8" MaxHeight="110">
                 <Grid RowDefinitions="Auto,*">
                     <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="0,0,0,4">
                         <TextBlock Text="{x:Static locales:Locale.Wheel_HistorySection}" FontSize="11" FontWeight="SemiBold" Opacity="0.7"/>

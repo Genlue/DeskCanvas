@@ -5,18 +5,21 @@ using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Pomodoro.Models;
 using Pomodoro.ViewModels;
+using DeskCanvas.Contracts;
 using DeskCanvas.Core.Interfaces;
 using DeskCanvas.Core.Models;
+using DeskCanvas.Runtime;
 using DeskCanvas.Services;
 
 namespace Pomodoro.Views;
 
-public partial class PomodoroView : UserControl, IWidgetSelfRefreshing, IWidgetSurfaceHints
+public partial class PomodoroView : UserControl, IWidgetSelfRefreshing, IWidgetSurfaceHints, IWidgetActivityConsumer
 {
     /// <inheritdoc />
     public string? ColorfulBackgroundResourceKey => "PomodoroCardBackground";
 
     private readonly IWidgetLayoutProvider? layoutProvider;
+    private readonly IWidgetSession? session;
     private PomodoroViewModel? viewModel;
     private WidgetTier currentTier = (WidgetTier)(-1);
 
@@ -26,10 +29,17 @@ public partial class PomodoroView : UserControl, IWidgetSelfRefreshing, IWidgetS
 
     public PomodoroView(PomodoroModel model) : this(model, null) { }
 
-    public PomodoroView(PomodoroModel model, IWidgetLayoutProvider? layoutProvider)
+    /// <summary>
+    /// <paramref name="session"/> is injected by WidgetFactory when the host runs the session
+    /// pipeline (a stable instance identity): the view model then gates its 1 s countdown tick
+    /// on the session's activity while the countdown data itself stays intact (the gated
+    /// stretch is replayed on reopen). Null keeps the legacy always-on behaviour.
+    /// </summary>
+    public PomodoroView(PomodoroModel model, IWidgetLayoutProvider? layoutProvider, IWidgetSession? session = null)
     {
         this.layoutProvider = layoutProvider;
-        viewModel = new PomodoroViewModel(model);
+        this.session = session;
+        viewModel = new PomodoroViewModel(model, session);
         DataContext = viewModel;
 
         InitializeComponent();
@@ -39,6 +49,9 @@ public partial class PomodoroView : UserControl, IWidgetSelfRefreshing, IWidgetS
         SizeChanged += OnSizeChanged;
     }
 
+    /// <inheritdoc />
+    public void OnSessionActivity(ActivitySnapshot activity) => viewModel?.OnSessionActivity(activity);
+
     private void OnLoaded(object? sender, RoutedEventArgs e)
     {
         // OnUnloaded disposes the view model (a running countdown would otherwise tick, beep
@@ -46,7 +59,7 @@ public partial class PomodoroView : UserControl, IWidgetSelfRefreshing, IWidgetS
         // one here — same pattern as Monitor/Progress.
         if (viewModel is { IsDisposed: true } or null)
         {
-            viewModel = new PomodoroViewModel(viewModel?.Model ?? new PomodoroModel());
+            viewModel = new PomodoroViewModel(viewModel?.Model ?? new PomodoroModel(), session);
             DataContext = viewModel;
         }
 

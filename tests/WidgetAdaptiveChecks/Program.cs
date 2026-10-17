@@ -102,29 +102,29 @@ internal static class Program
 
         if (method == null) return;
 
-        // No margins, no outline: the window minimum is the content minimum.
-        var bare = InvokeMin(method, new Size(160, 120), new Thickness(0), new Thickness(0));
-        Check(bare == (160, 120), $"no margin/outline → min == desired (got {bare})");
+        // No margins: the window minimum is the content minimum (the card has no 描边 inset
+        // any more — the specular rim is an overlay that never takes layout space).
+        var bare = InvokeMin(method, new Size(160, 120), new Thickness(0));
+        Check(bare == (160, 120), $"no margin → min == desired (got {bare})");
 
-        // The real card geometry: 12px margin on each side + a 1px outline ring.
-        var carded = InvokeMin(method, new Size(160, 120), new Thickness(12), new Thickness(1));
-        Check(carded == (186, 146), $"12 margin + 1 outline → min = desired + 26 (got {carded})");
+        // The real card geometry: 12px margin on each side.
+        var carded = InvokeMin(method, new Size(160, 120), new Thickness(12));
+        Check(carded == (184, 144), $"12 margin → min = desired + 24 (got {carded})");
 
         // Fractional desired sizes round up — a fractional pixel short would keep the
         // content 0.4px truncated forever.
-        var rounded = InvokeMin(method, new Size(100.4, 99.6), new Thickness(0), new Thickness(0));
+        var rounded = InvokeMin(method, new Size(100.4, 99.6), new Thickness(0));
         Check(rounded == (101, 100), $"fractional desired rounds up (got {rounded})");
 
         // The 48px floor: a view that reports nearly no minimum (Viewbox clocks) keeps
         // the historical 48px free-resize floor.
-        var floored = InvokeMin(method, new Size(10, 8), new Thickness(0), new Thickness(0));
+        var floored = InvokeMin(method, new Size(10, 8), new Thickness(0));
         Check(floored == (48, 48), $"tiny desired keeps the 48px floor (got {floored})");
     }
 
-    private static (double, double) InvokeMin(
-        MethodInfo method, Size desired, Thickness margin, Thickness outline) =>
+    private static (double, double) InvokeMin(MethodInfo method, Size desired, Thickness margin) =>
         ((double, double))method.Invoke(null,
-            [desired, margin, outline, 48.0])!;
+            [desired, margin, 48.0])!;
 
     // ---- 2. Translator control bar measure-driven degradation ----
 
@@ -326,7 +326,7 @@ internal static class WindowTopologyChecks
     public static void Run(Action<bool, string> check)
     {
         var settings = new SettingsStore(new AppSettings(
-            new Theme(true, null, 1, false, false, "Segoe UI", Surface: SurfaceStyle.Solid), [],
+            new Theme(true, null, 1, false, false, "Segoe UI", Surface: SurfaceStyle.Acrylic), [],
             new Layout(GridMode.Manual, false, false, false, false), new Dimensions(100, 10, 16),
             new Region("en"), false, null));
         var entry = new WidgetLayout("Topology", nameof(TopologyContent), 40, 60, 200, 180, null);
