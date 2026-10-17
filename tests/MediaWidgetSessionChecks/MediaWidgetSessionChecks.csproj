@@ -1,9 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <!-- The Music widget assembly targets net8.0-windows10.0.19041.0 (WinRT SMTC), so the
+    <!-- The Music widget assembly targets net10.0-windows10.0.19041.0 (WinRT SMTC), so the
          probe must match that TFM to reference it. -->
-    <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
+    <TargetFramework>net10.0-windows10.0.19041.0</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Avalonia" />

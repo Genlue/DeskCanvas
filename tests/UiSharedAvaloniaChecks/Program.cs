@@ -307,13 +307,17 @@ Check(badge.CornerRadius == new CornerRadius(6) && badge.Padding == new Thicknes
 
 testWindow.Close();
 
-// ---- 1280x800 display constraint: all 15 widget popup windows Height <= 560 DIP -----------
+// ---- 1280x800 display constraint: every widget popup window Height <= 560 DIP -----------
+// The count is a canary for the glob itself (a moved folder or a renamed pattern would
+// otherwise pass silently with zero files checked). It is deliberately a lower bound: the
+// widget set changes with product decisions (Fortune/Wheel were removed), and a hard-coded
+// total turns every such change into a red gate for no reason.
 var repoRoot = FindRepoRoot();
 var popupFiles = Directory.GetFiles(Path.Combine(repoRoot, "src", "Widgets"), "*Popup*.axaml", SearchOption.AllDirectories)
     .Concat(Directory.GetFiles(Path.Combine(repoRoot, "src", "Widgets"), "*PanelWindow*.axaml", SearchOption.AllDirectories))
     .ToList();
 
-Check(popupFiles.Count == 15, $"found all 15 widget popup windows (count={popupFiles.Count})");
+Check(popupFiles.Count >= 13, $"found the widget popup windows (count={popupFiles.Count}, expected >= 13)");
 foreach (var popupPath in popupFiles)
 {
     var pName = Path.GetFileName(popupPath);

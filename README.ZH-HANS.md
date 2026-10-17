@@ -5,7 +5,7 @@
 
 <div align="center">
   <h3>🎨 Windows 下一代 macOS 风格多功能桌面小组件套件</h3>
-  <p>基于 Avalonia 11 + .NET 8 打造 · 硬件级实时 Mica · 3D 光学液态玻璃 · 手机锁屏艺术大字时钟 · 自定义吸附网格系统</p>
+  <p>基于 Avalonia 11 + .NET 10 打造 · 硬件级实时 Mica · 3D 光学液态玻璃 · 手机锁屏艺术大字时钟 · 自定义吸附网格系统</p>
 </div>
 
 <h3 align="center">
@@ -62,7 +62,7 @@
 
 ### 环境要求
 - Windows 10 / 11（x64）
-- [.NET 8.0 SDK](https://dotnet.microsoft.com/download/dotnet/8.0) 或更高
+- [.NET 10.0 SDK](https://dotnet.microsoft.com/download/dotnet/10.0) 或更高
 - PowerShell（pwsh 或 Windows PowerShell）；构建 MSI 需 WiX v5
 
 ### 构建命令

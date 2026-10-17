@@ -46,11 +46,6 @@ namespace DeskCanvas.Core.Models.Settings;
 /// <c>null</c> uses <see cref="DefaultMonochromeVariant"/> (强调色, the historic
 /// behavior, so old configurations keep their look).
 /// </param>
-/// <param name="AutoTheme">
-/// Should the light/dark mode be chosen automatically from the desktop wallpaper
-/// (dark wallpaper → dark mode, light wallpaper → light mode). When enabled,
-/// <see cref="DarkMode"/> is ignored.
-/// </param>
     /// <param name="LiquidGlass">Static glass optics of 液态玻璃; null uses the default parameters.</param>
     /// <param name="LiquidGlassV2">Static optics of 新液态玻璃 (<see cref="SurfaceStyle.LiquidGlassV2"/>); null uses the default parameters.</param>
     /// <param name="TextShadowEnabled">

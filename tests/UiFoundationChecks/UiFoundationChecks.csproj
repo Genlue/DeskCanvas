@@ -3,8 +3,8 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <!-- Windows TFM: some migrated widgets (Music) are platform-specific; the host and the
-         remaining widgets are net8.0 and stay referenceable from here. -->
-    <TargetFramework>net8.0-windows10.0.19041</TargetFramework>
+         remaining widgets are net10.0 and stay referenceable from here. -->
+    <TargetFramework>net10.0-windows10.0.19041.0</TargetFramework>
     <SupportedOSPlatform>windows</SupportedOSPlatform>
   </PropertyGroup>
 

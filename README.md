@@ -5,7 +5,7 @@
 
 <div align="center">
   <h3>🎨 macOS-Style Desktop Widgets Suite for Windows</h3>
-  <p>Built with Avalonia 11 + .NET 8 · Hardware Mica Backdrop · 3D Liquid Glass Optics · Lockscreen Art-Font Clock · Custom Snap Grid Engine</p>
+  <p>Built with Avalonia 11 + .NET 10 · Hardware Mica Backdrop · 3D Liquid Glass Optics · Lockscreen Art-Font Clock · Custom Snap Grid Engine</p>
 </div>
 
 <h3 align="center">
@@ -61,7 +61,7 @@ Builds to a self-contained `DeskCanvas.exe` with a content-hash-verified embedde
 
 ### Prerequisites
 - Windows 10 / 11 (x64)
-- [.NET 8.0 SDK](https://dotnet.microsoft.com/download/dotnet/8.0) or higher
+- [.NET 10.0 SDK](https://dotnet.microsoft.com/download/dotnet/10.0) or higher
 - PowerShell (pwsh or Windows PowerShell); WiX v5 for the MSI
 
 ### Build Commands

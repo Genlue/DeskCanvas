@@ -4,7 +4,7 @@
     <OutputType>Exe</OutputType>
     <!-- The real widget assemblies under test are referenced directly; several widgets need the
          Windows TFM, so the probe targets the same TFM as UiFoundationChecks. -->
-    <TargetFramework>net8.0-windows10.0.19041</TargetFramework>
+    <TargetFramework>net10.0-windows10.0.19041.0</TargetFramework>
     <SupportedOSPlatform>windows</SupportedOSPlatform>
   </PropertyGroup>
 

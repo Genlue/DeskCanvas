@@ -174,8 +174,8 @@ try {
         Copy-Item (Join-Path $root "src\DeskCanvas\appSettings.json") $portableDir
         Copy-Item (Join-Path $root "src\DeskCanvas\layout.json") $portableDir
 
-        $widgetsSrc = Join-Path $project "..\DeskCanvas\bin\$Configuration\net8.0\Widgets"
-        if (-not (Test-Path $widgetsSrc)) { $widgetsSrc = Join-Path $root "src\DeskCanvas\bin\$Configuration\net8.0\Widgets" }
+        $widgetsSrc = Join-Path $project "..\DeskCanvas\bin\$Configuration\net10.0\Widgets"
+        if (-not (Test-Path $widgetsSrc)) { $widgetsSrc = Join-Path $root "src\DeskCanvas\bin\$Configuration\net10.0\Widgets" }
         if (Test-Path $widgetsSrc) {
             Copy-Item $widgetsSrc (Join-Path $portableDir "Widgets") -Recurse
         } else {

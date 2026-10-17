@@ -27,7 +27,7 @@
 
 ## 打包：单文件 exe
 
-`build.ps1` 默认产出**框架依赖单文件 exe**（需目标机安装 .NET 8 运行时）：
+`build.ps1` 默认产出**框架依赖单文件 exe**（需目标机安装 .NET 10 运行时）：
 
 ```
 ./build.ps1                      # dist\win-x64\DeskCanvas.exe

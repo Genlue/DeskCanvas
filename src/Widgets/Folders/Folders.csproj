@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFramework>net8.0</TargetFramework>
+        <TargetFramework>net10.0</TargetFramework>
         <OutputPath>..\..\DeskCanvas\bin\$(Configuration)\$(TargetFramework)\Widgets</OutputPath>
         <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
