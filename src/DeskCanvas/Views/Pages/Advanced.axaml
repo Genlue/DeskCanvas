@@ -21,6 +21,19 @@
             <ToggleSwitch IsChecked="{Binding LockPosition}" />
         </controls:Setting>
         <TextBlock FontSize="14" FontWeight="SemiBold" Margin="0 20 0 10"
+                   Text="{x:Static locales:Locale.Settings_Advanced_Fullscreen_Section}"/>
+        <controls:Setting Icon="{DynamicResource MultiScreen}"
+                          Title="{x:Static locales:Locale.Settings_Advanced_Fullscreen_Title}"
+                          Subtitle="{x:Static locales:Locale.Settings_Advanced_Fullscreen_Subtitle}">
+            <ComboBox ItemsSource="{Binding FullscreenOptions}" SelectedItem="{Binding SelectedFullscreenBehavior}" MinWidth="150">
+                <ComboBox.ItemTemplate>
+                    <DataTemplate DataType="viewModels:FullscreenBehaviorOption">
+                        <TextBlock Text="{Binding Label}" Margin="0 4" />
+                    </DataTemplate>
+                </ComboBox.ItemTemplate>
+            </ComboBox>
+        </controls:Setting>
+        <TextBlock FontSize="14" FontWeight="SemiBold" Margin="0 20 0 10"
                    Text="{x:Static locales:Locale.Settings_Advanced_Network}"/>
         <controls:Setting Icon="{DynamicResource SnapPosition}" 
                           Title="{x:Static locales:Locale.Settings_Advanced_Proxy_Title}" 

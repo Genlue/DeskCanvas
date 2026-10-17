@@ -25,6 +25,18 @@ public sealed class TrayIconService : IDisposable
 {
     private const string IconUri = "avares://DeskCanvas/Assets/icon.ico";
 
+    // ---- 集中的历史观感颜色常量（P2 挂账，待语义键收敛后统一） --------------------------------
+    //
+    // 托盘菜单弹出卡片（Avalonia 内部 TrayPopupRoot）的固定实色底/边。不直接消费语义令牌的
+    // 原因：SolidBackgroundDark/Light 是用户可调的纯色主题底色（默认 #2E2E2E/#FFFFFF），暗色
+    // 值与本处的 #1C1C1E 不同，直接消费会观感漂移；InteractionResources.ControlBorderBrush
+    // 是带 Opacity 的画刷，与 #38383A/#E5E5EA 实色边框不对应。取色时机（TrayPopupRoot 打开
+    // 瞬间按 Application.ActualThemeVariant 求值）保持现有路径不变。
+    private static readonly Color TrayCardBackgroundDark = Color.Parse("#1C1C1E");
+    private static readonly Color TrayCardBackgroundLight = Color.Parse("#FFFFFF");
+    private static readonly Color TrayCardBorderDark = Color.Parse("#38383A");
+    private static readonly Color TrayCardBorderLight = Color.Parse("#E5E5EA");
+
     private readonly IAppSettingsProvider appSettingsProvider;
     private readonly Func<SettingsWindow> settingsWindow;
     private readonly WidgetFactory widgetFactory;
@@ -109,8 +121,8 @@ public sealed class TrayIconService : IDisposable
         try
         {
             var isDark = Application.Current?.ActualThemeVariant == Avalonia.Styling.ThemeVariant.Dark;
-            presenter.Background = new SolidColorBrush(isDark ? Color.Parse("#1C1C1E") : Color.Parse("#FFFFFF"));
-            presenter.BorderBrush = new SolidColorBrush(isDark ? Color.Parse("#38383A") : Color.Parse("#E5E5EA"));
+            presenter.Background = new SolidColorBrush(isDark ? TrayCardBackgroundDark : TrayCardBackgroundLight);
+            presenter.BorderBrush = new SolidColorBrush(isDark ? TrayCardBorderDark : TrayCardBorderLight);
             presenter.BorderThickness = new Thickness(1);
             presenter.CornerRadius = new CornerRadius(8);
             presenter.Padding = new Thickness(4);

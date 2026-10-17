@@ -22,6 +22,14 @@ public record ProxyOption(string Label, string Value)
 }
 
 /// <summary>
+/// An 最大化或全屏时 option shown in the fullscreen-behaviour picker.
+/// </summary>
+public record FullscreenBehaviorOption(string Label, FullscreenBehavior Value)
+{
+    public override string ToString() => Label;
+}
+
+/// <summary>
 /// A target screen option shown in the Advanced grid screen selector.
 /// </summary>
 public record ScreenGridTargetOption(string Label, string? ScreenConfigId, AttachedScreen? Attached);
@@ -162,6 +170,7 @@ public class AdvancedViewModel : ReactiveObject, IDisposable
         this.RaisePropertyChanged(nameof(ProxyCustomUrl));
         this.RaisePropertyChanged(nameof(UpdateUrl));
         this.RaisePropertyChanged(nameof(ShowTrayIcon));
+        this.RaisePropertyChanged(nameof(SelectedFullscreenBehavior));
     }
 
     private void RaiseGridProperties()
@@ -427,6 +436,37 @@ public class AdvancedViewModel : ReactiveObject, IDisposable
         {
             var settings = appSettingsProvider.Get();
             appSettingsProvider.Save(settings with { UpdateUrl = string.IsNullOrWhiteSpace(value) ? null : value.Trim() });
+        }
+    }
+
+    // ---------- Fullscreen ----------
+
+    /// <summary>The three 最大化或全屏时 choices, in picker order.</summary>
+    public FullscreenBehaviorOption[] FullscreenOptions =>
+    [
+        new(Locale.Settings_Advanced_Fullscreen_Hide, FullscreenBehavior.Hide),
+        new(Locale.Settings_Advanced_Fullscreen_Pause, FullscreenBehavior.Pause),
+        new(Locale.Settings_Advanced_Fullscreen_None, FullscreenBehavior.None)
+    ];
+
+    /// <summary>
+    /// What the host does with the widgets while every attached screen is covered by a
+    /// fullscreen or maximized application. Saving lets the host re-apply the choice
+    /// immediately while the desktop is covered (the App-level wiring listens for it).
+    /// </summary>
+    public FullscreenBehaviorOption SelectedFullscreenBehavior
+    {
+        get
+        {
+            var current = appSettingsProvider.Get().FullscreenBehavior ?? FullscreenBehavior.Hide;
+            return FullscreenOptions.First(option => option.Value == current);
+        }
+        set
+        {
+            if (value is null) return;
+            var settings = appSettingsProvider.Get();
+            if ((settings.FullscreenBehavior ?? FullscreenBehavior.Hide) == value.Value) return;
+            appSettingsProvider.Save(settings with { FullscreenBehavior = value.Value });
         }
     }
 

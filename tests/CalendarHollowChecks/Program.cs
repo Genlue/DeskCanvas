@@ -7,6 +7,8 @@ using Avalonia.Styling;
 using Avalonia.Themes.Fluent;
 using Calendar.Models;
 using Calendar.Views;
+using DeskCanvas.Core.Models.Settings;
+using DeskCanvas.Services;
 using FixedWidgets.Models;
 using FixedWidgets.Views;
 using SkiaSharp;
@@ -56,8 +58,23 @@ class Program
         app.Styles.Add(new FluentTheme());
         // The marker brush is resolved through the app's own resource dictionaries, so load the
         // same styles the app switches on (accent + monochrome + the rendered-glass material).
-        foreach (var style in new[] { "Accent.axaml", "MonochromeBlackWhite.axaml", "LiquidGlass.axaml" })
-            app.Styles.Add(new StyleInclude(new Uri("avares://DeskCanvas/")) { Source = new Uri("avares://DeskCanvas/Styles/" + style) });
+        // The monochrome include stays swappable: the accent-mode section below replays the
+        // 黑白 ↔ 背景色 switch exactly like ThemeService does.
+        app.Styles.Add(Style("Accent.axaml"));
+        var monoStyle = Style("MonochromeBlackWhite.axaml");
+        app.Styles.Add(monoStyle);
+        app.Styles.Add(Style("LiquidGlass.axaml"));
+
+        void SwitchMonoStyle(string file)
+        {
+            app.Styles.Remove(monoStyle);
+            monoStyle = Style(file);
+            app.Styles.Add(monoStyle);
+        }
+
+        static StyleInclude Style(string file) =>
+            new(new Uri("avares://DeskCanvas/")) { Source = new Uri("avares://DeskCanvas/Styles/" + file) };
+
         app.Resources["SystemAccentColor"] = Color.Parse("#0A84FF");
         app.Resources["SystemAccentColorDark1"] = Color.Parse("#0A84FF");
         app.Resources["SystemAccentColorLight1"] = Color.Parse("#0A84FF");
@@ -84,6 +101,64 @@ class Program
 
             Console.WriteLine();
         }
+
+        // ---- Accent-mode numeral contrast (今日颜色=Accent, hollow off) ----------------------
+        // Regression: the monochrome ramps drive the disc through theme slots — 黑白 flips it to
+        // pure white in the dark variant, 背景色 to the light-mode background color — where the
+        // historic hard-coded white numeral vanished into the disc. The solid numeral must follow
+        // the disc's polarity in every ramp/variant combination.
+        Console.WriteLine("=== accent-mode numeral contrast (solid disc, 黑白/背景色 ramps) ===");
+        Console.WriteLine();
+
+        foreach (var (monoKey, monoName, monoFile, monoVariant) in new[]
+        {
+            ("bw", "黑白", "MonochromeBlackWhite.axaml", MonochromeStyle.BlackWhite),
+            ("bg", "背景色", "MonochromeBackground.axaml", MonochromeStyle.BackgroundColor),
+        })
+        {
+            foreach (var variant in new[] { ThemeVariant.Light, ThemeVariant.Dark })
+            {
+                var variantKey = variant == ThemeVariant.Dark ? "dark" : "light";
+                SwitchMonoStyle(monoFile);
+                ThemeResourceHelper.ClearAccentOverrides(app.Resources);
+                ThemeResourceHelper.ApplyAccentRamp(
+                    app.Resources, MonochromeTheme(monoVariant, variant == ThemeVariant.Dark), variant == ThemeVariant.Dark);
+                app.RequestedThemeVariant = variant;
+
+                // Anchor pass: a custom red marker locates the disc's bounds; the accent pass is
+                // then color-sampled inside exactly those bounds (the accent disc can be black or
+                // white itself — indistinguishable from the text without the anchor).
+                void ContrastCase(string what, int width, int height, Func<Control> anchor, Func<Control> accent)
+                {
+                    var box = FindMarkerBounds(
+                        Render(anchor(), width, height, variant, $"{monoKey}-{variantKey}-{what}-anchor"), width, height);
+                    Check($"{what} {monoName} {variantKey}: the accent-mode marker disc is drawn", box != null);
+                    if (box == null) return;
+
+                    var (disc, numeral, ratio) = AnalyzeContrast(
+                        Render(accent(), width, height, variant, $"{monoKey}-{variantKey}-{what}-accent"), width, box.Value);
+                    Check($"{what} {monoName} {variantKey}: solid numeral contrasts the disc (disc {disc}, numeral {numeral ?? "≈disc"}, {ratio:0.0}:1)",
+                        numeral != null && ratio >= 3.0);
+                }
+
+                ContrastCase("month", MonthSize, MonthSize,
+                    () => new Month(new MonthCalendarModel(DayOfWeek.Monday, TodayColorMode: "Custom",
+                        TodayColorLight: MarkerHex, TodayColorDark: MarkerHex, HollowTodayNumber: false)),
+                    () => new Month(new MonthCalendarModel(DayOfWeek.Monday, TodayColorMode: "Accent", HollowTodayNumber: false)));
+                ContrastCase("aggregate", AggregateWidth, AggregateHeight,
+                    () => new AggregateView(new AggregateModel(City: "成都", TodayColorMode: "Custom",
+                        TodayColorLight: MarkerHex, TodayColorDark: MarkerHex, HollowTodayNumber: false)),
+                    () => new AggregateView(new AggregateModel(City: "成都", TodayColorMode: "Accent", HollowTodayNumber: false)));
+            }
+        }
+
+        // Restore the startup accent flats so the section leaves no residue.
+        ThemeResourceHelper.ClearAccentOverrides(app.Resources);
+        app.Resources["SystemAccentColor"] = Color.Parse("#0A84FF");
+        app.Resources["SystemAccentColorDark1"] = Color.Parse("#0A84FF");
+        app.Resources["SystemAccentColorLight1"] = Color.Parse("#0A84FF");
+
+        Console.WriteLine();
 
         Console.WriteLine(failures == 0 ? "ALL CHECKS PASSED" : $"{failures} CHECK(S) FAILED");
         return failures == 0 ? 0 : 1;
@@ -236,5 +311,109 @@ class Program
     {
         Console.WriteLine($"  [{(ok ? "PASS" : "FAIL")}] {what}");
         if (!ok) failures++;
+    }
+
+    /// <summary>
+    /// The monochrome theme the accent-mode section replays; <see
+    /// cref="ThemeResourceHelper.ApplyAccentRamp"/> then writes the same ramp ThemeService writes.
+    /// </summary>
+    private static Theme MonochromeTheme(MonochromeStyle variant, bool dark) => new(
+        DarkMode: dark,
+        AccentColor: null,
+        OpacityLevel: 0.3,
+        Monochrome: true,
+        UseNativeFrame: false,
+        FontFamily: "Inter",
+        MonochromeVariant: variant);
+
+    /// <summary>Bounding box of the red anchor marker (strict thresholds keep text fringes out).</summary>
+    private static (int minX, int minY, int maxX, int maxY)? FindMarkerBounds(byte[]? bgra, int w, int h)
+    {
+        if (bgra == null) return null;
+        int minX = int.MaxValue, minY = int.MaxValue, maxX = -1, maxY = -1;
+        for (var y = 0; y < h; y++)
+            for (var x = 0; x < w; x++)
+            {
+                var i = (y * w + x) * 4;
+                if (bgra[i + 3] < 200 || bgra[i + 2] < 200 || bgra[i + 1] > 60 || bgra[i] > 60) continue;
+                if (x < minX) minX = x;
+                if (y < minY) minY = y;
+                if (x > maxX) maxX = x;
+                if (y > maxY) maxY = y;
+            }
+        return maxX < 0 ? null : (minX, minY, maxX, maxY);
+    }
+
+    /// <summary>
+    /// Marker colors inside the anchored disc bounds: the mode disc color and the mode color of
+    /// the pixels that differ from it (the numeral), as a WCAG contrast ratio. A null numeral
+    /// means nothing readable differs from the disc — the reported white-on-white.
+    /// </summary>
+    private static (string Disc, string? Numeral, double Ratio) AnalyzeContrast(
+        byte[]? bgra, int width, (int minX, int minY, int maxX, int maxY) box)
+    {
+        if (bgra == null) return ("none", null, 0);
+
+        var cx = (box.minX + box.maxX) / 2.0;
+        var cy = (box.minY + box.maxY) / 2.0;
+        var radius = (box.maxX - box.minX + 1) / 2.0;
+        var inner = radius * 0.92;
+
+        var discHist = new Dictionary<(int, int, int), int>();
+        var samples = new List<(int r, int g, int b)>();
+        for (var y = box.minY; y <= box.maxY; y++)
+            for (var x = box.minX; x <= box.maxX; x++)
+            {
+                var dx = x - cx; var dy = y - cy;
+                if (dx * dx + dy * dy > inner * inner) continue;
+                var i = (y * width + x) * 4;
+                if (bgra[i + 3] < 200) continue;
+                var (r, g, b) = (bgra[i + 2], bgra[i + 1], bgra[i]);
+                samples.Add((r, g, b));
+                var key = (r / 24, g / 24, b / 24);
+                discHist[key] = discHist.GetValueOrDefault(key) + 1;
+            }
+
+        if (samples.Count == 0) return ("none", null, 0);
+
+        var dk = discHist.OrderByDescending(kv => kv.Value).First().Key;
+        var disc = (r: dk.Item1 * 24 + 12, g: dk.Item2 * 24 + 12, b: dk.Item3 * 24 + 12);
+        var discHex = $"#{disc.r:X2}{disc.g:X2}{disc.b:X2}";
+
+        var numeralHist = new Dictionary<(int, int, int), int>();
+        var numeralTotal = 0;
+        foreach (var (r, g, b) in samples)
+        {
+            var dr = r - disc.r; var dg = g - disc.g; var db = b - disc.b;
+            if (dr * dr + dg * dg + db * db < 64 * 64) continue;
+            numeralTotal++;
+            var key = (r / 24, g / 24, b / 24);
+            numeralHist[key] = numeralHist.GetValueOrDefault(key) + 1;
+        }
+
+        if (numeralHist.Count == 0 || numeralTotal <= samples.Count * 0.02)
+            return (discHex, null, 0);
+
+        var nk = numeralHist.OrderByDescending(kv => kv.Value).First().Key;
+        var numeral = $"#{nk.Item1 * 24 + 12:X2}{nk.Item2 * 24 + 12:X2}{nk.Item3 * 24 + 12:X2}";
+        return (discHex, numeral, ContrastRatio(discHex, numeral));
+    }
+
+    private static double ContrastRatio(string a, string b)
+    {
+        var la = Luminance(a); var lb = Luminance(b);
+        var (hi, lo) = la > lb ? (la, lb) : (lb, la);
+        return (hi + 0.05) / (lo + 0.05);
+    }
+
+    private static double Luminance(string hex)
+    {
+        var r = Convert.ToInt32(hex.Substring(1, 2), 16) / 255.0;
+        var g = Convert.ToInt32(hex.Substring(3, 2), 16) / 255.0;
+        var b = Convert.ToInt32(hex.Substring(5, 2), 16) / 255.0;
+        Lin(ref r); Lin(ref g); Lin(ref b);
+        return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+
+        static void Lin(ref double c) => c = c <= 0.03928 ? c / 12.92 : Math.Pow((c + 0.055) / 1.055, 2.4);
     }
 }

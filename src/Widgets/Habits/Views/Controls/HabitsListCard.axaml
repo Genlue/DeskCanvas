@@ -15,7 +15,7 @@
             <Setter Property="Cursor" Value="Hand" />
         </Style>
         <Style Selector="Button.ghost-btn:pointerover /template/ ContentPresenter">
-            <Setter Property="Background" Value="#18808080" />
+            <Setter Property="Background" Value="{DynamicResource ControlHoverBrush}" />
         </Style>
 
         <!-- 行内勾选圈：24×24、1.5px 描边 -->
@@ -42,7 +42,7 @@
                 <TextBlock Text="{x:Static locales:Locale.Habits_Title}"
                            FontSize="13" FontWeight="SemiBold"
                            VerticalAlignment="Center" />
-                <Border Background="#14808080"
+                <Border Background="{DynamicResource PillBackground}"
                         CornerRadius="{DynamicResource WidgetPillCornerRadius}"
                         Padding="8,2" VerticalAlignment="Center">
                     <TextBlock Text="{Binding TodaySummaryText}"
@@ -54,23 +54,23 @@
             <Button Grid.Column="1" Classes="ghost-btn" Width="22" Height="22"
                     Click="OnOpenPopupClicked" ToolTip.Tip="{x:Static locales:Locale.Habits_Title}">
                 <Path Data="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z"
-                      Fill="{DynamicResource WidgetForeground}"
+                      Fill="{DynamicResource SystemControlForegroundBaseHighBrush}"
                       Opacity="0.6" Stretch="Uniform" Width="12" Height="12"
                       HorizontalAlignment="Center" VerticalAlignment="Center" />
             </Button>
         </Grid>
 
-        <!-- Habits List：行底 #0F808080 圆角 8，MinHeight 36，行距 3 -->
+        <!-- Habits List：行底 CardSubtleFill 圆角 8，MinHeight 36，行距 3 -->
         <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Hidden">
             <ItemsControl ItemsSource="{Binding DisplayHabits}">
                 <ItemsControl.ItemTemplate>
                     <DataTemplate DataType="vm:HabitDisplayItem">
-                        <Border Background="#0F808080" CornerRadius="8"
+                        <Border Background="{DynamicResource CardSubtleFill}" CornerRadius="8"
                                 Padding="8,5" MinHeight="36" Margin="0,0,0,3">
                             <Grid ColumnDefinitions="Auto, *, Auto">
                                 <!-- 图标容器 26×26 圆角 8 -->
                                 <Border Grid.Column="0" Width="26" Height="26" CornerRadius="8"
-                                        Background="#14808080" Margin="0,0,8,0"
+                                        Background="{DynamicResource PillBackground}" Margin="0,0,8,0"
                                         VerticalAlignment="Center">
                                     <TextBlock Text="{Binding Icon}" FontSize="13"
                                                HorizontalAlignment="Center" VerticalAlignment="Center" />

@@ -8,6 +8,7 @@ using DeskCanvas.Contracts;
 using DeskCanvas.Core.Interfaces;
 using DeskCanvas.Core.Models;
 using DeskCanvas.Core.Models.Attributes;
+using DeskCanvas.Core.Models.Settings;
 using DeskCanvas.Core.Services;
 using DeskCanvas.Runtime;
 using DeskCanvas.Views;
@@ -21,8 +22,14 @@ namespace DeskCanvas.Services;
 /// Resolves the one shared settings window (DI singleton). Every widget opens that same instance
 /// instead of building its own, so the app never accumulates settings windows.
 /// </param>
+/// <param name="appSettingsProvider">
+/// App settings, for <see cref="ApplyFullscreen"/>: the 最大化或全屏时 behaviour is read at
+/// every cover transition so a settings save lands on the next one (and the settings-window
+/// wiring re-applies it immediately while the desktop is covered).
+/// </param>
 public class WidgetFactory(IAssemblyProvider assemblyProvider, ILayoutProvider layoutProvider,
-    DisplayMonitorService displayMonitor, Func<Settings> settingsWindow)
+    DisplayMonitorService displayMonitor, Func<Settings> settingsWindow,
+    IAppSettingsProvider appSettingsProvider)
     : IWidgetFactory<Window, UserControl>
 {
     private readonly Dictionary<string, List<Widget>> activeWidgets = [];
@@ -121,6 +128,9 @@ public class WidgetFactory(IAssemblyProvider assemblyProvider, ILayoutProvider l
 
     /// <summary>True while <see cref="SuspendAll"/> is in effect (widgets hidden, timers paused).</summary>
     private bool suspended;
+
+    /// <summary>True while <see cref="PauseAll"/> is in effect (widgets visible, timers paused, nothing released).</summary>
+    private bool fullscreenPaused;
 
     /// <summary>
     /// Create widget windows for every attached screen that has a stored configuration
@@ -346,15 +356,15 @@ public class WidgetFactory(IAssemblyProvider assemblyProvider, ILayoutProvider l
     }
 
     /// <summary>
-    /// Release the caches the widget views opt into releasing and pause the shared timers —
-    /// every attached screen is covered by a fullscreen or maximized application, so nothing
-    /// here would be visible and every megabyte counts.
+    /// Hide every widget and release the caches the widget views opt into releasing, pausing
+    /// the shared timers — the 最大化或全屏时 → 隐藏 behaviour: every attached screen is
+    /// covered by a fullscreen or maximized application, so nothing here would be visible and
+    /// every megabyte counts.
     /// <para>
-    /// The windows are deliberately <b>not</b> hidden: they already sit at the bottom of the
-    /// z-order behind whatever covers the screen, and hiding then re-showing every window on
-    /// each transition was what made the widgets come back late (and flicker) after leaving a
-    /// game. Only invisible memory is given up — the material caches, which are rebuilt in the
-    /// background on resume.
+    /// The windows are hidden (<see cref="Widget.Hide"/>) and brought back on resume. They
+    /// already sit at the bottom of the z-order behind whatever covers the screen, but hiding
+    /// also drops them out of the compositor — on top of the released caches that hands the
+    /// most memory back to the covering application.
     /// </para>
     /// </summary>
     public void SuspendAll()
@@ -425,6 +435,92 @@ public class WidgetFactory(IAssemblyProvider assemblyProvider, ILayoutProvider l
         }
 
         TimerService.ResumeAll();
+    }
+
+    /// <summary>
+    /// Freeze-in-place suspension (最大化或全屏时 → 暂停): the windows stay visible with their
+    /// last frame, but the shared timers stop and every hosted content is told the desktop is
+    /// covered so its own ticks and data polling gate themselves. Unlike <see cref="SuspendAll"/>
+    /// nothing is hidden, no cache is given up and no trim runs — the desktop reappears exactly
+    /// as it was left, at the cost of keeping every allocation alive behind the covering window.
+    /// </summary>
+    public void PauseAll()
+    {
+        if (suspended || fullscreenPaused) return;
+        fullscreenPaused = true;
+
+        // Shared widget timers (clock ticks, monitor sampling, weather refresh …) are
+        // driven by one DispatcherTimer per interval, so pausing them pauses every
+        // widget at once — and with them every timer-driven data request.
+        TimerService.PauseAll();
+
+        foreach (var list in activeWidgets.Values)
+        {
+            foreach (var widget in list.ToList())
+            {
+                try
+                {
+                    widget.PauseTicks();
+                }
+                catch
+                {
+                    // Never let one misbehaving widget abort the whole pause pass.
+                }
+            }
+        }
+    }
+
+    /// <summary>Undo <see cref="PauseAll"/>: the timers resume and the widgets tick again.</summary>
+    public void ResumePausedWidgets()
+    {
+        if (!fullscreenPaused) return;
+        fullscreenPaused = false;
+
+        foreach (var list in activeWidgets.Values)
+        {
+            foreach (var widget in list.ToList())
+            {
+                try
+                {
+                    widget.ResumeTicks();
+                }
+                catch
+                {
+                    // See PauseAll.
+                }
+            }
+        }
+
+        TimerService.ResumeAll();
+    }
+
+    /// <summary>
+    /// Apply the 最大化或全屏时 behaviour for one cover transition. Undo-then-apply: whatever
+    /// the previous state suspended is restored first (both resume paths are no-ops when
+    /// inactive), so changing the option while the desktop is covered lands immediately —
+    /// and a <c>false</c> transition only ever restores.
+    /// </summary>
+    public void ApplyFullscreen(bool covered)
+    {
+        if (!covered)
+        {
+            ResumeAll();
+            ResumePausedWidgets();
+            return;
+        }
+
+        switch (appSettingsProvider.Get().FullscreenBehavior ?? FullscreenBehavior.Hide)
+        {
+            case FullscreenBehavior.Hide:
+                ResumePausedWidgets(); // a mode switch while covered (暂停 → 隐藏)
+                SuspendAll();
+                break;
+            case FullscreenBehavior.Pause:
+                ResumeAll(); // a mode switch while covered (隐藏 → 暂停)
+                PauseAll();
+                break;
+            // FullscreenBehavior.None: leave everything running.
+        }
     }
 
     /// <summary>

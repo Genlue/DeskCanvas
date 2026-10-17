@@ -84,6 +84,23 @@ public static class WidgetBundle
     /// </summary>
     public static bool IsPackagedMode() => !Directory.Exists(Path.Combine(Const.CurrentFolder, "Widgets"));
 
+    /// <summary>
+    /// The shipped default <c>appSettings.json</c> — the exact template a fresh data folder is
+    /// seeded with — or <c>null</c> when the embedded resource is unavailable (a build without
+    /// the resource, never the normal case).
+    /// <para>
+    /// Exposed so other paths that must start from the factory look (a brand-new empty profile)
+    /// read the same defaults instead of inventing a second copy of them.
+    /// </para>
+    /// </summary>
+    public static string? ReadDefaultAppSettingsJson()
+    {
+        using var stream = typeof(WidgetBundle).Assembly.GetManifestResourceStream(AppSettingsResource);
+        if (stream == null) return null;
+        using var reader = new StreamReader(stream);
+        return reader.ReadToEnd();
+    }
+
     private static void EnsureFile(Assembly assembly, string resource, string target)
     {
         if (File.Exists(target))

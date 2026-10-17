@@ -26,8 +26,8 @@ namespace Notes.Views;
 /// mode on a double-click; the body can come from the widget's own text, one
 /// markdown file, or the (most recent / picked) .md files of a folder, in which
 /// case the documents are stacked with titles and separators (macOS-notes-like).
-/// The colored top bar (title) follows the app accent or a custom color, with a
-/// per-widget opacity.
+/// The colored top bar follows the app accent or a custom color, with a per-widget
+/// opacity, an optional text override and a configurable height.
 /// </summary>
 public partial class Note : UserControl, IWidgetSelfRefreshing, IWidgetSurfaceHints, IFocusThemedContent
 {
@@ -113,23 +113,28 @@ public partial class Note : UserControl, IWidgetSelfRefreshing, IWidgetSurfaceHi
         var compact = currentH <= CompactHeight;
         ApplyHeader(model);
 
-        TitleBox.Height = 44;
+        // 顶栏 height (widget setting, clamped): the title box defines the bar height
+        // when visible, the bare bar keeps it via MinHeight.
+        var headerHeight = Math.Clamp(model.HeaderHeight, 24, 96);
+        TitleBox.Height = headerHeight;
         TitleBox.FontSize = 16;
-        // 顶栏 mode (widget setting): the full bar with its editable title, the bare bar
-        // (expand button only), or no bar at all — bar and the divider below it collapse
-        // and the body owns the whole card.
+        // 顶栏 mode (widget setting): the full bar with its title, the bare bar, or no
+        // bar at all — bar and the divider below it collapse and the body owns the
+        // whole card. The secondary panel is reached by double-clicking the card.
         var header = model.EffectiveHeaderMode;
+        var headerText = HeaderOverride(model);
         HeaderBorder.IsVisible = header != NoteHeaderMode.Hidden;
         Divider.IsVisible = header != NoteHeaderMode.Hidden;
-        TitleBox.IsVisible = header == NoteHeaderMode.BarAndTitle;
-        // The bare bar keeps the factory height: the title box (44 px) defines it when visible.
-        HeaderBorder.MinHeight = header == NoteHeaderMode.BarOnly ? 44 : 0;
+        // A custom top-bar text also shows on the bare bar; it overrides the title,
+        // so the text is read-only (no inline title editing while it is set).
+        TitleBox.IsVisible = header == NoteHeaderMode.BarAndTitle || headerText != null;
+        HeaderBorder.MinHeight = header == NoteHeaderMode.BarOnly ? headerHeight : 0;
         ContentBox.IsVisible = false;
         RenderScroll.IsVisible = false;
         FileScroll.IsVisible = false;
-        TitleBox.IsHitTestVisible = true;
+        TitleBox.IsHitTestVisible = headerText == null;
         // Widget-settings switch: double-click on the card edits inline only when
-        // explicitly allowed; the header's expand button always opens the panel.
+        // explicitly allowed; otherwise it opens the secondary panel.
         ClickThroughTextBox.SetAllowEdit(TitleBox, Model.AllowInlineEdit);
 
         var padding = Math.Clamp(model.BodyPadding, 0, 64);
@@ -153,7 +158,7 @@ public partial class Note : UserControl, IWidgetSelfRefreshing, IWidgetSurfaceHi
 
     private void BuildInternal(NoteModel model, bool compact)
     {
-        TitleBox.Text = model.Title;
+        TitleBox.Text = HeaderOverride(model) ?? model.Title;
         UpdatedText.IsVisible = !compact;
         UpdatedText.Text = model.Updated?.ToString("g", CultureInfo.CurrentUICulture);
 
@@ -187,14 +192,15 @@ public partial class Note : UserControl, IWidgetSelfRefreshing, IWidgetSurfaceHi
         if (model.Source == NoteSource.File)
         {
             // The card header shows the document title; the file name stays on disk.
+            // A custom top-bar text overrides it (read-only, set in Rebuild).
             TitleBox.IsHitTestVisible = false;
-            TitleBox.Text = paths.Count > 0
+            TitleBox.Text = HeaderOverride(model) ?? (paths.Count > 0
                 ? NoteFiles.TitleOf(paths[0], NoteFiles.Read(paths[0]))
-                : Locale.Notes_Empty;
+                : Locale.Notes_Empty);
         }
         else
         {
-            TitleBox.Text = model.Title;
+            TitleBox.Text = HeaderOverride(model) ?? model.Title;
         }
 
         if (paths.Count == 0)
@@ -287,6 +293,13 @@ public partial class Note : UserControl, IWidgetSelfRefreshing, IWidgetSurfaceHi
     // ---------- header ----------
 
     /// <summary>
+    /// The custom top-bar text override, or null when the header falls back to
+    /// the widget title / the document title of a file source.
+    /// </summary>
+    private static string? HeaderOverride(NoteModel model) =>
+        string.IsNullOrWhiteSpace(model.HeaderText) ? null : model.HeaderText;
+
+    /// <summary>
     /// Title bar brush: the app accent (live) or the custom color, with the
     /// configured opacity (both modes).
     /// In Colorful (macOS 18 widget) mode:
@@ -361,8 +374,6 @@ public partial class Note : UserControl, IWidgetSelfRefreshing, IWidgetSurfaceHi
     }
 
     // ---------- secondary panel ----------
-
-    public void OpenPopupClick(object? sender, RoutedEventArgs e) => OpenPopup();
 
     /// <summary>Open the secondary panel: a full-size editor for the note
     /// (internal / single-file source) or a read-only preview (folder source).</summary>

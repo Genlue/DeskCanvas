@@ -39,12 +39,6 @@
             <Setter Property="Background" Value="#30FF3B30" />
             <Setter Property="Foreground" Value="#FF3B30" />
         </Style>
-
-        <Style Selector="RadioButton.color-pick-radio">
-            <Setter Property="Width" Value="22" />
-            <Setter Property="Height" Value="22" />
-            <Setter Property="Cursor" Value="Hand" />
-        </Style>
     </Window.Styles>
 
     <controls:SecondaryPanelShell>

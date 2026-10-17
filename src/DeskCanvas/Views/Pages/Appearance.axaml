@@ -300,6 +300,29 @@
                 </ComboBox>
             </StackPanel>
         </controls:Setting>
+        <controls:Setting Icon="{DynamicResource Color}"
+                          Title="{x:Static locales:Locale.Settings_Appearance_SolidBackground_Title}"
+                          Subtitle="{x:Static locales:Locale.Settings_Appearance_SolidBackground_Subtitle}"
+                          IsVisible="{Binding ShowSolidBackgroundSetting}">
+            <StackPanel Orientation="Vertical" Spacing="8">
+                <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Right">
+                    <TextBlock MinWidth="70" VerticalAlignment="Center"
+                               Text="{x:Static locales:Locale.Settings_Appearance_SolidBackground_Dark}" />
+                    <controls:ColorInput Value="{Binding SolidBackgroundDarkHex}"
+                                         AllowEmpty="True" ColorFormat="Rgb" AlphaPolicy="ForceOpaque" />
+                    <Button Content="{x:Static locales:Locale.Settings_Appearance_SolidBackground_ApplyToLight}"
+                            Click="ApplySolidToLight" />
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Right">
+                    <TextBlock MinWidth="70" VerticalAlignment="Center"
+                               Text="{x:Static locales:Locale.Settings_Appearance_SolidBackground_Light}" />
+                    <controls:ColorInput Value="{Binding SolidBackgroundLightHex}"
+                                         AllowEmpty="True" ColorFormat="Rgb" AlphaPolicy="ForceOpaque" />
+                    <Button Content="{x:Static locales:Locale.Settings_Appearance_SolidBackground_ApplyToDark}"
+                            Click="ApplySolidToDark" />
+                </StackPanel>
+            </StackPanel>
+        </controls:Setting>
         <TextBlock FontSize="14" FontWeight="SemiBold" Margin="0 20 0 10"
                    Text="{x:Static locales:Locale.Settings_Advanced_Appearance}"/>
         <controls:Setting Icon="{DynamicResource Font}" 

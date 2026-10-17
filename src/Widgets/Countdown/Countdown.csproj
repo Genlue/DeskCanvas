@@ -17,6 +17,7 @@
     </ItemGroup>
 
     <ItemGroup>
+        <!-- CountdownStatusPresenter lives in the DeskCanvas.UI root namespace. -->
         <ProjectReference Include="..\..\DeskCanvas.UI\DeskCanvas.UI.csproj">
             <Private>false</Private>
             <ExcludeAssets>runtime</ExcludeAssets>

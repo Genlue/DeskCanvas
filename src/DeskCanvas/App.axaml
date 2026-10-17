@@ -210,6 +210,24 @@
                 </ResourceDictionary>
             </ResourceDictionary.ThemeDictionaries>
 
+            <!-- Accent button contract (app-wide): Fluent's built-in accent button hard-codes a
+                 pure-white foreground, which turns invisible on the monochrome black/white dark
+                 variant where SystemAccentColor resolves to pure white (white on white). These
+                 six keys pin the accent button family to the theme-managed pair — SystemAccentColor
+                 fill + AccentContrastColor text — so every window that hosts a Classes="accent"
+                 button (InputDialog, ConfirmDialog flows, the uninstaller, future dialogs) flips
+                 polarity with the monochrome theme automatically. Hover/pressed keep the
+                 SystemAccentColor + opacity feedback used everywhere else in the variant
+                 dictionaries, instead of the polarity-flipping Light1/Dark1 ramp slots. Declared
+                 at app scope on purpose: page-local overrides (the old Profiles.axaml resources
+                 block) never reach sibling windows. -->
+            <SolidColorBrush x:Key="AccentButtonForeground" Color="{DynamicResource AccentContrastColor}" />
+            <SolidColorBrush x:Key="AccentButtonForegroundPointerOver" Color="{DynamicResource AccentContrastColor}" />
+            <SolidColorBrush x:Key="AccentButtonForegroundPressed" Color="{DynamicResource AccentContrastColor}" />
+            <SolidColorBrush x:Key="AccentButtonBackground" Color="{DynamicResource SystemAccentColor}" />
+            <SolidColorBrush x:Key="AccentButtonBackgroundPointerOver" Color="{DynamicResource SystemAccentColor}" Opacity="0.85" />
+            <SolidColorBrush x:Key="AccentButtonBackgroundPressed" Color="{DynamicResource SystemAccentColor}" Opacity="0.7" />
+
             <!-- Menu surfaces (context menus): Mica-like chrome tint; items get an
                  accent-colored hover/pressed background (follows the chosen accent,
                  including the wallpaper/monochrome overrides applied by ThemeService). -->

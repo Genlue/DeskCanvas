@@ -66,6 +66,12 @@ public class AppSettingsProvider() : JsonParser<AppSettings>(() => Const.AppSett
             };
         }
 
+        // 最大化或全屏时: tolerate hand-edited files — an undefined token falls back to
+        // "not configured" (the consumers then apply the historical default, 隐藏).
+        FullscreenBehavior? fullscreenBehavior = settings.FullscreenBehavior is { } behavior && Enum.IsDefined(behavior)
+            ? behavior
+            : null;
+
         return settings with
         {
             Grid = settings.Grid ?? Grid.Default,
@@ -73,20 +79,28 @@ public class AppSettingsProvider() : JsonParser<AppSettings>(() => Const.AppSett
             Templates = settings.Templates.Select(t => t.NormalizeForSurface()).Distinct().ToArray(),
             SurfaceThemes = surfaceThemes,
             Layout = layout,
-            FocusLink = focusLink
+            FocusLink = focusLink,
+            FullscreenBehavior = fullscreenBehavior
         };
     }
 
     /// <summary>
-    /// Persist the proxy mode in the legacy-safe form: the in-memory token ("auto"/"direct"/
-    /// "system"/custom URL) becomes (ProxyAutoDetect, file value) — see
+    /// Serialize settings in the on-disk (legacy-safe) form: the in-memory proxy token
+    /// ("auto"/"direct"/"system"/custom URL) becomes (ProxyAutoDetect, file value) — see
     /// <see cref="ProxySettings.ToPersistedProxy"/> for why the file must never carry the
     /// 3.7.0+ tokens ("auto"/"direct") that pre-3.7.0 builds sharing this file misparse as a
-    /// custom proxy URL. The cached in-memory value stays the semantic one.
+    /// custom proxy URL. The in-memory value itself stays the semantic one.
+    /// <para>
+    /// Public so other writers of an <c>appSettings.json</c> (seeding a brand-new profile)
+    /// persist through the same mapping instead of copying the in-memory token into the file.
+    /// </para>
     /// </summary>
-    protected override string SerializeForFile(AppSettings value)
+    public static string ToFileJson(AppSettings value)
     {
         var (autoDetect, fileValue) = ProxySettings.ToPersistedProxy(value.HttpProxy);
         return JsonSerializer.Serialize(value with { ProxyAutoDetect = autoDetect, HttpProxy = fileValue });
     }
+
+    /// <inheritdoc />
+    protected override string SerializeForFile(AppSettings value) => ToFileJson(value);
 }

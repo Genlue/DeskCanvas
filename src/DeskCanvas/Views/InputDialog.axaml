@@ -3,7 +3,7 @@
         x:Class="DeskCanvas.Views.InputDialog"
         SystemDecorations="None"
         Background="Transparent"
-        TransparencyLevelHint="AcrylicBlur, None"
+        TransparencyLevelHint="Transparent"
         TransparencyBackgroundFallback="{DynamicResource SettingsBackground}"
         CanResize="False"
         ShowInTaskbar="False"
@@ -29,7 +29,7 @@
                      KeyDown="OnInputBoxKeyDown" />
             <TextBlock x:Name="ErrorText"
                        FontSize="{DynamicResource FontSizeCaption}"
-                       Foreground="#ff4d4f"
+                       Foreground="{DynamicResource ValidationErrorBrush}"
                        IsVisible="False"
                        TextWrapping="Wrap" />
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8" Margin="0 4 0 0">

@@ -207,24 +207,6 @@
   <data name="Clock_Material_FollowGlobal" xml:space="preserve">
     <value>跟随全局外观</value>
   </data>
-  <data name="Clock_Material_FollowGlobal_Desc" xml:space="preserve">
-    <value>自动跟随当前生效的主题与亮暗模式</value>
-  </data>
-  <data name="Clock_Material_Acrylic_Desc" xml:space="preserve">
-    <value>系统级 Mica 材质背景</value>
-  </data>
-  <data name="Clock_Material_Solid_Desc" xml:space="preserve">
-    <value>不透明纯色卡片，无模糊</value>
-  </data>
-  <data name="Clock_Material_LiquidGlass_Desc" xml:space="preserve">
-    <value>壁纸采样的折射玻璃质感</value>
-  </data>
-  <data name="Clock_Material_LiquidGlassV2_Desc" xml:space="preserve">
-    <value>实时背景折射 · 高光与色散</value>
-  </data>
-  <data name="Clock_Material_Colorful_Desc" xml:space="preserve">
-    <value>Apple HIG 绚彩不透明卡片</value>
-  </data>
   <data name="Clock_LiquidGlassOpacity" xml:space="preserve">
     <value>液态玻璃透明度</value>
   </data>

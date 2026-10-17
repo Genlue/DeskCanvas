@@ -11,6 +11,7 @@ using DeskCanvas.Core;
 using DeskCanvas.Core.Interfaces;
 using DeskCanvas.Core.Models;
 using DeskCanvas.Core.Models.Settings;
+using DeskCanvas.Core.Services;
 
 namespace DeskCanvas.Services;
 
@@ -228,9 +229,15 @@ public class ProfileService
     /// Create a new configuration profile directory.
     /// </summary>
     /// <param name="name">Profile name.</param>
-    /// <param name="copyCurrent">Whether to copy current configuration, layout and widget data into the new profile.</param>
+    /// <param name="copyCurrent">
+    /// <c>true</c> duplicates the active profile as-is: appearance, layout and widget data are
+    /// copied verbatim. <c>false</c> is what "新建方案" uses — the new profile starts empty, from
+    /// the shipped default appearance with no widgets and no widget data — while the app-level
+    /// preferences that are not part of a profile's look (UI language, autostart, updates,
+    /// proxy, tray icon, title bar) keep their current values.
+    /// </param>
     /// <returns>True if created successfully.</returns>
-    public bool CreateProfile(string name, bool copyCurrent = true)
+    public bool CreateProfile(string name, bool copyCurrent = false)
     {
         name = SanitizeProfileName(name);
         if (string.IsNullOrWhiteSpace(name)) return false;
@@ -268,10 +275,10 @@ public class ProfileService
             }
             else
             {
-                var cleanSettings = appSettingsProvider.Get() with { ActiveProfile = name };
-                var cleanScreens = new ScreensLayout([new ScreenLayout(ScreensLayout.LegacyPrimaryId, null, null, null, null, null, [])]);
-                File.WriteAllText(Path.Combine(path, Const.AppSettingsFileName), JsonSerializer.Serialize(cleanSettings));
-                File.WriteAllText(Path.Combine(path, Const.LayoutFileName), JsonSerializer.Serialize(cleanScreens));
+                var emptySettings = CreateEmptyProfileSettings(name);
+                var emptyScreens = new ScreensLayout([new ScreenLayout(ScreensLayout.LegacyPrimaryId, null, null, null, null, null, [])]);
+                File.WriteAllText(Path.Combine(path, Const.AppSettingsFileName), AppSettingsProvider.ToFileJson(emptySettings));
+                File.WriteAllText(Path.Combine(path, Const.LayoutFileName), JsonSerializer.Serialize(emptyScreens));
             }
 
             ProfilesListChanged?.Invoke(this, EventArgs.Empty);
@@ -281,6 +288,68 @@ public class ProfileService
         {
             Debug.WriteLine($"[ProfileService] CreateProfile '{name}' failed: {ex.Message}");
             return false;
+        }
+    }
+
+    /// <summary>
+    /// Settings of a brand-new empty profile.
+    /// <para>
+    /// The appearance groups (theme, surface materials, templates, font, grid, widget
+    /// dimensions, layout behaviour) come from the shipped <c>appSettings.json</c> template —
+    /// the same file a fresh data folder is seeded with — so the new profile opens with the
+    /// factory look instead of inheriting whatever the active profile was styled with.
+    /// </para>
+    /// <para>
+    /// App-level preferences are carried over because they are not part of a profile's look:
+    /// resetting them would flip the UI language, forget the custom update source or drop the
+    /// proxy setting just because a profile was created.
+    /// </para>
+    /// </summary>
+    private AppSettings CreateEmptyProfileSettings(string name)
+    {
+        var current = appSettingsProvider.Get();
+        var defaults = ReadShippedDefaultSettings();
+
+        if (defaults == null)
+        {
+            // The embedded template is always part of this assembly; this path only exists so a
+            // build without it can still create a usable profile. It inherits the current
+            // appearance — the lesser evil compared to a profile with no settings file at all.
+            defaults = current;
+        }
+
+        return defaults with
+        {
+            ActiveProfile = name,
+            Region = current.Region,
+            RunOnStartup = current.RunOnStartup,
+            IgnoreUpdate = current.IgnoreUpdate,
+            UpdateUrl = current.UpdateUrl,
+            UpdateInterval = current.UpdateInterval,
+            LastUpdateCheckTime = current.LastUpdateCheckTime,
+            LastUpdateCheckStatus = current.LastUpdateCheckStatus,
+            HttpProxy = current.HttpProxy, // the file form (ProxyAutoDetect) is derived on write
+            ShowTrayIcon = current.ShowTrayIcon,
+            TitleBarStyle = current.TitleBarStyle,
+            TitleBarSize = current.TitleBarSize
+        };
+    }
+
+    /// <summary>
+    /// Deserialize the shipped default <c>appSettings.json</c>, or <c>null</c> when the template
+    /// is missing or unreadable.
+    /// </summary>
+    private static AppSettings? ReadShippedDefaultSettings()
+    {
+        try
+        {
+            var json = WidgetBundle.ReadDefaultAppSettingsJson();
+            return string.IsNullOrWhiteSpace(json) ? null : JsonSerializer.Deserialize<AppSettings>(json);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"[ProfileService] Shipped default settings unreadable: {ex.Message}");
+            return null;
         }
     }
 

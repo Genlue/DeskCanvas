@@ -1,4 +1,5 @@
 using System;
+using DeskCanvas.Core.Models;
 using DeskCanvas.Core.Models.Settings;
 
 namespace DeskCanvas.Services;
@@ -73,5 +74,78 @@ public static class GridMetrics
             return Math.Max(1, (int) Math.Round(physical));
 
         return Math.Max(1, (int) Math.Round(dip));
+    }
+
+    /// <summary>
+    /// Row-major FIRST-FIT placement: scan the grid's cells from (0,0) left → right,
+    /// top → bottom and return the first (column, row) whose whole
+    /// <paramref name="spanCols"/>×<paramref name="spanRows"/> block is free.
+    /// <para>
+    /// Occupancy is tracked as a boolean cell matrix. Every widget already stored on
+    /// the screen occupies every cell its own footprint covers: the anchor is the
+    /// stored top-left corner's cell, the span is resolved through
+    /// <see cref="ResolveSpan"/> (DIP today, legacy physical pixels supported), and
+    /// the whole pixel rectangle is marked — a widget parked off the cell lattice
+    /// (legacy entries, grid-origin edits) blocks the boundary cells its edges reach
+    /// into, so a candidate can never slip into the sliver between its pixel rect and
+    /// the lattice and partially overlap it.
+    /// </para>
+    /// <para>
+    /// Returns <c>(-1, -1)</c> when no block fits — the grid is genuinely full (or the
+    /// widget is larger than the grid). Callers decide the fallback; the gallery's
+    /// placement used to fall back to the grid origin "ignoring occupancy", which
+    /// stacked the new card exactly onto the first placed one (the 吞组件 overlap).
+    /// </para>
+    /// </summary>
+    /// <param name="layout">Stored widgets of the target screen, positions RELATIVE to the
+    /// screen's working area, sizes in DIPs (legacy physical accepted via <see cref="ResolveSpan"/>).</param>
+    /// <param name="cell">Grid cell edge in physical pixels (<see cref="Resolve"/>).</param>
+    /// <param name="scaling">Scaling of the target screen.</param>
+    /// <param name="gridRelX">Grid origin X relative to the working area (physical pixels).</param>
+    /// <param name="gridRelY">Grid origin Y relative to the working area (physical pixels).</param>
+    /// <param name="columns">Grid column count.</param>
+    /// <param name="rows">Grid row count.</param>
+    /// <param name="spanCols">Span to place, in cells.</param>
+    /// <param name="spanRows">Span to place, in cells.</param>
+    public static (int Column, int Row) FindFirstFitCell(
+        IReadOnlyList<WidgetLayout> layout, int cell, double scaling,
+        int gridRelX, int gridRelY, int columns, int rows, int spanCols, int spanRows)
+    {
+        var occupied = new bool[rows, columns];
+        foreach (var widget in layout)
+        {
+            var spanC = Math.Max(1, ResolveSpan(widget.Width, cell, scaling));
+            var spanR = Math.Max(1, ResolveSpan(widget.Height, cell, scaling));
+
+            // Cells covered by the widget's pixel rect, relative to the grid origin:
+            // floor on the leading edge, ceil on the trailing edge — a grid-aligned
+            // widget marks exactly its span, an off-grid one marks the boundary cells
+            // its footprint reaches into (conservative, never under-covers).
+            var left = widget.X - gridRelX;
+            var top = widget.Y - gridRelY;
+            var col0 = (int) Math.Floor(left / (double) cell);
+            var row0 = (int) Math.Floor(top / (double) cell);
+            var col1 = (int) Math.Ceiling((left + spanC * (double) cell) / cell) - 1;
+            var row1 = (int) Math.Ceiling((top + spanR * (double) cell) / cell) - 1;
+
+            for (var r = Math.Max(row0, 0); r <= Math.Min(row1, rows - 1); r++)
+                for (var c = Math.Max(col0, 0); c <= Math.Min(col1, columns - 1); c++)
+                    occupied[r, c] = true;
+        }
+
+        for (var row = 0; row + spanRows <= rows; row++)
+        {
+            for (var col = 0; col + spanCols <= columns; col++)
+            {
+                var free = true;
+                for (var r = row; free && r < row + spanRows; r++)
+                    for (var c = col; free && c < col + spanCols; c++)
+                        free = !occupied[r, c];
+
+                if (free) return (col, row);
+            }
+        }
+
+        return (-1, -1);
     }
 }

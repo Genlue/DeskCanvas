@@ -94,6 +94,15 @@ public partial class NoteSettings : UserControl
             // mode migrate on the first pick and never fight the new field afterwards.
             UpdateModel(m => m with { HeaderMode = mode, ShowTitle = mode != NoteHeaderMode.Hidden });
         };
+        // Empty/whitespace clears the override so the bar falls back to the
+        // widget title (or the document title of a file source).
+        HeaderTextBar.TextChanged += (_, _) =>
+            UpdateModel(m => m with
+            {
+                HeaderText = string.IsNullOrWhiteSpace(HeaderTextBar.Text) ? null : HeaderTextBar.Text,
+            });
+        HeaderHeightBox.ValueChanged += (_, _) =>
+            UpdateModel(m => m with { HeaderHeight = (double)(HeaderHeightBox.Value ?? 44) });
         StyleToggle.Click += (_, _) =>
         {
             var enabled = StyleToggle.IsChecked == true;
@@ -210,6 +219,8 @@ public partial class NoteSettings : UserControl
         MarkdownToggle.IsChecked = model.Markdown;
         AllowInlineEditToggle.IsChecked = model.AllowInlineEdit;
         TitleBarBox.SelectedIndex = (int)model.EffectiveHeaderMode;
+        HeaderTextBar.Text = model.HeaderText ?? "";
+        HeaderHeightBox.Value = (decimal)Math.Clamp(model.HeaderHeight, 24, 96);
 
         var style = model.MarkdownStyle;
         StyleToggle.IsChecked = style?.Enabled ?? false;

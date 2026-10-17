@@ -1106,8 +1106,9 @@ internal static partial class Program
         var sliders = appearance.GetLogicalDescendants().OfType<LabeledSlider>().Count();
         var colors = appearance.GetLogicalDescendants().OfType<ColorInput>().Count();
         Check(sliders == 9, $"Appearance: 8 optics rows plus opacity are LabeledSliders ({sliders})");
-        // 描边颜色 was removed with the 描边 feature; the only colour row left is 纯色背景.
-        Check(colors == 1, $"Appearance: the one remaining colour row is a ColorInput ({colors})");
+        // 描边颜色 was removed with the 描边 feature; the remaining colour rows are
+        // 强调色 and the two 背景颜色 pickers (dark + light).
+        Check(colors == 3, $"Appearance: the three remaining colour rows are ColorInputs ({colors})");
         Check(CountStray<Slider, LabeledSlider>(appearance) == 0 && CountStray<ColorPicker, ColorInput>(appearance) == 0,
             "Appearance: no bare Slider / ColorPicker left");
         // The remaining numeric boxes are real single-value rows (interval / delay),

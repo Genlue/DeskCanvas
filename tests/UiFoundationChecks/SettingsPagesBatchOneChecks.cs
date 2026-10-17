@@ -161,7 +161,7 @@ internal static partial class Program
     private static void CheckNotesBatchOne()
     {
         var page = new Notes.Views.Settings.NoteSettings(new StubWidgetLayoutProvider());
-        CheckBatchPageContract("Notes", page, expectedHeaders: 0, expectedSettings: 22, extra: () =>
+        CheckBatchPageContract("Notes", page, expectedHeaders: 0, expectedSettings: 24, extra: () =>
         {
             // 八个 markdown 颜色行 + 页头颜色行全部在共享 ColorInput 上（含防抖业务仍在）。
             var colorInputs = page.GetLogicalDescendants().OfType<ColorInput>().Count();
@@ -173,6 +173,9 @@ internal static partial class Program
                   && page.FindControl<StackPanel>("StyleSection") is not null
                   && page.FindControl<StackPanel>("FilesPanel") is not null,
                 "Notes: header mode / style section / folder file list business areas survive");
+            Check(page.FindControl<TextBox>("HeaderTextBar") is not null
+                  && page.FindControl<NumericUpDown>("HeaderHeightBox") is not null,
+                "Notes: the header text / header height rows survive");
         });
     }
 

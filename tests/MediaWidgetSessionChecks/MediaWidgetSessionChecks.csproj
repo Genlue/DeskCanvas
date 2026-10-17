@@ -19,6 +19,5 @@
     <ProjectReference Include="..\..\src\Widgets\Map\Map.csproj" />
     <ProjectReference Include="..\..\src\Widgets\Pomodoro\Pomodoro.csproj" />
     <ProjectReference Include="..\..\src\Widgets\Dice\Dice.csproj" />
-    <ProjectReference Include="..\..\src\Widgets\Wheel\Wheel.csproj" />
   </ItemGroup>
 </Project>

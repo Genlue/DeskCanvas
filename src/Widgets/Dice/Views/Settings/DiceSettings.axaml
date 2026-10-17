@@ -5,7 +5,7 @@
              x:Class="Dice.Views.Settings.DiceSettings"
              controls:SettingsPage.ScrollOwnership="Host">
 
-    <StackPanel Orientation="Vertical" Spacing="6" Margin="0,0,10,0">
+    <StackPanel Orientation="Vertical" Spacing="5" Margin="0,0,10,0">
         <!-- 1. Dice Count -->
         <controls:Setting Title="{x:Static locales:Locale.Dice_Count}">
             <ComboBox x:Name="CountComboBox" MinWidth="180" SelectionChanged="OnSettingChanged">

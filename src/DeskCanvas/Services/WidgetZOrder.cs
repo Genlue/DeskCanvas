@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.InteropServices;
+using System.Threading;
 using Avalonia.Controls;
 using Avalonia.Threading;
 using static Avalonia.Controls.Win32Properties;
@@ -61,16 +63,31 @@ public static class WidgetZOrder
     private const uint GW_OWNER = 4;
     private const int GWL_EXSTYLE = -20;
     private const int GWL_HWNDPARENT = -8;
+    private const uint EVENT_OBJECT_REORDER = 0x8004;
+    private const uint EVENT_SYSTEM_FOREGROUND = 0x0003;
+    private const uint OBJID_WINDOW = 0;
+    private const uint WINEVENT_OUTOFCONTEXT = 0;
     private const uint WS_EX_TOPMOST = 0x00000008;
     private const uint WS_EX_TOOLWINDOW = 0x00000080;
     private const uint WS_EX_APPWINDOW = 0x00040000;
 
     private static readonly IntPtr HwndTop = IntPtr.Zero;
     private static readonly IntPtr HwndBottom = new(1);
+    private static readonly IntPtr HwndTopmost = new(-1);
 
     /// <summary>Native handles of the live desktop-widget windows (the bottom band).</summary>
-    private static readonly List<IntPtr> widgetHandles = new();
+    private static readonly Dictionary<IntPtr, Window> widgetHandles = new();
     private static readonly object gate = new();
+
+    /// <summary>
+    /// Watches the desktop shell while the band is alive; see <see cref="EnsureDesktopBarrierWatch"/>.
+    /// </summary>
+    private static DispatcherTimer? desktopBarrierTimer;
+    private static IntPtr desktopReorderHook;
+    private static IntPtr desktopForegroundHook;
+    private static WinEventDelegate? desktopReorderCallback;
+    private static int desktopRecoveryPending;
+    private static volatile bool desktopRaised;
 
     /// <summary>
     /// Pin a desktop-widget window to the bottom band for its whole lifetime:
@@ -86,7 +103,22 @@ public static class WidgetZOrder
 
         window.Closed += (_, _) =>
         {
-            lock (gate) widgetHandles.Remove(hwnd);
+            lock (gate)
+            {
+                widgetHandles.Remove(hwnd);
+                if (widgetHandles.Count > 0) return;
+                desktopBarrierTimer?.Stop();
+                desktopBarrierTimer = null;
+                if (desktopReorderHook != IntPtr.Zero)
+                {
+                    UnhookWinEvent(desktopReorderHook);
+                    desktopReorderHook = IntPtr.Zero;
+                    desktopReorderCallback = null;
+                }
+                UnhookWinEvent(desktopForegroundHook);
+                desktopForegroundHook = IntPtr.Zero;
+                desktopRaised = false;
+            }
         };
 
         SeverNativeOwner(window, hwnd);
@@ -94,10 +126,11 @@ public static class WidgetZOrder
         lock (gate)
         {
             PruneDeadHandles();
-            if (!widgetHandles.Contains(hwnd)) widgetHandles.Add(hwnd);
+            widgetHandles[hwnd] = window;
         }
 
         AttachZOrderHook(window, () => HwndBottom);
+        EnsureDesktopBarrierWatch();
     }
 
     /// <summary>
@@ -165,7 +198,8 @@ public static class WidgetZOrder
         SetWindowLongPtr(hwnd, GWL_HWNDPARENT, IntPtr.Zero);
 
         AddWindowStylesCallback(window, (style, exStyle) =>
-            (style, ForceToolWindow(exStyle)));
+            (style, ForceToolWindow(desktopRaised && widgetHandles.ContainsKey(hwnd)
+                ? exStyle | WS_EX_TOPMOST : exStyle)));
 
         SetWindowPos(hwnd, IntPtr.Zero, 0, 0, 0, 0,
             SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED);
@@ -202,8 +236,7 @@ public static class WidgetZOrder
     }
 
     /// <summary>
-    /// Insert-after handle that puts a panel directly above the widget band: the
-    /// first VISIBLE non-topmost window above the topmost widget. Invisible windows
+    /// Insert-after handle that puts a panel directly above the widget band: the first VISIBLE non-topmost window above the topmost widget. Invisible windows
     /// are skipped as anchors (they can sit anywhere in the chain, so the panel
     /// would be parked at a nonsensical spot), topmost-band windows — taskbar,
     /// always-on-top tools — must not become the anchor either (the panel would be
@@ -241,7 +274,7 @@ public static class WidgetZOrder
             PruneDeadHandles();
             for (var hwnd = GetTopWindow(IntPtr.Zero); hwnd != IntPtr.Zero; hwnd = GetWindow(hwnd, GW_HWNDNEXT))
             {
-                if (widgetHandles.Contains(hwnd)) return hwnd;
+                if (widgetHandles.ContainsKey(hwnd)) return hwnd;
             }
             return null;
         }
@@ -249,7 +282,131 @@ public static class WidgetZOrder
 
     private static void PruneDeadHandles()
     {
-        widgetHandles.RemoveAll(h => h == IntPtr.Zero || !IsWindow(h));
+        foreach (var hwnd in widgetHandles.Keys.Where(h => !IsWindow(h)).ToArray())
+            widgetHandles.Remove(hwnd);
+    }
+
+    /// <summary>
+    /// Watches for the one z-order change the band cannot absorb on its own: "Show Desktop"
+    /// (Win+D, the taskbar's show-desktop button) raises the desktop above every non-topmost
+    /// window. Temporarily use the topmost band until an application is activated again.
+    /// </summary>
+    /// <remarks>
+    /// The timer is only a low-frequency fallback for shell builds that do not deliver the event;
+    /// normal Win+D recovery is event driven.
+    /// </remarks>
+    private static void EnsureDesktopBarrierWatch()
+    {
+        lock (gate)
+        {
+            if (desktopBarrierTimer is not null) return;
+            desktopReorderCallback ??= OnDesktopReorder;
+            desktopReorderHook = SetWinEventHook(
+                EVENT_OBJECT_REORDER,
+                EVENT_OBJECT_REORDER,
+                IntPtr.Zero,
+                desktopReorderCallback,
+                0,
+                0,
+                WINEVENT_OUTOFCONTEXT);
+            desktopForegroundHook = SetWinEventHook(
+                EVENT_SYSTEM_FOREGROUND, EVENT_SYSTEM_FOREGROUND, IntPtr.Zero,
+                desktopReorderCallback, 0, 0, WINEVENT_OUTOFCONTEXT);
+
+            desktopBarrierTimer = new DispatcherTimer(
+                TimeSpan.FromMilliseconds(1000),
+                DispatcherPriority.Background,
+                (_, _) => MaintainWidgetBand());
+            desktopBarrierTimer.Start();
+            Dispatcher.UIThread.Post(MaintainWidgetBand, DispatcherPriority.Send);
+        }
+    }
+
+    /// <summary>
+    /// Coalesce shell notifications onto the UI thread. Both entering Show Desktop and
+    /// activating an application must update the temporary topmost state.
+    /// </summary>
+    private static void OnDesktopReorder(
+        IntPtr hook,
+        uint @event,
+        IntPtr hwnd,
+        int idObject,
+        int idChild,
+        uint eventThread,
+        uint eventTime)
+    {
+        if (@event == EVENT_OBJECT_REORDER)
+        {
+            if (idObject != OBJID_WINDOW || idChild != 0) return;
+            lock (gate)
+            {
+                if (!widgetHandles.ContainsKey(hwnd)) return;
+            }
+        }
+
+        if (Interlocked.Exchange(ref desktopRecoveryPending, 1) != 0) return;
+        Dispatcher.UIThread.Post(() =>
+        {
+            Interlocked.Exchange(ref desktopRecoveryPending, 0);
+            MaintainWidgetBand();
+        }, DispatcherPriority.Send);
+    }
+
+    private static void MaintainWidgetBand()
+    {
+        var shell = GetShellWindow();
+        if (shell == IntPtr.Zero) return;
+
+        IntPtr[] handles;
+        lock (gate)
+        {
+            PruneDeadHandles();
+            handles = widgetHandles.Keys.ToArray();
+        }
+
+        var foreground = GetForegroundWindow();
+        var applicationActive = foreground != IntPtr.Zero
+            && !IsDesktopShell(foreground) && !widgetHandles.ContainsKey(foreground)
+            && IsWindowVisible(foreground) && !IsIconic(foreground)
+            && !IsTopmostWindow(foreground);
+        var recover = desktopRaised && !applicationActive;
+        foreach (var hwnd in handles)
+        {
+            if (!applicationActive && IsWindowVisible(hwnd) && !IsAbove(hwnd, shell))
+            {
+                recover = true;
+                break;
+            }
+        }
+        var wasRaised = desktopRaised;
+        desktopRaised = recover;
+        foreach (var hwnd in handles)
+        {
+            var window = widgetHandles[hwnd];
+            window.Topmost = recover;
+            if (!IsWindowVisible(hwnd)) continue;
+            if (recover)
+            {
+                if (!IsTopmostWindow(hwnd) || !IsAbove(hwnd, shell))
+                    SetWindowPos(hwnd, HwndTopmost, 0, 0, 0, 0,
+                        SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_NOOWNERZORDER);
+            }
+            else if (wasRaised || IsTopmostWindow(hwnd))
+                SetWindowPos(hwnd, HwndBottom, 0, 0, 0, 0,
+                    SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_NOOWNERZORDER);
+        }
+
+    }
+
+    private static bool IsAbove(IntPtr hwnd, IntPtr other)
+    {
+        for (var below = GetWindow(hwnd, GW_HWNDNEXT);
+             below != IntPtr.Zero;
+             below = GetWindow(below, GW_HWNDNEXT))
+        {
+            if (below == other) return true;
+        }
+        return false;
     }
 
     private static bool IsTopmostWindow(IntPtr hwnd) =>
@@ -282,6 +439,8 @@ public static class WidgetZOrder
         void PlaceAtTarget()
         {
             correctionPending = false;
+            // A correction queued before Win+D must not demote the recovered widget.
+            if (desktopRaised) return;
             selfPlacement = true;
             try
             {
@@ -313,7 +472,7 @@ public static class WidgetZOrder
             {
                 if (!IsWindowVisible(below)) continue;
                 bool isBandMember;
-                lock (gate) isBandMember = widgetHandles.Contains(below);
+                lock (gate) isBandMember = widgetHandles.ContainsKey(below);
                 // The desktop itself (Progman / the wallpaper WorkerW) legitimately sits below
                 // the whole band — it is the desktop the band is "above only" of, not a
                 // misplaced window. Counting it as a violation made the predicate unsatisfiable
@@ -346,6 +505,11 @@ public static class WidgetZOrder
             // itself is a single GetWindow.
             EnsureUnowned(hwnd);
 
+            // Win+D is handled by the event hook above. While Show Desktop is active the
+            // widget must not run its normal HWND_BOTTOM correction, which would immediately
+            // undo the placement above the desktop and recreate the hidden state.
+            if (desktopRaised) return IntPtr.Zero;
+
             // The flags cannot be trusted as a "no z-change happened" shortcut:
             // system-initiated owned-group maintenance moves windows while carrying
             // SWP_NOZORDER, so a band violation must be detected by looking at the
@@ -373,6 +537,37 @@ public static class WidgetZOrder
 
     [DllImport("user32.dll")]
     private static extern IntPtr GetTopWindow(IntPtr hWnd);
+
+    [DllImport("user32.dll")]
+    private static extern IntPtr GetShellWindow();
+
+    [DllImport("user32.dll")]
+    private static extern IntPtr GetForegroundWindow();
+
+    [DllImport("user32.dll")]
+    private static extern bool IsIconic(IntPtr hwnd);
+
+    private delegate void WinEventDelegate(
+        IntPtr hook,
+        uint @event,
+        IntPtr hwnd,
+        int idObject,
+        int idChild,
+        uint eventThread,
+        uint eventTime);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    private static extern IntPtr SetWinEventHook(
+        uint eventMin,
+        uint eventMax,
+        IntPtr hmodWinEventProc,
+        WinEventDelegate lpfnWinEventProc,
+        uint idProcess,
+        uint idThread,
+        uint flags);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    private static extern bool UnhookWinEvent(IntPtr hWinEventHook);
 
     [DllImport("user32.dll")]
     private static extern IntPtr GetWindow(IntPtr hWnd, uint cmd);

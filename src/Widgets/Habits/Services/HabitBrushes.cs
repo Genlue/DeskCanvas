@@ -14,7 +14,6 @@ public static class HabitBrushes
     public static readonly IBrush Transparent = Brushes.Transparent;
     public static readonly IBrush White = Brushes.White;
     public static readonly IBrush DodgerBlue = Brushes.DodgerBlue;
-    public static readonly IBrush Gray = Brushes.Gray;
     public static readonly IBrush ForestGreen = Brushes.ForestGreen;
 
     public static readonly IBrush CardBackground = new ImmutableSolidColorBrush(Color.FromArgb(18, 128, 128, 128));

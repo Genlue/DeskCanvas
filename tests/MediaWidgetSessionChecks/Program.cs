@@ -1,5 +1,5 @@
 // Media/interaction widget session checks (P8 batch E — Picture / Music / Map / Pomodoro /
-// Dice / Wheel).
+// Dice).
 //
 // Run: dotnet run --project tests/MediaWidgetSessionChecks
 //
@@ -7,8 +7,8 @@
 // and the Music 250 ms progress tick follow the injected session's RenderActive (the SMTC
 // shared engine deliberately untouched); the Pomodoro countdown gates its 1 s tick without
 // losing countdown state (the gated stretch is replayed from the recorded wall-clock
-// boundary); Map's auto theme resolves per window; Dice and Wheel are interaction-driven
-// and stay session-free (N/A decision pinned). Direct construction only — the host pipeline
+// boundary); Map's auto theme resolves per window; Dice is interaction-driven
+// and stays session-free (N/A decision pinned). Direct construction only — the host pipeline
 // is covered by tests/SessionHookChecks.
 using System.Reflection;
 using Avalonia;
@@ -27,7 +27,6 @@ using Picture.ViewModels;
 using Pomodoro.Models;
 using Pomodoro.ViewModels;
 using Pomodoro.Views;
-using Wheel.ViewModels;
 using PictureWidget = Picture.Views.PictureView;
 using MusicWidget = Music.Views.Music;
 using MapViewWidget = Map.Views.MapView;
@@ -292,34 +291,25 @@ Check(fViewVm.IsRunning && !fViewVm.IsTimerEnabledForChecks, "3.21 the view's ga
 fViewVm.Dispose();
 
 // =========================================================================================
-// 4. Dice / Wheel: interaction-driven — the N/A decision (session-free, legacy always usable)
+// 4. Dice: interaction-driven — the N/A decision (session-free, legacy always usable)
 // =========================================================================================
-Console.WriteLine("--- Dice / Wheel: N/A decisions ---");
+Console.WriteLine("--- Dice: N/A decisions ---");
 
 var diceSource = Source("src/Widgets/Dice/ViewModels/DiceViewModel.cs");
-var wheelSource = Source("src/Widgets/Wheel/ViewModels/WheelViewModel.cs");
 Check(!diceSource.Contains("DispatcherTimer"), "4.1 (source) DiceViewModel owns no timer — the roll is interaction-driven");
-Check(!wheelSource.Contains("DispatcherTimer"), "4.2 (source) WheelViewModel owns no timer — the spin is interaction-driven");
 Check(!Source("src/Widgets/Dice/Views/DiceView.axaml.cs").Contains("IWidgetActivityConsumer"),
     "4.3 (source) DiceView stays session-free (N/A decision)");
-Check(!Source("src/Widgets/Wheel/Views/WheelView.axaml.cs").Contains("IWidgetActivityConsumer"),
-    "4.4 (source) WheelView stays session-free (N/A decision)");
 Check(!Source("src/Widgets/Map/Views/MapView.axaml.cs").Contains("IWidgetActivityConsumer"),
     "4.5 (source) MapView stays session-free — its only timer is the interaction-driven geocode debounce");
 
 var dice = new DiceViewModel();
 Check(dice.CurrentDice.Count > 0 && dice.Sum == dice.CurrentDice.Sum(),
     "4.6 the legacy DiceViewModel works with no session (interaction path always usable)");
-var wheel = new WheelViewModel();
-Check(wheel.CurrentTemplate.Options.Count > 0 && wheel.Angle == 0,
-    "4.7 the legacy WheelViewModel works with no session (interaction path always usable)");
 Check(diceSource.Contains("if (IsRolling) return;"), "4.8 (source) the roll is re-entrancy guarded, not session gated");
 
 Check(Source("src/Widgets/Dice/Views/DicePopupWindow.axaml.cs").Contains("PanelService.Open") &&
       Source("src/Widgets/Dice/Views/DicePopupWindow.axaml.cs").Contains("PanelScope.ProcessSingleton"),
     "4.9 (source) the Dice popup keeps its P6 PanelService wiring (untouched)");
-Check(Source("src/Widgets/Wheel/Views/WheelPopupWindow.axaml.cs").Contains("ShowAsSecondaryPanel"),
-    "4.10 (source) the Wheel popup keeps its P6 secondary-panel wiring (untouched)");
 
 // =========================================================================================
 // 5. Map: per-screen auto theme (window variant wins over the uniform Application variant)

@@ -132,7 +132,7 @@ public class HabitDisplayItem : INotifyPropertyChanged
         }
     }
 
-    public string StreakText => CurrentStreak > 0 ? $"🔥 {CurrentStreak}" : "🌱 0";
+    public string StreakText => $"连击 {CurrentStreak}";
 
     public string CompactSubtitle => IsNumeric
         ? $"{TodayValue:0.#}/{TargetValue:0.#}{Unit}" + (CurrentStreak > 0 ? $" · 连打{CurrentStreak}天" : "")

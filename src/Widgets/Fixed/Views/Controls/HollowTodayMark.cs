@@ -105,11 +105,14 @@ public class HollowTodayMark : Control
 
         if (!Hollow)
         {
-            // Solid filled disc + white numeral, strictly sharing the exact same center
+            // Solid filled disc + centered numeral, strictly sharing the exact same center. The
+            // numeral follows the disc's polarity: the 黑白/背景色 monochrome ramps drive the disc
+            // to a light color in the dark variant (pure white for 黑白, the light-mode background
+            // for 背景色), where the historic hard-coded white numeral vanished into it.
             context.DrawEllipse(brush, null, center, radius, radius);
             if (glyph != null)
             {
-                context.DrawGeometry(Brushes.White, null, glyph);
+                context.DrawGeometry(BuildNumeralBrush(brush), null, glyph);
             }
             return;
         }
@@ -145,6 +148,24 @@ public class HollowTodayMark : Control
         return luminance > 0.55
             ? new SolidColorBrush(Colors.Black, 0.32)
             : new SolidColorBrush(Colors.White, 0.38);
+    }
+
+    /// <summary>Near-black numeral for light discs (the app's dark label color, as in ClockDigitalTimeBrush).</summary>
+    private static readonly IBrush DarkNumeral = new SolidColorBrush(Color.FromRgb(0x1C, 0x1C, 0x1E));
+
+    /// <summary>
+    /// The numeral painted on the solid disc, at full opacity: white on a dark disc, near-black on
+    /// a light one — the same luminance split <see cref="BuildHoleRimBrush"/> uses for the hole
+    /// rim. The disc color is theme-driven (accent slot, custom hex, or a monochrome ramp slot),
+    /// so no fixed foreground stays readable on all of them.
+    /// </summary>
+    private static IBrush BuildNumeralBrush(IBrush discBrush)
+    {
+        if (discBrush is not ISolidColorBrush solid) return Brushes.White;
+
+        var color = solid.Color;
+        var luminance = (0.2126 * color.R + 0.7152 * color.G + 0.0722 * color.B) / 255.0;
+        return luminance > 0.55 ? DarkNumeral : Brushes.White;
     }
 
     /// <summary>

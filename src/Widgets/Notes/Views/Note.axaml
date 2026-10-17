@@ -1,7 +1,6 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:controls="clr-namespace:DeskCanvas.Views.Controls;assembly=DeskCanvas"
-             xmlns:locales="clr-namespace:Notes.Locales"
              x:Class="Notes.Views.Note"
              Margin="0"
              Foreground="{DynamicResource NotesTextBrush}">
@@ -19,39 +18,17 @@
         <Style Selector="TextBox /template/ ScrollViewer">
             <Setter Property="HorizontalScrollBarVisibility" Value="Disabled" />
         </Style>
-        <Style Selector="Button.NotesPanelBtn">
-            <Setter Property="Cursor" Value="Hand" />
-        </Style>
-        <Style Selector="Button.NotesPanelBtn:pointerover">
-            <Setter Property="Background" Value="#1E000000" />
-        </Style>
-        <Style Selector="Button.NotesPanelBtn:pressed">
-            <Setter Property="Background" Value="#35000000" />
-        </Style>
     </UserControl.Styles>
     <Grid RowDefinitions="Auto, Auto, *, Auto" VerticalAlignment="Stretch" HorizontalAlignment="Stretch">
         <!-- Content area background spanning row 1, 2 and 3: Light is pure white, Dark is pure black -->
         <Border Grid.Row="1" Grid.RowSpan="3" Background="{DynamicResource NotesPaperBackground}" />
-        <!-- Colored header bar: title (editable when the widget setting allows) + secondary panel button -->
+        <!-- Colored header bar: title (editable when the widget setting allows) -->
         <Border Grid.Row="0" Name="HeaderBorder" CornerRadius="0">
-            <Grid ColumnDefinitions="*, Auto">
-                <controls:ClickThroughTextBox Name="TitleBox" CornerRadius="0" Height="44"
-                                              VerticalContentAlignment="Center" LostFocus="UpdateTitle"
-                                              Foreground="{DynamicResource NotesTitleForegroundBrush}"
-                                              FontSize="16" FontWeight="SemiBold"
-                                              ScrollViewer.HorizontalScrollBarVisibility="Disabled" />
-                <Button Grid.Column="1" Name="OpenPanelBtn" Classes="NotesPanelBtn"
-                        Width="26" Height="26" CornerRadius="13" Padding="0" Margin="0,0,9,0"
-                        Background="Transparent" BorderThickness="0"
-                        VerticalAlignment="Center" HorizontalAlignment="Center"
-                        Click="OpenPopupClick" ToolTip.Tip="{x:Static locales:Locale.Notes_Panel_Open}">
-                    <Path Data="M2,7 L2,2 L7,2 M2.7,2.7 L7,7 M14,9 L14,14 L9,14 M13.3,13.3 L9,9"
-                          Stroke="{DynamicResource NotesTitleForegroundBrush}"
-                          StrokeThickness="1.6" StrokeLineCap="Round" StrokeJoin="Round"
-                          Width="16" Height="16" Stretch="Uniform"
-                          HorizontalAlignment="Center" VerticalAlignment="Center" />
-                </Button>
-            </Grid>
+            <controls:ClickThroughTextBox Name="TitleBox" CornerRadius="0" Height="44"
+                                          VerticalContentAlignment="Center" LostFocus="UpdateTitle"
+                                          Foreground="{DynamicResource NotesTitleForegroundBrush}"
+                                          FontSize="16" FontWeight="SemiBold"
+                                          ScrollViewer.HorizontalScrollBarVisibility="Disabled" />
         </Border>
         <Path Grid.Row="1" Name="Divider" Height="1" Margin="0,5,0,0" Stretch="Fill"
               Opacity="0.5" StrokeThickness="1"

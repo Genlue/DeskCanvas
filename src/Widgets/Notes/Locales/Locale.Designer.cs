@@ -384,11 +384,20 @@ namespace Notes.Locales {
         }
 
         /// <summary>
-        ///   Looks up a localized string similar to Open note panel.
+        ///   Looks up a localized string similar to Header height.
         /// </summary>
-        public static string Notes_Panel_Open {
+        public static string Notes_Header_Height {
             get {
-                return ResourceManager.GetString("Notes_Panel_Open", resourceCulture);
+                return ResourceManager.GetString("Notes_Header_Height", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Header text.
+        /// </summary>
+        public static string Notes_Header_Text {
+            get {
+                return ResourceManager.GetString("Notes_Header_Text", resourceCulture);
             }
         }
 

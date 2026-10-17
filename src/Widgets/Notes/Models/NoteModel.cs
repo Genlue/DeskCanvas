@@ -10,7 +10,7 @@ public enum NoteHeaderMode
     /// <summary>顶栏与标题: the colored bar with its editable title text — the factory look.</summary>
     BarAndTitle = 0,
 
-    /// <summary>仅顶栏: the colored bar stays (expand button included) but shows no title text.</summary>
+    /// <summary>仅顶栏: the colored bar stays but shows no title text (unless a custom header text is set).</summary>
     BarOnly = 1,
 
     /// <summary>隐藏顶栏: the bar and the divider below it collapse and the body owns the whole card.</summary>
@@ -83,15 +83,25 @@ public record MarkdownTypography(
 /// <param name="MarkdownStyle">Markdown typography overrides (see <see cref="MarkdownTypography"/>).</param>
 /// <param name="AllowInlineEdit">
 /// Allow editing the content by double-clicking the widget card. Default
-/// <c>false</c>: the card is read-only and a double-click (or the header's
-/// expand button) opens the secondary panel, where the note is edited. Can be
-/// turned on in the widget settings.
+/// <c>false</c>: the card is read-only and a double-click opens the secondary
+/// panel, where the note is edited. Can be turned on in the widget settings.
 /// </param>
 /// <param name="HeaderMode">
 /// 顶栏 mode: bar with title text, bare bar, or no bar at all (see
 /// <see cref="NoteHeaderMode"/>). Default <see cref="NoteHeaderMode.BarAndTitle"/>; when the bar
 /// is hidden the divider below it collapses too and the body owns the whole card —
 /// the secondary panel stays reachable via double-click.
+/// </param>
+/// <param name="HeaderText">
+/// Custom top-bar text. When set (non-whitespace) it replaces whatever the bar
+/// would otherwise show — the widget title, or the document title of a file
+/// source — and the bar text becomes read-only; the bar must be visible (see
+/// <see cref="NoteHeaderMode"/>) for it to appear, including on the bare bar.
+/// </param>
+/// <param name="HeaderHeight">
+/// Top-bar height in DIPs. Default 44 (the factory bar); the card clamps the
+/// value to 24–96 at render time. Applies to both the bar with title and the
+/// bare bar.
 /// </param>
 /// <param name="ShowTitle">
 /// Legacy two-state switch from before the 顶栏 became three-way, kept so old configs
@@ -117,7 +127,9 @@ public record NoteModel(
     MarkdownTypography? MarkdownStyle = null,
     bool AllowInlineEdit = false,
     NoteHeaderMode HeaderMode = NoteHeaderMode.BarAndTitle,
-    bool ShowTitle = true)
+    bool ShowTitle = true,
+    string? HeaderText = null,
+    double HeaderHeight = 44)
 {
     /// <summary>The mode the card actually renders with, honouring the legacy switch.</summary>
     [System.Text.Json.Serialization.JsonIgnore]

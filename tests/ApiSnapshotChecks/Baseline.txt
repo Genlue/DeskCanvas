@@ -230,10 +230,24 @@ property DeskCanvas.Contracts.WidgetScheduleRequest Period -> System.Nullable<Sy
 property DeskCanvas.Contracts.WidgetScheduleRequest RunWhenHidden -> System.Boolean
 property DeskCanvas.Contracts.WidgetScheduleRequest Timeout -> System.Nullable<System.TimeSpan>
 type DeskCanvas.Core.Const
+method DeskCanvas.Core.Const ReadPointerFolder(System.String) -> System.String
+method DeskCanvas.Core.Const ResolveDataFolder(System.String,System.Boolean) -> System.ValueTuple<System.String,DeskCanvas.Core.Models.DataFolderSource,System.String>
+method DeskCanvas.Core.Const SetActiveProfile(System.String) -> System.Void
+property DeskCanvas.Core.Const ActiveProfile -> System.String
+property DeskCanvas.Core.Const ActiveProfileFolder -> System.String
+property DeskCanvas.Core.Const ActiveProfilePointerPath -> System.String
+property DeskCanvas.Core.Const AppSettingsFile -> System.String
+property DeskCanvas.Core.Const CountdownFile -> System.String
+property DeskCanvas.Core.Const DiceFile -> System.String
+property DeskCanvas.Core.Const HabitsFile -> System.String
+property DeskCanvas.Core.Const LayoutFile -> System.String
+property DeskCanvas.Core.Const RemindersFile -> System.String
+property DeskCanvas.Core.Const ShortcutsFile -> System.String
+property DeskCanvas.Core.Const TimetableFile -> System.String
+field DeskCanvas.Core.Const ActiveProfilePointerFileName -> System.String
+field DeskCanvas.Core.Const ActiveProfilePointerPropertyName -> System.String
 field DeskCanvas.Core.Const AppName -> System.String
-field DeskCanvas.Core.Const AppSettingsFile -> System.String
 field DeskCanvas.Core.Const AppSettingsFileName -> System.String
-field DeskCanvas.Core.Const CountdownFile -> System.String
 field DeskCanvas.Core.Const CurrentFolder -> System.String
 field DeskCanvas.Core.Const DataFolder -> System.String
 field DeskCanvas.Core.Const DataFolderPointerFileName -> System.String
@@ -241,20 +255,14 @@ field DeskCanvas.Core.Const DataFolderPointerPath -> System.String
 field DeskCanvas.Core.Const DataFolderPointerPropertyName -> System.String
 field DeskCanvas.Core.Const DataFolderSource -> DeskCanvas.Core.Models.DataFolderSource
 field DeskCanvas.Core.Const DefaultDataFolder -> System.String
-field DeskCanvas.Core.Const DiceFile -> System.String
-field DeskCanvas.Core.Const FortuneFile -> System.String
-field DeskCanvas.Core.Const HabitsFile -> System.String
+field DeskCanvas.Core.Const DefaultProfileName -> System.String
 field DeskCanvas.Core.Const HabitsFileName -> System.String
-field DeskCanvas.Core.Const LayoutFile -> System.String
 field DeskCanvas.Core.Const LayoutFileName -> System.String
 field DeskCanvas.Core.Const ProfilesFolder -> System.String
-field DeskCanvas.Core.Const RemindersFile -> System.String
-field DeskCanvas.Core.Const ShortcutsFile -> System.String
 field DeskCanvas.Core.Const ShortcutsFileName -> System.String
-field DeskCanvas.Core.Const TimetableFile -> System.String
-field DeskCanvas.Core.Const WheelFile -> System.String
 field DeskCanvas.Core.Const WidgetsFolder -> System.String
 field DeskCanvas.Core.Const WidgetsFolderName -> System.String
+event DeskCanvas.Core.Const ActiveProfileChanged -> System.Action<System.String>
 type DeskCanvas.Core.Interfaces.DataChangedEvent`1
 method DeskCanvas.Core.Interfaces.DataChangedEvent`1 BeginInvoke(System.Object,T,T,System.AsyncCallback,System.Object) -> System.IAsyncResult
 method DeskCanvas.Core.Interfaces.DataChangedEvent`1 EndInvoke(System.IAsyncResult) -> System.Void
@@ -268,6 +276,7 @@ method DeskCanvas.Core.Interfaces.IAssemblyProvider LoadAssembly(System.String) 
 method DeskCanvas.Core.Interfaces.IAssemblyProvider UnloadAssembly(System.String) -> System.Void
 type DeskCanvas.Core.Interfaces.IDataProvider`1
 method DeskCanvas.Core.Interfaces.IDataProvider`1 Get() -> T
+method DeskCanvas.Core.Interfaces.IDataProvider`1 Reload() -> System.Void
 method DeskCanvas.Core.Interfaces.IDataProvider`1 Save(T) -> System.Void
 event DeskCanvas.Core.Interfaces.IDataProvider`1 DataChanged -> DeskCanvas.Core.Interfaces.DataChangedEvent<T>
 event DeskCanvas.Core.Interfaces.IDataProvider`1 DataChanging -> DeskCanvas.Core.Interfaces.DataChangedEvent<T>
@@ -536,7 +545,7 @@ property DeskCanvas.Core.Models.ScreensLayout Screens -> System.Collections.Gene
 property DeskCanvas.Core.Models.ScreensLayout Version -> System.Int32
 field DeskCanvas.Core.Models.ScreensLayout LegacyPrimaryId -> System.String
 type DeskCanvas.Core.Models.Settings.AppSettings
-method DeskCanvas.Core.Models.Settings.AppSettings Deconstruct(DeskCanvas.Core.Models.Settings.Theme,DeskCanvas.Core.Models.Settings.Theme[],DeskCanvas.Core.Models.Settings.Layout,DeskCanvas.Core.Models.Settings.Dimensions,DeskCanvas.Core.Models.Settings.Region,System.Boolean,System.String,System.String,DeskCanvas.Core.Models.Settings.Grid,System.String,System.Nullable<System.Boolean>,System.Nullable<DeskCanvas.Core.Models.Settings.TitleBarStyle>,System.Nullable<System.Double>,System.String,System.Boolean,DeskCanvas.Core.Models.Settings.UpdateCheckInterval,System.Nullable<System.DateTime>,System.Collections.Generic.Dictionary<System.String,DeskCanvas.Core.Models.Settings.Theme>,System.String,DeskCanvas.Core.Models.Settings.FocusLinkSettings) -> System.Void
+method DeskCanvas.Core.Models.Settings.AppSettings Deconstruct(DeskCanvas.Core.Models.Settings.Theme,DeskCanvas.Core.Models.Settings.Theme[],DeskCanvas.Core.Models.Settings.Layout,DeskCanvas.Core.Models.Settings.Dimensions,DeskCanvas.Core.Models.Settings.Region,System.Boolean,System.String,System.String,DeskCanvas.Core.Models.Settings.Grid,System.String,System.Nullable<System.Boolean>,System.Nullable<DeskCanvas.Core.Models.Settings.TitleBarStyle>,System.Nullable<System.Double>,System.String,System.Boolean,DeskCanvas.Core.Models.Settings.UpdateCheckInterval,System.Nullable<System.DateTime>,System.Collections.Generic.Dictionary<System.String,DeskCanvas.Core.Models.Settings.Theme>,System.String,DeskCanvas.Core.Models.Settings.FocusLinkSettings,System.Nullable<DeskCanvas.Core.Models.Settings.FullscreenBehavior>) -> System.Void
 method DeskCanvas.Core.Models.Settings.AppSettings Equals(System.Object) -> System.Boolean
 method DeskCanvas.Core.Models.Settings.AppSettings Equals(DeskCanvas.Core.Models.Settings.AppSettings) -> System.Boolean
 method DeskCanvas.Core.Models.Settings.AppSettings GetHashCode() -> System.Int32
@@ -552,6 +561,7 @@ property DeskCanvas.Core.Models.Settings.AppSettings EffectiveTitleBarSize -> Sy
 property DeskCanvas.Core.Models.Settings.AppSettings EffectiveTitleBarStyle -> DeskCanvas.Core.Models.Settings.TitleBarStyle
 property DeskCanvas.Core.Models.Settings.AppSettings EffectiveUpdateUrl -> System.String
 property DeskCanvas.Core.Models.Settings.AppSettings FocusLink -> DeskCanvas.Core.Models.Settings.FocusLinkSettings
+property DeskCanvas.Core.Models.Settings.AppSettings FullscreenBehavior -> System.Nullable<DeskCanvas.Core.Models.Settings.FullscreenBehavior>
 property DeskCanvas.Core.Models.Settings.AppSettings Grid -> DeskCanvas.Core.Models.Settings.Grid
 property DeskCanvas.Core.Models.Settings.AppSettings HttpProxy -> System.String
 property DeskCanvas.Core.Models.Settings.AppSettings IgnoreUpdate -> System.String
@@ -618,6 +628,10 @@ method DeskCanvas.Core.Models.Settings.FocusMode op_Inequality(DeskCanvas.Core.M
 property DeskCanvas.Core.Models.Settings.FocusMode AutoTheme -> System.Boolean
 property DeskCanvas.Core.Models.Settings.FocusMode DarkMode -> System.Nullable<System.Boolean>
 property DeskCanvas.Core.Models.Settings.FocusMode System -> DeskCanvas.Core.Models.Settings.FocusMode
+type DeskCanvas.Core.Models.Settings.FullscreenBehavior
+enumvalue DeskCanvas.Core.Models.Settings.FullscreenBehavior Hide
+enumvalue DeskCanvas.Core.Models.Settings.FullscreenBehavior None
+enumvalue DeskCanvas.Core.Models.Settings.FullscreenBehavior Pause
 type DeskCanvas.Core.Models.Settings.Grid
 method DeskCanvas.Core.Models.Settings.Grid Deconstruct(System.Int32,System.Int32,System.Double,System.Double,System.Double) -> System.Void
 method DeskCanvas.Core.Models.Settings.Grid Equals(System.Object) -> System.Boolean
@@ -669,7 +683,7 @@ property DeskCanvas.Core.Models.Settings.LiquidGlassRefractionLens Band -> Syste
 property DeskCanvas.Core.Models.Settings.LiquidGlassRefractionLens DepthEffect -> System.Single
 property DeskCanvas.Core.Models.Settings.LiquidGlassRefractionLens GradRadius -> System.Single
 type DeskCanvas.Core.Models.Settings.LiquidGlassSettings
-method DeskCanvas.Core.Models.Settings.LiquidGlassSettings Deconstruct(System.Double,System.Double,System.Double,System.Double,System.Double,System.Double,System.Double,System.Double,System.Double,System.Double,System.Double,System.Double,System.Boolean,System.Int32,System.Double) -> System.Void
+method DeskCanvas.Core.Models.Settings.LiquidGlassSettings Deconstruct(System.Double,System.Double,System.Double,System.Double,System.Double,System.Double,System.Double,System.Double,System.Boolean,System.Int32,System.Double) -> System.Void
 method DeskCanvas.Core.Models.Settings.LiquidGlassSettings Equals(System.Object) -> System.Boolean
 method DeskCanvas.Core.Models.Settings.LiquidGlassSettings Equals(DeskCanvas.Core.Models.Settings.LiquidGlassSettings) -> System.Boolean
 method DeskCanvas.Core.Models.Settings.LiquidGlassSettings GetHashCode() -> System.Int32
@@ -680,70 +694,47 @@ method DeskCanvas.Core.Models.Settings.LiquidGlassSettings op_Inequality(DeskCan
 property DeskCanvas.Core.Models.Settings.LiquidGlassSettings BackdropClarity -> System.Double
 property DeskCanvas.Core.Models.Settings.LiquidGlassSettings Blur -> System.Double
 property DeskCanvas.Core.Models.Settings.LiquidGlassSettings Dispersion -> System.Double
-property DeskCanvas.Core.Models.Settings.LiquidGlassSettings DyeSpread -> System.Double
-property DeskCanvas.Core.Models.Settings.LiquidGlassSettings EdgeTint -> System.Double
-property DeskCanvas.Core.Models.Settings.LiquidGlassSettings EdgeWidth -> System.Double
-property DeskCanvas.Core.Models.Settings.LiquidGlassSettings Glow -> System.Double
 property DeskCanvas.Core.Models.Settings.LiquidGlassSettings Highlight -> System.Double
-property DeskCanvas.Core.Models.Settings.LiquidGlassSettings IsSoftRecipe -> System.Boolean
+property DeskCanvas.Core.Models.Settings.LiquidGlassSettings HighlightAngle -> System.Double
 property DeskCanvas.Core.Models.Settings.LiquidGlassSettings LightAngle -> System.Double
 property DeskCanvas.Core.Models.Settings.LiquidGlassSettings LiveSampling -> System.Boolean
 property DeskCanvas.Core.Models.Settings.LiquidGlassSettings LiveSamplingInterval -> System.Int32
 property DeskCanvas.Core.Models.Settings.LiquidGlassSettings Refraction -> System.Double
-property DeskCanvas.Core.Models.Settings.LiquidGlassSettings SoftGlowPreset -> DeskCanvas.Core.Models.Settings.LiquidGlassSettings
-property DeskCanvas.Core.Models.Settings.LiquidGlassSettings Spectrum -> System.Double
+property DeskCanvas.Core.Models.Settings.LiquidGlassSettings Vibrancy -> System.Double
 property DeskCanvas.Core.Models.Settings.LiquidGlassSettings WallpaperOffsetX -> System.Double
 property DeskCanvas.Core.Models.Settings.LiquidGlassSettings WallpaperOffsetY -> System.Double
+field DeskCanvas.Core.Models.Settings.LiquidGlassSettings BandToAmountRatio -> System.Double
+field DeskCanvas.Core.Models.Settings.LiquidGlassSettings CornerBandCapFactor -> System.Double
+field DeskCanvas.Core.Models.Settings.LiquidGlassSettings CornerBandCapTransitionFrac -> System.Double
 field DeskCanvas.Core.Models.Settings.LiquidGlassSettings DefaultBackdropClarity -> System.Double
-field DeskCanvas.Core.Models.Settings.LiquidGlassSettings DefaultDyeSpread -> System.Double
-field DeskCanvas.Core.Models.Settings.LiquidGlassSettings DefaultEdgeTint -> System.Double
-field DeskCanvas.Core.Models.Settings.LiquidGlassSettings DefaultEdgeTintChromaBoost -> System.Double
+field DeskCanvas.Core.Models.Settings.LiquidGlassSettings DefaultHighlightAngle -> System.Double
 field DeskCanvas.Core.Models.Settings.LiquidGlassSettings DefaultLiveSampling -> System.Boolean
 field DeskCanvas.Core.Models.Settings.LiquidGlassSettings DefaultLiveSamplingInterval -> System.Int32
-field DeskCanvas.Core.Models.Settings.LiquidGlassSettings MaxDyeBandFraction -> System.Double
+field DeskCanvas.Core.Models.Settings.LiquidGlassSettings GradRadiusFactor -> System.Double
+field DeskCanvas.Core.Models.Settings.LiquidGlassSettings HighlightAngleDegrees -> System.Double
+field DeskCanvas.Core.Models.Settings.LiquidGlassSettings HighlightFalloff -> System.Double
+field DeskCanvas.Core.Models.Settings.LiquidGlassSettings HighlightReference -> System.Double
 field DeskCanvas.Core.Models.Settings.LiquidGlassSettings MaxLiveSamplingInterval -> System.Int32
 field DeskCanvas.Core.Models.Settings.LiquidGlassSettings MinBackdropClarity -> System.Double
-field DeskCanvas.Core.Models.Settings.LiquidGlassSettings MinDyeBandFraction -> System.Double
 field DeskCanvas.Core.Models.Settings.LiquidGlassSettings MinLiveSamplingInterval -> System.Int32
+field DeskCanvas.Core.Models.Settings.LiquidGlassSettings RefractionAmountMaxFrac -> System.Double
+field DeskCanvas.Core.Models.Settings.LiquidGlassSettings StrokeFeatherDips -> System.Double
+field DeskCanvas.Core.Models.Settings.LiquidGlassSettings StrokeWidthDips -> System.Double
+field DeskCanvas.Core.Models.Settings.LiquidGlassSettings VibrancySaturationBoost -> System.Double
 field DeskCanvas.Core.Models.Settings.LiquidGlassSettings WallpaperOffsetLimit -> System.Double
 type DeskCanvas.Core.Models.Settings.LiquidGlassV2Lens
 method DeskCanvas.Core.Models.Settings.LiquidGlassV2Lens Compute(System.Double,System.Single,System.Single) -> DeskCanvas.Core.Models.Settings.LiquidGlassRefractionLens
 method DeskCanvas.Core.Models.Settings.LiquidGlassV2Lens SmoothCap(System.Single,System.Single) -> System.Single
 type DeskCanvas.Core.Models.Settings.LiquidGlassV2Settings
-method DeskCanvas.Core.Models.Settings.LiquidGlassV2Settings Deconstruct(System.Double,System.Double,System.Double,System.Double,System.Double,System.Double,System.Double,System.Boolean,System.Int32,System.Double) -> System.Void
+method DeskCanvas.Core.Models.Settings.LiquidGlassV2Settings Deconstruct(System.Double,System.Double,System.Double,System.Double,System.Double,System.Double,System.Double,System.Double,System.Boolean,System.Int32,System.Double) -> System.Void
 method DeskCanvas.Core.Models.Settings.LiquidGlassV2Settings Equals(System.Object) -> System.Boolean
+method DeskCanvas.Core.Models.Settings.LiquidGlassV2Settings Equals(DeskCanvas.Core.Models.Settings.LiquidGlassSettings) -> System.Boolean
 method DeskCanvas.Core.Models.Settings.LiquidGlassV2Settings Equals(DeskCanvas.Core.Models.Settings.LiquidGlassV2Settings) -> System.Boolean
 method DeskCanvas.Core.Models.Settings.LiquidGlassV2Settings GetHashCode() -> System.Int32
 method DeskCanvas.Core.Models.Settings.LiquidGlassV2Settings Normalize() -> DeskCanvas.Core.Models.Settings.LiquidGlassV2Settings
 method DeskCanvas.Core.Models.Settings.LiquidGlassV2Settings ToString() -> System.String
 method DeskCanvas.Core.Models.Settings.LiquidGlassV2Settings op_Equality(DeskCanvas.Core.Models.Settings.LiquidGlassV2Settings,DeskCanvas.Core.Models.Settings.LiquidGlassV2Settings) -> System.Boolean
 method DeskCanvas.Core.Models.Settings.LiquidGlassV2Settings op_Inequality(DeskCanvas.Core.Models.Settings.LiquidGlassV2Settings,DeskCanvas.Core.Models.Settings.LiquidGlassV2Settings) -> System.Boolean
-property DeskCanvas.Core.Models.Settings.LiquidGlassV2Settings BackdropClarity -> System.Double
-property DeskCanvas.Core.Models.Settings.LiquidGlassV2Settings Blur -> System.Double
-property DeskCanvas.Core.Models.Settings.LiquidGlassV2Settings Dispersion -> System.Double
-property DeskCanvas.Core.Models.Settings.LiquidGlassV2Settings Highlight -> System.Double
-property DeskCanvas.Core.Models.Settings.LiquidGlassV2Settings LiveSampling -> System.Boolean
-property DeskCanvas.Core.Models.Settings.LiquidGlassV2Settings LiveSamplingInterval -> System.Int32
-property DeskCanvas.Core.Models.Settings.LiquidGlassV2Settings Refraction -> System.Double
-property DeskCanvas.Core.Models.Settings.LiquidGlassV2Settings Vibrancy -> System.Double
-property DeskCanvas.Core.Models.Settings.LiquidGlassV2Settings WallpaperOffsetX -> System.Double
-property DeskCanvas.Core.Models.Settings.LiquidGlassV2Settings WallpaperOffsetY -> System.Double
-field DeskCanvas.Core.Models.Settings.LiquidGlassV2Settings BandToAmountRatio -> System.Double
-field DeskCanvas.Core.Models.Settings.LiquidGlassV2Settings CornerBandCapFactor -> System.Double
-field DeskCanvas.Core.Models.Settings.LiquidGlassV2Settings CornerBandCapTransitionFrac -> System.Double
-field DeskCanvas.Core.Models.Settings.LiquidGlassV2Settings DefaultLiveSamplingInterval -> System.Int32
-field DeskCanvas.Core.Models.Settings.LiquidGlassV2Settings GradRadiusFactor -> System.Double
-field DeskCanvas.Core.Models.Settings.LiquidGlassV2Settings HighlightAngleDegrees -> System.Double
-field DeskCanvas.Core.Models.Settings.LiquidGlassV2Settings HighlightFalloff -> System.Double
-field DeskCanvas.Core.Models.Settings.LiquidGlassV2Settings HighlightReference -> System.Double
-field DeskCanvas.Core.Models.Settings.LiquidGlassV2Settings MaxLiveSamplingInterval -> System.Int32
-field DeskCanvas.Core.Models.Settings.LiquidGlassV2Settings MinBackdropClarity -> System.Double
-field DeskCanvas.Core.Models.Settings.LiquidGlassV2Settings MinLiveSamplingInterval -> System.Int32
-field DeskCanvas.Core.Models.Settings.LiquidGlassV2Settings RefractionAmountMaxFrac -> System.Double
-field DeskCanvas.Core.Models.Settings.LiquidGlassV2Settings StrokeFeatherDips -> System.Double
-field DeskCanvas.Core.Models.Settings.LiquidGlassV2Settings StrokeWidthDips -> System.Double
-field DeskCanvas.Core.Models.Settings.LiquidGlassV2Settings VibrancySaturationBoost -> System.Double
-field DeskCanvas.Core.Models.Settings.LiquidGlassV2Settings WallpaperOffsetLimit -> System.Double
 type DeskCanvas.Core.Models.Settings.MonochromeStyle
 enumvalue DeskCanvas.Core.Models.Settings.MonochromeStyle Accent
 enumvalue DeskCanvas.Core.Models.Settings.MonochromeStyle BackgroundColor
@@ -760,13 +751,11 @@ property DeskCanvas.Core.Models.Settings.Region Language -> System.String
 type DeskCanvas.Core.Models.Settings.SurfaceStyle
 enumvalue DeskCanvas.Core.Models.Settings.SurfaceStyle Acrylic
 enumvalue DeskCanvas.Core.Models.Settings.SurfaceStyle Colorful
+enumvalue DeskCanvas.Core.Models.Settings.SurfaceStyle FullColor
 enumvalue DeskCanvas.Core.Models.Settings.SurfaceStyle LiquidGlass
 enumvalue DeskCanvas.Core.Models.Settings.SurfaceStyle LiquidGlassV2
-enumvalue DeskCanvas.Core.Models.Settings.SurfaceStyle OutlinedAcrylic
-enumvalue DeskCanvas.Core.Models.Settings.SurfaceStyle SoftGlow
-enumvalue DeskCanvas.Core.Models.Settings.SurfaceStyle Solid
 type DeskCanvas.Core.Models.Settings.Theme
-method DeskCanvas.Core.Models.Settings.Theme Deconstruct(System.Nullable<System.Boolean>,System.String,System.Double,System.Boolean,System.Boolean,System.String,System.Nullable<DeskCanvas.Core.Models.Settings.SurfaceStyle>,System.String,System.Double,System.String,System.String,System.Nullable<DeskCanvas.Core.Models.Settings.MonochromeStyle>,System.Boolean,DeskCanvas.Core.Models.Settings.LiquidGlassSettings,DeskCanvas.Core.Models.Settings.LiquidGlassV2Settings,System.Boolean,System.Double) -> System.Void
+method DeskCanvas.Core.Models.Settings.Theme Deconstruct(System.Nullable<System.Boolean>,System.String,System.Double,System.Boolean,System.Boolean,System.String,System.Nullable<DeskCanvas.Core.Models.Settings.SurfaceStyle>,System.String,System.String,System.Nullable<DeskCanvas.Core.Models.Settings.MonochromeStyle>,System.Boolean,DeskCanvas.Core.Models.Settings.LiquidGlassSettings,DeskCanvas.Core.Models.Settings.LiquidGlassV2Settings,System.Boolean,System.Double) -> System.Void
 method DeskCanvas.Core.Models.Settings.Theme Equals(System.Object) -> System.Boolean
 method DeskCanvas.Core.Models.Settings.Theme Equals(DeskCanvas.Core.Models.Settings.Theme) -> System.Boolean
 method DeskCanvas.Core.Models.Settings.Theme GetHashCode() -> System.Int32
@@ -788,6 +777,7 @@ property DeskCanvas.Core.Models.Settings.Theme EffectiveSurface -> DeskCanvas.Co
 property DeskCanvas.Core.Models.Settings.Theme EffectiveTextShadowStrength -> System.Double
 property DeskCanvas.Core.Models.Settings.Theme FontFamily -> System.String
 property DeskCanvas.Core.Models.Settings.Theme IsColorful -> System.Boolean
+property DeskCanvas.Core.Models.Settings.Theme IsFullColor -> System.Boolean
 property DeskCanvas.Core.Models.Settings.Theme IsGlass -> System.Boolean
 property DeskCanvas.Core.Models.Settings.Theme IsLiquidGlass -> System.Boolean
 property DeskCanvas.Core.Models.Settings.Theme IsLiquidGlassV2 -> System.Boolean
@@ -920,6 +910,7 @@ method DeskCanvas.Core.Scheduling.WidgetScheduler Resume(System.String) -> Syste
 method DeskCanvas.Core.Scheduling.WidgetScheduler Schedule(DeskCanvas.Core.Scheduling.SchedulerJobOptions,System.Func<System.Threading.CancellationToken,System.Threading.Tasks.ValueTask>) -> DeskCanvas.Core.Scheduling.SchedulerLease
 method DeskCanvas.Core.Scheduling.WidgetScheduler Snapshot() -> System.Collections.Generic.IReadOnlyList<DeskCanvas.Core.Scheduling.SchedulerJobSnapshot>
 type DeskCanvas.Core.Services.AppSettingsProvider
+method DeskCanvas.Core.Services.AppSettingsProvider ToFileJson(DeskCanvas.Core.Models.Settings.AppSettings) -> System.String
 type DeskCanvas.Core.Services.AssemblyProvider
 method DeskCanvas.Core.Services.AssemblyProvider Activate(System.Type,System.Object[]) -> System.Object
 method DeskCanvas.Core.Services.AssemblyProvider GetAssemblyInfos(System.String) -> System.Linq.ILookup<System.String,DeskCanvas.Core.Models.AssemblyInfo>
@@ -941,6 +932,7 @@ property DeskCanvas.Core.Services.AtomReleaseInfo Title -> System.String
 property DeskCanvas.Core.Services.AtomReleaseInfo Version -> System.Version
 type DeskCanvas.Core.Services.JsonParser`1
 method DeskCanvas.Core.Services.JsonParser`1 Get() -> T
+method DeskCanvas.Core.Services.JsonParser`1 Reload() -> T
 method DeskCanvas.Core.Services.JsonParser`1 Save(T) -> System.Void
 event DeskCanvas.Core.Services.JsonParser`1 DataChanged -> DeskCanvas.Core.Interfaces.DataChangedEvent<T>
 event DeskCanvas.Core.Services.JsonParser`1 DataChanging -> DeskCanvas.Core.Interfaces.DataChangedEvent<T>
@@ -991,6 +983,57 @@ property DeskCanvas.Core.Services.ResolvedProxy UsesProxy -> System.Boolean
 type DeskCanvas.Core.Services.StartupService
 method DeskCanvas.Core.Services.StartupService IsEnabled() -> System.Boolean
 method DeskCanvas.Core.Services.StartupService SetRunOnStartup(System.Boolean) -> System.Boolean
+type DeskCanvas.Core.Services.UninstallerEngine
+method DeskCanvas.Core.Services.UninstallerEngine DeleteDirectory(System.String,System.Boolean,System.Collections.Generic.List<System.String>) -> System.ValueTuple<System.Int32,System.Int32>
+method DeskCanvas.Core.Services.UninstallerEngine Execute(DeskCanvas.Core.Services.UninstallerOptions,System.IProgress<DeskCanvas.Core.Services.UninstallerProgress>) -> DeskCanvas.Core.Services.UninstallerResult
+method DeskCanvas.Core.Services.UninstallerEngine ParseCommandLine(System.String[],System.String,System.Boolean) -> System.ValueTuple<DeskCanvas.Core.Services.UninstallerOptions,System.Boolean,System.String,System.Nullable<System.Int32>>
+method DeskCanvas.Core.Services.UninstallerEngine RemoveAppRegistry() -> System.Void
+method DeskCanvas.Core.Services.UninstallerEngine RemoveAutoStart(System.String) -> System.Void
+method DeskCanvas.Core.Services.UninstallerEngine RemoveShortcuts(System.String) -> System.Void
+method DeskCanvas.Core.Services.UninstallerEngine ResolveDataDirectory(System.String,System.Boolean) -> System.String
+method DeskCanvas.Core.Services.UninstallerEngine ResolveInstallDirectory(System.String) -> System.String
+method DeskCanvas.Core.Services.UninstallerEngine TerminateDeskCanvasProcesses(System.Int32) -> System.Int32
+type DeskCanvas.Core.Services.UninstallerOptions
+method DeskCanvas.Core.Services.UninstallerOptions Deconstruct(System.String,System.String,System.Boolean,System.Boolean,System.Boolean,System.Boolean,System.Boolean,System.Boolean) -> System.Void
+method DeskCanvas.Core.Services.UninstallerOptions Equals(System.Object) -> System.Boolean
+method DeskCanvas.Core.Services.UninstallerOptions Equals(DeskCanvas.Core.Services.UninstallerOptions) -> System.Boolean
+method DeskCanvas.Core.Services.UninstallerOptions GetHashCode() -> System.Int32
+method DeskCanvas.Core.Services.UninstallerOptions ToString() -> System.String
+method DeskCanvas.Core.Services.UninstallerOptions op_Equality(DeskCanvas.Core.Services.UninstallerOptions,DeskCanvas.Core.Services.UninstallerOptions) -> System.Boolean
+method DeskCanvas.Core.Services.UninstallerOptions op_Inequality(DeskCanvas.Core.Services.UninstallerOptions,DeskCanvas.Core.Services.UninstallerOptions) -> System.Boolean
+property DeskCanvas.Core.Services.UninstallerOptions DataDirectory -> System.String
+property DeskCanvas.Core.Services.UninstallerOptions InstallDirectory -> System.String
+property DeskCanvas.Core.Services.UninstallerOptions RemoveAutoStart -> System.Boolean
+property DeskCanvas.Core.Services.UninstallerOptions RemoveData -> System.Boolean
+property DeskCanvas.Core.Services.UninstallerOptions RemoveRegistry -> System.Boolean
+property DeskCanvas.Core.Services.UninstallerOptions RemoveShortcuts -> System.Boolean
+property DeskCanvas.Core.Services.UninstallerOptions Silent -> System.Boolean
+property DeskCanvas.Core.Services.UninstallerOptions TerminateProcesses -> System.Boolean
+type DeskCanvas.Core.Services.UninstallerProgress
+method DeskCanvas.Core.Services.UninstallerProgress Deconstruct(System.String,System.Int32,System.String) -> System.Void
+method DeskCanvas.Core.Services.UninstallerProgress Equals(System.Object) -> System.Boolean
+method DeskCanvas.Core.Services.UninstallerProgress Equals(DeskCanvas.Core.Services.UninstallerProgress) -> System.Boolean
+method DeskCanvas.Core.Services.UninstallerProgress GetHashCode() -> System.Int32
+method DeskCanvas.Core.Services.UninstallerProgress ToString() -> System.String
+method DeskCanvas.Core.Services.UninstallerProgress op_Equality(DeskCanvas.Core.Services.UninstallerProgress,DeskCanvas.Core.Services.UninstallerProgress) -> System.Boolean
+method DeskCanvas.Core.Services.UninstallerProgress op_Inequality(DeskCanvas.Core.Services.UninstallerProgress,DeskCanvas.Core.Services.UninstallerProgress) -> System.Boolean
+property DeskCanvas.Core.Services.UninstallerProgress Detail -> System.String
+property DeskCanvas.Core.Services.UninstallerProgress Percentage -> System.Int32
+property DeskCanvas.Core.Services.UninstallerProgress Status -> System.String
+type DeskCanvas.Core.Services.UninstallerResult
+method DeskCanvas.Core.Services.UninstallerResult Deconstruct(System.Boolean,System.Int32,System.Int32,System.Int32,System.Boolean,System.Collections.Generic.IReadOnlyList<System.String>) -> System.Void
+method DeskCanvas.Core.Services.UninstallerResult Equals(System.Object) -> System.Boolean
+method DeskCanvas.Core.Services.UninstallerResult Equals(DeskCanvas.Core.Services.UninstallerResult) -> System.Boolean
+method DeskCanvas.Core.Services.UninstallerResult GetHashCode() -> System.Int32
+method DeskCanvas.Core.Services.UninstallerResult ToString() -> System.String
+method DeskCanvas.Core.Services.UninstallerResult op_Equality(DeskCanvas.Core.Services.UninstallerResult,DeskCanvas.Core.Services.UninstallerResult) -> System.Boolean
+method DeskCanvas.Core.Services.UninstallerResult op_Inequality(DeskCanvas.Core.Services.UninstallerResult,DeskCanvas.Core.Services.UninstallerResult) -> System.Boolean
+property DeskCanvas.Core.Services.UninstallerResult DataDirectoryRemoved -> System.Boolean
+property DeskCanvas.Core.Services.UninstallerResult DeletedDirectoriesCount -> System.Int32
+property DeskCanvas.Core.Services.UninstallerResult DeletedFilesCount -> System.Int32
+property DeskCanvas.Core.Services.UninstallerResult Errors -> System.Collections.Generic.IReadOnlyList<System.String>
+property DeskCanvas.Core.Services.UninstallerResult Success -> System.Boolean
+property DeskCanvas.Core.Services.UninstallerResult TerminatedProcessCount -> System.Int32
 type DeskCanvas.Core.Services.WidgetLayoutProvider
 method DeskCanvas.Core.Services.WidgetLayoutProvider Get() -> DeskCanvas.Core.Models.WidgetLayout
 method DeskCanvas.Core.Services.WidgetLayoutProvider Remove() -> System.Void

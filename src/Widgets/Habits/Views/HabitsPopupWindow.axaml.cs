@@ -5,6 +5,7 @@ using System.Linq;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Shapes;
+using Avalonia.Data;
 using Avalonia.Interactivity;
 using Avalonia.Media;
 using DeskCanvas.Services;
@@ -36,6 +37,33 @@ public partial class HabitsPopupWindow : SecondaryPanelWindow
     [
         "#007AFF", "#34C759", "#FF9500", "#AF52DE", "#FF2D55", "#5856D6"
     ];
+
+    // 矢量图标路径（24×24 视窗，Material 实底图形）。规范 §4.4：禁止 emoji 充当功能图标。
+    private const string EditIconGeometry =
+        "M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34a.9959.9959 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z";
+
+    private const string DeleteIconGeometry =
+        "M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z";
+
+    /// <summary>
+    /// 主题跟随的矢量操作图标：12×12、Uniform 缩放、容器内几何居中，
+    /// Fill 绑定窗口作用域 SystemControlForegroundBaseHighBrush（彩色/单色、明暗全作用域存在）。
+    /// </summary>
+    private Avalonia.Controls.Shapes.Path CreateActionIcon(string geometryData)
+    {
+        var path = new Avalonia.Controls.Shapes.Path
+        {
+            Data = Geometry.Parse(geometryData),
+            Stretch = Stretch.Uniform,
+            Width = 12,
+            Height = 12,
+            Opacity = 0.75,
+            HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center,
+            VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center
+        };
+        path.Bind(Avalonia.Controls.Shapes.Shape.FillProperty, this.GetResourceObservable("SystemControlForegroundBaseHighBrush").ToBinding());
+        return path;
+    }
 
     protected override Point? SpawnScreenCenter => spawnScreenCenter;
 
@@ -225,7 +253,7 @@ public partial class HabitsPopupWindow : SecondaryPanelWindow
             });
             titleRow.Children.Add(new TextBlock
             {
-                Text = currentStreak > 0 ? $"🔥 {currentStreak}" : "🌱 0",
+                Text = $"连击 {currentStreak}",
                 FontSize = 11,
                 Opacity = 0.7,
                 VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center
@@ -279,12 +307,16 @@ public partial class HabitsPopupWindow : SecondaryPanelWindow
             var punchBtn = new Button
             {
                 Classes = { "pill-btn" },
-                Content = completed ? "已打卡 ✔" : "打卡",
+                Content = completed ? "已打卡" : "打卡",
                 Background = completed
                     ? HabitBrushes.GetBrush(habit.ColorHex)
-                    : HabitBrushes.ButtonBackground,
-                Foreground = completed ? HabitBrushes.White : HabitBrushes.Gray
+                    : HabitBrushes.ButtonBackground
             };
+            if (completed)
+            {
+                // 完成态：白字压在习惯色实底上，保证对比度；未完成态继承主题前景
+                punchBtn.Foreground = HabitBrushes.White;
+            }
             punchBtn.Click += (_, _) => ToggleHabit(habit.Id);
             actionStack.Children.Add(punchBtn);
 
@@ -302,7 +334,7 @@ public partial class HabitsPopupWindow : SecondaryPanelWindow
             var editBtn = new Button
             {
                 Classes = { "icon-action-btn" },
-                Content = new TextBlock { Text = "✏️", FontSize = 12 }
+                Content = CreateActionIcon(EditIconGeometry)
             };
             editBtn.Click += (_, _) => OpenEditForm(habit);
             editStack.Children.Add(editBtn);
@@ -310,7 +342,7 @@ public partial class HabitsPopupWindow : SecondaryPanelWindow
             var deleteBtn = new Button
             {
                 Classes = { "icon-action-btn" },
-                Content = new TextBlock { Text = "🗑️", FontSize = 12 }
+                Content = CreateActionIcon(DeleteIconGeometry)
             };
             deleteBtn.Click += (_, _) => DeleteHabit(habit.Id);
             editStack.Children.Add(deleteBtn);
@@ -742,8 +774,8 @@ public partial class HabitsPopupWindow : SecondaryPanelWindow
         }
         double monthlyRate = dueSum > 0 ? (double)doneSum / dueSum : 0;
 
-        StatCurrentStreakText.Text = $"🔥 {maxCurrentStreak} 天";
-        StatBestStreakText.Text = $"🏆 {maxBestStreak} 天";
+        StatCurrentStreakText.Text = $"{maxCurrentStreak} 天";
+        StatBestStreakText.Text = $"{maxBestStreak} 天";
         StatTotalCheckInsText.Text = $"{totalPunches} 次";
         StatCompletionRateText.Text = $"{monthlyRate * 100:0.#}%";
 

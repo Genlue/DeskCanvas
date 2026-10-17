@@ -89,6 +89,39 @@ internal static class Program
         Check("re-showing a widget puts it back into the band",
             Above(normal, widgetB) && Above(panel, widgetB));
 
+        // ---- Show Desktop / Win+D barrier ----
+        // Win+D (and the taskbar's show-desktop button) minimizes the ordinary windows and raises
+        // the desktop above every non-topmost window, covering the band. The band itself cannot
+        // see that as a violation: below every widget there is only the desktop, which the
+        // in-band predicate allows. Reproduce the resulting state without touching the user's
+        // windows: insert this suite's own widget directly UNDER the real desktop shell, then
+        // require the band watcher to put the shell back below the widgets.
+        Console.WriteLine();
+        Console.WriteLine("--- desktop raised by Show Desktop (Win+D) ---");
+        var shell = GetShellWindow();
+        var shellMovable = shell != IntPtr.Zero
+                           && SetWindowPos(shell, new IntPtr(1), 0, 0, 0, 0,
+                               SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
+        if (!shellMovable)
+        {
+            // Some confined sessions (for example a sandboxed build session) deny z-order
+            // changes to the shell. The watcher cannot repair the band there either, so the
+            // scenario is not observable from this process; report and move on instead of
+            // failing on the confinement.
+            Console.WriteLine(
+                $"    [SKIP] this process cannot move the desktop shell (error {Marshal.GetLastWin32Error()})");
+        }
+        else
+        {
+            var lowered = SetWindowPos(HwndOf(widgetA), shell, 0, 0, 0, 0,
+                SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
+            Check("a widget can be lowered under the desktop", lowered);
+            var repaired = WaitUntil(
+                () => Above(widgetA, shell) && Above(widgetB, shell),
+                3000);
+            Check("the band watcher puts the desktop back below the widgets", repaired);
+        }
+
         // Real secondary-panel path: owned, taskbar-less popup shown by its widget,
         // historically Topmost=true in XAML. The flag must be demoted and the panel
         // absorbed into the band — with the flag active the old enforcement fought
@@ -252,6 +285,8 @@ internal static class Program
     /// <summary>True when <paramref name="a"/> is closer to the top of the z-order than <paramref name="b"/>.</summary>
     private static bool Above(Window a, Window b) => ZIndex(HwndOf(a)) < ZIndex(HwndOf(b));
 
+    private static bool Above(Window a, IntPtr b) => ZIndex(HwndOf(a)) < ZIndex(b);
+
     private static int ZIndex(IntPtr target)
     {
         var index = 0;
@@ -297,11 +332,14 @@ internal static class Program
     private const int WS_EX_TOOLWINDOW = 0x00000080;
     private const int WS_EX_APPWINDOW = 0x00040000;
 
-    [DllImport("user32.dll")]
+    [DllImport("user32.dll", SetLastError = true)]
     private static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int x, int y, int cx, int cy, uint flags);
 
     [DllImport("user32.dll")]
     private static extern IntPtr GetTopWindow(IntPtr hWnd);
+
+    [DllImport("user32.dll")]
+    private static extern IntPtr GetShellWindow();
 
     [DllImport("user32.dll")]
     private static extern IntPtr GetWindow(IntPtr hWnd, uint cmd);

@@ -23,6 +23,9 @@ public partial class Appearance : UserControl
         InitializeComponent();
     }
 
+    private void ApplySolidToLight(object? sender, RoutedEventArgs e) =>
+        ((AppearanceViewModel)DataContext!).ApplySolidToLight();
+
     private void CommitOpacityLevel(object? sender, LabeledSliderValueCommittedEventArgs e) =>
         ((AppearanceViewModel)DataContext!).CommitOpacityLevel();
 
@@ -34,6 +37,9 @@ public partial class Appearance : UserControl
 
     private void ReloadSettings(object? sender, RoutedEventArgs e) =>
         ((AppearanceViewModel)DataContext!).ReloadSettings();
+
+    private void ApplySolidToDark(object? sender, RoutedEventArgs e) =>
+        ((AppearanceViewModel)DataContext!).ApplySolidToDark();
 
     private void ResetLiquidGlass(object? sender, RoutedEventArgs e) =>
         ((AppearanceViewModel)DataContext!).ResetLiquidGlass();

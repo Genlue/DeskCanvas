@@ -1509,6 +1509,54 @@ namespace DeskCanvas.Locales {
             }
         }        
         /// <summary>
+        ///   Looks up a localized string similar to Fullscreen.
+        /// </summary>
+        public static string Settings_Advanced_Fullscreen_Section {
+            get {
+                return ResourceManager.GetString("Settings_Advanced_Fullscreen_Section", resourceCulture);
+            }
+        }        
+        /// <summary>
+        ///   Looks up a localized string similar to When maximized or fullscreen.
+        /// </summary>
+        public static string Settings_Advanced_Fullscreen_Title {
+            get {
+                return ResourceManager.GetString("Settings_Advanced_Fullscreen_Title", resourceCulture);
+            }
+        }        
+        /// <summary>
+        ///   Looks up a localized string similar to What widgets do while a fullscreen or maximized window covers every screen.
+        /// </summary>
+        public static string Settings_Advanced_Fullscreen_Subtitle {
+            get {
+                return ResourceManager.GetString("Settings_Advanced_Fullscreen_Subtitle", resourceCulture);
+            }
+        }        
+        /// <summary>
+        ///   Looks up a localized string similar to Hide (release resources).
+        /// </summary>
+        public static string Settings_Advanced_Fullscreen_Hide {
+            get {
+                return ResourceManager.GetString("Settings_Advanced_Fullscreen_Hide", resourceCulture);
+            }
+        }        
+        /// <summary>
+        ///   Looks up a localized string similar to Pause (stop updating).
+        /// </summary>
+        public static string Settings_Advanced_Fullscreen_Pause {
+            get {
+                return ResourceManager.GetString("Settings_Advanced_Fullscreen_Pause", resourceCulture);
+            }
+        }        
+        /// <summary>
+        ///   Looks up a localized string similar to Do nothing.
+        /// </summary>
+        public static string Settings_Advanced_Fullscreen_None {
+            get {
+                return ResourceManager.GetString("Settings_Advanced_Fullscreen_None", resourceCulture);
+            }
+        }        
+        /// <summary>
         ///   Looks up a localized string similar to Network.
         /// </summary>
         public static string Settings_Advanced_Network {

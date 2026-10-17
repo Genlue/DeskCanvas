@@ -208,8 +208,11 @@
   <data name="Notes_TitleBar_Hidden" xml:space="preserve">
     <value>隐藏顶栏</value>
   </data>
-  <data name="Notes_Panel_Open" xml:space="preserve">
-    <value>打开笔记面板</value>
+  <data name="Notes_Header_Height" xml:space="preserve">
+    <value>顶栏高度</value>
+  </data>
+  <data name="Notes_Header_Text" xml:space="preserve">
+    <value>顶栏文字</value>
   </data>
   <data name="Notes_Panel_ReadOnly" xml:space="preserve">
     <value>文件夹来源在此面板只读，请直接编辑磁盘上的 Markdown 文件</value>

@@ -53,6 +53,13 @@ public partial class WidgetStackView : UserControl, IWidgetSelfRefreshing, IStac
 
     private readonly Dictionary<int, Border> childCards = new();
     private readonly Dictionary<int, UserControl?> childControls = new();
+
+    // 多彩（全彩）卡片的固定 macOS 底色（P2 挂账，待语义键收敛后统一）。与
+    // ColorfulResources.WidgetBackground 的 Dark 值同源，但不从资源解析——多彩分支是
+    // 文档化的显式回退保证：per-state 多个 surface 字典同时加载时，别的 material 的
+    // WidgetBackground 可能遮蔽共享键。也不可换 SolidBackgroundDark/Light——那是用户
+    // 可调的纯色主题底色（默认 #2E2E2E），值不同。
+    private static readonly Color ColorfulCardBackgroundDark = Color.Parse("#1C1C1E");
     private Border? emptyCard;
     private int currentActiveIndex = 0;
     private DispatcherTimer? activeTransitionTimer;
@@ -370,7 +377,7 @@ public partial class WidgetStackView : UserControl, IWidgetSelfRefreshing, IStac
                 HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Stretch,
                 VerticalAlignment = Avalonia.Layout.VerticalAlignment.Stretch,
                 CornerRadius = ResolveCornerRadius(),
-                Background = ResolveCardBackground(entry.ViewTypeName),
+                Background = ResolveCardBackground(control),
                 ClipToBounds = true,
                 Child = WrapWithHighlight(control)
             };
@@ -441,7 +448,7 @@ public partial class WidgetStackView : UserControl, IWidgetSelfRefreshing, IStac
     {
         if (emptyCard != null)
         {
-            UpdateCardStyle(emptyCard, null);
+            UpdateCardStyle(emptyCard, null, null);
             return;
         }
 
@@ -492,10 +499,10 @@ public partial class WidgetStackView : UserControl, IWidgetSelfRefreshing, IStac
         UpdateHighlight(emptyCard);
     }
 
-    private void UpdateCardStyle(Border card, string? viewTypeName)
+    private void UpdateCardStyle(Border card, string? viewTypeName, UserControl? control)
     {
         card.CornerRadius = ResolveCornerRadius();
-        card.Background = viewTypeName != null ? ResolveCardBackground(viewTypeName) : ResolveDefaultCardBackground();
+        card.Background = viewTypeName != null ? ResolveCardBackground(control) : ResolveDefaultCardBackground();
         UpdateHighlight(card);
     }
 
@@ -503,7 +510,7 @@ public partial class WidgetStackView : UserControl, IWidgetSelfRefreshing, IStac
     {
         if (emptyCard != null)
         {
-            UpdateCardStyle(emptyCard, null);
+            UpdateCardStyle(emptyCard, null, null);
         }
 
         if (model?.Entries != null)
@@ -512,7 +519,8 @@ public partial class WidgetStackView : UserControl, IWidgetSelfRefreshing, IStac
             {
                 if (childCards.TryGetValue(i, out var card) && card != null)
                 {
-                    UpdateCardStyle(card, model.Entries[i].ViewTypeName);
+                    childControls.TryGetValue(i, out var control);
+                    UpdateCardStyle(card, model.Entries[i].ViewTypeName, control);
                 }
             }
         }
@@ -548,7 +556,7 @@ public partial class WidgetStackView : UserControl, IWidgetSelfRefreshing, IStac
             // WidgetBackground resource — with per-state materials several surface dictionaries
             // are loaded at once and another material's brush could shadow it.
             return isDark
-                ? new SolidColorBrush(Color.Parse("#1C1C1E"))
+                ? new SolidColorBrush(ColorfulCardBackgroundDark)
                 : Brushes.White;
         }
 
@@ -562,7 +570,7 @@ public partial class WidgetStackView : UserControl, IWidgetSelfRefreshing, IStac
         return new SolidColorBrush(baseColor, opacity);
     }
 
-    private IBrush ResolveCardBackground(string viewTypeName)
+    private IBrush ResolveCardBackground(UserControl? control)
     {
         // 失焦自动切换: same rule as ResolveDefaultCardBackground — the window's effective theme.
         var theme = FocusThemeCoordinator.ResolveVisualTheme(this) ?? appSettingsProvider?.Get()?.Theme;
@@ -571,35 +579,26 @@ public partial class WidgetStackView : UserControl, IWidgetSelfRefreshing, IStac
 
         if (theme?.IsColorful == true)
         {
-            if (viewTypeName is "Forecast" or "FourDayForecast")
+            // 与独立宿主（Widget.WidgetCardBackground）完全同源：子组件视图通过
+            // IWidgetSurfaceHints.ColorfulBackgroundResourceKey 声明自己的多彩卡片画刷
+            // （表盘-1 的 ClockCardBackground、天气的 WeatherCardBackground 等都走这一条路），
+            // 从该子组件自己的资源上下文按明暗变体解析；解析不到（旧版 DLL 未实现接口）
+            // 再退回与宿主相同的通用回退。重叠内的组件外观必须与独立摆放完全一致，
+            // 因此这里不得按视图类型名分支（doc/开发规范.md §4.3）。
+            if (control is IWidgetSurfaceHints hints
+                && hints.ColorfulBackgroundResourceKey is { Length: > 0 } key
+                && ThemeScopeResolver.TryFindResource<IBrush>(control, key, variant, out var hintedBrush)
+                && hintedBrush != null)
             {
-                if (ThemeScopeResolver.TryFindResource<IBrush>(this, "WeatherCardBackground", variant, out var wcb) && wcb is IBrush wb)
-                    return wb;
-                return BuildWeatherCardBackground(isDark);
-            }
-            if (viewTypeName is "Progress" or "ProgressView")
-            {
-                if (ThemeScopeResolver.TryFindResource<IBrush>(this, "ProgressCardBackground", variant, out var pcb) && pcb is IBrush pb)
-                    return pb;
-            }
-            if (viewTypeName is "Batteries" or "BatteriesView")
-            {
-                if (ThemeScopeResolver.TryFindResource<IBrush>(this, "BatteriesCardBackground", variant, out var bcb) && bcb is IBrush bb)
-                    return bb;
-            }
-            if (viewTypeName is "Monitor" or "MultiDashboard" or "SingleMetric")
-            {
-                if (ThemeScopeResolver.TryFindResource<IBrush>(this, "MonitorCardBackground", variant, out var mcb) && mcb is IBrush mb)
-                    return mb;
-            }
-            if (viewTypeName is "Storage" or "StorageView")
-            {
-                if (ThemeScopeResolver.TryFindResource<IBrush>(this, "StorageCardBackground", variant, out var scb) && scb is IBrush sb)
-                    return sb;
+                return hintedBrush;
             }
 
+            // Explicit fallback guarantee for 多彩: pure white (light) / charcoal (dark) —
+            // the palette's own values, computed rather than resolved from the shared
+            // WidgetBackground resource — with per-state materials several surface dictionaries
+            // are loaded at once and another material's brush could shadow it.
             return isDark
-                ? new SolidColorBrush(Color.Parse("#1C1C1E"))
+                ? new SolidColorBrush(ColorfulCardBackgroundDark)
                 : Brushes.White;
         }
 
@@ -611,20 +610,6 @@ public partial class WidgetStackView : UserControl, IWidgetSelfRefreshing, IStac
         var baseColor = isDark ? ParseColor(darkColorHex, "#2E2E2E") : ParseColor(lightColorHex, "#FFFFFF");
         var opacity = Math.Clamp(theme?.OpacityLevel ?? 1.0, 0.0, 1.0);
         return new SolidColorBrush(baseColor, opacity);
-    }
-
-    private static LinearGradientBrush BuildWeatherCardBackground(bool isDark)
-    {
-        return new LinearGradientBrush
-        {
-            StartPoint = new RelativePoint(0, 0, RelativeUnit.Relative),
-            EndPoint = new RelativePoint(0, 1, RelativeUnit.Relative),
-            GradientStops =
-            {
-                new GradientStop(Color.Parse(isDark ? "#121E31" : "#1B71BE"), 0.0),
-                new GradientStop(Color.Parse(isDark ? "#1E314F" : "#509CEB"), 1.0)
-            }
-        };
     }
 
     private static Color ParseColor(string hex, string fallbackHex) =>

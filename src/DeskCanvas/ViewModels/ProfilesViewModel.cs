@@ -144,7 +144,9 @@ public class ProfilesViewModel : ReactiveObject
 
         if (!string.IsNullOrWhiteSpace(newName))
         {
-            if (profileService.CreateProfile(newName, copyCurrent: true))
+            // 新建方案 = 全新空白方案：出厂的默认外观、没有组件、没有组件数据；
+            // 想复制当前方案请用「复制」按钮（走 DuplicateProfile）。
+            if (profileService.CreateProfile(newName, copyCurrent: false))
             {
                 // Switch to newly created profile
                 profileService.SwitchProfile(newName);

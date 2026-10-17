@@ -180,15 +180,6 @@ public static class Const
     /// The path to the dice roll history and settings data file for the currently active profile.
     /// </summary>
     public static string DiceFile => Path.Combine(ActiveProfileFolder, DiceFileName);
-    /// <summary>
-    /// The path to the fortune records data file for the currently active profile.
-    /// </summary>
-    public static string FortuneFile => Path.Combine(ActiveProfileFolder, FortuneFileName);
-    /// <summary>
-    /// The path to the decision wheel templates and history data file for the currently active profile.
-    /// </summary>
-    public static string WheelFile => Path.Combine(ActiveProfileFolder, WheelFileName);
-
     /// <summary>Name of the folder holding widget assemblies (portable: next to the exe).</summary>
     public const string WidgetsFolderName = "Widgets";
     /// <summary>Name of the user-chosen data folder pointer file.</summary>
@@ -207,8 +198,6 @@ public static class Const
     public const string ShortcutsFileName = "shortcuts.json";
     private const string CountdownFileName = "countdown.json";
     private const string DiceFileName = "dice.json";
-    private const string FortuneFileName = "fortune.json";
-    private const string WheelFileName = "wheel.json";
     private const string ProfilesFolderName = "Profiles";
 
     /// <summary>

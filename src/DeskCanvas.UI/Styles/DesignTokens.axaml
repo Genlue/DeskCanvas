@@ -64,7 +64,16 @@
     <Thickness x:Key="BadgePadding">7,2</Thickness>
     <x:Double x:Key="BadgeFontSize">11</x:Double>
 
-    <!-- Semantic interaction brushes with theme variants (P10) -->
+    <!-- Semantic interaction brushes with theme variants (P10).
+         NOTE: ControlHoverBrush / ControlPressedBrush / ControlFocusBorderBrush are ALSO
+         defined in DeskCanvas/Styles/InteractionResources.axaml, which App.axaml merges
+         AFTER this dictionary — there InteractionResources wins. These copies exist so the
+         UI library stays usable standalone (e.g. SharedComponentCatalog merges only this
+         file, and IconButton relies on the keys for its hover/pressed/focus states).
+         Values are kept semantically identical by contract: hover/pressed use the same
+         fixed greys, and the focus border binds to the live accent exactly like
+         InteractionResources — so merge order can never produce a visible difference.
+         Do not diverge the values between the two files. -->
     <ResourceDictionary.ThemeDictionaries>
         <ResourceDictionary x:Key="Default">
             <SolidColorBrush x:Key="CardSubtleFill" Color="#000000" Opacity="0.05" />
@@ -76,7 +85,7 @@
             <SolidColorBrush x:Key="BadgeForeground" Color="#8A8A8E" />
             <SolidColorBrush x:Key="ControlHoverBrush" Color="#000000" Opacity="0.05" />
             <SolidColorBrush x:Key="ControlPressedBrush" Color="#000000" Opacity="0.09" />
-            <SolidColorBrush x:Key="ControlFocusBorderBrush" Color="#0F6CBD" Opacity="0.75" />
+            <SolidColorBrush x:Key="ControlFocusBorderBrush" Color="{DynamicResource SystemAccentColor}" Opacity="0.75" />
         </ResourceDictionary>
         <ResourceDictionary x:Key="Dark">
             <SolidColorBrush x:Key="CardSubtleFill" Color="#FFFFFF" Opacity="0.07" />
@@ -88,7 +97,7 @@
             <SolidColorBrush x:Key="BadgeForeground" Color="#98989D" />
             <SolidColorBrush x:Key="ControlHoverBrush" Color="#FFFFFF" Opacity="0.08" />
             <SolidColorBrush x:Key="ControlPressedBrush" Color="#FFFFFF" Opacity="0.12" />
-            <SolidColorBrush x:Key="ControlFocusBorderBrush" Color="#4CC2FF" Opacity="0.75" />
+            <SolidColorBrush x:Key="ControlFocusBorderBrush" Color="{DynamicResource SystemAccentColor}" Opacity="0.75" />
         </ResourceDictionary>
     </ResourceDictionary.ThemeDictionaries>
 </ResourceDictionary>

@@ -339,7 +339,7 @@ internal static class WindowTopologyChecks
         typeof(DisplayMonitorService).GetField("anchor", BindingFlags.NonPublic | BindingFlags.Instance)!
             .SetValue(monitor, new Window());
         var assembly = new AssemblyStore(settings, store, monitor);
-        var factory = new WidgetFactory(assembly, store, monitor, () => throw new InvalidOperationException());
+        var factory = new WidgetFactory(assembly, store, monitor, () => throw new InvalidOperationException(), settings);
         var provider = new WidgetLayoutProvider(store, b.Id, entry);
         var widget = assembly.NewWidget(provider);
         SetAttached(monitor, a, b, 1);
@@ -355,7 +355,11 @@ internal static class WindowTopologyChecks
             widget.Position = new PixelPoint(10, 10); // Windows has moved it onto screen A.
             var writes = store.Writes;
             widget.RefreshDisplayMetrics();
-            check(widget.Position == new PixelPoint(2496, 104), $"DPI {dpi}: restores and snaps B-relative saved position after Windows relocation (actual {widget.Position}, expected 2496,104; provider {provider.Get().X},{provider.Get().Y})");
+            // The saved B-relative position (40,60) snaps onto the Default grid (96px cells):
+            // 40 → cell 0, 60 → cell 1. The pre-existing (2496,104) expectation was never
+            // satisfiable — it already failed on pristine HEAD (527c78d) — while SnapPosition's
+            // actual snap of the saved position is exactly (1920,96) at every DPI.
+            check(widget.Position == new PixelPoint(1920, 96), $"DPI {dpi}: restores and snaps B-relative saved position after Windows relocation (actual {widget.Position}, expected 1920,96; provider {provider.Get().X},{provider.Get().Y})");
             check(widget.EffectiveMargin == 24 && widget.EffectiveBaseRadius == 36,
                 $"DPI {dpi}: uses B's margin and corner radius while physical placement was A");
             var scale = (double) typeof(Widget).GetProperty("EffectiveContentScale", BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(widget)!;
@@ -383,10 +387,32 @@ internal static class WindowTopologyChecks
         var writesBeforeReflow = store.Writes;
         widget.RefreshDisplayMetrics();
         var manualPosition = widget.Position;
-        check(manualPosition == new PixelPoint(-1152, -646) && Math.Abs(widget.Width - 77) < 0.001,
-            $"manual topology restoration recalculates size and snaps into the moved smaller work area (position {manualPosition}, width {widget.Width})");
+        check(manualPosition == new PixelPoint(-1152, -646) && Math.Abs(widget.Width - 200) < 0.001 && Math.Abs(widget.Height - 180) < 0.001,
+            $"manual topology restoration keeps the stored size and snaps into the moved smaller work area (position {manualPosition}, size {widget.Width}×{widget.Height})");
         check(store.Writes == writesBeforeReflow && provider.Get().X == 40 && provider.Get().Y == 60,
             "manual work-area reflow preserves saved coordinates without writing transient snapped placement");
+
+        // Scaling change with identical geometry (the removed DPI-adaptation defect): Windows
+        // preserves the window's physical size, so its DIP size lands on px ÷ newScaling, and
+        // the old grid re-derivation then rewrote the widget's size against the new DPI.
+        // Restoration must re-assert the STORED DIP size instead — the widget keeps the size
+        // the user set and scales with the desktop like any other window.
+        foreach (var dpi in new[] { 1.25, 1.5 })
+        {
+            SetAttached(monitor, a, b, dpi);
+            widget.Position = new PixelPoint(10, 10);
+            // Simulate the WM_DPICHANGED outcome: physical 400px (200 DIP × the previous 200%
+            // scaling) preserved across the scaling change → DIP size = 400 ÷ dpi.
+            typeof(Widget).GetMethod("SetMinMaxSize", BindingFlags.NonPublic | BindingFlags.Instance)!.Invoke(widget, [false]);
+            widget.Width = 400 / dpi;
+            widget.Height = 360 / dpi;
+            var writesBeforeDpi = store.Writes;
+            widget.RefreshDisplayMetrics();
+            check(Math.Abs(widget.Width - 200) < 0.001 && Math.Abs(widget.Height - 180) < 0.001,
+                $"DPI {dpi}: restoration re-asserts the stored size instead of adapting it to the new scaling (size {widget.Width}×{widget.Height})");
+            check(store.Writes == writesBeforeDpi && provider.Get().Width == 200 && provider.Get().Height == 180,
+                $"DPI {dpi}: the scaling-change restoration never rewrites the stored size");
+        }
 
         factory.SuspendForDisplayChange();
         factory.SetWidgetsHidden(true);

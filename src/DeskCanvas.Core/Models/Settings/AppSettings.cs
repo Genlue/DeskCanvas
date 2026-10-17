@@ -30,6 +30,11 @@ namespace DeskCanvas.Core.Models.Settings;
 /// configurations, feature never enabled) means the feature is off — see
 /// <see cref="FocusLinkSettings"/>.
 /// </param>
+/// <param name="FullscreenBehavior">
+/// 最大化或全屏时: what the host does with the widgets while every attached screen is covered
+/// by a fullscreen or maximized application. <c>null</c> (old configurations) means
+/// <see cref="FullscreenBehavior.Hide"/> — the historical behaviour.
+/// </param>
 public record AppSettings(
     Theme Theme,
     Theme[] Templates,
@@ -50,7 +55,8 @@ public record AppSettings(
     DateTime? LastUpdateCheckTime = null,
     Dictionary<string, Theme>? SurfaceThemes = null,
     string? LastUpdateCheckStatus = null,
-    FocusLinkSettings? FocusLink = null)
+    FocusLinkSettings? FocusLink = null,
+    FullscreenBehavior? FullscreenBehavior = null)
 {
     /// <summary>
     /// Gets the saved theme configuration for the specified surface, falling back to default presets.

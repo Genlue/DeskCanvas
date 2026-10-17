@@ -6,7 +6,7 @@
         Width="440" Height="480"
         SystemDecorations="None"
         Background="Transparent"
-        TransparencyLevelHint="AcrylicBlur, None"
+        TransparencyLevelHint="Transparent"
         TransparencyBackgroundFallback="{DynamicResource SettingsBackground}"
         CanResize="False"
         ShowInTaskbar="False"

@@ -3,7 +3,7 @@
         x:Class="DeskCanvas.Views.ConfirmDialog"
         SystemDecorations="None"
         Background="Transparent"
-        TransparencyLevelHint="AcrylicBlur, None"
+        TransparencyLevelHint="Transparent"
         TransparencyBackgroundFallback="{DynamicResource SettingsBackground}"
         CanResize="False"
         ShowInTaskbar="False"

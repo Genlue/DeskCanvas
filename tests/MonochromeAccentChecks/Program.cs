@@ -126,12 +126,14 @@ internal class Program
             "Dark-variant AccentContrastForegroundBrush == black (readable on the white accent)");
         Assert(BrushOf("AccentContrastForegroundBrush", ThemeVariant.Light) == Colors.White,
             "Light-variant AccentContrastForegroundBrush == white (readable on the black accent)");
-        Assert(BrushOf("ClockOpaqueDialBackgroundBrush", ThemeVariant.Dark) == darkBgColor
+        // 跟随背景 (inverted): the dark variant wears the LIGHT background, the light
+        // variant the DARK one — same rule as Batteries/Storage's inverted background.
+        Assert(BrushOf("ClockOpaqueDialBackgroundBrush", ThemeVariant.Dark) == lightBgColor
                && Math.Abs(OpacityOf("ClockOpaqueDialBackgroundBrush", ThemeVariant.Dark) - 1.0) < 0.001,
-            "Dark-variant ClockOpaqueDialBackgroundBrush == opaque dark background color");
-        Assert(BrushOf("ClockOpaqueDialBackgroundBrush", ThemeVariant.Light) == lightBgColor
+            "Dark-variant ClockOpaqueDialBackgroundBrush == opaque light background color (inverted)");
+        Assert(BrushOf("ClockOpaqueDialBackgroundBrush", ThemeVariant.Light) == darkBgColor
                && Math.Abs(OpacityOf("ClockOpaqueDialBackgroundBrush", ThemeVariant.Light) - 1.0) < 0.001,
-            "Light-variant ClockOpaqueDialBackgroundBrush == opaque light background color");
+            "Light-variant ClockOpaqueDialBackgroundBrush == opaque dark background color (inverted)");
 
         Console.WriteLine("\n--- 黑白, light mode (explicit): accent = black, text = black ---");
         themeService.Apply(Monochrome(MonochromeStyle.BlackWhite, false, darkBg, lightBg));
@@ -377,6 +379,57 @@ internal class Program
                     Assert(knobColor == glyph,
                         $"{variantName}: templated SwitchKnobOn fill == {glyph} (got {knobColor})");
                 }
+                hostWindow.Hide();
+                hostWindow.Content = null;
+            }
+        }
+
+        // --- Slider 滑块三态的可读性契约（单色档下"黑滑块 hover 变白消失"的修复） ---
+        // Fluent 把滑块 hover/pressed 硬接在 SystemAccentColorLight1 / Dark1 上
+        // （SliderThumbBackgroundPointerOver/Pressed），交叉写入后单色档下 hover 即反极性
+        // 纯色：亮色黑白下黑滑块 hover 变白，消失在设置页白色内容区上。修复在
+        // MonochromeBlackWhite / MonochromeBackground 两个字典里把 hover/pressed 钉回
+        // 静止态同源的 Dark1/Light2 槽，只用透明度做反馈。契约：颜色与静止态同极性
+        // （不跳反色）、hover 保留反馈透明度、pressed 比 hover 更深。
+        Console.WriteLine("\n--- Slider thumb state feedback (SliderThumbBackground*) ---");
+        foreach (var (variantName, monoVariant, dark) in new[]
+        {
+            ("黑白 dark", MonochromeStyle.BlackWhite, true),
+            ("黑白 light", MonochromeStyle.BlackWhite, false),
+            ("背景色 dark", MonochromeStyle.BackgroundColor, true),
+            ("背景色 light", MonochromeStyle.BackgroundColor, false),
+        })
+        {
+            themeService.Apply(Monochrome(monoVariant, dark, darkBg, lightBg));
+            var variant = dark ? ThemeVariant.Dark : ThemeVariant.Light;
+            var rest = BrushOf("SliderThumbBackground", variant);
+            var hover = BrushOf("SliderThumbBackgroundPointerOver", variant);
+            var pressed = BrushOf("SliderThumbBackgroundPressed", variant);
+            Assert(hover == rest,
+                $"{variantName}: hovered thumb ({hover}) stays on the resting polarity ({rest}) — visible");
+            Assert(OpacityOf("SliderThumbBackgroundPointerOver", variant) < 1.0,
+                $"{variantName}: hovered thumb keeps a feedback opacity");
+            Assert(pressed == rest,
+                $"{variantName}: pressed thumb stays on the resting polarity ({rest})");
+            Assert(OpacityOf("SliderThumbBackgroundPressed", variant)
+                   < OpacityOf("SliderThumbBackgroundPointerOver", variant),
+                $"{variantName}: pressed thumb is deeper than hovered");
+
+            // 模板级断言（暗色两档，模板化路径相同）：真实 Slider 挂进窗口、设置
+            // :pointerover 伪类后读 Thumb 的 Fill，证明覆写真的压过了 Fluent 模板的状态
+            // 样式（SliderThumbBackgroundPointerOver），而不是只改了某个中间资源键。
+            if (dark)
+            {
+                hostWindow.Content = new Slider { Value = 5 };
+                hostWindow.Show();
+                var slider = (Slider)hostWindow.Content!;
+                ((IPseudoClasses)slider.Classes).Set(":pointerover", true);
+                Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+                var thumb = slider.GetVisualDescendants().OfType<Thumb>().First();
+                var thumbColor = thumb.Background is SolidColorBrush tb ? tb.Color : default(Color?);
+                Assert(thumbColor == hover,
+                    $"{variantName}: templated thumb under :pointerover == {hover} (got {thumbColor})");
+                ((IPseudoClasses)slider.Classes).Set(":pointerover", false);
                 hostWindow.Hide();
                 hostWindow.Content = null;
             }

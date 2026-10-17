@@ -24,7 +24,6 @@
                     <DataTemplate x:DataType="viewModels:ClockMaterialOption">
                         <StackPanel Orientation="Vertical" Margin="0 3">
                             <TextBlock Text="{Binding DisplayName}" FontWeight="SemiBold" FontSize="12.5"/>
-                            <TextBlock Text="{Binding Description}" FontSize="10.5" Opacity="0.65"/>
                         </StackPanel>
                     </DataTemplate>
                 </ComboBox.ItemTemplate>

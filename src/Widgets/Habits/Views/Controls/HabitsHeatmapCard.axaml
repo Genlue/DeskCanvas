@@ -15,7 +15,7 @@
             <Setter Property="Cursor" Value="Hand" />
         </Style>
         <Style Selector="Button.action-btn:pointerover /template/ ContentPresenter">
-            <Setter Property="Background" Value="#18808080" />
+            <Setter Property="Background" Value="{DynamicResource ControlHoverBrush}" />
         </Style>
     </UserControl.Styles>
 
@@ -35,7 +35,7 @@
             <Button Grid.Column="1" Classes="action-btn" Width="22" Height="22"
                     Click="OnOpenPopupClicked" ToolTip.Tip="{x:Static locales:Locale.Habits_Title}">
                 <Path Data="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z"
-                      Fill="{DynamicResource WidgetForeground}"
+                      Fill="{DynamicResource SystemControlForegroundBaseHighBrush}"
                       Opacity="0.6" Stretch="Uniform" Width="12" Height="12"
                       HorizontalAlignment="Center" VerticalAlignment="Center" />
             </Button>
@@ -52,8 +52,8 @@
             <TextBlock Text="{x:Static locales:Locale.Habits_Weekday_Sun}" FontSize="10" Opacity="0.4" HorizontalAlignment="Center" />
         </UniformGrid>
 
-        <!-- Heatmap Grid -->
-        <ItemsControl Grid.Row="2" ItemsSource="{Binding HeatmapCells}" VerticalAlignment="Center">
+        <!-- Heatmap Grid：格子去掉固定 Height，随剩余空间均匀拉伸，小尺寸不再被容器裁切 -->
+        <ItemsControl Grid.Row="2" ItemsSource="{Binding HeatmapCells}">
             <ItemsControl.ItemsPanel>
                 <ItemsPanelTemplate>
                     <UniformGrid Columns="7" />
@@ -61,7 +61,7 @@
             </ItemsControl.ItemsPanel>
             <ItemsControl.ItemTemplate>
                 <DataTemplate DataType="services:HeatmapCell">
-                    <Border Margin="1.5" Height="15" CornerRadius="3"
+                    <Border Margin="1.5" MinHeight="10" CornerRadius="3"
                             Background="{Binding BackgroundBrush}"
                             Opacity="{Binding CellOpacity}"
                             BorderBrush="{DynamicResource SystemAccentColor}"

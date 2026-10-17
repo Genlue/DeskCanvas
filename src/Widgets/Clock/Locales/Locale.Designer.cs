@@ -494,42 +494,6 @@ namespace Clock.Locales {
             }
         }
 
-        public static string Clock_Material_FollowGlobal_Desc {
-            get {
-                return ResourceManager.GetString("Clock_Material_FollowGlobal_Desc", resourceCulture);
-            }
-        }
-
-        public static string Clock_Material_Acrylic_Desc {
-            get {
-                return ResourceManager.GetString("Clock_Material_Acrylic_Desc", resourceCulture);
-            }
-        }
-
-        public static string Clock_Material_Solid_Desc {
-            get {
-                return ResourceManager.GetString("Clock_Material_Solid_Desc", resourceCulture);
-            }
-        }
-
-        public static string Clock_Material_LiquidGlass_Desc {
-            get {
-                return ResourceManager.GetString("Clock_Material_LiquidGlass_Desc", resourceCulture);
-            }
-        }
-
-        public static string Clock_Material_LiquidGlassV2_Desc {
-            get {
-                return ResourceManager.GetString("Clock_Material_LiquidGlassV2_Desc", resourceCulture);
-            }
-        }
-
-        public static string Clock_Material_Colorful_Desc {
-            get {
-                return ResourceManager.GetString("Clock_Material_Colorful_Desc", resourceCulture);
-            }
-        }
-
         public static string Clock_LiquidGlassOpacity {
             get {
                 return ResourceManager.GetString("Clock_LiquidGlassOpacity", resourceCulture);

@@ -168,8 +168,11 @@
     <data name="Notes_TitleBar_Hidden" xml:space="preserve">
         <value>No bar</value>
     </data>
-    <data name="Notes_Panel_Open" xml:space="preserve">
-        <value>Open note panel</value>
+    <data name="Notes_Header_Height" xml:space="preserve">
+        <value>Header height</value>
+    </data>
+    <data name="Notes_Header_Text" xml:space="preserve">
+        <value>Header text</value>
     </data>
     <data name="Notes_Panel_ReadOnly" xml:space="preserve">
         <value>Folder source is read-only here — edit the markdown files on disk</value>

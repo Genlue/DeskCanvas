@@ -16,7 +16,7 @@
             <Setter Property="Cursor" Value="Hand" />
         </Style>
         <Style Selector="Button.ghost-btn:pointerover /template/ ContentPresenter">
-            <Setter Property="Background" Value="#18808080" />
+            <Setter Property="Background" Value="{DynamicResource ControlHoverBrush}" />
         </Style>
 
         <!-- 周切换 ghost 箭头 -->
@@ -37,7 +37,7 @@
         </Style>
         <Style Selector="Button.cycle-btn:pointerover">
             <Setter Property="Opacity" Value="1" />
-            <Setter Property="Background" Value="#18808080" />
+            <Setter Property="Background" Value="{DynamicResource ControlHoverBrush}" />
         </Style>
 
         <!-- 布尔型大打卡钮：50px 圆形 -->
@@ -67,7 +67,7 @@
             <Setter Property="FontSize" Value="13" />
             <Setter Property="FontWeight" Value="SemiBold" />
             <Setter Property="Foreground" Value="{DynamicResource WidgetForeground}" />
-            <Setter Property="Background" Value="#14808080" />
+            <Setter Property="Background" Value="{DynamicResource PillBackground}" />
             <Setter Property="BorderThickness" Value="0" />
             <Setter Property="Padding" Value="0" />
             <Setter Property="Cursor" Value="Hand" />
@@ -75,7 +75,7 @@
             <Setter Property="VerticalContentAlignment" Value="Center" />
         </Style>
         <Style Selector="Button.step-btn:pointerover">
-            <Setter Property="Background" Value="#28808080" />
+            <Setter Property="Background" Value="{DynamicResource ControlHoverBrush}" />
         </Style>
 
         <!-- +步进 主操作钮（用户习惯色） -->
@@ -98,17 +98,18 @@
     <Grid RowDefinitions="Auto, *, Auto">
         <!-- Header：图标 + 标题 13px + 切换箭头 ghost + 连续天数 pill + 菜单 -->
         <Grid Grid.Row="0" ColumnDefinitions="*, Auto" Margin="0,0,0,6">
-            <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
-                <TextBlock Text="{Binding FocusedHabit.Icon}" FontSize="15" VerticalAlignment="Center" />
-                <TextBlock Text="{Binding FocusedHabit.Title}" FontSize="13" FontWeight="SemiBold"
-                           TextTrimming="CharacterEllipsis" MaxWidth="80" VerticalAlignment="Center" />
-
-                <StackPanel Orientation="Horizontal" Spacing="2"
-                            IsVisible="{Binding CanCycleHabits}" VerticalAlignment="Center">
+            <!-- 标题列用 * 网格布局：长习惯名按剩余宽度省略，不会溢出与右侧 pill 重叠 -->
+            <Grid Grid.Column="0" ColumnDefinitions="Auto, *, Auto" VerticalAlignment="Center">
+                <TextBlock Grid.Column="0" Text="{Binding FocusedHabit.Icon}" FontSize="15"
+                           VerticalAlignment="Center" Margin="0,0,4,0" />
+                <TextBlock Grid.Column="1" Text="{Binding FocusedHabit.Title}" FontSize="13" FontWeight="SemiBold"
+                           TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="2"
+                            IsVisible="{Binding CanCycleHabits}" VerticalAlignment="Center" Margin="4,0,0,0">
                     <Button Classes="cycle-btn" Content="‹" Click="OnPrevHabitClicked" ToolTip.Tip="{x:Static locales:Locale.Habits_PrevHabit}" />
                     <Button Classes="cycle-btn" Content="›" Click="OnNextHabitClicked" ToolTip.Tip="{x:Static locales:Locale.Habits_NextHabit}" />
                 </StackPanel>
-            </StackPanel>
+            </Grid>
 
             <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
                 <Border Background="#18FF9500"
@@ -122,7 +123,7 @@
                 <Button Classes="ghost-btn" Width="22" Height="22"
                         Click="OnOpenPopupClicked" ToolTip.Tip="{x:Static locales:Locale.Habits_Title}">
                     <Path Data="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z"
-                          Fill="{DynamicResource WidgetForeground}"
+                          Fill="{DynamicResource SystemControlForegroundBaseHighBrush}"
                           Opacity="0.6" Stretch="Uniform" Width="12" Height="12"
                           HorizontalAlignment="Center" VerticalAlignment="Center" />
                 </Button>
@@ -180,7 +181,7 @@
                              Maximum="1" Minimum="0"
                              Value="{Binding FocusedHabit.ProgressPercentage}"
                              Foreground="{Binding FocusedHabit.ColorBrush}"
-                             Background="#14808080" />
+                             Background="{DynamicResource CardSubtleFill}" />
 
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="8">
                     <Button Classes="step-btn" Content="-" Click="OnStepMinusClicked" />
@@ -218,7 +219,7 @@
                                      Stroke="{Binding ColorBrush}"
                                      StrokeThickness="1.5"
                                      IsVisible="{Binding IsTodayAndNotDone}" />
-                            <Ellipse Width="3" Height="3" Fill="#25808080"
+                            <Ellipse Width="3" Height="3" Fill="{DynamicResource CardSubtleFill}"
                                      IsVisible="{Binding IsMissedOrFuture}" />
                         </Panel>
                     </StackPanel>

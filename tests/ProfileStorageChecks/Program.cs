@@ -130,11 +130,55 @@ internal static class Program
             Check(profileList.Contains("Default"), "GetProfiles contains 'Default'");
             Check(profileList.Contains("Work"), "GetProfiles contains 'Work'");
 
-            // Create new profile "Study"
+            // Create new profile "Study" — style the ACTIVE profile distinctively first: a new
+            // profile must start from the shipped defaults, never inherit the active look.
+            var activeSettings = appSettingsProvider.Get();
+            var styledSettings = activeSettings with
+            {
+                Theme = activeSettings.Theme with { OpacityLevel = 0.93, AccentColor = "#123456" },
+                Region = activeSettings.Region with { Language = "en-US" }
+            };
+            appSettingsProvider.Save(styledSettings);
+
             var created = profileService.CreateProfile("Study", copyCurrent: false);
             Check(created, "CreateProfile 'Study' succeeded");
             var studyDir = Path.Combine(Const.ProfilesFolder, "Study");
             Check(Directory.Exists(studyDir), "Study profile directory created on disk");
+
+            // 3a. 新建方案是"空白方案": 出厂外观、零组件、零组件数据; 仅应用级偏好沿用
+            var studySettingsFile = Path.Combine(studyDir, Const.AppSettingsFileName);
+            var studySettings = File.Exists(studySettingsFile)
+                ? JsonSerializer.Deserialize<AppSettings>(File.ReadAllText(studySettingsFile))
+                : null;
+            Check(studySettings != null, "Study profile carries its own appSettings.json");
+            Check(studySettings?.ActiveProfile == "Study", "Study settings point at itself (ActiveProfile)");
+            Check(studySettings != null && Math.Abs(studySettings.Theme.OpacityLevel - 0.4) < 1e-9,
+                $"Study starts from the shipped default opacity, not the active 0.93 (got {studySettings?.Theme.OpacityLevel})");
+            Check(studySettings?.Theme.AccentColor == null, "Study does not inherit the active accent color");
+            Check(studySettings?.Theme.Surface == SurfaceStyle.Acrylic, "Study starts on the default surface material");
+            Check(studySettings?.Region.Language == "en-US", "Study keeps the app-level UI language instead of resetting it");
+
+            var studyLayoutFile = Path.Combine(studyDir, Const.LayoutFileName);
+            var studyLayout = File.Exists(studyLayoutFile)
+                ? JsonSerializer.Deserialize<ScreensLayout>(File.ReadAllText(studyLayoutFile))
+                : null;
+            Check(studyLayout != null && studyLayout.Screens.All(s => s.Layout.Count == 0),
+                "Study layout is empty (no widgets copied from the active profile)");
+
+            var studyFiles = Directory.GetFiles(studyDir).Select(Path.GetFileName).ToList();
+            Check(!studyFiles.Contains("reminders.json") && !studyFiles.Contains("timetable.json"),
+                "Widget data is not copied into the new profile");
+            Check(studyFiles.Count == 2, $"New profile seeds exactly appSettings.json + layout.json (got {string.Join(", ", studyFiles)})");
+
+            appSettingsProvider.Save(activeSettings);
+
+            // 3b. 热切换到新方案: 播种文件必须能被读回, 外观为默认, 桌面无组件
+            Check(profileService.SwitchProfile("Study"), "SwitchProfile to the new empty profile succeeds");
+            Check(Const.ActiveProfile == "Study", "ActiveProfile follows the switch");
+            Check(Math.Abs(appSettingsProvider.Get().Theme.OpacityLevel - 0.4) < 1e-9,
+                $"Switched profile reads the default appearance back from disk (got {appSettingsProvider.Get().Theme.OpacityLevel})");
+            Check(layoutProvider.Get().Screens.All(s => s.Layout.Count == 0), "Switched profile's desktop has no widgets");
+            profileService.SwitchProfile("Default");
 
             // Duplicate profile "Study" to "StudyCopy"
             var duplicated = profileService.DuplicateProfile("Study", "StudyCopy");
@@ -194,7 +238,7 @@ internal static class Program
 
     private sealed class DummyWidgetFactory : WidgetFactory
     {
-        public DummyWidgetFactory() : base(null!, null!, null!, null!) { }
+        public DummyWidgetFactory() : base(null!, null!, null!, null!, null!) { }
         public override void CreateFromLayout() { }
         public override void CloseAll() { }
     }

@@ -7,11 +7,14 @@
              Background="Transparent">
 
     <UserControl.Styles>
-        <!-- 规范 §4：进度条 3px / 圆角 1.5 / 中性轨道 -->
+        <!-- 规范 §4：进度条 3px / 圆角 1.5 / 中性轨道（跟随主题深浅切换）。
+             MinWidth=0 覆盖 Fluent :horizontal 的 MinWidth=200——小卡内容区不足 200px 时
+             进度条会被强制撑大并溢出容器，与 header/日期行的边缘错开（对齐杀手）。 -->
         <Style Selector="ProgressBar.countdown-bar">
             <Setter Property="Height" Value="3" />
+            <Setter Property="MinWidth" Value="0" />
             <Setter Property="CornerRadius" Value="1.5" />
-            <Setter Property="Background" Value="{DynamicResource CardSubtleFill}" />
+            <Setter Property="Background" Value="{DynamicResource CountdownTrackBrush}" />
             <Setter Property="BorderThickness" Value="0" />
         </Style>
 
@@ -24,8 +27,8 @@
         </Style>
 
         <!-- 规范 §4：列表行内的弱图标按钮位 -->
-        <Style Selector="PathIcon.countdown-pin">
-            <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}" />
+        <Style Selector="Path.countdown-pin">
+            <Setter Property="Fill" Value="{DynamicResource SystemControlForegroundBaseHighBrush}" />
             <Setter Property="Opacity" Value="0.6" />
             <Setter Property="VerticalAlignment" Value="Center" />
         </Style>
@@ -52,16 +55,17 @@
             <Grid RowDefinitions="Auto,*,Auto" IsVisible="{Binding IsMinimalNumberStyle}">
                 <!-- Header: 圆点 + 分类 + 标题 / 右侧弱化指示 -->
                 <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="0,0,0,4">
-                    <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                    <!-- 标题占 * 列自动收缩：横向 StackPanel 不约束测量宽度，超宽内容会溢出绘制到相邻列之上（重叠根源） -->
+                    <Grid Grid.Column="0" ColumnDefinitions="Auto,Auto,*" VerticalAlignment="Center">
                         <Ellipse Width="6" Height="6" Fill="{Binding SelectedItem.ColorBrush}" VerticalAlignment="Center" />
-                        <TextBlock Text="{Binding SelectedItem.Category}" FontSize="10" Opacity="0.75"
-                                   VerticalAlignment="Center" />
-                        <TextBlock Text="{Binding SelectedItem.Title}" FontSize="13" FontWeight="SemiBold"
-                                   VerticalAlignment="Center" TextTrimming="CharacterEllipsis" MaxWidth="96" />
-                    </StackPanel>
+                        <TextBlock Grid.Column="1" Text="{Binding SelectedItem.Category}" FontSize="10" Opacity="0.75"
+                                   Margin="6,0,0,0" VerticalAlignment="Center" MaxWidth="64" TextTrimming="CharacterEllipsis" />
+                        <TextBlock Grid.Column="2" Text="{Binding SelectedItem.Title}" FontSize="13" FontWeight="SemiBold"
+                                   Margin="6,0,0,0" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                    </Grid>
                     <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
-                        <PathIcon Classes="countdown-pin" IsVisible="{Binding SelectedItem.IsPinned}"
-                                  Data="M16 12V4h1V2H7v2h1v8l-2 2v2h5.2v6h1.6v-6H18v-2l-2-2z" Width="11" Height="11" />
+                        <Path Classes="countdown-pin" IsVisible="{Binding SelectedItem.IsPinned}" Stretch="Uniform"
+                                  Data="M16 9V4h1c.55 0 1-.45 1-1s-.45-1-1-1H7c-.55 0-1 .45-1 1s.45 1 1 1h1v5c0 1.66-1.34 3-3 3v2h5.97v7l1 1 1-1v-7H18v-2c-1.66 0-3-1.34-3-3z" Width="11" Height="11" />
                         <TextBlock Text="{x:Static locales:Locale.Countdown_IsLunar}" FontSize="10" Opacity="0.55"
                                    VerticalAlignment="Center" IsVisible="{Binding SelectedItem.IsLunar}" />
                     </StackPanel>
@@ -101,16 +105,16 @@
             <Grid RowDefinitions="Auto,*,Auto" IsVisible="{Binding IsRingProgressStyle}">
                 <!-- Header -->
                 <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="0,0,0,2">
-                    <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                    <Grid Grid.Column="0" ColumnDefinitions="Auto,Auto,*" VerticalAlignment="Center">
                         <Ellipse Width="6" Height="6" Fill="{Binding SelectedItem.ColorBrush}" VerticalAlignment="Center" />
-                        <TextBlock Text="{Binding SelectedItem.Category}" FontSize="10" Opacity="0.75"
-                                   VerticalAlignment="Center" />
-                        <TextBlock Text="{Binding SelectedItem.Title}" FontSize="13" FontWeight="SemiBold"
-                                   VerticalAlignment="Center" TextTrimming="CharacterEllipsis" MaxWidth="130" />
-                    </StackPanel>
+                        <TextBlock Grid.Column="1" Text="{Binding SelectedItem.Category}" FontSize="10" Opacity="0.75"
+                                   Margin="6,0,0,0" VerticalAlignment="Center" MaxWidth="64" TextTrimming="CharacterEllipsis" />
+                        <TextBlock Grid.Column="2" Text="{Binding SelectedItem.Title}" FontSize="13" FontWeight="SemiBold"
+                                   Margin="6,0,0,0" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                    </Grid>
                     <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
-                        <PathIcon Classes="countdown-pin" IsVisible="{Binding SelectedItem.IsPinned}"
-                                  Data="M16 12V4h1V2H7v2h1v8l-2 2v2h5.2v6h1.6v-6H18v-2l-2-2z" Width="11" Height="11" />
+                        <Path Classes="countdown-pin" Stretch="Uniform" IsVisible="{Binding SelectedItem.IsPinned}"
+                                  Data="M16 9V4h1c.55 0 1-.45 1-1s-.45-1-1-1H7c-.55 0-1 .45-1 1s.45 1 1 1h1v5c0 1.66-1.34 3-3 3v2h5.97v7l1 1 1-1v-7H18v-2c-1.66 0-3-1.34-3-3z" Width="11" Height="11" />
                         <TextBlock Text="{x:Static locales:Locale.Countdown_IsLunar}" FontSize="10" Opacity="0.55"
                                    VerticalAlignment="Center" IsVisible="{Binding SelectedItem.IsLunar}" />
                     </StackPanel>
@@ -120,7 +124,7 @@
                 <Viewbox Grid.Row="1" Stretch="Uniform" ClipToBounds="False" Margin="0,2">
                     <Canvas Width="110" Height="110">
                         <!-- Background Track -->
-                        <Path StrokeThickness="6" Stroke="{DynamicResource CardSubtleFill}">
+                        <Path StrokeThickness="6" Stroke="{DynamicResource CountdownTrackBrush}">
                             <Path.Data>
                                 <EllipseGeometry Center="55,55" RadiusX="48" RadiusY="48" />
                             </Path.Data>
@@ -140,7 +144,7 @@
                         </Path>
 
                         <!-- Inner Content -->
-                        <StackPanel Canvas.Left="0" Canvas.Top="34" Width="110">
+                        <StackPanel Canvas.Left="0" Canvas.Top="36" Width="110">
                             <TextBlock Text="{Binding SelectedItem.MainDisplayNumber}"
                                        FontSize="22" FontWeight="Bold" LetterSpacing="-0.5"
                                        TextAlignment="Center"
@@ -174,7 +178,7 @@
                 <ItemsControl Grid.Row="1" ItemsSource="{Binding Items}">
                     <ItemsControl.ItemTemplate>
                         <DataTemplate DataType="vm:CountdownItemViewModel">
-                            <Border MinHeight="30" Margin="0,0,0,2" Background="#0F808080" CornerRadius="6">
+                            <Border MinHeight="30" Margin="0,0,0,2" Background="{DynamicResource CountdownPillBackgroundBrush}" CornerRadius="6">
                                 <Grid ColumnDefinitions="Auto,*,Auto">
                                     <Ellipse Grid.Column="0" Width="6" Height="6" Fill="{Binding ColorBrush}"
                                              Margin="8,0,0,0" VerticalAlignment="Center" />
@@ -203,16 +207,16 @@
                 <!-- Left: Big Number Focus -->
                 <Grid Grid.Column="0" RowDefinitions="Auto,*,Auto" Margin="0,0,12,0">
                     <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="0,0,0,4">
-                        <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                        <Grid Grid.Column="0" ColumnDefinitions="Auto,Auto,*" VerticalAlignment="Center">
                             <Ellipse Width="6" Height="6" Fill="{Binding SelectedItem.ColorBrush}" VerticalAlignment="Center" />
-                            <TextBlock Text="{Binding SelectedItem.Category}" FontSize="10" Opacity="0.75"
-                                       VerticalAlignment="Center" />
-                            <TextBlock Text="{Binding SelectedItem.Title}" FontSize="13" FontWeight="SemiBold"
-                                       TextTrimming="CharacterEllipsis" VerticalAlignment="Center" MaxWidth="130" />
-                        </StackPanel>
+                            <TextBlock Grid.Column="1" Text="{Binding SelectedItem.Category}" FontSize="10" Opacity="0.75"
+                                       Margin="6,0,0,0" VerticalAlignment="Center" MaxWidth="80" TextTrimming="CharacterEllipsis" />
+                            <TextBlock Grid.Column="2" Text="{Binding SelectedItem.Title}" FontSize="13" FontWeight="SemiBold"
+                                       Margin="6,0,0,0" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                        </Grid>
                         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
-                            <PathIcon Classes="countdown-pin" IsVisible="{Binding SelectedItem.IsPinned}"
-                                      Data="M16 12V4h1V2H7v2h1v8l-2 2v2h5.2v6h1.6v-6H18v-2l-2-2z" Width="11" Height="11" />
+                            <Path Classes="countdown-pin" Stretch="Uniform" IsVisible="{Binding SelectedItem.IsPinned}"
+                                      Data="M16 9V4h1c.55 0 1-.45 1-1s-.45-1-1-1H7c-.55 0-1 .45-1 1s.45 1 1 1h1v5c0 1.66-1.34 3-3 3v2h5.97v7l1 1 1-1v-7H18v-2c-1.66 0-3-1.34-3-3z" Width="11" Height="11" />
                             <TextBlock Text="{x:Static locales:Locale.Countdown_IsLunar}" FontSize="10" Opacity="0.55"
                                        VerticalAlignment="Center" IsVisible="{Binding SelectedItem.IsLunar}" />
                         </StackPanel>
@@ -248,7 +252,7 @@
                             <TextBlock Text="{Binding SelectedItem.ProgressPercentText}" FontSize="18" FontWeight="Bold"
                                        Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}" />
                         </StackPanel>
-                        <Rectangle Grid.Row="1" Height="1" Fill="{DynamicResource CardSubtleFill}" Margin="0,6" />
+                        <Rectangle Grid.Row="1" Height="1" Fill="{DynamicResource CountdownTrackBrush}" Margin="0,6" />
                         <StackPanel Grid.Row="2" Spacing="2" VerticalAlignment="Bottom">
                             <TextBlock Text="{x:Static locales:Locale.Countdown_TargetDate}" FontSize="10" Opacity="0.55" />
                             <TextBlock Text="{Binding SelectedItem.FormattedDate}" FontSize="11" FontWeight="SemiBold"
@@ -260,11 +264,11 @@
 
             <!-- Style 1: Ring Progress (4x2) -->
             <Grid ColumnDefinitions="Auto,*" IsVisible="{Binding IsRingProgressStyle}">
-                <!-- Left: Big Ring -->
-                <Viewbox Grid.Column="0" Width="110" Height="110" Stretch="Uniform" Margin="0,0,12,0"
+                <!-- Left: Big Ring（Max 尺寸代替固定尺寸，矮卡片下按比例缩小避免截断） -->
+                <Viewbox Grid.Column="0" MaxWidth="110" MaxHeight="110" Stretch="Uniform" Margin="0,0,12,0"
                          VerticalAlignment="Center">
                     <Canvas Width="110" Height="110">
-                        <Path StrokeThickness="6" Stroke="{DynamicResource CardSubtleFill}">
+                        <Path StrokeThickness="6" Stroke="{DynamicResource CountdownTrackBrush}">
                             <Path.Data>
                                 <EllipseGeometry Center="55,55" RadiusX="48" RadiusY="48" />
                             </Path.Data>
@@ -280,7 +284,7 @@
                                 <EllipseGeometry Center="55,55" RadiusX="48" RadiusY="48" />
                             </Path.Data>
                         </Path>
-                        <StackPanel Canvas.Left="0" Canvas.Top="34" Width="110">
+                        <StackPanel Canvas.Left="0" Canvas.Top="36" Width="110">
                             <TextBlock Text="{Binding SelectedItem.MainDisplayNumber}"
                                        FontSize="22" FontWeight="Bold" LetterSpacing="-0.5"
                                        TextAlignment="Center"
@@ -295,15 +299,15 @@
                 <!-- Right: Information & Progress -->
                 <Grid Grid.Column="1" RowDefinitions="Auto,*,Auto" VerticalAlignment="Stretch">
                     <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
-                        <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                        <Grid Grid.Column="0" ColumnDefinitions="Auto,Auto,*" VerticalAlignment="Center">
                             <Ellipse Width="6" Height="6" Fill="{Binding SelectedItem.ColorBrush}" VerticalAlignment="Center" />
-                            <TextBlock Text="{Binding SelectedItem.Category}" FontSize="10" Opacity="0.75"
-                                       VerticalAlignment="Center" />
-                            <TextBlock Text="{Binding SelectedItem.Title}" FontSize="13" FontWeight="SemiBold"
-                                       TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
-                        </StackPanel>
-                        <PathIcon Grid.Column="1" Classes="countdown-pin" IsVisible="{Binding SelectedItem.IsPinned}"
-                                  Data="M16 12V4h1V2H7v2h1v8l-2 2v2h5.2v6h1.6v-6H18v-2l-2-2z" Width="11" Height="11" />
+                            <TextBlock Grid.Column="1" Text="{Binding SelectedItem.Category}" FontSize="10" Opacity="0.75"
+                                       Margin="6,0,0,0" VerticalAlignment="Center" MaxWidth="80" TextTrimming="CharacterEllipsis" />
+                            <TextBlock Grid.Column="2" Text="{Binding SelectedItem.Title}" FontSize="13" FontWeight="SemiBold"
+                                       Margin="6,0,0,0" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                        </Grid>
+                        <Path Grid.Column="1" Classes="countdown-pin" Stretch="Uniform" IsVisible="{Binding SelectedItem.IsPinned}"
+                                  Data="M16 9V4h1c.55 0 1-.45 1-1s-.45-1-1-1H7c-.55 0-1 .45-1 1s.45 1 1 1h1v5c0 1.66-1.34 3-3 3v2h5.97v7l1 1 1-1v-7H18v-2c-1.66 0-3-1.34-3-3z" Width="11" Height="11" />
                     </Grid>
 
                     <StackPanel Grid.Row="1" VerticalAlignment="Center" Spacing="4">
@@ -341,7 +345,7 @@
                         </ItemsControl.ItemsPanel>
                         <ItemsControl.ItemTemplate>
                             <DataTemplate DataType="vm:CountdownItemViewModel">
-                                <Border MinHeight="32" Margin="0,0,2,2" Background="#0F808080" CornerRadius="6">
+                                <Border MinHeight="32" Margin="0,0,2,2" Background="{DynamicResource CountdownPillBackgroundBrush}" CornerRadius="6">
                                     <Grid ColumnDefinitions="Auto,*,Auto" Margin="8,0">
                                         <Ellipse Grid.Column="0" Width="6" Height="6" Fill="{Binding ColorBrush}"
                                                  VerticalAlignment="Center" />
@@ -369,16 +373,16 @@
             <!-- Style 0: Minimal Number (4x4 Focus Poster) -->
             <Grid RowDefinitions="Auto,*,Auto" IsVisible="{Binding IsMinimalNumberStyle}">
                 <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="0,0,0,8">
-                    <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                    <Grid Grid.Column="0" ColumnDefinitions="Auto,Auto,*" VerticalAlignment="Center">
                         <Ellipse Width="6" Height="6" Fill="{Binding SelectedItem.ColorBrush}" VerticalAlignment="Center" />
-                        <TextBlock Text="{Binding SelectedItem.Category}" FontSize="10" Opacity="0.75"
-                                   VerticalAlignment="Center" />
-                        <TextBlock Text="{Binding SelectedItem.Title}" FontSize="13" FontWeight="SemiBold"
-                                   TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
-                    </StackPanel>
+                        <TextBlock Grid.Column="1" Text="{Binding SelectedItem.Category}" FontSize="10" Opacity="0.75"
+                                   Margin="6,0,0,0" VerticalAlignment="Center" MaxWidth="100" TextTrimming="CharacterEllipsis" />
+                        <TextBlock Grid.Column="2" Text="{Binding SelectedItem.Title}" FontSize="13" FontWeight="SemiBold"
+                                   Margin="6,0,0,0" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                    </Grid>
                     <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
-                        <PathIcon Classes="countdown-pin" IsVisible="{Binding SelectedItem.IsPinned}"
-                                  Data="M16 12V4h1V2H7v2h1v8l-2 2v2h5.2v6h1.6v-6H18v-2l-2-2z" Width="12" Height="12" />
+                        <Path Classes="countdown-pin" Stretch="Uniform" IsVisible="{Binding SelectedItem.IsPinned}"
+                                  Data="M16 9V4h1c.55 0 1-.45 1-1s-.45-1-1-1H7c-.55 0-1 .45-1 1s.45 1 1 1h1v5c0 1.66-1.34 3-3 3v2h5.97v7l1 1 1-1v-7H18v-2c-1.66 0-3-1.34-3-3z" Width="12" Height="12" />
                         <TextBlock Text="{x:Static locales:Locale.Countdown_IsLunar}" FontSize="10" Opacity="0.55"
                                    VerticalAlignment="Center" IsVisible="{Binding SelectedItem.IsLunar}" />
                     </StackPanel>
@@ -412,16 +416,16 @@
             <!-- Style 1: Ring Progress (4x4 Circular Gauge) -->
             <Grid RowDefinitions="Auto,*,Auto" IsVisible="{Binding IsRingProgressStyle}">
                 <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="0,0,0,4">
-                    <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                    <Grid Grid.Column="0" ColumnDefinitions="Auto,Auto,*" VerticalAlignment="Center">
                         <Ellipse Width="6" Height="6" Fill="{Binding SelectedItem.ColorBrush}" VerticalAlignment="Center" />
-                        <TextBlock Text="{Binding SelectedItem.Category}" FontSize="10" Opacity="0.75"
-                                   VerticalAlignment="Center" />
-                        <TextBlock Text="{Binding SelectedItem.Title}" FontSize="13" FontWeight="SemiBold"
-                                   TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
-                    </StackPanel>
+                        <TextBlock Grid.Column="1" Text="{Binding SelectedItem.Category}" FontSize="10" Opacity="0.75"
+                                   Margin="6,0,0,0" VerticalAlignment="Center" MaxWidth="100" TextTrimming="CharacterEllipsis" />
+                        <TextBlock Grid.Column="2" Text="{Binding SelectedItem.Title}" FontSize="13" FontWeight="SemiBold"
+                                   Margin="6,0,0,0" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                    </Grid>
                     <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
-                        <PathIcon Classes="countdown-pin" IsVisible="{Binding SelectedItem.IsPinned}"
-                                  Data="M16 12V4h1V2H7v2h1v8l-2 2v2h5.2v6h1.6v-6H18v-2l-2-2z" Width="12" Height="12" />
+                        <Path Classes="countdown-pin" Stretch="Uniform" IsVisible="{Binding SelectedItem.IsPinned}"
+                                  Data="M16 9V4h1c.55 0 1-.45 1-1s-.45-1-1-1H7c-.55 0-1 .45-1 1s.45 1 1 1h1v5c0 1.66-1.34 3-3 3v2h5.97v7l1 1 1-1v-7H18v-2c-1.66 0-3-1.34-3-3z" Width="12" Height="12" />
                         <TextBlock Text="{x:Static locales:Locale.Countdown_IsLunar}" FontSize="10" Opacity="0.55"
                                    VerticalAlignment="Center" IsVisible="{Binding SelectedItem.IsLunar}" />
                     </StackPanel>
@@ -429,7 +433,7 @@
 
                 <Viewbox Grid.Row="1" Stretch="Uniform" MaxHeight="200" Margin="0,4">
                     <Canvas Width="110" Height="110">
-                        <Path StrokeThickness="6" Stroke="{DynamicResource CardSubtleFill}">
+                        <Path StrokeThickness="6" Stroke="{DynamicResource CountdownTrackBrush}">
                             <Path.Data>
                                 <EllipseGeometry Center="55,55" RadiusX="48" RadiusY="48" />
                             </Path.Data>
@@ -445,7 +449,7 @@
                                 <EllipseGeometry Center="55,55" RadiusX="48" RadiusY="48" />
                             </Path.Data>
                         </Path>
-                        <StackPanel Canvas.Left="0" Canvas.Top="32" Width="110">
+                        <StackPanel Canvas.Left="0" Canvas.Top="29" Width="110">
                             <TextBlock Text="{Binding SelectedItem.MainDisplayNumber}"
                                        FontSize="24" FontWeight="Bold" LetterSpacing="-0.5"
                                        TextAlignment="Center"
@@ -474,13 +478,13 @@
                 <!-- Selected Event Summary -->
                 <Grid Grid.Row="0" RowDefinitions="Auto,Auto" Margin="0,0,0,8">
                     <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="0,0,0,6">
-                        <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                        <Grid Grid.Column="0" ColumnDefinitions="Auto,Auto,*" VerticalAlignment="Center">
                             <Ellipse Width="6" Height="6" Fill="{Binding SelectedItem.ColorBrush}" VerticalAlignment="Center" />
-                            <TextBlock Text="{Binding SelectedItem.Category}" FontSize="10" Opacity="0.75"
-                                       VerticalAlignment="Center" />
-                            <TextBlock Text="{Binding SelectedItem.Title}" FontSize="13" FontWeight="SemiBold"
-                                       TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
-                        </StackPanel>
+                            <TextBlock Grid.Column="1" Text="{Binding SelectedItem.Category}" FontSize="10" Opacity="0.75"
+                                       Margin="6,0,0,0" VerticalAlignment="Center" MaxWidth="100" TextTrimming="CharacterEllipsis" />
+                            <TextBlock Grid.Column="2" Text="{Binding SelectedItem.Title}" FontSize="13" FontWeight="SemiBold"
+                                       Margin="6,0,0,0" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                        </Grid>
                         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
                             <TextBlock Text="{Binding SelectedItem.MainDisplayNumber}" FontSize="14" FontWeight="Bold"
                                        VerticalAlignment="Bottom"
@@ -509,7 +513,7 @@
                     <ItemsControl ItemsSource="{Binding Items}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate DataType="vm:CountdownItemViewModel">
-                                <Border MinHeight="36" Margin="0,0,0,3" Background="#0F808080" CornerRadius="8">
+                                <Border MinHeight="36" Margin="0,0,0,3" Background="{DynamicResource CountdownPillBackgroundBrush}" CornerRadius="8">
                                     <Grid ColumnDefinitions="Auto,*,Auto,Auto" Margin="4,0">
                                         <!-- 规范 §4：26x26 图标容器 -->
                                         <Border Grid.Column="0" Width="26" Height="26" CornerRadius="8"
@@ -522,8 +526,8 @@
                                             <TextBlock Text="{Binding FormattedDate}" FontSize="10" Opacity="0.5"
                                                        TextTrimming="CharacterEllipsis" />
                                         </StackPanel>
-                                        <PathIcon Grid.Column="2" Classes="countdown-pin" IsVisible="{Binding IsPinned}"
-                                                  Data="M16 12V4h1V2H7v2h1v8l-2 2v2h5.2v6h1.6v-6H18v-2l-2-2z"
+                                        <Path Grid.Column="2" Classes="countdown-pin" Stretch="Uniform" IsVisible="{Binding IsPinned}"
+                                                  Data="M16 9V4h1c.55 0 1-.45 1-1s-.45-1-1-1H7c-.55 0-1 .45-1 1s.45 1 1 1h1v5c0 1.66-1.34 3-3 3v2h5.97v7l1 1 1-1v-7H18v-2c-1.66 0-3-1.34-3-3z"
                                                   Width="11" Height="11" Margin="0,0,8,0" />
                                         <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="2"
                                                     VerticalAlignment="Center" Margin="0,0,4,0">

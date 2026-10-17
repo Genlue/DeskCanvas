@@ -17,7 +17,7 @@ using DeskCanvas.ViewModels;
 namespace Clock.ViewModels;
 
 public record ClockFontOption(string? FontFamily, string DisplayName, string Description);
-public record ClockMaterialOption(SurfaceStyle? Style, string DisplayName, string Description);
+public record ClockMaterialOption(SurfaceStyle? Style, string DisplayName);
 public record ClockFontSourceOption(bool IsSystemFont, string DisplayName);
 
 public class FramelessClockSettingsViewModel : ReactiveObject
@@ -57,16 +57,15 @@ public class FramelessClockSettingsViewModel : ReactiveObject
 
         // The option LIST is derived from the shared preset catalog — same set, order and
         // naming as the Appearance page's 应用主题 cards (ThemePresets.SurfaceTemplates +
-        // SurfaceNames.Of). Only the short hint text is per-material content.
+        // SurfaceNames.Of).
         var materialOptions = new List<ClockMaterialOption>
         {
-            new(null, Locale.Clock_Material_FollowGlobal, Locale.Clock_Material_FollowGlobal_Desc)
+            new(null, Locale.Clock_Material_FollowGlobal)
         };
         materialOptions.AddRange(ThemePresets.SurfaceTemplates.Select(template =>
             new ClockMaterialOption(
                 template.EffectiveSurface,
-                SurfaceNames.Of(template.EffectiveSurface),
-                MaterialDescription(template.EffectiveSurface))));
+                SurfaceNames.Of(template.EffectiveSurface))));
         MaterialOptions = materialOptions;
 
         FontSourceOptions = new List<ClockFontSourceOption>
@@ -300,17 +299,6 @@ public class FramelessClockSettingsViewModel : ReactiveObject
     }
 
     private static bool IsZh => System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName.Equals("zh", StringComparison.OrdinalIgnoreCase);
-
-    /// <summary>
-    /// The short hint shown under a material's name. The option list itself is derived from
-    /// <see cref="ThemePresets.SurfaceTemplates"/>; this only supplies the one-line text.
-    /// </summary>
-    private static string MaterialDescription(SurfaceStyle surface) => surface switch
-    {
-        SurfaceStyle.LiquidGlass => Locale.Clock_Material_LiquidGlass_Desc,
-        SurfaceStyle.FullColor => Locale.Clock_Material_Colorful_Desc,
-        _ => Locale.Clock_Material_Acrylic_Desc
-    };
 
     public ClockFontOption SelectedSystemFont
     {

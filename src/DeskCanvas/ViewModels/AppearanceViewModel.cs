@@ -107,6 +107,9 @@ public class AppearanceViewModel : ReactiveObject
             this.RaisePropertyChanged(nameof(ShowAccentSetting));
             this.RaisePropertyChanged(nameof(ShowOpacitySetting));
             this.RaisePropertyChanged(nameof(ShowMonochromeSetting));
+            this.RaisePropertyChanged(nameof(SolidBackgroundDarkHex));
+            this.RaisePropertyChanged(nameof(SolidBackgroundLightHex));
+            this.RaisePropertyChanged(nameof(ShowSolidBackgroundSetting));
             this.RaisePropertyChanged(nameof(AccentColorHex));
             // Only re-resolve the combo when the manual/system choice itself changed: a plain
             // colour change must not touch the selection, or the closed combo would flicker on
@@ -404,6 +407,11 @@ public class AppearanceViewModel : ReactiveObject
     /// Monochrome toggle is hidden in Colorful mode, which strictly uses Apple HIG vibrant semantic palettes.
     /// </summary>
     public bool ShowMonochromeSetting => CurrentColorPolicy == ThemeColorPolicy.Normal;
+
+    /// <summary>
+    /// 背景颜色 rows are hidden in Colorful mode, which pins the fixed macOS card colours.
+    /// </summary>
+    public bool ShowSolidBackgroundSetting => CurrentColorPolicy == ThemeColorPolicy.Normal;
 
 
     public bool ShowColorPalette => appSettingsProvider.Get().Theme.AccentColor != null;
@@ -779,7 +787,64 @@ public class AppearanceViewModel : ReactiveObject
         }
     }
 
-    
+    /// <summary>
+    /// Widget card background color in dark mode (HEX, alpha is the global opacity slider's job).
+    /// Applies to both 毛玻璃 and 纯色 surfaces.
+    /// </summary>
+    public string? SolidBackgroundDarkHex
+    {
+        get => appSettingsProvider.Get().Theme.EffectiveSolidBackgroundDark;
+        set
+        {
+            if (appSettingsProvider.Get().Theme.EffectiveSolidBackgroundDark == value) return;
+            SaveSolidBackground(SolidBackgroundDark: value);
+        }
+    }
+
+    /// <summary>
+    /// Widget card background color in light mode (HEX, alpha is the global opacity slider's job).
+    /// Applies to both 毛玻璃 and 纯色 surfaces.
+    /// </summary>
+    public string? SolidBackgroundLightHex
+    {
+        get => appSettingsProvider.Get().Theme.EffectiveSolidBackgroundLight;
+        set
+        {
+            if (appSettingsProvider.Get().Theme.EffectiveSolidBackgroundLight == value) return;
+            SaveSolidBackground(SolidBackgroundLight: value);
+        }
+    }
+
+    /// <summary>
+    /// Apply the currently selected dark-mode color to the light-mode color.
+    /// </summary>
+    public void ApplySolidToLight()
+    {
+        SaveSolidBackground(SolidBackgroundLight: SolidBackgroundDarkHex);
+        this.RaisePropertyChanged(nameof(SolidBackgroundLightHex));
+    }
+
+    /// <summary>
+    /// Apply the currently selected light-mode color to the dark-mode color.
+    /// </summary>
+    public void ApplySolidToDark()
+    {
+        SaveSolidBackground(SolidBackgroundDark: SolidBackgroundLightHex);
+        this.RaisePropertyChanged(nameof(SolidBackgroundDarkHex));
+    }
+
+    private void SaveSolidBackground(string? SolidBackgroundDark = null, string? SolidBackgroundLight = null)
+    {
+        var settings = appSettingsProvider.Get();
+        var theme = settings.Theme with
+        {
+            SolidBackgroundDark = SolidBackgroundDark ?? settings.Theme.SolidBackgroundDark,
+            SolidBackgroundLight = SolidBackgroundLight ?? settings.Theme.SolidBackgroundLight
+        };
+        SaveTheme(theme);
+    }
+
+
     /// <summary>
     /// Every font available: all fonts installed on the system, plus the bundled Inter font.
     /// </summary>

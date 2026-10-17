@@ -4,21 +4,21 @@
              xmlns:views="clr-namespace:Dice.Views"
              xmlns:locales="clr-namespace:Dice.Locales"
              x:Class="Dice.Views.DiceView"
-             Foreground="{DynamicResource WidgetForeground}">
+             Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}">
 
     <UserControl.Styles>
-        <!--  Ghost 图标按钮：透明底，:pointerover 提亮  -->
+        <!--  Ghost 图标按钮：透明底，:pointerover 提亮（跟随主题 token）  -->
         <Style Selector="Button.ghost-btn">
             <Setter Property="Background" Value="Transparent" />
             <Setter Property="BorderThickness" Value="0" />
             <Setter Property="Padding" Value="4" />
             <Setter Property="Cursor" Value="Hand" />
-            <Setter Property="Foreground" Value="{DynamicResource WidgetForeground}" />
+            <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}" />
             <Setter Property="Opacity" Value="0.6" />
         </Style>
         <Style Selector="Button.ghost-btn:pointerover">
             <Setter Property="Opacity" Value="1" />
-            <Setter Property="Background" Value="#18808080" />
+            <Setter Property="Background" Value="{DynamicResource PillHoverBackground}" />
         </Style>
 
         <!--  主按钮：唯一强调色  -->
@@ -37,7 +37,7 @@
 
         <!--  Header 总和 pill：中性灰底，蓝只留给主按钮  -->
         <Style Selector="Border.sum-pill">
-            <Setter Property="Background" Value="#14808080" />
+            <Setter Property="Background" Value="{DynamicResource PillBackground}" />
             <Setter Property="CornerRadius" Value="{DynamicResource WidgetPillCornerRadius}" />
             <Setter Property="Padding" Value="8,2" />
             <Setter Property="VerticalAlignment" Value="Center" />
@@ -47,8 +47,9 @@
     <Grid Background="Transparent" PointerPressed="OnCardPointerPressed">
         <!-- 1x1 Cell Layout -->
         <Grid x:Name="CellLayout" RowDefinitions="*,Auto" Margin="6" IsVisible="False">
+            <!--  MaxWidth/MaxHeight 代替固定宽高：小尺寸 1x1 单元格内随空间收缩，避免骰面被裁切  -->
             <controls:DiceFaceControl x:Name="CellDiceFace" HorizontalAlignment="Center" VerticalAlignment="Center"
-                                     Width="56" Height="56"/>
+                                     MaxWidth="64" MaxHeight="64" Margin="2"/>
             <TextBlock Grid.Row="1" Text="{x:Static locales:Locale.Dice_TapToRoll}" FontSize="10" Opacity="0.55" HorizontalAlignment="Center" Margin="0,2,0,0"/>
         </Grid>
 
@@ -59,9 +60,9 @@
                 <TextBlock Text="{x:Static locales:Locale.Dice_Title}" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center"
                            TextTrimming="CharacterEllipsis"/>
 
-                <Border x:Name="SumPill" Grid.Column="2" Classes="sum-pill" Margin="0,0,4,0">
+                <Border x:Name="SumPill" Grid.Column="2" Classes="sum-pill" Margin="0,0,4,0" MaxWidth="140">
                     <TextBlock x:Name="SmallSumText" Text="{x:Static locales:Locale.Dice_SumPlaceholder}" FontSize="11" FontWeight="SemiBold"
-                               Foreground="{DynamicResource WidgetForeground}"/>
+                               Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}" TextTrimming="CharacterEllipsis"/>
                 </Border>
 
                 <Button Grid.Column="3" Classes="ghost-btn" Click="OnExpandDetailsClicked" ToolTip.Tip="{x:Static locales:Locale.Dice_DetailsTip}">
@@ -73,7 +74,7 @@
             <ItemsControl x:Name="SmallDiceContainer" Grid.Row="1" VerticalAlignment="Center" HorizontalAlignment="Center">
                 <ItemsControl.ItemsPanel>
                     <ItemsPanelTemplate>
-                        <WrapPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" ItemWidth="58" ItemHeight="58"/>
+                        <WrapPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" ItemWidth="60" ItemHeight="60"/>
                     </ItemsPanelTemplate>
                 </ItemsControl.ItemsPanel>
             </ItemsControl>
@@ -91,16 +92,16 @@
                 <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto">
                     <TextBlock Text="{x:Static locales:Locale.Dice_Title}" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center"
                                TextTrimming="CharacterEllipsis"/>
-                    <Border Grid.Column="2" Classes="sum-pill">
+                    <Border Grid.Column="2" Classes="sum-pill" MaxWidth="140">
                         <TextBlock x:Name="WideSumText" Text="{x:Static locales:Locale.Dice_SumPlaceholder}" FontSize="11" FontWeight="SemiBold"
-                                   Foreground="{DynamicResource WidgetForeground}"/>
+                                   Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}" TextTrimming="CharacterEllipsis"/>
                     </Border>
                 </Grid>
 
                 <ItemsControl x:Name="WideDiceContainer" Grid.Row="1" VerticalAlignment="Center" HorizontalAlignment="Center">
                     <ItemsControl.ItemsPanel>
                         <ItemsPanelTemplate>
-                            <WrapPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" ItemWidth="52" ItemHeight="52"/>
+                            <WrapPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" ItemWidth="56" ItemHeight="56"/>
                         </ItemsPanelTemplate>
                     </ItemsControl.ItemsPanel>
                 </ItemsControl>
@@ -111,7 +112,7 @@
             </Grid>
 
             <!-- Separator -->
-            <Rectangle Grid.Column="1" Fill="#14808080" VerticalAlignment="Stretch" Margin="0,4"/>
+            <Rectangle Grid.Column="1" Fill="{DynamicResource CardSubtleBorder}" VerticalAlignment="Stretch" Margin="0,4"/>
 
             <!-- Right: History List -->
             <Grid Grid.Column="2" RowDefinitions="Auto,*" Margin="10,0,0,0">
@@ -132,7 +133,7 @@
                                 <TextBlock Grid.Column="1" Text="{Binding ValuesSummary}" FontSize="11" Margin="6,0"
                                            TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
                                 <TextBlock Grid.Column="2" Text="{Binding SumSummary}" FontSize="11" FontWeight="Bold"
-                                           Foreground="{DynamicResource WidgetForeground}" HorizontalAlignment="Right"
+                                           Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}" HorizontalAlignment="Right"
                                            VerticalAlignment="Center"/>
                             </Grid>
                         </DataTemplate>

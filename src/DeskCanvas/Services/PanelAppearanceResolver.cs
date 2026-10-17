@@ -68,7 +68,23 @@ public sealed record PanelAppearance(
 public static class PanelAppearanceResolver
 {
     /// <summary>The radius every popup declared locally in its AXAML (Weather's 20 excepted).</summary>
-    public const double DefaultCornerRadius = 18.0;
+    public const double DefaultCornerRadius = 36.0;
+
+    // ---- 集中的历史观感颜色常量（P2 挂账，待语义键收敛后统一） --------------------------------
+    //
+    // 多彩（全彩）卡片的固定 macOS 底色。两个原因决定它们不能直接换成语义令牌：
+    // 1. SolidBackgroundDark/Light（ThemeResourceHelper.WriteScopeCardResources 写入的
+    //    "纯色卡片底色"键）是用户可调的纯色主题底色，默认 #2E2E2E/#FFFFFF——与本处的
+    //    多彩固定卡片色 #1C1C1E/#FFFFFF 语义不同且暗色值不同，直接消费会观感漂移；
+    // 2. ColorfulResources.WidgetBackground 虽然同值，但本类是文档化的纯静态函数
+    //    （headless 可断言，不触碰 Avalonia Application 资源）。
+    private static readonly Color ColorfulCardBackgroundDark = Color.Parse("#1C1C1E");
+    private static readonly Color ColorfulCardBackgroundLight = Colors.White;
+
+    // 面板主文字色（历史观感：暗白 / 亮近黑）。InteractionResources 目前没有主文字
+    // 令牌（只有 SecondaryTextBrush），待语义键收敛（P2）后统一。
+    private static readonly IBrush TextPrimaryDark = Brushes.White;
+    private static readonly IBrush TextPrimaryLight = new SolidColorBrush(Color.FromRgb(30, 30, 30));
 
     /// <summary>
     /// What a popup used when <c>new AppSettingsProvider().Get()</c> threw — kept verbatim so a
@@ -193,7 +209,7 @@ public static class PanelAppearanceResolver
             Surface: SurfaceStyle.Colorful,
             IsDark: isDark,
             TransparencyLevels: [WindowTransparencyLevel.Transparent, WindowTransparencyLevel.None],
-            CardBackground: new SolidColorBrush(isDark ? Color.Parse("#1C1C1E") : Color.Parse("#FFFFFF")),
+            CardBackground: new SolidColorBrush(isDark ? ColorfulCardBackgroundDark : ColorfulCardBackgroundLight),
             CardBorderBrush: new SolidColorBrush(isDark ? Color.FromArgb(60, 255, 255, 255) : Color.FromArgb(40, 0, 0, 0)),
             UseRenderedGlass: false,
             GlassMaterial: null,
@@ -225,7 +241,7 @@ public static class PanelAppearanceResolver
 
     /// <summary>Header/body text: what every popup assigned to its title boxes.</summary>
     private static IBrush TextBrush(bool isDark)
-        => isDark ? Brushes.White : new SolidColorBrush(Color.FromRgb(30, 30, 30));
+        => isDark ? TextPrimaryDark : TextPrimaryLight;
 
     /// <summary>Secondary text and icon chrome: what every popup assigned to its close button.</summary>
     private static IBrush SubTextBrush(bool isDark)

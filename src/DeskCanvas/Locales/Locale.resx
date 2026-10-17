@@ -438,6 +438,24 @@
     <data name="Settings_Advanced_GridEditorInfo" xml:space="preserve">
         <value>{0} × {1} · cell {2} px</value>
     </data>
+    <data name="Settings_Advanced_Fullscreen_Section" xml:space="preserve">
+        <value>Fullscreen</value>
+    </data>
+    <data name="Settings_Advanced_Fullscreen_Title" xml:space="preserve">
+        <value>When maximized or fullscreen</value>
+    </data>
+    <data name="Settings_Advanced_Fullscreen_Subtitle" xml:space="preserve">
+        <value>What widgets do while a fullscreen or maximized window covers every screen</value>
+    </data>
+    <data name="Settings_Advanced_Fullscreen_Hide" xml:space="preserve">
+        <value>Hide (release resources)</value>
+    </data>
+    <data name="Settings_Advanced_Fullscreen_Pause" xml:space="preserve">
+        <value>Pause (stop updating)</value>
+    </data>
+    <data name="Settings_Advanced_Fullscreen_None" xml:space="preserve">
+        <value>Do nothing</value>
+    </data>
     <data name="Settings_Advanced_Network" xml:space="preserve">
         <value>Network</value>
     </data>
@@ -700,7 +718,7 @@
         <value>Highlight angle</value>
     </data>
     <data name="Settings_Appearance_Glass_HighlightAngleHint" xml:space="preserve">
-        <value>Specular highlight incident angle (0° - 360°), default 90°.</value>
+        <value>Specular highlight incident angle (0° - 360°), default 225°.</value>
     </data>
     <data name="Settings_Appearance_Glass_Vibrancy" xml:space="preserve">
         <value>Vibrancy</value>

@@ -22,6 +22,15 @@
                     <!-- Color-level twin of the contrast brush (consumed by Accent.axaml's
                          selection-control glyph keys, e.g. ToggleSwitchKnobFillOn). -->
                     <Color x:Key="AccentContrastColor">White</Color>
+                    <!-- Slider 滑块 hover/pressed（FluentControlResources 的
+                         SliderThumbBackgroundPointerOver/Pressed）：Fluent 把这两个态硬接在
+                         SystemAccentColorLight1 / Dark1 上，而黑白 ramp 是交叉写入的——亮色
+                         变体的 Light1 就是纯白，黑滑块 hover 一下变成白点，在设置页白色内容
+                         区上彻底消失（与 Accent.axaml 选中态控件家族同一根因）。钉回静止态
+                         同源的 Dark1 槽，只用透明度做 hover/pressed 反馈（梯度与选中态家族
+                         0.85/0.7 对齐）。 -->
+                    <SolidColorBrush x:Key="SliderThumbBackgroundPointerOver" Color="{DynamicResource SystemAccentColorDark1}" Opacity="0.85" />
+                    <SolidColorBrush x:Key="SliderThumbBackgroundPressed" Color="{DynamicResource SystemAccentColorDark1}" Opacity="0.7" />
                     <SolidColorBrush x:Key="SystemControlForegroundAccentBrush" Color="{DynamicResource SystemAccentColorDark1}" />
                     <SolidColorBrush x:Key="CalendarHeaderBrush" Color="{DynamicResource SystemAccentColorDark1}" />
                     <SolidColorBrush x:Key="CalendarTodayBrush" Color="{DynamicResource SystemAccentColorDark1}" />
@@ -78,7 +87,9 @@
                     <SolidColorBrush x:Key="SearchPillBackground" Color="Transparent" />
                     <SolidColorBrush x:Key="WidgetCardBorderBrush" Color="#15000000" />
                     <SolidColorBrush x:Key="ClockDialBackgroundBrush" Color="Black" Opacity="0.2" />
-                    <SolidColorBrush x:Key="ClockOpaqueDialBackgroundBrush" Color="{DynamicResource SolidBackgroundLight}" Opacity="1.0" />
+                    <!-- 跟随背景 (表盘-1 不透明档) 交叉取值：亮色变体用暗色背景色、暗色变体用亮色背景色
+                         （与 Batteries/Storage 的 "inverted background" 同规），使表盘与当前卡片背景形成对比。 -->
+                    <SolidColorBrush x:Key="ClockOpaqueDialBackgroundBrush" Color="{DynamicResource SolidBackgroundDark}" Opacity="1.0" />
                     <SolidColorBrush x:Key="ClockStrokesBrush" Color="Black" />
                 </ResourceDictionary>
                 <ResourceDictionary x:Key="Dark">
@@ -86,6 +97,13 @@
                     <!-- The accent itself is white in this variant, so black is required. -->
                     <SolidColorBrush x:Key="AccentContrastForegroundBrush" Color="Black" />
                     <Color x:Key="AccentContrastColor">Black</Color>
+                    <!-- Slider thumb hover/pressed: same fix as the light dictionary — Fluent's
+                         pointer-over source (Light1) happens to be achromatic white here, matching
+                         the resting thumb, but pressed (Fluent's Dark1 = black) sinks the thumb
+                         into the dark surface. Pin both states to the resting slot (Light2) with
+                         the same 0.85/0.7 feedback gradient as the selection-control family. -->
+                    <SolidColorBrush x:Key="SliderThumbBackgroundPointerOver" Color="{DynamicResource SystemAccentColorLight2}" Opacity="0.85" />
+                    <SolidColorBrush x:Key="SliderThumbBackgroundPressed" Color="{DynamicResource SystemAccentColorLight2}" Opacity="0.7" />
                     <SolidColorBrush x:Key="SystemControlForegroundAccentBrush" Color="{DynamicResource SystemAccentColorLight2}" />
                     <SolidColorBrush x:Key="CalendarHeaderBrush" Color="{DynamicResource SystemAccentColorLight2}" />
                     <SolidColorBrush x:Key="CalendarTodayBrush" Color="{DynamicResource SystemAccentColorLight2}" />
@@ -142,7 +160,8 @@
                     <SolidColorBrush x:Key="SearchPillBackground" Color="Transparent" />
                     <SolidColorBrush x:Key="WidgetCardBorderBrush" Color="#25FFFFFF" />
                     <SolidColorBrush x:Key="ClockDialBackgroundBrush" Color="White" Opacity="0.2" />
-                    <SolidColorBrush x:Key="ClockOpaqueDialBackgroundBrush" Color="{DynamicResource SolidBackgroundDark}" Opacity="1.0" />
+                    <!-- 跟随背景 (表盘-1 不透明档) 交叉取值：暗色变体用亮色背景色。 -->
+                    <SolidColorBrush x:Key="ClockOpaqueDialBackgroundBrush" Color="{DynamicResource SolidBackgroundLight}" Opacity="1.0" />
                     <SolidColorBrush x:Key="ClockStrokesBrush" Color="White" />
                 </ResourceDictionary>
             </ResourceDictionary.ThemeDictionaries>

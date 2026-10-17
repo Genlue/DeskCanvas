@@ -44,6 +44,16 @@ public sealed class FocusThemeCoordinator : IDisposable
     private bool fullscreenSuspended;
 
     /// <summary>
+    /// Does the 最大化或全屏时 choice leave nothing on screen to re-render while the desktop
+    /// is covered? Only the <see cref="FullscreenBehavior.Hide"/> behaviour hides the widgets;
+    /// <see cref="FullscreenBehavior.Pause"/> keeps them visible frozen and
+    /// <see cref="FullscreenBehavior.None"/> keeps them running, so in those modes theme
+    /// changes must still apply.
+    /// </summary>
+    private bool ShouldHoldForFullscreen() =>
+        (appSettingsProvider.Get().FullscreenBehavior ?? FullscreenBehavior.Hide) == FullscreenBehavior.Hide;
+
+    /// <summary>
     /// The snapshot the tracked windows were last poked against. A state flip that reshuffles
     /// <i>which</i> screens are unfocused ({"A"} → {"B"}) leaves the uniform focused-bool — and
     /// therefore the global application — untouched, yet windows moved between the two state
@@ -71,7 +81,7 @@ public sealed class FocusThemeCoordinator : IDisposable
         this.themeService = themeService;
 
         state = focusWatch.Current;
-        fullscreenSuspended = fullscreenWatcher.IsFullscreen;
+        fullscreenSuspended = fullscreenWatcher.IsFullscreen && ShouldHoldForFullscreen();
         // Seed the switch from the saved configuration: the settle pass below must not read as a
         // toggle (nothing to refresh — the session just started).
         featureEnabled = appSettingsProvider.Get().FocusLink is { Enabled: true };
@@ -87,12 +97,14 @@ public sealed class FocusThemeCoordinator : IDisposable
         appSettingsProvider.DataChanged += (_, _, _) => Reapply();
         // "自动（跟壁纸）" in either state: the wallpaper's brightness is the mode source.
         wallpaperTheme.DarkFlagChanged += _ => Reapply();
-        // While a fullscreen application suspends the widgets, applying would only re-render
-        // hidden glass; hold the state and settle once when the desktop is back.
+        // While the desktop is covered, applying would only re-render glass — but that is true
+        // only under the 隐藏 behaviour of 最大化或全屏时: 暂停 keeps the widgets visible
+        // (frozen) and 无处理 keeps them running, so the state still has to settle. Hold and
+        // reapply once when the desktop is back only when nothing is on screen to refresh.
         fullscreenWatcher.FullscreenChanged += (_, covered) =>
         {
-            fullscreenSuspended = covered;
-            if (!covered) Reapply();
+            fullscreenSuspended = covered && ShouldHoldForFullscreen();
+            if (!fullscreenSuspended) Reapply();
         };
         // The lens every global application resolves through: each save, variant flip and
         // wallpaper flip lands on the LIVE state's theme in a single pass — the settings
@@ -147,9 +159,11 @@ public sealed class FocusThemeCoordinator : IDisposable
         var settings = appSettingsProvider.Get();
         var enabled = settings.FocusLink is { Enabled: true };
 
-        // A fullscreen application owns the desktop (and the widgets nobody can see): hold
-        // everything — the toggle refresh included — and settle once when the desktop is back.
-        if (fullscreenSuspended || fullscreenWatcher.IsFullscreen) return;
+        // A fullscreen application owns the desktop (and, under the 隐藏 behaviour of
+        // 最大化或全屏时, the widgets nobody can see): hold everything — the toggle refresh
+        // included — and settle once when the desktop is back. 暂停/无处理 keep the widgets
+        // on screen, so there is nothing to hold and theme changes keep applying.
+        if ((fullscreenSuspended || fullscreenWatcher.IsFullscreen) && ShouldHoldForFullscreen()) return;
 
         var toggled = enabled != featureEnabled;
         featureEnabled = enabled;

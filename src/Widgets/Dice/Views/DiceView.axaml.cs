@@ -147,27 +147,21 @@ public partial class DiceView : UserControl, IWidgetSelfRefreshing, IWidgetSurfa
 
         foreach (var val in viewModel.CurrentDice)
         {
-            var face1 = new DiceFaceControl
+            // 尺寸由 DiceFaceControl 自持（固定 48x48 骰面 + 4px 阴影呼吸边距），
+            // 不在调用侧硬编码宽高——此前的 50/46 两套尺寸曾造成同排骰面一大一小。
+            // 两个容器各需独立实例（同一控件不能同时挂在两个父级下）。
+            SmallDiceContainer.Items.Add(new DiceFaceControl
             {
                 Value = val,
                 DiceType = viewModel.Model.Type,
-                FaceStyle = viewModel.Model.FaceStyle,
-                Width = 50,
-                Height = 50,
-                Margin = new Thickness(4)
-            };
-            SmallDiceContainer.Items.Add(face1);
-
-            var face2 = new DiceFaceControl
+                FaceStyle = viewModel.Model.FaceStyle
+            });
+            WideDiceContainer.Items.Add(new DiceFaceControl
             {
                 Value = val,
                 DiceType = viewModel.Model.Type,
-                FaceStyle = viewModel.Model.FaceStyle,
-                Width = 46,
-                Height = 46,
-                Margin = new Thickness(3)
-            };
-            WideDiceContainer.Items.Add(face2);
+                FaceStyle = viewModel.Model.FaceStyle
+            });
         }
 
         SumPill.IsVisible = viewModel.Model.ShowSum;

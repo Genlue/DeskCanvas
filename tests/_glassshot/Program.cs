@@ -73,9 +73,9 @@ if (args.Length > 0 && args[0] == "seed")
 string[] AllWidgetNames() =>
 [
     "Batteries", "Calendar", "Clock", "ControlCenter", "Countdown", "Dice", "FixedWidgets",
-    "Folders", "Fortune", "Habits", "Hitokoto", "Map", "Monitor", "Music", "Notes", "Picture",
+    "Folders", "Habits", "Hitokoto", "Map", "Monitor", "Music", "Notes", "Picture",
     "Pomodoro", "Progress", "Reminders", "Search", "Shortcuts", "StackWidgets", "Storage",
-    "Timetable", "Tools", "Weather", "Wheel"
+    "Timetable", "Tools", "Weather"
 ];
 
 // ---- list mode: enumerate windows of processes whose name contains the filter.
@@ -255,7 +255,7 @@ settings.Save(new AppSettings(
     new Region("en"), false, null, ActiveProfile: AppSettings.DefaultProfileName));
 
 var assemblyProvider = new AssemblyProviderStub();
-var widgetFactory = new WidgetFactory(assemblyProvider, layout, monitor, () => null!);
+var widgetFactory = new WidgetFactory(assemblyProvider, layout, monitor, () => null!, settings);
 var themeService = new ThemeService(settings, new WallpaperThemeService());
 var localeService = new LocaleService(settings);
 var profileService = new ProfileService(settings, layout, themeService, localeService, widgetFactory, monitor);
@@ -282,9 +282,9 @@ AssemblyProviderStub.Services = services;
 var names = new[]
 {
     "Batteries", "Calendar", "Clock", "ControlCenter", "Countdown", "Dice", "FixedWidgets",
-    "Folders", "Fortune", "Habits", "Hitokoto", "Map", "Monitor", "Music", "Notes", "Picture",
+    "Folders", "Habits", "Hitokoto", "Map", "Monitor", "Music", "Notes", "Picture",
     "Pomodoro", "Progress", "Reminders", "Search", "Shortcuts", "StackWidgets", "Storage",
-    "Timetable", "Tools", "Weather", "Wheel"
+    "Timetable", "Tools", "Weather"
 };
 
 var shot = 0;

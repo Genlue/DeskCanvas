@@ -108,24 +108,6 @@
     <data name="Clock_Material_FollowGlobal" xml:space="preserve">
         <value>Follow Global Theme</value>
     </data>
-    <data name="Clock_Material_FollowGlobal_Desc" xml:space="preserve">
-        <value>Follows the currently active theme and light/dark mode</value>
-    </data>
-    <data name="Clock_Material_Acrylic_Desc" xml:space="preserve">
-        <value>OS-level Mica backdrop</value>
-    </data>
-    <data name="Clock_Material_Solid_Desc" xml:space="preserve">
-        <value>Opaque solid card, no blur</value>
-    </data>
-    <data name="Clock_Material_LiquidGlass_Desc" xml:space="preserve">
-        <value>Refraction glass sampled from the desktop</value>
-    </data>
-    <data name="Clock_Material_LiquidGlassV2_Desc" xml:space="preserve">
-        <value>Real-time refraction · highlights and dispersion</value>
-    </data>
-    <data name="Clock_Material_Colorful_Desc" xml:space="preserve">
-        <value>Apple HIG vibrant opaque card</value>
-    </data>
     <data name="Clock_LiquidGlassOpacity" xml:space="preserve">
         <value>Liquid Glass Opacity</value>
     </data>

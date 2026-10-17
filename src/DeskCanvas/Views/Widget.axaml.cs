@@ -38,6 +38,13 @@ public partial class Widget : Window, INotifyPropertyChanged, IFocusThemedWindow
     private (int Columns, int Rows)? manualSpan;
     private bool isFrameless;
 
+    // 多彩（全彩）卡片的固定 macOS 底色（P2 挂账，待语义键收敛后统一）。与
+    // ColorfulResources.WidgetBackground 的 Dark 值同源，但不从资源解析——上面
+    // WidgetCardBackground 的多彩分支是文档化的显式回退保证：per-state 多个 surface
+    // 字典同时加载时，别的 material 的 WidgetBackground 可能遮蔽共享键。也不可换
+    // SolidBackgroundDark/Light——那是用户可调的纯色主题底色（默认 #2E2E2E），值不同。
+    private static readonly Color ColorfulCardBackgroundDark = Color.Parse("#1C1C1E");
+
     /// <summary>Resolved lazily: the widget is also instantiated in contexts without the app
     /// services (design-time / checks), where the 失焦自动切换 material resolution degrades to
     /// the shared theme.</summary>
@@ -83,6 +90,12 @@ public partial class Widget : Window, INotifyPropertyChanged, IFocusThemedWindow
 
     /// <summary>True while the host suspended the widgets (fullscreen application active).</summary>
     private bool suspended;
+
+    /// <summary>
+    /// True while the host paused ticking in the freeze-in-place mode (高级设置 → 最大化或全屏时 →
+    /// 暂停): the window stays visible, nothing is released, only the updates stop.
+    /// </summary>
+    private bool ticksPaused;
 
     /// <summary>The final activity of a tearing-down widget: its display is going away.</summary>
     private static readonly ActivitySnapshot TeardownActivity = new(ActivityReason.DisplayDetached);
@@ -136,6 +149,29 @@ public partial class Widget : Window, INotifyPropertyChanged, IFocusThemedWindow
         if (!suspended) return;
         suspended = false;
         (ContentPresenter.Content as IWidgetSuspendable)?.Resume();
+        ReportSessionActivity(ActivityReason.DesktopVisible);
+    }
+
+    /// <summary>
+    /// Freeze-in-place cover handling (高级设置 → 最大化或全屏时 → 暂停): the window keeps
+    /// showing its last frame, but the hosted content is told the desktop is covered so its
+    /// own timers and data polling gate themselves. Unlike <see cref="SuspendContent"/> nothing
+    /// is hidden and no cache is released — the widget is meant to be seen again unchanged the
+    /// moment the covering window moves. Widgets that are hidden-suspended are skipped: their
+    /// sessions already report the covered reason.
+    /// </summary>
+    public void PauseTicks()
+    {
+        if (suspended || ticksPaused) return;
+        ticksPaused = true;
+        ReportSessionActivity(ActivityReason.ScreenCovered);
+    }
+
+    /// <summary>Undo <see cref="PauseTicks"/> (no-op when inactive).</summary>
+    public void ResumeTicks()
+    {
+        if (!ticksPaused) return;
+        ticksPaused = false;
         ReportSessionActivity(ActivityReason.DesktopVisible);
     }
 
@@ -207,9 +243,15 @@ public partial class Widget : Window, INotifyPropertyChanged, IFocusThemedWindow
         RenderOptions.SetTextRenderingMode(this, TextRenderingMode.Antialias);
         UpdateContentSize();
         
-        // Manual grid: size is driven by the grid (span derived from the stored pixel size).
+        // Manual grid: the span (size steppers / occupancy) is derived from the stored
+        // pixel size, but the window size IS the stored size. The grid must not re-derive
+        // the size against the current DPI: span × cell ÷ scaling keeps the physical
+        // footprint DPI-invariant while the rest of the desktop scales with DPI, so a
+        // scaling change (or a restart under a changed one) rewrote every widget's size —
+        // the reported "组件放弃原尺寸去适应 DPI" defect. The size only ever changes
+        // through the user paths (size steppers, grid editor, cross-screen drag, grid
+        // settings) and is re-asserted from storage on topology events.
         manualSpan = GetSpan();
-        gridService.SetSize(this, manualSpan.Value.Columns, manualSpan.Value.Rows);
         SetMinMaxSize(true);
         
         Activated += OnActivated;
@@ -363,17 +405,33 @@ public partial class Widget : Window, INotifyPropertyChanged, IFocusThemedWindow
         ApplyPosition();
     }
 
-    /// <summary>Restore owning display geometry and styling without changing saved layout.</summary>
+    /// <summary>
+    /// Restore owning display geometry and styling without changing saved layout: the
+    /// stored position and the <b>stored size</b> are re-asserted (a scaling change makes
+    /// Windows keep the window's physical size, which silently rewrites its DIP size),
+    /// then the position is re-snapped to the screen's grid and clamped onto the working
+    /// area.
+    /// <para>
+    /// The size is deliberately NOT re-derived from the grid: span × cell ÷ scaling
+    /// would re-fit the widget to the new DPI — abandoning the size the user set — while
+    /// every DIP-sized neighbour (fonts, controls, other windows) scales with the DPI.
+    /// The widget keeps its stored DIP size across scaling changes and scales physically
+    /// like any other desktop window. The grid keeps governing size only through the user
+    /// paths (size steppers, grid editor, cross-screen drag, grid settings).
+    /// </para>
+    /// </summary>
     public void RefreshDisplayMetrics()
     {
         if (tornDown || displayMonitor.IsTopologyChanging || OwningScreen == null) return;
         restoringDisplayMetrics = true;
         try
         {
+            var layout = widgetLayoutProvider.Get();
             ApplyPosition();
             SetMinMaxSize(false);
-            manualSpan ??= GetSpan();
-            gridService.SetSize(this, manualSpan.Value.Columns, manualSpan.Value.Rows);
+            Width = layout.Width;
+            Height = layout.Height;
+            manualSpan = GetSpan();
             gridService.SnapPosition(this);
             ClampRestoredPosition();
             SetMinMaxSize(true);
@@ -829,7 +887,7 @@ public partial class Widget : Window, INotifyPropertyChanged, IFocusThemedWindow
                 // from the resource: with several surface dictionaries loaded at once
                 // (per-state materials) another material's WidgetBackground could shadow it.
                 return variant == Avalonia.Styling.ThemeVariant.Dark
-                    ? new SolidColorBrush(Color.Parse("#1C1C1E"))
+                    ? new SolidColorBrush(ColorfulCardBackgroundDark)
                     : Brushes.White;
             }
 

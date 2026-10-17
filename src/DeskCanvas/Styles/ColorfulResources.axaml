@@ -244,7 +244,9 @@
                     <!-- 表盘-1 内圈面盘（多彩亮色档）：恒黑卡片上的“白盘”，保持既有观感
                          （#1C1C1E@8% 叠白卡 = #EDEDED），与表盘-3「黑白」的亮色白同值。 -->
                     <SolidColorBrush x:Key="ClockDialBackgroundBrush" Color="#EDEDED" Opacity="1.0" />
-                    <SolidColorBrush x:Key="ClockOpaqueDialBackgroundBrush" Color="#FFFFFF" Opacity="1.0" />
+                    <!-- 跟随背景 (表盘-1 不透明档) 交叉取值：亮色变体用暗色背景色（多彩下为 #1C1C1E，
+                         由 WriteScopeCardResources 写入 SolidBackgroundDark），与恒黑卡片背景形成对比。 -->
+                    <SolidColorBrush x:Key="ClockOpaqueDialBackgroundBrush" Color="{DynamicResource SolidBackgroundDark}" Opacity="1.0" />
                     <SolidColorBrush x:Key="ClockStrokesBrush" Color="#8E8E93" />
                     <SolidColorBrush x:Key="FlipClockTopFlapBrush" Color="#F4F4F8" />
                     <SolidColorBrush x:Key="FlipClockBottomFlapBrush" Color="#EAEAF0" />
@@ -362,6 +364,11 @@
                     <SolidColorBrush x:Key="CountdownPillBackgroundBrush" Color="#10000000" />
                     <SolidColorBrush x:Key="CountdownPillBorderBrush" Color="#14000000" />
                     <SolidColorBrush x:Key="CountdownTrackBrush" Color="#15000000" />
+
+                    <!-- Habits: habit tracker pure card -->
+                    <SolidColorBrush x:Key="HabitsCardBackground" Color="#FFFFFF" />
+                    <!-- Dice: dice roller pure card -->
+                    <SolidColorBrush x:Key="DiceCardBackground" Color="#FFFFFF" />
 
                     <!-- Hitokoto: Apple Literary pure card with refined purple watermark & pill -->
                     <SolidColorBrush x:Key="HitokotoCardBackground" Color="#FFFFFF" />
@@ -503,7 +510,9 @@
                     <!-- 表盘-1 内圈面盘（多彩亮色档）：恒黑卡片上的“白盘”，保持既有观感
                          （#1C1C1E@8% 叠白卡 = #EDEDED），与表盘-3「黑白」的亮色白同值。 -->
                     <SolidColorBrush x:Key="ClockDialBackgroundBrush" Color="#EDEDED" Opacity="1.0" />
-                    <SolidColorBrush x:Key="ClockOpaqueDialBackgroundBrush" Color="#FFFFFF" Opacity="1.0" />
+                    <!-- 跟随背景 (表盘-1 不透明档) 交叉取值：亮色变体用暗色背景色（多彩下为 #1C1C1E，
+                         由 WriteScopeCardResources 写入 SolidBackgroundDark），与恒黑卡片背景形成对比。 -->
+                    <SolidColorBrush x:Key="ClockOpaqueDialBackgroundBrush" Color="{DynamicResource SolidBackgroundDark}" Opacity="1.0" />
                     <SolidColorBrush x:Key="ClockStrokesBrush" Color="#8E8E93" />
                     <SolidColorBrush x:Key="FlipClockTopFlapBrush" Color="#F4F4F8" />
                     <SolidColorBrush x:Key="FlipClockBottomFlapBrush" Color="#EAEAF0" />
@@ -621,6 +630,11 @@
                     <SolidColorBrush x:Key="CountdownPillBackgroundBrush" Color="#18FFFFFF" />
                     <SolidColorBrush x:Key="CountdownPillBorderBrush" Color="#20FFFFFF" />
                     <SolidColorBrush x:Key="CountdownTrackBrush" Color="#20FFFFFF" />
+
+                    <!-- Habits: habit tracker dark card -->
+                    <SolidColorBrush x:Key="HabitsCardBackground" Color="#1C1C1E" />
+                    <!-- Dice: dice roller dark card -->
+                    <SolidColorBrush x:Key="DiceCardBackground" Color="#1C1C1E" />
 
                     <!-- Hitokoto: Apple Literary dark card with luminous purple watermark & pill -->
                     <SolidColorBrush x:Key="HitokotoCardBackground" Color="#1C1C1E" />
@@ -761,7 +775,7 @@
                     <!-- 表盘-1 内圈面盘（多彩暗色档）：叠在恒黑卡片上呈 #373738，
                          与表盘-3「黑白」的暗色黑同值。 -->
                     <SolidColorBrush x:Key="ClockDialBackgroundBrush" Color="#373738" Opacity="1.0" />
-                    <SolidColorBrush x:Key="ClockOpaqueDialBackgroundBrush" Color="#2C2C2E" Opacity="1.0" />
+                    <SolidColorBrush x:Key="ClockOpaqueDialBackgroundBrush" Color="{DynamicResource SolidBackgroundLight}" Opacity="1.0" />
                     <SolidColorBrush x:Key="ClockStrokesBrush" Color="#8E8E93" />
                     <SolidColorBrush x:Key="FlipClockTopFlapBrush" Color="#2C2C2E" />
                     <SolidColorBrush x:Key="FlipClockBottomFlapBrush" Color="#232325" />

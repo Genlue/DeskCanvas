@@ -199,21 +199,16 @@ public class App : Application
         // would otherwise re-introduce exactly that violation).
         WidgetZOrder.PinWidgetToBottom(anchor);
 
-        // Fullscreen (games, video, presentations): the widgets are invisible anyway, so
-        // hide them, pause every shared widget timer and release the material caches —
-        // that hands the memory back to the fullscreen application. Restored on exit.
+        // Fullscreen (games, video, presentations): what happens to the widgets is the
+        // 最大化或全屏时 choice in 高级设置 — 隐藏 hides the windows, pauses every shared
+        // widget timer and releases the material caches (handing the memory to the covering
+        // application), 暂停 freezes them in place, 无处理 leaves them running. Restored on
+        // exit; a settings save made while covered re-applies the choice immediately.
         var fullscreenWatcher = services.GetRequiredService<FullscreenWatcherService>();
         fullscreenWatcher.FullscreenChanged += (_, isFullscreen) =>
-        {
-            if (isFullscreen)
-            {
-                widgetFactory.SuspendAll();
-            }
-            else
-            {
-                widgetFactory.ResumeAll();
-            }
-        };
+            widgetFactory.ApplyFullscreen(isFullscreen);
+        appSettingsProvider.DataChanged += (_, _, _) =>
+            widgetFactory.ApplyFullscreen(fullscreenWatcher.IsFullscreen);
         fullscreenWatcher.Attach(anchor);
 
         // 失焦自动切换 (设置 → 外观): watch the desktop's activation state and push the

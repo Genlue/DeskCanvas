@@ -237,10 +237,49 @@ public partial class Gallery : UserControl, INotifyPropertyChanged
         var attached = settingsWindow != null ? displayMonitor.Find(settingsWindow) : null;
         if (attached == null)
         {
-            // Monitor not ready (edge case): legacy primary placement.
+            // Monitor not ready (edge case): legacy primary placement. The Avalonia
+            // screen list itself (window.Screens) is still valid even while
+            // displayMonitor's own reconciliation has not committed yet — resolve the
+            // primary working area from it and run the SAME first-fit the regular
+            // path uses. The old pointer placement dropped the card at the clicked
+            // gallery card's screen position with no occupancy test at all, so every
+            // widget placed in this window stacked onto the previous one (the
+            // 吞组件 overlap); the fallback below only runs when no screen geometry
+            // is resolvable at all.
             var legacy = layoutProvider.Get().FindById(ScreensLayout.LegacyPrimaryId)
                          ?? new ScreenLayout(ScreensLayout.LegacyPrimaryId, null, null, null, null, null, []);
             var (defaultW, defaultH) = DefaultSize(settingsWindow, columns, rows);
+            var primary = settingsWindow?.Screens.Primary;
+            if (primary != null)
+            {
+                var area = primary.WorkingArea;
+                var scaling = primary.Scaling;
+                var grid = legacy.Grid ?? appSettingsProvider.Get().Grid ?? DeskCanvas.Core.Models.Settings.Grid.Default;
+                var (cell, gridX, gridY) = GridMetrics.Resolve(grid, area.X, area.Y, area.Width, area.Height);
+                var gridColumns = Math.Max(1, grid.Columns);
+                var gridRows = Math.Max(1, grid.Rows);
+                var spanCols = Math.Clamp(columns, 1, gridColumns);
+                var spanRows = Math.Clamp(rows, 1, gridRows);
+                // The unmigrated legacy entry keeps absolute desktop coordinates; the
+                // scan works relative to the primary screen's working area.
+                var relative = legacy.Key == null
+                    ? legacy.Layout.Select(item => item with { X = item.X - area.X, Y = item.Y - area.Y }).ToList()
+                    : legacy.Layout;
+                var gridRelX = gridX - area.X;
+                var gridRelY = gridY - area.Y;
+                var (col, row) = GridMetrics.FindFirstFitCell(relative, cell, scaling,
+                    gridRelX, gridRelY, gridColumns, gridRows, spanCols, spanRows);
+                if (col < 0) { col = 0; row = 0; } // grid full: origin, same as ComputePlacement's fallback
+                var relativeX = gridRelX + col * cell;
+                var relativeY = gridRelY + row * cell;
+                // v1 storage is absolute desktop pixels; keyed entries store relative.
+                var (storedX, storedY) = legacy.Key == null
+                    ? (relativeX + area.X, relativeY + area.Y)
+                    : (relativeX, relativeY);
+                widgetFactory.Add(legacy, new WidgetLayout(preview.Type, preview.Subtype, storedX, storedY,
+                    defaultW, defaultH, null)).Show();
+                return;
+            }
             var pointer = anchor != null ? anchor.PointToScreen(new Point(0, 0)) : new PixelPoint(0, 0);
             if (legacy.Key != null)
             {
@@ -289,9 +328,12 @@ public partial class Gallery : UserControl, INotifyPropertyChanged
     /// dropping a new card at the clicked position would bury it under the settings
     /// window and the widgets already there — the user then has to drag windows away
     /// just to grab it. Instead the card goes into the FIRST UNOCCUPIED slot,
-    /// scanning the screen's grid left → right, top → bottom. Only when no cell can
-    /// fit the widget's span does it fall back to the grid origin (top-left corner),
-    /// ignoring occupancy and covering whatever sits there.
+    /// scanning the screen's grid left → right, top → bottom
+    /// (<see cref="GridMetrics.FindFirstFitCell"/>: a cell occupancy matrix built from
+    /// every stored widget's own span, so differently sized widgets pack correctly and
+    /// a new card can never overlap an existing one while any free slot remains).
+    /// Only when the grid is genuinely full does it fall back to the grid origin
+    /// (top-left corner), covering whatever sits there.
     /// </para>
     /// </summary>
     private (int X, int Y, int Width, int Height) ComputePlacement(
@@ -306,8 +348,6 @@ public partial class Gallery : UserControl, INotifyPropertyChanged
         var (cell, gridX, gridY) = GridMetrics.Resolve(grid, area.X, area.Y, area.Width, area.Height);
         var width = (int) Math.Round(defaultCols * cell / scaling);
         var height = (int) Math.Round(defaultRows * cell / scaling);
-        var widthPhys = (int) Math.Round(width * scaling);
-        var heightPhys = (int) Math.Round(height * scaling);
 
         // Candidate origins are only those where the whole span stays inside the grid.
         var columns = Math.Max(1, grid.Columns);
@@ -315,53 +355,15 @@ public partial class Gallery : UserControl, INotifyPropertyChanged
         var spanCols = Math.Clamp(defaultCols, 1, columns);
         var spanRows = Math.Clamp(defaultRows, 1, rows);
 
-        for (var row = 0; row + spanRows <= rows; row++)
-        {
-            for (var col = 0; col + spanCols <= columns; col++)
-            {
-                var x = gridX + col * cell;
-                var y = gridY + row * cell;
-                if (!IntersectsAnyWidget(screenConfig.Layout, area, scaling, cell, x, y, widthPhys, heightPhys))
-                    return (x - area.X, y - area.Y, width, height);
-            }
-        }
+        var gridRelX = gridX - area.X;
+        var gridRelY = gridY - area.Y;
+        var (col, row) = GridMetrics.FindFirstFitCell(screenConfig.Layout, cell, scaling,
+            gridRelX, gridRelY, columns, rows, spanCols, spanRows);
 
         // Grid full (or widget larger than the grid): start at the top-left corner,
         // ignoring occupancy — the new card covers whatever is there.
-        return (gridX - area.X, gridY - area.Y, width, height);
-    }
-
-    /// <summary>
-    /// Whether a candidate rectangle (physical pixels) intersects any widget already
-    /// stored on this screen (stored positions are working-area-relative).
-    /// <para>
-    /// A stored size is turned back into cells through <see cref="GridMetrics.ResolveSpan"/>
-    /// — the same heuristic the widget itself uses to restore its span. Reading it as
-    /// DIPs unconditionally (plain <c>Width * scaling</c>) inflated every entry written by
-    /// a pre-DIP build by the display scaling factor: on a 125% screen a stored 2-cell
-    /// widget covered 2.5 cells, so the scan saw the neighbouring cell as taken and either
-    /// skipped a free slot or declared the whole grid full and fell back to the grid
-    /// origin — a new widget then landed on top of the existing ones no matter its size.
-    /// </para>
-    /// </summary>
-    private static bool IntersectsAnyWidget(
-        IReadOnlyList<WidgetLayout> layout, PixelRect area, double scaling, int cell,
-        int x, int y, int widthPhys, int heightPhys)
-    {
-        foreach (var widget in layout)
-        {
-            var wx = widget.X + area.X;
-            var wy = widget.Y + area.Y;
-            // Snap the stored size onto its cells: widgets are grid-aligned, and a
-            // pixel-exact box would let rounding gaps of a pixel or two admit a
-            // candidate that visually overlaps.
-            var ww = Math.Max(1, GridMetrics.ResolveSpan(widget.Width, cell, scaling)) * cell;
-            var wh = Math.Max(1, GridMetrics.ResolveSpan(widget.Height, cell, scaling)) * cell;
-            if (x < wx + ww && wx < x + widthPhys && y < wy + wh && wy < y + heightPhys)
-                return true;
-        }
-
-        return false;
+        if (col < 0) return (gridRelX, gridRelY, width, height);
+        return (gridRelX + col * cell, gridRelY + row * cell, width, height);
     }
 
     private (int Width, int Height) DefaultSize(Window? settingsWindow, int defaultCols = 2, int defaultRows = 2)

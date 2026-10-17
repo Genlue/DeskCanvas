@@ -36,7 +36,7 @@
 | ClockFamilySessionChecks | 正式门禁（已验证套件） | P8-D Clock 家族（Analog/Flip/Frameless/TickDial）：SharedTimeZone 第二消费者落地（四视图时区样板收敛）、私有定时器收敛+门控、主题逐屏、非法 id 回退 Utc 契约 |
 | MediaWidgetSessionChecks | 正式门禁（已验证套件） | P8-E 媒体类（Picture/Music/Map/Pomodoro/Dice/Wheel）：轮播/进度/计时门控（状态不丢）、Pomodoro 墙钟补放、SMTC 共享引擎不变、交互驱动组件 N/A 决策 |
 | ToolsWidgetSessionChecks | 正式门禁（已验证套件） | P8-F 工具杂项（Tools/Stack/Search/ControlCenter）：3 弹窗 PanelService 迁移（13 个待迁弹窗清单清零）、剪贴板监听/防抖语义不变、ControlCenter N/A 决策 |
-| ProfileStorageChecks | 正式门禁（已验证套件） | P12 数据 Profile 化：默认 Default 解析、activeProfile.json 指针读写、组件数据跨 Profile 完全隔离、ProfileService 增删重命名克隆热切换 |
+| ProfileStorageChecks | 正式门禁（已验证套件） | P12 数据 Profile 化：默认 Default 解析、activeProfile.json 指针读写、组件数据跨 Profile 完全隔离、ProfileService 增删重命名克隆热切换；P15 新建方案播种契约：出厂默认外观（不继承当前样式）、零组件/零组件数据、仅应用级偏好沿用、热切换读回 |
 | UninstallerChecks | 正式门禁（已验证套件） | P13 独立卸载与 Setup 安装程序：动态数据路径决议与自动跟随、默认保留数据（未勾选）、彻底清理（勾选）、只读文件鲁棒删除、自启动归属判定、Inno Setup 编译与内置卸载契约（35 项） |
 | ThemeSettingsChecks | 正式门禁（已验证套件） | P4 ThemeSnapshot、draft/commit、revision 冲突与影响域 |
 | SettingsIntegrationChecks | 正式门禁（已验证套件） | P4 真实 Appearance 设置页与原子 JSON 保存、失败/冲突重试、窗口资源隔离、Avalonia 文字预编辑与滑块完成提交 |
@@ -44,11 +44,11 @@
 | ProviderIntegrationChecks | 正式门禁（已验证套件） | P5 真实 Weather/Fixed/Monitor 兼容入口、完整响应投影、城市搜索与取消隔离、共享指标；冻结响应，无外网/WMI |
 | LayoutOwnershipChecks | 正式门禁（已验证套件） | 布局归属：宿主与各面板布局职责边界 |
 | FocusSwitchChecks | 正式门禁（已验证套件） | 失焦自动切换主题契约与原生枚举冒烟 |
-| MonochromeAccentChecks | 正式门禁（已验证套件） | 单色强调色模式下的配色契约 |
+| MonochromeAccentChecks | 正式门禁（已验证套件） | 单色强调色模式下的配色契约：黑白/背景色 ramp 交叉写入与归还、Fluent 选中态控件（开关/复选/单选）与 Slider 滑块三态（静止/hover/pressed）的可读性契约、accent-button 模板 |
 | WidgetAdaptiveChecks | 正式门禁（已验证套件） | 组件自适应档位/尺寸契约 |
 | FullscreenChecks | 正式门禁（已验证套件） | 全屏行为与原生窗口枚举冒烟 |
 | LiquidGlassChecks | 正式门禁（已验证套件） | 液态玻璃材质（P11 三元材质、Kyant0 光学模型、HighlightAngle 角度向量、默认关闭实时采样、GPU/CPU 渲染与壁纸布局等）契约；W5 收官时接入统一入口 |
-| MultiScreenGridChecks | 正式门禁 | 多屏网格坐标与映射契约 |
+| MultiScreenGridChecks | 正式门禁 | 多屏网格坐标与映射契约；组件库放置的行优先首个适配（占用矩阵、异构尺寸打包、换行、网格满回退、偏离网格存量组件保守占位、零两两重叠） |
 | BottomBandChecks | 正式门禁 | 底部条带布局/行为契约 |
 | SettingsReleaseChecks | 正式门禁 | 设置页关闭后的资源释放契约 |
 | PictureMemoryChecks | 正式门禁 | 图片组件内存释放契约 |

@@ -310,7 +310,7 @@ Rig SetupRig()
         .SetValue(monitor, new List<AttachedScreen> { attached });
 
     var assemblyProvider = new AssemblyProviderStub();
-    var widgetFactory = new WidgetFactory(assemblyProvider, layout, monitor, () => null!);
+    var widgetFactory = new WidgetFactory(assemblyProvider, layout, monitor, () => null!, settings);
     var themeService = new ThemeService(settings, new WallpaperThemeService());
     var localeService = new LocaleService(settings);
     var profileService = new ProfileService(settings, layout, themeService, localeService, widgetFactory, monitor);

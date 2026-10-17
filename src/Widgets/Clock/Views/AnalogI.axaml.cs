@@ -90,6 +90,8 @@ public partial class AnalogI : UserControl, IFixedSizeWidget, IWidgetSurfaceHint
     /// 表盘颜色: 当 IsDialOpaque 为 true 时，根据 DialColorMode 应用不透明背景（跟随背景使用
     /// ClockOpaqueDialBackgroundBrush，黑白和自定义使用指定颜色）；当 IsDialOpaque 为 false 时，
     /// 移除本地画刷覆盖，回退至主题字典的半透明 ClockDialBackgroundBrush。
+    /// 跟随背景为主题字典的交叉取值：亮色变体用暗色背景色、暗色变体用亮色背景色
+    /// （与 Batteries/Storage 的 inverted background 同规），使表盘与当前卡片背景形成对比。
     /// </summary>
     private void ApplyDialColor()
     {

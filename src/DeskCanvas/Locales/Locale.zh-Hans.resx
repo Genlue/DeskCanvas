@@ -537,6 +537,24 @@
     <data name="Settings_Advanced_GridEditorInfo" xml:space="preserve">
         <value>{0} × {1} · 格子 {2} px</value>
     </data>
+    <data name="Settings_Advanced_Fullscreen_Section" xml:space="preserve">
+        <value>全屏</value>
+    </data>
+    <data name="Settings_Advanced_Fullscreen_Title" xml:space="preserve">
+        <value>最大化或全屏时</value>
+    </data>
+    <data name="Settings_Advanced_Fullscreen_Subtitle" xml:space="preserve">
+        <value>桌面被全屏或最大化的窗口完全盖住时，组件的处理方式</value>
+    </data>
+    <data name="Settings_Advanced_Fullscreen_Hide" xml:space="preserve">
+        <value>隐藏（释放资源）</value>
+    </data>
+    <data name="Settings_Advanced_Fullscreen_Pause" xml:space="preserve">
+        <value>暂停（停止更新）</value>
+    </data>
+    <data name="Settings_Advanced_Fullscreen_None" xml:space="preserve">
+        <value>无处理</value>
+    </data>
     <data name="Settings_Advanced_Network" xml:space="preserve">
         <value>网络</value>
     </data>
@@ -799,7 +817,7 @@
         <value>高光角度</value>
     </data>
     <data name="Settings_Appearance_Glass_HighlightAngleHint" xml:space="preserve">
-        <value>反射高光入射角 (0° - 360°)，默认 90°。</value>
+        <value>反射高光入射角 (0° - 360°)，默认 225°。</value>
     </data>
     <data name="Settings_Appearance_Glass_Vibrancy" xml:space="preserve">
         <value>活力</value>
