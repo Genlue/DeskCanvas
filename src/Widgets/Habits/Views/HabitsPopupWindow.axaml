@@ -4,7 +4,7 @@
         xmlns:controls="clr-namespace:DeskCanvas.Views.Controls;assembly=DeskCanvas"
         x:Class="Habits.Views.HabitsPopupWindow"
         Title="Habits"
-        SystemDecorations="None"
+        WindowDecorations="None"
         Background="Transparent"
         TransparencyLevelHint="Transparent"
         ShowInTaskbar="False"
@@ -110,13 +110,13 @@
                 <StackPanel Orientation="Horizontal" Spacing="2">
                     <RadioButton x:Name="TabTodayBtn" Classes="seg-tab"
                                  Content="{x:Static locales:Locale.Habits_Tab_Today}"
-                                 IsChecked="True" Checked="OnTabChanged" />
+                                 IsChecked="True" IsCheckedChanged="OnTabChanged" />
                     <RadioButton x:Name="TabCalendarBtn" Classes="seg-tab"
                                  Content="{x:Static locales:Locale.Habits_Tab_Calendar}"
-                                 Checked="OnTabChanged" />
+                                 IsCheckedChanged="OnTabChanged" />
                     <RadioButton x:Name="TabStatsBtn" Classes="seg-tab"
                                  Content="{x:Static locales:Locale.Habits_Tab_Stats}"
-                                 Checked="OnTabChanged" />
+                                 IsCheckedChanged="OnTabChanged" />
                 </StackPanel>
             </Border>
 
@@ -131,27 +131,27 @@
 
                         <Grid ColumnDefinitions="*, Auto">
                             <TextBox Grid.Column="0" x:Name="FormTitleBox"
-                                     Watermark="{x:Static locales:Locale.Habits_TitlePrompt}" Margin="0,0,8,0" />
+                                     PlaceholderText="{x:Static locales:Locale.Habits_TitlePrompt}" Margin="0,0,8,0" />
                             <TextBox Grid.Column="1" x:Name="FormIconBox" Width="60"
-                                     Watermark="{x:Static locales:Locale.Habits_IconPrompt}" />
+                                     PlaceholderText="{x:Static locales:Locale.Habits_IconPrompt}" />
                         </Grid>
 
                         <!-- Type Selector: Boolean vs Numeric -->
                         <StackPanel Orientation="Horizontal" Spacing="16">
                             <RadioButton x:Name="TypeBooleanRadio" Content="{x:Static locales:Locale.Habits_Type_Boolean}"
-                                         IsChecked="True" Checked="OnFormTypeChanged" />
+                                         IsChecked="True" IsCheckedChanged="OnFormTypeChanged" />
                             <RadioButton x:Name="TypeNumericRadio" Content="{x:Static locales:Locale.Habits_Type_Numeric}"
-                                         Checked="OnFormTypeChanged" />
+                                         IsCheckedChanged="OnFormTypeChanged" />
                         </StackPanel>
 
                         <!-- Numeric inputs (Target, Step, Unit) -->
                         <Grid x:Name="NumericConfigGrid" IsVisible="False" ColumnDefinitions="*, *, *">
                             <TextBox Grid.Column="0" x:Name="FormTargetBox"
-                                     Watermark="{x:Static locales:Locale.Habits_TargetValue}" Margin="0,0,4,0" />
+                                     PlaceholderText="{x:Static locales:Locale.Habits_TargetValue}" Margin="0,0,4,0" />
                             <TextBox Grid.Column="1" x:Name="FormStepBox"
-                                     Watermark="{x:Static locales:Locale.Habits_StepValue}" Margin="0,0,4,0" />
+                                     PlaceholderText="{x:Static locales:Locale.Habits_StepValue}" Margin="0,0,4,0" />
                             <TextBox Grid.Column="2" x:Name="FormUnitBox"
-                                     Watermark="{x:Static locales:Locale.Habits_Unit}" />
+                                     PlaceholderText="{x:Static locales:Locale.Habits_Unit}" />
                         </Grid>
 
                         <!-- Frequency Selector -->

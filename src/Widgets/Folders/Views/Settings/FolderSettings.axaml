@@ -45,23 +45,23 @@
         </controls:Setting>
 
         <controls:Setting x:Name="DirsFirstSetting" Title="{x:Static locales:Locale.Folders_WatchDirsFirst}" IsVisible="False">
-            <CheckBox x:Name="DirsFirstToggle" Checked="OnToggleDirsFirst" Unchecked="OnToggleDirsFirst" />
+            <CheckBox x:Name="DirsFirstToggle" IsCheckedChanged="OnToggleDirsFirst" />
         </controls:Setting>
 
         <controls:Setting x:Name="ShowHiddenSetting" Title="{x:Static locales:Locale.Folders_WatchShowHidden}" IsVisible="False">
-            <CheckBox x:Name="ShowHiddenToggle" Checked="OnToggleShowHidden" Unchecked="OnToggleShowHidden" />
+            <CheckBox x:Name="ShowHiddenToggle" IsCheckedChanged="OnToggleShowHidden" />
         </controls:Setting>
 
         <controls:Setting x:Name="HideExtSetting" Title="{x:Static locales:Locale.Folders_WatchHideExt}" IsVisible="False">
-            <CheckBox x:Name="HideExtToggle" Checked="OnToggleHideExt" Unchecked="OnToggleHideExt" />
+            <CheckBox x:Name="HideExtToggle" IsCheckedChanged="OnToggleHideExt" />
         </controls:Setting>
 
         <controls:Setting x:Name="SortDescSetting" Title="{x:Static locales:Locale.Folders_WatchDesc}" IsVisible="False">
-            <CheckBox x:Name="SortDescToggle" Checked="OnToggleSortDesc" Unchecked="OnToggleSortDesc" />
+            <CheckBox x:Name="SortDescToggle" IsCheckedChanged="OnToggleSortDesc" />
         </controls:Setting>
 
         <controls:Setting x:Name="HideSubfoldersSetting" Title="{x:Static locales:Locale.Folders_WatchHideSubfolders}" IsVisible="False">
-            <CheckBox x:Name="HideSubfoldersToggle" Checked="OnToggleHideSubfolders" Unchecked="OnToggleHideSubfolders" />
+            <CheckBox x:Name="HideSubfoldersToggle" IsCheckedChanged="OnToggleHideSubfolders" />
         </controls:Setting>
 
         <controls:Setting x:Name="ColumnsSetting" Title="{x:Static locales:Locale.Folders_Columns}">
@@ -83,7 +83,7 @@
         <TextBlock Classes="dc-section-header" Text="{x:Static locales:Locale.Folders_Group_Name}" />
 
         <controls:Setting Title="{x:Static locales:Locale.Folders_ShowNames}">
-            <CheckBox x:Name="ShowNamesToggle" Checked="OnToggleNames" Unchecked="OnToggleNames" />
+            <CheckBox x:Name="ShowNamesToggle" IsCheckedChanged="OnToggleNames" />
         </controls:Setting>
 
         <controls:Setting Title="{x:Static locales:Locale.Folders_MaxNameLines}">
@@ -99,17 +99,17 @@
         </controls:Setting>
 
         <controls:Setting Title="{x:Static locales:Locale.Folders_CamelCaseWrap}">
-            <CheckBox x:Name="CamelCaseWrapToggle" Checked="OnToggleCamelCaseWrap" Unchecked="OnToggleCamelCaseWrap" />
+            <CheckBox x:Name="CamelCaseWrapToggle" IsCheckedChanged="OnToggleCamelCaseWrap" />
         </controls:Setting>
 
         <controls:Setting Title="{x:Static locales:Locale.Folders_BoldNames}">
-            <CheckBox x:Name="BoldNamesToggle" Checked="OnToggleBoldNames" Unchecked="OnToggleBoldNames" />
+            <CheckBox x:Name="BoldNamesToggle" IsCheckedChanged="OnToggleBoldNames" />
         </controls:Setting>
 
         <TextBlock Classes="dc-section-header" Text="{x:Static locales:Locale.Folders_Group_Title}" />
 
         <controls:Setting Title="{x:Static locales:Locale.Folders_ShowTitle}">
-            <CheckBox x:Name="ShowTitleToggle" Checked="OnToggleTitle" Unchecked="OnToggleTitle" />
+            <CheckBox x:Name="ShowTitleToggle" IsCheckedChanged="OnToggleTitle" />
         </controls:Setting>
 
         <controls:Setting Title="{x:Static locales:Locale.Folders_TitleLabel}"
@@ -128,13 +128,13 @@
         </controls:Setting>
 
         <controls:Setting Title="{x:Static locales:Locale.Folders_BoldTitle}">
-            <CheckBox x:Name="BoldTitleToggle" Checked="OnToggleBoldTitle" Unchecked="OnToggleBoldTitle" />
+            <CheckBox x:Name="BoldTitleToggle" IsCheckedChanged="OnToggleBoldTitle" />
         </controls:Setting>
 
         <TextBlock Classes="dc-section-header" Text="{x:Static locales:Locale.Folders_Group_Appearance}" />
 
         <controls:Setting Title="{x:Static locales:Locale.Folders_ShowScrollbar}">
-            <CheckBox x:Name="ShowScrollbarToggle" Checked="OnToggleScrollbar" Unchecked="OnToggleScrollbar" />
+            <CheckBox x:Name="ShowScrollbarToggle" IsCheckedChanged="OnToggleScrollbar" />
         </controls:Setting>
 
         <controls:Setting Title="{x:Static locales:Locale.Folders_IconSize}">
@@ -160,7 +160,7 @@
         <!-- Item list management: its own region (path entry, pickers, reorderable rows). -->
         <StackPanel x:Name="ItemsEditor" Orientation="Vertical" Spacing="6">
 
-            <TextBox x:Name="PathBox" MinHeight="{DynamicResource ControlMinHeight}" Watermark="{x:Static locales:Locale.Folders_Add_Hint}"
+            <TextBox x:Name="PathBox" MinHeight="{DynamicResource ControlMinHeight}" PlaceholderText="{x:Static locales:Locale.Folders_Add_Hint}"
                      FontSize="13" VerticalContentAlignment="Center" />
 
             <Grid ColumnDefinitions="*,Auto,Auto">

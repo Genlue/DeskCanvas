@@ -257,7 +257,7 @@ public class AggregateViewModel : ReactiveObject, IDisposable
     /// <summary>The process-lifetime or window-lifetime resource host the accent subscription belongs to.</summary>
     private IResourceHost? accentHost;
 
-    private void OnAccentResourcesChanged(object? sender, EventArgs e)
+    private void OnAccentResourcesChanged(object? sender, ResourcesChangedEventArgs e)
     {
         UpdateTodayBrush();
     }

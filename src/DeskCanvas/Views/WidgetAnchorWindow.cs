@@ -23,7 +23,7 @@ public sealed class WidgetAnchorWindow : Window
         Width = 1;
         Height = 1;
         ShowInTaskbar = false;
-        SystemDecorations = SystemDecorations.None;
+        WindowDecorations = WindowDecorations.None;
         TransparencyLevelHint = [WindowTransparencyLevel.Transparent];
         Opacity = 0;
 

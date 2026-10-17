@@ -89,7 +89,7 @@ Check(!monitor.IsPollingForChecks, "1.10 double-detach is idempotent and leaves 
 // =========================================================================================
 Console.WriteLine("--- Clipboard view session relay ---");
 var sharedMonitor = ClipboardMonitorService.Instance;
-var legacyHost = new Window { Width = 240, Height = 200, SystemDecorations = SystemDecorations.None, ShowInTaskbar = false };
+var legacyHost = new Window { Width = 240, Height = 200, WindowDecorations = WindowDecorations.None, ShowInTaskbar = false };
 var legacyView = new ClipboardView();
 legacyHost.Content = legacyView;
 legacyHost.Show();
@@ -104,7 +104,7 @@ Check(!sharedMonitor.IsPollingForChecks, "2.4 the unloaded legacy view leaves th
 
 var idA = WidgetInstanceId.New();
 var sessionA = WidgetSessionRegistry.GetOrCreate(idA);
-var gatedHost = new Window { Width = 240, Height = 200, SystemDecorations = SystemDecorations.None, ShowInTaskbar = false };
+var gatedHost = new Window { Width = 240, Height = 200, WindowDecorations = WindowDecorations.None, ShowInTaskbar = false };
 var gatedView = new ClipboardView(new ClipboardModel(), sessionA);
 gatedHost.Content = gatedView;
 gatedHost.Show();
@@ -125,7 +125,7 @@ Flush();
 var idB = WidgetInstanceId.New();
 var sessionB = WidgetSessionRegistry.GetOrCreate(idB);
 await sessionB.SetActivityAsync(new ActivitySnapshot(ActivityReason.ScreenCovered));
-var coveredHost = new Window { Width = 240, Height = 200, SystemDecorations = SystemDecorations.None, ShowInTaskbar = false };
+var coveredHost = new Window { Width = 240, Height = 200, WindowDecorations = WindowDecorations.None, ShowInTaskbar = false };
 var coveredView = new ClipboardView(new ClipboardModel(), sessionB);
 coveredHost.Content = coveredView;
 coveredHost.Show();
@@ -188,7 +188,7 @@ Check(!coveredTranslator.IsDebouncePendingForChecks, "3.9 the covered push keeps
 // 4. ControlCenterView poll gate (hosted; the 1.5 s system-state poll)
 // =========================================================================================
 Console.WriteLine("--- Control center poll gate ---");
-var ccLegacyHost = new Window { Width = 300, Height = 200, SystemDecorations = SystemDecorations.None, ShowInTaskbar = false };
+var ccLegacyHost = new Window { Width = 300, Height = 200, WindowDecorations = WindowDecorations.None, ShowInTaskbar = false };
 var ccLegacy = new ControlCenterView(new ControlCenterModel());
 ccLegacyHost.Content = ccLegacy;
 ccLegacyHost.Show();
@@ -200,7 +200,7 @@ Check(ccLegacy.IsPollingForChecks, "4.3 a session-less view ignores the covered 
 
 var idE = WidgetInstanceId.New();
 var sessionE = WidgetSessionRegistry.GetOrCreate(idE);
-var ccGatedHost = new Window { Width = 300, Height = 200, SystemDecorations = SystemDecorations.None, ShowInTaskbar = false };
+var ccGatedHost = new Window { Width = 300, Height = 200, WindowDecorations = WindowDecorations.None, ShowInTaskbar = false };
 var ccGated = new ControlCenterView(new ControlCenterModel(), sessionE);
 ccGatedHost.Content = ccGated;
 ccGatedHost.Show();
@@ -222,7 +222,7 @@ Check(!ccGated.IsPollingForChecks, "4.10 a resume while the session is covered s
 var idF = WidgetInstanceId.New();
 var sessionF = WidgetSessionRegistry.GetOrCreate(idF);
 await sessionF.SetActivityAsync(new ActivitySnapshot(ActivityReason.ScreenCovered));
-var ccCoveredHost = new Window { Width = 300, Height = 200, SystemDecorations = SystemDecorations.None, ShowInTaskbar = false };
+var ccCoveredHost = new Window { Width = 300, Height = 200, WindowDecorations = WindowDecorations.None, ShowInTaskbar = false };
 var ccCovered = new ControlCenterView(new ControlCenterModel(), sessionF);
 ccCoveredHost.Content = ccCovered;
 ccCoveredHost.Show();

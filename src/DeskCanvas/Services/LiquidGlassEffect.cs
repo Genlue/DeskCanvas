@@ -40,7 +40,7 @@ public static class LiquidGlassEffect
             compileAttempted = true;
             try
             {
-                cachedEffect = SKRuntimeEffect.Create(Source, out var errors);
+                cachedEffect = SKRuntimeEffect.CreateShader(Source, out var errors);
                 CompileError = cachedEffect == null ? errors : null;
             }
             catch (Exception ex)
@@ -159,7 +159,7 @@ public static class LiquidGlassEffect
             using var backdropChild = source.ToShader(SKShaderTileMode.Clamp, SKShaderTileMode.Clamp);
             children["content"] = backdropChild;
 
-            return effect.ToShader(false, uniforms, children);
+            return effect.ToShader(uniforms, children);
         }
         catch
         {
@@ -266,7 +266,8 @@ float2 gradSdRoundedRect(float2 p, float2 b, float r) {
 }
 
 float3 contentTexel(float2 p) {
-  return sample(content, p).rgb * 255.0;
+  // Skia m130+ removed sample(shader, coord); child.eval(coord) is the replacement.
+  return content.eval(p).rgb * 255.0;
 }
 
 half4 main(float2 fragCoord) {

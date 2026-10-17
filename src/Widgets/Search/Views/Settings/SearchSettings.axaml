@@ -56,12 +56,12 @@
 
                 <Grid ColumnDefinitions="Auto,*" Margin="0,2">
                     <TextBlock Text="{x:Static locales:Locale.Search_Engine_Name_Label}" FontSize="12" MinWidth="90" VerticalAlignment="Center"/>
-                    <TextBox x:Name="EditNameBox" Grid.Column="1" FontSize="12" Watermark="{x:Static locales:Locale.Search_Engine_Name_Watermark}" Height="26" Padding="4,2"/>
+                    <TextBox x:Name="EditNameBox" Grid.Column="1" FontSize="12" PlaceholderText="{x:Static locales:Locale.Search_Engine_Name_Watermark}" Height="26" Padding="4,2"/>
                 </Grid>
 
                 <Grid ColumnDefinitions="Auto,*" Margin="0,2">
                     <TextBlock Text="{x:Static locales:Locale.Search_Engine_Url_Label}" FontSize="12" MinWidth="90" VerticalAlignment="Center"/>
-                    <TextBox x:Name="EditUrlBox" Grid.Column="1" FontSize="12" Watermark="{x:Static locales:Locale.Search_Engine_Url_Watermark}" Height="26" Padding="4,2"/>
+                    <TextBox x:Name="EditUrlBox" Grid.Column="1" FontSize="12" PlaceholderText="{x:Static locales:Locale.Search_Engine_Url_Watermark}" Height="26" Padding="4,2"/>
                 </Grid>
 
                 <Grid ColumnDefinitions="Auto,*" Margin="0,2">

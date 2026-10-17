@@ -208,7 +208,7 @@ Window NewOwnerWindow() => new()
 {
     Width = 100,
     Height = 80,
-    SystemDecorations = SystemDecorations.None,
+    WindowDecorations = WindowDecorations.None,
     ShowInTaskbar = false
 };
 
@@ -217,7 +217,7 @@ class ProbePanel : SecondaryPanelWindow
 {
     public ProbePanel()
     {
-        SystemDecorations = SystemDecorations.None;
+        WindowDecorations = WindowDecorations.None;
         ShowInTaskbar = false;
         Width = 320;
         Height = 240;

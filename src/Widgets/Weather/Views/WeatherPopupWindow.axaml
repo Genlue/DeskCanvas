@@ -5,7 +5,7 @@
         xmlns:controls="clr-namespace:DeskCanvas.Views.Controls;assembly=DeskCanvas"
         x:Class="Weather.Views.WeatherPopupWindow"
         Title="Weather Detail"
-        SystemDecorations="None"
+        WindowDecorations="None"
         Background="Transparent"
         TransparencyLevelHint="Transparent"
         ShowInTaskbar="False"

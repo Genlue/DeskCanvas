@@ -159,7 +159,7 @@ public static class GlyphLiquidGlassRenderer
                 canvas.Clear(wallpaper.Background);
                 if (image != null)
                 {
-                    using var filter = sigma > 0 ? SKImageFilter.CreateBlur(sigma, sigma, SKShaderTileMode.Clamp) : null;
+                    using var filter = sigma > 0 ? SKImageFilter.CreateBlur(sigma, sigma) : null;
                     using var paint = new SKPaint { IsAntialias = true, FilterQuality = SKFilterQuality.High, ImageFilter = filter };
                     canvas.Save();
                     canvas.Translate(pad, pad);
@@ -208,7 +208,7 @@ public static class GlyphLiquidGlassRenderer
                     envBitmap.InstallPixels(new SKImageInfo(environmentWidth, environmentHeight, SKColorType.Bgra8888, SKAlphaType.Premul), envHandle.AddrOfPinnedObject());
                     using var envCanvas = new SKCanvas(envBitmap);
                     var environmentSigma = Math.Max(3f * scale, strokeRadius * 0.65f) / environmentStep;
-                    using var environmentFilter = SKImageFilter.CreateBlur(environmentSigma, environmentSigma, SKShaderTileMode.Clamp);
+                    using var environmentFilter = SKImageFilter.CreateBlur(environmentSigma, environmentSigma);
                     using var environmentPaint = new SKPaint { ImageFilter = environmentFilter, FilterQuality = SKFilterQuality.High };
                     envCanvas.DrawBitmap(source, new SKRect(0, 0, environmentWidth, environmentHeight), environmentPaint);
                     envCanvas.Flush();

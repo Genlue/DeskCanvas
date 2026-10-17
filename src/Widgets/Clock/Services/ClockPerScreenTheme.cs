@@ -38,7 +38,7 @@ internal static class ClockPerScreenTheme
             return injected;
         }
 
-        if (visual?.GetVisualRoot() is Control { ActualThemeVariant: { } root }
+        if (TopLevel.GetTopLevel(visual) is Control { ActualThemeVariant: { } root }
             && root != ThemeVariant.Default)
         {
             return root;

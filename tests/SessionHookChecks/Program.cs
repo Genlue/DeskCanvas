@@ -158,7 +158,7 @@ Check(VmOf(covered).TickSubscriptionCountForChecks == 1, "4.11 the covered pilot
 // Loaded/Unloaded keep their historic Start/Stop role beside the session gate.
 var idE = WidgetInstanceId.New();
 var sE = WidgetSessionRegistry.GetOrCreate(idE);
-var host = new Window { Width = 200, Height = 120, SystemDecorations = SystemDecorations.None, ShowInTaskbar = false };
+var host = new Window { Width = 200, Height = 120, WindowDecorations = WindowDecorations.None, ShowInTaskbar = false };
 var attached = new Digital(new ClockModel(), sE);
 host.Content = attached;
 host.Show();

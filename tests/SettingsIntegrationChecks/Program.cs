@@ -78,7 +78,7 @@ internal static class Program
             Check(provider.SaveAttempts == 1 && publicationCount == 1 && Disk(path).Theme.OpacityLevel == 0.45,
                 "real drag completion saves once and atomically publishes committed opacity");
             slider.RaiseEvent(new VectorEventArgs { RoutedEvent = Thumb.DragCompletedEvent });
-            numeric.RaiseEvent(new RoutedEventArgs(InputElement.LostFocusEvent));
+            numeric.RaiseEvent(new FocusChangedEventArgs(InputElement.LostFocusEvent));
             Check(provider.SaveAttempts == 1, "duplicate completion and numeric focus loss do not save twice");
             Check(!Directory.EnumerateFiles(directory, "*.tmp").Any(), "atomic settings writer cleans sibling temporary files");
 
@@ -160,7 +160,7 @@ internal static class Program
     {
         var vm = (AppearanceViewModel)page.DataContext!;
         var search = page.GetLogicalDescendants().OfType<TextBox>()
-            .First(t => t.Watermark == Locale.Settings_Appearance_FontSearchWatermark);
+            .First(t => t.PlaceholderText == Locale.Settings_Appearance_FontSearchWatermark);
         search.Focus();
         Pump();
         var request = new TextInputMethodClientRequestedEventArgs { RoutedEvent = InputElement.TextInputMethodClientRequestedEvent };

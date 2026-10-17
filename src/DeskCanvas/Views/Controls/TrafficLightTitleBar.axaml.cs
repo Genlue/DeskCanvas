@@ -89,7 +89,7 @@ public partial class TrafficLightTitleBar : UserControl
     protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
     {
         base.OnAttachedToVisualTree(e);
-        if (e.Root is not Window w) return;
+        if (TopLevel.GetTopLevel(this) is not Window w) return;
 
         window = w;
         window.Activated += OnWindowActivated;

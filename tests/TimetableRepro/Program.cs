@@ -271,7 +271,7 @@ internal static class Program
     {
         var window = new Window
         {
-            SystemDecorations = SystemDecorations.None,
+            WindowDecorations = WindowDecorations.None,
             ShowInTaskbar = false,
             ShowActivated = false,
             WindowStartupLocation = WindowStartupLocation.Manual,

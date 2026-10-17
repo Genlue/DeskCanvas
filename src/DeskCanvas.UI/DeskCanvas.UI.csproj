@@ -8,6 +8,9 @@
     <PackageReference Include="Avalonia" />
     <!-- ColorInput embeds the ColorPicker; the theme ships in this companion package. -->
     <PackageReference Include="Avalonia.Controls.ColorPicker" />
+    <!-- Subscribe(Action<T>) for Avalonia observables: Avalonia 12 dropped its own
+         ObservableExtensions and ReactiveUI 25 no longer brings System.Reactive. -->
+    <PackageReference Include="System.Reactive" />
     <ProjectReference Include="..\DeskCanvas.Contracts\DeskCanvas.Contracts.csproj" />
   </ItemGroup>
 </Project>

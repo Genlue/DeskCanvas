@@ -238,7 +238,7 @@ internal static class Program
         var subject = empty ? ShortcutsStore.Get().Shortcuts[0] : ShortcutsStore.Get().Shortcuts[0];
         var editor = new ShortcutsEditorWindow(subject.Id)
         {
-            SystemDecorations = SystemDecorations.None,
+            WindowDecorations = WindowDecorations.None,
             Width = width,
             Height = height,
         };
@@ -262,7 +262,7 @@ internal static class Program
         ShortcutsStore.ResetForTesting(RichDocument());
         var editor = new ShortcutsEditorWindow(ShortcutsStore.Get().Shortcuts[0].Id)
         {
-            SystemDecorations = SystemDecorations.None,
+            WindowDecorations = WindowDecorations.None,
             Width = width, Height = height,
         };
         editor.Show();
@@ -283,7 +283,7 @@ internal static class Program
         ShortcutsStore.ResetForTesting(RichDocument());
         var editor = new ShortcutsEditorWindow(ShortcutsStore.Get().Shortcuts[0].Id)
         {
-            SystemDecorations = SystemDecorations.None,
+            WindowDecorations = WindowDecorations.None,
             Width = width, Height = height,
         };
         editor.Show();
@@ -395,7 +395,7 @@ internal static class Program
         var view = new ShortcutsView(null, new ShortcutsModel(), null, null);
         var window = new Window
         {
-            SystemDecorations = SystemDecorations.None,
+            WindowDecorations = WindowDecorations.None,
             Width = width, Height = height,
             Background = HostBackground(),
             Content = view,
@@ -461,7 +461,7 @@ internal static class Program
                 popup.Content = null;
                 var win = new Window
                 {
-                    SystemDecorations = SystemDecorations.None,
+                    WindowDecorations = WindowDecorations.None,
                     Width = 400, Height = 540,
                     Background = Brushes.White,
                     Content = shell,
@@ -503,7 +503,7 @@ internal static class Program
         var settings = new ShortcutsSettings(provider);
         var window = new Window
         {
-            SystemDecorations = SystemDecorations.None,
+            WindowDecorations = WindowDecorations.None,
             Width = width, Height = height,
             Background = Brushes.White,
             Content = settings,

@@ -191,7 +191,7 @@
         <Border x:Name="InputBoxBorder" Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" Classes="card-box card-box-input" Padding="8,5"
                 CornerRadius="{DynamicResource WidgetInnerCornerRadius}">
             <Grid RowDefinitions="*,Auto">
-                <TextBox x:Name="InputTextBox" Classes="trans-box" Watermark="{x:Static locales:Locale.Tools_Translator_InputHint}"
+                <TextBox x:Name="InputTextBox" Classes="trans-box" PlaceholderText="{x:Static locales:Locale.Tools_Translator_InputHint}"
                          KeyUp="OnInputKeyUp" TextChanged="OnInputTextChanged" />
 
                 <Grid Grid.Row="1" ColumnDefinitions="*,Auto,Auto" Margin="4,2,2,0">
@@ -275,7 +275,7 @@
                 CornerRadius="{DynamicResource WidgetInnerCornerRadius}">
             <Grid RowDefinitions="*,Auto">
                 <TextBox x:Name="OutputTextBox" Classes="trans-box" IsReadOnly="True"
-                         Watermark="{x:Static locales:Locale.Tools_Translator_OutputHint}" />
+                         PlaceholderText="{x:Static locales:Locale.Tools_Translator_OutputHint}" />
 
                 <Grid Grid.Row="1" ColumnDefinitions="*,Auto" Margin="4,2,2,0">
                     <TextBlock x:Name="StatusText" Text="" FontSize="10" Opacity="0.5" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"

@@ -43,7 +43,7 @@ internal static class Program
         {
             var probeWindow = new Window
             {
-                SystemDecorations = SystemDecorations.None,
+                WindowDecorations = WindowDecorations.None,
                 Width = 120,
                 Height = 40,
                 Background = Brushes.White,
@@ -124,7 +124,7 @@ internal static class Program
 
         var window = new Window
         {
-            SystemDecorations = SystemDecorations.None,
+            WindowDecorations = WindowDecorations.None,
             Width = width,
             Height = height,
             Background = Brushes.White,

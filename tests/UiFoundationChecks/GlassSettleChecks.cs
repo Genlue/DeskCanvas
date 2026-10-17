@@ -293,7 +293,7 @@ internal static partial class Program
         object MakePrepared(long captureId) =>
             preparedCtor.Invoke(new object?[] { null, frame, null, captureId });
 
-        var host = new Window { Width = 400, Height = 300, SystemDecorations = SystemDecorations.None };
+        var host = new Window { Width = 400, Height = 300, WindowDecorations = WindowDecorations.None };
         var fresh = new LiquidGlassSurface { Material = theme, Width = 80, Height = 60 };
         var stale = new LiquidGlassSurface { Material = theme, Width = 80, Height = 60 };
         var staleBusy = new LiquidGlassSurface { Material = theme, Width = 80, Height = 60 };

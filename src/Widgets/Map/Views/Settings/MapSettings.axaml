@@ -114,7 +114,7 @@
         <!-- 百度地图 AK -->
         <controls:Setting x:Name="BaiduKeySetting" Title="{x:Static locales:Locale.Map_BaiduKey}" Subtitle="{x:Static locales:Locale.Map_BaiduKey_Subtitle}">
             <TextBox x:Name="BaiduKeyBox" MinWidth="220" Text="{Binding BaiduApiKey}"
-                     Watermark="{x:Static locales:Locale.Map_BaiduKeyWatermark}" />
+                     PlaceholderText="{x:Static locales:Locale.Map_BaiduKeyWatermark}" />
         </controls:Setting>
 
     </StackPanel>

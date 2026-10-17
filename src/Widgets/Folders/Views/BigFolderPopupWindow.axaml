@@ -1,11 +1,11 @@
-﻿<Window xmlns="https://github.com/avaloniaui"
+<Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:locales="clr-namespace:Folders.Locales"
         xmlns:local="clr-namespace:Folders.Views"
         xmlns:controls="clr-namespace:DeskCanvas.Views.Controls;assembly=DeskCanvas"
         x:Class="Folders.Views.BigFolderPopupWindow"
         Title="Big Folder"
-        SystemDecorations="None"
+        WindowDecorations="None"
         Background="Transparent"
         TransparencyLevelHint="Transparent"
         ShowInTaskbar="False"
@@ -71,7 +71,7 @@
                     <Grid ColumnDefinitions="Auto,*" Margin="0,0,0,2">
                         <TextBlock Classes="drawer-label" Text="{x:Static locales:Locale.Folders_BigFolder_FolderName}" Margin="0,0,12,0" />
                         <TextBox Grid.Column="1" x:Name="FolderNameBox" Classes="drawer-text"
-                                 Watermark="{x:Static locales:Locale.Folders_BigFolder_FolderName_Hint}"
+                                 PlaceholderText="{x:Static locales:Locale.Folders_BigFolder_FolderName_Hint}"
                                  LostFocus="OnSettingChanged" KeyDown="OnFolderNameKeyDown" />
                     </Grid>
 

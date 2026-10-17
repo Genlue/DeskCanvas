@@ -252,7 +252,7 @@ public partial class MultiScreen : UserControl
         var alias = new TextBox
         {
             Text = config?.Alias ?? "",
-            Watermark = Locale.Settings_MultiScreen_AliasPlaceholder,
+            PlaceholderText = Locale.Settings_MultiScreen_AliasPlaceholder,
             FontSize = 12,
             MinWidth = 240
         };

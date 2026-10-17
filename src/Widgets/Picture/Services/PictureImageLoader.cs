@@ -135,7 +135,7 @@ public static class PictureImageLoader
                     int tw = Math.Max(1, (int)Math.Round(skBmp.Width * scale));
                     int th = Math.Max(1, (int)Math.Round(skBmp.Height * scale));
                     var targetInfo = new SKImageInfo(tw, th, SKColorType.Bgra8888, SKAlphaType.Premul);
-                    resized = skBmp.Resize(targetInfo, SKFilterQuality.Medium);
+                    resized = skBmp.Resize(targetInfo, new SKSamplingOptions(SKFilterMode.Linear, SKMipmapMode.Linear));
                     if (resized != null) bmpToConvert = resized;
                 }
 
@@ -260,7 +260,7 @@ public static class PictureImageLoader
                 var bmpToConvert = source;
                 if (decodeW != targetW || decodeH != targetH)
                 {
-                    resizedBmp = source.Resize(targetInfo, SKFilterQuality.Medium);
+                    resizedBmp = source.Resize(targetInfo, new SKSamplingOptions(SKFilterMode.Linear, SKMipmapMode.Linear));
                     if (resizedBmp != null) bmpToConvert = resizedBmp;
                 }
 
@@ -366,7 +366,7 @@ public static class PictureImageLoader
         }
 
         var targetInfo = new SKImageInfo(targetW, targetH, SKColorType.Bgra8888, SKAlphaType.Premul);
-        using var resized = scratch.Bitmap.Resize(targetInfo, SKFilterQuality.Medium);
+        using var resized = scratch.Bitmap.Resize(targetInfo, new SKSamplingOptions(SKFilterMode.Linear, SKMipmapMode.Linear));
         return resized == null ? null : ConvertSkBitmapToWriteable(resized);
     }
 

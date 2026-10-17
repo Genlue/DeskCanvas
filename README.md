@@ -5,7 +5,7 @@
 
 <div align="center">
   <h3>🎨 macOS-Style Desktop Widgets Suite for Windows</h3>
-  <p>Built with Avalonia 11 + .NET 10 · Hardware Mica Backdrop · 3D Liquid Glass Optics · Lockscreen Art-Font Clock · Custom Snap Grid Engine</p>
+  <p>Built with Avalonia 12 + .NET 10 · Hardware Mica Backdrop · 3D Liquid Glass Optics · Lockscreen Art-Font Clock · Custom Snap Grid Engine</p>
 </div>
 
 <h3 align="center">
@@ -15,8 +15,8 @@
 </h3>
 
 <div align="center">
-  <img src="https://img.shields.io/badge/.NET-8.0-blue?logo=dotnet"/>
-  <img src="https://img.shields.io/badge/Avalonia-11.1-purple?logo=avaloniaui"/>
+  <img src="https://img.shields.io/badge/.NET-10.0-blue?logo=dotnet"/>
+  <img src="https://img.shields.io/badge/Avalonia-12.1-purple?logo=avaloniaui"/>
   <img src="https://img.shields.io/badge/Platform-Windows%20x64-0078D6?logo=windows"/>
   <img src="https://img.shields.io/badge/Release-Single--File%20EXE-success"/>
   <img src="https://img.shields.io/badge/Installer-MSI%20Package-blue?logo=windows"/>

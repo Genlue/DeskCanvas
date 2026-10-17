@@ -78,7 +78,7 @@
                  VerticalAlignment="Center"
                  VerticalContentAlignment="Center"
                  Text="{Binding QueryText, Mode=TwoWay}"
-                 Watermark="{Binding SearchPlaceholder}"
+                 PlaceholderText="{Binding SearchPlaceholder}"
                  KeyDown="OnInputKeyDown"/>
 
         <!-- Clear Button -->

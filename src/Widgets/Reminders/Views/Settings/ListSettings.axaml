@@ -8,10 +8,10 @@
          viewport is the single vertical scroll owner. -->
     <StackPanel Orientation="Vertical" Spacing="5" Margin="0 0 10 0">
             <controls:Setting Title="{x:Static locales:Locale.Reminders_AllowInlineEdit}">
-                <ToggleSwitch Name="AllowInlineEditToggle" Checked="AllowInlineEditChanged" Unchecked="AllowInlineEditChanged" />
+                <ToggleSwitch Name="AllowInlineEditToggle" IsCheckedChanged="AllowInlineEditChanged" />
             </controls:Setting>
             <controls:Setting Title="{x:Static locales:Locale.Reminders_DeleteOnCheck}">
-                <ToggleSwitch Name="DeleteOnCheckToggle" Checked="DeleteOnCheckChanged" Unchecked="DeleteOnCheckChanged" />
+                <ToggleSwitch Name="DeleteOnCheckToggle" IsCheckedChanged="DeleteOnCheckChanged" />
             </controls:Setting>
             <controls:Setting Title="{x:Static locales:Locale.Reminders_DeleteCompleted}">
                 <Button Content="{x:Static locales:Locale.Reminders_Delete}" Click="DeleteCompleted" />

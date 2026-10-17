@@ -5,7 +5,7 @@
 
 <div align="center">
   <h3>🎨 Windows 下一代 macOS 风格多功能桌面小组件套件</h3>
-  <p>基于 Avalonia 11 + .NET 10 打造 · 硬件级实时 Mica · 3D 光学液态玻璃 · 手机锁屏艺术大字时钟 · 自定义吸附网格系统</p>
+  <p>基于 Avalonia 12 + .NET 10 打造 · 硬件级实时 Mica · 3D 光学液态玻璃 · 手机锁屏艺术大字时钟 · 自定义吸附网格系统</p>
 </div>
 
 <h3 align="center">
@@ -16,8 +16,8 @@
 </h3>
 
 <div align="center">
-  <img src="https://img.shields.io/badge/.NET-8.0-blue?logo=dotnet"/>
-  <img src="https://img.shields.io/badge/Avalonia-11.1-purple?logo=avaloniaui"/>
+  <img src="https://img.shields.io/badge/.NET-10.0-blue?logo=dotnet"/>
+  <img src="https://img.shields.io/badge/Avalonia-12.1-purple?logo=avaloniaui"/>
   <img src="https://img.shields.io/badge/Platform-Windows%20x64-0078D6?logo=windows"/>
   <img src="https://img.shields.io/badge/Release-Single--File%20EXE-success"/>
   <img src="https://img.shields.io/badge/Installer-MSI%20Package-blue?logo=windows"/>

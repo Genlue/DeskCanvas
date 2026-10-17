@@ -22,6 +22,10 @@ public partial class BigFolderSettings : UserControl
     private BigFolderModel model;
     private Point? dragStart;
     private string? dragPath;
+    private PointerPressedEventArgs? dragTrigger;
+    // Avalonia 12 drag-drop: custom payloads use a typed application format instead of DataObject strings.
+    private static readonly DataFormat<string> ItemPathFormat =
+        DataFormat.CreateStringApplicationFormat("BigFoldersItemPath");
     private bool syncing;
 
     public BigFolderSettings() : this(null!) { }
@@ -230,28 +234,33 @@ public partial class BigFolderSettings : UserControl
         {
             dragStart = e.GetPosition(this);
             dragPath = item.Path;
+            dragTrigger = e;
         }
     }
 
     private async void OnItemPointerMoved(object? sender, PointerEventArgs e)
     {
-        if (dragPath == null || dragStart == null) return;
+        if (dragPath == null || dragStart == null || dragTrigger == null) return;
 
         var position = e.GetPosition(this);
         if (Math.Abs(position.X - dragStart.Value.X) + Math.Abs(position.Y - dragStart.Value.Y) < 8) return;
 
-        var data = new DataObject();
-        data.Set("BigFoldersItemPath", dragPath);
-        await DragDrop.DoDragDrop(e, data, DragDropEffects.Move);
+        // DoDragDropAsync starts from the press event; the 8px threshold above keeps clicks from
+        // accidentally starting a drag, so the saved press args are the trigger.
+        var trigger = dragTrigger;
+        dragTrigger = null;
+        var data = new DataTransfer();
+        data.Add(DataTransferItem.Create(ItemPathFormat, dragPath));
+        await DragDrop.DoDragDropAsync(trigger, data, DragDropEffects.Move);
         dragStart = null;
         dragPath = null;
     }
 
     private void OnRowDrop(object? sender, DragEventArgs e)
     {
-        if (!e.Data.Contains("BigFoldersItemPath") || e.Source is not Control { DataContext: BigFolderSettingRow target }) return;
+        if (!e.DataTransfer.Contains(ItemPathFormat) || e.Source is not Control { DataContext: BigFolderSettingRow target }) return;
 
-        var dragged = e.Data.Get("BigFoldersItemPath") as string;
+        var dragged = e.DataTransfer.TryGetValue(ItemPathFormat);
         if (string.IsNullOrEmpty(dragged)) return;
 
         var items = model.SafeItems.ToList();

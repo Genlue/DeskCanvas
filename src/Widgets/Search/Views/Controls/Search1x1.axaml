@@ -100,7 +100,7 @@
                                      Name="FlyoutTextBox"
                                      Classes="flyout-input"
                                      Text="{Binding QueryText, Mode=TwoWay}"
-                                     Watermark="{Binding SearchPlaceholder}"
+                                     PlaceholderText="{Binding SearchPlaceholder}"
                                      KeyDown="OnFlyoutKeyDown"/>
 
                             <Button Grid.Column="2"

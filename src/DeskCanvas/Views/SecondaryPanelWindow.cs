@@ -623,7 +623,13 @@ public abstract class SecondaryPanelWindow : Window, IFocusThemedWindow
         {
             foreach (var popup in this.GetVisualDescendants().OfType<Popup>())
             {
-                if (!popup.IsOpen || popup.Host is not TopLevel popupRoot) continue;
+                // Avalonia 12 no longer exposes Popup.Host (IPopupHost is private API);
+                // the popup root is the TopLevel that owns the popup's child.
+                if (!popup.IsOpen || popup.Child is null) continue;
+                if (TopLevel.GetTopLevel(popup.Child) is not TopLevel popupRoot) continue;
+                // Inline (overlay) popups resolve to this window, not to a separate popup HWND;
+                // treating the whole panel as "inside a popup" would stop outside clicks closing it.
+                if (ReferenceEquals(popupRoot, this)) continue;
                 var popupHandle = popupRoot.TryGetPlatformHandle()?.Handle;
                 if (popupHandle.HasValue && GetWindowRect(popupHandle.Value, out var rect))
                 {

@@ -486,7 +486,7 @@ public partial class BigFolder : UserControl, IWidgetSelfRefreshing, IWidgetSurf
 
     private void OnDragOver(object? sender, DragEventArgs e)
     {
-        if (e.Data.Contains(DataFormats.Files) || e.Data.Contains(DataFormats.FileNames))
+        if (e.DataTransfer.Contains(DataFormat.File))
         {
             e.DragEffects = DragDropEffects.Copy;
             DropHint.IsVisible = true;
@@ -502,7 +502,7 @@ public partial class BigFolder : UserControl, IWidgetSelfRefreshing, IWidgetSurf
     private void OnDrop(object? sender, DragEventArgs e)
     {
         DropHint.IsVisible = false;
-        var paths = ExtractDroppedPaths(e.Data);
+        var paths = ExtractDroppedPaths(e.DataTransfer);
         if (paths.Count == 0) return;
 
         e.Handled = true;
@@ -522,40 +522,17 @@ public partial class BigFolder : UserControl, IWidgetSelfRefreshing, IWidgetSurf
         DropHint.IsVisible = active;
     }
 
-    private static List<string> ExtractDroppedPaths(IDataObject data)
+    private static List<string> ExtractDroppedPaths(IDataTransfer data)
     {
+        // Avalonia 12 replaced DataObject/DataFormats with IDataTransfer/DataFormat. DataFormat.File
+        // is the universal file format and covers both the IStorageItem and the legacy string-list
+        // drop sources that previously needed GetFiles() + GetFileNames().
         var paths = new List<string>();
-        if (data.GetFiles() is { } files)
+        foreach (var f in data.TryGetFiles() ?? [])
         {
-            foreach (var f in files)
-            {
-                var p = f.TryGetLocalPath() ?? f.Path.LocalPath;
-                if (!string.IsNullOrEmpty(p) && (File.Exists(p) || Directory.Exists(p)))
-                    paths.Add(p);
-            }
-        }
-        else if (data.Get(DataFormats.Files) is IEnumerable<IStorageItem> storageItems)
-        {
-            foreach (var f in storageItems)
-            {
-                var p = f.TryGetLocalPath() ?? f.Path.LocalPath;
-                if (!string.IsNullOrEmpty(p) && (File.Exists(p) || Directory.Exists(p)))
-                    paths.Add(p);
-            }
-        }
-        // GetFileNames() is obsolete ("Use GetFiles") but still the only API that yields local
-        // paths for a plain string-list 'Files' drop; GetFiles() above already consumed the
-        // IStorageItem form. Kept, with a narrow suppression, because swapping it for GetFiles()
-        // would silently drop that drop-source. Migrate when Avalonia exposes the replacement.
-#pragma warning disable CS0618
-        else if (data.GetFileNames() is { } fileNames)
-#pragma warning restore CS0618
-        {
-            foreach (var p in fileNames)
-            {
-                if (!string.IsNullOrEmpty(p) && (File.Exists(p) || Directory.Exists(p)))
-                    paths.Add(p);
-            }
+            var p = f.TryGetLocalPath() ?? f.Path.LocalPath;
+            if (!string.IsNullOrEmpty(p) && (File.Exists(p) || Directory.Exists(p)))
+                paths.Add(p);
         }
         return paths.Distinct().ToList();
     }

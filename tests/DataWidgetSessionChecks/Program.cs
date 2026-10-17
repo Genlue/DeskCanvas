@@ -238,7 +238,7 @@ DispatcherTimer? TimerOf(HitokotoView view) =>
     (DispatcherTimer?)typeof(HitokotoView).GetField("autoRefreshTimer", BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(view);
 Window HostOf(HitokotoView view) => new()
 {
-    Width = 320, Height = 120, SystemDecorations = SystemDecorations.None, ShowInTaskbar = false,
+    Width = 320, Height = 120, WindowDecorations = WindowDecorations.None, ShowInTaskbar = false,
     Content = view
 };
 HitokotoModel LiveModel() => new HitokotoModel(RefreshIntervalMinutes: 1).Normalize();

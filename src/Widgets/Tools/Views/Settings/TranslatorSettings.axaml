@@ -28,13 +28,13 @@
 
         <!-- Baidu AppId -->
         <controls:Setting Title="{x:Static locales:Locale.Tools_Translator_BaiduAppId}">
-            <TextBox x:Name="BaiduAppIdBox" Watermark="{x:Static locales:Locale.Tools_Translator_Settings_BaiduAppIdWatermark}"
+            <TextBox x:Name="BaiduAppIdBox" PlaceholderText="{x:Static locales:Locale.Tools_Translator_Settings_BaiduAppIdWatermark}"
                      TextChanged="OnBaiduCredentialsChanged" />
         </controls:Setting>
 
         <!-- Baidu Secret -->
         <controls:Setting Title="{x:Static locales:Locale.Tools_Translator_BaiduSecret}">
-            <TextBox x:Name="BaiduSecretBox" PasswordChar="•" Watermark="{x:Static locales:Locale.Tools_Translator_Settings_BaiduSecretWatermark}"
+            <TextBox x:Name="BaiduSecretBox" PasswordChar="•" PlaceholderText="{x:Static locales:Locale.Tools_Translator_Settings_BaiduSecretWatermark}"
                      TextChanged="OnBaiduCredentialsChanged" />
         </controls:Setting>
 
@@ -42,7 +42,7 @@
 
         <!-- Custom URL -->
         <controls:Setting Title="{x:Static locales:Locale.Tools_Translator_CustomUrl}">
-            <TextBox x:Name="CustomUrlBox" Watermark="{x:Static locales:Locale.Tools_Translator_Settings_CustomUrlWatermark}"
+            <TextBox x:Name="CustomUrlBox" PlaceholderText="{x:Static locales:Locale.Tools_Translator_Settings_CustomUrlWatermark}"
                      TextChanged="OnCustomUrlChanged" />
         </controls:Setting>
     </StackPanel>

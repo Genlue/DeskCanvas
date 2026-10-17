@@ -194,11 +194,11 @@ internal static class Program
         Check("a transparency-level switch keeps the owner link severed", OwnerOf(guardPanel) == IntPtr.Zero);
 
         // Decorations and window state both force Avalonia's UpdateWindowProperties.
-        guardPanel.SystemDecorations = SystemDecorations.Full;
+        guardPanel.WindowDecorations = WindowDecorations.Full;
         RunJobs();
         Check("a decoration change keeps it out of the taskbar", !TaskbarEligible(guardPanel));
         Check("a decoration change keeps the owner link severed", OwnerOf(guardPanel) == IntPtr.Zero);
-        guardPanel.SystemDecorations = SystemDecorations.None;
+        guardPanel.WindowDecorations = WindowDecorations.None;
         guardPanel.Width += 8;
         guardPanel.Activate();
         guardPanel.Topmost = true;
@@ -263,7 +263,7 @@ internal static class Program
         Height = 120,
         ShowInTaskbar = false,
         ShowActivated = false,
-        SystemDecorations = SystemDecorations.None,
+        WindowDecorations = WindowDecorations.None,
         WindowStartupLocation = WindowStartupLocation.Manual,
         Position = new PixelPoint(-32000, -32000)
     };

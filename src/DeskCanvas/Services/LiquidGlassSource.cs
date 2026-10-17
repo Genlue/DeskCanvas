@@ -272,7 +272,7 @@ internal static class LiquidGlassSourceCache
                 canvas.Clear(wallpaper.Background);
                 // sigma arrives in desktop px and is converted to texture px by the Scale below —
                 // Skia maps an image filter's sigma through the CTM (see Get for why that matters).
-                using var filter = sigma > 0.05f ? SKImageFilter.CreateBlur(sigma, sigma, SKShaderTileMode.Clamp) : null;
+                using var filter = sigma > 0.05f ? SKImageFilter.CreateBlur(sigma, sigma) : null;
                 using var paint = new SKPaint { IsAntialias = true, FilterQuality = SKFilterQuality.High, ImageFilter = filter };
                 canvas.Save();
                 canvas.Scale(scale);

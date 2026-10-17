@@ -1141,7 +1141,7 @@ internal static partial class Program
 
     private static void Blur(TextBox box)
     {
-        box.RaiseEvent(new RoutedEventArgs(InputElement.LostFocusEvent));
+        box.RaiseEvent(new FocusChangedEventArgs(InputElement.LostFocusEvent));
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
     }
 

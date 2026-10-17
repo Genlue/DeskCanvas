@@ -329,7 +329,7 @@
                           Title="{x:Static locales:Locale.Settings_Advanced_FontFamily_Title}" 
                           Subtitle="{x:Static locales:Locale.Settings_Advanced_FontFamily_Subtitle}">
             <StackPanel Orientation="Vertical" Spacing="6" MinWidth="260">
-                <TextBox Watermark="{x:Static locales:Locale.Settings_Appearance_FontSearchWatermark}"
+                <TextBox PlaceholderText="{x:Static locales:Locale.Settings_Appearance_FontSearchWatermark}"
                          Text="{Binding FontSearchText}" />
                 <ComboBox ItemsSource="{Binding FilteredFonts}" 
                           SelectedItem="{Binding Font}"

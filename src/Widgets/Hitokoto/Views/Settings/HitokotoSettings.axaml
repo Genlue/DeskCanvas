@@ -82,7 +82,7 @@
 
         <controls:Setting x:Name="CustomApiSetting" Title="{x:Static locales:Locale.Hitokoto_CustomApi}" Subtitle="{x:Static locales:Locale.Hitokoto_CustomApi_Subtitle}">
             <!-- Watermark 是官方接口地址示例（示例数据，合法例外），不是界面文案 -->
-            <TextBox x:Name="CustomApiBox" MinWidth="210" Watermark="https://v1.hitokoto.cn/"
+            <TextBox x:Name="CustomApiBox" MinWidth="210" PlaceholderText="https://v1.hitokoto.cn/"
                      LostFocus="OnCustomApiLostFocus" />
         </controls:Setting>
     </StackPanel>

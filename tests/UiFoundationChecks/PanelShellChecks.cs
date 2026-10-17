@@ -228,7 +228,7 @@ internal static partial class Program
         // keep the card invisible until the panel window reveals it.
         var shell = new SecondaryPanelShell { Title = "Probe", Subtitle = "sub" };
         shell.Content = new TextBox();
-        var host = new Window { Width = 420, Height = 320, SystemDecorations = SystemDecorations.None };
+        var host = new Window { Width = 420, Height = 320, WindowDecorations = WindowDecorations.None };
         host.Content = shell;
         host.Show();
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
@@ -299,7 +299,7 @@ internal static partial class Program
 
         var shell = new SecondaryPanelShell { Title = "Anchor" };
         shell.Content = new TextBox();
-        var host = new Window { Width = 460, Height = 580, SystemDecorations = SystemDecorations.None };
+        var host = new Window { Width = 460, Height = 580, WindowDecorations = WindowDecorations.None };
         host.Content = shell;
         host.Show();
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
@@ -357,7 +357,7 @@ internal static partial class Program
             {
                 CultureInfo.CurrentUICulture = culture;
                 var shell = new SecondaryPanelShell();
-                var host = new Window { Width = 320, Height = 240, SystemDecorations = SystemDecorations.None };
+                var host = new Window { Width = 320, Height = 240, WindowDecorations = WindowDecorations.None };
                 host.Content = shell;
                 host.Show();
                 Avalonia.Threading.Dispatcher.UIThread.RunJobs();
@@ -385,7 +385,7 @@ internal static partial class Program
     {
         public TestPanelWindow()
         {
-            SystemDecorations = SystemDecorations.None;
+            WindowDecorations = WindowDecorations.None;
             TransparencyLevelHint = [WindowTransparencyLevel.Transparent];
             Background = Brushes.Transparent;
             ShowInTaskbar = false;
@@ -615,7 +615,7 @@ internal static partial class Program
             new Dimensions(80, 12, 16), new Region("zh-Hans"), false, null));
 
         var shell = new SecondaryPanelShell();
-        var host = new Window { Width = 300, Height = 200, SystemDecorations = SystemDecorations.None };
+        var host = new Window { Width = 300, Height = 200, WindowDecorations = WindowDecorations.None };
         host.Content = shell;
         host.Show();
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();

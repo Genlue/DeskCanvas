@@ -59,6 +59,19 @@
 - 小组件版本：各自 `AssemblyInfo.cs`。
 - 包版本：`Directory.Packages.props` 一处集中修改。
 
+## UI 框架：Avalonia 12
+
+- **Avalonia 12.1.4**（全家桶同版本）+ **SkiaSharp 3.119.4**（必须跟随 `Avalonia.Skia` 的依赖版本，2.88 已不受支持）。
+- `Avalonia.ReactiveUI` 在 12 中拆出官方仓库，改为独立发版的 **`ReactiveUI.Avalonia`**。本项目只用 `ReactiveObject`，不涉及 Avalonia 集成类型。
+- **`Avalonia.Diagnostics` 已被移除**：DevTools 转为 Avalonia Plus 商业包 `AvaloniaUI.DiagnosticsSupport`（`AttachDevTools()` → `AttachDeveloperTools()`）。本项目从未调用 DevTools，故直接去掉引用；需要运行时检查工具时自行加商业包。
+- ReactiveUI 25 起不再依赖 `System.Reactive`，而代码里的 `observable.Subscribe(Action<T>)` 来自它，已在 `DeskCanvas.UI` 显式引用 `System.Reactive` 恢复。
+- **离线/CI 构建**：Avalonia 12 的构建期遥测（`AvaloniaStatsTask`）在无外网时会长时间挂起（表现为构建卡在某个项目、CPU 几乎不动）。设环境变量 `AVALONIA_TELEMETRY_OPTOUT=1` 即可跳过，构建恢复正常耗时。
+- `Window.SystemDecorations` / `ExtendClientAreaChromeHints` 已由 `Window.WindowDecorations`（`None` / `BorderOnly` / `Full`）+ `ExtendClientAreaToDecorationsHint` 取代；本项目把原来的 `NoChrome`（保留原生边框、隐藏标题按钮）映射为 `BorderOnly`。
+- **SkiaSharp 3 的两个渲染语义变化**（本项目已适配）：
+  - SkSL 的 `sample(shader, coord)` 已被 Skia m130+ 删除，子着色器采样改用 `content.eval(coord)`；
+  - `SKImageFilter.CreateBlur(σ, σ, tileMode)` 带 tile mode 时会把钳制后的输入扩展到整个裁剪区（包括为模糊外溢预留的画布留白），导致留白区被内容填充；用不带 tile mode 的 `CreateBlur(σ, σ)` 才是 2.88 的旧语义（透明填充、模糊柔和外溢）。
+  - `Screen` 变为 abstract 且构造函数 `private protected`：外部代码无法 new / 继承，测试需要假屏幕时用 `Avalonia.Platform.PlatformScreen` 反射构造（见 `tests/UiFoundationChecks/TestScreen.cs`）。
+
 ## 液态玻璃（1.7.0）
 
 在 **外观 → 应用主题 → 液态玻璃** 启用。默认模糊度 12、折射 28%（= 实机约 9 DIP 的透镜位移）、边缘宽度 24、高光 65%（= 实机亮边线强度）、色散 18%（≈ 0.35 px，几乎不可见）、光照方向 225°（左上方）、边缘染色 50%（可选：按边缘内外的实际壁纸颜色采样并适当提饱和度，柔和地染出轮廓色，0 关闭）；每项支持滑块和数值输入，即时保存，可重置参数或刷新壁纸。若桌面被任务栏替换程序（myDockFinder 等）、壁纸引擎或 DWM 改动、自动对齐仍偏差，可用「壁纸对准校正…」按钮手动微调采样偏移（水平/垂直，±1000 DIP），调整即时全局生效并保存在玻璃参数里。颜色区的不透明度控制玻璃染色浓度，深浅背景色决定染色颜色；圆角沿用高级设置。液态玻璃**不绘制**「描边」高光环（那是毛玻璃主题的可选项，液态玻璃的边饰是材质自身的均匀亮边线）。

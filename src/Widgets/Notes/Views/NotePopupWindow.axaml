@@ -4,7 +4,7 @@
         xmlns:controls="clr-namespace:DeskCanvas.Views.Controls;assembly=DeskCanvas"
         x:Class="Notes.Views.NotePopupWindow"
         Title="Notes"
-        SystemDecorations="None"
+        WindowDecorations="None"
         Background="Transparent"
         TransparencyLevelHint="Transparent"
         ShowInTaskbar="False"
@@ -29,7 +29,7 @@
                          Background="Transparent"
                          Padding="0"
                          MinHeight="22"
-                         Watermark="{x:Static locales:Locale.Notes_Title}"
+                         PlaceholderText="{x:Static locales:Locale.Notes_Title}"
                          LostFocus="OnTitleLostFocus"
                          KeyDown="OnTitleKeyDown"
                          ScrollViewer.HorizontalScrollBarVisibility="Disabled" />

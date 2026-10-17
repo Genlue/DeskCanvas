@@ -91,7 +91,7 @@ Check(coveredVm.TickSubscriptionCountForChecks == 1, "1.13 the covered AnalogIII
 // Loaded/Unloaded keep their historic Start/Stop role beside the session gate.
 var idC = WidgetInstanceId.New();
 var sC = WidgetSessionRegistry.GetOrCreate(idC);
-var analogHost = new Window { Width = 200, Height = 200, SystemDecorations = SystemDecorations.None, ShowInTaskbar = false };
+var analogHost = new Window { Width = 200, Height = 200, WindowDecorations = WindowDecorations.None, ShowInTaskbar = false };
 var attachedAnalog = new AnalogI(new ClockModel(), sC);
 analogHost.Content = attachedAnalog;
 analogHost.Show();
@@ -161,7 +161,7 @@ Check(VmOfFlip(coveredFlip).TickSubscriptionCountForChecks == 1, "3.8 the covere
 // 4. Frameless clock (FramelessDigital keeps its tick logic in code-behind)
 // =========================================================================================
 Console.WriteLine("--- FramelessDigital gating ---");
-var framelessHost = new Window { Width = 312, Height = 152, SystemDecorations = SystemDecorations.None, ShowInTaskbar = false };
+var framelessHost = new Window { Width = 312, Height = 152, WindowDecorations = WindowDecorations.None, ShowInTaskbar = false };
 var legacyFrameless = new FramelessDigital(new FramelessClockModel());
 framelessHost.Content = legacyFrameless;
 framelessHost.Show();

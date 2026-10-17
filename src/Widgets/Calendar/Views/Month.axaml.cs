@@ -71,7 +71,7 @@ public partial class Month : UserControl, IWidgetSurfaceHints, IFocusThemedConte
         ActualThemeVariantChanged -= OnActualThemeVariantChanged;
         ActualThemeVariantChanged += OnActualThemeVariantChanged;
 
-        if (this.GetVisualRoot() is Window win)
+        if (TopLevel.GetTopLevel(this) is Window win)
         {
             windowHost = win;
             win.ResourcesChanged -= OnAccentResourcesChanged;
@@ -130,7 +130,7 @@ public partial class Month : UserControl, IWidgetSurfaceHints, IFocusThemedConte
 
     private void OnActualThemeVariantChanged(object? sender, System.EventArgs e) => UpdateTodayBrush();
 
-    private void OnAccentResourcesChanged(object? sender, System.EventArgs e) => UpdateTodayBrush();
+    private void OnAccentResourcesChanged(object? sender, ResourcesChangedEventArgs e) => UpdateTodayBrush();
 
     /// <summary>
     /// True when today's number is punched out of the marker disc (镂空) instead of being painted

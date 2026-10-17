@@ -82,20 +82,12 @@ public static class FramelessGlyphGeometry
             Edging = SKFontEdging.SubpixelAntialias,
             Subpixel = true
         };
-        using var paint = new SKPaint(font)
-        {
-            IsAntialias = true,
-            SubpixelText = true,
-            TextSize = 100f,
-            Typeface = typeface
-        };
-
         using var path = new SKPath { FillType = SKPathFillType.Winding };
         SKRect referenceBounds;
 
         if (!fixedWidthDigits)
         {
-            using var rawPath = paint.GetTextPath(text, 0f, 0f);
+            using var rawPath = font.GetTextPath(text, new SKPoint(0f, 0f));
             if (rawPath == null || rawPath.IsEmpty)
                 return null;
 
@@ -107,7 +99,7 @@ public static class FramelessGlyphGeometry
         }
         else
         {
-            var metrics = GetTabularMetrics(familyKey, clampedWeight, paint);
+            var metrics = GetTabularMetrics(familyKey, clampedWeight, font);
             if (metrics.MaxDigitWidth <= 0 || metrics.MaxBottom <= metrics.MinTop)
                 return null;
 
@@ -122,7 +114,7 @@ public static class FramelessGlyphGeometry
                 bool isColon = ch == ':';
                 float slotW = isColon ? colonSlotW : metrics.MaxDigitWidth;
 
-                using var chRaw = paint.GetTextPath(ch.ToString(), 0f, 0f);
+                using var chRaw = font.GetTextPath(ch.ToString(), new SKPoint(0f, 0f));
                 if (chRaw != null && !chRaw.IsEmpty)
                 {
                     chRaw.FillType = SKPathFillType.Winding;
@@ -194,7 +186,7 @@ public static class FramelessGlyphGeometry
         return new SKPath(rawPath);
     }
 
-    private static TabularMetrics GetTabularMetrics(string familyKey, int weight, SKPaint paint)
+    private static TabularMetrics GetTabularMetrics(string familyKey, int weight, SKFont font)
     {
         var cacheKey = (familyKey, weight);
         if (TabularMetricsCache.TryGetValue(cacheKey, out var cached))
@@ -206,7 +198,7 @@ public static class FramelessGlyphGeometry
 
         for (char c = '0'; c <= '9'; c++)
         {
-            using var p = paint.GetTextPath(c.ToString(), 0f, 0f);
+            using var p = font.GetTextPath(c.ToString(), new SKPoint(0f, 0f));
             if (p == null || p.IsEmpty) continue;
             var b = p.TightBounds;
             if (b.Width > maxDigitW) maxDigitW = b.Width;
@@ -215,7 +207,7 @@ public static class FramelessGlyphGeometry
         }
 
         float colonW = maxDigitW * 0.25f;
-        using (var cp = paint.GetTextPath(":", 0f, 0f))
+        using (var cp = font.GetTextPath(":", new SKPoint(0f, 0f)))
         {
             if (cp != null && !cp.IsEmpty)
             {

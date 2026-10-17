@@ -206,7 +206,7 @@ internal static class Program
         {
             Width = hostWidth,
             Height = hostHeight,
-            SystemDecorations = SystemDecorations.None,
+            WindowDecorations = WindowDecorations.None,
             Background = Brushes.Transparent,
             Content = host,
         };

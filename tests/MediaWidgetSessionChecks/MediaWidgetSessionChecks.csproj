@@ -10,7 +10,7 @@
     <PackageReference Include="Avalonia.Desktop" />
     <PackageReference Include="Avalonia.Headless" />
     <PackageReference Include="Avalonia.Themes.Fluent" />
-    <PackageReference Include="Avalonia.ReactiveUI" />
+    <PackageReference Include="ReactiveUI.Avalonia" />
     <ProjectReference Include="..\..\src\DeskCanvas.Contracts\DeskCanvas.Contracts.csproj" />
     <ProjectReference Include="..\..\src\DeskCanvas.Runtime\DeskCanvas.Runtime.csproj" />
     <!-- The P8 batch E media/interaction widgets, checked by direct construction (no host pipeline). -->

@@ -224,7 +224,7 @@ class Program
             Width = width,
             Height = height,
             Content = view,
-            SystemDecorations = SystemDecorations.None,
+            WindowDecorations = WindowDecorations.None,
             Background = Brushes.Transparent,
             RequestedThemeVariant = variant
         };

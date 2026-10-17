@@ -397,7 +397,7 @@ public partial class ColorInput : UserControl
 
     private void ApplyFormatToParts()
     {
-        HexBoxPart.Watermark = ColorFormat == ColorInputFormat.Rgb ? "#RRGGBB" : "#AARRGGBB";
+        HexBoxPart.PlaceholderText = ColorFormat == ColorInputFormat.Rgb ? "#RRGGBB" : "#AARRGGBB";
         PushDraftText(lastValidColor is { } color ? Format(color) : (Value ?? string.Empty));
     }
 

@@ -135,7 +135,7 @@ class Program
             Width = width,
             Height = height,
             Content = cardWrapper,
-            SystemDecorations = SystemDecorations.None,
+            WindowDecorations = WindowDecorations.None,
             Background = Brushes.Transparent
         };
 

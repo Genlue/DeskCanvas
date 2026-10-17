@@ -8,7 +8,7 @@
         TransparencyLevelHint="AcrylicBlur, None"
         TransparencyBackgroundFallback="{DynamicResource SettingsBackground}"
         ExtendClientAreaToDecorationsHint="True"
-        ExtendClientAreaChromeHints="NoChrome"
+        WindowDecorations="BorderOnly"
         ExtendClientAreaTitleBarHeightHint="60"
         ShowInTaskbar="True"
         WindowStartupLocation="CenterScreen"

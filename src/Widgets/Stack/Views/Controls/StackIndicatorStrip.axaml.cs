@@ -137,7 +137,7 @@ public partial class StackIndicatorStrip : Border
         base.OnAttachedToVisualTree(e);
 
         // 旧实现用宿主窗口的 IsPointerOver：指针在组件任意处都算“正在查看”。
-        if (this.GetVisualRoot() is Control root)
+        if (TopLevel.GetTopLevel(this) is Control root)
         {
             rootPointerSubscription?.Dispose();
             rootPointerSubscription = root.GetObservable(InputElement.IsPointerOverProperty)

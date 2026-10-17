@@ -94,7 +94,7 @@ public class App : Application
                         MenuPopupCornerRadius, MenuPopupCornerRadius);
                 }
 
-                if (cm.GetVisualRoot() is WindowBase wb)
+                if (TopLevel.GetTopLevel(cm) is WindowBase wb)
                     ApplyMenuPopupRounding(wb);
             }
 
@@ -110,7 +110,7 @@ public class App : Application
         {
             void ApplyMenuPopup()
             {
-                if (presenter.GetVisualRoot() is WindowBase wb)
+                if (TopLevel.GetTopLevel(presenter) is WindowBase wb)
                     ApplyMenuPopupRounding(wb);
             }
 
@@ -124,7 +124,7 @@ public class App : Application
         // so hover tooltips render only the shadowed text without any pill/capsule background.
         static void ConfigureToolTipPopupRoot(ToolTip tt)
         {
-            if (tt.GetVisualRoot() is WindowBase wb)
+            if (TopLevel.GetTopLevel(tt) is WindowBase wb)
             {
                 wb.TransparencyLevelHint = [WindowTransparencyLevel.Transparent];
                 wb.Background = Avalonia.Media.Brushes.Transparent;

@@ -49,13 +49,13 @@
         <controls:Setting Icon="{DynamicResource SnapPosition}"
                           Title="{x:Static locales:Locale.Settings_Advanced_ProxyCustom_Title}"
                           Subtitle="{x:Static locales:Locale.Settings_Advanced_ProxyCustom_Subtitle}">
-            <TextBox MinWidth="260" Watermark="{x:Static locales:Locale.Settings_Advanced_ProxyCustom_Watermark}"
+            <TextBox MinWidth="260" PlaceholderText="{x:Static locales:Locale.Settings_Advanced_ProxyCustom_Watermark}"
                      Text="{Binding ProxyCustomUrl}" />
         </controls:Setting>
         <controls:Setting Icon="{DynamicResource Refresh}" 
                           Title="{x:Static locales:Locale.Settings_Advanced_UpdateUrl_Title}" 
                           Subtitle="{x:Static locales:Locale.Settings_Advanced_UpdateUrl_Subtitle}">
-            <TextBox MinWidth="260" Watermark="https://github.com/owner/repo/releases/latest"
+            <TextBox MinWidth="260" PlaceholderText="https://github.com/owner/repo/releases/latest"
                      Text="{Binding UpdateUrl}" />
         </controls:Setting>
         <TextBlock FontSize="14" FontWeight="SemiBold" Margin="0 20 0 10"

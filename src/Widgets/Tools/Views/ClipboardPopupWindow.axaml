@@ -5,7 +5,7 @@
         xmlns:controls="clr-namespace:DeskCanvas.Views.Controls;assembly=DeskCanvas"
         x:Class="Tools.Views.ClipboardPopupWindow"
         Title="Clipboard Manager"
-        SystemDecorations="None"
+        WindowDecorations="None"
         Background="Transparent"
         TransparencyLevelHint="Transparent"
         ShowInTaskbar="False"
@@ -75,7 +75,7 @@
                     <TextBlock Grid.Column="0" Text="🔍" FontSize="12" Opacity="0.6" Margin="0,0,6,0" VerticalAlignment="Center" />
                     <TextBox Grid.Column="1" x:Name="SearchBox"
                              Background="Transparent" BorderThickness="0"
-                             Watermark="{x:Static locales:Locale.Tools_Clipboard_SearchWatermark}" FontSize="12"
+                             PlaceholderText="{x:Static locales:Locale.Tools_Clipboard_SearchWatermark}" FontSize="12"
                              Padding="0,2" VerticalAlignment="Center"
                              TextChanged="OnSearchTextChanged" />
                 </Grid>

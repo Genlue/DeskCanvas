@@ -108,7 +108,7 @@
                          Name="SearchInputBox"
                          Classes="search-input"
                          Text="{Binding QueryText, Mode=TwoWay}"
-                         Watermark="{Binding SearchPlaceholder}"
+                         PlaceholderText="{Binding SearchPlaceholder}"
                          KeyDown="OnInputKeyDown"/>
 
                 <Button Grid.Column="1"

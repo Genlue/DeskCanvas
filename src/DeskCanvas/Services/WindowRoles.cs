@@ -116,7 +116,7 @@ public sealed record WindowRoleProfile(
 /// <item><b>Preview</b> — reserved placeholder, all-inert (no implementation exists yet).</item>
 /// <item><b>Anchor</b> — ShowInTaskbar=false (WidgetAnchorWindow.cs:25), ZBand=BottomBand
 /// (App.axaml.cs:199 the anchor is pinned to the widget band so the band predicate never sees a
-/// visible non-member below a widget), ActivatesOnShow=false (1×1, off-screen, SystemDecorations.None,
+/// visible non-member below a widget), ActivatesOnShow=false (1×1, off-screen, WindowDecorations.None,
 /// removed from Alt-Tab — WidgetAnchorWindow.cs:21-55), TracksFocusTheme=false,
 /// CloseOnDisplayChange=false (lives for the whole app lifetime).</item>
 /// </list>

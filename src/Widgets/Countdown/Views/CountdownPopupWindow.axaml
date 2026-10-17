@@ -6,7 +6,7 @@
         xmlns:controls="clr-namespace:DeskCanvas.Views.Controls;assembly=DeskCanvas"
         x:Class="Countdown.Views.CountdownPopupWindow"
         Title="{x:Static locales:Locale.Countdown_Title}"
-        SystemDecorations="None"
+        WindowDecorations="None"
         Background="Transparent"
         TransparencyLevelHint="Transparent"
         ShowInTaskbar="False"
@@ -163,7 +163,7 @@
                         <!-- Title Input -->
                         <StackPanel Spacing="4">
                             <TextBlock Text="{x:Static locales:Locale.Countdown_EventTitle}" FontSize="12" Opacity="0.75" />
-                            <TextBox x:Name="EventTitleTextBox" Watermark="{x:Static locales:Locale.Countdown_EventTitle}" />
+                            <TextBox x:Name="EventTitleTextBox" PlaceholderText="{x:Static locales:Locale.Countdown_EventTitle}" />
                         </StackPanel>
 
                         <!-- DatePicker -->

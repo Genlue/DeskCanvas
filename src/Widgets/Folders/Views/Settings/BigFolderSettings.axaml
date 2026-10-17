@@ -54,7 +54,7 @@
         <controls:Setting Title="{x:Static locales:Locale.Folders_BigFolder_FolderName}"
                           EditorHorizontalAlignment="Stretch">
             <TextBox x:Name="FolderNameBox" MinHeight="{DynamicResource ControlMinHeight}"
-                     Watermark="{x:Static locales:Locale.Folders_BigFolder_FolderName_Hint}"
+                     PlaceholderText="{x:Static locales:Locale.Folders_BigFolder_FolderName_Hint}"
                      FontSize="13" VerticalContentAlignment="Center"
                      LostFocus="OnPopupFolderNameChanged" KeyDown="OnPopupFolderNameKeyDown" />
         </controls:Setting>
@@ -101,7 +101,7 @@
 
         <!-- Items Editor: its own region (path entry, pickers, reorderable rows). -->
         <StackPanel x:Name="ItemsEditor" Orientation="Vertical" Spacing="6">
-            <TextBox x:Name="PathBox" MinHeight="{DynamicResource ControlMinHeight}" Watermark="{x:Static locales:Locale.Folders_Add_Hint}"
+            <TextBox x:Name="PathBox" MinHeight="{DynamicResource ControlMinHeight}" PlaceholderText="{x:Static locales:Locale.Folders_Add_Hint}"
                      FontSize="13" VerticalContentAlignment="Center" />
 
             <Grid ColumnDefinitions="*,Auto,Auto">

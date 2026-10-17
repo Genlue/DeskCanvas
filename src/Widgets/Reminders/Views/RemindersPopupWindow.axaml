@@ -6,7 +6,7 @@
         xmlns:controls="clr-namespace:DeskCanvas.Views.Controls;assembly=DeskCanvas"
         x:Class="Reminders.Views.RemindersPopupWindow"
         Title="Reminders"
-        SystemDecorations="None"
+        WindowDecorations="None"
         Background="Transparent"
         TransparencyLevelHint="Transparent"
         ShowInTaskbar="False"
@@ -73,7 +73,7 @@
                          Background="Transparent"
                          Padding="0"
                          MinHeight="22"
-                         Watermark="{x:Static locales:Locale.Reminders_List_Title}"
+                         PlaceholderText="{x:Static locales:Locale.Reminders_List_Title}"
                          LostFocus="OnTitleLostFocus"
                          KeyDown="OnTitleKeyDown" />
                 <TextBlock x:Name="SubtitleText"
@@ -224,7 +224,7 @@
                              FontSize="13"
                              CornerRadius="8"
                              Padding="10,6"
-                             Watermark="{x:Static locales:Locale.Reminders_Add_Placeholder}"
+                             PlaceholderText="{x:Static locales:Locale.Reminders_Add_Placeholder}"
                              KeyDown="OnNewItemKeyDown" />
 
                     <!-- Add Button -->

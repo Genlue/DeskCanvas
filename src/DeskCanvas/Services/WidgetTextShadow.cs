@@ -92,7 +92,7 @@ public static class WidgetTextShadow
         // content in settings/dialogs never queues a job.
         Control.LoadedEvent.AddClassHandler<Control>((control, _) =>
         {
-            if (control.GetVisualRoot() is not Views.Widget) return;
+            if (TopLevel.GetTopLevel(control) is not Views.Widget) return;
             if (IsTextHost(control)) ApplyTextDeferred(control);
             else if (IsMarked(control)) ApplyElementDeferred(control);
         });
@@ -148,7 +148,7 @@ public static class WidgetTextShadow
     {
         Dispatcher.UIThread.Post(() =>
         {
-            if (visual.GetVisualRoot() is not Views.Widget) return;
+            if (TopLevel.GetTopLevel(visual) is not Views.Widget) return;
             visual.Effect = GetEffect(isText, visual);
         }, DispatcherPriority.Loaded);
     }

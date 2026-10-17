@@ -1,3 +1,4 @@
+using Avalonia.Input.Platform;
 using System;
 using System.Diagnostics;
 using System.Globalization;

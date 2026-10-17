@@ -657,7 +657,7 @@ internal static partial class Program
         typeof(DisplayMonitorService).GetProperty(nameof(DisplayMonitorService.Attached))!.SetValue(monitor,
             new List<AttachedScreen>
             {
-                new(new Screen(1, new PixelRect(0, 0, 1920, 1080), new PixelRect(0, 0, 1920, 1040), true),
+                new(TestScreen.Create(1, new PixelRect(0, 0, 1920, 1080), new PixelRect(0, 0, 1920, 1040), true),
                     new ScreenIdentity("A", "A", 1920, 1080, true, 1), screenConfig)
             });
         typeof(DisplayMonitorService).GetProperty(nameof(DisplayMonitorService.IsTopologyChanging))!

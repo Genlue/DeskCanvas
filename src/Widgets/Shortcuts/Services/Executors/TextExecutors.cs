@@ -1,3 +1,4 @@
+using Avalonia.Input.Platform;
 using System.Globalization;
 using Shortcuts.Models;
 
@@ -11,7 +12,7 @@ internal sealed class GetClipboardExecutor : IActionExecutor
         if (topLevel?.Clipboard == null)
             throw new ActionFailedException(Loc.Get("Shortcuts_Error_NoService"));
 
-        var text = await topLevel.Clipboard.GetTextAsync().ConfigureAwait(true);
+        var text = await topLevel.Clipboard.TryGetTextAsync().ConfigureAwait(true);
         return text ?? string.Empty;
     }
 }

@@ -28,7 +28,7 @@ public partial class Gallery : UserControl, INotifyPropertyChanged
     private readonly DisplayMonitorService displayMonitor;
     private List<WidgetPreviewViewModel>? widgets;
     public List<WidgetPreviewViewModel> Widgets => widgets ??= GetWidgets();
-    public CornerRadius Radius => new(appSettingsProvider.Get().Dimensions.Radius / (VisualRoot?.RenderScaling ?? 1.0));
+    public CornerRadius Radius => new(appSettingsProvider.Get().Dimensions.Radius / (TopLevel.GetTopLevel(this)?.RenderScaling ?? 1.0));
 
     /// <inheritdoc />
     public new event PropertyChangedEventHandler? PropertyChanged;

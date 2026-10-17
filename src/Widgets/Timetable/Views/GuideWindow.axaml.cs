@@ -1,3 +1,4 @@
+using Avalonia.Input.Platform;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;

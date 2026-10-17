@@ -19,7 +19,7 @@
                 <TextBox x:Name="PathBox" Grid.Column="0" FontSize="12"
                          VerticalContentAlignment="Center"
                          IsReadOnly="True"
-                         Watermark="{x:Static locales:Locale.Folders_SingleFile_EmptyHint}" />
+                         PlaceholderText="{x:Static locales:Locale.Folders_SingleFile_EmptyHint}" />
                 <Button Grid.Column="1" Classes="dc-toolbar-button" Margin="6,0,0,0"
                         Content="{x:Static locales:Locale.Folders_PickFile}" Click="OnPickFile" />
                 <Button Grid.Column="2" Classes="dc-toolbar-button" Margin="4,0,0,0"

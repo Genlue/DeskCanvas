@@ -5,7 +5,7 @@
         xmlns:locales="clr-namespace:Dice.Locales"
         x:Class="Dice.Views.DicePopupWindow"
         Title="{x:Static locales:Locale.Dice_PopupTitle}"
-        SystemDecorations="None"
+        WindowDecorations="None"
         Background="Transparent"
         TransparencyLevelHint="Transparent"
         ShowInTaskbar="False"

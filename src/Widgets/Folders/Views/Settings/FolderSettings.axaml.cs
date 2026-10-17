@@ -23,6 +23,10 @@ public partial class FolderSettings : UserControl
     private FolderModel model;
     private Point? dragStart;
     private string? dragPath;
+    private PointerPressedEventArgs? dragTrigger;
+    // Avalonia 12 drag-drop: custom payloads use a typed application format instead of DataObject strings.
+    private static readonly DataFormat<string> ItemPathFormat =
+        DataFormat.CreateStringApplicationFormat("FoldersItemPath");
     private bool syncing;
 
     public FolderSettings(IWidgetLayoutProvider widgetLayoutProvider)
@@ -205,28 +209,33 @@ public partial class FolderSettings : UserControl
         {
             dragStart = e.GetPosition(this);
             dragPath = item.Path;
+            dragTrigger = e;
         }
     }
 
     private async void OnItemPointerMoved(object? sender, PointerEventArgs e)
     {
-        if (dragPath == null || dragStart == null) return;
+        if (dragPath == null || dragStart == null || dragTrigger == null) return;
 
         var position = e.GetPosition(this);
         if (Math.Abs(position.X - dragStart.Value.X) + Math.Abs(position.Y - dragStart.Value.Y) < 8) return;
 
-        var data = new DataObject();
-        data.Set("FoldersItemPath", dragPath);
-        await DragDrop.DoDragDrop(e, data, DragDropEffects.Move);
+        // DoDragDropAsync starts from the press event; the 8px threshold above keeps clicks from
+        // accidentally starting a drag, so the saved press args are the trigger.
+        var trigger = dragTrigger;
+        dragTrigger = null;
+        var data = new DataTransfer();
+        data.Add(DataTransferItem.Create(ItemPathFormat, dragPath));
+        await DragDrop.DoDragDropAsync(trigger, data, DragDropEffects.Move);
         dragStart = null;
         dragPath = null;
     }
 
     private void OnRowDrop(object? sender, DragEventArgs e)
     {
-        if (!e.Data.Contains("FoldersItemPath") || e.Source is not Control { DataContext: FolderItem target }) return;
+        if (!e.DataTransfer.Contains(ItemPathFormat) || e.Source is not Control { DataContext: FolderItem target }) return;
 
-        var dragged = e.Data.Get("FoldersItemPath") as string;
+        var dragged = e.DataTransfer.TryGetValue(ItemPathFormat);
         if (string.IsNullOrEmpty(dragged)) return;
 
         var items = model.Items.ToList();
@@ -261,7 +270,7 @@ public partial class FolderSettings : UserControl
     private void OnNameKeyDown(object? sender, KeyEventArgs e)
     {
         if (e.Key == Key.Enter)
-            TopLevel.GetTopLevel(this)?.FocusManager?.ClearFocus();
+            TopLevel.GetTopLevel(this)?.FocusManager?.Focus(null);
     }
 
     private void OnRemove(object? sender, RoutedEventArgs e)
@@ -481,7 +490,7 @@ public partial class FolderSettings : UserControl
     private void OnTitleKeyDown(object? sender, KeyEventArgs e)
     {
         if (e.Key == Key.Enter)
-            TopLevel.GetTopLevel(this)?.FocusManager?.ClearFocus();
+            TopLevel.GetTopLevel(this)?.FocusManager?.Focus(null);
     }
 
     private void OnColumnsChanged(object? sender, SelectionChangedEventArgs e)

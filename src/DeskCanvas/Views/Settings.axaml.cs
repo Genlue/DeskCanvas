@@ -206,9 +206,12 @@ public partial class Settings : Window
     {
         var settings = appSettingsProvider.Get();
         var isTraffic = settings.EffectiveTitleBarStyle == TitleBarStyle.TrafficLights;
-        ExtendClientAreaChromeHints = isTraffic
-            ? ExtendClientAreaChromeHints.NoChrome
-            : ExtendClientAreaChromeHints.Default;
+        // Avalonia 12 removed ExtendClientAreaChromeHints: "no chrome" is now expressed as
+        // BorderOnly (resizable border, no system caption buttons) so the custom traffic-light
+        // bar can own the top row; Full keeps the native caption.
+        WindowDecorations = isTraffic
+            ? Avalonia.Controls.WindowDecorations.BorderOnly
+            : Avalonia.Controls.WindowDecorations.Full;
         ExtendClientAreaTitleBarHeightHint = isTraffic ? 36 : 50;
         TrafficBar.IsVisible = isTraffic;
         TrafficBar.Size = settings.EffectiveTitleBarSize;

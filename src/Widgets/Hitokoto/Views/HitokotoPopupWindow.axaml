@@ -3,7 +3,7 @@
         xmlns:controls="clr-namespace:DeskCanvas.Views.Controls;assembly=DeskCanvas"
         x:Class="Hitokoto.Views.HitokotoPopupWindow"
         Title="一言 · 灵感收纳箱"
-        SystemDecorations="None"
+        WindowDecorations="None"
         Background="Transparent"
         TransparencyLevelHint="Transparent"
         ShowInTaskbar="False"
@@ -83,7 +83,7 @@
                         <TextBlock Grid.Column="0" Text="🔍" FontSize="12" Opacity="0.6" Margin="0,0,6,0" VerticalAlignment="Center" />
                         <TextBox Grid.Column="1" x:Name="SearchBox"
                                  Background="Transparent" BorderThickness="0"
-                                 Watermark="搜索收藏或偶遇过的句子、出处、作者..." FontSize="12"
+                                 PlaceholderText="搜索收藏或偶遇过的句子、出处、作者..." FontSize="12"
                                  Padding="0,2" VerticalAlignment="Center"
                                  TextChanged="OnSearchTextChanged" />
                     </Grid>

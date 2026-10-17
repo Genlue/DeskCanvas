@@ -1,3 +1,4 @@
+using Avalonia.Input.Platform;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -98,7 +99,7 @@ public partial class HitokotoPopupWindow : SecondaryPanelWindow
         SpotlightNextBtn.Content = "🎲 Next";
         CopyPlainBtn.Content = "📋 Copy Text";
         CopyMarkdownBtn.Content = "📝 Copy Markdown";
-        SearchBox.Watermark = "Search bookmarked or recent quotes, sources, authors...";
+        SearchBox.PlaceholderText = "Search bookmarked or recent quotes, sources, authors...";
         ClearHistoryBtn.Content = "Clear History";
     }
 

@@ -6,7 +6,7 @@
         xmlns:sc="clr-namespace:Shortcuts.Views.Controls"
         x:Class="Shortcuts.Views.ShortcutsPopupWindow"
         Title="{x:Static locales:Locale.Shortcuts_Popup_Title}"
-        SystemDecorations="None"
+        WindowDecorations="None"
         Background="Transparent"
         TransparencyLevelHint="Transparent"
         ShowInTaskbar="False"
@@ -56,7 +56,7 @@
             <TextBox x:Name="SearchBox"
                      Margin="0,2,0,8"
                      FontSize="12"
-                     Watermark="{x:Static locales:Locale.Shortcuts_Search_Placeholder}"
+                     PlaceholderText="{x:Static locales:Locale.Shortcuts_Search_Placeholder}"
                      TextChanged="OnSearchTextChanged" />
 
             <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled" Padding="0,2,0,8">

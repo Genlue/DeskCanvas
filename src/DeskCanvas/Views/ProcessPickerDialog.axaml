@@ -4,7 +4,7 @@
         xmlns:services="clr-namespace:DeskCanvas.Services"
         x:Class="DeskCanvas.Views.ProcessPickerDialog"
         Width="440" Height="480"
-        SystemDecorations="None"
+        WindowDecorations="None"
         Background="Transparent"
         TransparencyLevelHint="Transparent"
         TransparencyBackgroundFallback="{DynamicResource SettingsBackground}"
@@ -23,7 +23,7 @@
                        Text="{x:Static locales:Locale.ProcessPicker_Title}" />
             <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="8" Margin="0 0 0 10">
                 <TextBox x:Name="SearchBox" Width="280"
-                         Watermark="{x:Static locales:Locale.ProcessPicker_Search}"
+                         PlaceholderText="{x:Static locales:Locale.ProcessPicker_Search}"
                          TextChanged="OnSearchChanged" />
                 <Button Content="{x:Static locales:Locale.ProcessPicker_Refresh}" Click="OnRefresh" />
             </StackPanel>

@@ -79,14 +79,14 @@ foreach (var control in new SharedSlider[] { new SharedSlider(), new LegacySlide
     model.Level = 42;
     Flush();
     Key(numeric, InputElement.KeyDownEvent, Avalonia.Input.Key.Enter);
-    numeric.RaiseEvent(new RoutedEventArgs(InputElement.LostFocusEvent));
+    numeric.RaiseEvent(new FocusChangedEventArgs(InputElement.LostFocusEvent));
     Check(commits.Count == 0 && model.Level == 42, $"{name}: external binding loads/completion cause no persistence commit");
     numericText.Text = "63";
     Flush();
     Check(control.Value == 65 && model.Level == 65 && commits.Count == 0, $"{name}: numeric preview snaps and retains binding");
     Key(numericText, InputElement.KeyDownEvent, Avalonia.Input.Key.Enter);
     Check(commits.SequenceEqual(new[] { 65d }), $"{name}: numeric Enter immediately commits typed input");
-    numeric.RaiseEvent(new RoutedEventArgs(InputElement.LostFocusEvent));
+    numeric.RaiseEvent(new FocusChangedEventArgs(InputElement.LostFocusEvent));
     Key(numericText, InputElement.KeyDownEvent, Avalonia.Input.Key.Enter);
     Check(commits.SequenceEqual(new[] { 65d }), $"{name}: numeric Enter plus blur commits exactly once");
     Key(slider, InputElement.KeyDownEvent, Avalonia.Input.Key.Right);

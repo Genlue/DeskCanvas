@@ -411,7 +411,7 @@ public partial class Folder : UserControl, IWidgetSelfRefreshing, INotifyPropert
     private void OnDragOver(object? sender, DragEventArgs e)
     {
         if (IsWatchFolderMode) return;
-        if (e.Data.Contains(DataFormats.FileNames))
+        if (e.DataTransfer.Contains(DataFormat.File))
         {
             e.DragEffects = DragDropEffects.Copy;
             DropHint.IsVisible = true;
@@ -428,9 +428,9 @@ public partial class Folder : UserControl, IWidgetSelfRefreshing, INotifyPropert
     {
         DropHint.IsVisible = false;
         if (IsWatchFolderMode) return;
-        if (!e.Data.Contains(DataFormats.FileNames)) return;
+        if (!e.DataTransfer.Contains(DataFormat.File)) return;
 
-        var paths = e.Data.GetFiles()?.Select(f => f.Path.LocalPath).Where(path => File.Exists(path) || Directory.Exists(path)).ToList() ?? [];
+        var paths = e.DataTransfer.TryGetFiles()?.Select(f => f.Path.LocalPath).Where(path => File.Exists(path) || Directory.Exists(path)).ToList() ?? [];
         if (paths.Count == 0) return;
 
         var newItems = model.Items.Concat(paths).Distinct().ToList();

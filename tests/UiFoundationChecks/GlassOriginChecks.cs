@@ -62,7 +62,7 @@ internal static partial class Program
 
     private static void CheckWalkEqualsRawWithoutTransforms()
     {
-        var host = new Window { Width = 360, Height = 240, SystemDecorations = SystemDecorations.None };
+        var host = new Window { Width = 360, Height = 240, WindowDecorations = WindowDecorations.None };
         var surface = new LiquidGlassSurface { Width = 120, Height = 80 };
         host.Content = surface;
         host.Show();
@@ -82,7 +82,7 @@ internal static partial class Program
         // never affected; surfaces inside the scaled content (plugin-provided glass) and the
         // frameless clock were — with an offset proportional to the distance from the scale
         // anchor, hence "some positions off, others fine".
-        var host = new Window { Width = 400, Height = 300, SystemDecorations = SystemDecorations.None };
+        var host = new Window { Width = 400, Height = 300, WindowDecorations = WindowDecorations.None };
         var presenter = new ContentPresenter { Width = 200, Height = 150 };
         var nested = new LiquidGlassSurface { Width = 100, Height = 60 };
         presenter.Content = nested;
@@ -117,7 +117,7 @@ internal static partial class Program
         // widget content scale) cannot move it — while the raw path demonstrably would have.
         // SurfaceOverride = Solid keeps the render pipeline out of the headless run; this check is
         // about the frame's geometry, not its pixels.
-        var host = new Window { Width = 420, Height = 200, SystemDecorations = SystemDecorations.None };
+        var host = new Window { Width = 420, Height = 200, WindowDecorations = WindowDecorations.None };
         var clock = new FramelessDigital(new FramelessClockModel(SurfaceOverride: SurfaceStyle.Acrylic))
         {
             Width = 380,

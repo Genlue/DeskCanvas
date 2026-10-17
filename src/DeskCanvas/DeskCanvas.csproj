@@ -23,12 +23,10 @@
         <PackageReference Include="Avalonia" />
         <PackageReference Include="Avalonia.Controls.ColorPicker" />
         <PackageReference Include="Avalonia.Desktop" />
-        <PackageReference Include="Avalonia.ReactiveUI" />
+        <PackageReference Include="ReactiveUI.Avalonia" />
         <PackageReference Include="Avalonia.Themes.Fluent" />
         <PackageReference Include="Avalonia.Fonts.Inter" />
         <PackageReference Include="SkiaSharp" />
-        <!--Condition below is needed to remove Avalonia.Diagnostics package from build output in Release configuration.-->
-        <PackageReference Condition="'$(Configuration)' == 'Debug'" Include="Avalonia.Diagnostics" />
         <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
         <PackageReference Include="Microsoft.Win32.SystemEvents" />
         <PackageReference Include="System.Management" />

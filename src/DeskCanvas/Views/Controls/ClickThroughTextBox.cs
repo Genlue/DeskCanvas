@@ -69,7 +69,9 @@ public class ClickThroughTextBox : TextBox
              (e.Key == Key.Tab && !AcceptsTab) ||
              (e.Key == Key.Escape)))
         {
-            widget.FocusManager?.ClearFocus();
+            // Avalonia 12 removed IFocusManager.ClearFocus; Focus(null) is the public
+            // replacement (it clears, or restores the scope's previous element).
+            widget.FocusManager?.Focus(null);
         }
     }
 

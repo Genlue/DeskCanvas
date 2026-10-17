@@ -264,7 +264,7 @@ public partial class SingleFile : UserControl, IWidgetSelfRefreshing
 
     private void OnDragOver(object? sender, DragEventArgs e)
     {
-        if (e.Data.Contains(DataFormats.FileNames))
+        if (e.DataTransfer.Contains(DataFormat.File))
         {
             e.DragEffects = DragDropEffects.Copy;
             DropOverlay.IsVisible = true;
@@ -280,9 +280,9 @@ public partial class SingleFile : UserControl, IWidgetSelfRefreshing
     private void OnDrop(object? sender, DragEventArgs e)
     {
         DropOverlay.IsVisible = false;
-        if (!e.Data.Contains(DataFormats.FileNames)) return;
+        if (!e.DataTransfer.Contains(DataFormat.File)) return;
 
-        var path = e.Data.GetFiles()?.Select(f => f.Path.LocalPath).FirstOrDefault(p => File.Exists(p) || Directory.Exists(p));
+        var path = e.DataTransfer.TryGetFiles()?.Select(f => f.Path.LocalPath).FirstOrDefault(p => File.Exists(p) || Directory.Exists(p));
         if (!string.IsNullOrEmpty(path))
         {
             UpdateModel(model with { Path = path });

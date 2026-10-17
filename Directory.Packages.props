@@ -10,16 +10,21 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- Avalonia 全家桶：主程序与所有小组件共用同一版本 -->
-    <PackageVersion Include="Avalonia" Version="11.1.3" />
-    <PackageVersion Include="Avalonia.Controls.ColorPicker" Version="11.1.3" />
-    <PackageVersion Include="Avalonia.Desktop" Version="11.1.3" />
-    <PackageVersion Include="Avalonia.Headless" Version="11.1.3" />
-    <PackageVersion Include="Avalonia.ReactiveUI" Version="11.1.3" />
-    <PackageVersion Include="Avalonia.Themes.Fluent" Version="11.1.3" />
-    <PackageVersion Include="Avalonia.Fonts.Inter" Version="11.1.3" />
-    <PackageVersion Include="Avalonia.Diagnostics" Version="11.1.3" />
-    <PackageVersion Include="SkiaSharp" Version="2.88.8" />
+    <!-- Avalonia 全家桶：主程序与所有小组件共用同一版本。
+         12.x 说明：Avalonia.ReactiveUI 已拆分为独立发版的 ReactiveUI.Avalonia（版本号与 Avalonia 同步）；
+         Avalonia.Diagnostics 已被移除，DevTools 转为 Avalonia Plus 的商业包 AvaloniaUI.DiagnosticsSupport，
+         本项目不使用 DevTools，故不再引用。SkiaSharp 必须跟随 Avalonia.Skia 的 3.119.4。 -->
+    <PackageVersion Include="Avalonia" Version="12.1.4" />
+    <PackageVersion Include="Avalonia.Controls.ColorPicker" Version="12.1.4" />
+    <PackageVersion Include="Avalonia.Desktop" Version="12.1.4" />
+    <PackageVersion Include="Avalonia.Headless" Version="12.1.4" />
+    <PackageVersion Include="Avalonia.Themes.Fluent" Version="12.1.4" />
+    <PackageVersion Include="Avalonia.Fonts.Inter" Version="12.1.4" />
+    <PackageVersion Include="ReactiveUI.Avalonia" Version="12.1.4" />
+    <!-- ReactiveUI 25 起不再依赖 System.Reactive；项目代码用到的 Subscribe(Action<T>) 扩展来自它，
+         显式引用以恢复 11.x 时代的编译契约（无 Rx 操作符，仅此一个扩展）。 -->
+    <PackageVersion Include="System.Reactive" Version="6.0.2" />
+    <PackageVersion Include="SkiaSharp" Version="3.119.4" />
 
     <!-- .NET 官方包 -->
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="8.0.0" />

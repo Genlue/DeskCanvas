@@ -95,7 +95,7 @@ public static class LiquidGlassRenderer
             var pad = (int)Math.Ceiling(Math.Max(sigma * 3f, 16f));
             using var surface = SKSurface.Create(new SKImageInfo(frame.Width + 2 * pad, frame.Height + 2 * pad));
             surface.Canvas.Clear(wallpaper.Background);
-            using var filter = sigma > 0 ? SKImageFilter.CreateBlur(sigma, sigma, SKShaderTileMode.Clamp) : null;
+            using var filter = sigma > 0 ? SKImageFilter.CreateBlur(sigma, sigma) : null;
             using var paint = new SKPaint { IsAntialias = true, FilterQuality = SKFilterQuality.High, ImageFilter = filter };
             surface.Canvas.Save();
             surface.Canvas.Translate(pad, pad);
@@ -180,7 +180,7 @@ public static class LiquidGlassRenderer
         {
             if (image != null)
             {
-                using var filter = sigma > 0 ? SKImageFilter.CreateBlur(sigma, sigma, SKShaderTileMode.Clamp) : null;
+                using var filter = sigma > 0 ? SKImageFilter.CreateBlur(sigma, sigma) : null;
                 using var paint = new SKPaint { IsAntialias = true, FilterQuality = SKFilterQuality.High, ImageFilter = filter };
                 canvas.Save();
                 canvas.Translate(pad, pad);

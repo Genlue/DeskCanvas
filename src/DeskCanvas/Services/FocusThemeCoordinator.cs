@@ -287,7 +287,7 @@ public sealed class FocusThemeCoordinator : IDisposable
         var coordinator = App.Services?.GetService(typeof(FocusThemeCoordinator)) as FocusThemeCoordinator;
         if (coordinator is null) return settings.Theme;
 
-        var window = visual as Window ?? visual.GetVisualRoot() as Window;
+        var window = visual as Window ?? TopLevel.GetTopLevel(visual) as Window;
         return window is { } w
             ? coordinator.ResolveWindowTheme(settings, w)
             : coordinator.ResolveWindowTheme(settings);

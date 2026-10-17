@@ -210,8 +210,19 @@ internal static class Program
                     UseShellExecute = false
                 };
                 using var proc = System.Diagnostics.Process.Start(psi)!;
-                proc.WaitForExit(30000);
-                Check(proc.ExitCode == 0, $"8.7 ISCC.exe 编译 DeskCanvas.iss 成功 (exit={proc.ExitCode})");
+                // The setup packages a ~162 MB single-file exe; LZMA on a slower box easily
+                // exceeds 30s, and reading ExitCode after a WaitForExit(int) timeout throws
+                // ("Process must exit before requested information can be determined") —
+                // which used to crash the whole suite mid-run.
+                if (proc.WaitForExit(300000))
+                {
+                    Check(proc.ExitCode == 0, $"8.7 ISCC.exe 编译 DeskCanvas.iss 成功 (exit={proc.ExitCode})");
+                }
+                else
+                {
+                    try { proc.Kill(entireProcessTree: true); } catch { }
+                    Check(false, "8.7 ISCC.exe 编译 DeskCanvas.iss 超时(300s)");
+                }
             }
             else
             {

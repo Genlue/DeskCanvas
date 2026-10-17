@@ -240,7 +240,7 @@ public partial class Widget : Window, INotifyPropertyChanged, IFocusThemedWindow
         DataContext = this;
         
         SetMinMaxSize(false);
-        RenderOptions.SetTextRenderingMode(this, TextRenderingMode.Antialias);
+        TextOptions.SetTextRenderingMode(this, TextRenderingMode.Antialias);
         UpdateContentSize();
         
         // Manual grid: the span (size steppers / occupancy) is derived from the stored
@@ -708,7 +708,7 @@ public partial class Widget : Window, INotifyPropertyChanged, IFocusThemedWindow
         // One visual child per window: if the control is still rooted in another window,
         // refuse to attach rather than throwing from the ContentPresenter or silently
         // stealing the child.
-        if (overlay.GetVisualRoot() is Window { } other && !ReferenceEquals(other, this)) return;
+        if (TopLevel.GetTopLevel(overlay) is Window { } other && !ReferenceEquals(other, this)) return;
 
         overlayProvider = provider;
         overlayControl = overlay;
@@ -937,9 +937,9 @@ public partial class Widget : Window, INotifyPropertyChanged, IFocusThemedWindow
     /// <summary>Target span of an in-flight preset resize animation (null when idle).</summary>
     private (int Columns, int Rows)? pendingSpan;
 
-    public SystemDecorations WidgetSystemDecorations => GlassMaterial.UseNativeFrame
-        ? SystemDecorations.BorderOnly
-        : SystemDecorations.None;
+    public WindowDecorations WidgetSystemDecorations => GlassMaterial.UseNativeFrame
+        ? WindowDecorations.BorderOnly
+        : WindowDecorations.None;
 
     public bool WidgetExtendClientArea => GlassMaterial.UseNativeFrame;
     public void EditWidget() => editWidgetWindow?.Invoke().Show();
@@ -1147,7 +1147,7 @@ public partial class Widget : Window, INotifyPropertyChanged, IFocusThemedWindow
     {
         // ClientSize is only available once the native window exists; before that
         // the window size properties carry the same value (client == window with
-        // SystemDecorations.None, which is the widget's normal mode).
+        // WindowDecorations.None, which is the widget's normal mode).
         var width = ClientSize.Width > 0 ? ClientSize.Width : Width;
         var height = ClientSize.Height > 0 ? ClientSize.Height : Height;
         if (width <= 0 || height <= 0) return;
@@ -1431,7 +1431,7 @@ public partial class Widget : Window, INotifyPropertyChanged, IFocusThemedWindow
                         ContextMenuCornerRadius, ContextMenuCornerRadius);
                 }
 
-                if (cm.GetVisualRoot() is WindowBase wb)
+                if (TopLevel.GetTopLevel(cm) is WindowBase wb)
                 {
                     var handle = wb.TryGetPlatformHandle()?.Handle;
                     if (handle.HasValue && handle.Value != IntPtr.Zero)

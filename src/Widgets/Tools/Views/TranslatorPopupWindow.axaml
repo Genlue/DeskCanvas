@@ -4,7 +4,7 @@
         xmlns:controls="clr-namespace:DeskCanvas.Views.Controls;assembly=DeskCanvas"
         x:Class="Tools.Views.TranslatorPopupWindow"
         Title="Translator"
-        SystemDecorations="None"
+        WindowDecorations="None"
         Background="Transparent"
         TransparencyLevelHint="Transparent"
         ShowInTaskbar="False"
@@ -59,7 +59,7 @@
             <Border Grid.Row="0" Classes="card-box" Padding="10,7" Margin="0,0,0,8">
                 <Grid RowDefinitions="*,Auto">
                     <TextBox x:Name="InputBox" Classes="trans-box"
-                             Watermark="{x:Static locales:Locale.Tools_Translator_InputHint}"
+                             PlaceholderText="{x:Static locales:Locale.Tools_Translator_InputHint}"
                              TextChanged="OnInputTextChanged" />
 
                     <Grid Grid.Row="1" ColumnDefinitions="*,Auto,Auto" Margin="4,2,2,0">
@@ -106,7 +106,7 @@
             <!-- Output -->
             <Border Grid.Row="3" Classes="card-box" Padding="10,7">
                 <TextBox x:Name="OutputBox" Classes="trans-box" IsReadOnly="True"
-                         Watermark="{x:Static locales:Locale.Tools_Translator_OutputHint}" />
+                         PlaceholderText="{x:Static locales:Locale.Tools_Translator_OutputHint}" />
             </Border>
         </Grid>
     </controls:SecondaryPanelShell>

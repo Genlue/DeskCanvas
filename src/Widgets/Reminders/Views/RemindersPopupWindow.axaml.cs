@@ -219,7 +219,7 @@ public partial class RemindersPopupWindow : SecondaryPanelWindow
     {
         if (e.Key == Key.Enter)
         {
-            TopLevel.GetTopLevel(this)?.FocusManager?.ClearFocus();
+            TopLevel.GetTopLevel(this)?.FocusManager?.Focus(null);
             e.Handled = true;
         }
     }
@@ -288,7 +288,7 @@ public partial class RemindersPopupWindow : SecondaryPanelWindow
     {
         if (e.Key == Key.Enter)
         {
-            TopLevel.GetTopLevel(this)?.FocusManager?.ClearFocus();
+            TopLevel.GetTopLevel(this)?.FocusManager?.Focus(null);
             e.Handled = true;
         }
     }

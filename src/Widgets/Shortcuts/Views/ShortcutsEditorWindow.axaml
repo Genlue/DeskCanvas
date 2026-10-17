@@ -9,7 +9,7 @@
         TransparencyLevelHint="AcrylicBlur, None"
         TransparencyBackgroundFallback="{DynamicResource SettingsBackground}"
         ExtendClientAreaToDecorationsHint="True"
-        ExtendClientAreaChromeHints="NoChrome"
+        WindowDecorations="BorderOnly"
         ExtendClientAreaTitleBarHeightHint="52"
         ShowInTaskbar="True"
         CanResize="True"
@@ -150,7 +150,7 @@
 
                 <TextBox x:Name="NameBox" Grid.Column="1" Margin="10,0"
                          FontSize="15" FontWeight="SemiBold" BorderThickness="0" Background="Transparent"
-                         Watermark="{x:Static locales:Locale.Shortcuts_Editor_NameWatermark}"
+                         PlaceholderText="{x:Static locales:Locale.Shortcuts_Editor_NameWatermark}"
                          VerticalContentAlignment="Center"
                          LostFocus="OnNameCommitted" KeyDown="OnNameKeyDown" />
 
@@ -213,7 +213,7 @@
                         CornerRadius="{DynamicResource HostSurfaceCornerRadius}">
                     <Grid RowDefinitions="Auto,*" Margin="10">
                         <TextBox x:Name="LibrarySearchBox" FontSize="12"
-                                 Watermark="{x:Static locales:Locale.Shortcuts_Library_Search}"
+                                 PlaceholderText="{x:Static locales:Locale.Shortcuts_Library_Search}"
                                  TextChanged="OnLibrarySearchChanged" />
                         <ScrollViewer Grid.Row="1" MaxHeight="230" Margin="0,8,0,0"
                                       HorizontalScrollBarVisibility="Disabled">

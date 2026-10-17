@@ -57,7 +57,7 @@ Check(stub.RenderRequests.SequenceEqual([true]) && stub.FrameScales.Count == 1,
 // =========================================================================================
 Console.WriteLine("--- Shared shell (UI type) standalone ---");
 var sharedShell = new SharedShell { Title = "Shared", Subtitle = "port slice", CloseButtonLabel = "Close panel" };
-var sharedWindow = new Window { Width = 420, Height = 320, SystemDecorations = SystemDecorations.None };
+var sharedWindow = new Window { Width = 420, Height = 320, WindowDecorations = WindowDecorations.None };
 sharedWindow.Content = sharedShell;
 sharedWindow.Show();
 Flush();
@@ -98,7 +98,7 @@ Check(!SharedDrag.IsDragExcluded(new Panel(), probeGrid), "a plain subtree is dr
 // =========================================================================================
 Console.WriteLine("--- Glass slot mirroring ---");
 var slotShell = new SharedShell { Title = "slot" };
-var slotWindow = new Window { Width = 420, Height = 320, SystemDecorations = SystemDecorations.None };
+var slotWindow = new Window { Width = 420, Height = 320, WindowDecorations = WindowDecorations.None };
 slotWindow.Content = slotShell;
 slotWindow.Show();
 Flush();
@@ -126,7 +126,7 @@ Check(!mirror2.IsVisible && mirror2.CornerRadius == new CornerRadius(12),
 // =========================================================================================
 Console.WriteLine("--- Derived-type selector experiment ---");
 var derivedProbe = new DerivedShellProbe();
-var derivedWindow = new Window { Width = 420, Height = 320, SystemDecorations = SystemDecorations.None };
+var derivedWindow = new Window { Width = 420, Height = 320, WindowDecorations = WindowDecorations.None };
 derivedWindow.Content = derivedProbe;
 derivedWindow.Show();
 Flush();
@@ -141,7 +141,7 @@ Check(typeof(LegacyShell).BaseType == typeof(SharedShell), "the host facade exec
 var facadeShell = new LegacyShell();
 Check(facadeShell.GlassSurface is LegacyGlass,
     "the facade instantiates the host LiquidGlassSurface into the shared port slot");
-var facadeWindow = new Window { Width = 420, Height = 320, SystemDecorations = SystemDecorations.None };
+var facadeWindow = new Window { Width = 420, Height = 320, WindowDecorations = WindowDecorations.None };
 facadeWindow.Content = facadeShell;
 facadeWindow.Show();
 Flush();
@@ -259,7 +259,7 @@ sealed class ProbePanelWindow : SecondaryPanelWindow
 {
     public ProbePanelWindow()
     {
-        SystemDecorations = SystemDecorations.None;
+        WindowDecorations = WindowDecorations.None;
         ShowInTaskbar = false;
         Width = 420;
         Height = 320;

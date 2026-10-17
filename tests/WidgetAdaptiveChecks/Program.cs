@@ -218,7 +218,7 @@ internal static class Program
             var calcView = new CalculatorView(new CalculatorModel());
             var win = new Window
             {
-                SystemDecorations = SystemDecorations.None,
+                WindowDecorations = WindowDecorations.None,
                 ShowInTaskbar = false,
                 ShowActivated = false,
                 Width = w,
@@ -264,7 +264,7 @@ internal static class Program
     {
         var window = new Window
         {
-            SystemDecorations = SystemDecorations.None,
+            WindowDecorations = WindowDecorations.None,
             ShowInTaskbar = false,
             ShowActivated = false,
             WindowStartupLocation = WindowStartupLocation.Manual,
@@ -380,7 +380,7 @@ internal static class WindowTopologyChecks
         check(Math.Abs(widget.Width - 115) < 0.001 && Math.Abs(widget.Height - 172.5) < 0.001,
             "Manual size uses B's 115px cell at 200% DPI despite physical A placement");
         check(widget.WidgetMargin.Left == 24, "Manual grid uses the owning display's dedicated margin");
-        var resizedB = new Screen(2, new PixelRect(-1280, -720, 1280, 720), new PixelRect(-1280, -680, 1280, 680), false);
+        var resizedB = TestScreen.Create(2, new PixelRect(-1280, -720, 1280, 720), new PixelRect(-1280, -680, 1280, 680), false);
         typeof(DisplayMonitorService).GetProperty(nameof(DisplayMonitorService.Attached))!.SetValue(monitor,
             new[] { new AttachedScreen(resizedB, new ScreenIdentity("B", "B", 1280, 720, false, 2), b) });
         typeof(DisplayMonitorService).GetProperty(nameof(DisplayMonitorService.IsTopologyChanging))!.SetValue(monitor, false);
@@ -446,7 +446,7 @@ internal static class WindowTopologyChecks
         var legacyWindow = assembly.NewWidget(legacyProvider);
         live[legacy.Id] = [legacyWindow];
         var legacyAttached = new[] { new AttachedScreen(
-            new Screen(1, new PixelRect(0, 0, 1920, 1080), new PixelRect(0, 40, 1920, 1040), true),
+            TestScreen.Create(1, new PixelRect(0, 0, 1920, 1080), new PixelRect(0, 40, 1920, 1040), true),
             new ScreenIdentity("A", "A", 1920, 1080, true, 1), legacy) };
         typeof(DisplayMonitorService).GetProperty(nameof(DisplayMonitorService.Attached))!.SetValue(monitor, legacyAttached);
         // Freeze the OS enumeration seam during this injected-topology migration check.
@@ -476,7 +476,7 @@ internal static class WindowTopologyChecks
             check(store.Get().FindById(legacy.Id)!.Layout.Count == 2 && store.Get().FindById(legacy.Id)!.Key == null,
                 "partial legacy startup preserves offline absolute coordinates in storage");
             var replugged = legacyAttached.Select(attached => attached with { Config = legacy }).ToList();
-            replugged.Add(new AttachedScreen(new Screen(1.5, new PixelRect(1920, 0, 1920, 1080), new PixelRect(1920, 0, 1920, 1040), false),
+            replugged.Add(new AttachedScreen(TestScreen.Create(1.5, new PixelRect(1920, 0, 1920, 1080), new PixelRect(1920, 0, 1920, 1040), false),
                 new ScreenIdentity("B", "B", 1920, 1080, false, 1.5), b));
             typeof(DisplayMonitorService).GetProperty(nameof(DisplayMonitorService.Attached))!.SetValue(monitor, replugged);
             factory.OnScreensChanged();
@@ -498,7 +498,7 @@ internal static class WindowTopologyChecks
             try
             {
                 if (!initialStartup) factory.Create().ToList();
-                var unconfigured = new AttachedScreen(new Screen(1.5, new PixelRect(1920, 0, 1920, 1080), new PixelRect(1920, 0, 1920, 1040), false),
+                var unconfigured = new AttachedScreen(TestScreen.Create(1.5, new PixelRect(1920, 0, 1920, 1080), new PixelRect(1920, 0, 1920, 1040), false),
                     new ScreenIdentity("B", "B", 1920, 1080, false, 1.5), null);
                 primaryOnly.Add(unconfigured);
                 typeof(DisplayMonitorService).GetProperty(nameof(DisplayMonitorService.Attached))!.SetValue(monitor, primaryOnly);
@@ -518,8 +518,8 @@ internal static class WindowTopologyChecks
     private static void SetAttached(DisplayMonitorService monitor, ScreenLayout? a, ScreenLayout? b, double dpi)
     {
         var attached = new List<AttachedScreen>();
-        if (a != null) attached.Add(new AttachedScreen(new Screen(1, new PixelRect(0, 0, 1920, 1080), new PixelRect(0, 0, 1920, 1040), true), new ScreenIdentity("A", "A", 1920, 1080, true, 1), a));
-        if (b != null) attached.Add(new AttachedScreen(new Screen(dpi, new PixelRect(1920, 0, 1920, 1080), new PixelRect(1920, 0, 1920, 1040), false), new ScreenIdentity("B", "B", 1920, 1080, false, dpi), b));
+        if (a != null) attached.Add(new AttachedScreen(TestScreen.Create(1, new PixelRect(0, 0, 1920, 1080), new PixelRect(0, 0, 1920, 1040), true), new ScreenIdentity("A", "A", 1920, 1080, true, 1), a));
+        if (b != null) attached.Add(new AttachedScreen(TestScreen.Create(dpi, new PixelRect(1920, 0, 1920, 1080), new PixelRect(1920, 0, 1920, 1040), false), new ScreenIdentity("B", "B", 1920, 1080, false, dpi), b));
         typeof(DisplayMonitorService).GetProperty(nameof(DisplayMonitorService.Attached))!.SetValue(monitor, attached);
         typeof(DisplayMonitorService).GetProperty(nameof(DisplayMonitorService.IsTopologyChanging))!.SetValue(monitor, false);
     }

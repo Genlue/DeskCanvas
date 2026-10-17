@@ -347,7 +347,7 @@ public class ProgressViewModel : ReactiveObject, IDisposable
                 return dark ? ThemeVariant.Dark : ThemeVariant.Light;
             }
 
-            if (visual.GetVisualRoot() is Control { ActualThemeVariant: { } root }
+            if (TopLevel.GetTopLevel(visual) is Control { ActualThemeVariant: { } root }
                 && root != ThemeVariant.Default)
             {
                 return root;

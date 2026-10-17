@@ -6,7 +6,7 @@
         TransparencyLevelHint="AcrylicBlur, None"
         TransparencyBackgroundFallback="{DynamicResource SettingsBackground}"
         ExtendClientAreaToDecorationsHint="True"
-        ExtendClientAreaChromeHints="NoChrome"
+        WindowDecorations="BorderOnly"
         ExtendClientAreaTitleBarHeightHint="40"
         WindowStartupLocation="CenterOwner"
         Width="300" Height="170" CanResize="False">
@@ -14,7 +14,7 @@
       <StackPanel Margin="16" Spacing="10" PointerPressed="Drag">
         <TextBlock Text="{x:Static locales:Locale.Widget_Scale}" FontSize="{DynamicResource FontSizeBody}" FontWeight="Bold"
                    IsHitTestVisible="False" HorizontalAlignment="Center" Margin="0 4 0 0"/>
-        <TextBox Name="ScaleInput" Watermark="1.0" HorizontalAlignment="Center" MinWidth="160"
+        <TextBox Name="ScaleInput" PlaceholderText="1.0" HorizontalAlignment="Center" MinWidth="160"
                  TextAlignment="Center"/>
         <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
             <Button Content="{x:Static locales:Locale.Widget_Scale_Reset}" Click="Reset" />

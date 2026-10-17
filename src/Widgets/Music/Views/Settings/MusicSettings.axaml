@@ -58,14 +58,14 @@
                     <TextBlock Text="{x:Static locales:Locale.Music_ManualNameLabel}"
                                FontSize="12" VerticalAlignment="Center" MinWidth="70" />
                     <TextBox x:Name="ManualNameBox" Grid.Column="1" FontSize="12"
-                             Watermark="{x:Static locales:Locale.Music_ManualNameWatermark}"
+                             PlaceholderText="{x:Static locales:Locale.Music_ManualNameWatermark}"
                              Height="26" Padding="4,2" />
                 </Grid>
                 <Grid ColumnDefinitions="Auto,*" Margin="0,2">
                     <TextBlock Text="{x:Static locales:Locale.Music_ManualPatternLabel}"
                                FontSize="12" VerticalAlignment="Center" MinWidth="70" />
                     <TextBox x:Name="ManualPatternBox" Grid.Column="1" FontSize="12"
-                             Watermark="{x:Static locales:Locale.Music_ManualPatternWatermark}"
+                             PlaceholderText="{x:Static locales:Locale.Music_ManualPatternWatermark}"
                              Height="26" Padding="4,2" />
                 </Grid>
                 <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right" Margin="0,4,0,0">

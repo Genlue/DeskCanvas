@@ -4,7 +4,7 @@
         xmlns:controls="clr-namespace:DeskCanvas.Views.Controls;assembly=DeskCanvas"
         x:Class="Tools.Views.CalculatorPopupWindow"
         Title="Calculator"
-        SystemDecorations="None"
+        WindowDecorations="None"
         Background="Transparent"
         TransparencyLevelHint="Transparent"
         ShowInTaskbar="False"
@@ -237,7 +237,7 @@
                             </Grid>
 
                             <TextBox Grid.Row="1" x:Name="SciExpressionBox" Classes="expr-box"
-                                     Watermark="{x:Static locales:Locale.Tools_Calculator_InputHint}"
+                                     PlaceholderText="{x:Static locales:Locale.Tools_Calculator_InputHint}"
                                      TextChanged="OnSciExpressionTextChanged"
                                      KeyDown="OnSciExpressionKeyDown" />
 
@@ -309,7 +309,7 @@
                         <StackPanel Spacing="3">
                             <Grid ColumnDefinitions="*,Auto">
                                 <TextBox x:Name="ProgExpressionBox" Classes="expr-box"
-                                         Watermark="{x:Static locales:Locale.Tools_Calculator_ProgWatermark}"
+                                         PlaceholderText="{x:Static locales:Locale.Tools_Calculator_ProgWatermark}"
                                          TextChanged="OnProgExpressionTextChanged"
                                          KeyDown="OnProgExpressionKeyDown" />
                                 <Button Grid.Column="1" Classes="icon-btn" Width="22" Height="22"

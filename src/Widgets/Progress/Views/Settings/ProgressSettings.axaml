@@ -48,7 +48,7 @@
 
         <!-- 自定义标题 -->
         <controls:Setting Title="{x:Static locales:Locale.Progress_CustomTitle}">
-            <TextBox Name="CustomTitleBox" MinWidth="180" Watermark="{x:Static locales:Locale.Progress_CustomTitle_Placeholder}" LostFocus="OnTitleLostFocus" />
+            <TextBox Name="CustomTitleBox" MinWidth="180" PlaceholderText="{x:Static locales:Locale.Progress_CustomTitle_Placeholder}" LostFocus="OnTitleLostFocus" />
         </controls:Setting>
 
         <!-- 显示百分比 -->
@@ -63,7 +63,7 @@
 
         <!-- 人生进度相关设置 (仅在人生模式下显示) -->
         <controls:Setting Name="BirthDateSetting" Title="{x:Static locales:Locale.Progress_BirthDate}">
-            <TextBox Name="BirthDateBox" MinWidth="140" Watermark="2000-01-01" LostFocus="OnBirthDateLostFocus" />
+            <TextBox Name="BirthDateBox" MinWidth="140" PlaceholderText="2000-01-01" LostFocus="OnBirthDateLostFocus" />
         </controls:Setting>
 
         <controls:Setting Name="LifeExpectancySetting" Title="{x:Static locales:Locale.Progress_LifeExpectancy}">

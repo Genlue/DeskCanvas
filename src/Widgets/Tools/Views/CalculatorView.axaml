@@ -173,7 +173,7 @@
                 <Grid RowDefinitions="*,Auto">
                     <TextBox Grid.Row="0" x:Name="SmallExpressionBox" Classes="expr-input"
                              FontSize="12" TextAlignment="Left"
-                             Watermark="{x:Static locales:Locale.Tools_Calculator_SmallWatermark}"
+                             PlaceholderText="{x:Static locales:Locale.Tools_Calculator_SmallWatermark}"
                              TextChanged="OnSmallExpressionChanged"
                              KeyDown="OnExpressionKeyDown" />
                     <Grid Grid.Row="1" ColumnDefinitions="Auto,*" VerticalAlignment="Bottom" Margin="0,2,0,0">
@@ -218,7 +218,7 @@
                     <!-- Expression & Big Result -->
                     <StackPanel Grid.Row="1" VerticalAlignment="Center" Spacing="1">
                         <TextBox x:Name="MedExpressionBox" Classes="expr-input" FontSize="12" TextAlignment="Right"
-                                 Watermark="0"
+                                 PlaceholderText="0"
                                  TextChanged="OnMedExpressionChanged"
                                  KeyDown="OnExpressionKeyDown" />
                         <TextBlock x:Name="MedResultText" Text="0" FontSize="20" FontWeight="Bold"
@@ -293,7 +293,7 @@
                 <StackPanel Spacing="2">
                     <StackPanel x:Name="LargeTapePreviewList" Spacing="1" Margin="0,0,0,2" />
                     <TextBox x:Name="LargeExpressionBox" Classes="expr-input" FontSize="13.5" TextAlignment="Right"
-                             Watermark="{x:Static locales:Locale.Tools_Calculator_InputHint}"
+                             PlaceholderText="{x:Static locales:Locale.Tools_Calculator_InputHint}"
                              TextChanged="OnLargeExpressionChanged"
                              KeyDown="OnExpressionKeyDown" />
                     <TextBlock x:Name="LargeResultText" Text="0" FontSize="24" FontWeight="Bold"
