@@ -1,13 +1,15 @@
 name: Release
 
+# 发布目前为手动触发（作者要求：改完先不发）。要恢复"push main 即发布"，
+# 把下面 push 触发块的注释打开即可。
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - main
+  # push:
+  #   branches:
+  #     - main
 
-# The release job creates a tag and a release, and update-docs pushes to the wiki —
-# both need write access, which the default GITHUB_TOKEN does not carry.
+# The release job creates a tag and a release — it needs write access, which the
+# default GITHUB_TOKEN does not carry.
 permissions:
   contents: write
 
@@ -29,21 +31,12 @@ jobs:
       - name: Install Inno Setup
         run: choco install innosetup -y --no-progress
 
-      - name: Build solution
-        run: dotnet build .\src\DeskCanvas.sln --configuration Release
-
       # The one canonical packager: single-file self-contained exe into dist\win-x64, then
       # Inno Setup compiles dist\installer\DeskCanvas-<version>-x64-Setup.exe.
       # The Setup installer is the ONLY distribution form — no portable zip, no MSI.
       - name: Package Setup
         shell: powershell
         run: .\build.ps1 -Setup
-
-      - name: Upload docs input
-        uses: actions/upload-artifact@v4
-        with:
-          name: build
-          path: .\src\DeskCanvas\bin\Release\net10.0
 
       - name: Get Assembly Version
         id: version
@@ -83,52 +76,3 @@ jobs:
             ${{ steps.changelog.outputs.changes }}
           files: dist/installer/DeskCanvas-*-Setup.exe
           fail_on_unmatched_files: true
-
-  update-docs:
-    runs-on: windows-latest
-    needs: release
-
-    steps:
-      - name: Install .NET Core
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: 10.0.x
-
-      - name: Install tool
-        run: dotnet tool install -g XMLDoc2Markdown
-
-      - name: Download artifacts
-        uses: actions/download-artifact@v4
-        with:
-          pattern: build
-          path: .
-
-      - name: Run tool
-        run: |
-          ls .
-          ls .\build
-          xmldoc2md .\build\DeskCanvas.Core.dll `
-          --output .\new-wiki\API `
-          --platform github-pages `
-          --index-page-name API `
-
-      - name: Checkout wiki repository
-        uses: actions/checkout@v4
-        with:
-          repository: ${{github.repository}}.wiki
-          path: wiki
-
-      - name: Update API docs
-        run: |
-          if (Test-Path -Path wiki\API) { Remove-Item -Recurse -Force wiki\API }
-          New-Item -ItemType Directory -Path wiki\API
-          Copy-Item -Path new-wiki\API\* -Destination wiki\API -Recurse
-
-      - name: Commit & Push changes
-        run: |
-          cd wiki
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
-          git add .
-          git commit -m "Update API docs"
-          git push
