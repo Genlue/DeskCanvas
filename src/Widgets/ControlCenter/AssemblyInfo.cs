@@ -16,7 +16,8 @@ using DeskCanvas.Core.Models.Attributes;
     "ControlCenter_Subtitle",
     defaultColumns: 4,
     defaultRows: 2,
-    presetSpans: "2x2,4x2,4x4")]
+    presetSpans: "2x2,4x2,4x4",
+    category: "WidgetCategory_SystemStatus")]
 
 [assembly: WidgetInfo(
     typeof(SingleControlView),
@@ -26,7 +27,8 @@ using DeskCanvas.Core.Models.Attributes;
     "SingleControl_Subtitle",
     defaultColumns: 1,
     defaultRows: 1,
-    presetSpans: "1x1,2x1,1x2,2x2")]
+    presetSpans: "1x1,2x1,1x2,2x2",
+    category: "WidgetCategory_SystemStatus")]
 
 [assembly: Locale(
     typeof(Locale),

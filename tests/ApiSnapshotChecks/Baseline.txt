@@ -358,7 +358,7 @@ property DeskCanvas.Core.Models.ActiveDisplayPath SourceId -> System.UInt32
 property DeskCanvas.Core.Models.ActiveDisplayPath TargetAvailable -> System.Boolean
 property DeskCanvas.Core.Models.ActiveDisplayPath TargetId -> System.UInt32
 type DeskCanvas.Core.Models.AssemblyInfo
-method DeskCanvas.Core.Models.AssemblyInfo Deconstruct(System.String,System.String,System.String,System.String,System.Version,System.String) -> System.Void
+method DeskCanvas.Core.Models.AssemblyInfo Deconstruct(System.String,System.String,System.String,System.String,System.Version,System.String,System.Collections.Generic.IReadOnlyList<System.String>) -> System.Void
 method DeskCanvas.Core.Models.AssemblyInfo Equals(System.Object) -> System.Boolean
 method DeskCanvas.Core.Models.AssemblyInfo Equals(DeskCanvas.Core.Models.AssemblyInfo) -> System.Boolean
 method DeskCanvas.Core.Models.AssemblyInfo GetHashCode() -> System.Int32
@@ -367,6 +367,7 @@ method DeskCanvas.Core.Models.AssemblyInfo op_Equality(DeskCanvas.Core.Models.As
 method DeskCanvas.Core.Models.AssemblyInfo op_Inequality(DeskCanvas.Core.Models.AssemblyInfo,DeskCanvas.Core.Models.AssemblyInfo) -> System.Boolean
 property DeskCanvas.Core.Models.AssemblyInfo AssemblyName -> System.String
 property DeskCanvas.Core.Models.AssemblyInfo Author -> System.String
+property DeskCanvas.Core.Models.AssemblyInfo Categories -> System.Collections.Generic.IReadOnlyList<System.String>
 property DeskCanvas.Core.Models.AssemblyInfo DisplayName -> System.String
 property DeskCanvas.Core.Models.AssemblyInfo FilePath -> System.String
 property DeskCanvas.Core.Models.AssemblyInfo IconData -> System.String
@@ -376,6 +377,7 @@ property DeskCanvas.Core.Models.Attributes.LocaleAttribute DisplayName -> System
 property DeskCanvas.Core.Models.Attributes.LocaleAttribute IconData -> System.String
 property DeskCanvas.Core.Models.Attributes.LocaleAttribute LocaleType -> System.Type
 type DeskCanvas.Core.Models.Attributes.WidgetInfoAttribute
+property DeskCanvas.Core.Models.Attributes.WidgetInfoAttribute Category -> System.String
 property DeskCanvas.Core.Models.Attributes.WidgetInfoAttribute DefaultColumns -> System.Int32
 property DeskCanvas.Core.Models.Attributes.WidgetInfoAttribute DefaultRows -> System.Int32
 property DeskCanvas.Core.Models.Attributes.WidgetInfoAttribute EditModelViewType -> System.Type

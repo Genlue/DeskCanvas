@@ -61,6 +61,17 @@ public partial class FlipCard : UserControl
         ApplyBadges();
 
         DetachedFromVisualTree += (_, _) => StopAnimationAndSnap();
+
+        // A first binding push equal to the ValueProperty default ("00" — e.g. the minute card
+        // created during the :00 minute) raises no PropertyChanged, so the static flaps would
+        // stay empty. Sync once from the current Value on attach to guarantee initial rendering.
+        AttachedToVisualTree += (_, _) =>
+        {
+            if (string.IsNullOrEmpty(currentDisplayedValue) && !string.IsNullOrEmpty(Value))
+            {
+                SetInstant(Value);
+            }
+        };
     }
 
     public string Value

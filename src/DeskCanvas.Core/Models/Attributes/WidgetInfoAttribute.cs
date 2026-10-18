@@ -15,6 +15,8 @@ namespace DeskCanvas.Core.Models.Attributes;
 /// <param name="presetSpans">Preset spans offered in the gallery's size panel, formatted
 /// as "WxH" pairs separated by commas (e.g. "2x2,4x2,4x4"). Null/empty means the widget
 /// is placed at its default span only and the gallery shows no size panel.</param>
+/// <param name="category">Resource key of the gallery section the widget is grouped under
+/// (e.g. "WidgetCategory_ClockCalendar"). Null keeps the widget in the legacy flat list.</param>
 [AttributeUsage(AttributeTargets.Assembly, AllowMultiple = true)]
 public class WidgetInfoAttribute(
     Type viewType,
@@ -24,7 +26,8 @@ public class WidgetInfoAttribute(
     string? subtitle = null,
     int defaultColumns = 2,
     int defaultRows = 2,
-    string? presetSpans = null)
+    string? presetSpans = null,
+    string? category = null)
     : Attribute
 {
     /// <summary>
@@ -84,6 +87,13 @@ public class WidgetInfoAttribute(
     /// Raw preset span list as declared (e.g. "2x2,4x2,4x4").
     /// </summary>
     public string? PresetSpanList { get; } = presetSpans;
+
+    /// <summary>
+    /// Resource key of the gallery category the widget belongs to. Null means uncategorized —
+    /// the gallery keeps such widgets in a trailing "other" bucket so a stale or third-party
+    /// widget DLL without the category argument still shows up.
+    /// </summary>
+    public string? Category { get; } = category;
 
     private IReadOnlyList<(int Columns, int Rows)>? presetSpansCache;
 

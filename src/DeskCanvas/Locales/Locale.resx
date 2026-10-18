@@ -1230,4 +1230,14 @@ Migrate (copy) the current data there? Choosing "Switch without migrating" start
   <data name="Settings_Appearance_SaveReload" xml:space="preserve"><value>Reload and discard draft</value></data>
   <data name="Gallery_NoRoom" xml:space="preserve"><value>There is no free grid cell on this screen for this card. Move or remove an existing widget, enlarge the grid, or pick a smaller size.</value></data>
   <data name="Gallery_NoRoom_Ok" xml:space="preserve"><value>OK</value></data>
+  <data name="WidgetCategory_All" xml:space="preserve"><value>All</value></data>
+  <data name="WidgetCategory_ClockCalendar" xml:space="preserve"><value>Clocks &amp; Calendar</value></data>
+  <data name="WidgetCategory_Weather" xml:space="preserve"><value>Weather</value></data>
+  <data name="WidgetCategory_SystemStatus" xml:space="preserve"><value>System</value></data>
+  <data name="WidgetCategory_Productivity" xml:space="preserve"><value>Productivity</value></data>
+  <data name="WidgetCategory_Launcher" xml:space="preserve"><value>Launcher</value></data>
+  <data name="WidgetCategory_Lifestyle" xml:space="preserve"><value>Media &amp; Life</value></data>
+  <data name="WidgetCategory_Utilities" xml:space="preserve"><value>Utilities</value></data>
+  <data name="WidgetCategory_Container" xml:space="preserve"><value>Containers</value></data>
+  <data name="WidgetCategory_Uncategorized" xml:space="preserve"><value>Other</value></data>
 </root>

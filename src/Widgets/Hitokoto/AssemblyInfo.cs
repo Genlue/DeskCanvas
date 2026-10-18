@@ -16,7 +16,8 @@ using Hitokoto.Views.Settings;
     "Hitokoto_Subtitle",
     defaultColumns: 4,
     defaultRows: 2,
-    presetSpans: "2x1,2x2,4x2,4x4")]
+    presetSpans: "2x1,2x2,4x2,4x4",
+    category: "WidgetCategory_Lifestyle")]
 [assembly: Locale(
     typeof(Locale),
     "Hitokoto",

@@ -85,10 +85,16 @@ public class AssemblyProvider : IAssemblyProvider
             var company = companyAttribute?.Company ?? "";
             var locale = GetLocaleResourceManager(assembly);
             var displayName = locale?.GetString(localeAttribute?.DisplayName ?? "") ?? assemblyName;
+            var categories = widgetAttributes
+                .Select(widget => widget.Category)
+                .Where(category => !string.IsNullOrEmpty(category))
+                .Cast<string>()
+                .Distinct(StringComparer.Ordinal)
+                .ToList();
 
             context.Unload();
 
-            return new AssemblyInfo(filePath, assemblyName, displayName, company, version, localeAttribute?.IconData ?? "");
+            return new AssemblyInfo(filePath, assemblyName, displayName, company, version, localeAttribute?.IconData ?? "", categories);
         }
         catch (Exception)
         {

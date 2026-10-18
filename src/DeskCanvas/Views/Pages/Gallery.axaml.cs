@@ -32,6 +32,40 @@ public partial class Gallery : UserControl, INotifyPropertyChanged
     public List<WidgetPreviewViewModel> Widgets => widgets ??= GetWidgets();
     public CornerRadius Radius => new(appSettingsProvider.Get().Dimensions.Radius / (TopLevel.GetTopLevel(this)?.RenderScaling ?? 1.0));
 
+    /// <summary>Display order of the gallery sections (top → bottom); keys are
+    /// <c>WidgetInfoAttribute.Category</c> values resolved against the main app locale.</summary>
+    private static readonly string[] CategoryOrder =
+    [
+        "WidgetCategory_ClockCalendar",
+        "WidgetCategory_Weather",
+        "WidgetCategory_SystemStatus",
+        "WidgetCategory_Productivity",
+        "WidgetCategory_Launcher",
+        "WidgetCategory_Lifestyle",
+        "WidgetCategory_Utilities",
+        "WidgetCategory_Container",
+    ];
+
+    /// <summary>Glyph shown in each section header; mirrors the approved 8-category scheme.</summary>
+    private static readonly IReadOnlyDictionary<string, string> CategoryIcons = new Dictionary<string, string>
+    {
+        ["WidgetCategory_ClockCalendar"] = "🕒",
+        ["WidgetCategory_Weather"] = "🌤️",
+        ["WidgetCategory_SystemStatus"] = "📊",
+        ["WidgetCategory_Productivity"] = "✅",
+        ["WidgetCategory_Launcher"] = "🚀",
+        ["WidgetCategory_Lifestyle"] = "🎵",
+        ["WidgetCategory_Utilities"] = "🧰",
+        ["WidgetCategory_Container"] = "🧩",
+    };
+
+    /// <summary>Bucket for widgets whose assembly declares no category (stale or
+    /// third-party DLLs compiled against the pre-category attribute constructor).</summary>
+    private const string UncategorizedKey = "WidgetCategory_Uncategorized";
+
+    private List<WidgetCategoryGroup>? categories;
+    public List<WidgetCategoryGroup> Categories => categories ??= BuildCategories();
+
     /// <inheritdoc />
     public new event PropertyChangedEventHandler? PropertyChanged;
 
@@ -75,6 +109,7 @@ public partial class Gallery : UserControl, INotifyPropertyChanged
         if (widgets != null) return;
         widgets = GetWidgets();
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Widgets)));
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Categories)));
     }
 
     private void OnUnloaded(object? sender, RoutedEventArgs e) => ReleasePreviews();
@@ -85,6 +120,11 @@ public partial class Gallery : UserControl, INotifyPropertyChanged
 
         var released = widgets;
         widgets = null;
+        // The section view models wrap those same previews, so they must be rebuilt
+        // on the next visit too. NO PropertyChanged is raised here on purpose: a
+        // Categories refresh would lazily rebuild all previews mid-unload
+        // and defeat the release. OnLoaded re-notifies everything after rebuilding.
+        categories = null;
         foreach (var preview in released)
         {
             try
@@ -119,8 +159,8 @@ public partial class Gallery : UserControl, INotifyPropertyChanged
                         locale?.GetString(widgetInfo.Title ?? string.Empty) ?? widgetInfo.Title,
                         widgetInfo.DefaultColumns,
                         widgetInfo.DefaultRows,
-                        widgetInfo.PresetSpans
-                    ));
+                        widgetInfo.PresetSpans,
+                        widgetInfo.Category));
 
                 result.AddRange(items);
             }
@@ -132,6 +172,34 @@ public partial class Gallery : UserControl, INotifyPropertyChanged
 
         return result;
     }
+
+    private List<WidgetCategoryGroup> BuildCategories()
+    {
+        var byKey = Widgets
+            .GroupBy(widget => widget.Category ?? UncategorizedKey)
+            .ToDictionary(group => group.Key, group => group.ToList());
+
+        var groups = new List<WidgetCategoryGroup>();
+        // Known categories first, in the curated display order.
+        foreach (var key in CategoryOrder)
+        {
+            if (byKey.Remove(key, out var items)) groups.Add(MakeGroup(key, items));
+        }
+        // Categories the host doesn't know (a newer third-party widget DLL) slot in
+        // alphabetically before the uncategorized bucket, which always trails last.
+        foreach (var key in byKey.Keys.Where(key => key != UncategorizedKey).OrderBy(key => key, StringComparer.Ordinal).ToList())
+        {
+            if (byKey.Remove(key, out var items)) groups.Add(MakeGroup(key, items));
+        }
+        if (byKey.Remove(UncategorizedKey, out var others)) groups.Add(MakeGroup(UncategorizedKey, others));
+        return groups;
+    }
+
+    private static WidgetCategoryGroup MakeGroup(string key, List<WidgetPreviewViewModel> items) =>
+        new(key,
+            CategoryIcons.GetValueOrDefault(key, "🧩"),
+            Locale.ResourceManager.GetString(key, Locale.Culture) ?? key,
+            items);
 
     private void Button_OnClick(object? sender, RoutedEventArgs e)
     {

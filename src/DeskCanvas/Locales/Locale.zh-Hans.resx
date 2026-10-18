@@ -1329,4 +1329,14 @@
   <data name="Settings_Appearance_SaveReload" xml:space="preserve"><value>重新加载并放弃草稿</value></data>
   <data name="Gallery_NoRoom" xml:space="preserve"><value>当前屏幕的网格没有足够空位放置这张卡片。请移动或移除已有组件、扩大网格，或换用更小的尺寸。</value></data>
   <data name="Gallery_NoRoom_Ok" xml:space="preserve"><value>确定</value></data>
+  <data name="WidgetCategory_All" xml:space="preserve"><value>全部</value></data>
+  <data name="WidgetCategory_ClockCalendar" xml:space="preserve"><value>时钟与日历</value></data>
+  <data name="WidgetCategory_Weather" xml:space="preserve"><value>天气</value></data>
+  <data name="WidgetCategory_SystemStatus" xml:space="preserve"><value>系统状态</value></data>
+  <data name="WidgetCategory_Productivity" xml:space="preserve"><value>任务效率</value></data>
+  <data name="WidgetCategory_Launcher" xml:space="preserve"><value>快捷启动</value></data>
+  <data name="WidgetCategory_Lifestyle" xml:space="preserve"><value>媒体与生活</value></data>
+  <data name="WidgetCategory_Utilities" xml:space="preserve"><value>实用工具</value></data>
+  <data name="WidgetCategory_Container" xml:space="preserve"><value>容器组合</value></data>
+  <data name="WidgetCategory_Uncategorized" xml:space="preserve"><value>其他</value></data>
 </root>

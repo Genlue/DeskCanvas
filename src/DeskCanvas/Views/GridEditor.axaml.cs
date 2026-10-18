@@ -57,6 +57,7 @@ public partial class GridEditor : Window
         WindowRoles.Register(this, WindowRole.Dialog);
 
         Opened += OnOpened;
+        ScalingChanged += OnEditorScalingChanged;
         KeyDown += OnKeyDown;
         Closed += OnClosed;
         ColumnsInput.ValueChanged += OnCellParameterChanged;
@@ -89,8 +90,8 @@ public partial class GridEditor : Window
         if (screen != null)
         {
             Position = new PixelPoint(screen.Bounds.X, screen.Bounds.Y);
-            Width = screen.Bounds.Width / ScreenScaling;
-            Height = screen.Bounds.Height / ScreenScaling;
+            Width = screen.Bounds.Width / Scaling;
+            Height = screen.Bounds.Height / Scaling;
         }
         else
         {
@@ -118,22 +119,27 @@ public partial class GridEditor : Window
     /// <summary>
     /// DPI scale used to convert the target screen's physical geometry into this window's DIPs.
     /// <para>
-    /// The window's own <see cref="Visual.RenderScaling"/> is authoritative once the platform
-    /// window exists; the screen model can disagree with it (remote-desktop sessions, mixed-DPI
-    /// multi-monitor setups, a monitor list captured before a resolution change). A DIP width
-    /// larger than the physical screen is exactly what pushes the right-aligned parameter panel
-    /// and the ✕ button outside the visible area, so this prefers the window value.
+    /// The TARGET SCREEN's own scale is authoritative, NOT the window's
+    /// <see cref="Visual.RenderScaling"/>. The Win32 Position setter updates the platform
+    /// window's DPI silently (it rewrites the impl field without raising ScalingChanged),
+    /// and a cross-monitor move of a still-hidden window raises no WM_DPICHANGED at all —
+    /// so after the constructor moves the window onto a non-primary screen, the window's
+    /// RenderScaling can keep reporting the primary's scale (or the 1.0 creation default)
+    /// for the whole editor session. Converting with that stale value produced a DIP width
+    /// that rendered wider than the target screen, which pushed the right-aligned parameter
+    /// panel and the ✕ button outside the visible area — the "parameters panel never
+    /// appears on non-primary screens" bug. The screen model's Scaling is GetDpiForMonitor
+    /// of the very monitor the editor is forced to cover (the same value the platform
+    /// window itself settles on), so both sides agree by construction.
     /// </para>
     /// </summary>
-    private double Scaling => RenderScaling > 0 ? RenderScaling : ScreenScaling;
-
-    /// <summary>DPI scale reported by the target screen model (used before the window is shown).</summary>
-    private double ScreenScaling
+    private double Scaling
     {
         get
         {
-            var scaling = ResolveTargetScreen()?.Scaling ?? 1.0;
-            return scaling > 0 ? scaling : 1.0;
+            var screenScaling = ResolveTargetScreen()?.Scaling ?? 0;
+            if (screenScaling > 0) return screenScaling;
+            return RenderScaling > 0 ? RenderScaling : 1.0;
         }
     }
 
@@ -200,13 +206,29 @@ public partial class GridEditor : Window
         SyncParamInputs();
         Avalonia.Threading.Dispatcher.UIThread.Post(() => { ApplyScreenPlacement(); SyncParamInputs(); },
             Avalonia.Threading.DispatcherPriority.Loaded);
+        // Final settle: on a mixed-DPI multi-monitor setup the WM_DPICHANGED round trip
+        // (suggested-rect resize → scaling change → layout) can land after the Loaded
+        // pass. ApplyScreenPlacement is idempotent, so this is a no-op when the window
+        // is already exactly on the target screen.
+        Avalonia.Threading.Dispatcher.UIThread.Post(ApplyScreenPlacement,
+            Avalonia.Threading.DispatcherPriority.Background);
     }
 
     /// <summary>
-    /// Force native physical window position and dimensions via Win32 SetWindowPosition
-    /// to guarantee full coverage of the target display without DPI mismatch or clamping.
-    /// The DIP size is then derived from the window's own render scaling so the laid-out
-    /// content matches the forced physical rectangle (see <see cref="Scaling"/>).
+    /// Force native physical window position and dimensions so the window covers the
+    /// target display exactly, without DPI mismatch or clamping. The DIP size is derived
+    /// with <see cref="Scaling"/> (the target screen's own scale) so the laid-out content
+    /// matches the forced physical rectangle.
+    /// <para>
+    /// Order is load-bearing: MOVE first, SIZE second, FORCE the physical rect last.
+    /// Moving first makes the Win32 Position setter re-sync the platform window's own DPI
+    /// to the monitor it now sits on; sizing uses that scale; and the raw SetWindowPos
+    /// last bypasses Avalonia's DIP bookkeeping entirely, so no suggested-rect resize
+    /// (those preserve the DIP size, not the screen coverage) or layout round trip can
+    /// leave the window narrower or — fatally for the right-aligned parameter panel and
+    /// the ✕ button — wider than the target screen. A DPI change that still lands after
+    /// this self-heals through <see cref="OnEditorScalingChanged"/>.
+    /// </para>
     /// </summary>
     private void ApplyScreenPlacement()
     {
@@ -215,16 +237,47 @@ public partial class GridEditor : Window
 
         var bounds = screen.Bounds;
 
-        InteropService.SetWindowPosition(this, bounds.X, bounds.Y, bounds.Width, bounds.Height, topmost: true);
+        // 1) Move first — re-syncs the platform window's DPI to the target monitor.
+        Position = new PixelPoint(bounds.X, bounds.Y);
 
+        // 2) DIP size for the forced physical rectangle (physical = DIP × true DPI).
         Width = bounds.Width / Scaling;
         Height = bounds.Height / Scaling;
-        Position = new PixelPoint(bounds.X, bounds.Y);
+
+        // 3) Force the exact physical rectangle last, so it always wins.
+        InteropService.SetWindowPosition(this, bounds.X, bounds.Y, bounds.Width, bounds.Height, topmost: true);
+    }
+
+    /// <summary>Guards <see cref="OnEditorScalingChanged"/> against re-entrancy
+    /// (SetWindowPos can synchronously raise another DPI change).</summary>
+    private bool reapplyingPlacement;
+
+    /// <summary>
+    /// The window's own DPI changed while open (mixed-DPI monitors, a DPI transition
+    /// that landed after the open-time passes): re-apply the placement so the editor
+    /// always covers the target screen exactly. Idempotent; the guard keeps a
+    /// synchronous DPI storm from recursing.
+    /// </summary>
+    private void OnEditorScalingChanged(object? sender, EventArgs e)
+    {
+        if (reapplyingPlacement) return;
+        reapplyingPlacement = true;
+        try
+        {
+            ApplyScreenPlacement();
+            ApplyGrid();
+            UpdateInfo();
+        }
+        finally
+        {
+            reapplyingPlacement = false;
+        }
     }
 
     private void OnClosed(object? sender, EventArgs e)
     {
         Opened -= OnOpened;
+        ScalingChanged -= OnEditorScalingChanged;
         KeyDown -= OnKeyDown;
         Closed -= OnClosed;
         ColumnsInput.ValueChanged -= OnCellParameterChanged;

@@ -48,70 +48,89 @@
     </UserControl.Styles>
 
     <StackPanel Margin="0,0,0,32">
-        <ItemsControl ItemsSource="{Binding Widgets}">
+        <!-- 按分类分区的组件卡片（分类筛选由设置窗口侧边栏的分组导航承担） -->
+        <ItemsControl ItemsSource="{Binding Categories}">
             <ItemsControl.ItemTemplate>
-                <DataTemplate DataType="viewModels:WidgetPreviewViewModel">
-                    <StackPanel Width="{Binding CardWidth}" Margin="10,0,10,26">
-                        <Button Classes="macos-gallery-card"
-                                ToolTip.Tip="{Binding ToolTipText}"
-                                Click="Button_OnClick"
-                                PointerReleased="Card_OnPointerReleased">
-                            <StackPanel Orientation="Vertical">
-                                <!-- 真实比例小组件预览框。内边距不再由这里硬编码：preview-box 与桌面
-                                     卡片 Border 同样带 .widget-content-host，内容的内边距由 App.axaml
-                                     的同一条规则算出，组件自己写的 Margin 优先——预览与桌面因此一致。 -->
-                                <Border Classes="preview-box widget-content-host"
-                                        Width="{Binding PreviewWidth}"
-                                        Height="{Binding PreviewHeight}"
-                                        HorizontalAlignment="Center">
-                                    <ContentPresenter IsHitTestVisible="False"
-                                                      Content="{Binding Control}"
-                                                      HorizontalAlignment="Stretch"
-                                                      VerticalAlignment="Stretch" />
-                                </Border>
+                <DataTemplate DataType="viewModels:WidgetCategoryGroup">
+                    <StackPanel Margin="0,6,0,10">
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="7" Margin="0,2,0,14">
+                            <TextBlock Text="{Binding Icon}" FontSize="15" VerticalAlignment="Center" />
+                            <TextBlock Text="{Binding Title}"
+                                       FontSize="15"
+                                       FontWeight="SemiBold"
+                                       VerticalAlignment="Center" />
+                            <Border Background="#14808080" CornerRadius="8" Padding="7,1" VerticalAlignment="Center">
+                                <TextBlock Text="{Binding CountText}" FontSize="11" Opacity="0.75" />
+                            </Border>
+                        </StackPanel>
+                        <ItemsControl ItemsSource="{Binding Widgets}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate DataType="viewModels:WidgetPreviewViewModel">
+                                    <StackPanel Width="{Binding CardWidth}" Margin="10,0,10,26">
+                                        <Button Classes="macos-gallery-card"
+                                                ToolTip.Tip="{Binding ToolTipText}"
+                                                Click="Button_OnClick"
+                                                PointerReleased="Card_OnPointerReleased">
+                                            <StackPanel Orientation="Vertical">
+                                                <!-- 真实比例小组件预览框。内边距不再由这里硬编码：preview-box 与桌面
+                                                     卡片 Border 同样带 .widget-content-host，内容的内边距由 App.axaml
+                                                     的同一条规则算出，组件自己写的 Margin 优先——预览与桌面因此一致。 -->
+                                                <Border Classes="preview-box widget-content-host"
+                                                        Width="{Binding PreviewWidth}"
+                                                        Height="{Binding PreviewHeight}"
+                                                        HorizontalAlignment="Center">
+                                                    <ContentPresenter IsHitTestVisible="False"
+                                                                      Content="{Binding Control}"
+                                                                      HorizontalAlignment="Stretch"
+                                                                      VerticalAlignment="Stretch" />
+                                                </Border>
 
-                                <!-- macOS 风格底部信息条 (标题、尺寸徽章与添加按钮) -->
-                                <Grid Margin="2,10,2,0" ColumnDefinitions="*,Auto">
-                                    <StackPanel Grid.Column="0" Orientation="Vertical" Spacing="2">
-                                        <TextBlock Text="{Binding Title}"
-                                                   FontWeight="SemiBold"
-                                                   FontSize="13"
-                                                   TextTrimming="CharacterEllipsis" />
-                                        <Border Background="#14808080" CornerRadius="4" Padding="5,1"
-                                                HorizontalAlignment="Left" Margin="0,2,0,0">
-                                            <TextBlock Text="{Binding SizeBadge}"
-                                                       FontSize="10"
-                                                       FontWeight="Medium"
-                                                       Opacity="0.75" />
-                                        </Border>
+                                                <!-- macOS 风格底部信息条 (标题、尺寸徽章与添加按钮) -->
+                                                <Grid Margin="2,10,2,0" ColumnDefinitions="*,Auto">
+                                                    <StackPanel Grid.Column="0" Orientation="Vertical" Spacing="2">
+                                                        <TextBlock Text="{Binding Title}"
+                                                                   FontWeight="SemiBold"
+                                                                   FontSize="13"
+                                                                   TextTrimming="CharacterEllipsis" />
+                                                        <Border Background="#14808080" CornerRadius="4" Padding="5,1"
+                                                                HorizontalAlignment="Left" Margin="0,2,0,0">
+                                                            <TextBlock Text="{Binding SizeBadge}"
+                                                                       FontSize="10"
+                                                                       FontWeight="Medium"
+                                                                       Opacity="0.75" />
+                                                        </Border>
+                                                    </StackPanel>
+
+                                                    <Border Grid.Column="1"
+                                                            Classes="add-badge"
+                                                            Width="24" Height="24"
+                                                            CornerRadius="12"
+                                                            Background="#18808080"
+                                                            VerticalAlignment="Center"
+                                                            HorizontalAlignment="Right">
+                                                        <Path Classes="add-icon"
+                                                              Data="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"
+                                                              Fill="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                                                              Width="11" Height="11"
+                                                              Stretch="Uniform"
+                                                              HorizontalAlignment="Center"
+                                                              VerticalAlignment="Center" />
+                                                    </Border>
+                                                </Grid>
+                                            </StackPanel>
+                                        </Button>
                                     </StackPanel>
-
-                                    <Border Grid.Column="1"
-                                            Classes="add-badge"
-                                            Width="24" Height="24"
-                                            CornerRadius="12"
-                                            Background="#18808080"
-                                            VerticalAlignment="Center"
-                                            HorizontalAlignment="Right">
-                                        <Path Classes="add-icon"
-                                              Data="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"
-                                              Fill="{DynamicResource SystemControlForegroundBaseMediumBrush}"
-                                              Width="11" Height="11"
-                                              Stretch="Uniform"
-                                              HorizontalAlignment="Center"
-                                              VerticalAlignment="Center" />
-                                    </Border>
-                                </Grid>
-                            </StackPanel>
-                        </Button>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <WrapPanel Orientation="Horizontal" HorizontalAlignment="Center" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                        </ItemsControl>
                     </StackPanel>
                 </DataTemplate>
             </ItemsControl.ItemTemplate>
-            <ItemsControl.ItemsPanel>
-                <ItemsPanelTemplate>
-                    <WrapPanel Orientation="Horizontal" HorizontalAlignment="Center" />
-                </ItemsPanelTemplate>
-            </ItemsControl.ItemsPanel>
         </ItemsControl>
     </StackPanel>
 </UserControl>

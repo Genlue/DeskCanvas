@@ -11,7 +11,8 @@ public record WidgetPreviewViewModel(
     string? Title,
     int DefaultColumns = 2,
     int DefaultRows = 2,
-    IReadOnlyList<(int Columns, int Rows)>? PresetSpans = null)
+    IReadOnlyList<(int Columns, int Rows)>? PresetSpans = null,
+    string? Category = null)
 {
     public IReadOnlyList<(int Columns, int Rows)> PresetSpans { get; } = PresetSpans ?? [];
 

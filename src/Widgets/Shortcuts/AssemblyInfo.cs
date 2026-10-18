@@ -16,6 +16,7 @@ using Shortcuts.Views.Settings;
     "Shortcuts_Subtitle",
     defaultColumns: 2,
     defaultRows: 2,
-    presetSpans: "1x1,2x2,4x2,4x4")]
+    presetSpans: "1x1,2x2,4x2,4x4",
+    category: "WidgetCategory_Launcher")]
 
 [assembly: Locale(typeof(Locale), "Shortcuts", "M13 2 3 14h7l-1 8 11-13h-8z")]

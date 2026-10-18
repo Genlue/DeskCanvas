@@ -91,15 +91,15 @@ Check(defaultAttr.DefaultColumns == 2 && defaultAttr.DefaultRows == 2, "WidgetIn
 var customAttr = new DeskCanvas.Core.Models.Attributes.WidgetInfoAttribute(typeof(object), defaultColumns: 1, defaultRows: 1);
 Check(customAttr.DefaultColumns == 1 && customAttr.DefaultRows == 1, "WidgetInfoAttribute custom 1x1");
 
-var toolsDll = Path.GetFullPath("src/DeskCanvas/bin/Debug/net8.0/Widgets/Tools.dll");
+var toolsDll = Path.GetFullPath("src/DeskCanvas/bin/Debug/net10.0/Widgets/Tools.dll");
 if (File.Exists(toolsDll))
 {
     AppDomain.CurrentDomain.AssemblyResolve += (_, ea) =>
     {
         var name = new System.Reflection.AssemblyName(ea.Name).Name;
-        var cand1 = Path.GetFullPath($"src/DeskCanvas/bin/Debug/net8.0/{name}.dll");
+        var cand1 = Path.GetFullPath($"src/DeskCanvas/bin/Debug/net10.0/{name}.dll");
         if (File.Exists(cand1)) return System.Reflection.Assembly.LoadFrom(cand1);
-        var cand2 = Path.GetFullPath($"src/DeskCanvas/bin/Debug/net8.0/Widgets/{name}.dll");
+        var cand2 = Path.GetFullPath($"src/DeskCanvas/bin/Debug/net10.0/Widgets/{name}.dll");
         if (File.Exists(cand2)) return System.Reflection.Assembly.LoadFrom(cand2);
         return null;
     };
@@ -153,7 +153,7 @@ if (File.Exists(toolsDll))
     }
 }
 
-var searchDll = Path.GetFullPath("src/DeskCanvas/bin/Debug/net8.0/Widgets/Search.dll");
+var searchDll = Path.GetFullPath("src/DeskCanvas/bin/Debug/net10.0/Widgets/Search.dll");
 if (File.Exists(searchDll))
 {
     var searchAsm = System.Reflection.Assembly.LoadFrom(searchDll);
@@ -205,7 +205,7 @@ if (File.Exists(searchDll))
 }
 
 System.Reflection.Assembly? clockAsm = null;
-var clockDll = Path.GetFullPath("src/DeskCanvas/bin/Debug/net8.0/Widgets/Clock.dll");
+var clockDll = Path.GetFullPath("src/DeskCanvas/bin/Debug/net10.0/Widgets/Clock.dll");
 if (File.Exists(clockDll))
 {
     clockAsm = System.Reflection.Assembly.LoadFrom(clockDll);
@@ -247,7 +247,7 @@ if (File.Exists(clockDll))
     }
 }
 
-var foldersDll = Path.GetFullPath("src/DeskCanvas/bin/Debug/net8.0/Widgets/Folders.dll");
+var foldersDll = Path.GetFullPath("src/DeskCanvas/bin/Debug/net10.0/Widgets/Folders.dll");
 if (File.Exists(foldersDll))
 {
     var foldersAsm = System.Reflection.Assembly.LoadFrom(foldersDll);

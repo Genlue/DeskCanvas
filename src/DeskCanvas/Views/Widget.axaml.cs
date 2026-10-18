@@ -374,7 +374,12 @@ public partial class Widget : Window, INotifyPropertyChanged, IFocusThemedWindow
         if (tornDown || displayMonitor.IsTopologyChanging) return;
         UpdateContentSize();
         ApplyWidgetRegion();
-        if (GlassMaterial.UseNativeFrame)
+        // Native-frame mode re-runs the resize tail on EVERY frame of a span
+        // transition: that persisted the animated intermediate size and fed the
+        // post-animation snap with dirty data, which made the final AfterResize
+        // actively SetSize back to the previous span. The Resize tail owns the
+        // window until pendingSpan clears.
+        if (GlassMaterial.UseNativeFrame && pendingSpan == null)
             AfterResize();
     }
 
@@ -449,6 +454,13 @@ public partial class Widget : Window, INotifyPropertyChanged, IFocusThemedWindow
     public void RefreshDisplayMetrics()
     {
         if (tornDown || displayMonitor.IsTopologyChanging || OwningScreen == null) return;
+        // A span change from the context menu is still animating: the stored layout
+        // still carries the OLD size, so re-asserting it here snaps the window back
+        // mid-transition (the 300ms transition re-targets the old size — the reported
+        // "size creeps a little then instantly reverts") and the unconditional
+        // manualSpan reset below turns the steppers into a no-op afterwards. Skip
+        // and let the next poller tick / activation re-run this once it settled.
+        if (pendingSpan != null) return;
         restoringDisplayMetrics = true;
         try
         {
@@ -1566,7 +1578,14 @@ public partial class Widget : Window, INotifyPropertyChanged, IFocusThemedWindow
 
     private void OnWidgetLayoutUpdated(object? sender, WidgetLayout? oldLayout, WidgetLayout newLayout)
     {
-        if (oldLayout != null && (Math.Abs(oldLayout.Width - newLayout.Width) > 0.5 || Math.Abs(oldLayout.Height - newLayout.Height) > 0.5))
+        // While a context-menu resize is animating this callback fires from this
+        // window's own intermediate SaveLayout (the provider does not dedupe saves):
+        // writing the stored size back re-targets the running transition and the
+        // nested AfterResize re-persists the intermediate value — a feedback loop
+        // that stalls the animation at a half-way size. The Resize tail owns the
+        // window until pendingSpan clears and unifies the stored entry then.
+        if (oldLayout != null && pendingSpan == null
+            && (Math.Abs(oldLayout.Width - newLayout.Width) > 0.5 || Math.Abs(oldLayout.Height - newLayout.Height) > 0.5))
         {
             Width = newLayout.Width;
             Height = newLayout.Height;
@@ -1816,7 +1835,7 @@ public partial class Widget : Window, INotifyPropertyChanged, IFocusThemedWindow
         
         var positioned = StorePosition(widgetLayoutProvider.Get());
         if (movedToAnotherScreen)
-            positioned = positioned with { Width = (int) Width, Height = (int) Height };
+            positioned = positioned with { Width = (int) Math.Round(Width), Height = (int) Math.Round(Height) };
         SaveLayout(positioned);
     }
 
@@ -1912,6 +1931,16 @@ public partial class Widget : Window, INotifyPropertyChanged, IFocusThemedWindow
         gridService.SetSize(this, columns, rows);
         await Task.Delay(320);
         Transitions = null;
+        // Force the window onto the target size before any bookkeeping. The
+        // transition must not be trusted to have delivered: a headless probe
+        // under Avalonia 12.1.4 shows the interpolation can strand the effective
+        // value a fraction above the START size (353→354, the reported "creep")
+        // and that clearing Transitions does NOT reliably fall back to the local
+        // value when the platform resize round-trip has been re-writing Width
+        // during the animation. Re-asserting the span size after the collection
+        // is cleared lands exactly on target in both environments (verified by
+        // tests/_resizetransprobe) and is a no-op when the animation did finish.
+        gridService.SetSize(this, columns, rows);
         AfterResize();
         SetMinMaxSize(true);
         pendingSpan = null;
@@ -1924,7 +1953,14 @@ public partial class Widget : Window, INotifyPropertyChanged, IFocusThemedWindow
         
         if (FixedSizeWidget is { } fixedWidget)
         {
-            var (c, r) = GetSpan();
+            // Derive the span from the LIVE window size, not from the stored layout:
+            // the save below has not run yet, so GetSpan() here validated the OLD
+            // entry (a no-op in the happy path) — or worse, an intermediate value
+            // persisted mid-animation, which turned this check into the thing that
+            // snapped the widget back to its previous span.
+            var (cellPx, _, _) = GetGridMetrics();
+            var scaling = ScreenScaling;
+            var (c, r) = (ResolveSpan(Width, cellPx, scaling), ResolveSpan(Height, cellPx, scaling));
             var (sc, sr) = fixedWidget.SnapSpan(c, r);
             if (sc != c || sr != r)
             {
@@ -1939,7 +1975,10 @@ public partial class Widget : Window, INotifyPropertyChanged, IFocusThemedWindow
         
         Scale();
         var settings = widgetLayoutProvider.Get();
-        SaveLayout(settings with { Width = (int)Width, Height = (int)Height });
+        // Math.Round, not a truncating (int) cast: the truncation used to shave up
+        // to 1 DIP off every save, and each ≥0.5 DIP delta then re-wrote the window
+        // size through OnWidgetLayoutUpdated — the sub-pixel "creep" on every resize.
+        SaveLayout(settings with { Width = (int) Math.Round(Width), Height = (int) Math.Round(Height) });
         Notify(nameof(Radius));
         UpdateContentSize();
         ApplyWidgetRegion();
