@@ -1,12 +1,11 @@
 name: Release
 
-# 发布目前为手动触发（作者要求：改完先不发）。要恢复"push main 即发布"，
-# 把下面 push 触发块的注释打开即可。
+# push main 即发布（Setup 安装包是唯一发行形式）。
 on:
   workflow_dispatch:
-  # push:
-  #   branches:
-  #     - main
+  push:
+    branches:
+      - main
 
 # The release job creates a tag and a release — it needs write access, which the
 # default GITHUB_TOKEN does not carry.
