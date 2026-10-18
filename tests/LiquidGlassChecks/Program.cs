@@ -415,7 +415,8 @@ OpticsProfile.Run(output);
 var gpuFailures = GpuMaterialCheck.Run();
 var v2Failures = LiquidGlassV2Check.Run();
 var clarityFailures = BackdropClarityBlurCheck.Run();
-if (gpuFailures + v2Failures + clarityFailures > 0) Environment.Exit(1);
+var samplingFailures = BackdropSamplingCheck.Run();
+if (gpuFailures + v2Failures + clarityFailures + samplingFailures > 0) Environment.Exit(1);
 
 SKBitmap Decode(Theme material) => SKBitmap.Decode(LiquidGlassRenderer.Render(frame with { Theme = material }, wallpaper));
 void DrawCard(int x, string label, Theme material)

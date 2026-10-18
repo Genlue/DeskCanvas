@@ -384,11 +384,29 @@ public static class UninstallerEngine
                 dataRemoved = true;
             }
 
-            // Also clean up anchor pointer in %LocalAppData%\DeskCanvas if data folder was redirected elsewhere
+            // Clean up the anchor pointer in %LocalAppData%\DeskCanvas when the data folder was
+            // redirected elsewhere. The folder itself is only removed when the pointer removal
+            // leaves it EMPTY: the packaged folder is where a redirected install keeps nothing but
+            // dataFolder.json, but it is also where an earlier install (or a dev harness) keeps
+            // real data — deleting the directory wholesale wiped a live data folder during the
+            // uninstaller checks (UninstallerChecks 4.1 raced that deletion against another
+            // process recreating files, which is how it surfaced) and the loss is unrecoverable.
             var defaultData = Const.DefaultDataFolder;
-            if (!string.Equals(options.DataDirectory, defaultData, StringComparison.OrdinalIgnoreCase) && Directory.Exists(defaultData))
+            if (!string.Equals(options.DataDirectory, defaultData, StringComparison.OrdinalIgnoreCase)
+                && Directory.Exists(defaultData))
             {
-                DeleteDirectory(defaultData, deleteRoot: true, errors);
+                try
+                {
+                    var anchor = Path.Combine(defaultData, Const.DataFolderPointerFileName);
+                    if (File.Exists(anchor)) File.Delete(anchor);
+                    if (!Directory.EnumerateFileSystemEntries(defaultData).Any())
+                        Directory.Delete(defaultData);
+                }
+                catch (Exception ex)
+                {
+                    // A left-behind anchor is cosmetic; report it, never fail the uninstall for it.
+                    errors.Add($"Failed to clean the default data folder anchor '{defaultData}': {ex.Message}");
+                }
             }
         }
         else

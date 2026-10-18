@@ -172,12 +172,29 @@ public static class LiquidGlassEffect
 
     private static readonly string Source = Expand(RawSource);
 
+    /// <summary>
+    /// One bilinear fetch of the backdrop at <paramref name="coord"/>, written as four single-texel
+    /// taps plus a hand-written blend (a bitmap shader samples nearest, so Skia's own filtering is
+    /// not available here — see <see cref="Expand"/>).
+    /// <para>
+    /// <b>The tap base and the blend weight must come from the same texel grid.</b> A texel
+    /// <c>k</c> covers <c>[k, k+1)</c> and is stored at its centre <c>k+0.5</c>, so the two texels a
+    /// point <c>c</c> lies between are <c>floor(c-0.5)+0.5</c> and <c>+1</c>, and the weight is
+    /// <c>c-0.5-floor(c-0.5)</c>. Pairing those centres with <c>fract(c)</c> instead only adds a
+    /// constant half-texel shift (3.8.2's form, invisible); pairing them with
+    /// <c>fract(c-0.5)</c> — the shape this file shipped with — makes the reconstructed position
+    /// jump by a whole texel at every half-texel boundary. At 背景清晰度 25% one texel spans four
+    /// screen pixels, so that jump showed up as the reported 网格状像素: regular blocks of
+    /// duplicated backdrop, worst with 模糊 high and 清晰度 low, absent at 100%.
+    /// </para>
+    /// </summary>
     private static string SampleBackdrop(string target, string coord) =>
-        $"{target}00 = contentTexel(floor({coord}) + float2(0.5, 0.5));\n" +
-        $"{target}10 = contentTexel(floor({coord}) + float2(1.5, 0.5));\n" +
-        $"{target}01 = contentTexel(floor({coord}) + float2(0.5, 1.5));\n" +
-        $"{target}11 = contentTexel(floor({coord}) + float2(1.5, 1.5));\n" +
-        $"{target}F = fract({coord} - float2(0.5, 0.5));\n" +
+        $"float2 {target}B = floor({coord} - float2(0.5, 0.5));\n" +
+        $"{target}00 = contentTexel({target}B + float2(0.5, 0.5));\n" +
+        $"{target}10 = contentTexel({target}B + float2(1.5, 0.5));\n" +
+        $"{target}01 = contentTexel({target}B + float2(0.5, 1.5));\n" +
+        $"{target}11 = contentTexel({target}B + float2(1.5, 1.5));\n" +
+        $"{target}F = {coord} - float2(0.5, 0.5) - {target}B;\n" +
         $"{target} = mix(mix({target}00, {target}10, {target}F.x), mix({target}01, {target}11, {target}F.x), {target}F.y);\n";
 
     private static string Expand(string raw)

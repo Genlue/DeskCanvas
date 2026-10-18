@@ -420,11 +420,20 @@ public static class LiquidGlassWallpaper
                     && Interlocked.Increment(ref settleStable) >= SettleStableRounds)
                     CloseSettle();
             }
-            else if (SettleActive)
+            else
             {
-                // An unusable capture says nothing about stability — a run of failures must not
-                // accumulate towards closing the window.
-                Volatile.Write(ref settleStable, 0);
+                if (SettleActive)
+                {
+                    // An unusable capture says nothing about stability — a run of failures must not
+                    // accumulate towards closing the window.
+                    Volatile.Write(ref settleStable, 0);
+                }
+
+                // A latched source (every host refused: UIPI) has nothing to publish until an event
+                // clears the latch, so probing it at the configured rate is pure churn. Walk the
+                // interval to its idle ceiling instead; a wallpaper/display change re-arms the
+                // source and resets idleRounds through Invalidate.
+                if (DesktopCapturer.HostBlocked) Interlocked.Increment(ref idleRounds);
             }
         }
         catch (Exception ex)
@@ -569,6 +578,9 @@ public static class LiquidGlassWallpaper
         // grid describes, exactly as in Invalidate.
         Volatile.Write(ref settleFallbacks, 0);
         ResetTemporalAcceptance();
+        // A wallpaper change is one of the two moments the capture source can legitimately change
+        // its answer (the other is a display change, see Invalidate) — re-arm a UIPI latch.
+        DesktopCapturer.ClearHostBlock();
         GlassDiagnostics.Event($"settle window opened (deadline {SettleDeadlineMs}ms, live sampling {(liveSamplingEnabled ? "on" : "off")})");
         UpdateTimerState();
     }
@@ -1053,6 +1065,10 @@ public static class LiquidGlassWallpaper
         // host is deliberately NOT forgotten — host invalidation is the capture's own self-healing
         // path (NoteUnusableCapture), not an invalidation concern.
         ResetTemporalAcceptance();
+        // A wallpaper/display change is exactly the moment the capture source can change its
+        // answer (a wallpaper engine starting, a monitor arriving): re-arm host capture even if the
+        // last round was refused by UIPI.
+        DesktopCapturer.ClearHostBlock();
 
         Interlocked.Exchange(ref lastRoundAt, Environment.TickCount64);
         previousStale?.Dispose();
@@ -1396,7 +1412,7 @@ public static class LiquidGlassWallpaper
                 // against nothing and publishes; the grids re-arm from the current scene then.
                 // lastPublishedSamples stays: it still describes what the surfaces render.
                 // (The branch deliberately covers plain capture FAILURES too, not only flat/jumped
-                // frames: a run of null captures — PrintWindow and the screen BitBlt both failing —
+                // frames: a run of null captures — every host refusing to print, a GDI failure —
                 // used to never reach any recovery at all, because there was no frame to classify.)
                 lock (SampleGate)
                 {
@@ -1417,8 +1433,8 @@ public static class LiquidGlassWallpaper
     /// (<see cref="Invalidate"/>/<see cref="BeginSettle"/>, see the doc there): a new wallpaper is,
     /// against the scene the grid describes, a wild jump by definition. With nothing to compare
     /// against, the next frame validates as fresh and publishes. Internal because
-    /// <see cref="DesktopCapturer"/>'s screen-fallback transitions call it too (same
-    /// source-change rationale).
+    /// <see cref="DesktopCapturer"/>'s source transitions (the diagnostic screen override leaving)
+    /// call it too (same source-change rationale).
     /// </summary>
     internal static void ResetTemporalAcceptance()
     {
@@ -1465,10 +1481,29 @@ public static class LiquidGlassWallpaper
         ReportRetainedCapture();
     }
 
-    /// <summary>Static file based fallback (Windows wallpaper image + registry placement).</summary>
+    /// <summary>
+    /// How often the wallpaper file is re-validated while it is the active source. The image on
+    /// disk only changes through the shell — <see cref="WallpaperWatcherService"/> invalidates the
+    /// cache for that — so re-reading the registry and the file timestamp on every surface prepare
+    /// (dozens per frame) would be pure overhead.
+    /// </summary>
+    private const int FileProbeIntervalMs = 1000;
+
+    private static long lastFileProbeAt;
+
+    /// <summary>
+    /// The wallpaper image itself (Windows' transcoded copy + the registry placement), used
+    /// whenever the live host cannot be read — live sampling off, or every host refused by UIPI.
+    /// This is the wallpaper by definition: no windows, no icons, no compositor content.
+    /// </summary>
     [System.Runtime.Versioning.SupportedOSPlatform("windows")]
     private static WallpaperSnapshot FromFileFallback()
     {
+        if (cached is { LiveCapture: false }
+            && Environment.TickCount64 - Volatile.Read(ref lastFileProbeAt) < FileProbeIntervalMs)
+            return cached;
+        Volatile.Write(ref lastFileProbeAt, Environment.TickCount64);
+
         var path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
             @"Microsoft\Windows\Themes\TranscodedWallpaper");
         if (!File.Exists(path)) path = InteropService.GetWallpaperPath();
@@ -1519,9 +1554,9 @@ public static class LiquidGlassWallpaper
 /// </para>
 /// <para>
 /// When <i>no</i> host can be printed — UIPI refuses every cross-process <c>PrintWindow</c>
-/// because the shell or the wallpaper engine runs at a higher integrity level — captures come
-/// from a plain screen BitBlt instead (<see cref="TryScreenCapture"/>), with this process's own
-/// windows excluded from the frame so the glass cannot sample itself.
+/// because the shell or the wallpaper engine runs at a higher integrity level — this returns
+/// <c>null</c> and the sampler uses the wallpaper image itself. It never substitutes a screen
+/// BitBlt: the screen is the composited desktop (other windows, desktop icons), not the wallpaper.
 /// </para>
 /// </summary>
 public static class DesktopCapturer
@@ -1618,20 +1653,18 @@ public static class DesktopCapturer
     private static string resolvedHostDescription = "unresolved";
 
     /// <summary>
-    /// Capture-source override for diagnostics and support: <c>screen</c> pins the screen
-    /// fallback (so the screen path can be exercised even where window printing works),
-    /// <c>window</c> disables the automatic fallback (so the window path can be observed
-    /// without the fallback masking it). Unset keeps the automatic behaviour.
+    /// Capture-source override for diagnostics and support: <c>screen</c> pins the screen source
+    /// (so that path can be exercised even where window printing works). Unset — the only
+    /// production setting — never samples the screen; see <see cref="CaptureBitmap"/>.
     /// </summary>
     private static readonly string? CaptureOverride =
         Environment.GetEnvironmentVariable("DESKCANVAS_GLASS_CAPTURE")?.Trim().ToLowerInvariant();
 
-    private static readonly bool ScreenFallbackDisabled = CaptureOverride == "window";
-
     /// <summary>
-    /// 1 while captures come from the screen BitBlt instead of a wallpaper host window —
-    /// because no host could be printed (UIPI against a higher-integrity shell), or because
-    /// the <c>DESKCANVAS_GLASS_CAPTURE=screen</c> override pins it for testing.
+    /// 1 while captures come from the screen BitBlt instead of a wallpaper host window — pinned by
+    /// <c>DESKCANVAS_GLASS_CAPTURE=screen</c> for diagnostics only. UIPI no longer switches the
+    /// source: a screen frame is the composited desktop, not the wallpaper (see
+    /// <see cref="CaptureBitmap"/>).
     /// </summary>
     private static int screenFallback = CaptureOverride == "screen" ? 1 : 0;
 
@@ -1643,12 +1676,22 @@ public static class DesktopCapturer
 
     /// <summary>
     /// Win32 error of the most recent PrintWindow refusal (0 when the last print succeeded).
-    /// 5 (ERROR_ACCESS_DENIED) is the UIPI signature of a host at a higher integrity level, and
-    /// the only failure the screen fallback exists for. A transient refusal (err 87 and friends)
-    /// must NOT flip the source: the window path retries those, and the wallpaper-only content
-    /// is strictly preferred over the screen.
+    /// 5 (ERROR_ACCESS_DENIED) is the UIPI signature of a host at a higher integrity level; a
+    /// transient refusal (err 87 and friends) must NOT latch the capture source, because the window
+    /// path retries those and wallpaper-only content is the only content the material wants.
     /// </summary>
     private static int lastPrintError;
+
+    /// <summary>
+    /// How long a UIPI refusal silences host capture attempts. One refusal is evidence about the
+    /// session, not about this frame: re-walking every candidate once per surface prepare (and once
+    /// per probe) costs a denied cross-process call each time and can never succeed, so the
+    /// candidate list is re-armed by events (wallpaper change, display change) instead.
+    /// </summary>
+    private const int HostBlockedRetryMs = 30000;
+
+    /// <summary>Tick before which no capture is attempted because every host refused (see above).</summary>
+    private static long hostRetryAfter;
 
     /// <summary>Capture outcomes already written to the trace, so a novel one is never dropped.</summary>
     private static readonly HashSet<string> seenCaptureTraces = new();
@@ -1688,16 +1731,15 @@ public static class DesktopCapturer
     {
         get
         {
-            if (ScreenFallbackActive) return "screen BitBlt (window printing blocked by UIPI)";
+            if (ScreenFallbackActive) return "screen BitBlt (diagnostic override — not the wallpaper)";
             lock (HostGate) return resolvedHostDescription;
         }
     }
 
     /// <summary>
-    /// True while captures come from the screen instead of a wallpaper host window: the
-    /// window-print path was blocked (a shell at a higher integrity level) or the screen
-    /// source is pinned by the capture override. Material-visible only in that the sampled
-    /// content is the composited desktop rather than the wallpaper alone.
+    /// True while captures come from the screen instead of a wallpaper host window — pinned by the
+    /// <c>DESKCANVAS_GLASS_CAPTURE=screen</c> diagnostic override only. Material-visible in that
+    /// the sampled content is the composited desktop (windows, icons) rather than the wallpaper.
     /// </summary>
     public static bool ScreenFallbackActive => Volatile.Read(ref screenFallback) == 1;
 
@@ -1711,10 +1753,12 @@ public static class DesktopCapturer
     /// the next source on every flat frame would flip a genuinely dark animated scene back to
     /// Progman, a visible jump the fast path exists to avoid.
     /// <para>
-    /// When every candidate is refused with ERROR_ACCESS_DENIED — UIPI against a shell at a
-    /// higher integrity level, see <see cref="TryScreenCapture"/> — captures switch to the
-    /// screen BitBlt for the session instead of dropping to the static file fallback. The
-    /// wallpaper-only window path stays the preferred source everywhere it works.
+    /// When every candidate is refused with ERROR_ACCESS_DENIED — UIPI against a shell at a higher
+    /// integrity level — the result is <c>null</c>, and the caller samples the wallpaper image
+    /// itself (<see cref="LiquidGlassWallpaper"/>'s file fallback). It deliberately does not switch
+    /// to a screen BitBlt: that frame is the composited desktop, i.e. whatever windows happen to be
+    /// behind the widget plus the desktop icons, which is the wrong sampling object for glass that
+    /// is supposed to sit on the wallpaper.
     /// </para>
     /// </summary>
     /// <param name="reuse">
@@ -1731,9 +1775,10 @@ public static class DesktopCapturer
         var height = GetSystemMetrics(SmCYVirtualScreen);
         if (width <= 0 || height <= 0) return null;
 
-        // Screen fallback fast path: engaged when no wallpaper host could be printed (UIPI —
-        // see TryScreenCapture) or pinned by the capture override. A screen capture needs no
-        // host, so this sits before the remembered-window check.
+        // Screen capture is a pinned diagnostic source only (DESKCANVAS_GLASS_CAPTURE=screen): a
+        // screen BitBlt is the composited desktop — every window and every desktop icon — and the
+        // material is defined as glass over the *wallpaper*, so it can never be the automatic
+        // answer to "the host would not print". See the refusal path below.
         if (ScreenFallbackActive)
         {
             var screen = TryScreenCapture(width, height, reuse);
@@ -1746,6 +1791,13 @@ public static class DesktopCapturer
             // The screen read itself failed (a session that cannot read the screen at all):
             // fall through — the window path stays the only remaining option.
         }
+
+        // A refused host (UIPI) does not become printable by trying again: without this latch every
+        // surface's prepare and every probe round re-walked the candidate list and re-issued a
+        // denied PrintWindow per candidate. The caller falls back to the wallpaper image itself in
+        // the meantime; a wallpaper change or a display change clears the latch so a fixed session
+        // is picked up within one event.
+        if (Environment.TickCount64 < Volatile.Read(ref hostRetryAfter)) return null;
 
         // Fast path: the host resolved last time. This runs once per sampled frame, so it must not
         // walk every top-level window to rediscover a window that has not changed. The frame gets
@@ -1799,9 +1851,8 @@ public static class DesktopCapturer
                 resolvedHost = hwnd;
                 resolvedHostDescription = description;
             }
-            // A host printed its content again: if the screen fallback was engaged (a resume
-            // crossed integrity levels, the shell restarted unelevated), the window path is
-            // the better source once more — leave the fallback and let the windows back in.
+            // A host printed its content again: if the diagnostic screen source was engaged, the
+            // window path is the better source once more — release the pin and let the windows out.
             if (ScreenFallbackActive) LeaveScreenFallback();
             TraceCapture($"resolved:{description}",
                 $"resolved '{description}' (0x{hwnd:X}) from {candidates.Count} candidate(s)");
@@ -1809,22 +1860,28 @@ public static class DesktopCapturer
             return bmp;
         }
 
-        if (captured == 0 && uipiBlocked && !ScreenFallbackDisabled)
+        if (captured == 0 && uipiBlocked)
         {
             // Not one candidate would print, and at least one refusal was ERROR_ACCESS_DENIED:
             // UIPI — the shell, the wallpaper host or both run at a higher integrity level (an
             // elevated explorer.exe, a UAC-disabled/UAC-hardened session, an elevated wallpaper
-            // engine), so every cross-process PrintWindow is denied. The screen BitBlt involves
-            // no cross-process call and keeps working there — the last-resort source, since the
-            // wallpaper-only host content is what the material is designed around.
-            EnterScreenFallback();
-            var screen = TryScreenCapture(width, height, reuse);
-            if (screen != null)
-            {
-                if (!LooksLikeWallpaper(screen)) flat = true;
-                else screen.SetImmutable();
-                return screen;
-            }
+            // engine), so every cross-process PrintWindow is denied.
+            //
+            // This used to engage a screen BitBlt "last-resort source". That is exactly the
+            // reported 采样对象出错: the glass then shows the composited desktop — whatever windows
+            // happen to sit behind the widget, plus the desktop icons — instead of the wallpaper,
+            // and an animated wallpaper is indistinguishable from a screenshot of it. The
+            // wallpaper *image itself* (the file Windows is displaying, see
+            // LiquidGlassWallpaper's file fallback) is the correct answer: it is the wallpaper by
+            // definition, and it cannot leak window content into the material. Latch the refusal
+            // so the candidate walk is not repeated per surface, and let the caller fall back.
+            Volatile.Write(ref hostRetryAfter, Environment.TickCount64 + HostBlockedRetryMs);
+            TraceCapture("host:uipi",
+                "every wallpaper host refused PrintWindow with ERROR_ACCESS_DENIED (UIPI — this " +
+                "process runs below the shell's integrity level); sampling the wallpaper image " +
+                "itself instead of the screen. Run DeskCanvas at the same integrity level as " +
+                "explorer to get the live/animated wallpaper back.");
+            return null;
         }
 
         TraceCapture($"nocandidate:{captured}:{rejected}",
@@ -1848,9 +1905,23 @@ public static class DesktopCapturer
         }
 
         // Full re-validation includes the capture source itself: drop back to the window path
-        // (the next capture re-resolves it and re-engages the screen fallback if still blocked).
+        // (the next capture re-resolves it). The UIPI latch is deliberately NOT cleared here —
+        // this method is called from the unusable-capture path, which a refused host hits every few
+        // hundred milliseconds; re-arming the candidate walk from there would re-issue denied
+        // PrintWindows forever. Only real events (wallpaper/display change) clear it.
         LeaveScreenFallback();
     }
+
+    /// <summary>
+    /// Re-arm host capture after a UIPI refusal latch, without touching the remembered host. Called
+    /// on events that can legitimately change the answer — a wallpaper change, a display change, a
+    /// fresh settle window — so a session that was fixed (the app relaunched at the shell's level,
+    /// the shell restarted unelevated) recovers on the next round instead of after the retry delay.
+    /// </summary>
+    internal static void ClearHostBlock() => Volatile.Write(ref hostRetryAfter, 0);
+
+    /// <summary>True while a UIPI refusal is latched (diagnostics and checks).</summary>
+    internal static bool HostBlocked => Environment.TickCount64 < Volatile.Read(ref hostRetryAfter);
 
     /// <summary>The host the current capture comes from, for cross-checking capture coherence.</summary>
     public static IntPtr ResolvedHost
@@ -2052,15 +2123,18 @@ public static class DesktopCapturer
         {
             // Windows refuses this outright when it cannot reach the window (UIPI against a
             // higher-integrity host) and otherwise hands back a frame that may have nothing drawn
-            // on it — the two are indistinguishable to the caller without this.
+            // on it — the two are indistinguishable to the caller without this. The last error is
+            // cleared first: PrintWindow does not set it on every failure, and a stale 5 from an
+            // unrelated call would latch the capture source as UIPI-blocked.
+            Marshal.SetLastPInvokeError(0);
             if (!PrintWindow(hwnd, memDc, PwRenderFullContent))
             {
                 var err = Marshal.GetLastWin32Error();
                 Volatile.Write(ref lastPrintError, err);
                 var hint = err == 5
                     ? " — ERROR_ACCESS_DENIED: the window belongs to a process at a HIGHER integrity " +
-                      "level (an elevated shell), so UIPI blocks the cross-process print. " +
-                      "The screen-capture fallback covers this case."
+                      "level (an elevated shell), so UIPI blocks the cross-process print. The glass " +
+                      "then samples the wallpaper image itself (never the screen)."
                     : "";
                 TraceCapture($"printwindow:{ClassNameOf(hwnd)}:{err}",
                     $"{ClassNameOf(hwnd)}: PrintWindow(PW_RENDERFULLCONTENT) returned false (err {err}){hint}");
@@ -2086,17 +2160,19 @@ public static class DesktopCapturer
     }
 
     /// <summary>
-    /// Capture the composited desktop itself — the cross-integrity-level alternative to printing
-    /// a wallpaper host's window.
+    /// Capture the composited desktop itself — <b>diagnostics only</b>, pinned by
+    /// <c>DESKCANVAS_GLASS_CAPTURE=screen</c>.
     /// <para>
-    /// <c>PrintWindow</c> is a cross-process request, so UIPI refuses it when the target belongs
-    /// to a process at a higher integrity level (an elevated explorer.exe, an elevated wallpaper
-    /// engine — or a UAC-session where the shell is High while this process is Medium): every
-    /// candidate fails with ERROR_ACCESS_DENIED and the material would never leave the static
-    /// file fallback. A screen read sends no message and passes no permission gate, so it keeps
-    /// working there. The trade is content: the screen contains every visible window, not only
-    /// the wallpaper, so <see cref="EnsureCaptureVisibilityExclusion"/> keeps this process's own
-    /// windows out of the frame (the pixels behind them show through instead).
+    /// This is <i>not</i> a wallpaper source: it contains every visible window and the desktop
+    /// icons, so glass fed from it shows whatever sits behind the widget instead of the wallpaper.
+    /// It used to be the automatic answer to a UIPI refusal; that is the reported
+    /// "采样对象出错". Kept because it is the only way to exercise the pre-DWM capture path on a
+    /// machine where window printing works.
+    /// </para>
+    /// <para>
+    /// <see cref="EnsureCaptureVisibilityExclusion"/> keeps this process's own windows out of the
+    /// frame (the pixels behind them show through instead) so the glass cannot sample a stale copy
+    /// of itself.
     /// </para>
     /// <para>
     /// Same virtual-desktop geometry as <see cref="CaptureWindow"/>: the bitmap is the desktop
@@ -2157,30 +2233,18 @@ public static class DesktopCapturer
     }
 
     /// <summary>
-    /// Engage the screen fallback, once: the content source changes fundamentally (the screen
-    /// instead of a wallpaper host), and the temporal acceptance grid would read the first
-    /// screen frame as an overlay-transition wild jump against the host's last frame and drop
-    /// it. Retiring the acceptance reference lets the switch publish immediately.
+    /// Leave the pinned screen source and put this process's windows back into captures. Only the
+    /// diagnostic override ever pins it now — no capture failure switches the source on its own
+    /// (see <see cref="CaptureBitmap"/>), so this is a no-op in production.
     /// </summary>
-    private static void EnterScreenFallback()
-    {
-        if (Interlocked.Exchange(ref screenFallback, 1) == 1) return;
-        LiquidGlassWallpaper.ResetTemporalAcceptance();
-        TraceCapture("screenfallback:engage",
-            "no wallpaper host could be printed (UIPI — a shell/host at a higher integrity " +
-            "level?); capturing the screen instead, with DeskCanvas's own windows excluded");
-    }
-
-    /// <summary>Leave the screen fallback and put this process's windows back into captures.</summary>
     private static void LeaveScreenFallback()
     {
-        // The capture override pins the source for diagnostics; only the automatic fallback
-        // may leave it.
+        // The capture override pins the source for diagnostics; nothing else may leave it.
         if (CaptureOverride == "screen") return;
         if (Interlocked.Exchange(ref screenFallback, 0) == 0) return;
         LiquidGlassWallpaper.ResetTemporalAcceptance();
         RestoreCaptureVisibility();
-        TraceCapture("screenfallback:leave", "a wallpaper host prints again — back to window captures");
+        TraceCapture("screenfallback:leave", "screen source released — back to window captures");
     }
 
     /// <summary>
