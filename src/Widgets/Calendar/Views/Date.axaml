@@ -12,9 +12,21 @@
             <TextBlock Grid.Row="0" Grid.Column="1" Opacity="0.5" FontWeight="Bold"
                        Text="{Binding Month}" 
                        VerticalAlignment="Bottom" HorizontalAlignment="Left" />
+            <!-- 日号：LineHeight 不能小于字体自然行高（约 1.2 × FontSize）。
+                 旧的 50/45 让行盒比字形矮，Avalonia 按行盒裁切，数字底部被平切；
+                 这里给足行高，再把数字放进行内垂直居中。
+                 行盒上方的空行（约 1/5 em）用负 Margin 收掉：Viewbox 会因此把整套内容放大，
+                 日号跟着变大（300px 卡片下墨迹 141×126 → 201×155）；底部同样收 8，让数字
+                 贴着卡片下缘。RenderTransform 只做 8% 横向拉伸，让数字略扁一点，不参与布局，
+                 因此不会影响 Viewbox 的缩放基准。 -->
             <TextBlock Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" LetterSpacing="-3"
-                       FontSize="50" LineHeight="45" Text="{Binding Day}" FontWeight="SemiBold"
-                       VerticalAlignment="Top" HorizontalAlignment="Center" />
+                       FontSize="50" LineHeight="60" Text="{Binding Day}" FontWeight="SemiBold"
+                       VerticalAlignment="Center" HorizontalAlignment="Center"
+                       Margin="0,-12,0,-8" RenderTransformOrigin="50%,50%">
+                <TextBlock.RenderTransform>
+                    <ScaleTransform ScaleX="1.08" ScaleY="1" />
+                </TextBlock.RenderTransform>
+            </TextBlock>
         </Grid>
     </Viewbox>
 </UserControl>

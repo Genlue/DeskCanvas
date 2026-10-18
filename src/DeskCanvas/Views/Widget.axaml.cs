@@ -1234,7 +1234,29 @@ public partial class Widget : Window, INotifyPropertyChanged, IFocusThemedWindow
         return (Math.Max(floor, w), Math.Max(floor, h));
     }
 
-    private (int m, int cw, int ch, int cr)? lastAppliedRegion;
+    private (int x, int y, int cw, int ch, int cr)? lastAppliedRegion;
+
+    /// <summary>
+    /// True while a 1-bit rounded region is actually set on the HWND. Deliberately kept
+    /// apart from <see cref="lastAppliedRegion"/> (pure geometry bookkeeping): forgetting the
+    /// key must never be mistaken for "the native clip is already gone". The old single-field
+    /// design made exactly that mistake on a material switch — the key was cleared before
+    /// <see cref="ApplyWidgetRegion"/> ran, so its non-clipping branch skipped
+    /// <c>ClearWidgetRegion</c> and left the acrylic clip (and the missing bottom rim edge)
+    /// on screen until something rebuilt the window.
+    /// </summary>
+    private bool regionApplied;
+
+    /// <summary>Remove the native clip if one is applied. Cheap and idempotent: it never
+    /// touches the HWND when no region is set, so it can be called from any path without
+    /// rebuilding the backdrop on every settings save.</summary>
+    private void ClearWidgetClip()
+    {
+        lastAppliedRegion = null;
+        if (!regionApplied) return;
+        InteropService.ClearWidgetRegion(this);
+        regionApplied = false;
+    }
 
     /// <summary>
     /// Clip the native window (and therefore the OS-level acrylic backdrop) to the
@@ -1251,11 +1273,7 @@ public partial class Widget : Window, INotifyPropertyChanged, IFocusThemedWindow
         // Native frame: no custom clipping.
         if (GlassMaterial.UseNativeFrame)
         {
-            if (lastAppliedRegion != null)
-            {
-                InteropService.ClearWidgetRegion(this);
-                lastAppliedRegion = null;
-            }
+            ClearWidgetClip();
             return;
         }
 
@@ -1268,22 +1286,30 @@ public partial class Widget : Window, INotifyPropertyChanged, IFocusThemedWindow
 
         if (!needsClipping)
         {
-            if (lastAppliedRegion != null)
-            {
-                InteropService.ClearWidgetRegion(this);
-                lastAppliedRegion = null;
-            }
+            ClearWidgetClip();
             return;
         }
 
         var scaling = ScreenScaling;
-        var margin = (int) Math.Round(WidgetMargin.Left * scaling);
-        var width = (int) Math.Round(ClientSize.Width * scaling);
-        var height = (int) Math.Round(ClientSize.Height * scaling);
+        // The region is a 1-bit GDI mask in whole device pixels. Derive its edges from the
+        // card's own device rectangle once: rounding the client size and the margin apart
+        // can leave the card's last row/column — exactly where the 1 px rim hairline sits —
+        // outside the mask. Floor the near edges and ceil the far ones so the card's
+        // anti-aliased boundary pixel is inside the clip as well, and note that
+        // InteropService.SetWindowRegion adds the extra row/column CreateRoundRectRgn
+        // silently drops — without that the mask ends one pixel above the card's bottom
+        // edge and cuts the bottom hairline away (top survives because the near edge is
+        // inclusive).
+        var left = (int)Math.Floor(WidgetMargin.Left * scaling);
+        var top = (int)Math.Floor(WidgetMargin.Top * scaling);
+        var right = (int)Math.Ceiling((ClientSize.Width - WidgetMargin.Right) * scaling);
+        var bottom = (int)Math.Ceiling((ClientSize.Height - WidgetMargin.Bottom) * scaling);
 
-        var cardWidth = Math.Max(1, width - 2 * margin);
-        var cardHeight = Math.Max(1, height - 2 * margin);
-        var cardRadius = (int) Math.Round(ResolveEffectiveRadius(EffectiveBaseRadius));
+        var cardWidth = Math.Max(1, right - left);
+        var cardHeight = Math.Max(1, bottom - top);
+        // Same radius source as the card border/rim: Radius is already expressed in DIP so
+        // that Radius × scaling is the configured device-pixel radius.
+        var cardRadius = (int)Math.Round(Radius.TopLeft * scaling);
 
         // The decoration overlay (IWidgetOverlayProvider, e.g. the Stack pagination dots that
         // moved into the plugin) is placed inside the card on this surface per its
@@ -1292,17 +1318,21 @@ public partial class Widget : Window, INotifyPropertyChanged, IFocusThemedWindow
         // reads as frosted glass, an opaque one as a slab of a different material (see
         // UpdateOverlayLayout). The card rectangle alone therefore also covers the dots;
         // no extra strip is ever OR-ed in, and the region work stays entirely host-side.
-        var key = (margin, cardWidth, cardHeight, cardRadius);
-        if (lastAppliedRegion == key) return;
-        lastAppliedRegion = key;
+        var key = (left, top, cardWidth, cardHeight, cardRadius);
+        if (regionApplied && lastAppliedRegion == key) return;
 
-        InteropService.SetWidgetRegion(
+        // Only remember the geometry when the OS actually took the region: before the HWND
+        // exists (early layout passes) the call fails, and caching the key anyway would make
+        // every later pass skip the clip until the size happened to change.
+        var applied = InteropService.SetWidgetRegion(
             this,
-            margin,
-            margin,
+            left,
+            top,
             cardWidth,
             cardHeight,
             cardRadius);
+        lastAppliedRegion = applied ? key : null;
+        regionApplied = applied;
     }
 
     private void OnAppSettingsUpdated(object sender, AppSettings? oldData, AppSettings newData)
@@ -1365,6 +1395,11 @@ public partial class Widget : Window, INotifyPropertyChanged, IFocusThemedWindow
         Notify(nameof(HighlightAngle));
         UpdateContentSize();
         ApplyWidgetRegion();
+
+        // The rim's geometry can be unchanged across a material swap (all the acrylic/solid
+        // materials share one 高光 angle), so the layer may still hold the previous surface's
+        // raster. Repaint it explicitly once the native clip for the new material is applied.
+        SpecularRimLayer?.InvalidateVisual();
     }
 
     /// <summary>
@@ -1386,7 +1421,13 @@ public partial class Widget : Window, INotifyPropertyChanged, IFocusThemedWindow
         if (TransparencyLevelHint == null || !TransparencyLevelHint.SequenceEqual(target))
         {
             TransparencyLevelHint = target;
-            lastAppliedRegion = null;
+
+            // The hint swap reconfigures the native backdrop, so the native clip is removed
+            // and the remembered key dropped: ApplyWidgetRegion re-applies it when the new
+            // material still needs one. For 毛玻璃 → 全彩 / 液态玻璃 the removal is the actual
+            // fix — leaving the old 1-bit rounded region on the HWND kept cutting the card
+            // (and its bottom/right rim hairline) until something rebuilt the window.
+            ClearWidgetClip();
         }
     }
 
@@ -1570,11 +1611,7 @@ public partial class Widget : Window, INotifyPropertyChanged, IFocusThemedWindow
         if (isFrameless == next) return;
         isFrameless = next;
 
-        if (isFrameless && lastAppliedRegion != null)
-        {
-            InteropService.ClearWidgetRegion(this);
-            lastAppliedRegion = null;
-        }
+        if (isFrameless) ClearWidgetClip();
 
         if (isFrameless)
         {

@@ -10,7 +10,7 @@
         ExtendClientAreaToDecorationsHint="True"
         ExtendClientAreaTitleBarHeightHint="50"
         WindowStartupLocation="CenterScreen"
-        Title="Settings"
+        Title="DeskCanvas"
         x:DataType="viewModels:SettingsViewModel">
 
     <Window.Styles>
@@ -190,8 +190,12 @@
         <Border x:Name="NativeTitleBar" Grid.Row="0" Grid.RowSpan="2" VerticalAlignment="Top" Height="40"
                 Margin="0,0,140,0" Background="Transparent" IsVisible="False"
                 PointerPressed="OnNativeTitleBarPointerPressed" />
+        <!-- 自绘标题：只在红绿灯（自绘标题栏）模式出现。原生模式下 Window.Title 的
+             "DeskCanvas" 由 DWM caption 绘制，这里再画一份就会和系统 caption 叠印，
+             所以初始隐藏，显隐统一由 Settings.UpdateAppTitleVisibility() 决定
+             （原来的 IsVisible 绑定会在代码直接赋值时被清除）。 -->
         <TextBlock Name="AppTitle" Grid.Row="0" Grid.RowSpan="2" VerticalAlignment="Top" IsHitTestVisible="False"
-                   Margin="16 16 0 16" FontWeight="Bold" IsVisible="{Binding #SplitView.IsPaneOpen}">DeskCanvas</TextBlock>
+                   Margin="16 16 0 16" FontWeight="Bold" IsVisible="False">DeskCanvas</TextBlock>
         </Grid>
     </Border>
 </Window>

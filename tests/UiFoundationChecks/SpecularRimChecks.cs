@@ -45,23 +45,26 @@ internal static partial class Program
         Check(vertical != null, "the rim control renders a bitmap");
         if (vertical == null) return;
 
-        Check(Brightness(vertical, 50, 0) > 180, "90°: the top edge is painted white");
-        Check(Brightness(vertical, 0, 50) < 20, "90°: the left edge stays unpainted");
+        Check(Brightness(vertical, 50, 1) > 180, "90°: the top edge is painted white");
+        Check(Brightness(vertical, 50, 98) > 180, "90°: the bottom edge is painted just as white");
+        Check(Brightness(vertical, 50, 0) < 5 && Brightness(vertical, 50, 99) < 5,
+            "the stroke sits one device pixel inside the card edge (never on the clip boundary)");
+        Check(Brightness(vertical, 1, 50) < 20, "90°: the left edge stays unpainted");
         Check(Brightness(vertical, 50, 50) < 5, "the card interior stays untouched");
         Check(Brightness(vertical, 0, 0) < 5, "the rounded corner clips the rim (no paint outside the card)");
 
         using var horizontal = RenderRim(strength: 100, angle: 0);
-        Check(horizontal != null && Brightness(horizontal, 0, 50) > 180,
+        Check(horizontal != null && Brightness(horizontal, 1, 50) > 180,
             "0°: the left edge is painted white instead");
-        Check(horizontal != null && Brightness(horizontal, 50, 0) < 20,
+        Check(horizontal != null && Brightness(horizontal, 50, 1) < 20,
             "0°: the top edge is no longer lit (the rim follows the angle)");
 
         using var half = RenderRim(strength: 50, angle: 90);
-        Check(half != null && Brightness(half, 50, 0) is > 60 and < 190,
+        Check(half != null && Brightness(half, 50, 1) is > 60 and < 190,
             "50% strength paints a mid-alpha rim (not on/off)");
 
         using var off = RenderRim(strength: 0, angle: 90);
-        Check(off != null && Brightness(off, 50, 0) < 5, "0% strength paints nothing");
+        Check(off != null && Brightness(off, 50, 1) < 5, "0% strength paints nothing");
 
         // The removed 描边 fields must stay out of the theme model — a settings file that still
         // carries them is simply ignored instead of resurrecting the old ring.

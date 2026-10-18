@@ -71,10 +71,25 @@ public sealed class SpecularHighlight : Control
     /// <summary>Intensity buckets: one polyline geometry per 1/64 of the highlight's brightness.</summary>
     private const int Buckets = 64;
 
+    /// <summary>
+    /// Distance from the card edge to the stroke centreline, in device pixels.
+    /// <para>
+    /// 0.5 would centre the 1 px band on the card's outermost row. That row is also the
+    /// window's outermost row, and on 毛玻璃 the HWND carries a native 1-bit region whose
+    /// last row/column the OS can lose (GDI's <c>CreateRoundRectRgn</c> drops it — see
+    /// <c>InteropService.SetWindowRegion</c>). Even with that compensated, keeping the
+    /// hairline one pixel off the clip boundary is cheap insurance: the bottom/right half of
+    /// the outline can never share a row with the mask edge, whatever the compositor does
+    /// with it. The stroke therefore walks the rounded rect 1.5 px inside the card edge
+    /// (outer edge at 1 px), which at every DPI still reads as a hairline along the outline.
+    /// </para>
+    /// </summary>
+    private const double CenterlineInsetDevicePixels = 1.5;
+
     private readonly Dictionary<int, StreamGeometry> runs = [];
     private readonly Dictionary<int, IPen> pens = [];
-    private double builtWidth = -1, builtHeight = -1, builtRadius = -1, builtAngle = double.NaN, builtThickness = -1;
-    private double penThickness = -1;
+    private int builtWidth = -1, builtHeight = -1, builtRadius = -1;
+    private double builtAngle = double.NaN, builtScaling = -1.0, penThickness = -1;
 
     static SpecularHighlight()
     {
@@ -85,6 +100,35 @@ public sealed class SpecularHighlight : Control
     {
         // The rim is decoration: it must never intercept presses meant for the card beneath.
         IsHitTestVisible = false;
+    }
+
+    protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
+    {
+        base.OnPropertyChanged(change);
+
+        // Bounds is not an affecting property, and a size change alone (fractional grid
+        // resizes, a margin change, a DPI change) has to repaint: the old raster is laid out
+        // for the previous device-pixel grid. IsVisible false → true happens on every
+        // material switch that hides/shows the rim, and the control can be toggled back on
+        // without any geometry or angle change — repaint it unconditionally.
+        if (change.Property == BoundsProperty)
+        {
+            var bounds = change.GetNewValue<Rect>();
+            if (bounds != change.GetOldValue<Rect>())
+                InvalidateVisual();
+        }
+        else if (change.Property == IsVisibleProperty && change.GetNewValue<bool>())
+        {
+            InvalidateVisual();
+        }
+    }
+
+    protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        base.OnAttachedToVisualTree(e);
+        // The surface the rim belongs to is (re)created with the visual tree; the cached
+        // segment table stays valid, but the pixels must be produced again.
+        InvalidateVisual();
     }
 
     public CornerRadius CornerRadius
@@ -117,18 +161,35 @@ public sealed class SpecularHighlight : Control
         if (strength <= 0.001) return;
 
         var scaling = TopLevel.GetTopLevel(this)?.RenderScaling ?? 1.0;
-        var thickness = Math.Max(0.5, SpecularRim.ThicknessDevicePixels / Math.Max(scaling, 0.1));
-        var maxRadius = Math.Max(0.0, Math.Min(width, height) / 2.0 - thickness);
-        var radius = Math.Clamp(CornerRadius.TopLeft, 0.0, maxRadius);
+        if (!(scaling > 0.0)) scaling = 1.0;
+
+        // The rim is a one-device-pixel hairline, so its band has to land on whole pixel
+        // rows/columns. The card is laid out from fractional DIP bounds (grid percentages
+        // times scaling), so anchoring the stroke at "0" and "height" put the bottom and
+        // right strokes across two pixel rows at ~50 % each. Snap the outline to the
+        // device-pixel grid: strip the card's fractional pixel and place the stroke centres
+        // on whole-pixel offsets inside the card (see CenterlineInsetDevicePixels — 1.5 px,
+        // i.e. one pixel clear of the card edge), so every edge gets one full pixel
+        // row/column inside the card and none of them shares a row with the window/mask
+        // boundary. (Floor, not round: the control's own AA edge pixel must stay outside the
+        // stroke.)
+        var pxWidth = (int)Math.Floor(width * scaling);
+        var pxHeight = (int)Math.Floor(height * scaling);
+        if (pxWidth < 1 || pxHeight < 1) return;
+
+        var pxRadius = (int)Math.Round(CornerRadius.TopLeft * scaling, MidpointRounding.AwayFromZero);
+        pxRadius = Math.Clamp(pxRadius, 0, Math.Min(pxWidth, pxHeight) / 2);
         var angle = Math.Clamp(Angle, 0.0, 360.0);
 
-        if (width != builtWidth || height != builtHeight || radius != builtRadius
-            || angle != builtAngle || thickness != builtThickness)
+        if (pxWidth != builtWidth || pxHeight != builtHeight || pxRadius != builtRadius
+            || angle != builtAngle || scaling != builtScaling)
         {
-            Build(width, height, radius, angle, thickness);
+            Build(pxWidth, pxHeight, pxRadius, angle, scaling);
         }
 
-        if (Math.Abs(thickness - penThickness) > 1e-6)
+        // Exactly one device pixel, whatever the DPI scaling.
+        var thickness = SpecularRim.ThicknessDevicePixels / scaling;
+        if (Math.Abs(thickness - penThickness) > 1e-9)
         {
             pens.Clear();
             penThickness = thickness;
@@ -152,30 +213,37 @@ public sealed class SpecularHighlight : Control
 
     /// <summary>
     /// Walks the inset rounded rectangle once and stores the rim as flat segments, each carrying
-    /// the intensity of its own normal. The path is inset by half the pen so the outer edge of
-    /// the stroke lands exactly on the card boundary — the shader's inner-only visible band.
+    /// the intensity of its own normal. Everything is laid out in whole device pixels (the stroke
+    /// centreline is half a pixel inside the card edge, so the 1 px band lands on complete pixel
+    /// rows/columns) and converted back to DIP only when the geometry is written.
     /// </summary>
-    private void Build(double width, double height, double radius, double angle, double thickness)
+    private void Build(int pxWidth, int pxHeight, int pxRadius, double angle, double scaling)
     {
-        builtWidth = width;
-        builtHeight = height;
-        builtRadius = radius;
+        builtWidth = pxWidth;
+        builtHeight = pxHeight;
+        builtRadius = pxRadius;
         builtAngle = angle;
-        builtThickness = thickness;
+        builtScaling = scaling;
         runs.Clear();
 
-        var inset = thickness / 2.0;
-        var left = inset;
-        var top = inset;
-        var right = width - inset;
-        var bottom = height - inset;
-        var corner = Math.Max(0.0, radius - inset);
+        // Stroke centreline: one device pixel inside each edge (see
+        // CenterlineInsetDevicePixels). For cards thinner than two pixels the two parallel
+        // lines collapse onto the same line (degenerate, but still drawn instead of
+        // throwing/vanishing).
+        var left = CenterlineInsetDevicePixels;
+        var top = CenterlineInsetDevicePixels;
+        var right = Math.Max(left, pxWidth - CenterlineInsetDevicePixels);
+        var bottom = Math.Max(top, pxHeight - CenterlineInsetDevicePixels);
+
+        // Outer stroke edge radius = pxRadius; the centreline runs `inset` px inside it.
+        var corner = Math.Max(0.0, Math.Min(pxRadius - CenterlineInsetDevicePixels, Math.Min(right - left, bottom - top) / 2.0));
+        var segmentLength = SpecularRim.SegmentLengthDips * scaling;
         var points = new List<RimPoint>();
 
         void Edge(Point from, Point to, double nx, double ny)
         {
             var length = Math.Sqrt((to.X - from.X) * (to.X - from.X) + (to.Y - from.Y) * (to.Y - from.Y));
-            var count = Math.Max(1, (int)Math.Ceiling(length / SpecularRim.SegmentLengthDips));
+            var count = Math.Max(1, (int)Math.Ceiling(length / segmentLength));
             for (var i = 0; i <= count; i++)
             {
                 var t = (double)i / count;
@@ -186,7 +254,7 @@ public sealed class SpecularHighlight : Control
         void Arc(double cx, double cy, double startDegrees, double endDegrees)
         {
             var length = Math.Abs(endDegrees - startDegrees) * Math.PI / 180.0 * corner;
-            var count = Math.Max(1, (int)Math.Ceiling(length / SpecularRim.SegmentLengthDips));
+            var count = Math.Max(1, (int)Math.Ceiling(length / segmentLength));
             for (var i = 0; i <= count; i++)
             {
                 var degrees = startDegrees + (endDegrees - startDegrees) * i / count;
@@ -225,7 +293,9 @@ public sealed class SpecularHighlight : Control
             }
 
             var level = (int)Math.Round(SpecularRim.Intensity(nx, ny, angle) * Buckets);
-            (buckets[level] ??= []).Add((new Point(from.X, from.Y), new Point(to.X, to.Y)));
+            (buckets[level] ??= []).Add((
+                new Point(from.X / scaling, from.Y / scaling),
+                new Point(to.X / scaling, to.Y / scaling)));
         }
 
         for (var level = 0; level <= Buckets; level++)

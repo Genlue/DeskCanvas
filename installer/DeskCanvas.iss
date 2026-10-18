@@ -2,7 +2,7 @@
 ; Produces DeskCanvas-Setup.exe with native uninstallation (unins000.exe) and dynamic data directory cleanup support.
 
 #ifndef MyAppVersion
-#define MyAppVersion "3.8.3"
+#define MyAppVersion "4.0.0"
 #endif
 
 #ifndef MyRuntime
@@ -21,6 +21,10 @@ AppPublisher=Genlue
 AppPublisherURL=https://github.com/Genlue/DeskCanvas
 AppSupportURL=https://github.com/Genlue/DeskCanvas/issues
 AppUpdatesURL=https://github.com/Genlue/DeskCanvas/releases
+VersionInfoCompany=Genlue
+VersionInfoProductName=DeskCanvas
+VersionInfoDescription=DeskCanvas Setup
+VersionInfoVersion={#MyAppVersion}
 DefaultDirName={autopf}\DeskCanvas
 DefaultGroupName=DeskCanvas
 AllowNoIcons=yes

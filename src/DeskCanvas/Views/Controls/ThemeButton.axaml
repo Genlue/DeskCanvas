@@ -37,11 +37,14 @@
                                             Strength="{Binding PreviewHighlightStrength}"
                                             Angle="{Binding PreviewHighlightAngle}"
                                             IsVisible="{Binding PreviewShowsHighlight}" />
-                <TextBlock Canvas.Left="70" Canvas.Top="48" Width="45"
-                           TextAlignment="Center" VerticalAlignment="Center"
-                           FontSize="28" LineHeight="24" Text="Aa"
-                           FontFamily="{Binding WidgetFontFamily}"
-                           Foreground="{Binding WidgetForeground}" />
+                <!-- Canvas 内 VerticalAlignment 不起作用，用一个与卡片同尺寸的 45×45 Grid 定位，
+                     文字在容器内水平/垂直居中。LineHeight 不能小于 FontSize，否则行盒会裁掉字形底部。 -->
+                <Grid Canvas.Left="70" Canvas.Top="40" Width="45" Height="45">
+                    <TextBlock TextAlignment="Center" VerticalAlignment="Center" HorizontalAlignment="Center"
+                               FontSize="28" LineHeight="36" Text="Aa"
+                               FontFamily="{Binding WidgetFontFamily}"
+                               Foreground="{Binding WidgetForeground}" />
+                </Grid>
             </Canvas>
         </Button>
         <TextBlock FontSize="12" HorizontalAlignment="Center"

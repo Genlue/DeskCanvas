@@ -20,7 +20,7 @@
   <img src="https://img.shields.io/badge/Avalonia-12.1-purple?logo=avaloniaui"/>
   <img src="https://img.shields.io/badge/Platform-Windows%20x64-0078D6?logo=windows"/>
   <img src="https://img.shields.io/badge/Release-Single--File%20EXE-success"/>
-  <img src="https://img.shields.io/badge/Installer-MSI%20Package-blue?logo=windows"/>
+  <img src="https://img.shields.io/badge/Installer-Inno%20Setup-blue?logo=windows"/>
 </div>
 
 <br />
@@ -54,7 +54,7 @@
 ⏰ 时钟（模拟×3 / 数字 / 翻页 / 无边框）· 📅 日历 · 🌤️ 天气（7 日预报、四日方格卡、日出日落、紫外线、空气质量、代理）· 📊 系统监控 · 📝 笔记（Markdown 排版、二级面板）· ✅ 清单（交互式待办 + 二级面板）· 📁 文件夹（桌面快速启动器 + 实时文件监听）· 🎵 音乐控制 · 🔍 搜索 · 📈 进度 · 🖼️ 相册 · 🔋 电池 · 🗺️ 地图 · 🍅 番茄钟 · 📚 堆叠 · 🧰 工具（剪贴板、翻译、计算器）· 🎛️ 系统控制中心 · 💽 磁盘存储 · 💬 一言（诗词 / 文学 / 动漫语录卡）· 📌 固定（多组件聚合卡）
 
 ### 6. 🚀 单文件分发
-构建产出自带组件包（内容哈希校验、首次启动解包）的单文件 `DeskCanvas.exe`；组件解包到 `%LocalAppData%\DeskCanvas`，可直接替换 DLL 热更新。每个版本同步提供 WiX v5 打包的 MSI 安装器。
+构建产出自带组件包（内容哈希校验、首次启动解包）的单文件 `DeskCanvas.exe`；组件解包到 `%LocalAppData%\DeskCanvas`，可直接替换 DLL 热更新。每个版本**只**提供 Inno Setup 打包的 `DeskCanvas-<版本>-x64-Setup.exe`（自带独立卸载界面，可选择性清理数据目录），不再分发 MSI、便携 zip 等其它安装形式。
 
 ---
 
@@ -63,7 +63,7 @@
 ### 环境要求
 - Windows 10 / 11（x64）
 - [.NET 10.0 SDK](https://dotnet.microsoft.com/download/dotnet/10.0) 或更高
-- PowerShell（pwsh 或 Windows PowerShell）；构建 MSI 需 WiX v5
+- PowerShell（pwsh 或 Windows PowerShell）；构建 Setup 安装器需 Inno Setup 6
 
 ### 构建命令
 ```powershell
@@ -74,16 +74,16 @@ cd DeskCanvas
 # 编译打包单文件 EXE
 powershell -ExecutionPolicy Bypass -File .\build.ps1
 
-# 额外产出经典便携版 zip（exe + Widgets + 配置）
+# 额外产出经典便携版 zip（exe + Widgets + 配置）——仅供本地调试，不随发行版发布
 powershell -ExecutionPolicy Bypass -File .\build.ps1 -Portable
 
-# 编译打包 Windows MSI 安装器
-powershell -ExecutionPolicy Bypass -File .\build.ps1 -Msi
+# 编译打包 Setup 安装器（发行版唯一分发的形式）
+powershell -ExecutionPolicy Bypass -File .\build.ps1 -Setup
 
 # 产物位置：
 # dist/win-x64/DeskCanvas.exe
 # dist/DeskCanvas-win-x64-portable.zip
-# dist/installer/DeskCanvas-<version>-win-x64.msi
+# dist/installer/DeskCanvas-<version>-x64-Setup.exe
 ```
 
 ---

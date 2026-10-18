@@ -121,9 +121,11 @@
                            FontSize="12"
                            Text="{Binding Month}"
                            VerticalAlignment="Bottom" HorizontalAlignment="Left" />
+                <!-- 今日日号：同 Date 视图，LineHeight 小于 FontSize 时行盒会裁掉字形底部，
+                     这里用约 1.2 倍的自然行高，并在行内垂直居中。 -->
                 <TextBlock Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" LetterSpacing="-3"
-                           FontSize="44" LineHeight="40" Text="{Binding TodayNumber}" FontWeight="SemiBold"
-                           VerticalAlignment="Top" HorizontalAlignment="Center" />
+                           FontSize="44" LineHeight="53" Text="{Binding TodayNumber}" FontWeight="SemiBold"
+                           VerticalAlignment="Center" HorizontalAlignment="Center" />
             </Grid>
         </Viewbox>
     </Panel>

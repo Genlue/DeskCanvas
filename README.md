@@ -19,7 +19,7 @@
   <img src="https://img.shields.io/badge/Avalonia-12.1-purple?logo=avaloniaui"/>
   <img src="https://img.shields.io/badge/Platform-Windows%20x64-0078D6?logo=windows"/>
   <img src="https://img.shields.io/badge/Release-Single--File%20EXE-success"/>
-  <img src="https://img.shields.io/badge/Installer-MSI%20Package-blue?logo=windows"/>
+  <img src="https://img.shields.io/badge/Installer-Inno%20Setup-blue?logo=windows"/>
 </div>
 
 <br />
@@ -53,7 +53,7 @@ Custom square-cell grid (m×n cells stored as percentages, responsive across res
 ⏰ Clock (analog ×3 / digital / flip / frameless) · 📅 Calendar · 🌤️ Weather (7-day forecast, 4-day square card, sun times, UV, AQI, proxy) · 📊 System Monitor · 📝 Notes (Markdown typography, secondary panel) · ✅ Reminders (interactive checklist with secondary panel) · 📁 Folders (desktop quick launcher with live file watching) · 🎵 Music controls · 🔍 Search · 📈 Progress · 🖼️ Picture · 🔋 Batteries · 🗺️ Map · 🍅 Pomodoro · 📚 Stack · 🧰 Tools (clipboard, translator, calculator) · 🎛️ Control Center · 💽 Storage · 💬 Hitokoto Quotes (poetry / literature / anime quote card) · 📌 Fixed (multi-widget aggregate cards)
 
 ### 6. 🚀 Standalone Single-File Distribution
-Builds to a self-contained `DeskCanvas.exe` with a content-hash-verified embedded widget bundle; widgets are extracted to `%LocalAppData%\DeskCanvas` on first run and stay hot-updatable. An MSI installer (WiX v5) is also produced per release.
+Builds to a self-contained `DeskCanvas.exe` with a content-hash-verified embedded widget bundle; widgets are extracted to `%LocalAppData%\DeskCanvas` on first run and stay hot-updatable. Releases ship **only** the Inno Setup `DeskCanvas-<version>-x64-Setup.exe` (with the standalone uninstaller UI and optional data-directory cleanup); MSI and portable zips are no longer distributed.
 
 ---
 
@@ -62,7 +62,7 @@ Builds to a self-contained `DeskCanvas.exe` with a content-hash-verified embedde
 ### Prerequisites
 - Windows 10 / 11 (x64)
 - [.NET 10.0 SDK](https://dotnet.microsoft.com/download/dotnet/10.0) or higher
-- PowerShell (pwsh or Windows PowerShell); WiX v5 for the MSI
+- PowerShell (pwsh or Windows PowerShell); Inno Setup 6 for the Setup installer
 
 ### Build Commands
 ```powershell
@@ -73,16 +73,16 @@ cd DeskCanvas
 # Compile and package single-file EXE
 powershell -ExecutionPolicy Bypass -File .\build.ps1
 
-# Also produce the classic portable zip (exe + Widgets + settings)
+# Also produce the classic portable zip (exe + Widgets + settings) — local debugging only, never shipped
 powershell -ExecutionPolicy Bypass -File .\build.ps1 -Portable
 
-# Compile and package the Windows MSI installer
-powershell -ExecutionPolicy Bypass -File .\build.ps1 -Msi
+# Compile and package the Setup installer (the only form releases ship)
+powershell -ExecutionPolicy Bypass -File .\build.ps1 -Setup
 
 # Output locations:
 # dist/win-x64/DeskCanvas.exe
 # dist/DeskCanvas-win-x64-portable.zip
-# dist/installer/DeskCanvas-<version>-win-x64.msi
+# dist/installer/DeskCanvas-<version>-x64-Setup.exe
 ```
 
 ---

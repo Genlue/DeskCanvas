@@ -82,11 +82,14 @@ public class InteropService
     /// <param name="width">Region width (physical pixels).</param>
     /// <param name="height">Region height (physical pixels).</param>
     /// <param name="radius">Corner radius (physical pixels, typically <c>Dimensions.Radius</c>).</param>
-    public static void SetWidgetRegion(Window window, int x, int y, int width, int height, int radius)
+    /// <returns>True when the region was set on the window; false when there is no handle
+    /// yet (the window has not been created) or the OS rejected it — callers must retry
+    /// instead of assuming the clip is in place.</returns>
+    public static bool SetWidgetRegion(Window window, int x, int y, int width, int height, int radius)
     {
         var handle = window.TryGetPlatformHandle()?.Handle;
-        if (handle == null) return;
-        SetWindowRegion(handle.Value, x, y, width, height, radius);
+        if (handle == null) return false;
+        return SetWindowRegion(handle.Value, x, y, width, height, radius);
     }
 
     /// <summary>
@@ -94,9 +97,11 @@ public class InteropService
     /// This forces the OS-level DWM AcrylicBlur to strictly follow the exact same rounded
     /// rectangle boundary without bleeding blur into the corner areas.
     /// </summary>
-    public static void SetWindowRegion(IntPtr handle, int x, int y, int width, int height, int radius)
+    /// <returns>True when the region was applied; false for an invalid handle or when
+    /// <c>SetWindowRgn</c> rejected the region.</returns>
+    public static bool SetWindowRegion(IntPtr handle, int x, int y, int width, int height, int radius)
     {
-        if (handle == IntPtr.Zero) return;
+        if (handle == IntPtr.Zero) return false;
 
         width = Math.Max(1, width);
         height = Math.Max(1, height);
@@ -104,13 +109,28 @@ public class InteropService
 
         // Win32 GDI CreateRoundRectRgn treats right/bottom as exclusive.
         // [x, x + width) covers exactly 'width' pixels without 1-pixel bleed.
+        //
+        // GDI quirk (measured on Windows 11 22631 at 125 % DPI, uniform for every radius
+        // 1…30 and every size 10…15 px): CreateRoundRectRgn *drops the last row and column*
+        // of the requested rect — asking for (15,15)-(390,390) yields a region whose
+        // GetRgnBox is (15,15)-(389,389) (374×374) and PtInRegion(300,389) is false.
+        // CreateRectRgn does NOT do this. The consequence was the missing bottom rim:
+        // ApplyWidgetRegion asks for exactly the card rect, the card's last device row holds
+        // the 1 px specular hairline, and the OS clipped that row away — only the corner arcs
+        // (which curve away from the last row) survived. Compensate by asking for one extra
+        // row/column; the reported box then equals the card exactly (375×375).
         var region = radius > 0
-            ? CreateRoundRectRgn(x, y, x + width, y + height, radius * 2, radius * 2)
+            ? CreateRoundRectRgn(x, y, x + width + 1, y + height + 1, radius * 2, radius * 2)
             : CreateRectRgn(x, y, x + width, y + height);
-        if (region == IntPtr.Zero) return;
+        if (region == IntPtr.Zero) return false;
 
         if (SetWindowRgn(handle, region, true) == 0)
+        {
             DeleteObject(region);
+            return false;
+        }
+
+        return true;
     }
 
     /// <summary>

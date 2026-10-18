@@ -48,7 +48,6 @@ public partial class Settings : Window
         this.appSettingsProvider = appSettingsProvider;
         DataContext = viewModel;
         Resized += OnResized;
-        KeyDown += OnKeyDown;
         Closed += (_, _) => closedForReal = true;
         // Self-heal is timer-driven only: an Activated-time check fires while the window is
         // still transitioning (level momentarily reads non-acrylic on every re-show) and would
@@ -216,7 +215,24 @@ public partial class Settings : Window
         TrafficBar.IsVisible = isTraffic;
         TrafficBar.Size = settings.EffectiveTitleBarSize;
         NativeTitleBar.IsVisible = !isTraffic;
-        AppTitle.IsVisible = !isTraffic;
+        // 原生模式下标题由 DWM caption 绘制（Window.Title = "DeskCanvas"），自绘的 AppTitle
+        // 必须隐藏，否则两份 "DeskCanvas"/"Settings" 会在左上角叠印。
+        UpdateAppTitleVisibility();
+    }
+
+    /// <summary>
+    /// 自绘标题 AppTitle 的显隐：只在红绿灯（自绘标题栏）模式下显示，并且跟随侧栏状态——
+    /// 窄窗口（宽度 &lt; 800）侧栏收起时不显示标题。
+    /// <para>
+    /// 这套判断原先一半在 XAML 绑定（<c>IsVisible="{Binding #SplitView.IsPaneOpen}"</c>）、
+    /// 一半在代码（直接赋值会清除绑定），两处冲突时窄窗口行为就会丢；现在统一收到这里，
+    /// 由 <see cref="ApplyTitleBarStyle"/> 和 <see cref="OnResized"/>（改完 IsPaneOpen 之后）调用。
+    /// </para>
+    /// </summary>
+    private void UpdateAppTitleVisibility()
+    {
+        var isTraffic = appSettingsProvider.Get().EffectiveTitleBarStyle == TitleBarStyle.TrafficLights;
+        AppTitle.IsVisible = isTraffic && SplitView.IsPaneOpen;
     }
 
     private void OnNativeTitleBarPointerPressed(object? sender, PointerPressedEventArgs e)
@@ -264,11 +280,6 @@ public partial class Settings : Window
     private void Restart(object? sender, RoutedEventArgs e) => AppRestart.Restart();
 
     private void Exit(object? sender, RoutedEventArgs e) => AppShutdown.Request();
-
-    private void OnKeyDown(object? sender, KeyEventArgs e)
-    {
-        AppTitle.Text = "UwUidgets";
-    }
 
     /// <summary>
     /// Closing the shared settings window normally only hides it.
@@ -320,8 +331,12 @@ public partial class Settings : Window
         System.Threading.Tasks.Task.Delay(500).ContinueWith(_ => MemoryTrimmerService.RequestTrim());
     }
 
-    private void OnResized(object? sender, WindowResizedEventArgs e) => 
+    private void OnResized(object? sender, WindowResizedEventArgs e)
+    {
         SplitView.IsPaneOpen = Width >= 800;
+        // 侧栏开合直接决定自绘标题的可见性（窄窗口不显示标题）。
+        UpdateAppTitleVisibility();
+    }
 
     private void OnMenuItemChanged(object? _, SelectionChangedEventArgs e)
     {

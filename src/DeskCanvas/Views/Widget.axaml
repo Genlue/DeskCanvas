@@ -146,6 +146,7 @@
              (毛玻璃 / 全彩): the same |dot(edge normal, light)| hairline as 液态玻璃's shader
              highlight, with 高光 strength and 高光角度 shared from the theme. -->
         <controls:SpecularHighlight
+                x:Name="SpecularRimLayer"
                 Margin="{Binding WidgetMargin, RelativeSource={RelativeSource AncestorType=views:Widget}}"
                 CornerRadius="{Binding Radius, RelativeSource={RelativeSource AncestorType=views:Widget}}"
                 Strength="{Binding HighlightStrength, RelativeSource={RelativeSource AncestorType=views:Widget}}"
