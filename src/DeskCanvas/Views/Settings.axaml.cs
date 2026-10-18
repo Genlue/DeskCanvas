@@ -96,6 +96,10 @@ public partial class Settings : Window
 
             Show();
 
+            // 原生标题栏模式下，DWM caption 的隐藏（见 ApplyTitleBarStyle）需要在平台句柄
+            // 存在后才能真正生效；构造阶段句柄尚不存在，这里补一次（幂等）。
+            InteropService.HideNativeCaption(this);
+
             // WindowStartupLocation="CenterScreen" re-applies on every Show, and it derives the
             // position from the window it is re-showing — for a hidden/minimized window that is a
             // stale rect, so the window jumped (onto another monitor, or off-screen entirely) each
@@ -215,24 +219,11 @@ public partial class Settings : Window
         TrafficBar.IsVisible = isTraffic;
         TrafficBar.Size = settings.EffectiveTitleBarSize;
         NativeTitleBar.IsVisible = !isTraffic;
-        // 原生模式下标题由 DWM caption 绘制（Window.Title = "DeskCanvas"），自绘的 AppTitle
-        // 必须隐藏，否则两份 "DeskCanvas"/"Settings" 会在左上角叠印。
-        UpdateAppTitleVisibility();
-    }
-
-    /// <summary>
-    /// 自绘标题 AppTitle 的显隐：只在红绿灯（自绘标题栏）模式下显示，并且跟随侧栏状态——
-    /// 窄窗口（宽度 &lt; 800）侧栏收起时不显示标题。
-    /// <para>
-    /// 这套判断原先一半在 XAML 绑定（<c>IsVisible="{Binding #SplitView.IsPaneOpen}"</c>）、
-    /// 一半在代码（直接赋值会清除绑定），两处冲突时窄窗口行为就会丢；现在统一收到这里，
-    /// 由 <see cref="ApplyTitleBarStyle"/> 和 <see cref="OnResized"/>（改完 IsPaneOpen 之后）调用。
-    /// </para>
-    /// </summary>
-    private void UpdateAppTitleVisibility()
-    {
-        var isTraffic = appSettingsProvider.Get().EffectiveTitleBarStyle == TitleBarStyle.TrafficLights;
-        AppTitle.IsVisible = isTraffic && SplitView.IsPaneOpen;
+        // 原生模式下 DWM 会在扩展客户区之上再画一层系统标题栏：不透明的底色横带加
+        // "DeskCanvas" 标题文字，压在亚克力窗口上像一条硬边。让 DWM 不绘制标题栏的
+        // 底色与文字（原生最小化/最大化/关闭按钮保留），窗口拖动由 DWM caption 命中
+        // 区和上面那层透明的 NativeTitleBar 拖拽条共同承担。
+        if (!isTraffic) InteropService.HideNativeCaption(this);
     }
 
     private void OnNativeTitleBarPointerPressed(object? sender, PointerPressedEventArgs e)
@@ -334,8 +325,6 @@ public partial class Settings : Window
     private void OnResized(object? sender, WindowResizedEventArgs e)
     {
         SplitView.IsPaneOpen = Width >= 800;
-        // 侧栏开合直接决定自绘标题的可见性（窄窗口不显示标题）。
-        UpdateAppTitleVisibility();
     }
 
     private void OnMenuItemChanged(object? _, SelectionChangedEventArgs e)

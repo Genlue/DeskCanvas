@@ -97,6 +97,16 @@
             <Setter Property="Height" Value="16" />
         </Style>
     </Window.Styles>
+
+    <Window.Resources>
+        <!-- Avalonia 12 在 ExtendClientArea + Full（原生顶栏）模式下会自绘一套窗口装饰：
+             不透明的标题栏底色横带 + "DeskCanvas" 标题文字 + 右上角原生风格按钮，
+             全部画在客户区里（不是 DWM）。底色来自模板里的
+             {DynamicResource TitleBarBackgroundBrush}——覆盖这个资源让横带透明，
+             亚克力背景直接透出来。标题文字与右上角按钮是刻意保留的（原生模式的样子）；
+             红绿灯模式下 BorderOnly 不含标题栏部件，什么都不画。 -->
+        <SolidColorBrush x:Key="TitleBarBackgroundBrush" Color="Transparent" />
+    </Window.Resources>
     
     <!-- The window's own glass surface. It is clipped to exactly the radius Avalonia's
          WinUIComposition backdrop is rounded with (SettingsWindowCornerRadius), so the blurred
@@ -115,7 +125,7 @@
         <SplitView Name="SplitView" Grid.Row="0" Grid.RowSpan="2" IsPaneOpen="True" DisplayMode="CompactInline" PaneBackground="Transparent" OpenPaneLength="200" CompactPaneLength="60">
             <SplitView.Pane>
                 <!-- Keep the title strip outside the scrolling viewport so navigation cannot
-                     scroll underneath AppTitle / traffic lights in a short window. -->
+                     scroll underneath the traffic lights in a short window. -->
                 <ScrollViewer Margin="0 48 0 0" ClipToBounds="True">
                     <StackPanel Margin="0 0 12 0">
                         <ListBox Name="ListBox" Background="Transparent" SelectionMode="Single" ItemsSource="{Binding AllItems}" SelectionChanged="OnMenuItemChanged">
@@ -190,12 +200,6 @@
         <Border x:Name="NativeTitleBar" Grid.Row="0" Grid.RowSpan="2" VerticalAlignment="Top" Height="40"
                 Margin="0,0,140,0" Background="Transparent" IsVisible="False"
                 PointerPressed="OnNativeTitleBarPointerPressed" />
-        <!-- 自绘标题：只在红绿灯（自绘标题栏）模式出现。原生模式下 Window.Title 的
-             "DeskCanvas" 由 DWM caption 绘制，这里再画一份就会和系统 caption 叠印，
-             所以初始隐藏，显隐统一由 Settings.UpdateAppTitleVisibility() 决定
-             （原来的 IsVisible 绑定会在代码直接赋值时被清除）。 -->
-        <TextBlock Name="AppTitle" Grid.Row="0" Grid.RowSpan="2" VerticalAlignment="Top" IsHitTestVisible="False"
-                   Margin="16 16 0 16" FontWeight="Bold" IsVisible="False">DeskCanvas</TextBlock>
         </Grid>
     </Border>
 </Window>

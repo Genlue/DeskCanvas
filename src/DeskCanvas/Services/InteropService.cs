@@ -338,6 +338,8 @@ public class InteropService
     private static extern int DwmSetWindowAttribute(IntPtr hwnd, uint attribute, ref uint value, int size);
 
     private const uint DWMWA_BORDER_COLOR = 34;
+    private const uint DWMWA_CAPTION_COLOR = 35;
+    private const uint DWMWA_TEXT_COLOR = 36;
     private const uint DWMWA_COLOR_NONE = 0xFFFFFFFE;
     private const uint DWMWA_WINDOW_CORNER_PREFERENCE = 33;
     private const uint DWMWCP_DONOTROUND = 1;
@@ -357,6 +359,31 @@ public class InteropService
 
             uint doNotRound = DWMWCP_DONOTROUND;
             DwmSetWindowAttribute(hwnd, DWMWA_WINDOW_CORNER_PREFERENCE, ref doNotRound, sizeof(uint));
+        }
+        catch { }
+    }
+
+    /// <summary>
+    /// Hides the DWM-drawn native caption (title text + opaque background band) while keeping the
+    /// system caption buttons. Used when a window extends its client area but stays in the native
+    /// title-bar mode: DWM would otherwise fill the top strip with an opaque caption background
+    /// and the window title text, drawing a hard opaque band over the acrylic window.
+    /// <para>
+    /// DWMWA_COLOR_NONE requires Windows 11 (build 22000+); on older systems the calls fail with
+    /// a non-zero HRESULT and are silently ignored — the caption keeps its default look.
+    /// </para>
+    /// </summary>
+    public static void HideNativeCaption(Window window)
+    {
+        if (!OperatingSystem.IsWindows()) return;
+        var handle = window.TryGetPlatformHandle()?.Handle;
+        if (handle == null || handle.Value == IntPtr.Zero) return;
+
+        try
+        {
+            uint none = DWMWA_COLOR_NONE;
+            DwmSetWindowAttribute(handle.Value, DWMWA_CAPTION_COLOR, ref none, sizeof(uint));
+            DwmSetWindowAttribute(handle.Value, DWMWA_TEXT_COLOR, ref none, sizeof(uint));
         }
         catch { }
     }
