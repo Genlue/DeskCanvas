@@ -173,16 +173,45 @@ public partial class Folder : UserControl, IWidgetSelfRefreshing, INotifyPropert
         {
             StartWatcher();
         }
-        if (VisualRoot is TopLevel topLevel)
+        var viaGet = TopLevel.GetTopLevel(this);
+        if (TopLevel.GetTopLevel(this) is TopLevel topLevel)
         {
             DragDrop.SetAllowDrop(topLevel, true);
-            if (topLevel.TryGetPlatformHandle()?.Handle is { } handle && handle != IntPtr.Zero)
-            {
-                dropHandle = handle;
-                WidgetOleDropTarget.Register(handle, OnOleDrop, OnOleDragActive);
-                WidgetOleDropTarget.RegisterWmDropFiles(handle, OnOleDrop, OnOleDragActive);
-            }
+            TryRegisterDropTarget(topLevel);
         }
+    }
+
+    /// <summary>
+    /// Register the OLE / WM_DROPFILES drop target on the window handle.
+    /// <para>
+    /// <c>Loaded</c> can fire while the content is already attached to a window that has not
+    /// created its native handle yet — <see cref="VisualRoot"/> is then the top-level host with
+    /// <c>TryGetPlatformHandle() == null</c>. The old code simply skipped registration in that
+    /// case, so the widget silently lost drag-and-drop and, worse, the release contract could
+    /// never be observed. Retry on the dispatcher once the window is actually up.
+    /// </para>
+    /// </summary>
+    private void TryRegisterDropTarget(TopLevel topLevel)
+    {
+        if (topLevel.TryGetPlatformHandle()?.Handle is { } handle && handle != IntPtr.Zero)
+        {
+            dropHandle = handle;
+            WidgetOleDropTarget.Register(handle, OnOleDrop, OnOleDragActive);
+            WidgetOleDropTarget.RegisterWmDropFiles(handle, OnOleDrop, OnOleDragActive);
+            return;
+        }
+
+        Dispatcher.UIThread.Post(() =>
+        {
+            // The widget may have been unloaded again while the post was queued.
+            if (!IsLoaded || dropHandle != IntPtr.Zero) return;
+            if (TopLevel.GetTopLevel(this) is not TopLevel root) return;
+            if (root.TryGetPlatformHandle()?.Handle is not { } late || late == IntPtr.Zero) return;
+
+            dropHandle = late;
+            WidgetOleDropTarget.Register(late, OnOleDrop, OnOleDragActive);
+            WidgetOleDropTarget.RegisterWmDropFiles(late, OnOleDrop, OnOleDragActive);
+        }, DispatcherPriority.Loaded);
     }
 
     private void OnUnloaded(object? sender, RoutedEventArgs e)

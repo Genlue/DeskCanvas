@@ -114,6 +114,7 @@ public partial class Widget : Window, INotifyPropertyChanged, IFocusThemedWindow
     public void PrepareForTeardown()
     {
         tornDown = true;
+        displayMonitor.ScreensChanged -= RestoreWhenScreenReady;
         widgetLayoutProvider.DataChanged -= OnWidgetLayoutUpdated;
         appSettingsProvider.DataChanged -= OnAppSettingsUpdated;
         layoutProvider.DataChanged -= OnLayoutDataUpdated;
@@ -329,6 +330,17 @@ public partial class Widget : Window, INotifyPropertyChanged, IFocusThemedWindow
         // SnapPosition lands on the same cell, and ClampRestoredPosition only pulls a
         // stranded window back onto its own working area.
         RefreshDisplayMetrics();
+        if (OwningScreen == null)
+        {
+            // The owning screen is not resolvable yet (a display change is still settling):
+            // RefreshDisplayMetrics bailed out, so the window kept the OS default position —
+            // the card shows up in the middle of the screen instead of its stored cell.
+            // Restoring on the next activation is what made it jump the moment the user
+            // started dragging it; restore as soon as the display set is committed instead.
+            // (-= first: Opened fires again every time a hidden widget is shown again.)
+            displayMonitor.ScreensChanged -= RestoreWhenScreenReady;
+            displayMonitor.ScreensChanged += RestoreWhenScreenReady;
+        }
 
         UpdateContentSize();
         ApplyWidgetRegion();
@@ -341,6 +353,20 @@ public partial class Widget : Window, INotifyPropertyChanged, IFocusThemedWindow
 
         // The window's "loaded" signal: the widget is visible on the desktop (A0 wiring).
         ReportSessionActivity(ActivityReason.DesktopVisible);
+    }
+
+    /// <summary>
+    /// One-shot companion to the <c>OwningScreen == null</c> branch in <see cref="OnOpened"/>:
+    /// while the display set is still settling the widget cannot resolve its screen, so it is
+    /// shown wherever the OS puts it. Restore the stored geometry as soon as the screen set is
+    /// committed, instead of leaving it to the next activation (which is exactly when the user
+    /// grabs the card, so the correction reads as "the card teleports the moment I drag it").
+    /// </summary>
+    private void RestoreWhenScreenReady(object? sender, EventArgs e)
+    {
+        if (tornDown || OwningScreen == null) return;
+        displayMonitor.ScreensChanged -= RestoreWhenScreenReady;
+        RefreshDisplayMetrics();
     }
 
     private void OnResized(object? sender, WindowResizedEventArgs e)
@@ -1935,9 +1961,9 @@ public partial class Widget : Window, INotifyPropertyChanged, IFocusThemedWindow
     
     /// <summary>
     /// Resolve a stored pixel size into a whole number of grid cells
-    /// (see <see cref="GridMetrics.ResolveSpan"/> — the gallery's occupancy test reads
-    /// stored sizes through the very same heuristic, so placement and restore agree
-    /// on how much of the grid a widget takes).
+    /// (see <see cref="GridMetrics.ResolveSpan"/> — the gallery's occupancy test measures the
+    /// same stored size in the same physical pixels, so placement and restore agree on how
+    /// much of the grid a widget takes).
     /// </summary>
     private static int ResolveSpan(double size, double cellPx, double scaling)
         => GridMetrics.ResolveSpan(size, cellPx, scaling);

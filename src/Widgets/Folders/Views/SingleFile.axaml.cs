@@ -78,7 +78,7 @@ public partial class SingleFile : UserControl, IWidgetSelfRefreshing
     private void OnLoaded(object? sender, RoutedEventArgs e)
     {
         ApplyModel();
-        if (VisualRoot is TopLevel topLevel)
+        if (TopLevel.GetTopLevel(this) is TopLevel topLevel)
         {
             DragDrop.SetAllowDrop(topLevel, true);
             if (topLevel.TryGetPlatformHandle()?.Handle is { } handle && handle != IntPtr.Zero)
@@ -208,7 +208,7 @@ public partial class SingleFile : UserControl, IWidgetSelfRefreshing
         // Ctrl + left drag moves the widget window (same as Folder widget); never trigger click.
         if (point.Properties.IsLeftButtonPressed && IsControlPressed(e))
         {
-            if (VisualRoot is Window window)
+            if (TopLevel.GetTopLevel(this) is Window window)
             {
                 window.BeginMoveDrag(e);
                 e.Handled = true;

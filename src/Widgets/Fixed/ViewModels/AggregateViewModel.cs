@@ -6,6 +6,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Media;
 using Avalonia.Styling;
+using Avalonia.Threading;
 using FixedWidgets.Models;
 using FixedWidgets.Services;
 using ReactiveUI;
@@ -484,31 +485,57 @@ public class AggregateViewModel : ReactiveObject, IDisposable
         {
             var info = await weatherService.GetWeatherAsync(model.Latitude, model.Longitude, model.TemperatureUnit);
 
-            // A reply that arrives after disposal (the view was unloaded mid-request) must not
-            // touch this view model any more, and must not revive it through its bindings.
-            if (disposed) return;
-
-            if (info == null)
+            // The reply is applied on the UI thread only. Normally the await above already
+            // resumes there (it is the caller's context), but the service runs its own awaits
+            // ConfigureAwait(false), so a caller that started this from a background thread would
+            // land on the pool — and neither bound properties nor the icon geometry (see
+            // ApplyWeather) may be touched from there.
+            if (!Dispatcher.UIThread.CheckAccess())
             {
-                if (TemperatureText == "--°")
+                Dispatcher.UIThread.Post(() =>
                 {
-                    TemperatureText = "24°";
-                    ConditionText = IsChineseCulture ? "晴朗" : "Clear";
-                    HighLowText = "↑26°  ↓18°";
-                    WeatherIcon = OpenMeteoWeatherService.GetWeatherIcon(0);
-                }
+                    try { ApplyWeather(info); }
+                    catch { /* Same contract as below: keep what is on screen. */ }
+                });
                 return;
             }
 
-            TemperatureText = $"{Math.Round(info.Temperature):0}°";
-            ConditionText = info.ConditionText;
-            HighLowText = $"↑{Math.Round(info.MaxTemp):0}°  ↓{Math.Round(info.MinTemp):0}°";
-            WeatherIcon = info.Icon;
+            ApplyWeather(info);
         }
         catch
         {
             // Offline or a service error: keep the values that are already on screen.
         }
+    }
+
+    /// <summary>
+    /// Apply one weather reply. UI thread only — it writes bound properties and parses
+    /// <see cref="WeatherIcon"/>, and an Avalonia geometry belongs to the thread that created it:
+    /// parsing it anywhere else makes the bound <c>Path</c> throw from its measure pass, inside
+    /// the render pass, which takes the process down (the 全部组件 gallery crash).
+    /// </summary>
+    private void ApplyWeather(WeatherInfo? info)
+    {
+        // A reply that arrives after disposal (the view was unloaded mid-request) must not
+        // touch this view model any more, and must not revive it through its bindings.
+        if (disposed) return;
+
+        if (info == null)
+        {
+            if (TemperatureText == "--°")
+            {
+                TemperatureText = "24°";
+                ConditionText = IsChineseCulture ? "晴朗" : "Clear";
+                HighLowText = "↑26°  ↓18°";
+                WeatherIcon = OpenMeteoWeatherService.GetWeatherIcon(0);
+            }
+            return;
+        }
+
+        TemperatureText = $"{Math.Round(info.Temperature):0}°";
+        ConditionText = info.ConditionText;
+        HighLowText = $"↑{Math.Round(info.MaxTemp):0}°  ↓{Math.Round(info.MinTemp):0}°";
+        WeatherIcon = OpenMeteoWeatherService.GetWeatherIcon(info.WeatherCode);
     }
 
     /// <summary>

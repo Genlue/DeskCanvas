@@ -1,11 +1,11 @@
 # tests/ 本地检查项目登记
 
-本目录共 58 个检查项目（不含 `_shortcuts_tools` Python 辅助脚本目录，2026-10-17 按非 bin/obj 的 csproj 统计）。分类口径：
+本目录共 60 个检查项目（不含 `_shortcuts_tools` Python 辅助脚本目录，2026-10-17 按非 bin/obj 的 csproj 统计）。分类口径：
 
 - **正式门禁**：有明确通过/失败语义（退出码或异常），按改动范围纳入提交/发布门槛。
 - **探针/复现程序**：测量、截图或复现 harness，产出供人工判读，不作门禁。
 
-统一验证入口：`scripts/verify.ps1`（执行结构/约定检查、解决方案构建及下表标注「已验证套件」的项目）。当前入口共 **39 个步骤**：两项结构/约定守卫、解决方案 Debug 构建和 **36 个 Release 检查程序**，覆盖 P1–P8 架构、P10 统一控件库与排版、P11 材质主题、P12 数据 Profile 化、P13 卸载与 Setup 门禁。发布门禁聚合入口：`scripts/release-gate.ps1`（verify 全量 + ApiSnapshot 校验 + UpgradeRollbackChecks + SettingsReleaseChecks,摘要落 dist/release-gate-summary.json）。两项守卫统一由 `pwsh`（PowerShell 7）子进程执行。
+统一验证入口：`scripts/verify.ps1`（执行结构/约定检查、解决方案构建及下表标注「已验证套件」的项目）。当前入口共 **40 个步骤**：两项结构/约定守卫、解决方案 Debug 构建和 **37 个 Release 检查程序**，覆盖 P1–P8 架构、P10 统一控件库与排版、P11 材质主题、P12 数据 Profile 化、P13 卸载与 Setup 门禁。发布门禁聚合入口：`scripts/release-gate.ps1`（verify 全量 + ApiSnapshot 校验 + UpgradeRollbackChecks + SettingsReleaseChecks,摘要落 dist/release-gate-summary.json）。两项守卫统一由 `pwsh`（PowerShell 7）子进程执行。
 
 架构重构门禁：`IdentityStorageChecks`（P1 身份迁移与原子保存）、`ContractsLifecycleChecks`（P2 纯 .NET 契约与会话生命周期）、`SchedulerChecks`（P5 owner 调度租约与失败隔离）。这三项已由 `scripts/verify.ps1` 一并执行。
 
@@ -63,11 +63,13 @@
 | TimetableChecks | 正式门禁 | 课程表数据契约：周表达式、导入器、学期计算与配色 |
 | UpdateAtomChecks | 正式门禁 | releases.atom 回退解析器对冻结 fixture 的契约（自述按改动范围作提交门槛） |
 | WidgetReleaseChecks | 正式门禁 | 切换 profile 时组件真实释放的内存契约（跑真实宿主管线） |
+| GeometryThreadChecks | 正式门禁（已验证套件） | 组件图标几何的线程亲和：天气服务只回数据（`WeatherInfo` 不得携带 `Geometry`）、图标在 UI 线程解析后绑定可正常测量（设置 → 全部组件崩溃的回归）、共享定时器在后台线程（会话解锁 SystemEvents 路径）触发的 tick 必须改投递到 UI 线程 |
 | ShortcutsAllocProbe | 探针/复现程序 | Shortcuts 缓存助手每次调用的托管分配对比测量 |
 | ShortcutsRender | 探针/复现程序 | Shortcuts 卡片无头渲染 harness（参数化尺寸/场景截图） |
 | TimetableMemoryProbe | 探针/复现程序 | 课程表单实例内存成本量化（托管堆/GC/工作集归因） |
 | TimetableRepro | 探针/复现程序 | 课程表设置页与组件多尺寸渲染复现 harness |
 | _glassshot | 探针/复现程序 | 全组件液态玻璃渲染截图 harness（真实管线逐视图 45 张 + 实机批处理截图；产出 dist/glass-shots/，人工审查） |
+| _galleryprobe | 探针/复现程序 | 设置 → 全部组件 的端到端复现 harness：真实 Gallery 页 + 全部已构建组件程序集，挂进无头窗口后持续泵送布局/渲染若干秒，让预览的异步刷新（聚合卡天气）落地；旧代码必崩于 `Shape.MeasureOverride` 跨线程几何异常，修复后逐项 PASS 并输出 GALLERY PROBE: NO CRASH（需先构建 src/DeskCanvas.sln） |
 | _uiprobe | 探针/复现程序 | Shortcuts UI 场景截图探针（编辑器/卡片/弹窗/设置等场景） |
 
 备注：`_shortcuts_tools/` 为 Python 测量/生成辅助脚本，非 .NET 项目，不计入上述清单。

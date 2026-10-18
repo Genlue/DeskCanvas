@@ -43,9 +43,14 @@ public static class GridMetrics
     /// builds carry physical pixels (e.g. 575 px on a 125% display for a 5-cell
     /// span) and are never rewritten until the widget happens to be moved or
     /// resized. Every consumer that turns a stored size back into a span — the
-    /// widget's own restore path and the gallery's occupancy test for a new
-    /// widget — must therefore read it through this one heuristic, or the two
-    /// disagree about how much of the grid is taken.
+    /// size steppers, the size menu, the cross-screen drag — reads it through this
+    /// one heuristic, so they all agree about how much of the grid is taken.
+    /// </para>
+    /// <para>
+    /// Placement occupancy (<see cref="FindFirstFitCell"/>) deliberately does NOT use
+    /// this heuristic: it marks the physical rectangle the window will really occupy,
+    /// which is what the restored entry actually becomes on screen (<c>Width = stored
+    /// DIP</c>, so a legacy physical size lands 1.25 cells wide on a 125% display).
     /// </para>
     /// <para>
     /// The DIP reading is trusted whenever it lands close to a whole number of
@@ -77,56 +82,105 @@ public static class GridMetrics
     }
 
     /// <summary>
-    /// Row-major FIRST-FIT placement: scan the grid's cells from (0,0) left → right,
+    /// A resolved placement frame: the grid lattice (cell edge, origin) together with the
+    /// working area the card has to stay inside.
+    /// <para>
+    /// <see cref="Columns"/>/<see cref="Rows"/> are the <b>configured</b> grid extent, which
+    /// is not the same thing as the <b>placeable</b> extent. A grid may hang off the working
+    /// area — Y at 50% with ten 96 px rows reaches 1480 px on a 1040 px screen — and a cell
+    /// outside the working area is not a slot: the window placed there is pulled back onto
+    /// the screen by <c>Widget.ClampRestoredPosition</c> at display time and lands on
+    /// whatever already occupies the visible spot, so two cards end up in the same place.
+    /// See <see cref="PlaceableColumns"/> / <see cref="PlaceableRows"/>.
+    /// </para>
+    /// </summary>
+    /// <param name="Cell">Grid cell edge in physical pixels (<see cref="Resolve"/>).</param>
+    /// <param name="Scaling">Scaling of the target screen (stored sizes are DIPs).</param>
+    /// <param name="GridX">Grid origin X relative to the working area (physical pixels).</param>
+    /// <param name="GridY">Grid origin Y relative to the working area (physical pixels).</param>
+    /// <param name="Columns">Configured grid column count.</param>
+    /// <param name="Rows">Configured grid row count.</param>
+    /// <param name="AreaWidth">Working-area width (physical pixels).</param>
+    /// <param name="AreaHeight">Working-area height (physical pixels).</param>
+    public readonly record struct PlacementFrame(
+        int Cell,
+        double Scaling,
+        int GridX,
+        int GridY,
+        int Columns,
+        int Rows,
+        int AreaWidth,
+        int AreaHeight)
+    {
+        /// <summary>Columns of whole cells the grid still has inside the working area.</summary>
+        public int PlaceableColumns => Cell <= 0
+            ? 0
+            : Math.Max(0, Math.Min(Columns, (AreaWidth - GridX) / Cell));
+
+        /// <summary>Rows of whole cells the grid still has inside the working area.</summary>
+        public int PlaceableRows => Cell <= 0
+            ? 0
+            : Math.Max(0, Math.Min(Rows, (AreaHeight - GridY) / Cell));
+
+        /// <summary>Physical pixels of a stored (DIP) width on this screen.</summary>
+        public int ToPhysicalWidth(double dipWidth) => Math.Max(1, (int) Math.Round(dipWidth * Scaling));
+
+        /// <summary>Physical pixels of a stored (DIP) height on this screen.</summary>
+        public int ToPhysicalHeight(double dipHeight) => Math.Max(1, (int) Math.Round(dipHeight * Scaling));
+    }
+
+    /// <summary>
+    /// Row-major FIRST-FIT placement: scan the placeable cells from (0,0) left → right,
     /// top → bottom and return the first (column, row) whose whole
     /// <paramref name="spanCols"/>×<paramref name="spanRows"/> block is free.
     /// <para>
-    /// Occupancy is tracked as a boolean cell matrix. Every widget already stored on
-    /// the screen occupies every cell its own footprint covers: the anchor is the
-    /// stored top-left corner's cell, the span is resolved through
-    /// <see cref="ResolveSpan"/> (DIP today, legacy physical pixels supported), and
-    /// the whole pixel rectangle is marked — a widget parked off the cell lattice
-    /// (legacy entries, grid-origin edits) blocks the boundary cells its edges reach
-    /// into, so a candidate can never slip into the sliver between its pixel rect and
-    /// the lattice and partially overlap it.
+    /// Occupancy is tracked as a boolean cell matrix built from the rectangle each stored
+    /// widget is <b>actually displayed at</b>: its stored position is clamped onto the
+    /// working area (exactly like <c>Widget.ClampRestoredPosition</c>) before the cells it
+    /// covers are marked. A widget stored outside the area — a bigger desktop before a
+    /// resolution change, a grid hanging off the bottom edge — is displayed somewhere else,
+    /// and marking its stored rectangle instead would let a new card land right on top of
+    /// it. The whole pixel rectangle is marked (floor on the leading edge, ceil on the
+    /// trailing edge), so a widget parked off the cell lattice blocks the boundary cells
+    /// its edges reach into and a candidate can never slip into the sliver between its
+    /// rect and the lattice.
     /// </para>
     /// <para>
-    /// Returns <c>(-1, -1)</c> when no block fits — the grid is genuinely full (or the
-    /// widget is larger than the grid). Callers decide the fallback; the gallery's
-    /// placement used to fall back to the grid origin "ignoring occupancy", which
-    /// stacked the new card exactly onto the first placed one (the 吞组件 overlap).
+    /// Only blocks whose whole span stays inside the working area are considered, and a
+    /// span larger than the grid (or than the visible part of it) never fits.
+    /// </para>
+    /// <para>
+    /// Returns <c>(-1, -1)</c> when no block fits — the grid is genuinely full, the card is
+    /// larger than the grid, or the working area has no room left for it. Callers must stop
+    /// there: the gallery's old fallback to the grid origin "ignoring occupancy" stacked the
+    /// new card exactly onto the first placed one (the 吞组件 overlap).
     /// </para>
     /// </summary>
     /// <param name="layout">Stored widgets of the target screen, positions RELATIVE to the
-    /// screen's working area, sizes in DIPs (legacy physical accepted via <see cref="ResolveSpan"/>).</param>
-    /// <param name="cell">Grid cell edge in physical pixels (<see cref="Resolve"/>).</param>
-    /// <param name="scaling">Scaling of the target screen.</param>
-    /// <param name="gridRelX">Grid origin X relative to the working area (physical pixels).</param>
-    /// <param name="gridRelY">Grid origin Y relative to the working area (physical pixels).</param>
-    /// <param name="columns">Grid column count.</param>
-    /// <param name="rows">Grid row count.</param>
+    /// screen's working area, sizes in DIPs.</param>
+    /// <param name="frame">Grid lattice + working area of the target screen.</param>
     /// <param name="spanCols">Span to place, in cells.</param>
     /// <param name="spanRows">Span to place, in cells.</param>
     public static (int Column, int Row) FindFirstFitCell(
-        IReadOnlyList<WidgetLayout> layout, int cell, double scaling,
-        int gridRelX, int gridRelY, int columns, int rows, int spanCols, int spanRows)
+        IReadOnlyList<WidgetLayout> layout, PlacementFrame frame, int spanCols, int spanRows)
     {
+        var columns = frame.PlaceableColumns;
+        var rows = frame.PlaceableRows;
         var occupied = new bool[rows, columns];
+
         foreach (var widget in layout)
         {
-            var spanC = Math.Max(1, ResolveSpan(widget.Width, cell, scaling));
-            var spanR = Math.Max(1, ResolveSpan(widget.Height, cell, scaling));
+            var width = frame.ToPhysicalWidth(widget.Width);
+            var height = frame.ToPhysicalHeight(widget.Height);
 
-            // Cells covered by the widget's pixel rect, relative to the grid origin:
-            // floor on the leading edge, ceil on the trailing edge — a grid-aligned
-            // widget marks exactly its span, an off-grid one marks the boundary cells
-            // its footprint reaches into (conservative, never under-covers).
-            var left = widget.X - gridRelX;
-            var top = widget.Y - gridRelY;
-            var col0 = (int) Math.Floor(left / (double) cell);
-            var row0 = (int) Math.Floor(top / (double) cell);
-            var col1 = (int) Math.Ceiling((left + spanC * (double) cell) / cell) - 1;
-            var row1 = (int) Math.Ceiling((top + spanR * (double) cell) / cell) - 1;
+            // The rectangle the window really shows: restored position clamped onto the
+            // working area, relative to the grid origin.
+            var left = Math.Clamp(widget.X, 0, Math.Max(0, frame.AreaWidth - width)) - frame.GridX;
+            var top = Math.Clamp(widget.Y, 0, Math.Max(0, frame.AreaHeight - height)) - frame.GridY;
+            var col0 = (int) Math.Floor(left / (double) frame.Cell);
+            var row0 = (int) Math.Floor(top / (double) frame.Cell);
+            var col1 = (int) Math.Ceiling((left + width) / (double) frame.Cell) - 1;
+            var row1 = (int) Math.Ceiling((top + height) / (double) frame.Cell) - 1;
 
             for (var r = Math.Max(row0, 0); r <= Math.Min(row1, rows - 1); r++)
                 for (var c = Math.Max(col0, 0); c <= Math.Min(col1, columns - 1); c++)

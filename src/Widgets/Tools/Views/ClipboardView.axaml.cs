@@ -382,7 +382,7 @@ public partial class ClipboardView : UserControl, IWidgetSelfRefreshing, IWidget
     {
         get
         {
-            var r = (VisualRoot as DeskCanvas.Views.Widget)?.Radius.TopLeft ?? 0;
+            var r = (TopLevel.GetTopLevel(this) as DeskCanvas.Views.Widget)?.Radius.TopLeft ?? 0;
             return r > 0 ? r : null;
         }
     }
@@ -390,7 +390,7 @@ public partial class ClipboardView : UserControl, IWidgetSelfRefreshing, IWidget
     public void OnOpenPopupClicked(object? sender, RoutedEventArgs e)
     {
         var (screenCenter, _) = GetScreenCenterAndTopLevel();
-        var owner = VisualRoot as Window;
+        var owner = TopLevel.GetTopLevel(this) as Window;
         ClipboardPopupWindow.ShowPopup(screenCenter, owner, SpawnCornerRadius);
     }
 
@@ -404,11 +404,11 @@ public partial class ClipboardView : UserControl, IWidgetSelfRefreshing, IWidget
 
     private (Point? ScreenCenter, TopLevel? TopLevel) GetScreenCenterAndTopLevel()
     {
-        if (VisualRoot is Visual rootVisual && VisualRoot is TopLevel topLevel)
+        if (TopLevel.GetTopLevel(this) is { } topLevel)
         {
             var bounds = Bounds;
             var centerLocal = new Point(bounds.Width / 2, bounds.Height / 2);
-            var rootPoint = this.TranslatePoint(centerLocal, rootVisual);
+            var rootPoint = this.TranslatePoint(centerLocal, topLevel);
             if (rootPoint.HasValue)
             {
                 var screenPoint = topLevel.PointToScreen(rootPoint.Value);

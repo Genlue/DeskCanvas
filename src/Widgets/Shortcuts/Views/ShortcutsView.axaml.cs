@@ -157,7 +157,7 @@ public partial class ShortcutsView : UserControl, IWidgetSelfRefreshing
     private void OnCardPointerPressed(object? sender, PointerPressedEventArgs e)
     {
         if (!e.GetCurrentPoint(this).Properties.IsLeftButtonPressed) return;
-        ShortcutsPopupWindow.ShowPopup(ScreenCenter(), VisualRoot as Window, SpawnCornerRadius);
+        ShortcutsPopupWindow.ShowPopup(ScreenCenter(), TopLevel.GetTopLevel(this) as Window, SpawnCornerRadius);
         e.Handled = true;
     }
 
@@ -186,7 +186,7 @@ public partial class ShortcutsView : UserControl, IWidgetSelfRefreshing
 
             if (model.ConfirmBeforeRun || shortcut.ConfirmBeforeRun)
             {
-                var owner = VisualRoot as Window;
+                var owner = TopLevel.GetTopLevel(this) as Window;
                 if (owner != null)
                 {
                     var ok = await ConfirmDialog.ConfirmAsync(
@@ -230,7 +230,7 @@ public partial class ShortcutsView : UserControl, IWidgetSelfRefreshing
     private void OnTileMenuEdit(object? sender, RoutedEventArgs e)
     {
         if ((sender as MenuItem)?.DataContext is not ShortcutTileViewModel tile || tile.IsCreate) return;
-        ShortcutsEditorWindow.ShowEditor(tile.ShortcutId, VisualRoot as Window);
+        ShortcutsEditorWindow.ShowEditor(tile.ShortcutId, TopLevel.GetTopLevel(this) as Window);
     }
 
     private void OnTileMenuDuplicate(object? sender, RoutedEventArgs e)
@@ -245,7 +245,7 @@ public partial class ShortcutsView : UserControl, IWidgetSelfRefreshing
 
         try
         {
-            var owner = VisualRoot as Window;
+            var owner = TopLevel.GetTopLevel(this) as Window;
             if (owner != null)
             {
                 var ok = await ConfirmDialog.ConfirmAsync(
@@ -278,7 +278,7 @@ public partial class ShortcutsView : UserControl, IWidgetSelfRefreshing
                 {
                     var shortcut = create();
                     ShortcutsStore.Upsert(shortcut, this);
-                    ShortcutsEditorWindow.ShowEditor(shortcut.Id, VisualRoot as Window);
+                    ShortcutsEditorWindow.ShowEditor(shortcut.Id, TopLevel.GetTopLevel(this) as Window);
                 }
                 catch
                 {
@@ -295,7 +295,7 @@ public partial class ShortcutsView : UserControl, IWidgetSelfRefreshing
 
     private Point? ScreenCenter()
     {
-        if (VisualRoot is not TopLevel topLevel) return null;
+        if (TopLevel.GetTopLevel(this) is not TopLevel topLevel) return null;
         var centerLocal = new Point(Bounds.Width / 2, Bounds.Height / 2);
         var rootPoint = this.TranslatePoint(centerLocal, topLevel);
         if (rootPoint == null) return null;
@@ -308,7 +308,7 @@ public partial class ShortcutsView : UserControl, IWidgetSelfRefreshing
     {
         get
         {
-            var radius = (VisualRoot as Widget)?.Radius.TopLeft ?? 0;
+            var radius = (TopLevel.GetTopLevel(this) as Widget)?.Radius.TopLeft ?? 0;
             return radius > 0 ? radius : null;
         }
     }

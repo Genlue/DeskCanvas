@@ -64,7 +64,7 @@ public class ClickThroughTextBox : TextBox
 
     private void OnKeyDown(object? sender, KeyEventArgs e)
     {
-        if (VisualRoot is Widget widget &&
+        if (TopLevel.GetTopLevel(this) is Widget widget &&
             ((e.Key == Key.Enter && !AcceptsReturn) || 
              (e.Key == Key.Tab && !AcceptsTab) ||
              (e.Key == Key.Escape)))
@@ -154,7 +154,7 @@ public class ClickThroughTextBox : TextBox
             // Inline editing is disabled (widget setting): behave as pure card
             // surface — forward the press so the widget can be dragged, never
             // activate the caret, the flyout or the word selection.
-            if (!IsFocused && VisualRoot is Widget card)
+            if (!IsFocused && TopLevel.GetTopLevel(this) is Widget card)
             {
                 card.OnPointerPressed(sender, e);
                 e.Handled = true;
@@ -162,7 +162,7 @@ public class ClickThroughTextBox : TextBox
             return;
         }
 
-        if (!IsFocused && e.ClickCount == 1 && VisualRoot is Widget widget)
+        if (!IsFocused && e.ClickCount == 1 && TopLevel.GetTopLevel(this) is Widget widget)
         {
             // First single click: pass through so the widget can be dragged;
             // text boxes act like part of the desktop surface until activated.

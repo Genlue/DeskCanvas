@@ -71,7 +71,7 @@ public partial class PictureView : UserControl, IWidgetSelfRefreshing, IWidgetSu
         // Ctrl + Left drag moves the widget window
         if (point.Properties.IsLeftButtonPressed && IsControlPressed(e))
         {
-            if (VisualRoot is Window window)
+            if (TopLevel.GetTopLevel(this) is Window window)
             {
                 window.BeginMoveDrag(e);
                 e.Handled = true;

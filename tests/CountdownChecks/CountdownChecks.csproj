@@ -9,6 +9,10 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Widgets\Countdown\Countdown.csproj" />
+    <!-- The view model drives UpdateTimer (TimerService), which also listens to
+         Microsoft.Win32.SystemEvents for the session-unlock refresh: the host project has to be
+         referenced directly, because the widget's own reference to it is runtime-excluded. -->
+    <ProjectReference Include="..\..\src\DeskCanvas\DeskCanvas.csproj" />
   </ItemGroup>
 
   <ItemGroup>

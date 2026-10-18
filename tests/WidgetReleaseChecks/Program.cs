@@ -188,7 +188,9 @@ internal static class Program
         using var selfProcess = Process.GetCurrentProcess();
         for (var round = 1; round <= rounds; round++)
         {
-            var target = round % 2 == 1 ? "Alt" : AppSettings.DefaultProfileName;
+            // Const.DefaultProfileName is the on-disk folder ("Default"); AppSettings.DefaultProfileName
+            // is the localized display name ("默认配置") and has no folder of its own.
+            var target = round % 2 == 1 ? "Alt" : DeskCanvas.Core.Const.DefaultProfileName;
             var ok = profileService.SwitchProfile(target);
             await SettleAsync(realMode ? 700 : 80);
 
@@ -223,7 +225,7 @@ internal static class Program
         Console.WriteLine("--- shared material caches through one more switch ---");
         PopulateGlassCaches();
         var glassBefore = int.Parse(GetStaticProperty("DeskCanvas.Services.LiquidGlassSourceCache", "CachedEntryCount"));
-        var okSwitch = profileService.SwitchProfile(profileService.GetActiveProfile() == "Alt" ? AppSettings.DefaultProfileName : "Alt");
+        var okSwitch = profileService.SwitchProfile(profileService.GetActiveProfile() == "Alt" ? DeskCanvas.Core.Const.DefaultProfileName : "Alt");
         await SettleAsync(realMode ? 300 : 60);
         var glassAfter = int.Parse(GetStaticProperty("DeskCanvas.Services.LiquidGlassSourceCache", "CachedEntryCount"));
         Console.WriteLine($"CachedEntryCount: before={glassBefore} after={glassAfter}");
@@ -280,8 +282,10 @@ internal static class Program
 
         var canary = new object();
         var canaryRef = new WeakReference(canary);
-        GC.KeepAlive(canary);
         ForceGc();
+        // KeepAlive must come AFTER the collection: it pins the local only up to that call, so
+        // "KeepAlive then collect" lets the JIT treat the reference as dead and the canary dies.
+        GC.KeepAlive(canary);
         Check(canaryRef.IsAlive, "measurement canary: a live reference is reported alive after GC");
     }
 
@@ -349,7 +353,7 @@ internal static class Program
         SaveLayout(layout, monitor, screen, widgetLayouts);
 
         var assemblyProvider = new AssemblyProviderStub();
-        var widgetFactory = new WidgetFactory(assemblyProvider, layout, monitor, () => null!);
+        var widgetFactory = new WidgetFactory(assemblyProvider, layout, monitor, () => null!, settings);
         var themeService = new ThemeService(settings, new WallpaperThemeService());
         var localeService = new LocaleService(settings);
         var profileService = new ProfileService(settings, layout, themeService, localeService, widgetFactory, monitor);
@@ -510,8 +514,10 @@ internal static class Program
 
         var canary = new object();
         var canaryRef = new WeakReference(canary);
-        GC.KeepAlive(canary);
         ForceGc();
+        // KeepAlive must come AFTER the collection: it pins the local only up to that call, so
+        // "KeepAlive then collect" lets the JIT treat the reference as dead and the canary dies.
+        GC.KeepAlive(canary);
         Check(canaryRef.IsAlive, "measurement canary: a live reference is reported alive after GC");
     }
 
@@ -689,9 +695,18 @@ internal static class Program
 
         public void UnloadAssembly(string assemblyName) { }
 
+        /// <summary>
+        /// Production activation, not DI-only: a widget whose model cannot be default-constructed
+        /// (no parameterless ctor — Digital, Folder, Battery, …) is activated through its own
+        /// shorter constructor by <see cref="AssemblyProvider"/>. Calling
+        /// <c>ActivatorUtilities</c> directly made profile switches fail where the real host
+        /// succeeds, so the probe delegates to the same implementation the app uses.
+        /// </summary>
+        private static readonly Lazy<AssemblyProvider> Real = new(() => new AssemblyProvider(Services!));
+
         public object Activate(Type type, params object[] args)
         {
-            var instance = ActivatorUtilities.CreateInstance(Services!, type, args);
+            var instance = Real.Value.Activate(type, args);
             // Real mode: keep every probe window invisible and non-activating — nothing may
             // appear on the user's desktop (or steal focus) while the probe runs.
             if (realMode && instance is Window window)

@@ -86,7 +86,7 @@ public partial class FolderSettings : UserControl
 
     private void OnLoaded(object? sender, RoutedEventArgs e)
     {
-        if (VisualRoot is TopLevel topLevel)
+        if (TopLevel.GetTopLevel(this) is TopLevel topLevel)
             DragDrop.SetAllowDrop(topLevel, true);
     }
 

@@ -77,6 +77,16 @@ public class ProfileService
                 Directory.CreateDirectory(activeFolder);
             }
 
+            // Complete the folders BEFORE anything reads them. A data folder that has the
+            // directory but no appSettings.json (deleted by hand, half-migrated upgrade, a check
+            // harness on a fresh temp folder) used to make SaveCurrentProfile's first
+            // appSettingsProvider.Get() throw FileNotFoundException; the blanket catch below then
+            // swallowed it, so every later read — the settings page, any widget — crashed instead
+            // of the app healing itself.
+            SeedMissingProfileFiles(Const.DefaultProfileName, defaultFolder);
+            if (!string.Equals(activeName, Const.DefaultProfileName, StringComparison.OrdinalIgnoreCase))
+                SeedMissingProfileFiles(activeName, activeFolder);
+
             SaveCurrentProfile(activeName);
         }
         catch (Exception ex)
@@ -332,8 +342,21 @@ public class ProfileService
     /// </summary>
     private AppSettings CreateEmptyProfileSettings(string name)
     {
-        var current = appSettingsProvider.Get();
         var defaults = ReadShippedDefaultSettings();
+
+        // The current settings may not be readable yet — a brand-new data folder, a file deleted
+        // by hand, a half-migrated upgrade, or a check harness on a fresh temp folder. Seeding
+        // must not depend on them: the shipped template alone can produce a valid profile, and
+        // the app-level carries below are simply skipped in that case.
+        AppSettings? current = null;
+        try
+        {
+            current = appSettingsProvider.Get();
+        }
+        catch (Exception ex) when (ex is FileNotFoundException or DirectoryNotFoundException)
+        {
+            Debug.WriteLine("[ProfileService] No current settings to carry over — seeding from the shipped template.");
+        }
 
         if (defaults == null)
         {
@@ -342,6 +365,12 @@ public class ProfileService
             // appearance — the lesser evil compared to a profile with no settings file at all.
             defaults = current;
         }
+
+        if (defaults == null)
+            throw new InvalidOperationException("Neither the shipped app settings template nor the current settings are available.");
+
+        if (current == null)
+            return defaults with { ActiveProfile = name };
 
         return defaults with
         {
@@ -366,16 +395,7 @@ public class ProfileService
     /// </summary>
     private static AppSettings? ReadShippedDefaultSettings()
     {
-        try
-        {
-            var json = WidgetBundle.ReadDefaultAppSettingsJson();
-            return string.IsNullOrWhiteSpace(json) ? null : JsonSerializer.Deserialize<AppSettings>(json);
-        }
-        catch (Exception ex)
-        {
-            Debug.WriteLine($"[ProfileService] Shipped default settings unreadable: {ex.Message}");
-            return null;
-        }
+        return WidgetBundle.ReadDefaultAppSettings();
     }
 
     /// <summary>

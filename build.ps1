@@ -7,6 +7,12 @@
     Produces a single-file DeskCanvas.exe with all widgets embedded (widgets are
     extracted to %LocalAppData%\DeskCanvas on first run, so they stay hot-updatable).
 
+    The exe is SELF-CONTAINED: the .NET 10 runtime travels inside it, so a target
+    machine needs nothing installed. That is what the Setup installer ships — the
+    framework-dependent build only ever existed for the old zip/portable releases.
+    Expect ~150 MB for the raw exe (ReadyToRun + embedded runtime) and roughly half
+    that for the compressed Setup.
+
     Portable mode (-Portable) additionally copies the Widgets folder and JSON
     settings next to the exe (classic official layout) and zips the whole thing.
 
@@ -109,7 +115,7 @@ try {
     dotnet publish $project `
         -c $Configuration `
         -r $Runtime `
-        --self-contained false `
+        --self-contained true `
         -o $dist `
         --nologo
 

@@ -913,10 +913,10 @@ public partial class Timetable : UserControl, IWidgetSelfRefreshing, IWidgetSurf
         if (!model.HasData) return;
 
         Point? screenCenter = null;
-        if (VisualRoot is Visual rootVisual && VisualRoot is TopLevel topLevel)
+        if (TopLevel.GetTopLevel(this) is { } topLevel)
         {
             var centerLocal = new Point(Bounds.Width / 2, Bounds.Height / 2);
-            var rootPoint = this.TranslatePoint(centerLocal, rootVisual);
+            var rootPoint = this.TranslatePoint(centerLocal, topLevel);
             if (rootPoint.HasValue)
             {
                 var screenPoint = topLevel.PointToScreen(rootPoint.Value);
@@ -924,8 +924,8 @@ public partial class Timetable : UserControl, IWidgetSelfRefreshing, IWidgetSurf
             }
         }
 
-        var owner = VisualRoot as Window;
-        var radius = (VisualRoot as DeskCanvas.Views.Widget)?.Radius.TopLeft ?? 0;
+        var owner = TopLevel.GetTopLevel(this) as Window;
+        var radius = (TopLevel.GetTopLevel(this) as DeskCanvas.Views.Widget)?.Radius.TopLeft ?? 0;
         TimetablePanelWindow.ShowPanel(model, screenCenter, owner, radius > 0 ? radius : null);
     }
 

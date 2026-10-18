@@ -158,7 +158,7 @@ internal static class Program
         var updateService = new UpdateService(settingsStore);
 
         Settings? window = null;
-        var widgetFactory = new WidgetFactory(assemblies, layoutStore, monitor, () => window!);
+        var widgetFactory = new WidgetFactory(assemblies, layoutStore, monitor, () => window!, settingsStore);
         window = new Settings(settingsStore, assemblies, layoutStore, monitor, widgetFactory, profileService, updateService);
         var viewModel = (SettingsViewModel)window.DataContext!;
         var listBox = window.FindControl<ListBox>("ListBox")!;

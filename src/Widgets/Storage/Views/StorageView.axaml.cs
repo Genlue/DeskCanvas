@@ -112,7 +112,7 @@ public partial class StorageView : UserControl, IWidgetSelfRefreshing, IWidgetSu
                 return;
 
             var now = Environment.TickCount64;
-            var currentWinPos = (VisualRoot as Window)?.Position;
+            var currentWinPos = (TopLevel.GetTopLevel(this) as Window)?.Position;
             bool windowDidNotMove = lastClickWinPos == null || currentWinPos == null ||
                 (Math.Abs(currentWinPos.Value.X - lastClickWinPos.Value.X) < 6 &&
                  Math.Abs(currentWinPos.Value.Y - lastClickWinPos.Value.Y) < 6);

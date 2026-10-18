@@ -1228,4 +1228,6 @@ Migrate (copy) the current data there? Choosing "Switch without migrating" start
   <data name="Settings_Appearance_SaveRetry" xml:space="preserve"><value>Retry save</value></data>
   <data name="Settings_Appearance_SaveConflict" xml:space="preserve"><value>Settings changed elsewhere. Your draft is retained; reload before editing again.</value></data>
   <data name="Settings_Appearance_SaveReload" xml:space="preserve"><value>Reload and discard draft</value></data>
+  <data name="Gallery_NoRoom" xml:space="preserve"><value>There is no free grid cell on this screen for this card. Move or remove an existing widget, enlarge the grid, or pick a smaller size.</value></data>
+  <data name="Gallery_NoRoom_Ok" xml:space="preserve"><value>OK</value></data>
 </root>

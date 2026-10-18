@@ -67,8 +67,11 @@ class Program
         TestFirstFitSequentialPlacement();
         TestFirstFitHeterogeneousSizes();
         TestFirstFitWrapsToNextRow();
-        TestFirstFitFullGridFallback();
+        TestFirstFitFullGridRefused();
         TestFirstFitOffGridStoredWidget();
+        TestFirstFitStaysInsideWorkingArea();
+        TestStoredWidgetOutsideAreaBlocksShownCells();
+        TestSpanLargerThanGridIsRefused();
         TestFirstFitNoOverlapAcrossManyPlacements();
 
         Console.WriteLine();
@@ -343,42 +346,50 @@ class Program
     // ---------- Gallery placement: row-major first-fit (吞组件 regression) ----------
 
     /// <summary>
-    /// Mirror of <c>Gallery.ComputePlacement</c>'s caller math: resolve the grid,
-    /// ask <see cref="GridMetrics.FindFirstFitCell"/> for the first free block and
-    /// convert it into a working-area-relative rectangle (physical X/Y, DIP size).
-    /// The check then treats each result as a stored widget exactly like the real
-    /// flow does (the next placement scans the layout with the previous entry in it).
+    /// Mirror of <c>Gallery.ComputePlacement</c>: resolve the grid, build the placement frame
+    /// (grid lattice + working area), ask <see cref="GridMetrics.FindFirstFitCell"/> for the
+    /// first free block and convert it into a working-area-relative rectangle (physical X/Y,
+    /// DIP size). <c>null</c> means the gallery refuses the placement — the old grid-origin
+    /// fallback no longer exists. The check then treats each result as a stored widget exactly
+    /// like the real flow does (the next placement scans the layout with the entry in it).
     /// </summary>
-    private static WidgetLayout PlaceLikeGallery(ScreenLayout screen, PixelRect area, double scaling,
+    private static WidgetLayout? PlaceLikeGallery(ScreenLayout screen, PixelRect area, double scaling,
         GridSettings? gridOverride, int cols, int rows)
     {
         var grid = gridOverride ?? screen.Grid ?? GridSettings.Default;
         var (cell, gridX, gridY) = GridMetrics.Resolve(grid, area.X, area.Y, area.Width, area.Height);
-        var width = (int) Math.Round(cols * cell / scaling);
-        var height = (int) Math.Round(rows * cell / scaling);
-        var columns = Math.Max(1, grid.Columns);
-        var gridRows = Math.Max(1, grid.Rows);
-        var spanCols = Math.Clamp(cols, 1, columns);
-        var spanRows = Math.Clamp(rows, 1, gridRows);
-        var gridRelX = gridX - area.X;
-        var gridRelY = gridY - area.Y;
-        var (col, row) = GridMetrics.FindFirstFitCell(screen.Layout, cell, scaling,
-            gridRelX, gridRelY, columns, gridRows, spanCols, spanRows);
+        var frame = new GridMetrics.PlacementFrame(cell, scaling, gridX - area.X, gridY - area.Y,
+            grid.Columns, grid.Rows, area.Width, area.Height);
+        var (col, row) = GridMetrics.FindFirstFitCell(screen.Layout, frame, cols, rows);
 
-        // The gallery's documented full-grid fallback: the grid origin, occupancy ignored.
-        if (col < 0) { col = 0; row = 0; }
-        var x = gridRelX + col * cell;
-        var y = gridRelY + row * cell;
-        var layout = new WidgetLayout("Test", "Widget", x, y, width, height, null);
+        // Nothing fits: grid full, card larger than the grid, or no room left in the area.
+        if (col < 0) return null;
+
+        var layout = new WidgetLayout("Test", "Widget", frame.GridX + col * cell, frame.GridY + row * cell,
+            (int) Math.Round(cols * cell / scaling), (int) Math.Round(rows * cell / scaling), null);
         screen.Layout.Add(layout);
         return layout;
     }
 
-    private static bool Overlaps(WidgetLayout a, WidgetLayout b, double scaling)
+    /// <summary>
+    /// The rectangle a stored widget is actually SHOWN at: its stored position clamped onto
+    /// the working area (mirrors <c>Widget.ClampRestoredPosition</c>, which does not save the
+    /// adjustment). Two entries can share one visible rectangle even though their stored
+    /// coordinates differ — that is the "two widgets at 848" overlap.
+    /// </summary>
+    private static (int X, int Y, int W, int H) ShownRect(WidgetLayout widget, PixelRect area, double scaling)
     {
-        // Stored X/Y are physical (working-area-relative), sizes DIPs → same tier.
-        var ax = a.X; var ay = a.Y; var aw = (int) Math.Round(a.Width * scaling); var ah = (int) Math.Round(a.Height * scaling);
-        var bx = b.X; var by = b.Y; var bw = (int) Math.Round(b.Width * scaling); var bh = (int) Math.Round(b.Height * scaling);
+        var width = (int) Math.Round(widget.Width * scaling);
+        var height = (int) Math.Round(widget.Height * scaling);
+        return (Math.Clamp(widget.X, area.X, area.X + Math.Max(0, area.Width - width)),
+                Math.Clamp(widget.Y, area.Y, area.Y + Math.Max(0, area.Height - height)),
+                width, height);
+    }
+
+    private static bool Overlaps(WidgetLayout a, WidgetLayout b, PixelRect area, double scaling)
+    {
+        var (ax, ay, aw, ah) = ShownRect(a, area, scaling);
+        var (bx, by, bw, bh) = ShownRect(b, area, scaling);
         return ax < bx + bw && bx < ax + aw && ay < by + bh && by < ay + ah;
     }
 
@@ -402,7 +413,8 @@ class Program
         for (var i = 0; i < 9; i++)
         {
             var widget = PlaceLikeGallery(screen, area, scaling, null, 2, 2);
-            placed.Add(widget);
+            Assert(widget != null, $"placement #{i + 1} found a free slot");
+            placed.Add(widget!);
         }
 
         // 20 columns / 2 per card → row 0 holds ten cards at cols 0,2,4…18.
@@ -417,7 +429,7 @@ class Program
 
         for (var i = 0; i < placed.Count; i++)
             for (var j = i + 1; j < placed.Count; j++)
-                Assert(!Overlaps(placed[i], placed[j], scaling),
+                Assert(!Overlaps(placed[i], placed[j], area, scaling),
                     $"placement #{i + 1} and #{j + 1} do not overlap");
     }
 
@@ -427,15 +439,16 @@ class Program
     {
         Console.WriteLine("--- 9. Row-major first-fit: heterogeneous widget sizes ---");
         var (screen, area, scaling) = TestTopology();
-        var wide = PlaceLikeGallery(screen, area, scaling, null, 4, 1);
-        var card = PlaceLikeGallery(screen, area, scaling, null, 2, 2);
-        var mini = PlaceLikeGallery(screen, area, scaling, null, 1, 1);
+        var wide = PlaceLikeGallery(screen, area, scaling, null, 4, 1)!;
+        var card = PlaceLikeGallery(screen, area, scaling, null, 2, 2)!;
+        var mini = PlaceLikeGallery(screen, area, scaling, null, 1, 1)!;
 
         Assert(wide.X == 0 && wide.Y == 0, "4×1 takes the first row's start (cells 0-3)");
         Assert(card.X == 4 * 96 && card.Y == 0, "2×2 takes the next free cells (4-5), not a covered slot");
         Assert(mini.X == 6 * 96 && mini.Y == 0, "1×1 takes cell 6 right after the 2×2 card");
 
-        Assert(!Overlaps(wide, card, scaling) && !Overlaps(wide, mini, scaling) && !Overlaps(card, mini, scaling),
+        Assert(!Overlaps(wide, card, area, scaling) && !Overlaps(wide, mini, area, scaling)
+               && !Overlaps(card, mini, area, scaling),
             "heterogeneous placements do not overlap");
     }
 
@@ -445,24 +458,30 @@ class Program
         Console.WriteLine("--- 10. Row-major first-fit: wraps to the next row ---");
         var (screen, area, scaling) = TestTopology();
         WidgetLayout last = null!;
-        for (var i = 0; i < 10; i++) last = PlaceLikeGallery(screen, area, scaling, null, 2, 2);
+        for (var i = 0; i < 10; i++) last = PlaceLikeGallery(screen, area, scaling, null, 2, 2)!;
         Assert(last.X == 18 * 96 && last.Y == 0, "the tenth 2×2 card completes row 0 (cells 18-19)");
-        var wrapped = PlaceLikeGallery(screen, area, scaling, null, 2, 2);
+        var wrapped = PlaceLikeGallery(screen, area, scaling, null, 2, 2)!;
         Assert(wrapped.X == 0 && wrapped.Y == 2 * 96, "the eleventh card wraps to row 1, column 0");
     }
 
-    /// <summary>A genuinely full grid reports "no fit" — the caller's fallback (grid
-    /// origin) is the documented last resort, but a non-full grid must never hit it.</summary>
-    private static void TestFirstFitFullGridFallback()
+    /// <summary>A genuinely full grid reports "no fit" and the gallery REFUSES the card.
+    /// The old fallback (grid origin, occupancy ignored) stacked it onto the first one —
+    /// the 吞组件 overlap the report describes.</summary>
+    private static void TestFirstFitFullGridRefused()
     {
-        Console.WriteLine("--- 11. Row-major first-fit: full-grid fallback ---");
-        var (screen, area, scaling) = TestTopology(new GridSettings(2, 2, 0, 0, 50));
+        Console.WriteLine("--- 11. Row-major first-fit: a full grid refuses the card ---");
+        // 2×2 grid of 480 px cells: 960×960 fits the 1920×1040 working area.
+        var (screen, area, scaling) = TestTopology(new GridSettings(2, 2, 0, 0, 25));
         var first = PlaceLikeGallery(screen, area, scaling, null, 2, 2);
-        Assert(first.X == 0 && first.Y == 0, "the first card takes the whole-grid slot");
-        var (cell, gridX, gridY) = GridMetrics.Resolve(screen.Grid!, area.X, area.Y, area.Width, area.Height);
-        var second = GridMetrics.FindFirstFitCell(screen.Layout, cell, 1.0,
-            gridX - area.X, gridY - area.Y, 2, 2, 2, 2);
-        Assert(second == (-1, -1), "a full 2×2 grid reports (-1,-1) instead of a covered slot");
+        Assert(first is { X: 0, Y: 0 }, "the first card takes the whole-grid slot");
+
+        var second = PlaceLikeGallery(screen, area, scaling, null, 2, 2);
+        Assert(second == null, "the second card is refused instead of covering the first one");
+        Assert(screen.Layout.Count == 1, "a refused card is not written to the layout");
+
+        var frame = new GridMetrics.PlacementFrame(480, 1.0, 0, 0, 2, 2, area.Width, area.Height);
+        Assert(GridMetrics.FindFirstFitCell(screen.Layout, frame, 2, 2) == (-1, -1),
+            "a full 2×2 grid reports (-1,-1) instead of a covered slot");
     }
 
     /// <summary>A stored widget parked OFF the current grid's cell boundaries (legacy
@@ -476,13 +495,91 @@ class Program
         // Half a cell off the origin: the 192px footprint [48,240) physically covers
         // parts of cells 0, 1 AND 2 — all three must read as occupied.
         screen.Layout.Add(new WidgetLayout("Test", "Legacy", 48, 0, 2 * 96, 96, null));
-        var (cell, gridX, gridY) = GridMetrics.Resolve(GridSettings.Default, area.X, area.Y, area.Width, area.Height);
-        var (col, row) = GridMetrics.FindFirstFitCell(screen.Layout, cell, 1.0,
-            gridX - area.X, gridY - area.Y, 20, 10, 2, 2);
+        var frame = new GridMetrics.PlacementFrame(96, 1.0, 0, 0, 20, 10, area.Width, area.Height);
+        var (col, row) = GridMetrics.FindFirstFitCell(screen.Layout, frame, 2, 2);
         Assert(!(col == 0 && row == 0), "a 2×2 candidate is rejected at the origin next to the off-grid widget");
         Assert(!(col == 1 && row == 0), "a 2×2 candidate is rejected straddling the off-grid widget");
         Assert(!(col == 2 && row == 0), "a 2×2 candidate cannot overlap the widget's trailing sliver in cell 2");
         Assert(col == 3 && row == 0, $"the first fully free 2×2 block starts at cell (3,0) (got {col},{row})");
+    }
+
+    /// <summary>
+    /// Report bug 2: the grid can hang off the working area (Y 50% + ten 96 px rows on a
+    /// 1040 px screen reaches 1480 px). A cell below the area is not a slot — the window is
+    /// clamped back onto the screen at display time, so two cards stored at different rows
+    /// both showed up at y = 848. The scan must stay inside the area and the card must never
+    /// be placed where the clamp will move it.
+    /// </summary>
+    private static void TestFirstFitStaysInsideWorkingArea()
+    {
+        Console.WriteLine("--- 13. Row-major first-fit: grid hanging off the working area ---");
+        var (screen, area, scaling) = TestTopology(new GridSettings(20, 10, 0, 50, 5));
+
+        // Grid origin is 50% of 1040 = 520 px; only rows 0-4 still end inside the area.
+        var placed = new List<WidgetLayout>();
+        for (var i = 0; i < 40; i++)
+        {
+            var widget = PlaceLikeGallery(screen, area, scaling, null, 2, 2);
+            if (widget == null) break;
+            placed.Add(widget);
+        }
+
+        Assert(placed.Count > 0, "cards are still placed while the grid has visible rows");
+        Assert(placed.All(w => w.Y >= 520), "no card is placed above the grid origin");
+        Assert(placed.All(w => w.Y + w.Height <= area.Height),
+            "no card is placed where the working-area clamp would move it (y + height <= 1040)");
+        Assert(placed.All(w => w.X >= 0 && w.X + w.Width <= area.Width), "no card overflows the area horizontally");
+
+        // The clamp is a no-op for every placed card, so placement == presentation.
+        Assert(placed.All(w => ShownRect(w, area, scaling) == (w.X, w.Y, w.Width, w.Height)),
+            "every placed card is shown exactly where it was placed");
+
+        var violations = 0;
+        for (var i = 0; i < placed.Count; i++)
+            for (var j = i + 1; j < placed.Count; j++)
+                if (Overlaps(placed[i], placed[j], area, scaling)) violations++;
+        Assert(violations == 0, $"none of the {placed.Count} placements overlap ({violations} violations)");
+
+        var refused = PlaceLikeGallery(screen, area, scaling, null, 2, 2);
+        Assert(placed.Count is 40 || refused == null,
+            "once the visible rows are full the next card is refused, not stacked on the origin");
+    }
+
+    /// <summary>
+    /// The exact repro from the report: two widgets stored at y = 904 and y = 1096 are both
+    /// clamped to y = 848 when shown. Occupancy has to be judged on the SHOWN rectangle, or
+    /// the next card is placed into cells that are already covered on screen.
+    /// </summary>
+    private static void TestStoredWidgetOutsideAreaBlocksShownCells()
+    {
+        Console.WriteLine("--- 14. Row-major first-fit: stored-outside-area widget blocks its shown cells ---");
+        var (screen, area, scaling) = TestTopology(new GridSettings(20, 10, 0, 50, 5));
+        var below = new WidgetLayout("Test", "Legacy", 0, 1096, 192, 192, null);
+        screen.Layout.Add(below);
+        Assert(ShownRect(below, area, scaling).Y == 848, "a widget stored at y=1096 is shown at y=848");
+
+        var next = PlaceLikeGallery(screen, area, scaling, null, 2, 2);
+        Assert(next != null, "the next card still finds a free slot");
+        Assert(!Overlaps(next!, below, area, scaling),
+            $"the new card does not land on the clamped widget (got y={next!.Y})");
+    }
+
+    /// <summary>
+    /// Report bug 3: a span larger than the grid used to be scanned with a CLAMPED span while
+    /// keeping its full width, so a 4×2 card was "placeable" on a 2×2 grid and overflowed it.
+    /// It is now refused.
+    /// </summary>
+    private static void TestSpanLargerThanGridIsRefused()
+    {
+        Console.WriteLine("--- 15. Row-major first-fit: a card larger than the grid is refused ---");
+        var (screen, area, scaling) = TestTopology(new GridSettings(2, 2, 0, 0, 5));
+        var refused = PlaceLikeGallery(screen, area, scaling, null, 4, 2);
+        Assert(refused == null, "a 4×2 card is refused on a 2-column grid");
+        Assert(screen.Layout.Count == 0, "nothing is written for a refused card");
+
+        var fits = PlaceLikeGallery(screen, area, scaling, null, 2, 2);
+        Assert(fits is { X: 0, Y: 0, Width: 2 * 96, Height: 2 * 96 },
+            "a card that matches the grid is still placed at its natural size");
     }
 
     /// <summary>The full gallery stress: many mixed-span placements over the shipped
@@ -490,17 +587,18 @@ class Program
     /// layout stays inside the grid area.</summary>
     private static void TestFirstFitNoOverlapAcrossManyPlacements()
     {
-        Console.WriteLine("--- 13. Row-major first-fit: mixed-size stress, zero pairwise overlap ---");
+        Console.WriteLine("--- 16. Row-major first-fit: mixed-size stress, zero pairwise overlap ---");
         var (screen, area, scaling) = TestTopology();
         var spans = new[] { (2, 2), (4, 1), (1, 1), (6, 3), (2, 1), (3, 3), (2, 2), (8, 4), (1, 2), (4, 4), (2, 2), (1, 1) };
         var placed = new List<WidgetLayout>();
         foreach (var (cols, rows) in spans)
-            placed.Add(PlaceLikeGallery(screen, area, scaling, null, cols, rows));
+            if (PlaceLikeGallery(screen, area, scaling, null, cols, rows) is { } widget)
+                placed.Add(widget);
 
         var violations = 0;
         for (var i = 0; i < placed.Count; i++)
             for (var j = i + 1; j < placed.Count; j++)
-                if (Overlaps(placed[i], placed[j], scaling)) violations++;
+                if (Overlaps(placed[i], placed[j], area, scaling)) violations++;
 
         Assert(violations == 0, $"none of the {placed.Count} mixed-size placements overlap ({violations} violations)");
     }

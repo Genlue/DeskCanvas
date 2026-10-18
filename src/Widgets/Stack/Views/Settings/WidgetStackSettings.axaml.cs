@@ -73,7 +73,7 @@ public partial class WidgetStackSettings : UserControl
 
         Loaded += (_, _) =>
         {
-            if (VisualRoot is Window win)
+            if (TopLevel.GetTopLevel(this) is Window win)
             {
                 StackDropCoordinator.ActiveTargetWindow = win;
                 StackDropCoordinator.ActiveDropHandler = OnDesktopWidgetDropped;
@@ -82,7 +82,7 @@ public partial class WidgetStackSettings : UserControl
 
         Unloaded += (_, _) =>
         {
-            if (VisualRoot is Window win && StackDropCoordinator.ActiveTargetWindow == win)
+            if (TopLevel.GetTopLevel(this) is Window win && StackDropCoordinator.ActiveTargetWindow == win)
             {
                 StackDropCoordinator.ActiveTargetWindow = null;
                 StackDropCoordinator.ActiveDropHandler = null;

@@ -368,7 +368,7 @@ public partial class Note : UserControl, IWidgetSelfRefreshing, IWidgetSurfaceHi
         if (e.ClickCount == 1)
         {
             // Pass the press through so the widget can still be dragged.
-            (VisualRoot as Widget)?.OnPointerPressed(this, e);
+            (TopLevel.GetTopLevel(this) as Widget)?.OnPointerPressed(this, e);
             e.Handled = true;
         }
     }
@@ -380,7 +380,7 @@ public partial class Note : UserControl, IWidgetSelfRefreshing, IWidgetSurfaceHi
     public void OpenPopup()
     {
         var (screenCenter, _) = GetScreenCenterAndTopLevel();
-        var owner = VisualRoot as Window;
+        var owner = TopLevel.GetTopLevel(this) as Window;
         NotePopupWindow.ShowPopup(Model, screenCenter, owner, OnPanelModelChanged, SpawnCornerRadius);
     }
 
@@ -392,18 +392,18 @@ public partial class Note : UserControl, IWidgetSelfRefreshing, IWidgetSurfaceHi
     {
         get
         {
-            var r = (VisualRoot as Widget)?.Radius.TopLeft ?? 0;
+            var r = (TopLevel.GetTopLevel(this) as Widget)?.Radius.TopLeft ?? 0;
             return r > 0 ? r : null;
         }
     }
 
     private (Point? ScreenCenter, TopLevel? TopLevel) GetScreenCenterAndTopLevel()
     {
-        if (VisualRoot is Visual rootVisual && VisualRoot is TopLevel topLevel)
+        if (TopLevel.GetTopLevel(this) is { } topLevel)
         {
             var bounds = Bounds;
             var centerLocal = new Point(bounds.Width / 2, bounds.Height / 2);
-            var rootPoint = this.TranslatePoint(centerLocal, rootVisual);
+            var rootPoint = this.TranslatePoint(centerLocal, topLevel);
             if (rootPoint.HasValue)
             {
                 var screenPoint = topLevel.PointToScreen(rootPoint.Value);

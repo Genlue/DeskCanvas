@@ -33,7 +33,9 @@ public class App : Application
         }
 
         var services = new ServiceCollection()
-            .AddSingleton<IAppSettingsProvider, AppSettingsProvider>()
+            .AddSingleton<IAppSettingsProvider>(_ => new AppSettingsProvider(
+                () => WidgetBundle.ReadDefaultAppSettings()
+                      ?? throw new InvalidOperationException("The shipped app settings template is missing.")))
             .AddSingleton<ILayoutProvider, LayoutProvider>()
             .AddSingleton<IAssemblyProvider, AssemblyProvider>()
             .AddSingleton<WallpaperThemeService>()

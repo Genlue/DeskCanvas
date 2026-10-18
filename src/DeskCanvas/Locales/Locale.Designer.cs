@@ -33,6 +33,8 @@ namespace DeskCanvas.Locales {
         public static string Settings_Appearance_SaveRetry => ResourceManager.GetString("Settings_Appearance_SaveRetry", resourceCulture);
         public static string Settings_Appearance_SaveConflict => ResourceManager.GetString("Settings_Appearance_SaveConflict", resourceCulture);
         public static string Settings_Appearance_SaveReload => ResourceManager.GetString("Settings_Appearance_SaveReload", resourceCulture);
+        public static string Gallery_NoRoom => ResourceManager.GetString("Gallery_NoRoom", resourceCulture);
+        public static string Gallery_NoRoom_Ok => ResourceManager.GetString("Gallery_NoRoom_Ok", resourceCulture);
         public static string Settings_Appearance_V2_DispersionHint => ResourceManager.GetString("Settings_Appearance_V2_DispersionHint", resourceCulture);
         public static string Settings_Appearance_V2_Highlight => ResourceManager.GetString("Settings_Appearance_V2_Highlight", resourceCulture);
         public static string Settings_Appearance_V2_HighlightHint => ResourceManager.GetString("Settings_Appearance_V2_HighlightHint", resourceCulture);

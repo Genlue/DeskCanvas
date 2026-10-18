@@ -5,8 +5,23 @@ using DeskCanvas.Core.Models.Settings;
 namespace DeskCanvas.Core.Services;
 
 /// <inheritdoc cref="IAppSettingsProvider"/>
-public class AppSettingsProvider() : JsonParser<AppSettings>(() => Const.AppSettingsFile), IAppSettingsProvider
+/// <param name="defaults">
+/// Optional factory for the settings a data folder starts with (the shipped
+/// <c>appSettings.json</c> template, supplied by the host through DI). When it is present, a
+/// missing settings file is treated as "first run" and materialised instead of throwing: the
+/// file is genuinely optional — a fresh folder, a hand-deleted file, a half-migrated upgrade and
+/// a check harness on a temp folder all look the same — while every consumer reads it via
+/// <see cref="Get"/> without a guard of its own.
+/// </param>
+public class AppSettingsProvider(Func<AppSettings>? defaults = null) : JsonParser<AppSettings>(() => Const.AppSettingsFile), IAppSettingsProvider
 {
+    /// <summary>
+    /// First-run defaults for a missing <c>appSettings.json</c> — see
+    /// <see cref="JsonParser{T}.CreateDefaultIfMissing"/>. Without a factory (direct construction
+    /// in checks and probes) the platform error still surfaces, exactly as before.
+    /// </summary>
+    protected override AppSettings? CreateDefaultIfMissing() => defaults?.Invoke();
+
     /// <inheritdoc />
     protected override AppSettings Normalize(AppSettings settings)
     {

@@ -136,7 +136,7 @@ public partial class HitokotoView : UserControl, IFramelessWidget, IWidgetSelfRe
 
         // Fetch a fresh quote on startup if the cached quote is older than the refresh interval
         // (or if this is a live desktop widget and cached quote has never been fetched).
-        if (VisualRoot is Widget)
+        if (TopLevel.GetTopLevel(this) is Widget)
         {
             var intervalMinutes = model.RefreshIntervalMinutes > 0 ? model.RefreshIntervalMinutes : 30;
             if (currentItem.FetchedAt == default ||
@@ -218,7 +218,7 @@ public partial class HitokotoView : UserControl, IFramelessWidget, IWidgetSelfRe
             Padding = new Thickness(0);
         }
 
-        (VisualRoot as Widget)?.RefreshFramelessState();
+        (TopLevel.GetTopLevel(this) as Widget)?.RefreshFramelessState();
     }
 
     private void ApplyModelVisuals()
@@ -471,7 +471,7 @@ public partial class HitokotoView : UserControl, IFramelessWidget, IWidgetSelfRe
         if (e.ClickCount == 1)
         {
             // Pass single-click through to the Widget window so dragging works anywhere on the card
-            (VisualRoot as Widget)?.OnPointerPressed(this, e);
+            (TopLevel.GetTopLevel(this) as Widget)?.OnPointerPressed(this, e);
             e.Handled = true;
         }
     }
@@ -559,10 +559,10 @@ public partial class HitokotoView : UserControl, IFramelessWidget, IWidgetSelfRe
     public void OpenPopup()
     {
         Point? screenCenter = null;
-        if (VisualRoot is Visual rootVisual && VisualRoot is TopLevel topLevel)
+        if (TopLevel.GetTopLevel(this) is { } topLevel)
         {
             var centerLocal = new Point(Bounds.Width / 2, Bounds.Height / 2);
-            var rootPoint = this.TranslatePoint(centerLocal, rootVisual);
+            var rootPoint = this.TranslatePoint(centerLocal, topLevel);
             if (rootPoint.HasValue)
             {
                 var sp = topLevel.PointToScreen(rootPoint.Value);
@@ -570,8 +570,8 @@ public partial class HitokotoView : UserControl, IFramelessWidget, IWidgetSelfRe
             }
         }
 
-        var owner = VisualRoot as Window;
-        var r = (VisualRoot as Widget)?.Radius.TopLeft ?? 0;
+        var owner = TopLevel.GetTopLevel(this) as Window;
+        var r = (TopLevel.GetTopLevel(this) as Widget)?.Radius.TopLeft ?? 0;
         double? cornerRadius = r > 0 ? r : null;
 
         HitokotoPopupWindow.ShowPopup(

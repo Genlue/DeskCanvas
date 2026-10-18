@@ -13,8 +13,10 @@ using DeskCanvas.Core.Interfaces;
 using DeskCanvas.Core.Models;
 using DeskCanvas.Core.Models.Attributes;
 using DeskCanvas.Core.Models.Settings;
+using DeskCanvas.Locales;
 using DeskCanvas.Services;
 using DeskCanvas.ViewModels;
+using GridSettings = DeskCanvas.Core.Models.Settings.Grid;
 
 namespace DeskCanvas.Views.Pages;
 
@@ -233,7 +235,7 @@ public partial class Gallery : UserControl, INotifyPropertyChanged
     {
         displayMonitor.Refresh();
         if (displayMonitor.IsTopologyChanging) return;
-        var settingsWindow = VisualRoot as Window;
+        var settingsWindow = TopLevel.GetTopLevel(this) as Window;
         var attached = settingsWindow != null ? displayMonitor.Find(settingsWindow) : null;
         if (attached == null)
         {
@@ -253,31 +255,30 @@ public partial class Gallery : UserControl, INotifyPropertyChanged
             if (primary != null)
             {
                 var area = primary.WorkingArea;
-                var scaling = primary.Scaling;
-                var grid = legacy.Grid ?? appSettingsProvider.Get().Grid ?? DeskCanvas.Core.Models.Settings.Grid.Default;
-                var (cell, gridX, gridY) = GridMetrics.Resolve(grid, area.X, area.Y, area.Width, area.Height);
-                var gridColumns = Math.Max(1, grid.Columns);
-                var gridRows = Math.Max(1, grid.Rows);
-                var spanCols = Math.Clamp(columns, 1, gridColumns);
-                var spanRows = Math.Clamp(rows, 1, gridRows);
+                var grid = legacy.Grid ?? appSettingsProvider.Get().Grid ?? GridSettings.Default;
+                var frame = FrameFor(grid, area, primary.Scaling);
                 // The unmigrated legacy entry keeps absolute desktop coordinates; the
                 // scan works relative to the primary screen's working area.
                 var relative = legacy.Key == null
                     ? legacy.Layout.Select(item => item with { X = item.X - area.X, Y = item.Y - area.Y }).ToList()
                     : legacy.Layout;
-                var gridRelX = gridX - area.X;
-                var gridRelY = gridY - area.Y;
-                var (col, row) = GridMetrics.FindFirstFitCell(relative, cell, scaling,
-                    gridRelX, gridRelY, gridColumns, gridRows, spanCols, spanRows);
-                if (col < 0) { col = 0; row = 0; } // grid full: origin, same as ComputePlacement's fallback
-                var relativeX = gridRelX + col * cell;
-                var relativeY = gridRelY + row * cell;
+                var (col, row) = GridMetrics.FindFirstFitCell(relative, frame, columns, rows);
+                // No slot (grid full, card larger than the grid, or no room left in the
+                // working area): stop instead of covering whatever sits at the origin.
+                if (col < 0)
+                {
+                    NotifyNoRoom();
+                    return;
+                }
+                var (width, height) = SizeOf(frame, columns, rows);
+                var relativeX = frame.GridX + col * frame.Cell;
+                var relativeY = frame.GridY + row * frame.Cell;
                 // v1 storage is absolute desktop pixels; keyed entries store relative.
                 var (storedX, storedY) = legacy.Key == null
                     ? (relativeX + area.X, relativeY + area.Y)
                     : (relativeX, relativeY);
                 widgetFactory.Add(legacy, new WidgetLayout(preview.Type, preview.Subtype, storedX, storedY,
-                    defaultW, defaultH, null)).Show();
+                    width, height, null)).Show();
                 return;
             }
             var pointer = anchor != null ? anchor.PointToScreen(new Point(0, 0)) : new PixelPoint(0, 0);
@@ -310,7 +311,12 @@ public partial class Gallery : UserControl, INotifyPropertyChanged
                 Layout = screenConfig.Layout.Select(item => item with { X = item.X - area.X, Y = item.Y - area.Y }).ToList()
             };
         }
-        var (x, y, w, h) = ComputePlacement(placementConfig, attached, columns, rows);
+        if (ComputePlacement(placementConfig, attached, columns, rows) is not { } slot)
+        {
+            NotifyNoRoom();
+            return;
+        }
+        var (x, y, w, h) = slot;
         if (screenConfig.Key == null)
         {
             x += attached.Screen.WorkingArea.X;
@@ -321,8 +327,37 @@ public partial class Gallery : UserControl, INotifyPropertyChanged
     }
 
     /// <summary>
+    /// No placeable slot for the card. Refuse the placement and say why: the old fallback
+    /// dropped the card on the grid origin with occupancy ignored, so it landed exactly on
+    /// the first placed widget (visually "swallowed" — the record itself was never lost).
+    /// </summary>
+    private void NotifyNoRoom()
+    {
+        if (VisualRoot is not Window owner) return;
+        _ = ConfirmDialog.InformAsync(owner, Locale.Gallery_NoRoom, Locale.Gallery_NoRoom_Ok);
+    }
+
+    /// <summary>
+    /// The placement frame of a screen: its grid lattice plus the working area a card has to
+    /// stay inside (the grid itself may hang off the screen, see
+    /// <see cref="GridMetrics.PlacementFrame"/>).
+    /// </summary>
+    private static GridMetrics.PlacementFrame FrameFor(GridSettings grid, PixelRect area, double scaling)
+    {
+        var (cell, gridX, gridY) = GridMetrics.Resolve(grid, area.X, area.Y, area.Width, area.Height);
+        return new GridMetrics.PlacementFrame(cell, scaling, gridX - area.X, gridY - area.Y,
+            grid.Columns, grid.Rows, area.Width, area.Height);
+    }
+
+    /// <summary>The DIP size of a <paramref name="columns"/>×<paramref name="rows"/> card placed in <paramref name="frame"/>.</summary>
+    private static (int Width, int Height) SizeOf(GridMetrics.PlacementFrame frame, int columns, int rows) =>
+        ((int) Math.Round(columns * frame.Cell / frame.Scaling),
+         (int) Math.Round(rows * frame.Cell / frame.Scaling));
+
+    /// <summary>
     /// Compute the initial placement (position relative to the owning screen's
-    /// working area + size) for a new widget on the target screen.
+    /// working area + size) for a new widget on the target screen, or <c>null</c> when the
+    /// card does not fit.
     /// <para>
     /// Widgets live on the bottom desktop band (below every application window), so
     /// dropping a new card at the clicked position would bury it under the settings
@@ -332,38 +367,28 @@ public partial class Gallery : UserControl, INotifyPropertyChanged
     /// (<see cref="GridMetrics.FindFirstFitCell"/>: a cell occupancy matrix built from
     /// every stored widget's own span, so differently sized widgets pack correctly and
     /// a new card can never overlap an existing one while any free slot remains).
-    /// Only when the grid is genuinely full does it fall back to the grid origin
-    /// (top-left corner), covering whatever sits there.
+    /// </para>
+    /// <para>
+    /// "Free" is judged in the same rectangle the window will be shown at: the scan is
+    /// limited to the cells that stay inside the working area, and the card keeps its real
+    /// span (a 4×2 card on a 2-column grid is refused instead of being placed with a
+    /// clamped span while keeping its full width). The old grid-origin fallback is gone —
+    /// it is exactly how a card ended up covering the one placed before it.
     /// </para>
     /// </summary>
-    private (int X, int Y, int Width, int Height) ComputePlacement(
+    private (int X, int Y, int Width, int Height)? ComputePlacement(
         ScreenLayout screenConfig, AttachedScreen attached, int defaultCols = 2, int defaultRows = 2)
     {
         var settings = appSettingsProvider.Get();
         var screen = attached.Screen;
-        var area = screen.WorkingArea;
-        var scaling = screen.Scaling;
+        var grid = screenConfig.Grid ?? settings.Grid ?? GridSettings.Default;
+        var frame = FrameFor(grid, screen.WorkingArea, screen.Scaling);
 
-        var grid = screenConfig.Grid ?? settings.Grid ?? DeskCanvas.Core.Models.Settings.Grid.Default;
-        var (cell, gridX, gridY) = GridMetrics.Resolve(grid, area.X, area.Y, area.Width, area.Height);
-        var width = (int) Math.Round(defaultCols * cell / scaling);
-        var height = (int) Math.Round(defaultRows * cell / scaling);
+        var (col, row) = GridMetrics.FindFirstFitCell(screenConfig.Layout, frame, defaultCols, defaultRows);
+        if (col < 0) return null;
 
-        // Candidate origins are only those where the whole span stays inside the grid.
-        var columns = Math.Max(1, grid.Columns);
-        var rows = Math.Max(1, grid.Rows);
-        var spanCols = Math.Clamp(defaultCols, 1, columns);
-        var spanRows = Math.Clamp(defaultRows, 1, rows);
-
-        var gridRelX = gridX - area.X;
-        var gridRelY = gridY - area.Y;
-        var (col, row) = GridMetrics.FindFirstFitCell(screenConfig.Layout, cell, scaling,
-            gridRelX, gridRelY, columns, rows, spanCols, spanRows);
-
-        // Grid full (or widget larger than the grid): start at the top-left corner,
-        // ignoring occupancy — the new card covers whatever is there.
-        if (col < 0) return (gridRelX, gridRelY, width, height);
-        return (gridRelX + col * cell, gridRelY + row * cell, width, height);
+        var (width, height) = SizeOf(frame, defaultCols, defaultRows);
+        return (frame.GridX + col * frame.Cell, frame.GridY + row * frame.Cell, width, height);
     }
 
     private (int Width, int Height) DefaultSize(Window? settingsWindow, int defaultCols = 2, int defaultRows = 2)

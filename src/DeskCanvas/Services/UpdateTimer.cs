@@ -98,6 +98,19 @@ public class UpdateTimer : IDisposable
 
     private void OnTimerTick(object? sender, EventArgs e)
     {
+        // Ticks always reach subscribers on the UI thread. The DispatcherTimer already ticks
+        // there, but the session-unlock catch-up comes from Microsoft.Win32.SystemEvents, which
+        // fires on its own thread: a widget whose handler starts an async refresh there resumes
+        // on the thread pool, and anything it builds for its view (an icon StreamGeometry, say)
+        // then belongs to that pool thread — the Path bound to it throws from its measure pass,
+        // inside the render pass, and the process dies. Raw property writes would throw too, and
+        // be swallowed by the per-subscriber guard below.
+        if (!Dispatcher.UIThread.CheckAccess())
+        {
+            Dispatcher.UIThread.Post(() => OnTimerTick(sender, e));
+            return;
+        }
+
         // The tick runs over a local snapshot taken under the lock, then invokes subscribers with
         // no lock held. A subscriber that (un)subscribes from inside its own callback keeps the
         // previous semantics — the set for *this* tick is fixed, a newly added action waits for

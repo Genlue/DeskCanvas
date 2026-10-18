@@ -148,16 +148,39 @@ public partial class BigFolder : UserControl, IWidgetSelfRefreshing, IWidgetSurf
     {
         RecomputeAndPopulate();
 
-        if (VisualRoot is TopLevel topLevel)
+        if (TopLevel.GetTopLevel(this) is TopLevel topLevel)
         {
             DragDrop.SetAllowDrop(topLevel, true);
-            if (topLevel.TryGetPlatformHandle()?.Handle is { } handle && handle != IntPtr.Zero)
-            {
-                dropHandle = handle;
-                WidgetOleDropTarget.Register(handle, OnOleDrop, OnOleDragActive);
-                WidgetOleDropTarget.RegisterWmDropFiles(handle, OnOleDrop, OnOleDragActive);
-            }
+            TryRegisterDropTarget(topLevel);
         }
+    }
+
+    /// <summary>
+    /// Register the OLE / WM_DROPFILES drop target on the window handle. <c>Loaded</c> can fire
+    /// before the window created its native handle (the top-level host then reports no handle),
+    /// so a missing handle is retried on the dispatcher instead of silently dropping drag-and-drop
+    /// — see the same note in <c>Folder</c>.
+    /// </summary>
+    private void TryRegisterDropTarget(TopLevel topLevel)
+    {
+        if (topLevel.TryGetPlatformHandle()?.Handle is { } handle && handle != IntPtr.Zero)
+        {
+            dropHandle = handle;
+            WidgetOleDropTarget.Register(handle, OnOleDrop, OnOleDragActive);
+            WidgetOleDropTarget.RegisterWmDropFiles(handle, OnOleDrop, OnOleDragActive);
+            return;
+        }
+
+        Dispatcher.UIThread.Post(() =>
+        {
+            if (!IsLoaded || dropHandle != IntPtr.Zero) return;
+            if (TopLevel.GetTopLevel(this) is not TopLevel root) return;
+            if (root.TryGetPlatformHandle()?.Handle is not { } late || late == IntPtr.Zero) return;
+
+            dropHandle = late;
+            WidgetOleDropTarget.Register(late, OnOleDrop, OnOleDragActive);
+            WidgetOleDropTarget.RegisterWmDropFiles(late, OnOleDrop, OnOleDragActive);
+        }, DispatcherPriority.Loaded);
     }
 
     private void OnUnloaded(object? sender, RoutedEventArgs e)
@@ -414,7 +437,7 @@ public partial class BigFolder : UserControl, IWidgetSelfRefreshing, IWidgetSurf
     private void OpenFullPopupWindow()
     {
         var (screenCenter, _) = GetScreenCenterAndTopLevel();
-        var owner = VisualRoot as Window;
+        var owner = TopLevel.GetTopLevel(this) as Window;
         BigFolderPopupWindow.ShowPopup(model, screenCenter, owner, UpdateModel, SpawnCornerRadius);
     }
 
@@ -426,18 +449,18 @@ public partial class BigFolder : UserControl, IWidgetSelfRefreshing, IWidgetSurf
     {
         get
         {
-            var r = (VisualRoot as DeskCanvas.Views.Widget)?.Radius.TopLeft ?? 0;
+            var r = (TopLevel.GetTopLevel(this) as DeskCanvas.Views.Widget)?.Radius.TopLeft ?? 0;
             return r > 0 ? r : null;
         }
     }
 
     private (Point? ScreenCenter, TopLevel? TopLevel) GetScreenCenterAndTopLevel()
     {
-        if (VisualRoot is Visual rootVisual && VisualRoot is TopLevel topLevel)
+        if (TopLevel.GetTopLevel(this) is { } topLevel)
         {
             var bounds = Bounds;
             var centerLocal = new Point(bounds.Width / 2, bounds.Height / 2);
-            var rootPoint = this.TranslatePoint(centerLocal, rootVisual);
+            var rootPoint = this.TranslatePoint(centerLocal, topLevel);
             if (rootPoint.HasValue)
             {
                 var pixelPoint = topLevel.PointToScreen(rootPoint.Value);

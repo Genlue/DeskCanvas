@@ -12,13 +12,19 @@ using DeskCanvas.Services;
 
 namespace FixedWidgets.Services;
 
+/// <summary>
+/// One weather reading. Deliberately carries the <see cref="WeatherCode"/> instead of a parsed
+/// icon geometry: this record is filled on whatever thread the HTTP continuation lands on, and an
+/// Avalonia <see cref="StreamGeometry"/> belongs to the thread that created it (see
+/// <see cref="OpenMeteoWeatherService.GetWeatherIcon"/>). The view model parses the icon itself,
+/// on the UI thread.
+/// </summary>
 public record WeatherInfo(
     double Temperature,
     int WeatherCode,
     string ConditionText,
     double MaxTemp,
-    double MinTemp,
-    StreamGeometry Icon);
+    double MinTemp);
 
 public class OpenMeteoWeatherService : IDisposable
 {
@@ -71,9 +77,11 @@ public class OpenMeteoWeatherService : IDisposable
             double minTemp = data.Daily?.Min != null && data.Daily.Min.Length > 0 ? data.Daily.Min[0] : curTemp;
 
             string condition = GetConditionText(code);
-            StreamGeometry icon = GetWeatherIcon(code);
 
-            return new WeatherInfo(curTemp, code, condition, maxTemp, minTemp, icon);
+            // No geometry is built here: this method resumes on a thread-pool thread (every
+            // await above is ConfigureAwait(false)), and a StreamGeometry parsed there belongs
+            // to that thread. The view model parses the icon on the UI thread instead.
+            return new WeatherInfo(curTemp, code, condition, maxTemp, minTemp);
         }
         catch
         {
@@ -143,8 +151,24 @@ public class OpenMeteoWeatherService : IDisposable
             };
     }
 
+    /// <summary>
+    /// Parses the icon geometry for a weather code. <b>UI thread only.</b>
+    /// <para>
+    /// Avalonia's <see cref="Geometry"/> is thread-affine: the instance captures the dispatcher of
+    /// the thread that created it, and the <c>Path</c> bound to it then throws
+    /// "The calling thread cannot access this object because a different thread owns it" from
+    /// <c>Shape.MeasureOverride</c> — inside the render pass, where nothing catches it, so the
+    /// process dies. Parsing this in the weather service used to do exactly that, because
+    /// <see cref="GetWeatherAsync"/> resumes on a pool thread; the view model (on the UI thread)
+    /// is now the only caller.
+    /// </para>
+    /// </summary>
     public static StreamGeometry GetWeatherIcon(int code)
     {
+        System.Diagnostics.Debug.Assert(
+            Avalonia.Threading.Dispatcher.UIThread.CheckAccess(),
+            "GetWeatherIcon must run on the UI thread: Avalonia geometry is thread-affine.");
+
         string pathData = code switch
         {
             // Sunny

@@ -101,6 +101,27 @@ public static class WidgetBundle
         return reader.ReadToEnd();
     }
 
+    /// <summary>
+    /// The shipped template deserialized, or <c>null</c> when the resource is missing/unreadable.
+    /// The single source for "what a data folder starts with": the DI registration hands it to
+    /// <see cref="Core.Services.AppSettingsProvider"/> as its first-run default, and the profile
+    /// seeding reads it for a brand-new profile's look.
+    /// </summary>
+    public static DeskCanvas.Core.Models.Settings.AppSettings? ReadDefaultAppSettings()
+    {
+        try
+        {
+            var json = ReadDefaultAppSettingsJson();
+            return string.IsNullOrWhiteSpace(json)
+                ? null
+                : System.Text.Json.JsonSerializer.Deserialize<DeskCanvas.Core.Models.Settings.AppSettings>(json);
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
     private static void EnsureFile(Assembly assembly, string resource, string target)
     {
         if (File.Exists(target))

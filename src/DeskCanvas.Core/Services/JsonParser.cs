@@ -48,7 +48,29 @@ public class JsonParser<T> : IDataProvider<T>
             if (data != null) return data;
 
             var path = CurrentFilePath;
-            var json = File.ReadAllText(path);
+            string json;
+            try
+            {
+                json = File.ReadAllText(path);
+            }
+            catch (Exception ex) when (ex is FileNotFoundException or DirectoryNotFoundException)
+            {
+                // Some documents are genuinely optional: a data folder that has never been
+                // written (first run, a hand-deleted settings file, a half-migrated upgrade)
+                // has no file yet, and "missing" means "start from the defaults", not "crash".
+                // The subclass decides whether it can supply them; everything else keeps the
+                // platform error.
+                var fallback = CreateDefaultIfMissing();
+                if (fallback is null) throw;
+
+                // Publish through the regular commit path so the file exists from now on and
+                // every other reader (including code that reads the file directly) sees it.
+                // Normalized like any deserialized value: the on-disk and in-memory shapes of a
+                // document must not differ depending on whether it was read or seeded.
+                var seeded = Normalize(fallback);
+                Save(seeded);
+                return seeded;
+            }
 
             data = JsonSerializer.Deserialize<T>(json)
                    ?? throw new FormatException($"Can't deserialize {typeof(T).Name}");
@@ -56,6 +78,13 @@ public class JsonParser<T> : IDataProvider<T>
             return data = Normalize(data);
         }
     }
+
+    /// <summary>
+    /// Value to publish and persist when the document file does not exist, or <c>null</c> to let
+    /// the platform error surface. Default <c>null</c>: only documents whose absence is a valid
+    /// state (the settings file of a brand-new data folder) opt in.
+    /// </summary>
+    protected virtual T? CreateDefaultIfMissing() => default;
 
     /// <summary>
     /// Invalidate in-memory cached data and re-read from the current file path.

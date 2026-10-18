@@ -84,6 +84,9 @@ internal class Program
     private static async Task RunAsync()
     {
         Console.WriteLine($"data folder: {Const.DataFolder}");
+        // The check-harness sandbox folder is created lazily, but the store file below is written
+        // first: create it here so the run does not depend on another component having done it.
+        Directory.CreateDirectory(Const.DataFolder);
         await CheckStoreAsync();
         await CheckIdleReleaseAsync();
     }
