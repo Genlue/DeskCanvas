@@ -13,11 +13,20 @@ namespace Weather.Views.Controls;
 /// The fixed-pixel design is calibrated for a ~340x170 card; a LayoutTransform
 /// scales it up proportionally on larger grids (cell sizes differ hugely
 /// between the virtual and manual grids) while keeping the scroll behavior.
+/// Cards shorter than <see cref="CompactHeight"/> switch to the compact type
+/// scale so the hourly strip keeps a full-viewport height.
 /// </summary>
 public partial class ForecastWide : UserControl
 {
     private const double DesignWidth = 340;
     private const double DesignHeight = 170;
+
+    /// <summary>
+    /// Below this height the design-size header would eat so much of the card that the
+    /// hourly strip no longer fits its icon: switch the header to the compact type scale
+    /// (36px temperature, 12px details) and shrink the hourly icon.
+    /// </summary>
+    private const double CompactHeight = 150;
     private readonly Forecast? owner;
 
     public ForecastWide(ForecastViewModel viewModel, Forecast? owner = null)
@@ -39,6 +48,10 @@ public partial class ForecastWide : UserControl
             Math.Min(e.NewSize.Width / DesignWidth, e.NewSize.Height / DesignHeight),
             1.0, 2.5);
         Scaler.LayoutTransform = scale > 1.01 ? new ScaleTransform(scale, scale) : null;
+
+        // 只有「矮于设计稿」的卡片需要紧凑档；放大档（scale > 1）的内容始终按
+        // 340x170 排版，不会出现逐小时条被挤扁的问题。
+        Root.Classes.Set("compact", e.NewSize.Height < CompactHeight);
     }
 
     /// <summary>

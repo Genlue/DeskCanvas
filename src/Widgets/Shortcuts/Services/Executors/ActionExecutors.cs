@@ -16,6 +16,7 @@ public static class ActionExecutors
         // Launch
         ["openApp"] = new OpenAppExecutor(),
         ["openFile"] = new OpenPathExecutor(),
+        ["openFolder"] = new OpenFolderExecutor(),
         ["openUrl"] = new OpenUrlExecutor(),
         ["webSearch"] = new WebSearchExecutor(),
 
@@ -33,6 +34,9 @@ public static class ActionExecutors
         ["emptyRecycleBin"] = new EmptyRecycleBinExecutor(),
         ["wait"] = new WaitExecutor(),
         ["notify"] = new NotifyExecutor(),
+        ["minimizeAll"] = new MinimizeAllExecutor(),
+        ["sendKeys"] = new SendKeysExecutor(),
+        ["sendHotkey"] = new SendHotkeyExecutor(),
 
         // Text & data
         ["getClipboard"] = new GetClipboardExecutor(),
@@ -40,6 +44,7 @@ public static class ActionExecutors
         ["textTransform"] = new TextTransformExecutor(),
         ["currentDate"] = new CurrentDateExecutor(),
         ["randomNumber"] = new RandomNumberExecutor(),
+        ["httpRequest"] = new HttpRequestExecutor(),
 
         // DeskCanvas host integration
         ["themeSurface"] = new ThemeSurfaceExecutor(),
@@ -47,6 +52,7 @@ public static class ActionExecutors
         ["widgetsVisibility"] = new WidgetsVisibilityExecutor(),
         ["addReminder"] = new AddReminderExecutor(),
         ["openDataFolder"] = new OpenDataFolderExecutor(),
+        ["runShortcut"] = new RunShortcutExecutor(),
     };
 
     public static IActionExecutor? Find(string type) => Map.GetValueOrDefault(type);

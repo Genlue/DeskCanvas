@@ -55,10 +55,25 @@ public sealed class RunServices
     public WidgetFactory? WidgetFactory { get; init; }
     public Func<TopLevel?>? TopLevelAccessor { get; init; }
 
+    /// <summary>
+    /// Shortcut ids already on the call stack for <c>runShortcut</c>; used to block direct and
+    /// indirect recursion without threading a mutable stack through every executor.
+    /// </summary>
+    public IReadOnlyList<string> Chain { get; init; } = Array.Empty<string>();
+
     /// <summary>The window that may own confirm dialogs.</summary>
     public Window? Owner => TopLevelAccessor?.Invoke() as Window;
 
     public TopLevel? TopLevel => TopLevelAccessor?.Invoke();
+
+    /// <summary>Copy of these services with an extended nesting chain.</summary>
+    public RunServices WithChain(IReadOnlyList<string> chain) => new()
+    {
+        AppSettings = AppSettings,
+        WidgetFactory = WidgetFactory,
+        TopLevelAccessor = TopLevelAccessor,
+        Chain = chain,
+    };
 }
 
 /// <summary>Execution state for one run: outputs, variables and progress counters.</summary>
@@ -68,6 +83,9 @@ public sealed class RunContext
     public RunServices Services { get; }
     public CancellationToken Token { get; }
     public Dictionary<string, string> Outputs { get; } = new(StringComparer.Ordinal);
+
+    /// <summary>Ancestor shortcut ids from <c>runShortcut</c> calls (recursion guard).</summary>
+    public IReadOnlyList<string> Chain => Services.Chain;
 
     /// <summary>Most recent non-empty output ("result of previous step").</summary>
     public string? LastOutput { get; private set; }
@@ -139,7 +157,11 @@ public sealed class RunContext
     // ---- confirm ------------------------------------------------------------------
 
     /// <summary>Ask the user before a destructive step; without a window the step proceeds.</summary>
-    public async Task<bool> ConfirmDestructiveAsync()
+    public async Task<bool> ConfirmDestructiveAsync() =>
+        await ConfirmAsync(Loc.Get("Shortcuts_ConfirmDestructive")).ConfigureAwait(true);
+
+    /// <summary>Ask a specific yes/no question; without an owner window the step proceeds.</summary>
+    public async Task<bool> ConfirmAsync(string message)
     {
         var owner = Services.Owner;
         if (owner == null) return true;
@@ -148,9 +170,9 @@ public sealed class RunContext
         {
             return await DeskCanvas.Views.ConfirmDialog.ConfirmAsync(
                 owner,
-                Loc.Get("Shortcuts_ConfirmDestructive"),
+                message,
                 Loc.Get("Shortcuts_ConfirmRunOk"),
-                Loc.Get("Shortcuts_Cancel"));
+                Loc.Get("Shortcuts_Cancel")).ConfigureAwait(true);
         }
         catch
         {

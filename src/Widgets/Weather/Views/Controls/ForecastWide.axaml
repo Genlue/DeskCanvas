@@ -17,14 +17,49 @@
         <Style Selector="Button.detail-btn:pointerover">
             <Setter Property="Background" Value="#22808080" />
         </Style>
+        <!-- 设计稿字号集中在这里，紧凑档只覆盖这几个值，不另建一套样式。
+             卡片高度低于 150 时，上方三行收窄，把高度让给逐小时条：
+             44px 温度 + 50 行高在 120 高的卡片里会吃掉 70px，逐小时条只剩 50px，
+             图标（含间距 28px）放不进 50/3 的行里。 -->
+        <Style Selector="TextBlock.city">
+            <Setter Property="FontSize" Value="16" />
+        </Style>
+        <Style Selector="TextBlock.temperature">
+            <Setter Property="FontSize" Value="44" />
+            <Setter Property="LineHeight" Value="50" />
+        </Style>
+        <Style Selector="TextBlock.detail">
+            <Setter Property="FontSize" Value="14" />
+        </Style>
+        <Style Selector="Grid.compact TextBlock.city">
+            <Setter Property="FontSize" Value="14" />
+        </Style>
+        <Style Selector="Grid.compact TextBlock.temperature">
+            <Setter Property="FontSize" Value="36" />
+            <Setter Property="LineHeight" Value="40" />
+        </Style>
+        <Style Selector="Grid.compact TextBlock.detail">
+            <Setter Property="FontSize" Value="12" />
+        </Style>
+        <Style Selector="Grid.compact TextBlock.hourly">
+            <Setter Property="FontSize" Value="12" />
+        </Style>
+        <Style Selector="Grid.compact PathIcon.hourly-icon">
+            <Setter Property="Width" Value="16" />
+            <Setter Property="Height" Value="16" />
+            <Setter Property="Margin" Value="0" />
+        </Style>
     </UserControl.Styles>
-    <LayoutTransformControl Name="Scaler">
-    <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto,Auto">
-        <TextBlock Grid.Row="0" Grid.Column="0"
-                   FontSize="16" FontWeight="Bold" 
+    <LayoutTransformControl Name="Scaler" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+    <!-- 第 4 行（索引 3）必须是 Star：四个 Auto 行在卡片高度不足时总高会超过可用高度，
+         最后一行（逐小时条）会被排到卡片外由窗口裁掉，正是「下方天气被截断」。
+         Star 行把剩余高度交给滚动区，滚动区再按视口高度分配时间/图标/温度三行。 -->
+    <Grid Name="Root" ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto,*">
+        <TextBlock Grid.Row="0" Grid.Column="0" Classes="city"
+                   FontWeight="Bold" 
                    Text="{Binding CityName}" />
-        <TextBlock Grid.Row="1" Grid.Column="0" Grid.RowSpan="2" 
-                   FontSize="44" LetterSpacing="-2" LineHeight="50" Margin="-2,0,0,0"
+        <TextBlock Grid.Row="1" Grid.Column="0" Grid.RowSpan="2" Classes="temperature"
+                   LetterSpacing="-2" Margin="-2,0,0,0"
                    Text="{Binding CurrentTemperature}" />
         <StackPanel Grid.Row="0" Grid.Column="1" Orientation="Horizontal" Spacing="6" HorizontalAlignment="Right" VerticalAlignment="Center">
             <PathIcon Foreground="{DynamicResource WeatherIconBrush}" 
@@ -37,25 +72,31 @@
                       HorizontalAlignment="Center" VerticalAlignment="Center" />
             </Button>
         </StackPanel>
-        <TextBlock Grid.Row="1" Grid.Column="1" 
-                   FontSize="14" FontWeight="Bold" Opacity="0.5"
+        <TextBlock Grid.Row="1" Grid.Column="1" Classes="detail"
+                   FontWeight="Bold" Opacity="0.5"
                    HorizontalAlignment="Right" VerticalAlignment="Bottom"
                    Text="{Binding CurrentCondition}" />
-        <TextBlock Grid.Row="2" Grid.Column="1"
-                   FontSize="14" FontWeight="Bold" Opacity="0.5"
+        <TextBlock Grid.Row="2" Grid.Column="1" Classes="detail"
+                   FontWeight="Bold" Opacity="0.5"
                    HorizontalAlignment="Right" VerticalAlignment="Top"
                    Text="{Binding CurrentMinMax}" />
-        <ScrollViewer x:Name="HourlyScroller" Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2">
-            <ItemsControl ItemsSource="{Binding HourlyForecast}">
+        <!-- VerticalScrollBarVisibility=Disabled：这是横向滚动条，纵向必须拿到有限高度，
+             否则 ScrollViewer 会以无限高度测量内容，内部的 Star 行退化成 Auto，
+             逐小时项就会高于视口、温度被视口裁掉。 -->
+        <ScrollViewer x:Name="HourlyScroller" Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2"
+                      MinHeight="0" VerticalAlignment="Stretch"
+                      HorizontalScrollBarVisibility="Hidden"
+                      VerticalScrollBarVisibility="Disabled">
+            <ItemsControl ItemsSource="{Binding HourlyForecast}" VerticalAlignment="Stretch">
                 <ItemsControl.ItemTemplate>
                     <DataTemplate DataType="viewModels:HourlyForecastViewModel">
-                        <Grid RowDefinitions="*,*,*" MinWidth="57">
-                            <TextBlock Grid.Row="0" Text="{Binding Time}" Opacity="0.5" HorizontalAlignment="Center" VerticalAlignment="Bottom" FontWeight="SemiBold" />
-                            <PathIcon Grid.Row="1" HorizontalAlignment="Center"
+                        <Grid RowDefinitions="Auto,*,Auto" MinWidth="57">
+                            <TextBlock Grid.Row="0" Classes="hourly" Text="{Binding Time}" Opacity="0.5" HorizontalAlignment="Center" VerticalAlignment="Bottom" FontWeight="SemiBold" />
+                            <PathIcon Grid.Row="1" Classes="hourly-icon" HorizontalAlignment="Center"
                                       Foreground="{DynamicResource WeatherIconBrush}" 
                                       VerticalAlignment="Center" Margin="0 4"
                                       Data="{Binding Icon}" />
-                            <TextBlock Grid.Row="2" Text="{Binding Temperature}" HorizontalAlignment="Center" VerticalAlignment="Bottom" FontWeight="SemiBold" />
+                            <TextBlock Grid.Row="2" Classes="hourly" Text="{Binding Temperature}" HorizontalAlignment="Center" VerticalAlignment="Bottom" FontWeight="SemiBold" />
                         </Grid>
                     </DataTemplate>
                 </ItemsControl.ItemTemplate>

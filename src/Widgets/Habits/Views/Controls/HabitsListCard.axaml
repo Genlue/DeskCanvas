@@ -7,17 +7,6 @@
              Margin="10,8,10,8">
 
     <UserControl.Styles>
-        <!-- Ghost 图标按钮（规范 §4） -->
-        <Style Selector="Button.ghost-btn">
-            <Setter Property="Background" Value="Transparent" />
-            <Setter Property="BorderThickness" Value="0" />
-            <Setter Property="Padding" Value="4" />
-            <Setter Property="Cursor" Value="Hand" />
-        </Style>
-        <Style Selector="Button.ghost-btn:pointerover /template/ ContentPresenter">
-            <Setter Property="Background" Value="{DynamicResource ControlHoverBrush}" />
-        </Style>
-
         <!-- 行内勾选圈：24×24、1.5px 描边 -->
         <Style Selector="Button.check-btn">
             <Setter Property="Width" Value="24" />
@@ -51,12 +40,17 @@
                 </Border>
             </StackPanel>
 
-            <Button Grid.Column="1" Classes="ghost-btn" Width="22" Height="22"
+            <Button Grid.Column="1" Classes="dc-icon-button compact" Width="22" Height="22"
                     Click="OnOpenPopupClicked" ToolTip.Tip="{x:Static locales:Locale.Habits_Title}">
-                <Path Data="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z"
-                      Fill="{DynamicResource SystemControlForegroundBaseHighBrush}"
-                      Opacity="0.6" Stretch="Uniform" Width="12" Height="12"
-                      HorizontalAlignment="Center" VerticalAlignment="Center" />
+                <!-- Viewbox 保留 24×24 设计画布再整体缩放（16/24）：Path 的 Stretch 会把几何
+                     边界拉到控件左上角，直接 Uniform 到 12×12 会让墨迹偏上偏左；
+                     16 的容器让实际墨迹仍约为 12px，与修改前视觉大小一致。 -->
+                <Viewbox Width="16" Height="16" Stretch="Uniform"
+                         HorizontalAlignment="Center" VerticalAlignment="Center">
+                    <Path Data="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z"
+                          Fill="{DynamicResource SystemControlForegroundBaseHighBrush}"
+                          Opacity="0.6" Stretch="None" Width="24" Height="24" />
+                </Viewbox>
             </Button>
         </Grid>
 

@@ -7,6 +7,7 @@ using Avalonia.Styling;
 using Avalonia.Threading;
 using DeskCanvas.Core.Interfaces;
 using DeskCanvas.Core.Models;
+using DeskCanvas.Core.Models.Settings;
 using DeskCanvas.Services;
 using DeskCanvas.Views;
 using Shortcuts.Models;
@@ -22,6 +23,8 @@ public partial class ShortcutsView : UserControl, IWidgetSelfRefreshing
     private readonly ShortcutsCardViewModel viewModel = new();
     private WidgetTier currentTier = (WidgetTier)(-1);
     private bool eventsAttached;
+    private double cardRadius = 16;
+    private IAppSettingsProvider? subscribedSettings;
 
     public ShortcutsView() : this(null, new ShortcutsModel(), null, null)
     {
@@ -45,9 +48,13 @@ public partial class ShortcutsView : UserControl, IWidgetSelfRefreshing
         SizeChanged += OnSizeChanged;
 
         // Per-window theme variants (light/dark can differ per screen): keep the tiles' text
-        // brushes in sync with whatever variant this card actually renders in.
+        // brushes in sync with whatever variant this card actually renders in. The tile radius
+        // follows the same scoped resources, so re-resolve it whenever the variant changes.
         ActualThemeVariantChanged += (_, _) =>
+        {
+            ApplyCardRadius();
             viewModel.ApplyTheme(ActualThemeVariant == ThemeVariant.Dark);
+        };
     }
 
     // ---- lifecycle ---------------------------------------------------------------
@@ -55,14 +62,21 @@ public partial class ShortcutsView : UserControl, IWidgetSelfRefreshing
     private void OnLoaded(object? sender, RoutedEventArgs e)
     {
         AttachEvents();
+        ShortcutsRuntime.PublishTopLevel(TopLevel.GetTopLevel(this));
+        ApplyCardRadius();
         viewModel.ApplyTheme(ActualThemeVariant == ThemeVariant.Dark);
+        EnsureHotkeys();
         if (Bounds.Width > 0 && Bounds.Height > 0)
             ApplySize(Bounds.Size);
         else
             Dispatcher.UIThread.Post(() => ApplySize(Bounds.Size), DispatcherPriority.Loaded);
     }
 
-    private void OnUnloaded(object? sender, RoutedEventArgs e) => DetachEvents();
+    private void OnUnloaded(object? sender, RoutedEventArgs e)
+    {
+        ShortcutsRuntime.ReleaseTopLevel(TopLevel.GetTopLevel(this));
+        DetachEvents();
+    }
 
     private void AttachEvents()
     {
@@ -70,6 +84,9 @@ public partial class ShortcutsView : UserControl, IWidgetSelfRefreshing
         eventsAttached = true;
         ShortcutsStore.ModelChanged += OnStoreChanged;
         ShortcutRunner.RunEvent += OnRunEvent;
+        subscribedSettings = ShortcutsRuntime.AppSettings;
+        if (subscribedSettings != null)
+            subscribedSettings.DataChanged += OnAppSettingsChanged;
         viewModel.Rebuild();
     }
 
@@ -79,12 +96,86 @@ public partial class ShortcutsView : UserControl, IWidgetSelfRefreshing
         eventsAttached = false;
         ShortcutsStore.ModelChanged -= OnStoreChanged;
         ShortcutRunner.RunEvent -= OnRunEvent;
+        if (subscribedSettings != null)
+        {
+            subscribedSettings.DataChanged -= OnAppSettingsChanged;
+            subscribedSettings = null;
+        }
     }
 
     private void OnStoreChanged(ShortcutsDocument document, object? sender)
     {
-        if (Dispatcher.UIThread.CheckAccess()) viewModel.Rebuild();
-        else Dispatcher.UIThread.Post(viewModel.Rebuild);
+        if (Dispatcher.UIThread.CheckAccess())
+        {
+            viewModel.Rebuild();
+            EnsureHotkeys();
+        }
+        else
+        {
+            Dispatcher.UIThread.Post(() =>
+            {
+                viewModel.Rebuild();
+                EnsureHotkeys();
+            });
+        }
+    }
+
+    private void OnAppSettingsChanged(object? sender, AppSettings? oldData, AppSettings newData)
+    {
+        if (Dispatcher.UIThread.CheckAccess()) ApplyCardRadius();
+        else Dispatcher.UIThread.Post(ApplyCardRadius);
+    }
+
+    /// <summary>Start the OS hotkey host only once a shortcut actually has a binding.</summary>
+    private void EnsureHotkeys()
+    {
+        try
+        {
+            if (ShortcutsStore.Get().Shortcuts.Any(s => !string.IsNullOrWhiteSpace(s.Hotkey)))
+                ShortcutHotkeyService.EnsureStarted();
+        }
+        catch
+        {
+            // Hotkey setup must never take the card down.
+        }
+    }
+
+    /// <summary>
+    /// Resolve the host card radius (already scaled by the widget shell) and push it into the
+    /// tiles. The app-settings fallback is in physical pixels, so convert it to DIPs.
+    /// </summary>
+    private void ApplyCardRadius()
+    {
+        double radius;
+        if (ThemeScopeResolver.TryFindResource<CornerRadius>(this, "WidgetCardCornerRadius",
+                ActualThemeVariant, out var cardCorner))
+        {
+            radius = Math.Max(0, cardCorner.TopLeft);
+        }
+        else
+        {
+            try
+            {
+                var raw = ShortcutsRuntime.AppSettings?.Get().Dimensions.Radius ?? 16;
+                var scaling = TopLevel.GetTopLevel(this)?.RenderScaling ?? 1.0;
+                if (!double.IsFinite(scaling) || scaling <= 0) scaling = 1.0;
+                radius = Math.Max(0, raw / scaling);
+            }
+            catch
+            {
+                radius = 16;
+            }
+        }
+
+        cardRadius = radius;
+        viewModel.SetCardRadius(radius);
+    }
+
+    private void OnTileBorderSizeChanged(object? sender, SizeChangedEventArgs e)
+    {
+        if ((sender as Control)?.DataContext is not ShortcutTileViewModel tile) return;
+        if (e.NewSize.Width > 0 && e.NewSize.Height > 0)
+            tile.SetTileSize(e.NewSize.Width, e.NewSize.Height);
     }
 
     private void OnRunEvent(RunEvent runEvent)
@@ -106,6 +197,7 @@ public partial class ShortcutsView : UserControl, IWidgetSelfRefreshing
         var tier = ResolveTier(size);
         if (tier == currentTier) return;
         currentTier = tier;
+        viewModel.SetCardRadius(cardRadius);
         viewModel.ApplyLayout(model, tier);
     }
 

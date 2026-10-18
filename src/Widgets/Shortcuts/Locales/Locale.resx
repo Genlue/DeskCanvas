@@ -615,4 +615,172 @@
     <data name="Shortcuts_Switch" xml:space="preserve">
         <value>Switch Shortcut</value>
     </data>
+    <data name="Shortcuts_Action_openFolder" xml:space="preserve">
+        <value>Open Folder</value>
+    </data>
+    <data name="Shortcuts_Action_minimizeAll" xml:space="preserve">
+        <value>Minimize All Windows</value>
+    </data>
+    <data name="Shortcuts_Action_sendKeys" xml:space="preserve">
+        <value>Send Keys / Text</value>
+    </data>
+    <data name="Shortcuts_Action_runShortcut" xml:space="preserve">
+        <value>Run Another Shortcut</value>
+    </data>
+    <data name="Shortcuts_Action_httpRequest" xml:space="preserve">
+        <value>HTTP Request</value>
+    </data>
+    <data name="Shortcuts_Param_keys" xml:space="preserve">
+        <value>Keys</value>
+    </data>
+    <data name="Shortcuts_Param_sendText" xml:space="preserve">
+        <value>Text to type</value>
+    </data>
+    <data name="Shortcuts_Param_shortcut" xml:space="preserve">
+        <value>Shortcut name or ID</value>
+    </data>
+    <data name="Shortcuts_Param_method" xml:space="preserve">
+        <value>Method</value>
+    </data>
+    <data name="Shortcuts_Param_body" xml:space="preserve">
+        <value>Body</value>
+    </data>
+    <data name="Shortcuts_Param_timeout" xml:space="preserve">
+        <value>Timeout</value>
+    </data>
+    <data name="Shortcuts_Http_GET" xml:space="preserve">
+        <value>GET</value>
+    </data>
+    <data name="Shortcuts_Http_POST" xml:space="preserve">
+        <value>POST</value>
+    </data>
+    <data name="Shortcuts_Output_OpenedFolder" xml:space="preserve">
+        <value>Opened {0}</value>
+    </data>
+    <data name="Shortcuts_Output_Minimized" xml:space="preserve">
+        <value>Windows minimized</value>
+    </data>
+    <data name="Shortcuts_Output_KeysSent" xml:space="preserve">
+        <value>Keys sent</value>
+    </data>
+    <data name="Shortcuts_Output_RanShortcut" xml:space="preserve">
+        <value>Ran {0}</value>
+    </data>
+    <data name="Shortcuts_Output_HttpStatus" xml:space="preserve">
+        <value>HTTP {0}</value>
+    </data>
+    <data name="Shortcuts_Error_PathNotFound" xml:space="preserve">
+        <value>Path not found: {0}</value>
+    </data>
+    <data name="Shortcuts_Error_InvalidUrl" xml:space="preserve">
+        <value>Only http and https URLs are allowed</value>
+    </data>
+    <data name="Shortcuts_Error_HttpStatus" xml:space="preserve">
+        <value>HTTP request failed: {0}</value>
+    </data>
+    <data name="Shortcuts_Error_HttpTimeout" xml:space="preserve">
+        <value>HTTP request timed out</value>
+    </data>
+    <data name="Shortcuts_Error_SendKeys" xml:space="preserve">
+        <value>Cannot send keys</value>
+    </data>
+    <data name="Shortcuts_Error_ShortcutNotFound" xml:space="preserve">
+        <value>Shortcut not found: {0}</value>
+    </data>
+    <data name="Shortcuts_Error_Recursion" xml:space="preserve">
+        <value>Recursive shortcut call blocked</value>
+    </data>
+    <data name="Shortcuts_Error_Depth" xml:space="preserve">
+        <value>Shortcut chain is too deep</value>
+    </data>
+    <data name="Shortcuts_Error_ShortcutBusy" xml:space="preserve">
+        <value>"{0}" is already running</value>
+    </data>
+    <data name="Shortcuts_Error_TooLong" xml:space="preserve">
+        <value>Value is too long (max {0} characters)</value>
+    </data>
+    <data name="Shortcuts_Error_InvalidKeys" xml:space="preserve">
+        <value>Invalid key combination: {0}</value>
+    </data>
+    <data name="Shortcuts_Confirm_SendKeys" xml:space="preserve">
+        <value>This sends a Win-key combination to the active window. Continue?</value>
+    </data>
+    <data name="Shortcuts_Template_Focus" xml:space="preserve">
+        <value>Deep Focus</value>
+    </data>
+    <data name="Shortcuts_Template_Workspace" xml:space="preserve">
+        <value>Start Workspace</value>
+    </data>
+    <data name="Shortcuts_Template_ClockOut" xml:space="preserve">
+        <value>Clock Out</value>
+    </data>
+    <data name="Shortcuts_Template_FocusNotice" xml:space="preserve">
+        <value>Focus mode on</value>
+    </data>
+    <data name="Shortcuts_Hotkey_Label" xml:space="preserve">
+        <value>Shortcut key</value>
+    </data>
+    <data name="Shortcuts_Hotkey_None" xml:space="preserve">
+        <value>Not set</value>
+    </data>
+    <data name="Shortcuts_Hotkey_Record" xml:space="preserve">
+        <value>Record</value>
+    </data>
+    <data name="Shortcuts_Hotkey_Cancel" xml:space="preserve">
+        <value>Cancel</value>
+    </data>
+    <data name="Shortcuts_Hotkey_Clear" xml:space="preserve">
+        <value>Clear</value>
+    </data>
+    <data name="Shortcuts_Hotkey_Recording" xml:space="preserve">
+        <value>Press a key combination…</value>
+    </data>
+    <data name="Shortcuts_Hotkey_RecordingStatus" xml:space="preserve">
+        <value>Recording… press Esc to cancel, Backspace to clear</value>
+    </data>
+    <data name="Shortcuts_Hotkey_HintModifier" xml:space="preserve">
+        <value>Hold Ctrl, Alt, Shift or Win plus another key</value>
+    </data>
+    <data name="Shortcuts_Hotkey_HintUnsupported" xml:space="preserve">
+        <value>This key cannot be used</value>
+    </data>
+    <data name="Shortcuts_Hotkey_Registered" xml:space="preserve">
+        <value>Active</value>
+    </data>
+    <data name="Shortcuts_Hotkey_Conflict" xml:space="preserve">
+        <value>Already used by another app</value>
+    </data>
+    <data name="Shortcuts_Hotkey_Duplicate" xml:space="preserve">
+        <value>Also used by "{0}"</value>
+    </data>
+    <data name="Shortcuts_Hotkey_Invalid" xml:space="preserve">
+        <value>Invalid key combination</value>
+    </data>
+    <data name="Shortcuts_Hotkey_Suspended" xml:space="preserve">
+        <value>Paused while recording</value>
+    </data>
+    <data name="Shortcuts_Hotkey_Pending" xml:space="preserve">
+        <value>Saved, waiting for the card</value>
+    </data>
+    <data name="Shortcuts_Hotkey_TypingHint" xml:space="preserve">
+        <value>Press Enter or leave the field to apply</value>
+    </data>
+    <data name="Shortcuts_Action_sendHotkey" xml:space="preserve">
+        <value>Send Keystroke</value>
+    </data>
+    <data name="Shortcuts_Param_hotkey" xml:space="preserve">
+        <value>Key combination</value>
+    </data>
+    <data name="Shortcuts_Param_holdMs" xml:space="preserve">
+        <value>Hold time</value>
+    </data>
+    <data name="Shortcuts_Unit_Milliseconds" xml:space="preserve">
+        <value>{0} ms</value>
+    </data>
+    <data name="Shortcuts_Output_HotkeySent" xml:space="preserve">
+        <value>Keystroke sent</value>
+    </data>
+    <data name="Shortcuts_Error_CaptureActive" xml:space="preserve">
+        <value>A key capture is active; finish it first</value>
+    </data>
 </root>

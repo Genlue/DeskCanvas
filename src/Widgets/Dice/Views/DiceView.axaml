@@ -1,7 +1,6 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:controls="clr-namespace:Dice.Views.Controls"
-             xmlns:views="clr-namespace:Dice.Views"
              xmlns:locales="clr-namespace:Dice.Locales"
              x:Class="Dice.Views.DiceView"
              Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}">
@@ -56,11 +55,11 @@
         <!-- 2x2 Small Layout -->
         <Grid x:Name="SmallLayout" RowDefinitions="Auto,*,Auto" Margin="12,10" IsVisible="True">
             <!-- Header -->
-            <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto,Auto">
+            <Grid x:Name="SmallHeader" Grid.Row="0" ColumnDefinitions="Auto,*,Auto,Auto">
                 <TextBlock Text="{x:Static locales:Locale.Dice_Title}" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center"
                            TextTrimming="CharacterEllipsis"/>
 
-                <Border x:Name="SumPill" Grid.Column="2" Classes="sum-pill" Margin="0,0,4,0" MaxWidth="140">
+                <Border x:Name="SmallSumPill" Grid.Column="2" Classes="sum-pill" Margin="0,0,4,0" MaxWidth="140">
                     <TextBlock x:Name="SmallSumText" Text="{x:Static locales:Locale.Dice_SumPlaceholder}" FontSize="11" FontWeight="SemiBold"
                                Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}" TextTrimming="CharacterEllipsis"/>
                 </Border>
@@ -70,76 +69,34 @@
                 </Button>
             </Grid>
 
-            <!-- Dice Tray (Center) -->
-            <ItemsControl x:Name="SmallDiceContainer" Grid.Row="1" VerticalAlignment="Center" HorizontalAlignment="Center">
-                <ItemsControl.ItemsPanel>
-                    <ItemsPanelTemplate>
-                        <WrapPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" ItemWidth="60" ItemHeight="60"/>
-                    </ItemsPanelTemplate>
-                </ItemsControl.ItemsPanel>
-            </ItemsControl>
+            <!-- Dice Tray：骰子数量与骰面尺寸由 DiceTrayPanel 按可用空间自适应 -->
+            <controls:DiceTrayPanel x:Name="SmallDiceTray" Grid.Row="1" MaxFaceSize="48"/>
 
             <!-- Bottom Action -->
-            <Button Grid.Row="2" Classes="roll-pill" HorizontalAlignment="Center" Click="OnRollActionClicked">
+            <Button x:Name="SmallRollButton" Grid.Row="2" Classes="roll-pill" HorizontalAlignment="Center" Click="OnRollActionClicked">
                 <TextBlock x:Name="SmallRollText" Text="{x:Static locales:Locale.Dice_RollAction}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
             </Button>
         </Grid>
 
-        <!-- 4x2 Wide Layout -->
-        <Grid x:Name="WideLayout" ColumnDefinitions="*,1,*" Margin="14,10" IsVisible="False">
-            <!-- Left: Dice Tray -->
-            <Grid Grid.Column="0" RowDefinitions="Auto,*,Auto" Margin="0,0,10,0">
-                <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto">
-                    <TextBlock Text="{x:Static locales:Locale.Dice_Title}" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center"
-                               TextTrimming="CharacterEllipsis"/>
-                    <Border Grid.Column="2" Classes="sum-pill" MaxWidth="140">
-                        <TextBlock x:Name="WideSumText" Text="{x:Static locales:Locale.Dice_SumPlaceholder}" FontSize="11" FontWeight="SemiBold"
-                                   Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}" TextTrimming="CharacterEllipsis"/>
-                    </Border>
-                </Grid>
-
-                <ItemsControl x:Name="WideDiceContainer" Grid.Row="1" VerticalAlignment="Center" HorizontalAlignment="Center">
-                    <ItemsControl.ItemsPanel>
-                        <ItemsPanelTemplate>
-                            <WrapPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" ItemWidth="56" ItemHeight="56"/>
-                        </ItemsPanelTemplate>
-                    </ItemsControl.ItemsPanel>
-                </ItemsControl>
-
-                <Button Grid.Row="2" Classes="roll-pill" HorizontalAlignment="Center" Click="OnRollActionClicked">
-                    <TextBlock Text="{x:Static locales:Locale.Dice_RollAction}"/>
+        <!-- 4x2 Wide Layout：整宽骰盘（不再带右侧历史栏） -->
+        <Grid x:Name="WideLayout" RowDefinitions="Auto,*,Auto" Margin="14,10" IsVisible="False">
+            <Grid x:Name="WideHeader" Grid.Row="0" ColumnDefinitions="Auto,*,Auto,Auto">
+                <TextBlock Text="{x:Static locales:Locale.Dice_Title}" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center"
+                           TextTrimming="CharacterEllipsis"/>
+                <Border x:Name="WideSumPill" Grid.Column="2" Classes="sum-pill" Margin="0,0,4,0" MaxWidth="140">
+                    <TextBlock x:Name="WideSumText" Text="{x:Static locales:Locale.Dice_SumPlaceholder}" FontSize="11" FontWeight="SemiBold"
+                               Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}" TextTrimming="CharacterEllipsis"/>
+                </Border>
+                <Button Grid.Column="3" Classes="ghost-btn" Click="OnExpandDetailsClicked" ToolTip.Tip="{x:Static locales:Locale.Dice_DetailsTip}">
+                    <PathIcon Data="M7 10l5 5 5-5z" Width="12" Height="12"/>
                 </Button>
             </Grid>
 
-            <!-- Separator -->
-            <Rectangle Grid.Column="1" Fill="{DynamicResource CardSubtleBorder}" VerticalAlignment="Stretch" Margin="0,4"/>
+            <controls:DiceTrayPanel x:Name="WideDiceTray" Grid.Row="1" MaxFaceSize="64"/>
 
-            <!-- Right: History List -->
-            <Grid Grid.Column="2" RowDefinitions="Auto,*" Margin="10,0,0,0">
-                <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="0,0,0,6">
-                    <TextBlock Text="{x:Static locales:Locale.Dice_RecentRolls}" FontSize="12" FontWeight="SemiBold" Opacity="0.8"
-                               VerticalAlignment="Center"/>
-                    <Button Grid.Column="1" Classes="ghost-btn" Click="OnExpandDetailsClicked" ToolTip.Tip="{x:Static locales:Locale.Dice_FullHistoryTip}">
-                        <PathIcon Data="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z" Width="11" Height="11"/>
-                    </Button>
-                </Grid>
-
-                <ListBox x:Name="WideHistoryList" Grid.Row="1" Background="Transparent" BorderThickness="0" Padding="0">
-                    <ListBox.ItemTemplate>
-                        <DataTemplate x:DataType="views:DiceHistoryItemViewModel">
-                            <Grid ColumnDefinitions="Auto,*,Auto" Margin="0,2" MinHeight="22">
-                                <TextBlock Text="{Binding Timestamp, StringFormat='{}{0:HH:mm}'}" FontSize="11" Opacity="0.55"
-                                           VerticalAlignment="Center"/>
-                                <TextBlock Grid.Column="1" Text="{Binding ValuesSummary}" FontSize="11" Margin="6,0"
-                                           TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
-                                <TextBlock Grid.Column="2" Text="{Binding SumSummary}" FontSize="11" FontWeight="Bold"
-                                           Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}" HorizontalAlignment="Right"
-                                           VerticalAlignment="Center"/>
-                            </Grid>
-                        </DataTemplate>
-                    </ListBox.ItemTemplate>
-                </ListBox>
-            </Grid>
+            <Button x:Name="WideRollButton" Grid.Row="2" Classes="roll-pill" HorizontalAlignment="Center" Click="OnRollActionClicked">
+                <TextBlock Text="{x:Static locales:Locale.Dice_RollAction}"/>
+            </Button>
         </Grid>
     </Grid>
 </UserControl>

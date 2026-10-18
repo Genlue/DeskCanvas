@@ -40,7 +40,7 @@
         <value>鼠标滚轮切页</value>
     </data>
     <data name="Setting_Wheel_Only_On_Dots" xml:space="preserve">
-        <value>仅圆点处可用滚轮切页</value>
+        <value>滚轮优先交给子组件（空白处切页）</value>
     </data>
     <data name="Setting_Auto_Hide_Dots" xml:space="preserve">
         <value>常态隐藏切换圆点（切换或悬停时显示）</value>

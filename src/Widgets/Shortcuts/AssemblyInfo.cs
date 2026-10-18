@@ -6,7 +6,7 @@ using Shortcuts.Views;
 using Shortcuts.Views.Settings;
 
 [assembly: AssemblyCompany("creewick")]
-[assembly: AssemblyVersion("1.0.0")]
+[assembly: AssemblyVersion("1.1.0")]
 
 [assembly: WidgetInfo(
     typeof(ShortcutsView),

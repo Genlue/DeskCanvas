@@ -240,4 +240,25 @@
   <data name="Timetable_PeriodNotSet" xml:space="preserve">
     <value>未设置</value>
   </data>
+  <data name="Timetable_AllWeeks" xml:space="preserve">
+    <value>全学期</value>
+  </data>
+  <data name="Timetable_WeekView" xml:space="preserve">
+    <value>周视图</value>
+  </data>
+  <data name="Timetable_PreviousWeek" xml:space="preserve">
+    <value>上一周</value>
+  </data>
+  <data name="Timetable_NextWeek" xml:space="preserve">
+    <value>下一周</value>
+  </data>
+  <data name="Timetable_BackToCurrentWeek" xml:space="preserve">
+    <value>回到本周</value>
+  </data>
+  <data name="Timetable_ShowAllWeeks" xml:space="preserve">
+    <value>显示整个学期</value>
+  </data>
+  <data name="Timetable_ShowWeekView" xml:space="preserve">
+    <value>切换为单周视图</value>
+  </data>
 </root>

@@ -66,19 +66,13 @@
             <Setter Property="Foreground" Value="{DynamicResource AccentContrastForegroundBrush}" />
         </Style>
 
-        <Style Selector="Button.icon-action-btn">
-            <Setter Property="Width" Value="24" />
-            <Setter Property="Height" Value="24" />
-            <Setter Property="CornerRadius" Value="12" />
-            <Setter Property="Background" Value="Transparent" />
-            <Setter Property="BorderThickness" Value="0" />
-            <Setter Property="Padding" Value="0" />
+        <!-- 操作图标按钮：尺寸/内容居中/悬停背景由共享 dc-icon-button.compact 负责，
+             这里只保留弱化透明度与悬停恢复。 -->
+        <Style Selector="Button.habit-action">
             <Setter Property="Opacity" Value="0.6" />
-            <Setter Property="Cursor" Value="Hand" />
         </Style>
-        <Style Selector="Button.icon-action-btn:pointerover">
+        <Style Selector="Button.habit-action:pointerover">
             <Setter Property="Opacity" Value="1.0" />
-            <Setter Property="Background" Value="{DynamicResource ControlHoverBrush}" />
         </Style>
     </Window.Styles>
 

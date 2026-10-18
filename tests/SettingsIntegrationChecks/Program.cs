@@ -145,6 +145,7 @@ internal static class Program
             CheckOpticsSliders(page, provider, path);
             CheckTextComposition(page, provider);
             CheckWindowScopes(provider.Get().Theme);
+            CheckRealPointerCommit(page, provider, path, host);
             host.Close();
             Console.WriteLine($"SettingsIntegrationChecks: {checks - failures}/{checks} passed");
             Console.WriteLine("UNVERIFIED: physical IME, physical multi-monitor transitions, GPU/performance, old package compatibility.");
@@ -221,6 +222,52 @@ internal static class Program
             "optics draft survives another control save and reports conflict on completion");
         vm.ReloadSettings();
         Check(vm.GlassBlur == 40 && !vm.HasSettingsError, "explicit reload resets optics preview after conflict");
+    }
+
+    /// <summary>
+    /// The user-facing regression: moving a bar slider with the pointer must persist on release.
+    /// The Slider marks its pointer events handled, so nothing used to commit unless the numeric
+    /// spinner was touched afterwards. Real headless pointer input, no synthesized routed events.
+    /// </summary>
+    private static void CheckRealPointerCommit(Appearance page, FileSettings provider, string path, Window host)
+    {
+        var editor = page.FindControl<LabeledSlider>("OpacityEditor")!;
+        var slider = editor.FindControl<Slider>("SliderPart")!;
+        var point = slider.TranslatePoint(new Point(slider.Bounds.Width * 0.95, slider.Bounds.Height / 2), host);
+        if (point is null)
+        {
+            Check(false, "real pointer track click resolves coordinates on the settings page");
+            return;
+        }
+
+        var saves = provider.SaveAttempts;
+        var before = Disk(path).Theme.OpacityLevel;
+        host.MouseDown(point.Value, MouseButton.Left);
+        Pump();
+        host.MouseUp(point.Value, MouseButton.Left);
+        Pump();
+        var clicked = slider.Value;
+        Check(Math.Abs(clicked - before) > 1e-6 && provider.SaveAttempts == saves + 1
+            && Math.Abs(Disk(path).Theme.OpacityLevel - clicked) < 1e-6,
+            "real pointer track click on the real settings page persists exactly once");
+
+        // Drag gesture from the thumb: preview only while the pointer is down, one write on release.
+        var thumb = slider.GetVisualDescendants().OfType<Thumb>().First();
+        var grip = thumb.TranslatePoint(new Point(thumb.Bounds.Width / 2, thumb.Bounds.Height / 2), host)!.Value;
+        var savesBeforeDrag = provider.SaveAttempts;
+        host.MouseDown(grip, MouseButton.Left);
+        Pump();
+        for (var step = 1; step <= 6; step++)
+        {
+            host.MouseMove(grip - new Point(step * 8, 0));
+            Pump();
+        }
+        Check(provider.SaveAttempts == savesBeforeDrag, "real pointer drag on the settings page never saves mid-gesture");
+        host.MouseUp(grip - new Point(48, 0), MouseButton.Left);
+        Pump();
+        Check(provider.SaveAttempts == savesBeforeDrag + 1
+            && Math.Abs(Disk(path).Theme.OpacityLevel - slider.Value) < 1e-6,
+            "real pointer drag on the real settings page persists exactly once on release");
     }
 
     private static void CheckWindowScopes(Theme theme)

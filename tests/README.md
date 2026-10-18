@@ -16,7 +16,7 @@
 | ContractsLifecycleChecks | 正式门禁（已验证套件） | P2 Contracts/Runtime 会话串行生命周期与幂等释放 |
 | SchedulerChecks | 正式门禁（已验证套件） | P5 owner 调度租约、暂停恢复、失败隔离与统计 |
 | UiSharedChecks | 正式门禁（已验证套件） | P3 公共 UI 状态呈现、重复通知和差异消费者适配 |
-| UiSharedAvaloniaChecks | 正式门禁（已验证套件） | P3 共享滑块/设置行/颜色输入与宿主兼容门面、实际数值/键盘/颜色提交、自适应布局槽位、旧/新编译资源 URI 与全部 token、可嵌入样例目录；P10 语义样式（`dc-pill`/`dc-card-box`/`dc-badge`/`dc-icon-button`）实际几何与 15 个二级弹窗 ≤560 DIP 断言（当前 153 项） |
+| UiSharedAvaloniaChecks | 正式门禁（已验证套件） | P3 共享滑块/设置行/颜色输入与宿主兼容门面、实际数值/键盘/颜色提交（含真实指针拖拽/轨道点击的恰好一次提交）、自适应布局槽位、旧/新编译资源 URI 与全部 token、可嵌入样例目录；P10 语义样式（`dc-pill`/`dc-card-box`/`dc-badge`/`dc-icon-button`）实际几何与 15 个二级弹窗 ≤560 DIP 断言（当前 161 项） |
 | PanelShellAvaloniaChecks | 正式门禁（已验证套件） | P3 玻璃表面端口：共享面板壳独立渲染、GlassSurfaceBase 端口契约（独立桩实现）、外观端口槽镜像、宿主外观分解与旧 URI shim、拖动行为同属性身份、面板窗口端口驱动 |
 | PerScreenThemeChecks | 正式门禁（已验证套件） | P4 每屏独立主题：按屏幕作用域的焦点状态解析矩阵、窗口 variant/窗口级颜色资源应用、快照重排 poke、uniform 回退与旧 API 兼容 |
 | SharedDataSourcesChecks | 正式门禁（已验证套件） | P5 Storage 卷枚举与 MediaSession 共享 provider：请求单飞、TTL、owner lease、取消隔离、组件外观投影等价、两消费者共享轮次；冻结注入，无真实 SMTC/磁盘外设 |

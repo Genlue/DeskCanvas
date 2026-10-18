@@ -16,6 +16,7 @@ public sealed class ShortcutsCardViewModel : INotifyPropertyChanged
     private int capacity = 4;
     private bool compactTiles;
     private bool darkTheme;
+    private double cardRadius = 16;
 
     public ObservableCollection<ShortcutTileViewModel> Tiles { get; } = [];
 
@@ -89,6 +90,13 @@ public sealed class ShortcutsCardViewModel : INotifyPropertyChanged
                 tile = new ShortcutTileViewModel(shortcut);
                 tileCache[shortcut.Id] = tile;
             }
+            else
+            {
+                // Reused tiles must pick up renamed/recolored/hotkey-ed definitions.
+                tile.Apply(shortcut);
+            }
+
+            tile.SetCardRadius(cardRadius);
 
             var currentIndex = Tiles.IndexOf(tile);
             if (currentIndex < 0) Tiles.Insert(target, tile);
@@ -128,6 +136,17 @@ public sealed class ShortcutsCardViewModel : INotifyPropertyChanged
         darkTheme = isDark;
         foreach (var tile in Tiles)
             tile.ApplyTheme(isDark);
+    }
+
+    /// <summary>
+    /// Host card radius (scaled by the widget shell). Every tile derives its outer radius from
+    /// it; new tiles built by a later Rebuild inherit the same value.
+    /// </summary>
+    public void SetCardRadius(double radius)
+    {
+        cardRadius = Math.Max(0, radius);
+        foreach (var tile in Tiles)
+            tile.SetCardRadius(cardRadius);
     }
 
     public ShortcutDefinition? FindShortcut(string id) =>

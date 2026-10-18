@@ -188,7 +188,11 @@ public partial class NoteSettings : UserControl
             UpdateModel(m => m with { HeaderColor = e.Value });
         };
         HeaderOpacityBox.ValueChanged += (_, _) =>
-            UpdateModel(m => m with { HeaderOpacity = (double)(HeaderOpacityBox.Value ?? 1.0m) });
+            UpdateModel(m => m with
+            {
+                HeaderOpacity = NoteModel.NormalizeHeaderOpacity(
+                    (double)(HeaderOpacityBox.Value ?? (decimal)NoteDefaults.HeaderOpacity)),
+            });
         SourceBox.SelectionChanged += (_, _) =>
         {
             UpdateModel(m => m with { Source = (NoteSource)Math.Max(0, SourceBox.SelectedIndex) });
@@ -256,7 +260,7 @@ public partial class NoteSettings : UserControl
                 ? model.HeaderColor
                 : "#FF3376CD";
             HeaderOpacityBox.IsEnabled = true;
-            HeaderOpacityBox.Value = (decimal)Math.Round(model.HeaderOpacity, 2);
+            HeaderOpacityBox.Value = (decimal)Math.Round(NoteModel.NormalizeHeaderOpacity(model.HeaderOpacity), 2);
         }
 
         SourceBox.SelectedIndex = (int)model.Source;

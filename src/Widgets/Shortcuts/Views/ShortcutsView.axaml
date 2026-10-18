@@ -54,12 +54,15 @@
                                           Click="OnTileMenuDelete" />
                             </ContextMenu>
                         </Button.ContextMenu>
-                        <Border Background="{Binding TintBrush}" CornerRadius="10" Padding="9,6" ClipToBounds="True">
+                        <Border Background="{Binding TintBrush}" CornerRadius="{Binding TileCornerRadius}"
+                                Padding="9,6" ClipToBounds="True"
+                                SizeChanged="OnTileBorderSizeChanged">
                             <Panel>
                                 <!-- Icon + text sit as one group, centered both ways in the block,
                                      so the block can stretch to any cell size without drifting. -->
                                 <Grid ColumnDefinitions="Auto,*" VerticalAlignment="Center">
-                                    <Border Grid.Column="0" Width="28" Height="28" CornerRadius="8"
+                                    <Border Grid.Column="0" Width="28" Height="28"
+                                            CornerRadius="{Binding IconCornerRadius}"
                                             Background="{Binding IconBrush}" VerticalAlignment="Center">
                                         <sc:GlyphView Data="{Binding GlyphGeometry}" Stroke="White"
                                                       StrokeThickness="1.7"
@@ -74,11 +77,24 @@
                                                    LineHeight="15"
                                                    TextTrimming="CharacterEllipsis"
                                                    Foreground="{Binding NameBrush}" />
-                                        <TextBlock Text="{Binding ActionCountText}" FontSize="10" Opacity="0.8"
-                                                   LineHeight="12"
-                                                   TextTrimming="CharacterEllipsis"
-                                                   Foreground="{Binding SubBrush}"
-                                                   IsVisible="{Binding SubtitleSlotVisible}" />
+                                        <Grid ColumnDefinitions="*,Auto" IsVisible="{Binding SubtitleSlotVisible}">
+                                            <TextBlock Text="{Binding ActionCountText}" FontSize="10" Opacity="0.8"
+                                                       LineHeight="12"
+                                                       TextTrimming="CharacterEllipsis"
+                                                       Foreground="{Binding SubBrush}"
+                                                       IsVisible="{Binding ShowActionCountText}" />
+                                            <!-- Hotkey badge shares the secondary line so it never covers the
+                                                 title; the 1x1 tier hides the whole line. -->
+                                            <Border Grid.Column="1" Margin="4,0,0,0" Padding="4,0"
+                                                    CornerRadius="4" Background="#24808080"
+                                                    VerticalAlignment="Center"
+                                                    IsVisible="{Binding HasHotkeyBadge}"
+                                                    ToolTip.Tip="{Binding HotkeyText}">
+                                                <TextBlock Text="{Binding HotkeyText}" FontSize="8.5"
+                                                           LineHeight="11"
+                                                           Foreground="{Binding SubBrush}" />
+                                            </Border>
+                                        </Grid>
                                         <TextBlock Text="{Binding StateText}" FontSize="10"
                                                    LineHeight="12"
                                                    TextTrimming="CharacterEllipsis"

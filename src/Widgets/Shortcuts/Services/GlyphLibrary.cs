@@ -54,6 +54,8 @@ public static class GlyphLibrary
         ["redo"] = "M19.5 9.5H10a5 5 0 0 0 0 10h5M15.5 5.5l4 4-4 4",
         ["stop"] = "M7 7h10v10H7z",
         ["pencil"] = "M4.5 19.5l1-4L16 5l3 3L8.5 18.5zM14 7l3 3",
+        ["keyboard"] = "M3 7.5h18v9H3zM6 10.5h.01M9 10.5h.01M12 10.5h.01M15 10.5h.01M18 10.5h.01M7 13.5h10",
+        ["desktop"] = "M3.5 5.5h17V16h-17zM8 19.5h8M12 16v3.5",
     };
 
     /// <summary>Glyphs offered by the icon picker (curated, recognizable set).</summary>
@@ -62,6 +64,7 @@ public static class GlyphLibrary
         "bolt", "timer", "play", "music", "lock", "moon", "sun", "camera",
         "trash", "clock", "bell", "clip", "text", "globe", "search", "folder",
         "app", "sparkle", "sliders", "list", "branch", "repeat", "comment", "eye",
+        "keyboard", "desktop",
     ];
 
     private static readonly ConcurrentDictionary<string, Geometry?> GeometryCache = new(StringComparer.Ordinal);

@@ -28,6 +28,10 @@ public class MediaManagerService : IDisposable
 
     private readonly MediaEngine engine;
     private bool disposed;
+    // This facade currently holds one engine poll pause (IWidgetSuspendable). Tracked per facade
+    // so a resume from one consumer cannot un-pause a cover another consumer is still paused for,
+    // and so disposing while paused gives the pause back.
+    private bool pollingPaused;
 
     public MediaManagerService() : this(null) { }
 
@@ -36,16 +40,19 @@ public class MediaManagerService : IDisposable
     {
         engine = MediaEngine.Acquire(sharedProvider ?? DefaultProvider, wantsGateway: sharedProvider is null);
 
+        engine.TrackChanged += OnEngineTrackChanged;
+        engine.TimelineChanged += OnEngineTimelineChanged;
+
         // Pull the engine's current state so a late-joining consumer (cached settings page) does not
-        // wait for the next identity change to learn what is playing.
+        // wait for the next identity change to learn what is playing. The engine dedupes identity
+        // changes process-wide, so an event that fired before this facade attached (the engine's
+        // first round can complete synchronously inside Acquire) is never repeated — consumers that
+        // render state call PublishCurrentTrack once they are subscribed.
         var snapshot = engine.CurrentSnapshot;
         if (snapshot is { SourceAppId: not null })
         {
             CurrentTrack = Project(snapshot);
         }
-
-        engine.TrackChanged += OnEngineTrackChanged;
-        engine.TimelineChanged += OnEngineTimelineChanged;
     }
 
     public event Action<MediaTrackInfo>? TrackChanged;
@@ -77,11 +84,41 @@ public class MediaManagerService : IDisposable
     /// application (host suspension, see <c>IWidgetSuspendable</c>). The push-based WinRT event
     /// subscriptions stay attached: they cost nothing between fires and a track change during
     /// suspension still refreshes the (invisible) widget state.
+    /// <para>
+    /// The pause is counted per consumer on the shared engine, so a resume from another widget
+    /// cannot restart the poll while this one is still covered. Idempotent per facade.
+    /// </para>
     /// </summary>
-    public void PausePolling() => engine.PausePolling();
+    public void PausePolling()
+    {
+        if (disposed || pollingPaused) return;
+        pollingPaused = true;
+        engine.PausePolling();
+    }
 
-    /// <summary>Restart the SMTC poll after <see cref="PausePolling"/>. Idempotent.</summary>
-    public void ResumePolling() => engine.ResumePolling();
+    /// <summary>Restart the SMTC poll after <see cref="PausePolling"/>. Idempotent per facade.</summary>
+    public void ResumePolling()
+    {
+        if (disposed || !pollingPaused) return;
+        pollingPaused = false;
+        engine.ResumePolling();
+    }
+
+    /// <summary>
+    /// Replays the engine's current snapshot to this facade's subscribers. The shared engine
+    /// publishes a snapshot only when the track identity changes, so a consumer that attaches
+    /// after that round (a rebuilt widget view, a newly opened settings page) would otherwise stay
+    /// blank until the next track change. Consumers call this right after subscribing.
+    /// </summary>
+    public void PublishCurrentTrack()
+    {
+        if (disposed) return;
+        var snapshot = engine.CurrentSnapshot;
+        if (snapshot is { SourceAppId: not null })
+        {
+            OnEngineTrackChanged(snapshot);
+        }
+    }
 
     /// <summary>
     /// Releases this consumer's share of the shared engine. The engine — and its SMTC client and
@@ -93,6 +130,15 @@ public class MediaManagerService : IDisposable
         disposed = true;
         engine.TrackChanged -= OnEngineTrackChanged;
         engine.TimelineChanged -= OnEngineTimelineChanged;
+
+        // Giving the pause back matters: a widget unloaded while the desktop is covered must not
+        // leave the shared poll stopped for the consumers that stay alive.
+        if (pollingPaused)
+        {
+            pollingPaused = false;
+            engine.ResumePolling();
+        }
+
         MediaEngine.Release(engine);
     }
 
@@ -105,12 +151,14 @@ public class MediaManagerService : IDisposable
 
     private void OnEngineTrackChanged(SharedMediaSnapshot snapshot)
     {
+        if (disposed) return;
         CurrentTrack = snapshot.SourceAppId is null ? new MediaTrackInfo() : Project(snapshot);
         TrackChanged?.Invoke(CurrentTrack);
     }
 
     private void OnEngineTimelineChanged(TimeSpan position, TimeSpan duration)
     {
+        if (disposed) return;
         CurrentTrack.Position = position;
         CurrentTrack.Duration = duration;
         TimelineChanged?.Invoke(position, duration);
@@ -144,8 +192,12 @@ public class MediaManagerService : IDisposable
         private readonly MediaSessionSharedProvider provider;
         private readonly SmtcGateway? gateway;
         private Timer? pollTimer;
-        private bool shutdown;
+        private volatile bool shutdown;
         private int refCount;
+        // Number of consumers currently suspended (IWidgetSuspendable). The poll stops while it is
+        // above zero; it is per consumer, not a toggle, so overlapping suspend/resume pairs from
+        // different widgets reconcile instead of fighting.
+        private int pauseCount;
 
         private SharedMediaSnapshot? lastSnapshot;
         private string? currentSessionId;
@@ -161,28 +213,47 @@ public class MediaManagerService : IDisposable
             {
                 gateway = SharedGateway.Value;
                 gateway.SessionActivity += OnGatewayActivity;
+                // The previous engine (the last consumer) shut the shared gateway down; a new
+                // engine owns it again and re-arms the manager handshake.
+                gateway.Revive();
             }
         }
 
         public SmtcGateway? Gateway => gateway;
 
-        public SharedMediaSnapshot? CurrentSnapshot => lastSnapshot;
+        /// <summary>The latest applied snapshot; read under the apply gate so a concurrently
+        /// completing round cannot be observed half-applied.</summary>
+        public SharedMediaSnapshot? CurrentSnapshot
+        {
+            get { lock (applyGate) return lastSnapshot; }
+        }
 
         public event Action<SharedMediaSnapshot>? TrackChanged;
         public event Action<TimeSpan, TimeSpan>? TimelineChanged;
 
         public static MediaEngine Acquire(MediaSessionSharedProvider provider, bool wantsGateway)
         {
+            MediaEngine engine;
+            bool created;
             lock (engines)
             {
-                if (!engines.TryGetValue(provider, out var engine))
+                if (!engines.TryGetValue(provider, out engine!))
                 {
                     engines[provider] = engine = new MediaEngine(provider, wantsGateway);
-                    _ = engine.InitializeAsync();
+                    created = true;
+                }
+                else
+                {
+                    created = false;
                 }
                 engine.refCount++;
-                return engine;
             }
+
+            // Start the async init outside the dictionary lock: its first round can complete
+            // synchronously (a cached provider/manager), and running consumer code that raises
+            // events while the engine registry is locked would serialize every other consumer.
+            if (created) _ = engine.InitializeAsync();
+            return engine;
         }
 
         public static void Release(MediaEngine engine)
@@ -240,13 +311,41 @@ public class MediaManagerService : IDisposable
         public void PausePolling()
         {
             if (shutdown) return;
-            try { pollTimer?.Change(Timeout.Infinite, Timeout.Infinite); } catch { }
+            Interlocked.Increment(ref pauseCount);
+            ApplyPollCadence();
         }
 
         public void ResumePolling()
         {
             if (shutdown) return;
-            try { pollTimer?.Change(TimeSpan.FromSeconds(1), TimeSpan.FromMilliseconds(1500)); } catch { }
+            if (Interlocked.Decrement(ref pauseCount) < 0)
+            {
+                // A resume without a matching pause must not underflow into a permanently
+                // "resumed" negative count that a later single pause cannot silence.
+                Interlocked.Exchange(ref pauseCount, 0);
+            }
+            ApplyPollCadence();
+        }
+
+        /// <summary>Reconciles the timer with the pause count. Called on creation and on every
+        /// suspend/resume edge, so the order of "timer created" vs "consumer suspended" cannot
+        /// strand the poll in either state.</summary>
+        private void ApplyPollCadence()
+        {
+            var timer = pollTimer;
+            if (timer == null) return;
+            try
+            {
+                if (Volatile.Read(ref pauseCount) > 0)
+                {
+                    timer.Change(Timeout.Infinite, Timeout.Infinite);
+                }
+                else
+                {
+                    timer.Change(TimeSpan.FromSeconds(1), TimeSpan.FromMilliseconds(1500));
+                }
+            }
+            catch (ObjectDisposedException) { }
         }
 
         public async Task RefreshAsync()
@@ -254,6 +353,17 @@ public class MediaManagerService : IDisposable
             if (shutdown) return;
             try
             {
+                // Retry the manager handshake on every round: a transient RequestAsync failure at
+                // engine startup used to leave the poll silently reading Empty forever (the engine
+                // stayed alive, so a rebuild was the only way out). EnsureInitializedAsync is a
+                // no-op once bound.
+                if (gateway != null && !await gateway.EnsureInitializedAsync().ConfigureAwait(false))
+                {
+                    // No manager yet: keep the last known state instead of resetting the widget to
+                    // "not playing"; the next scheduled round retries.
+                    return;
+                }
+
                 using var lease = await provider.AcquireAsync("media-engine").ConfigureAwait(false);
                 if (shutdown) return;
                 ApplySnapshot(lease.Snapshot.Value ?? SharedMediaSnapshot.Empty);
@@ -268,33 +378,42 @@ public class MediaManagerService : IDisposable
         {
             try
             {
-                if (gateway != null)
-                {
-                    await gateway.InitializeAsync().ConfigureAwait(false);
-                    // Release() can run while this await is in flight (the last consumer unloads
-                    // during startup). Subscribing then would leak the poll timer, so bail out.
-                    if (shutdown) return;
+                await RefreshAsync().ConfigureAwait(false);
+                if (shutdown) return;
 
-                    await RefreshAsync().ConfigureAwait(false);
-                    if (shutdown) return;
-
-                    // Poll every 1.5s as WinRT SMTC events often do not fire for Win32 apps like QQMusic
-                    pollTimer = new Timer(async _ =>
-                    {
-                        if (shutdown) return;
-                        try
-                        {
-                            await RefreshAsync().ConfigureAwait(false);
-                        }
-                        catch { }
-                    }, null, TimeSpan.FromSeconds(1), TimeSpan.FromMilliseconds(1500));
-                }
-                else
+                if (gateway == null)
                 {
                     // Injected source: no platform gateway and no poll timer — the consumer drives
                     // refreshes, which keeps tests and embedded hosts deterministic.
-                    await RefreshAsync().ConfigureAwait(false);
+                    return;
                 }
+
+                // Poll every 1.5s as WinRT SMTC events often do not fire for Win32 apps like QQMusic.
+                // The timer starts armed only through ApplyPollCadence so a suspend that arrived
+                // while this init was in flight is honoured instead of being overwritten.
+                var timer = new Timer(async _ =>
+                {
+                    if (shutdown) return;
+                    try
+                    {
+                        await RefreshAsync().ConfigureAwait(false);
+                    }
+                    catch { }
+                }, null, Timeout.Infinite, Timeout.Infinite);
+
+                lock (engines)
+                {
+                    // Release() can run while the refresh above was in flight; publishing the
+                    // timer then would leave a live poll behind a released engine.
+                    if (shutdown)
+                    {
+                        timer.Dispose();
+                        return;
+                    }
+                    pollTimer = timer;
+                }
+
+                ApplyPollCadence();
             }
             catch (Exception ex)
             {
@@ -337,7 +456,7 @@ public class MediaManagerService : IDisposable
                     lastSnapshot.Artist == snapshot.Artist &&
                     lastSnapshot.AlbumTitle == snapshot.AlbumTitle &&
                     lastSnapshot.IsPlaying == snapshot.IsPlaying &&
-                    (lastSnapshot.ThumbnailData != null || snapshot.ThumbnailData == null);
+                    SameCover(lastSnapshot.ThumbnailData, snapshot.ThumbnailData);
 
                 var applied = position == snapshot.Position ? snapshot : snapshot with { Position = position };
                 heldPosition = position;
@@ -368,6 +487,20 @@ public class MediaManagerService : IDisposable
             }
             return false;
         }
+
+        /// <summary>
+        /// Whether the artwork counts as unchanged for identity purposes. A missing thumbnail is
+        /// treated as "unknown", not as "no cover": players transiently fail to hand it out (or
+        /// publish the track before the art), and clearing the widget's cover on every such round
+        /// would flicker. An arriving cover — or a different image on the same track (placeholder
+        /// replaced by the real artwork) — is an identity change and reaches the UI.
+        /// </summary>
+        private static bool SameCover(byte[]? current, byte[]? next)
+        {
+            if (current is null) return next is null;
+            if (next is null) return true;
+            return current.Length == next.Length && current.AsSpan().SequenceEqual(next);
+        }
     }
 }
 
@@ -378,26 +511,87 @@ public class MediaManagerService : IDisposable
 /// </summary>
 internal sealed class SmtcGateway
 {
+    // Guards the manager/session binding. ReadSnapshotAsync rounds can overlap (the 1.5 s poll
+    // racing a WinRT push) and Release can shut the gateway down in the middle of one; every
+    // (un)subscription and every field swap is serialized here so a rebind can neither subscribe
+    // a session twice nor drop a subscription it still needs.
+    private readonly object gate = new();
     private GlobalSystemMediaTransportControlsSessionManager? sessionManager;
     private GlobalSystemMediaTransportControlsSession? boundSession;
     private string? boundSessionId;
     private List<PlayerRule> rules = [];
-    private bool shutdown;
+    private volatile bool shutdown;
+    // Incremented by Shutdown only. An EnsureInitializedAsync continuation that started before a
+    // Release compares its epoch and becomes a no-op instead of nulling out / double-subscribing
+    // the manager a live engine now uses — the previous code could leave the whole chain silently
+    // fetching SharedMediaSnapshot.Empty until the widget was rebuilt.
+    private int generation;
 
     public event Action? SessionActivity;
 
-    public async Task InitializeAsync()
+    /// <summary>
+    /// Re-arms a gateway that the previous engine shut down when it was the last consumer. Only a
+    /// newly attached engine may revive it: a refresh round that was already in flight during
+    /// Release must never resurrect the manager with no engine left to own it.
+    /// </summary>
+    public void Revive()
     {
-        shutdown = false;
-        sessionManager = await GlobalSystemMediaTransportControlsSessionManager.RequestAsync();
-        if (sessionManager == null || shutdown)
+        lock (gate)
         {
-            if (shutdown) sessionManager = null;
-            return;
+            if (sessionManager == null) shutdown = false;
+        }
+    }
+
+    /// <summary>
+    /// Makes sure a session manager is bound, retrying on the next caller when a previous attempt
+    /// failed (SMTC RequestAsync can fail transiently while a player starts or the system is busy).
+    /// Returns true when a manager is available. Cheap and idempotent once bound.
+    /// </summary>
+    public async Task<bool> EnsureInitializedAsync()
+    {
+        int started;
+        lock (gate)
+        {
+            if (shutdown) return false;
+            if (sessionManager != null) return true;
+            started = generation;
         }
 
-        sessionManager.SessionsChanged += OnSessionsChanged;
-        sessionManager.CurrentSessionChanged += OnCurrentSessionChanged;
+        GlobalSystemMediaTransportControlsSessionManager? manager;
+        try
+        {
+            manager = await GlobalSystemMediaTransportControlsSessionManager.RequestAsync();
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"[MediaManagerService] SMTC RequestAsync error: {ex.Message}");
+            return false;
+        }
+
+        lock (gate)
+        {
+            // A Shutdown ran while RequestAsync was in flight: never touch the shared manager from
+            // a stale continuation (a newer engine may already own it).
+            if (started != generation || shutdown) return sessionManager != null;
+
+            if (manager == null)
+            {
+                DetachManagerLocked();
+                return false;
+            }
+
+            if (ReferenceEquals(sessionManager, manager))
+            {
+                // A newer round already installed and subscribed this manager instance.
+                return true;
+            }
+
+            DetachManagerLocked();
+            sessionManager = manager;
+            manager.SessionsChanged += OnSessionsChanged;
+            manager.CurrentSessionChanged += OnCurrentSessionChanged;
+            return true;
+        }
     }
 
     public void UpdateRules(IEnumerable<PlayerRule> newRules) =>
@@ -406,11 +600,11 @@ internal sealed class SmtcGateway
     /// <summary>The fetch the default provider delegates to; produces one shared snapshot round.</summary>
     public async Task<SharedMediaSnapshot> ReadSnapshotAsync(CancellationToken cancellationToken)
     {
-        var manager = sessionManager;
-        if (manager == null || shutdown) return SharedMediaSnapshot.Empty;
+        var manager = CurrentManager();
+        if (manager == null) return SharedMediaSnapshot.Empty;
 
         var session = SelectSession(manager, out var matchedRule);
-        await BindAsync(session).ConfigureAwait(false);
+        Bind(session);
         if (session == null || shutdown) return SharedMediaSnapshot.Empty;
 
         var playback = session.GetPlaybackInfo();
@@ -455,7 +649,7 @@ internal sealed class SmtcGateway
     public async Task<List<(string AppId, string Title, string Artist, bool IsPlaying)>> GetActiveSessionsAsync()
     {
         var result = new List<(string, string, string, bool)>();
-        var manager = sessionManager;
+        var manager = CurrentManager();
         if (manager == null) return result;
 
         try
@@ -479,8 +673,8 @@ internal sealed class SmtcGateway
 
     public async Task TogglePlayPauseAsync()
     {
-        var session = boundSession;
-        if (session == null || shutdown) return;
+        var session = CurrentSession();
+        if (session == null) return;
         try
         {
             var info = session.GetPlaybackInfo();
@@ -501,8 +695,8 @@ internal sealed class SmtcGateway
 
     public async Task SkipNextAsync()
     {
-        var session = boundSession;
-        if (session == null || shutdown) return;
+        var session = CurrentSession();
+        if (session == null) return;
         try
         {
             await session.TrySkipNextAsync();
@@ -515,8 +709,8 @@ internal sealed class SmtcGateway
 
     public async Task SkipPreviousAsync()
     {
-        var session = boundSession;
-        if (session == null || shutdown) return;
+        var session = CurrentSession();
+        if (session == null) return;
         try
         {
             await session.TrySkipPreviousAsync();
@@ -529,22 +723,48 @@ internal sealed class SmtcGateway
 
     public async Task ChangePlaybackPositionAsync(TimeSpan position)
     {
-        var session = boundSession;
-        if (session == null || shutdown) return;
+        var session = CurrentSession();
+        if (session == null) return;
         await session.TryChangePlaybackPositionAsync(position.Ticks);
     }
 
     /// <summary>Stops every platform subscription; a later engine re-initializes with a fresh RequestAsync.</summary>
     public void Shutdown()
     {
-        shutdown = true;
-        UnbindCurrentSession();
-        if (sessionManager != null)
+        lock (gate)
         {
-            sessionManager.SessionsChanged -= OnSessionsChanged;
-            sessionManager.CurrentSessionChanged -= OnCurrentSessionChanged;
-            sessionManager = null;
+            // Bumping the generation before clearing makes any in-flight EnsureInitializedAsync
+            // continuation a no-op, so it cannot resurrect (or null out) the manager afterwards.
+            generation++;
+            shutdown = true;
+            UnbindCurrentSessionLocked();
+            DetachManagerLocked();
         }
+    }
+
+    private GlobalSystemMediaTransportControlsSessionManager? CurrentManager()
+    {
+        lock (gate)
+        {
+            return shutdown ? null : sessionManager;
+        }
+    }
+
+    private GlobalSystemMediaTransportControlsSession? CurrentSession()
+    {
+        lock (gate)
+        {
+            return shutdown ? null : boundSession;
+        }
+    }
+
+    /// <summary>Unhooks the manager event subscriptions. Caller holds <see cref="gate"/>.</summary>
+    private void DetachManagerLocked()
+    {
+        if (sessionManager == null) return;
+        sessionManager.SessionsChanged -= OnSessionsChanged;
+        sessionManager.CurrentSessionChanged -= OnCurrentSessionChanged;
+        sessionManager = null;
     }
 
     private GlobalSystemMediaTransportControlsSession? SelectSession(
@@ -603,41 +823,55 @@ internal sealed class SmtcGateway
         return bestSession;
     }
 
-    private async Task BindAsync(GlobalSystemMediaTransportControlsSession? session)
+    /// <summary>Binds the selected session and its three change streams. Serialized with Shutdown
+    /// and with overlapping refresh rounds so the handlers are subscribed exactly once.</summary>
+    private void Bind(GlobalSystemMediaTransportControlsSession? session)
     {
-        if (session == null)
+        lock (gate)
         {
-            UnbindCurrentSession();
-            return;
+            if (shutdown) return;
+
+            if (session == null)
+            {
+                UnbindCurrentSessionLocked();
+                return;
+            }
+
+            var appId = session.SourceAppUserModelId;
+            if (boundSession != null && boundSessionId == appId)
+            {
+                // Same session, keep its event subscriptions.
+                return;
+            }
+
+            UnbindCurrentSessionLocked();
+
+            boundSession = session;
+            boundSessionId = appId;
+
+            boundSession.PlaybackInfoChanged += OnSessionPlaybackInfoChanged;
+            boundSession.MediaPropertiesChanged += OnSessionMediaPropertiesChanged;
+            boundSession.TimelinePropertiesChanged += OnSessionTimelineChanged;
         }
-
-        var appId = session.SourceAppUserModelId;
-        if (boundSession != null && boundSessionId == appId)
-        {
-            // Same session, keep its event subscriptions.
-            return;
-        }
-
-        UnbindCurrentSession();
-
-        boundSession = session;
-        boundSessionId = appId;
-
-        boundSession.PlaybackInfoChanged += OnSessionPlaybackInfoChanged;
-        boundSession.MediaPropertiesChanged += OnSessionMediaPropertiesChanged;
-        boundSession.TimelinePropertiesChanged += OnSessionTimelineChanged;
     }
 
-    private void UnbindCurrentSession()
+    /// <summary>Drops the bound session's subscriptions. Caller holds <see cref="gate"/>.</summary>
+    private void UnbindCurrentSessionLocked()
     {
-        if (boundSession != null)
+        if (boundSession == null) return;
+        try
         {
             boundSession.PlaybackInfoChanged -= OnSessionPlaybackInfoChanged;
             boundSession.MediaPropertiesChanged -= OnSessionMediaPropertiesChanged;
             boundSession.TimelinePropertiesChanged -= OnSessionTimelineChanged;
-            boundSession = null;
-            boundSessionId = null;
         }
+        catch
+        {
+            // A session the player already tore down can reject unsubscription; the reference
+            // must still be dropped so a later session does not inherit stale handlers.
+        }
+        boundSession = null;
+        boundSessionId = null;
     }
 
     private void OnSessionsChanged(GlobalSystemMediaTransportControlsSessionManager sender, SessionsChangedEventArgs args) => RaiseActivity();

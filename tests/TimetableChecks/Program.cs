@@ -3,6 +3,7 @@ using System.Text.Json;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
+using Avalonia.Interactivity;
 using Avalonia.Media;
 using DeskCanvas.Core.Interfaces;
 using DeskCanvas.Core.Models;
@@ -83,6 +84,10 @@ internal static class Program
         Console.WriteLine();
         Console.WriteLine("6. 注册契约与视图构造 (WidgetInfo / XAML)");
         RegistrationChecks();
+
+        Console.WriteLine();
+        Console.WriteLine("7. 二级面板周切换 (TimetablePanelWindow)");
+        WeekNavigationChecks();
 
         Console.WriteLine();
         Console.WriteLine($"{passed}/{passed + failed} passed, {failed} failed");
@@ -517,6 +522,116 @@ internal static class Program
         Check(weekScroll?.HorizontalScrollBarVisibility == ScrollBarVisibility.Disabled,
             "周视图的 ScrollViewer 本地为横向 Disabled");
     }
+
+    /// <summary>
+    /// The panel's week navigation: the header controls switch the rendered week / whole-term
+    /// view without touching the model, out-of-range is disabled rather than clamped silently,
+    /// and the whole-term mode really is the renderer's week 0 (every course, no week filter).
+    /// </summary>
+    private static void WeekNavigationChecks()
+    {
+        var model = new TimetableModel(
+            Name: "周切换",
+            TotalWeeks: 8,
+            CurrentWeekOverride: 6,
+            Periods: [new TimetablePeriod("1", "08:00", "08:45")],
+            Courses:
+            [
+                new TimetableCourse("A", Entries: [new TimetableEntry(1, [1], "1-2")]),
+                new TimetableCourse("B", Entries: [new TimetableEntry(2, [1], "5-8")]),
+            ]).Normalize();
+
+        var panel = new Timetable.Views.TimetablePanelWindow(model);
+        try
+        {
+            var badge = panel.FindControl<TextBlock>("WeekBadgeText");
+            var grid = panel.FindControl<Grid>("PanelGridHost");
+            var prev = panel.FindControl<Button>("PreviousWeekButton");
+            var next = panel.FindControl<Button>("NextWeekButton");
+            var today = panel.FindControl<Button>("BackToCurrentWeekButton");
+            var mode = panel.FindControl<Button>("WeekModeButton");
+
+            Check(badge != null && grid != null && prev != null && next != null && today != null && mode != null,
+                "面板头部有上一周 / 下一周 / 回到本周 / 模式切换四个控件");
+
+            if (badge == null || grid == null || prev == null || next == null || today == null || mode == null)
+                return;
+
+            Check(badge.Text == Timetable.Locales.Locale.Timetable_Week.Replace("{0}", "6"),
+                "打开面板默认显示当前周（第 6 周）");
+            Check(BlockCount(grid) == 1,
+                "当前周只显示覆盖第 6 周的课程（B，1 个块）");
+            Check(prev.IsEnabled && next.IsEnabled && !today.IsEnabled,
+                "当前周：上一/下一周可用，回到本周禁用");
+
+            Click(next);
+            Click(next);
+            Check(badge.Text == Timetable.Locales.Locale.Timetable_Week.Replace("{0}", "8"),
+                "下一周可连续前进到第 8 周");
+            Check(!next.IsEnabled, "到达总周数上限后下一周禁用");
+            Click(next);
+            Check(badge.Text == Timetable.Locales.Locale.Timetable_Week.Replace("{0}", "8"),
+                "越界点击不会改变周次（不静默夹取）");
+
+            Click(prev);
+            Click(prev);
+            Click(prev);
+            Click(prev);
+            Check(badge.Text == Timetable.Locales.Locale.Timetable_Week.Replace("{0}", "4"),
+                "上一周可回溯到第 4 周");
+            Check(BlockCount(grid) == 0, "第 4 周没有任何课程（周规则过滤生效）");
+
+            Click(today);
+            Check(badge.Text == Timetable.Locales.Locale.Timetable_Week.Replace("{0}", "6") && !today.IsEnabled,
+                "回到本周恢复第 6 周并禁用自身");
+
+            Click(mode);
+            Check(badge.Text == Timetable.Locales.Locale.Timetable_AllWeeks,
+                "模式切换后徽标显示全学期");
+            Check(BlockCount(grid) == 2,
+                "全学期（week=0）显示所有课程（A+B，2 个块）");
+            Check(!prev.IsEnabled && !next.IsEnabled && today.IsEnabled,
+                "全学期模式下上一/下一周禁用，回到本周可用");
+
+            Click(mode);
+            Check(badge.Text == Timetable.Locales.Locale.Timetable_Week.Replace("{0}", "6") && BlockCount(grid) == 1,
+                "切回单周模式恢复当前周网格（备注区不重建）");
+        }
+        finally
+        {
+            panel.Close();
+        }
+
+        // Upper bound fallback: with no declared term length the highest week mentioned by any
+        // course rule keeps the range navigable (a total of 10 here).
+        var openEnded = new TimetableModel(
+            Name: "推算周数",
+            CurrentWeekOverride: 3,
+            Periods: [new TimetablePeriod("1", "08:00", "08:45")],
+            Courses: [new TimetableCourse("A", Entries: [new TimetableEntry(1, [1], "1-10")])]).Normalize();
+
+        var second = new Timetable.Views.TimetablePanelWindow(openEnded);
+        try
+        {
+            var badge = second.FindControl<TextBlock>("WeekBadgeText");
+            var next = second.FindControl<Button>("NextWeekButton");
+
+            for (var i = 0; i < 12; i++) Click(next!);
+            Check(badge?.Text == Timetable.Locales.Locale.Timetable_Week.Replace("{0}", "10") && next?.IsEnabled == false,
+                "未设置总周数时按课程周次推算上限（1-10 → 停在第 10 周）");
+        }
+        finally
+        {
+            second.Close();
+        }
+    }
+
+    /// <summary>Raises the button's Click event — the same handler path a pointer release takes.</summary>
+    private static void Click(Button button) => button.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+
+    /// <summary>Course blocks (bordered cards with content) currently hosted by the panel grid.</summary>
+    private static int BlockCount(Grid grid) =>
+        grid.Children.OfType<Border>().Count(b => b.Child is StackPanel);
 
     /// <summary>Minimal layout provider so the settings page can be exercised without a live widget.</summary>
     private sealed class StubLayoutProvider(WidgetLayout initial) : IWidgetLayoutProvider

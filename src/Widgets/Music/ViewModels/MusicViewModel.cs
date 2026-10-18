@@ -7,6 +7,7 @@ using Music.Locales;
 using Music.Models;
 using Music.Services;
 using DeskCanvas.Contracts;
+using DeskCanvas.Runtime;
 
 namespace Music.ViewModels;
 
@@ -165,7 +166,11 @@ public class MusicViewModel : INotifyPropertyChanged, IDisposable
     public bool AmbientGlow => model.AmbientGlow;
     public bool ShowProgressBar => model.ShowProgressBar;
 
-    public MusicViewModel(MusicModel model, IWidgetSession? session = null)
+    /// <summary>
+    /// <paramref name="mediaProvider"/> is the injected snapshot source for check/embedded hosts.
+    /// The production host passes null, which keeps the process-shared SMTC engine.
+    /// </summary>
+    public MusicViewModel(MusicModel model, IWidgetSession? session = null, MediaSessionSharedProvider? mediaProvider = null)
     {
         this.model = model;
         this.session = session;
@@ -174,11 +179,18 @@ public class MusicViewModel : INotifyPropertyChanged, IDisposable
         renderActive = session?.Activity.RenderActive ?? true;
 
         lastSyncTimestamp = Stopwatch.GetTimestamp();
-        mediaService = new MediaManagerService();
+        mediaService = new MediaManagerService(mediaProvider);
         mediaService.UpdateRules(model.PlayerRules);
 
         mediaService.TrackChanged += OnTrackChanged;
         mediaService.TimelineChanged += OnTimelineChanged;
+
+        // The shared engine publishes TrackChanged only when the track identity changes. Its first
+        // round can complete synchronously inside the service constructor (cached provider/manager),
+        // which puts that event before the subscription above — and it would never repeat. Replaying
+        // the current projection here is what makes a rebuilt widget show what is playing instead of
+        // staying blank until the user switches tracks.
+        mediaService.PublishCurrentTrack();
 
         timer = new DispatcherTimer
         {

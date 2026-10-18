@@ -76,8 +76,14 @@ public partial class LabeledSlider : UserControl
         InitializeComponent();
 
         SliderPart.PropertyChanged += OnSliderPropertyChanged;
-        SliderPart.AddHandler(Thumb.DragCompletedEvent, OnSliderDragCompleted, RoutingStrategies.Bubble);
-        SliderPart.AddHandler(PointerReleasedEvent, OnSliderPointerReleased, RoutingStrategies.Bubble);
+        // The Slider/Thumb mark every pointer event they consume as handled, so both gesture
+        // completions have to opt into handled events or a plain track click never commits.
+        SliderPart.AddHandler(Thumb.DragCompletedEvent, OnSliderDragCompleted, RoutingStrategies.Bubble, handledEventsToo: true);
+        SliderPart.AddHandler(PointerReleasedEvent, OnSliderPointerReleased, RoutingStrategies.Bubble, handledEventsToo: true);
+        // Last resort: capture is stolen mid-gesture (window deactivation, a popup taking the
+        // pointer), so the release never arrives. The Slider owns the capture itself, hence
+        // Direct routing on this very element.
+        SliderPart.AddHandler(PointerCaptureLostEvent, OnSliderPointerCaptureLost, RoutingStrategies.Direct, handledEventsToo: true);
         SliderPart.AddHandler(KeyUpEvent, OnSliderKeyUp, RoutingStrategies.Bubble);
 
         NumericPart.ValueChanged += OnNumericValueChanged;
@@ -305,9 +311,15 @@ public partial class LabeledSlider : UserControl
 
     private void OnSliderDragCompleted(object? sender, VectorEventArgs e) => TryCommit();
 
-    // A pointer release covers track clicks / repeat buttons, which change the value without a
-    // thumb drag. The baseline check keeps press-without-change releases silent.
+    // A pointer release covers thumb drags, track clicks and repeat buttons: the Slider marks
+    // those pointer events handled, so this handler listens to handled events too. A release
+    // outside the control is routed back to the capturing Slider, so it lands here as well.
+    // The baseline check in TryCommit keeps press-without-change releases silent and makes a
+    // duplicate completion (release + drag completed + capture lost) a no-op.
     private void OnSliderPointerReleased(object? sender, PointerReleasedEventArgs e) => TryCommit();
+
+    /// <summary>Capture was taken away before the gesture could release — commit what the user reached.</summary>
+    private void OnSliderPointerCaptureLost(object? sender, PointerCaptureLostEventArgs e) => TryCommit();
 
     private void OnSliderKeyUp(object? sender, KeyEventArgs e)
     {

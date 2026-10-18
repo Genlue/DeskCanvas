@@ -1,0 +1,58 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:locales="clr-namespace:Shortcuts.Locales"
+             x:Class="Shortcuts.Views.Controls.HotkeyCaptureBox"
+             Background="Transparent">
+
+    <UserControl.Styles>
+        <Style Selector="Button.hotkey-capture-action">
+            <Setter Property="Padding" Value="10,4" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="BorderBrush" Value="{DynamicResource MenuSurfaceBorder}" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+        </Style>
+        <Style Selector="Button.hotkey-capture-action:pointerover">
+            <Setter Property="Background" Value="#15808080" />
+        </Style>
+    </UserControl.Styles>
+
+    <StackPanel Spacing="3">
+        <Grid ColumnDefinitions="*,Auto,Auto">
+            <TextBox x:Name="InputBox"
+                     Grid.Column="0"
+                     IsReadOnly="False"
+                     IsTabStop="True"
+                     FontSize="12"
+                     Height="30"
+                     VerticalContentAlignment="Center"
+                     PlaceholderText="{x:Static locales:Locale.Shortcuts_Hotkey_None}"
+                     TextChanged="OnTextChanged"
+                     LostFocus="OnInputLostFocus"
+                     KeyDown="OnInputKeyDown" />
+            <Button x:Name="RecordButton"
+                    Grid.Column="1"
+                    Classes="hotkey-capture-action"
+                    Margin="6,0,0,0"
+                    Click="OnRecordClicked"
+                    Content="{x:Static locales:Locale.Shortcuts_Hotkey_Record}"
+                    ToolTip.Tip="{x:Static locales:Locale.Shortcuts_Hotkey_Record}"
+                    AutomationProperties.Name="{x:Static locales:Locale.Shortcuts_Hotkey_Record}" />
+            <Button x:Name="ClearButton"
+                    Grid.Column="2"
+                    Classes="hotkey-capture-action"
+                    Margin="6,0,0,0"
+                    Click="OnClearClicked"
+                    Content="{x:Static locales:Locale.Shortcuts_Hotkey_Clear}"
+                    ToolTip.Tip="{x:Static locales:Locale.Shortcuts_Hotkey_Clear}"
+                    AutomationProperties.Name="{x:Static locales:Locale.Shortcuts_Hotkey_Clear}" />
+        </Grid>
+        <TextBlock x:Name="StatusText"
+                   FontSize="10.5"
+                   Opacity="0.6"
+                   TextTrimming="CharacterEllipsis" />
+    </StackPanel>
+</UserControl>

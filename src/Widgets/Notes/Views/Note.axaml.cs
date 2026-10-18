@@ -309,7 +309,7 @@ public partial class Note : UserControl, IWidgetSelfRefreshing, IWidgetSurfaceHi
     private void ApplyHeader(NoteModel model)
     {
         var theme = FocusThemeCoordinator.ResolveVisualTheme(this) ?? appSettingsProvider.Get().Theme;
-        var opacity = theme.IsColorful ? 1.0 : Math.Clamp(model.HeaderOpacity, 0, 1);
+        var opacity = theme.IsColorful ? 1.0 : NoteModel.NormalizeHeaderOpacity(model.HeaderOpacity);
 
         Color color;
         if (theme.IsColorful)

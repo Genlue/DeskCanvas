@@ -689,6 +689,12 @@ public partial class ShortcutsEditorWindow
             return string.IsNullOrEmpty(labelKey) ? raw : Loc.Get(labelKey);
         }
 
+        if (spec.Kind == ParamKind.Hotkey &&
+            HotkeyGesture.TryParse(raw, requireModifier: false, out var hotkey, out _))
+        {
+            return hotkey.Text;
+        }
+
         return spec.UnitKey != null ? Loc.Format(spec.UnitKey, raw) : raw;
     }
 
@@ -795,6 +801,42 @@ public partial class ShortcutsEditorWindow
                 break;
             }
 
+            case ParamKind.Hotkey:
+            {
+                var current = action.Params.GetValueOrDefault(spec.Key);
+                var original = current is { IsVariable: false } ? current.Text?.Trim() ?? string.Empty : string.Empty;
+                var capture = new HotkeyCaptureBox
+                {
+                    Value = original,
+                    RequireModifier = false,
+                    IsReadOnly = false,
+                    ShowStatus = true,
+                };
+
+                // Do not rebuild rows while the flyout is open: committing there would destroy
+                // the anchor and close the capture box mid-recording. Keep the last valid value
+                // and write it when the flyout closes.
+                var pending = original;
+                var changed = false;
+                capture.ValueChanged += (_, e) =>
+                {
+                    pending = e.Value ?? string.Empty;
+                    changed = true;
+                };
+                panel.Children.Add(capture);
+
+                flyout.Closed += (_, _) =>
+                {
+                    if (!changed) return;
+                    if (pending.Length == 0) action.Params.Remove(spec.Key);
+                    else action.Params[spec.Key] = ShortcutValue.Literal(pending);
+                    CommitChange();
+                };
+
+                initialFocus = capture;
+                break;
+            }
+
             default:
             {
                 var current = action.Params.GetValueOrDefault(spec.Key);
@@ -853,10 +895,17 @@ public partial class ShortcutsEditorWindow
         // shortcuts no longer fire while the user is editing a parameter value.
         flyout.Opened += (_, _) =>
         {
-            initialFocus?.Focus();
-            Dispatcher.UIThread.Post(() => initialFocus?.Focus(), DispatcherPriority.Input);
+            FocusEditor(initialFocus);
+            Dispatcher.UIThread.Post(() => FocusEditor(initialFocus), DispatcherPriority.Input);
         };
         flyout.ShowAt(anchor);
+    }
+
+    /// <summary>The hotkey capture needs focus inside its text box, not on the wrapper control.</summary>
+    private static void FocusEditor(Control? editor)
+    {
+        if (editor is HotkeyCaptureBox capture) capture.FocusInput();
+        else editor?.Focus();
     }
 
     private Button BuildBrowseButton(ParamSpec spec, TextBox box, Action<ShortcutValue, bool> commit,

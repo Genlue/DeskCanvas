@@ -833,6 +833,19 @@ public partial class Widget : Window, INotifyPropertyChanged, IFocusThemedWindow
     }
 
     /// <summary>
+    /// Whether the switch chord's button is held right now.
+    /// <para>
+    /// The live state from the event is the primary signal. The cached flag is only a fallback:
+    /// an inner control (Button, ScrollViewer content, a drag-aware child) captures the pointer
+    /// on press, and a capture makes the window see a spurious "pointer left" — the cached flag
+    /// was cleared there while the middle button was still down, so every subsequent wheel tick
+    /// over that control was ignored ("only the non-interactive padding switches pages").
+    /// </para>
+    /// </summary>
+    private bool IsMiddleButtonChordHeld(PointerEventArgs e) =>
+        stackMiddleButtonChord || e.GetCurrentPoint(this).Properties.IsMiddleButtonPressed;
+
+    /// <summary>
     /// 中键+滚轮切换重叠组件: hold the middle button anywhere over the widget and roll the
     /// wheel to page through the stack — no aiming for the dots strip required. Runs on the
     /// tunnel route ahead of every inner control, and marks the wheel handled so neither the
@@ -842,11 +855,17 @@ public partial class Widget : Window, INotifyPropertyChanged, IFocusThemedWindow
     /// </summary>
     private void OnStackChordWheelChanged(object? sender, PointerWheelEventArgs e)
     {
-        if (!stackMiddleButtonChord) return;
         if (StackWidget is not { } stack || stack.IndicatorItems is not { Count: > 1 } list) return;
+        if (!IsMiddleButtonChordHeld(e)) return;
 
         try
         {
+            // Re-arm the cached flag from the live state: a capture-induced exit may have
+            // cleared it mid-gesture, and the following wheel ticks should keep working even
+            // on platforms that only report the button state on the press.
+            if (e.GetCurrentPoint(this).Properties.IsMiddleButtonPressed)
+                stackMiddleButtonChord = true;
+
             if (stack.IsTransitionActive)
             {
                 e.Handled = true;
@@ -869,9 +888,12 @@ public partial class Widget : Window, INotifyPropertyChanged, IFocusThemedWindow
     protected override void OnPointerExited(PointerEventArgs e)
     {
         base.OnPointerExited(e);
-        // The chord is a press-and-scroll gesture inside the widget: leaving the window
-        // ends it (a release outside would otherwise leave the flag stuck on).
-        stackMiddleButtonChord = false;
+        // The chord is a press-and-scroll gesture inside the widget: leaving the window ends it
+        // (a release outside would otherwise leave the flag stuck on). Never end it while the
+        // middle button is still down — an inner control's pointer capture raises the same
+        // "pointer exited" on the window even though the pointer never left the card.
+        if (!e.GetCurrentPoint(this).Properties.IsMiddleButtonPressed)
+            stackMiddleButtonChord = false;
     }
 
     /// <summary>

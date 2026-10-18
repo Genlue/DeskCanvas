@@ -190,6 +190,8 @@ var widgetImportWhitelist = new Dictionary<string, int>
     ["src/Widgets/Folders/Views/SingleFile.axaml.cs"] = 1,
     ["src/Widgets/Picture/Views/PictureView.axaml.cs"] = 1,
     ["src/Widgets/Shortcuts/Services/Executors/SystemExecutors.cs"] = 4,
+    ["src/Widgets/Shortcuts/Services/KeyboardInput.cs"] = 1,
+    ["src/Widgets/Shortcuts/Services/ShortcutHotkeyService.cs"] = 8,
     ["src/Widgets/Tools/Services/ClipboardNative.cs"] = 12,
 };
 

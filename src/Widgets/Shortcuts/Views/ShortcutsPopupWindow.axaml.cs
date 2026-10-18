@@ -96,10 +96,15 @@ public partial class ShortcutsPopupWindow : SecondaryPanelWindow
         else Dispatcher.UIThread.Post(Apply);
     }
 
-    private void OnWindowOpened(object? sender, EventArgs e) => AttachEvents();
+    private void OnWindowOpened(object? sender, EventArgs e)
+    {
+        ShortcutsRuntime.PublishTopLevel(this);
+        AttachEvents();
+    }
 
     private void OnWindowClosed(object? sender, EventArgs e)
     {
+        ShortcutsRuntime.ReleaseTopLevel(this);
         DetachEvents();
         Opened -= OnWindowOpened;
         Closed -= OnWindowClosed;
@@ -135,6 +140,12 @@ public partial class ShortcutsPopupWindow : SecondaryPanelWindow
                 tile = new ShortcutTileViewModel(shortcut);
                 tile.ApplyTheme(ActualThemeVariant == ThemeVariant.Dark);
                 cache[shortcut.Id] = tile;
+            }
+            else
+            {
+                // Reused rows must pick up renames / new hotkeys from the shared document.
+                tile.Apply(shortcut);
+                tile.ApplyTheme(ActualThemeVariant == ThemeVariant.Dark);
             }
 
             var currentIndex = items.IndexOf(tile);

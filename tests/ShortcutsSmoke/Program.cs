@@ -4,6 +4,8 @@ using Avalonia.Headless;
 using DeskCanvas.Core;
 using Shortcuts.Models;
 using Shortcuts.Services;
+using Shortcuts.Services.Executors;
+using Shortcuts.ViewModels;
 
 namespace ShortcutsSmoke;
 
@@ -33,6 +35,9 @@ internal static class Program
 
         CheckGlyphs();
         CheckDocumentRoundTrip();
+        CheckHotkeyModel();
+        CheckCornerRadius();
+        CheckNewActionsAndTemplates();
         CheckStoreCrud();
         CheckViewsConstruct();
 
@@ -84,6 +89,145 @@ internal static class Program
         Check(back.Shortcuts.Count == 1 && back.Shortcuts[0].Actions.Count == 2,
             "document round-trips");
         Check(back.Shortcuts[0].ActionCount == 2, "action count counts leaves");
+    }
+
+    // ---- hotkey model --------------------------------------------------------------
+
+    private static void CheckHotkeyModel()
+    {
+        Check(HotkeyGesture.TryParse("Ctrl+Alt+1", requireModifier: true, out var one, out _)
+              && one.Text == "Ctrl+Alt+1" && one.VirtualKey == 0x31
+              && one.Modifiers == (HotkeyModifiers.Control | HotkeyModifiers.Alt),
+            "hotkey parses Ctrl+Alt+1");
+
+        Check(HotkeyGesture.TryParse("alt+ctrl+shift+win+f12", requireModifier: true, out var all, out _)
+              && all.Text == "Ctrl+Alt+Shift+Win+F12",
+            "hotkey canonicalizes modifier order");
+
+        Check(!HotkeyGesture.TryParse("A", requireModifier: true, out _, out var bareError)
+              && bareError == HotkeyParseError.ModifierRequired,
+            "bare letter needs a modifier");
+
+        Check(HotkeyGesture.TryParse("F5", requireModifier: true, out _, out _),
+            "F5 can stand alone");
+
+        Check(!HotkeyGesture.TryParse("Ctrl+Alt", requireModifier: true, out _, out var missingKey)
+              && missingKey == HotkeyParseError.MissingKey,
+            "modifier-only text is rejected");
+
+        Check(!HotkeyGesture.TryParse("Ctrl+Alt+NoSuchKey", requireModifier: true, out _, out _),
+            "unknown key is rejected");
+
+        Check(HotkeyGesture.TryParse("ctrl + alt + k", requireModifier: false, out var typed, out _)
+              && typed.Text == "Ctrl+Alt+K",
+            "hand-typed lowercase/spaced combo canonicalizes");
+
+        Check(HotkeyGesture.TryParse("ctrl+shift+-", requireModifier: false, out var symbol, out _)
+              && symbol.Text == "Ctrl+Shift+-",
+            "punctuation keys parse");
+
+        Check(HotkeyGesture.TryParse("Ctrl+Alt+Space", requireModifier: true, out var space, out _)
+              && space.Text == "Ctrl+Alt+Space",
+            "named keys keep canonical casing");
+
+        const string oldJson = """
+        {"Version":1,"Shortcuts":[{"Id":"old","Name":"Old","Glyph":"bolt","Color":"#534AB7","ConfirmBeforeRun":false,"Actions":[]}]}
+        """;
+        var oldDocument = JsonSerializer.Deserialize<ShortcutsDocument>(oldJson, DocumentJson.FileOptions)!;
+        Check(oldDocument.Shortcuts[0].Hotkey == null, "old JSON without Hotkey loads as null");
+
+        var serialized = JsonSerializer.Serialize(
+            new ShortcutDefinition { Name = "no-hotkey" }, DocumentJson.Options);
+        Check(!serialized.Contains("Hotkey", StringComparison.Ordinal),
+            "unbound hotkey is omitted from JSON");
+
+        var duplicateSource = new ShortcutDefinition
+        {
+            Name = "duplicate-source", Glyph = "bolt", Hotkey = "Ctrl+Alt+8",
+        };
+        ShortcutsStore.ResetForTesting(new ShortcutsDocument
+        {
+            Version = 1,
+            Shortcuts = [duplicateSource],
+        });
+        var duplicate = ShortcutsStore.Duplicate(duplicateSource.Id);
+        Check(duplicate != null && duplicate.Hotkey == null,
+            "duplicating a shortcut does not copy its hotkey");
+
+        // Leave a fresh sandbox for the store CRUD checks: Duplicate wrote the test document.
+        try { File.Delete(ShortcutsStore.FilePath); } catch { }
+        ShortcutsStore.ResetForTesting(null);
+    }
+
+    // ---- corner geometry -----------------------------------------------------------
+
+    private static void CheckCornerRadius()
+    {
+        var tile = new ShortcutTileViewModel(new ShortcutDefinition { Name = "corner", Glyph = "bolt" });
+        tile.SetCardRadius(16);
+        tile.SetTileSize(140, 45);
+
+        var outer = tile.TileCornerRadius.TopLeft;
+        var inner = tile.IconCornerRadius.TopLeft;
+        Check(outer is >= 8 and <= 16, $"tile radius follows card radius (got {outer:0.##})");
+        Check(Math.Abs(inner - Math.Max(4, outer - 6)) < 0.01,
+            $"icon radius is outer - 6 (outer {outer:0.##}, inner {inner:0.##})");
+
+        tile.SetTileSize(140, 20);
+        Check(tile.TileCornerRadius.TopLeft <= outer, "tile radius shrinks with a short tile");
+        Check(tile.IconCornerRadius.TopLeft >= 4, "icon radius never drops below 4");
+
+        tile.SetCardRadius(0);
+        Check(tile.TileCornerRadius.TopLeft == 0 && tile.IconCornerRadius.TopLeft == 0,
+            "square host keeps square tiles");
+
+        tile.SetCardRadius(24);
+        tile.SetTileSize(200, 80);
+        Check(tile.TileCornerRadius.TopLeft > outer, "larger card radius grows the tile radius");
+
+        var hotkeyTile = new ShortcutTileViewModel(new ShortcutDefinition
+        {
+            Name = "hotkey-tile", Glyph = "bolt", Hotkey = "Ctrl+Alt+1",
+        });
+        hotkeyTile.SetTileSize(100, 40);
+        Check(!hotkeyTile.HasHotkeyBadge, "very narrow tile hides the hotkey badge");
+        hotkeyTile.SetTileSize(130, 40);
+        Check(hotkeyTile.HasHotkeyBadge && !hotkeyTile.ShowActionCountText,
+            "2x2-width tile shows the badge instead of the action count");
+        hotkeyTile.SetTileSize(220, 40);
+        Check(hotkeyTile.HasHotkeyBadge && hotkeyTile.ShowActionCountText,
+            "roomy tile shows both the badge and the action count");
+    }
+
+    // ---- ecosystem -----------------------------------------------------------------
+
+    private static void CheckNewActionsAndTemplates()
+    {
+        foreach (var type in new[] { "openFolder", "minimizeAll", "sendKeys", "sendHotkey", "runShortcut", "httpRequest" })
+        {
+            Check(ActionCatalog.Get(type) != null, $"catalog defines {type}");
+            Check(ActionExecutors.Find(type) != null, $"executor exists for {type}");
+        }
+
+        Check(ActionCatalog.Get("sendHotkey")!.Params.Any(p => p.Kind == ParamKind.Hotkey),
+            "sendHotkey exposes a Hotkey parameter");
+
+        Check(ActionCatalog.Get("openFolder")!.Params[0].Kind == ParamKind.FolderPath,
+            "openFolder uses the folder picker");
+
+        Check(ShortcutTemplates.Menu.Count == 7, "seven new-shortcut templates are offered");
+
+        foreach (var (labelKey, create) in ShortcutTemplates.Menu)
+        {
+            var shortcut = create();
+            Check(!string.IsNullOrWhiteSpace(Loc.Get(labelKey)) && !string.IsNullOrWhiteSpace(shortcut.Name),
+                $"template '{labelKey}' has a localized name");
+            Check(shortcut.Actions.All(a => ActionCatalog.Get(a.Type) != null),
+                $"template '{labelKey}' only uses catalog actions");
+        }
+
+        Check(ShortcutTemplates.ClockOut().ConfirmBeforeRun,
+            "clock-out template requires confirmation");
     }
 
     private static void CheckStoreCrud()
@@ -273,6 +417,108 @@ internal static class Program
         var unknownResult = await ShortcutRunner.RunAsync(unknownAction, new RunServices());
         CheckAsync(!unknownResult.Success, "unknown action type fails the run");
 
+        // New executors: safe negative paths only (no windows are minimized / no keys are sent).
+        var missingFolder = new ShortcutDefinition
+        {
+            Name = "smoke-missing-folder",
+            Actions =
+            [
+                ShortcutAction.With("openFolder",
+                    ("path", Path.Combine(Path.GetTempPath(), "definitely-missing-" + Guid.NewGuid().ToString("N")))),
+            ],
+        };
+        var missingFolderResult = await ShortcutRunner.RunAsync(missingFolder, new RunServices());
+        CheckAsync(!missingFolderResult.Success && !string.IsNullOrEmpty(missingFolderResult.Error),
+            "openFolder rejects a missing path");
+
+        var badScheme = new ShortcutDefinition
+        {
+            Name = "smoke-http-scheme",
+            Actions = [ShortcutAction.With("httpRequest", ("url", "file:///C:/"))],
+        };
+        var badSchemeResult = await ShortcutRunner.RunAsync(badScheme, new RunServices());
+        CheckAsync(!badSchemeResult.Success, "httpRequest rejects non-http schemes");
+
+        var badKeys = new ShortcutDefinition
+        {
+            Name = "smoke-bad-keys",
+            Actions = [ShortcutAction.With("sendKeys", ("keys", "Ctrl+Alt+NoSuchKey"))],
+        };
+        var badKeysResult = await ShortcutRunner.RunAsync(badKeys, new RunServices());
+        CheckAsync(!badKeysResult.Success, "sendKeys rejects an unknown key before SendInput");
+
+        // sendHotkey: injectable sender, exact press/release order, finally release, capture guard.
+        var previousSender = KeyboardInput.Sender;
+        try
+        {
+            var keyboard = new FakeKeyboardInput();
+            KeyboardInput.Sender = keyboard;
+
+            var hotkeyShortcut = new ShortcutDefinition
+            {
+                Name = "smoke-send-hotkey",
+                Actions =
+                [
+                    ShortcutAction.With("sendHotkey", ("hotkey", "ctrl + shift + k"), ("holdMs", "10")),
+                ],
+            };
+            var hotkeyResult = await ShortcutRunner.RunAsync(hotkeyShortcut, new RunServices());
+            CheckAsync(hotkeyResult.Success, "sendHotkey succeeds with an injected sender");
+            CheckAsync(keyboard.Batches.Count == 2, "sendHotkey sends a down batch and an up batch");
+            CheckAsync(keyboard.Batches.Count == 2 &&
+                       DescribeStrokes(keyboard.Batches[0]) == "11↓,10↓,4B↓",
+                "sendHotkey presses modifiers before the main key");
+            CheckAsync(keyboard.Batches.Count == 2 &&
+                       DescribeStrokes(keyboard.Batches[1]) == "4B↑,10↑,11↑",
+                "sendHotkey releases in reverse order");
+
+            var failing = new FakeKeyboardInput { FailOnCall = 1 };
+            KeyboardInput.Sender = failing;
+            var failingResult = await ShortcutRunner.RunAsync(hotkeyShortcut, new RunServices());
+            CheckAsync(!failingResult.Success, "sendHotkey surfaces a sender failure");
+            CheckAsync(failing.Batches.Count >= 2 &&
+                       failing.Batches[1].Count > 0 &&
+                       failing.Batches[1].All(s => s.IsKeyUp),
+                "sendHotkey releases all keys in finally after a press failure");
+
+            KeyboardInput.Sender = keyboard;
+            ShortcutHotkeyService.BeginCapture();
+            try
+            {
+                var blockedResult = await ShortcutRunner.RunAsync(hotkeyShortcut, new RunServices());
+                CheckAsync(!blockedResult.Success && keyboard.Batches.Count == 2,
+                    "sendHotkey refuses to inject while a capture box is recording");
+            }
+            finally
+            {
+                ShortcutHotkeyService.EndCapture();
+            }
+        }
+        finally
+        {
+            KeyboardInput.Sender = previousSender;
+        }
+
+        var cycleA = new ShortcutDefinition
+        {
+            Id = ShortcutDefinition.NewId(),
+            Name = "smoke-cycle-a",
+            Actions = [ShortcutAction.With("runShortcut", ("target", "smoke-cycle-b"))],
+        };
+        var cycleB = new ShortcutDefinition
+        {
+            Id = ShortcutDefinition.NewId(),
+            Name = "smoke-cycle-b",
+            Actions = [ShortcutAction.With("runShortcut", ("target", "smoke-cycle-a"))],
+        };
+        ShortcutsStore.ResetForTesting(new ShortcutsDocument
+        {
+            Version = 1,
+            Shortcuts = [cycleA, cycleB],
+        });
+        var cycleResult = await ShortcutRunner.RunAsync(cycleA, new RunServices());
+        CheckAsync(!cycleResult.Success, "runShortcut blocks indirect recursion");
+
         // Host-integration action that only touches the sandboxed data folder.
         var remindersShortcut = new ShortcutDefinition
         {
@@ -285,6 +531,158 @@ internal static class Program
                    File.ReadAllText(Const.RemindersFile).Contains("smoke-reminder"),
             "reminder appended to reminders.json");
 
+        // Hotkey registration: fake registrar, no real OS table.
+        var fake = new FakeRegistrar();
+        fake.RejectKeys.Add(0x39); // Ctrl+Alt+9 is "taken" by another app
+
+        var validId = ShortcutDefinition.NewId();
+        var duplicateId = ShortcutDefinition.NewId();
+        var invalidId = ShortcutDefinition.NewId();
+        var conflictId = ShortcutDefinition.NewId();
+
+        var hotkeyDocument = new ShortcutsDocument
+        {
+            Version = 1,
+            Shortcuts =
+            [
+                new()
+                {
+                    Id = validId, Name = "valid", Hotkey = "Ctrl+Alt+1",
+                    Actions = [ShortcutAction.With("comment", ("note", "hotkey-ran"))],
+                },
+                new() { Id = duplicateId, Name = "duplicate", Hotkey = "Ctrl+Alt+1" },
+                new() { Id = invalidId, Name = "invalid", Hotkey = "Ctrl+Alt" },
+                new() { Id = conflictId, Name = "conflict", Hotkey = "Ctrl+Alt+9" },
+            ],
+        };
+
+        ShortcutsStore.ResetForTesting(hotkeyDocument);
+        ShortcutHotkeyService.ResetForTesting();
+        ShortcutHotkeyService.RegistrarFactory = () => fake;
+        ShortcutHotkeyService.EnsureStarted();
+
+        CheckAsync(ShortcutHotkeyService.IsStarted, "hotkey service starts with the injected registrar");
+        CheckAsync(fake.RegisterCalls == 2, "only parseable, non-duplicate hotkeys reach the registrar");
+        CheckAsync(fake.ActiveRegistrations.Count == 1, "one hotkey registered");
+
+        CheckAsync(ShortcutHotkeyService.TryGetBinding(validId, out var validBinding)
+                   && validBinding.Status == HotkeyRegistrationStatus.Registered,
+            "valid hotkey is registered");
+        CheckAsync(ShortcutHotkeyService.TryGetBinding(duplicateId, out var duplicateBinding)
+                   && duplicateBinding.Status == HotkeyRegistrationStatus.Duplicate
+                   && duplicateBinding.Detail == "valid",
+            "duplicate hotkey is reported with the owner's name");
+        CheckAsync(ShortcutHotkeyService.TryGetBinding(invalidId, out var invalidBinding)
+                   && invalidBinding.Status == HotkeyRegistrationStatus.Invalid,
+            "unparseable hotkey is reported as invalid");
+        CheckAsync(ShortcutHotkeyService.TryGetBinding(conflictId, out var conflictBinding)
+                   && conflictBinding.Status == HotkeyRegistrationStatus.Conflict,
+            "registrar failure is reported as a conflict");
+
+        // Document change: unregister everything, then register the new table.
+        hotkeyDocument.Shortcuts[0].Hotkey = "Ctrl+Alt+3";
+        ShortcutsStore.ResetForTesting(hotkeyDocument);
+        ShortcutHotkeyService.Refresh(hotkeyDocument);
+        CheckAsync(fake.UnregisterCalls >= 1, "refresh unregisters the previous table first");
+        CheckAsync(ShortcutHotkeyService.TryGetBinding(validId, out var moved)
+                   && moved.Hotkey == "Ctrl+Alt+3"
+                   && moved.Status == HotkeyRegistrationStatus.Registered,
+            "refresh moves the binding to the new gesture");
+
+        // Recording: suspend removes registrations; resume puts them back.
+        ShortcutHotkeyService.Suspend();
+        CheckAsync(fake.ActiveRegistrations.Count == 0, "suspend unregisters every hotkey");
+        CheckAsync(ShortcutHotkeyService.TryGetBinding(validId, out var suspendedBinding)
+                   && suspendedBinding.Status == HotkeyRegistrationStatus.Suspended,
+            "suspended binding is marked while recording");
+
+        ShortcutHotkeyService.Resume();
+        // The old "Ctrl+Alt+1" duplicate became unique when the first shortcut moved to
+        // Ctrl+Alt+3, so two bindings are live again (the conflict stays rejected).
+        CheckAsync(fake.ActiveRegistrations.Count == 2, "resume re-registers the document");
+
+        // Trigger path: execute by id without a real keyboard event.
+        var triggered = await ShortcutHotkeyService.ExecuteShortcutAsync(validId);
+        CheckAsync(triggered, "hotkey trigger path runs the shortcut");
+
+        ShortcutHotkeyService.Shutdown();
+        ShortcutHotkeyService.Shutdown();
+        CheckAsync(fake.Disposed, "shutdown disposes the registrar exactly once");
+        CheckAsync(!ShortcutHotkeyService.IsStarted, "shutdown clears the started flag");
+        ShortcutHotkeyService.ResetForTesting();
+
+        // Opt-in real interop smoke (manual run: set DESKCANVAS_REAL_HOTKEY_TEST=1). The
+        // default gate never touches the OS hotkey table.
+        if (Environment.GetEnvironmentVariable("DESKCANVAS_REAL_HOTKEY_TEST") == "1")
+        {
+            var realId = ShortcutDefinition.NewId();
+            var realDocument = new ShortcutsDocument
+            {
+                Version = 1,
+                Shortcuts = [new() { Id = realId, Name = "real", Hotkey = "Ctrl+Alt+F24" }],
+            };
+
+            ShortcutsStore.ResetForTesting(realDocument);
+            ShortcutHotkeyService.EnsureStarted();
+            CheckAsync(ShortcutHotkeyService.TryGetBinding(realId, out var realBinding)
+                       && realBinding.Status == HotkeyRegistrationStatus.Registered,
+                "real Win32 registrar accepts Ctrl+Alt+F24");
+            ShortcutHotkeyService.Shutdown();
+        }
+
         return failures;
+    }
+
+    private static string DescribeStrokes(IEnumerable<KeyStroke> strokes) =>
+        string.Join(",", strokes.Select(s => s.VirtualKey.ToString("X2") + (s.IsKeyUp ? "↑" : "↓")));
+
+    private sealed class FakeKeyboardInput : IKeyboardInputSender
+    {
+        public List<IReadOnlyList<KeyStroke>> Batches { get; } = [];
+
+        public int Calls { get; private set; }
+        public int FailOnCall { get; init; }
+
+        public void Send(IReadOnlyList<KeyStroke> strokes)
+        {
+            Calls++;
+            Batches.Add(strokes.ToArray());
+            if (Calls == FailOnCall)
+                throw new InvalidOperationException("fake sender failure");
+        }
+    }
+
+    private sealed class FakeRegistrar : IHotkeyRegistrar
+    {
+        public event Action<int>? Pressed;
+
+        public readonly HashSet<uint> RejectKeys = [];
+        public readonly List<int> ActiveRegistrations = [];
+
+        public int RegisterCalls { get; private set; }
+        public int UnregisterCalls { get; private set; }
+        public bool Disposed { get; private set; }
+
+        public bool Register(int registrationId, HotkeyModifiers modifiers, uint virtualKey)
+        {
+            RegisterCalls++;
+            if (Disposed || RejectKeys.Contains(virtualKey)) return false;
+            ActiveRegistrations.Add(registrationId);
+            return true;
+        }
+
+        public void Unregister(int registrationId)
+        {
+            UnregisterCalls++;
+            ActiveRegistrations.Remove(registrationId);
+        }
+
+        public void Press(int registrationId) => Pressed?.Invoke(registrationId);
+
+        public void Dispose()
+        {
+            Disposed = true;
+            ActiveRegistrations.Clear();
+        }
     }
 }

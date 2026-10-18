@@ -27,7 +27,10 @@ internal static class Program
         var scenario = args.Length > 3 ? args[3] : "small";
 
         var sandbox = Path.Combine(Path.GetTempPath(), "DeskCanvas-ShortcutsRender-" + Guid.NewGuid().ToString("N")[..8]);
+        Environment.SetEnvironmentVariable("DESKCANVAS_DATA_FOLDER", sandbox);
         Environment.SetEnvironmentVariable("DESCANVAS_DATA_FOLDER", sandbox);
+        // The harness must never touch the real OS hotkey table (Ctrl+Alt+1 may be taken).
+        Environment.SetEnvironmentVariable("DESKCANVAS_SHORTCUTS_DISABLE_HOTKEYS", "1");
 
         AppBuilder.Configure<Application>()
             .UseHeadless(new AvaloniaHeadlessPlatformOptions { UseHeadlessDrawing = false })
@@ -111,6 +114,12 @@ internal static class Program
         {
             // Probe added by editor-bugs: does the invisible "..." button cover a container's chevron?
             RunChevronProbe(outPath);
+            return;
+        }
+
+        if (scenario == "hotkeyparam")
+        {
+            RunHotkeyParamProbe(outPath);
             return;
         }
 
@@ -442,6 +451,50 @@ internal static class Program
         }
         if (Path.GetDirectoryName(outPath) is { Length: > 0 } dir3)
             editor.CaptureRenderedFrame()?.Save(Path.Combine(dir3, "url_long.png"));
+        editor.Close();
+    }
+
+    /// <summary>Opens the sendHotkey chip and dumps the shared capture control geometry.</summary>
+    private static void RunHotkeyParamProbe(string outPath)
+    {
+        Console.WriteLine("=== sendHotkey parameter probe ===");
+        var editor = OpenEditor();
+        DumpEditorGeometry(editor);
+
+        var chip = FindChip(editor);
+        Console.WriteLine("  chip: " + Describe(chip));
+        if (chip == null)
+        {
+            editor.Close();
+            return;
+        }
+
+        Click(editor, chip);
+        Pump(editor);
+
+        var captures = ProbeRoots(editor)
+            .SelectMany(root => root.GetVisualDescendants().OfType<Shortcuts.Views.Controls.HotkeyCaptureBox>())
+            .ToList();
+        Console.WriteLine("  captures: " + captures.Count + " [" + string.Join(",", captures.Select(c => c.IsReadOnly)) + "]");
+        var capture = captures.FirstOrDefault(c => !c.IsReadOnly);
+        Console.WriteLine("  capture: " + Describe(capture));
+        if (capture != null)
+        {
+            var text = capture.GetVisualDescendants().OfType<TextBox>().FirstOrDefault();
+            var record = capture.GetVisualDescendants().OfType<Button>()
+                .FirstOrDefault(b => b.Classes.Contains("hotkey-capture-action"));
+            Console.WriteLine("  capture text='" + (text?.Text ?? "<null>") + "' readonly=" + (text?.IsReadOnly)
+                              + " record=" + Describe(record));
+        }
+
+        editor.CaptureRenderedFrame()?.Save(outPath);
+
+        if (capture != null)
+        {
+            var input = capture.GetVisualDescendants().OfType<TextBox>().FirstOrDefault();
+            Console.WriteLine("  capture input='" + (input?.Text ?? "<null>") + "' focused=" + (input?.IsFocused));
+        }
+
         editor.Close();
     }
 
@@ -816,6 +869,27 @@ internal static class Program
             };
         }
 
+        if (scenario == "hotkey")
+        {
+            return new ShortcutsDocument
+            {
+                Version = 1,
+                Shortcuts =
+                [
+                    new()
+                    {
+                        Name = "一键专注", Glyph = "moon", Color = "#534AB7", Hotkey = "Ctrl+Alt+1",
+                        Actions = [ShortcutAction.Create("mediaPlayPause")],
+                    },
+                    new()
+                    {
+                        Name = "工作区启动", Glyph = "app", Color = "#185FA5", Hotkey = "Ctrl+Alt+2",
+                        Actions = [ShortcutAction.Create("openFolder")],
+                    },
+                ],
+            };
+        }
+
         if (scenario == "chevronprobe")
         {
             var repeat = ShortcutAction.Create("repeat");
@@ -824,6 +898,25 @@ internal static class Program
             {
                 Version = 1,
                 Shortcuts = [new() { Name = "循环测试", Glyph = "repeat", Color = "#534AB7", Actions = [repeat] }],
+            };
+        }
+
+        if (scenario == "hotkeyparam")
+        {
+            return new ShortcutsDocument
+            {
+                Version = 1,
+                Shortcuts =
+                [
+                    new()
+                    {
+                        Name = "发送快捷键测试", Glyph = "keyboard", Color = "#534AB7",
+                        Actions =
+                        [
+                            ShortcutAction.With("sendHotkey", ("hotkey", "ctrl + shift + s"), ("holdMs", "40")),
+                        ],
+                    },
+                ],
             };
         }
 

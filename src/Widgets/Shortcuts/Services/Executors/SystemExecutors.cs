@@ -261,6 +261,43 @@ internal sealed class WaitExecutor : IActionExecutor
     }
 }
 
+/// <summary>Minimize every top-level window through the shell's own verb (no key injection).</summary>
+internal sealed class MinimizeAllExecutor : IActionExecutor
+{
+    public Task<string?> ExecuteAsync(ShortcutAction action, RunContext context)
+    {
+        object? shell = null;
+        try
+        {
+            var type = Type.GetTypeFromProgID("Shell.Application");
+            if (type == null)
+                throw new ActionFailedException(Loc.Get("Shortcuts_Error_NoService"));
+
+            shell = Activator.CreateInstance(type);
+            if (shell == null)
+                throw new ActionFailedException(Loc.Get("Shortcuts_Error_NoService"));
+
+            type.InvokeMember("MinimizeAll", System.Reflection.BindingFlags.InvokeMethod,
+                null, shell, null);
+        }
+        catch (ActionFailedException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            throw new ActionFailedException(Loc.Get("Shortcuts_Error_NoService") + " - " + ex.Message);
+        }
+        finally
+        {
+            if (shell != null && Marshal.IsComObject(shell))
+                Marshal.ReleaseComObject(shell);
+        }
+
+        return Task.FromResult<string?>(Loc.Get("Shortcuts_Output_Minimized"));
+    }
+}
+
 /// <summary>Windows toast notification; falls back to the PowerShell host AUMID for unpackaged apps.</summary>
 internal sealed class NotifyExecutor : IActionExecutor
 {

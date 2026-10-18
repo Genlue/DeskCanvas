@@ -147,6 +147,10 @@ public partial class StackIndicatorStrip : Border
                     UpdateReveal();
                 });
         }
+
+        // 新挂载的实例按“当前”悬停状态重新定值：XAML 里的初始 Opacity=0 只适用于
+        // 常态隐藏开启的情况，关闭时必须在挂载时就恢复常显。
+        UpdateReveal();
     }
 
     protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
@@ -161,6 +165,13 @@ public partial class StackIndicatorStrip : Border
 
     private bool Revealed => stack is { } s && (s.IsTransitionActive || rootPointerOver || IsPointerOver);
 
+    /// <summary>
+    /// 重估显隐但不重建圆点（数据可能没变，变的是 <see cref="IStackWidget.AutoHideIndicators"/>、
+    /// 过渡状态或悬停状态）。重叠组件在每次通知宿主之前都会调用它——显隐不能只靠
+    /// “条目数据变化”这一条路径，否则开关打开后圆点会停在旧的不透明值上常显。
+    /// </summary>
+    public void RefreshReveal() => UpdateReveal();
+
     /// <summary>常态隐藏：仅切换过渡期间或指针悬停时显示，空闲后短暂停留再隐藏（Opacity 保持可命中）。</summary>
     public void UpdateReveal()
     {
@@ -170,6 +181,11 @@ public partial class StackIndicatorStrip : Border
             Opacity = 1;
             return;
         }
+
+        // 订阅到的 rootPointerOver 只在变化时更新；这里按根元素当前值再取一次，
+        // 保证圆点条晚于指针进入窗口才挂上、或订阅建立之前的悬停状态不被漏判。
+        if (TopLevel.GetTopLevel(this) is InputElement root)
+            rootPointerOver = root.IsPointerOver;
 
         if (s.IsTransitionActive || rootPointerOver || IsPointerOver)
         {

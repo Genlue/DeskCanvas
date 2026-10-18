@@ -84,6 +84,11 @@ public partial class ShortcutsEditorWindow : Window
     private void OnWindowOpened(object? sender, EventArgs e)
     {
         TryRestoreGeometry();
+        ShortcutsRuntime.PublishTopLevel(this);
+        try { ShortcutHotkeyService.EnsureStarted(); } catch { }
+        ShortcutHotkeyService.StateChanged += OnHotkeyStateChanged;
+        UpdateHotkeyUi();
+
         if (eventsAttached) return;
         eventsAttached = true;
         ShortcutsStore.ModelChanged += OnStoreChanged;
@@ -121,6 +126,8 @@ public partial class ShortcutsEditorWindow : Window
     private void SelectShortcut(string shortcutId)
     {
         if (shortcut.Id == shortcutId) return;
+        HotkeyCapture.CancelRecording();
+
         var target = ShortcutsStore.Get().Shortcuts.FirstOrDefault(s => s.Id == shortcutId);
         if (target == null) return;
 
@@ -178,6 +185,10 @@ public partial class ShortcutsEditorWindow : Window
 
     private void OnWindowClosed(object? sender, EventArgs e)
     {
+        HotkeyCapture.CancelRecording();
+        ShortcutHotkeyService.StateChanged -= OnHotkeyStateChanged;
+        ShortcutsRuntime.ReleaseTopLevel(this);
+
         if (eventsAttached)
         {
             eventsAttached = false;
@@ -265,6 +276,8 @@ public partial class ShortcutsEditorWindow : Window
         ActionCountText.Text = actionCount == 1
             ? Loc.Get("Shortcuts_Actions_CountOne")
             : Loc.Format("Shortcuts_Actions_Count", actionCount);
+
+        UpdateHotkeyUi();
     }
 
     private void OnNameCommitted(object? sender, RoutedEventArgs e) => CommitName();

@@ -35,8 +35,16 @@ public partial class ShortcutsSettings : UserControl
         InitializeControls();
         isInitializing = false;
 
-        Loaded += (_, _) => AttachEvents();
-        Unloaded += (_, _) => DetachEvents();
+        Loaded += (_, _) =>
+        {
+            ShortcutsRuntime.PublishTopLevel(TopLevel.GetTopLevel(this));
+            AttachEvents();
+        };
+        Unloaded += (_, _) =>
+        {
+            ShortcutsRuntime.ReleaseTopLevel(TopLevel.GetTopLevel(this));
+            DetachEvents();
+        };
     }
 
     // ---- events -------------------------------------------------------------------
@@ -47,6 +55,16 @@ public partial class ShortcutsSettings : UserControl
         eventsAttached = true;
         ShortcutsStore.ModelChanged += OnStoreChanged;
         PopulateShortcutCombo();
+
+        try
+        {
+            if (ShortcutsStore.Get().Shortcuts.Any(s => !string.IsNullOrWhiteSpace(s.Hotkey)))
+                ShortcutHotkeyService.EnsureStarted();
+        }
+        catch
+        {
+            // Hotkey setup must never take the settings page down.
+        }
     }
 
     private void DetachEvents()

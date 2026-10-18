@@ -2,7 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Avalonia;
+using Avalonia.Automation;
 using Avalonia.Controls;
+using Avalonia.Interactivity;
 using Avalonia.Layout;
 using Avalonia.Media;
 using DeskCanvas.Services;
@@ -18,9 +20,14 @@ namespace Timetable.Views;
 /// complete week grid on a large, readable surface (plus the course notes), spawns from the
 /// widget and is dismissed by Escape / an outside click like every other panel.
 /// <para>
-/// Memory contract: the panel is a short-lived window; it holds only the model snapshot and
-/// the controls it builds (bounded by the import limits) and installs no timers — the current
-/// lesson outline is computed once when the panel opens.
+/// Week navigation (prev / next / back to this week / one-week ↔ whole-term) is panel-local
+/// state: it rebuilds the grid and the badge only, never the window, and it is never written
+/// back to the model or the layout.
+/// </para>
+/// <para>
+/// Memory contract: the panel is a short-lived window; it holds only the model snapshot, the
+/// runtime index and the controls it builds (bounded by the import limits) and installs no
+/// timers — the current lesson outline is computed once when the panel opens.
 /// </para>
 /// <para>
 /// W8 migration: the card, the glass surface, the title chrome and the close button all live in
@@ -34,6 +41,21 @@ public partial class TimetablePanelWindow : SecondaryPanelWindow
 {
     private readonly Point? spawnScreenCenter;
     private readonly TimetableModel model;
+
+    private TimetableRuntime? runtime;
+
+    /// <summary>The real term week at open time (0 when the term date cannot be resolved).</summary>
+    private int currentWeek;
+
+    /// <summary>Last selectable week: the declared term length, the model's override, or the
+    /// highest week any course rule mentions — whichever is largest.</summary>
+    private int lastWeek = 1;
+
+    /// <summary>The week the grid currently shows (ignored when <see cref="showAllWeeks"/>).</summary>
+    private int displayWeek;
+
+    /// <summary>Whole-term mode: passes week 0 to the renderer (its "no week context" value).</summary>
+    private bool showAllWeeks;
 
     protected override Point? SpawnScreenCenter => spawnScreenCenter;
 
@@ -83,6 +105,17 @@ public partial class TimetablePanelWindow : SecondaryPanelWindow
         Title = Locale.Timetable_Title;
         HeaderTitleText.Text = model.Name ?? Locale.Timetable_Title;
         NotesHeaderText.Text = Locale.Timetable_Review_Notes;
+
+        NameButton(PreviousWeekButton, Locale.Timetable_PreviousWeek);
+        NameButton(NextWeekButton, Locale.Timetable_NextWeek);
+        NameButton(BackToCurrentWeekButton, Locale.Timetable_BackToCurrentWeek);
+    }
+
+    /// <summary>Tooltip + accessible name from one localized string (icon-only buttons).</summary>
+    private static void NameButton(Button button, string label)
+    {
+        ToolTip.SetTip(button, label);
+        AutomationProperties.SetName(button, label);
     }
 
     // ---------- Content ----------
@@ -90,14 +123,119 @@ public partial class TimetablePanelWindow : SecondaryPanelWindow
     private void BuildContent()
     {
         var now = DateTime.Now;
-        var week = TimetableClock.ComputeWeek(model, now);
+        currentWeek = TimetableClock.ComputeWeek(model, now);
+        lastWeek = ResolveLastWeek(currentWeek);
 
-        WeekBadgeText.Text = week >= 1
-            ? Locale.Timetable_Week.Replace("{0}", week.ToString())
-            : Locale.Timetable_UnknownWeek;
+        // A resolved term date opens on the current week; with no week context the panel keeps
+        // its historical behaviour and shows everything (which is what week 0 means).
+        showAllWeeks = currentWeek < 1;
+        displayWeek = currentWeek >= 1 ? Math.Clamp(currentWeek, 1, lastWeek) : 1;
 
-        BuildGrid(TimetableRuntime.Build(model), week, now);
+        runtime = TimetableRuntime.Build(model);
         BuildNotes();
+        RefreshWeekView(now);
+    }
+
+    /// <summary>
+    /// Re-renders the grid and the week chrome for the current panel state. Only the grid host
+    /// and the header badge are touched — the window, the notes card and the runtime survive.
+    /// </summary>
+    private void RefreshWeekView(DateTime now)
+    {
+        var week = showAllWeeks ? 0 : displayWeek;
+
+        WeekBadgeText.Text = showAllWeeks
+            ? Locale.Timetable_AllWeeks
+            : Locale.Timetable_Week.Replace("{0}", displayWeek.ToString());
+
+        BuildGrid(runtime ?? TimetableRuntime.Empty, week, now);
+
+        // Out-of-range is disabled, not silently clamped: a button that looks clickable but
+        // does nothing is worse than a visibly unavailable one.
+        PreviousWeekButton.IsEnabled = !showAllWeeks && displayWeek > 1;
+        NextWeekButton.IsEnabled = !showAllWeeks && displayWeek < lastWeek;
+        BackToCurrentWeekButton.IsEnabled = currentWeek >= 1 && (showAllWeeks || displayWeek != currentWeek);
+
+        WeekModeButton.Content = showAllWeeks ? Locale.Timetable_WeekView : Locale.Timetable_AllWeeks;
+        NameButton(WeekModeButton, showAllWeeks ? Locale.Timetable_ShowWeekView : Locale.Timetable_ShowAllWeeks);
+    }
+
+    /// <summary>
+    /// Upper bound of the selectable week range. The declared term length wins; when the term
+    /// length is unset the highest week mentioned by any course rule (and the current week)
+    /// keeps the range meaningful. Always at least 1 and bounded by the import limit.
+    /// </summary>
+    private int ResolveLastWeek(int currentWeek)
+    {
+        var last = Math.Max(model.TotalWeeks, currentWeek);
+
+        if (model.Courses != null)
+        {
+            foreach (var course in model.Courses)
+            {
+                if (course.Entries == null) continue;
+                foreach (var entry in course.Entries)
+                {
+                    if (!WeekExpression.TryParse(entry.Weeks, out var set, out _) || set.All) continue;
+                    last = Math.Max(last, HighestWeek(set));
+                }
+            }
+        }
+
+        return Math.Clamp(last, 1, TimetableLimits.MaxWeeks);
+    }
+
+    /// <summary>Highest 1-based week present in a rule mask (0 for an empty set).</summary>
+    private static int HighestWeek(WeekSet set)
+    {
+        var mask = set.Mask;
+        var week = 0;
+        while (mask != 0)
+        {
+            week++;
+            mask >>= 1;
+        }
+        return week;
+    }
+
+    // ---------- Week navigation ----------
+
+    private void OnPreviousWeekClick(object? sender, RoutedEventArgs e) => StepWeek(-1);
+
+    private void OnNextWeekClick(object? sender, RoutedEventArgs e) => StepWeek(1);
+
+    private void OnBackToCurrentWeekClick(object? sender, RoutedEventArgs e)
+    {
+        if (currentWeek < 1) return;
+        showAllWeeks = false;
+        displayWeek = Math.Clamp(currentWeek, 1, lastWeek);
+        RefreshWeekView(DateTime.Now);
+    }
+
+    private void OnWeekModeClick(object? sender, RoutedEventArgs e)
+    {
+        showAllWeeks = !showAllWeeks;
+
+        if (!showAllWeeks)
+        {
+            // Leaving the whole-term view returns to a real week: the current one when the term
+            // date is known, otherwise whatever week the panel last showed.
+            displayWeek = currentWeek >= 1
+                ? Math.Clamp(currentWeek, 1, lastWeek)
+                : Math.Clamp(displayWeek, 1, lastWeek);
+        }
+
+        RefreshWeekView(DateTime.Now);
+    }
+
+    private void StepWeek(int delta)
+    {
+        var target = displayWeek + delta;
+        if (target < 1 || target > lastWeek) return;
+
+        showAllWeeks = false;
+        displayWeek = target;
+        RefreshWeekView(DateTime.Now);
     }
 
     /// <summary>The complete week grid at fixed readable metrics (the body scrolls when tall).</summary>
@@ -109,6 +247,9 @@ public partial class TimetablePanelWindow : SecondaryPanelWindow
 
         var today = DayIndex(now.DayOfWeek);
         var nowTime = TimeOnly.FromDateTime(now);
+        // The live-lesson outline only means something on the real current week: browsing week 3
+        // (or the whole term, week 0) must not highlight a block just because its time matches.
+        var highlightCurrent = week >= 1 && week == currentWeek;
         var dayCount = model.ShowWeekend ? 7 : 5;
         var rowCount = Math.Max(1, runtime.MaxPeriod);
 
@@ -202,7 +343,8 @@ public partial class TimetablePanelWindow : SecondaryPanelWindow
                 {
                     var block = ScheduleBlocks.Create(first.Slot, 12, 10, showSub: true,
                         model.ShowRoom, model.ShowTeacher);
-                    HighlightCurrent(block, first.Slot, day, today, nowTime, accent);
+                    if (highlightCurrent)
+                        HighlightCurrent(block, first.Slot, day, today, nowTime, accent);
                     Grid.SetRow(block, row);
                     Grid.SetRowSpan(block, span);
                     Grid.SetColumn(block, dayIdx + 1);
@@ -218,7 +360,8 @@ public partial class TimetablePanelWindow : SecondaryPanelWindow
                     {
                         var block = ScheduleBlocks.Create(item.Slot, 12, 10, showSub: true,
                             model.ShowRoom, model.ShowTeacher);
-                        HighlightCurrent(block, item.Slot, day, today, nowTime, accent);
+                        if (highlightCurrent)
+                            HighlightCurrent(block, item.Slot, day, today, nowTime, accent);
                         Grid.SetColumn(block, item.Lane);
                         container.Children.Add(block);
                     }

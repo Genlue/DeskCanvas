@@ -30,6 +30,32 @@
             </StackPanel>
         </controls:SecondaryPanelShell.HeaderContent>
 
+        <!-- Week navigation: prev / next / back-to-this-week plus the "one week ↔ whole term"
+             mode switch. All four are panel-local state — nothing is written back to the model.
+             Icons are vector paths (no emoji); labels are localized in code behind. -->
+        <controls:SecondaryPanelShell.HeaderActions>
+            <StackPanel Orientation="Horizontal" Spacing="2" VerticalAlignment="Center">
+                <Button x:Name="PreviousWeekButton" Classes="dc-icon-button compact"
+                        Click="OnPreviousWeekClick">
+                    <PathIcon Width="12" Height="12"
+                              Data="M15.41 7.41 14 6l-6 6 6 6 1.41-1.41L10.83 12z" />
+                </Button>
+                <Button x:Name="NextWeekButton" Classes="dc-icon-button compact"
+                        Click="OnNextWeekClick">
+                    <PathIcon Width="12" Height="12"
+                              Data="M8.59 16.59 10 18l6-6-6-6-1.41 1.41L13.17 12z" />
+                </Button>
+                <Button x:Name="BackToCurrentWeekButton" Classes="dc-icon-button compact"
+                        Click="OnBackToCurrentWeekClick">
+                    <!-- "Today": a calendar page carrying the current-day marker. -->
+                    <PathIcon Width="12" Height="12"
+                              Data="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19a2 2 0 0 0 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z" />
+                </Button>
+                <Button x:Name="WeekModeButton" Classes="dc-pill compact"
+                        Click="OnWeekModeClick" />
+            </StackPanel>
+        </controls:SecondaryPanelShell.HeaderActions>
+
         <!-- Scrollable body: the full week grid, then the course notes. -->
         <ScrollViewer VerticalScrollBarVisibility="Auto">
             <StackPanel Orientation="Vertical" Spacing="12" Margin="0,0,6,0">

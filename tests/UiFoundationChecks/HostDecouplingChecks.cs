@@ -81,6 +81,7 @@ internal static partial class Program
         CheckOverlayLayoutHintsContract();
         CheckLegacyStackAdapterPath();
         CheckStackChordGesturePreserved();
+        CheckStackWheelSwitchScopes();
     }
 
     // ---- 1. 源码契约：宿主无类型名外观分支、无 Stack 专属 XAML -------------------------------
@@ -415,6 +416,42 @@ internal static partial class Program
             $"hovering the widget reveals the auto-hidden dots through the new control (opacity {revealStrip.Opacity})");
         revealHost.Close();
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+
+        // 设置保存后立刻生效（“常态隐藏”开关）：此前显隐只挂在“条目数据变化”这一条路径上，
+        // 开关单独变化时圆点停在旧的不透明值上常显。headless 不推进 DispatcherTimer，
+        // 这里断言“空闲停留计时已排定”，再直接驱动一次回调验证落点。
+        var liveView = new WidgetStackView(model, new StubWidgetLayoutProvider(), new StubAssemblyProvider());
+        var liveStrip = (StackIndicatorStrip)((IWidgetOverlayProvider)liveView).Overlay!;
+        Check(liveStrip.Opacity == 1, $"auto-hide off: dots start visible (opacity {liveStrip.Opacity})");
+
+        liveView.UpdateFromSettings(model with { AutoHideDots = true });
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+        var hideTimer = (Avalonia.Threading.DispatcherTimer?)typeof(StackIndicatorStrip)
+            .GetField("hideTimer", BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(liveStrip);
+        Check(hideTimer is { IsEnabled: true },
+            "turning 常态隐藏 on re-evaluates the reveal and schedules the idle fade");
+        typeof(StackIndicatorStrip)
+            .GetMethod("OnHideTimerTick", BindingFlags.NonPublic | BindingFlags.Instance)!
+            .Invoke(liveStrip, [null, EventArgs.Empty]);
+        Check(liveStrip.Opacity == 0,
+            $"the scheduled idle fade actually hides the dots (opacity {liveStrip.Opacity})");
+
+        liveView.UpdateFromSettings(model with { AutoHideDots = false });
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+        Check(liveStrip.Opacity == 1,
+            $"turning 常态隐藏 back off restores the always-visible dots (opacity {liveStrip.Opacity})");
+
+        // 真实保存路径：设置页写入 layout → 宿主 OnWidgetLayoutUpdated → IWidgetSelfRefreshing.Refresh。
+        // 同一套显隐重估必须在这条路径上同样成立（不是只有 UpdateFromSettings 才生效）。
+        var settingsLayout = new WidgetLayout("Stack", "StackView", 0, 0, 384, 384,
+            System.Text.Json.JsonSerializer.SerializeToElement(model with { AutoHideDots = true }),
+            null);
+        liveView.Refresh(settingsLayout);
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+        var refreshTimer = (Avalonia.Threading.DispatcherTimer?)typeof(StackIndicatorStrip)
+            .GetField("hideTimer", BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(liveStrip);
+        Check(liveView.Model.AutoHideDots && refreshTimer is { IsEnabled: true },
+            "the host settings-save path (Refresh) re-evaluates the reveal and schedules the fade");
     }
 
     // ---- 5. 布局提示契约: 放置 / 右缘空间 / Acrylic 内移 / Region 合并 -------------------------
@@ -615,6 +652,232 @@ internal static partial class Program
 
         host.Close();
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+    }
+
+    // ---- 8. 滚轮切页的作用范围（中键手势在交互子控件上 / “鼠标滚轮切换”设置） -----------------
+
+    /// <summary>
+    /// 两条与“指针落在什么上面”直接相关的路径：
+    /// <list type="number">
+    /// <item>中键+滚轮：内部控件（Button/ScrollViewer）按下时捕获指针会让窗口收到一次
+    /// “指针已离开”，旧实现据此清掉和弦布尔，于是只有非交互边距还能切页。修正后按事件里的
+    /// 实时按键状态判断，交互子控件上照样切页，且子控件不会同时滚动（wheel 被标记 Handled）。</item>
+    /// <item>“鼠标滚轮切换”打开后：非交互背景上的滚轮切页；“仅在圆点处切换”只对会自己消费
+    /// 滚轮的内容（滚动列表、滑块、按钮…）让行，而不是整块主体一律 return。</item>
+    /// </list>
+    /// </summary>
+    private static void CheckStackWheelSwitchScopes()
+    {
+        Console.WriteLine("--- 滚轮切页范围: 交互子控件上的中键手势 / 非交互区的滚轮切页 ---");
+
+        // (1) 中键手势落在交互子控件上。
+        var interactive = new InteractiveStackContent();
+        var host = BuildDecoupledWidget(() => interactive, SolidTheme(), wrapPositionProxy: false);
+        host.Show();
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+        AvaloniaHeadlessPlatform.ForceRenderTimerTick();
+
+        var buttonPoint = interactive.PointOf(interactive.ActionButton, host);
+        var scrollPoint = interactive.PointOf(interactive.Scroller, host);
+        Check(buttonPoint != default && scrollPoint != default,
+            $"interactive content is laid out (button {buttonPoint}, scroller {scrollPoint})");
+
+        // 中键按下在 Button 上 → 指针移开（子控件捕获指针，窗口会收到“已离开”）→ 滚轮。
+        host.MouseMove(buttonPoint);
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+        host.MouseDown(buttonPoint, MouseButton.Middle);
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+        host.MouseMove(new Point(buttonPoint.X, buttonPoint.Y + 60));
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+        host.MouseWheel(new Point(buttonPoint.X, buttonPoint.Y + 60), new Vector(0, -120), RawInputModifiers.MiddleMouseButton);
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+        Check(interactive.CurrentIndex == 1,
+            $"the middle-button chord still pages after a child captured the pointer (index {interactive.CurrentIndex})");
+        Check(interactive.Scroller.Offset.Y == 0,
+            $"the chord marks the wheel handled so the inner ScrollViewer does not scroll (offset {interactive.Scroller.Offset.Y})");
+        host.MouseUp(new Point(buttonPoint.X, buttonPoint.Y + 60), MouseButton.Middle);
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+
+        // 中键松开后，交互区上的滚轮归子控件（滚动），不切页。
+        var beforeIndex = interactive.CurrentIndex;
+        host.MouseWheel(scrollPoint, new Vector(0, -120));
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+        Check(interactive.CurrentIndex == beforeIndex,
+            $"without the chord the wheel over a ScrollViewer stays with the child (index {interactive.CurrentIndex})");
+        Check(interactive.Scroller.Offset.Y > 0,
+            $"the inner ScrollViewer actually scrolled (offset {interactive.Scroller.Offset.Y})");
+
+        host.Close();
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+
+        // (2) “鼠标滚轮切换”设置：非交互区切页，交互区让行。
+        var model = new WidgetStackModel(
+        [
+            new StackedWidgetEntry("Weather", "Forecast", "weather"),
+            new StackedWidgetEntry("Weather", "FourDayForecast", "four-day"),
+            new StackedWidgetEntry("Progress", "ProgressView", "progress"),
+        ], 0, AllowWheelSwitch: true, WheelSwitchOnlyOnDots: true);
+        var view = new WidgetStackView(model, new StubWidgetLayoutProvider(), new StubAssemblyProvider());
+        var scopes = new WheelScopeContent();
+        view.FindControl<Avalonia.Controls.Grid>("WidgetsHost")!.Children.Add(scopes);
+
+        var scopeHost = new Window { Width = 384, Height = 384 };
+        scopeHost.Content = view;
+        scopeHost.Show();
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+        AvaloniaHeadlessPlatform.ForceRenderTimerTick();
+
+        var actionPoint = scopes.PointOf(scopes.Button, scopeHost);
+        var listPoint = scopes.PointOf(scopes.Scroller, scopeHost);
+        var backgroundPoint = scopes.PointOf(scopes.Backdrop, scopeHost);
+
+        scopeHost.MouseWheel(actionPoint, new Vector(0, -120));
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+        Check(view.Model.SelectedIndex == 0,
+            $"a wheel over an interactive Button does not page while 仅在圆点处切换 is on (index {view.Model.SelectedIndex})");
+
+        scopeHost.MouseWheel(listPoint, new Vector(0, -120));
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+        Check(view.Model.SelectedIndex == 0,
+            $"a wheel over a ScrollViewer does not page (index {view.Model.SelectedIndex})");
+
+        var offsetBeforePaging = scopes.Scroller.Offset.Y;
+        scopeHost.MouseWheel(backgroundPoint, new Vector(0, -120));
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+        Check(view.Model.SelectedIndex == 1,
+            $"a wheel over the non-interactive background pages even with 仅在圆点处切换 on (index {view.Model.SelectedIndex})");
+        Check(scopes.Scroller.Offset.Y == offsetBeforePaging,
+            $"paging from the background does not scroll the inner ScrollViewer (offset {scopes.Scroller.Offset.Y}, was {offsetBeforePaging})");
+
+        // 关闭“鼠标滚轮切页”：主体上的滚轮完全不再切页（交互区本来就由子控件自己消费）。
+        view.UpdateFromSettings(model with { AllowWheelSwitch = false });
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+        var disabledIndex = view.Model.SelectedIndex;
+        scopeHost.MouseWheel(backgroundPoint, new Vector(0, -120));
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+        Check(view.Model.SelectedIndex == disabledIndex,
+            $"AllowWheelSwitch=false disables the body wheel entirely (index {view.Model.SelectedIndex})");
+
+        scopeHost.Close();
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+    }
+
+    /// <summary>带真实交互子控件的旧协议内容：Button 在上、可滚动内容在下。</summary>
+    private sealed class InteractiveStackContent : UserControl, IStackWidget
+    {
+        public Button ActionButton { get; }
+        public ScrollViewer Scroller { get; }
+
+        public InteractiveStackContent()
+        {
+            ActionButton = new Button { Content = "action", Height = 32, HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Stretch };
+            Scroller = new ScrollViewer
+            {
+                VerticalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Auto,
+                Content = new Border
+                {
+                    Height = 900,
+                    Background = Brushes.Transparent,
+                    Child = new TextBlock { Text = "long content" },
+                },
+            };
+
+            Content = new Avalonia.Controls.Grid
+            {
+                RowDefinitions = new RowDefinitions("Auto,*"),
+                Background = Brushes.Transparent,
+                Children =
+                {
+                    ActionButton,
+                    Place(Scroller, 1),
+                },
+            };
+        }
+
+        private static T Place<T>(T control, int row) where T : Control
+        {
+            Avalonia.Controls.Grid.SetRow(control, row);
+            return control;
+        }
+
+        public int CurrentIndex { get; private set; }
+
+        public IReadOnlyList<StackWidgetIndicatorItem> IndicatorItems =>
+            [.. Enumerable.Range(0, 3).Select(i =>
+                new StackWidgetIndicatorItem(i, $"page-{i}", i == CurrentIndex, i == CurrentIndex ? 1.0 : 0.3))];
+
+        public bool IsTransitionActive => false;
+        public bool AutoHideIndicators => false;
+        public bool CanEditCurrentChild => false;
+        public string? CurrentChildTitle => null;
+        public void EditCurrentChild(object? ownerWindow = null) { }
+        public event EventHandler? IndicatorItemsChanged;
+
+        public void SwitchToIndex(int index)
+        {
+            CurrentIndex = index;
+            IndicatorItemsChanged?.Invoke(this, EventArgs.Empty);
+        }
+
+        public Point PointOf(Control control, Visual root) =>
+            control.TranslatePoint(new Point(control.Bounds.Width / 2, control.Bounds.Height / 2), root)
+            ?? default;
+    }
+
+    /// <summary>滚轮作用范围的探测内容：交互按钮 / 可滚动列表 / 非交互背景三块。</summary>
+    private sealed class WheelScopeContent : UserControl
+    {
+        public Border Backdrop { get; }
+        public Button Button { get; }
+        public ScrollViewer Scroller { get; }
+
+        public WheelScopeContent()
+        {
+            Button = new Button { Content = "action", Height = 32, HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Stretch };
+            Scroller = new ScrollViewer
+            {
+                Height = 72,
+                VerticalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Auto,
+                Content = new Border
+                {
+                    Height = 900,
+                    Background = Brushes.Transparent,
+                    Child = new TextBlock { Text = "long content" },
+                },
+            };
+
+            Backdrop = new Border
+            {
+                Background = Brushes.Transparent,
+                Child = new Avalonia.Controls.Grid
+                {
+                    RowDefinitions = new RowDefinitions("Auto,Auto,*"),
+                    Children =
+                    {
+                        Button,
+                        Place(Scroller, 1),
+                        Place(new Border { Background = Brushes.Transparent }, 2),
+                    },
+                },
+            };
+
+            // 第三行（*）留作非交互背景；把按钮与滚动区固定在第 0/1 行。
+            Content = Backdrop;
+        }
+
+        private static T Place<T>(T control, int row) where T : Control
+        {
+            Avalonia.Controls.Grid.SetRow(control, row);
+            return control;
+        }
+
+        public Point PointOf(Control control, Visual root)
+        {
+            var local = control == Backdrop
+                ? new Point(control.Bounds.Width / 2, control.Bounds.Height - 6)
+                : new Point(control.Bounds.Width / 2, control.Bounds.Height / 2);
+            return control.TranslatePoint(local, root) ?? default;
+        }
     }
 
     // ---- 共享 rig（Widget 宿主窗口，与 DragCommitChecks/WidgetAdaptiveChecks 同一套缝合法） ----

@@ -615,4 +615,172 @@
     <data name="Shortcuts_Switch" xml:space="preserve">
         <value>切换指令</value>
     </data>
+    <data name="Shortcuts_Action_openFolder" xml:space="preserve">
+        <value>打开文件夹</value>
+    </data>
+    <data name="Shortcuts_Action_minimizeAll" xml:space="preserve">
+        <value>最小化所有窗口</value>
+    </data>
+    <data name="Shortcuts_Action_sendKeys" xml:space="preserve">
+        <value>发送按键或文本</value>
+    </data>
+    <data name="Shortcuts_Action_runShortcut" xml:space="preserve">
+        <value>运行另一条快捷指令</value>
+    </data>
+    <data name="Shortcuts_Action_httpRequest" xml:space="preserve">
+        <value>HTTP 请求</value>
+    </data>
+    <data name="Shortcuts_Param_keys" xml:space="preserve">
+        <value>按键</value>
+    </data>
+    <data name="Shortcuts_Param_sendText" xml:space="preserve">
+        <value>要输入的文字</value>
+    </data>
+    <data name="Shortcuts_Param_shortcut" xml:space="preserve">
+        <value>快捷指令名称或 ID</value>
+    </data>
+    <data name="Shortcuts_Param_method" xml:space="preserve">
+        <value>方法</value>
+    </data>
+    <data name="Shortcuts_Param_body" xml:space="preserve">
+        <value>请求体</value>
+    </data>
+    <data name="Shortcuts_Param_timeout" xml:space="preserve">
+        <value>超时</value>
+    </data>
+    <data name="Shortcuts_Http_GET" xml:space="preserve">
+        <value>GET</value>
+    </data>
+    <data name="Shortcuts_Http_POST" xml:space="preserve">
+        <value>POST</value>
+    </data>
+    <data name="Shortcuts_Output_OpenedFolder" xml:space="preserve">
+        <value>已打开 {0}</value>
+    </data>
+    <data name="Shortcuts_Output_Minimized" xml:space="preserve">
+        <value>已最小化所有窗口</value>
+    </data>
+    <data name="Shortcuts_Output_KeysSent" xml:space="preserve">
+        <value>按键已发送</value>
+    </data>
+    <data name="Shortcuts_Output_RanShortcut" xml:space="preserve">
+        <value>已运行 {0}</value>
+    </data>
+    <data name="Shortcuts_Output_HttpStatus" xml:space="preserve">
+        <value>HTTP {0}</value>
+    </data>
+    <data name="Shortcuts_Error_PathNotFound" xml:space="preserve">
+        <value>找不到路径：{0}</value>
+    </data>
+    <data name="Shortcuts_Error_InvalidUrl" xml:space="preserve">
+        <value>只允许 http 或 https 地址</value>
+    </data>
+    <data name="Shortcuts_Error_HttpStatus" xml:space="preserve">
+        <value>HTTP 请求失败：{0}</value>
+    </data>
+    <data name="Shortcuts_Error_HttpTimeout" xml:space="preserve">
+        <value>HTTP 请求超时</value>
+    </data>
+    <data name="Shortcuts_Error_SendKeys" xml:space="preserve">
+        <value>无法发送按键</value>
+    </data>
+    <data name="Shortcuts_Error_ShortcutNotFound" xml:space="preserve">
+        <value>找不到快捷指令：{0}</value>
+    </data>
+    <data name="Shortcuts_Error_Recursion" xml:space="preserve">
+        <value>已阻止递归调用快捷指令</value>
+    </data>
+    <data name="Shortcuts_Error_Depth" xml:space="preserve">
+        <value>快捷指令嵌套层数过多</value>
+    </data>
+    <data name="Shortcuts_Error_ShortcutBusy" xml:space="preserve">
+        <value>「{0}」正在运行</value>
+    </data>
+    <data name="Shortcuts_Error_TooLong" xml:space="preserve">
+        <value>内容过长（最多 {0} 个字符）</value>
+    </data>
+    <data name="Shortcuts_Error_InvalidKeys" xml:space="preserve">
+        <value>键位组合无效：{0}</value>
+    </data>
+    <data name="Shortcuts_Confirm_SendKeys" xml:space="preserve">
+        <value>将向当前窗口发送 Win 组合键，是否继续？</value>
+    </data>
+    <data name="Shortcuts_Template_Focus" xml:space="preserve">
+        <value>一键专注</value>
+    </data>
+    <data name="Shortcuts_Template_Workspace" xml:space="preserve">
+        <value>工作区启动</value>
+    </data>
+    <data name="Shortcuts_Template_ClockOut" xml:space="preserve">
+        <value>下班关机</value>
+    </data>
+    <data name="Shortcuts_Template_FocusNotice" xml:space="preserve">
+        <value>已进入专注模式</value>
+    </data>
+    <data name="Shortcuts_Hotkey_Label" xml:space="preserve">
+        <value>快捷键</value>
+    </data>
+    <data name="Shortcuts_Hotkey_None" xml:space="preserve">
+        <value>未设置</value>
+    </data>
+    <data name="Shortcuts_Hotkey_Record" xml:space="preserve">
+        <value>录制</value>
+    </data>
+    <data name="Shortcuts_Hotkey_Cancel" xml:space="preserve">
+        <value>取消</value>
+    </data>
+    <data name="Shortcuts_Hotkey_Clear" xml:space="preserve">
+        <value>清除</value>
+    </data>
+    <data name="Shortcuts_Hotkey_Recording" xml:space="preserve">
+        <value>请按下组合键…</value>
+    </data>
+    <data name="Shortcuts_Hotkey_RecordingStatus" xml:space="preserve">
+        <value>录制中…按 Esc 取消，按 Backspace 清除</value>
+    </data>
+    <data name="Shortcuts_Hotkey_HintModifier" xml:space="preserve">
+        <value>请同时按住 Ctrl、Alt、Shift 或 Win 再加一个按键</value>
+    </data>
+    <data name="Shortcuts_Hotkey_HintUnsupported" xml:space="preserve">
+        <value>不支持这个按键</value>
+    </data>
+    <data name="Shortcuts_Hotkey_Registered" xml:space="preserve">
+        <value>已生效</value>
+    </data>
+    <data name="Shortcuts_Hotkey_Conflict" xml:space="preserve">
+        <value>已被其他程序占用</value>
+    </data>
+    <data name="Shortcuts_Hotkey_Duplicate" xml:space="preserve">
+        <value>与「{0}」重复</value>
+    </data>
+    <data name="Shortcuts_Hotkey_Invalid" xml:space="preserve">
+        <value>键位格式无效</value>
+    </data>
+    <data name="Shortcuts_Hotkey_Suspended" xml:space="preserve">
+        <value>录制中，暂时停用</value>
+    </data>
+    <data name="Shortcuts_Hotkey_Pending" xml:space="preserve">
+        <value>已保存，卡片加载后生效</value>
+    </data>
+    <data name="Shortcuts_Hotkey_TypingHint" xml:space="preserve">
+        <value>按回车或离开输入框应用</value>
+    </data>
+    <data name="Shortcuts_Action_sendHotkey" xml:space="preserve">
+        <value>发送快捷键</value>
+    </data>
+    <data name="Shortcuts_Param_hotkey" xml:space="preserve">
+        <value>组合键</value>
+    </data>
+    <data name="Shortcuts_Param_holdMs" xml:space="preserve">
+        <value>按住时长</value>
+    </data>
+    <data name="Shortcuts_Unit_Milliseconds" xml:space="preserve">
+        <value>{0} 毫秒</value>
+    </data>
+    <data name="Shortcuts_Output_HotkeySent" xml:space="preserve">
+        <value>快捷键已发送</value>
+    </data>
+    <data name="Shortcuts_Error_CaptureActive" xml:space="preserve">
+        <value>正在录制按键，请先完成录制</value>
+    </data>
 </root>

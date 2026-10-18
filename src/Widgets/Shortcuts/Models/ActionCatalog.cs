@@ -19,6 +19,7 @@ public enum ParamKind
     Choice,
     FilePath,
     FolderPath,
+    Hotkey,
 }
 
 /// <summary>One parameter of an action.</summary>
@@ -68,6 +69,10 @@ public static class ActionCatalog
         [
             new("path", "Shortcuts_Param_path", ParamKind.FilePath, Primary: true),
         ]),
+        new("openFolder", ActionCategory.Launch, "folder", "Shortcuts_Action_openFolder",
+        [
+            new("path", "Shortcuts_Param_path", ParamKind.FolderPath, Primary: true),
+        ]),
         new("openUrl", ActionCategory.Launch, "globe", "Shortcuts_Action_openUrl",
         [
             new("url", "Shortcuts_Param_url", ParamKind.Text, "https://", Primary: true),
@@ -108,6 +113,18 @@ public static class ActionCatalog
         [
             new("message", "Shortcuts_Param_message", ParamKind.Text, Primary: true),
         ]),
+        new("minimizeAll", ActionCategory.System, "desktop", "Shortcuts_Action_minimizeAll", []),
+        new("sendKeys", ActionCategory.System, "keyboard", "Shortcuts_Action_sendKeys",
+        [
+            new("keys", "Shortcuts_Param_keys", ParamKind.Text, Primary: true),
+            new("text", "Shortcuts_Param_sendText", ParamKind.Text, Primary: true),
+        ]),
+        new("sendHotkey", ActionCategory.System, "keyboard", "Shortcuts_Action_sendHotkey",
+        [
+            new("hotkey", "Shortcuts_Param_hotkey", ParamKind.Hotkey, Primary: true),
+            new("holdMs", "Shortcuts_Param_holdMs", ParamKind.Number, "40", Min: 10, Max: 500,
+                UnitKey: "Shortcuts_Unit_Milliseconds", Primary: true),
+        ]),
 
         // ---- Text & data (amber) ---------------------------------------------------
         new("getClipboard", ActionCategory.Text, "clip", "Shortcuts_Action_getClipboard", []),
@@ -137,6 +154,18 @@ public static class ActionCatalog
             new("min", "Shortcuts_Param_min", ParamKind.Number, "1", Min: -1000000, Max: 1000000),
             new("max", "Shortcuts_Param_max", ParamKind.Number, "100", Min: -1000000, Max: 1000000),
         ]),
+        new("httpRequest", ActionCategory.Text, "globe", "Shortcuts_Action_httpRequest",
+        [
+            new("url", "Shortcuts_Param_url", ParamKind.Text, "https://", Primary: true),
+            new("method", "Shortcuts_Param_method", ParamKind.Choice, "GET",
+            [
+                ("GET", "Shortcuts_Http_GET"),
+                ("POST", "Shortcuts_Http_POST"),
+            ], Primary: true),
+            new("body", "Shortcuts_Param_body", ParamKind.Text, Primary: true),
+            new("timeout", "Shortcuts_Param_timeout", ParamKind.Number, "15", Min: 1, Max: 60,
+                UnitKey: "Shortcuts_Param_SecondsUnit", Primary: true),
+        ]),
 
         // ---- Control flow (purple) -------------------------------------------------
         new("if", ActionCategory.Flow, "branch", "Shortcuts_Action_if",
@@ -164,6 +193,10 @@ public static class ActionCatalog
         new("comment", ActionCategory.Flow, "comment", "Shortcuts_Action_comment",
         [
             new("note", "Shortcuts_Param_note", ParamKind.Text, Primary: true),
+        ]),
+        new("runShortcut", ActionCategory.Flow, "bolt", "Shortcuts_Action_runShortcut",
+        [
+            new("target", "Shortcuts_Param_shortcut", ParamKind.Text, Primary: true),
         ]),
 
         // ---- DeskCanvas host integration (teal) ------------------------------------

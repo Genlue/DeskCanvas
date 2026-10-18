@@ -117,6 +117,84 @@ foreach (var control in new SharedSlider[] { new SharedSlider(), new LegacySlide
     window.Close();
 }
 
+// ---- slider pointer gestures: real drag / track click / off-control release commit once ----
+// The Slider marks its pointer events handled, so these are the gestures that used to change the
+// value silently: only the numeric spin box ever persisted. Every case below is a real headless
+// pointer gesture, not a synthesized routed event.
+foreach (var control in new SharedSlider[] { new SharedSlider(), new LegacySlider() })
+{
+    var name = control.GetType().FullName!;
+    control.Minimum = 0;
+    control.Maximum = 100;
+    control.Step = 1;
+    control.Width = 320;
+    var window = new Window { Width = 440, Height = 140, Content = control };
+    window.Show();
+    Flush();
+    var model = new BoundValue { Level = 20 };
+    var commits = new List<double>();
+    control.ValueCommitted += (_, e) => commits.Add(e.Value);
+    using var binding = control.Bind(SharedSlider.ValueProperty,
+        new Binding(nameof(BoundValue.Level)) { Source = model, Mode = BindingMode.TwoWay });
+    Flush();
+    var track = Part<Slider>(control, "SliderPart");
+    var thumb = track.GetVisualDescendants().OfType<Thumb>().First();
+    Point ThumbCentre() => thumb.TranslatePoint(new Point(thumb.Bounds.Width / 2, thumb.Bounds.Height / 2), window)!.Value;
+
+    // A real thumb drag previews live; only the release may persist (spec §3.3 forbids per-step writes).
+    var start = ThumbCentre();
+    window.MouseDown(start, MouseButton.Left);
+    Flush();
+    for (var step = 1; step <= 8; step++)
+    {
+        window.MouseMove(start + new Point(step * 10, 0));
+        Flush();
+    }
+    var dragged = control.Value;
+    Check(commits.Count == 0 && dragged > 20 && model.Level == dragged,
+        $"{name}: pointer drag previews live but never commits mid-gesture");
+    window.MouseUp(start + new Point(80, 0), MouseButton.Left);
+    Flush();
+    Check(commits.SequenceEqual(new[] { dragged }) && model.Level == dragged,
+        $"{name}: real thumb drag commits exactly once with the final value");
+
+    // A track click is the ordinary way to move a short thumb: the value changes on press.
+    var trackPoint = track.TranslatePoint(new Point(track.Bounds.Width - 8, track.Bounds.Height / 2), window)!.Value;
+    window.MouseDown(trackPoint, MouseButton.Left);
+    Flush();
+    var clicked = control.Value;
+    Check(clicked > dragged && commits.Count == 1,
+        $"{name}: track press moves the value without committing");
+    window.MouseUp(trackPoint, MouseButton.Left);
+    Flush();
+    Check(commits.SequenceEqual(new[] { dragged, clicked }) && model.Level == clicked,
+        $"{name}: track click commits exactly once on release");
+
+    // Releasing outside the control is routed back through the pointer capture.
+    var grip = ThumbCentre();
+    window.MouseDown(grip, MouseButton.Left);
+    Flush();
+    for (var step = 1; step <= 4; step++)
+    {
+        window.MouseMove(grip - new Point(step * 14, 0));
+        Flush();
+    }
+    var released = control.Value;
+    window.MouseUp(new Point(-40, 70), MouseButton.Left);
+    Flush();
+    Check(commits.SequenceEqual(new[] { dragged, clicked, released }) && model.Level == released,
+        $"{name}: release outside the control still commits exactly once");
+
+    // Press + release without moving the thumb stays silent (same value as the last commit).
+    var idle = ThumbCentre();
+    window.MouseDown(idle, MouseButton.Left);
+    window.MouseUp(idle, MouseButton.Left);
+    Flush();
+    Check(commits.Count == 3 && model.Level == released,
+        $"{name}: press without a value change stays silent");
+    window.Close();
+}
+
 // ---- Setting rows: shared template + host facade (W3 contract) ---------------------------
 Check(typeof(LegacySetting).BaseType == typeof(SharedSetting), "Setting host facade executes shared implementation");
 Check(ReferenceEquals(LegacySetting.TitleProperty, SharedSetting.TitleProperty), "Setting old/new styled properties have one identity");

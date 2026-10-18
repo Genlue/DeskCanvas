@@ -1,6 +1,16 @@
 namespace Notes.Models;
 
 /// <summary>
+/// Defaults shared by the model, the settings page and the render-time clamp —
+/// one constant so a new note and a missing/invalid stored value agree.
+/// </summary>
+public static class NoteDefaults
+{
+    /// <summary>标题栏默认不透明度（30%）。</summary>
+    public const double HeaderOpacity = 0.3;
+}
+
+/// <summary>
 /// What stays of the note card's colored top bar (顶栏). The historic two-state
 /// "show title bar" switch expanded into this: the bar and its title text are
 /// separately disposable, but they are one setting, not two.
@@ -73,7 +83,7 @@ public record MarkdownTypography(
 /// <param name="Markdown">Render the body as markdown (double-click to edit the source).</param>
 /// <param name="FollowAccentHeader">The title bar follows the app accent color.</param>
 /// <param name="HeaderColor">Custom title bar color (hex, e.g. #3376CD) when not following the accent.</param>
-/// <param name="HeaderOpacity">Title bar opacity (0–1), applied in both color modes.</param>
+/// <param name="HeaderOpacity">Title bar opacity (0–1), applied in both color modes. Default 30%.</param>
 /// <param name="Source">Body source: internal text, one file, or a folder of files.</param>
 /// <param name="Path">Target file or folder for <see cref="Source"/>.</param>
 /// <param name="RecentFiles">Folder mode: take the most recently modified documents.</param>
@@ -117,7 +127,7 @@ public record NoteModel(
     bool Markdown = true,
     bool FollowAccentHeader = true,
     string? HeaderColor = null,
-    double HeaderOpacity = 1.0,
+    double HeaderOpacity = NoteDefaults.HeaderOpacity,
     NoteSource Source = NoteSource.Internal,
     string? Path = null,
     bool RecentFiles = true,
@@ -136,4 +146,11 @@ public record NoteModel(
     public NoteHeaderMode EffectiveHeaderMode => ShowTitle
         ? HeaderMode
         : NoteHeaderMode.Hidden;
+
+    /// <summary>
+    /// Clamp the configured title-bar opacity to 0–1; NaN/Infinity (corrupt or
+    /// missing JSON input) fall back to <see cref="NoteDefaults.HeaderOpacity"/>.
+    /// </summary>
+    public static double NormalizeHeaderOpacity(double value) =>
+        double.IsFinite(value) ? Math.Clamp(value, 0, 1) : NoteDefaults.HeaderOpacity;
 }

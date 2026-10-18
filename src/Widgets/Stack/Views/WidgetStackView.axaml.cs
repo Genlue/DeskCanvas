@@ -14,6 +14,7 @@ using Avalonia.Interactivity;
 using Avalonia.Media;
 using Avalonia.Styling;
 using Avalonia.Threading;
+using Avalonia.VisualTree;
 using StackWidgets.Models;
 using StackWidgets.Views.Controls;
 using DeskCanvas.Core.Interfaces;
@@ -279,6 +280,10 @@ public partial class WidgetStackView : UserControl, IWidgetSelfRefreshing, IStac
     {
         try
         {
+            // 常态隐藏圆点的显隐由“数据是否变化”之外的因素决定（AutoHideDots 开关、
+            // 过渡状态、悬停状态）：先就地重估一次显隐，再把事件发给宿主/圆点条。
+            // 只靠事件时，开关切换若没有对应的条目变化就不会重估，圆点会停在旧的不透明值上。
+            indicatorStrip.RefreshReveal();
             IndicatorItemsChanged?.Invoke(this, EventArgs.Empty);
         }
         catch (Exception ex)
@@ -870,9 +875,11 @@ public partial class WidgetStackView : UserControl, IWidgetSelfRefreshing, IStac
         {
             if (model?.Entries == null || !model.AllowWheelSwitch || model.Entries.Count <= 1) return;
 
-            // 仅在圆点处可用滚轮切页：主体上的滚轮原样留给子组件自己的滚动行为，
-            // 切页只由右侧圆点上的滚轮（Widget 宿主的 OnStackIndicatorsWheelChanged）承担。
-            if (model.WheelSwitchOnlyOnDots) return;
+            // “鼠标滚轮切换”打开后，非交互内容（卡片背景、纯展示区）上的滚轮用于切页；
+            // “仅在圆点处可用滚轮”只保护那些自己会消费滚轮的子内容（滚动列表、滑块、
+            // 数值框、按钮……）：落在它们上面的滚轮仍然原样归子组件。此前这里对
+            // WheelSwitchOnlyOnDots 无条件 return，设置打开后主体滚轮永远不切页。
+            if (model.WheelSwitchOnlyOnDots && IsInsideInteractiveContent(e.Source as Visual)) return;
 
             if (activeTransitionTimer != null)
             {
@@ -899,6 +906,22 @@ public partial class WidgetStackView : UserControl, IWidgetSelfRefreshing, IStac
         {
             System.Diagnostics.Debug.WriteLine($"[WidgetStack] OnPointerWheelChanged error: {ex.Message}");
         }
+    }
+
+    /// <summary>
+    /// 事件源是否落在“自己会消费滚轮”的内容里：向上找祖先链，遇到可滚动容器或值控件
+    /// （含承载它们的模板）即视为交互内容。只认框架控件类型，不按具体插件类型分支
+    /// （doc/开发规范.md §4.3）——知道“这一块是列表/输入框”就够了，不需要认识是哪个组件。
+    /// </summary>
+    private bool IsInsideInteractiveContent(Visual? source)
+    {
+        for (var visual = source; visual != null && !ReferenceEquals(visual, this); visual = visual.GetVisualParent())
+        {
+            if (visual is ScrollViewer or Slider or TextBox or NumericUpDown or ComboBox or ListBox or TreeView or Button)
+                return true;
+        }
+
+        return false;
     }
 
     public void UpdateChildSettings(int index, string? newSettingsJson, bool forceRecreateIfNotSelfRefreshing = false)

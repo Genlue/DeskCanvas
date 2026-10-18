@@ -8,17 +8,6 @@
              Margin="10,8,10,8">
 
     <UserControl.Styles>
-        <!-- Ghost 图标按钮（规范 §4） -->
-        <Style Selector="Button.ghost-btn">
-            <Setter Property="Background" Value="Transparent" />
-            <Setter Property="BorderThickness" Value="0" />
-            <Setter Property="Padding" Value="4" />
-            <Setter Property="Cursor" Value="Hand" />
-        </Style>
-        <Style Selector="Button.ghost-btn:pointerover /template/ ContentPresenter">
-            <Setter Property="Background" Value="{DynamicResource ControlHoverBrush}" />
-        </Style>
-
         <!-- 周切换 ghost 箭头 -->
         <Style Selector="Button.cycle-btn">
             <Setter Property="Width" Value="18" />
@@ -120,12 +109,16 @@
                                Foreground="#FF9500" />
                 </Border>
 
-                <Button Classes="ghost-btn" Width="22" Height="22"
+                <Button Classes="dc-icon-button compact" Width="22" Height="22"
                         Click="OnOpenPopupClicked" ToolTip.Tip="{x:Static locales:Locale.Habits_Title}">
-                    <Path Data="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z"
-                          Fill="{DynamicResource SystemControlForegroundBaseHighBrush}"
-                          Opacity="0.6" Stretch="Uniform" Width="12" Height="12"
-                          HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    <!-- 同 HabitsListCard：24×24 设计画布经 Viewbox 缩到 16×16，避免 Path 的
+                         Stretch 把不对称字形的墨迹拉到左上角。 -->
+                    <Viewbox Width="16" Height="16" Stretch="Uniform"
+                             HorizontalAlignment="Center" VerticalAlignment="Center">
+                        <Path Data="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z"
+                              Fill="{DynamicResource SystemControlForegroundBaseHighBrush}"
+                              Opacity="0.6" Stretch="None" Width="24" Height="24" />
+                    </Viewbox>
                 </Button>
             </StackPanel>
         </Grid>

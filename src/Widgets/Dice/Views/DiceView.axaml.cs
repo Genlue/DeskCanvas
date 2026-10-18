@@ -1,5 +1,4 @@
 using System;
-using System.Collections.ObjectModel;
 using System.Text.Json;
 using Avalonia;
 using Avalonia.Controls;
@@ -8,8 +7,8 @@ using Avalonia.Interactivity;
 using DeskCanvas.Core.Interfaces;
 using DeskCanvas.Core.Models;
 using DeskCanvas.Services;
+using Dice.Locales;
 using Dice.Models;
-using Dice.Services;
 using Dice.ViewModels;
 using Dice.Views.Controls;
 
@@ -22,7 +21,6 @@ public partial class DiceView : UserControl, IWidgetSelfRefreshing, IWidgetSurfa
     private readonly IWidgetLayoutProvider? layoutProvider;
     private readonly DiceViewModel viewModel;
     private WidgetTier currentTier = (WidgetTier)(-1);
-    private readonly ObservableCollection<DiceHistoryItemViewModel> recentHistory = [];
 
     public DiceView() : this((IWidgetLayoutProvider?)null, null) { }
 
@@ -41,7 +39,6 @@ public partial class DiceView : UserControl, IWidgetSelfRefreshing, IWidgetSurfa
 
         InitializeComponent();
 
-        WideHistoryList.ItemsSource = recentHistory;
         viewModel.PropertyChanged += (_, e) =>
         {
             if (e.PropertyName == nameof(DiceViewModel.CurrentDice) ||
@@ -52,14 +49,10 @@ public partial class DiceView : UserControl, IWidgetSelfRefreshing, IWidgetSurfa
             }
         };
 
-        DiceStore.RollCompleted += OnRollCompleted;
-
         Loaded += OnLoaded;
-        Unloaded += OnUnloaded;
         SizeChanged += OnSizeChanged;
 
         UpdateDiceVisuals();
-        LoadHistory();
     }
 
     private static DiceModel ResolveModel(IWidgetLayoutProvider? layoutProvider, DiceModel? model)
@@ -88,11 +81,6 @@ public partial class DiceView : UserControl, IWidgetSelfRefreshing, IWidgetSurfa
             ApplySize(Bounds.Size);
         }
         UpdateDiceVisuals();
-    }
-
-    private void OnUnloaded(object? sender, RoutedEventArgs e)
-    {
-        DiceStore.RollCompleted -= OnRollCompleted;
     }
 
     private void OnSizeChanged(object? sender, SizeChangedEventArgs e)
@@ -141,52 +129,32 @@ public partial class DiceView : UserControl, IWidgetSelfRefreshing, IWidgetSurfa
             CellDiceFace.FaceStyle = viewModel.Model.FaceStyle;
         }
 
-        // 2. Update 2x2 Small & 4x2 Wide containers
-        SmallDiceContainer.Items.Clear();
-        WideDiceContainer.Items.Clear();
+        // 2. Update 2x2 Small & 4x2 Wide trays
+        SmallDiceTray.Children.Clear();
+        WideDiceTray.Children.Clear();
 
         foreach (var val in viewModel.CurrentDice)
         {
-            // 尺寸由 DiceFaceControl 自持（固定 48x48 骰面 + 4px 阴影呼吸边距），
-            // 不在调用侧硬编码宽高——此前的 50/46 两套尺寸曾造成同排骰面一大一小。
-            // 两个容器各需独立实例（同一控件不能同时挂在两个父级下）。
-            SmallDiceContainer.Items.Add(new DiceFaceControl
-            {
-                Value = val,
-                DiceType = viewModel.Model.Type,
-                FaceStyle = viewModel.Model.FaceStyle
-            });
-            WideDiceContainer.Items.Add(new DiceFaceControl
-            {
-                Value = val,
-                DiceType = viewModel.Model.Type,
-                FaceStyle = viewModel.Model.FaceStyle
-            });
+            // 尺寸由 DiceTrayPanel 按可用空间统一分配（FaceSize），两个布局各自持有独立实例。
+            SmallDiceTray.Children.Add(CreateFace(val));
+            WideDiceTray.Children.Add(CreateFace(val));
         }
 
-        SumPill.IsVisible = viewModel.Model.ShowSum;
-        WideSumText.IsVisible = viewModel.Model.ShowSum;
+        SmallSumPill.IsVisible = viewModel.Model.ShowSum;
+        WideSumPill.IsVisible = viewModel.Model.ShowSum;
 
-        SmallSumText.Text = $"总和: {viewModel.Sum}" + (viewModel.IsCriticalMax ? " ★满点!" : "");
-        WideSumText.Text = $"总和: {viewModel.Sum}" + (viewModel.IsCriticalMax ? " ★满点!" : "");
+        string sumText = $"{Locale.Dice_Sum}: {viewModel.Sum}"
+            + (viewModel.IsCriticalMax ? $" · {Locale.Dice_NaturalMax}" : "");
+        SmallSumText.Text = sumText;
+        WideSumText.Text = sumText;
     }
 
-    private void LoadHistory()
+    private DiceFaceControl CreateFace(int value) => new()
     {
-        recentHistory.Clear();
-        var data = DiceStore.GetData();
-        foreach (var r in data.History)
-        {
-            recentHistory.Add(new DiceHistoryItemViewModel(r));
-            if (recentHistory.Count >= 6) break;
-        }
-    }
-
-    private void OnRollCompleted(DiceRollRecord record)
-    {
-        recentHistory.Insert(0, new DiceHistoryItemViewModel(record));
-        if (recentHistory.Count > 6) recentHistory.RemoveAt(recentHistory.Count - 1);
-    }
+        Value = value,
+        DiceType = viewModel.Model.Type,
+        FaceStyle = viewModel.Model.FaceStyle
+    };
 
     private async void OnRollActionClicked(object? sender, RoutedEventArgs e)
     {

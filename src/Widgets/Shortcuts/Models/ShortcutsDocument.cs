@@ -34,6 +34,14 @@ public sealed class ShortcutDefinition
     /// <summary>Ask for confirmation before running (destructive shortcuts).</summary>
     public bool ConfirmBeforeRun { get; set; }
 
+    /// <summary>
+    /// Global hotkey in canonical text form ("Ctrl+Alt+1"), or <c>null</c> when unbound.
+    /// Missing in old files deserializes to <c>null</c>; null is omitted when writing so
+    /// documents that never used hotkeys stay byte-for-byte compatible.
+    /// </summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? Hotkey { get; set; }
+
     public List<ShortcutAction> Actions { get; set; } = [];
 
     public DateTime UpdatedAt { get; set; } = DateTime.Now;

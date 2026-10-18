@@ -46,23 +46,32 @@ public partial class HabitsPopupWindow : SecondaryPanelWindow
         "M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z";
 
     /// <summary>
-    /// 主题跟随的矢量操作图标：12×12、Uniform 缩放、容器内几何居中，
+    /// 主题跟随的矢量操作图标：24×24 设计画布经 Viewbox 统一缩放到 16×16（墨迹约 12px）。
+    /// Path 用 Stretch=None 保留原始坐标——Stretch=Uniform 会把几何边界拉到控件左上角，
+    /// 对宽高比不接近 1 的字形（如铅笔、垃圾桶）会让墨迹偏上/偏左。
     /// Fill 绑定窗口作用域 SystemControlForegroundBaseHighBrush（彩色/单色、明暗全作用域存在）。
     /// </summary>
-    private Avalonia.Controls.Shapes.Path CreateActionIcon(string geometryData)
+    private Control CreateActionIcon(string geometryData)
     {
         var path = new Avalonia.Controls.Shapes.Path
         {
             Data = Geometry.Parse(geometryData),
-            Stretch = Stretch.Uniform,
-            Width = 12,
-            Height = 12,
+            Stretch = Stretch.None,
+            Width = 24,
+            Height = 24,
             Opacity = 0.75,
-            HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center,
-            VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center
         };
         path.Bind(Avalonia.Controls.Shapes.Shape.FillProperty, this.GetResourceObservable("SystemControlForegroundBaseHighBrush").ToBinding());
-        return path;
+
+        return new Viewbox
+        {
+            Width = 16,
+            Height = 16,
+            Stretch = Stretch.Uniform,
+            HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center,
+            VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center,
+            Child = path,
+        };
     }
 
     protected override Point? SpawnScreenCenter => spawnScreenCenter;
@@ -333,7 +342,7 @@ public partial class HabitsPopupWindow : SecondaryPanelWindow
 
             var editBtn = new Button
             {
-                Classes = { "icon-action-btn" },
+                Classes = { "dc-icon-button", "compact", "habit-action" },
                 Content = CreateActionIcon(EditIconGeometry)
             };
             editBtn.Click += (_, _) => OpenEditForm(habit);
@@ -341,7 +350,7 @@ public partial class HabitsPopupWindow : SecondaryPanelWindow
 
             var deleteBtn = new Button
             {
-                Classes = { "icon-action-btn" },
+                Classes = { "dc-icon-button", "compact", "habit-action" },
                 Content = CreateActionIcon(DeleteIconGeometry)
             };
             deleteBtn.Click += (_, _) => DeleteHabit(habit.Id);

@@ -132,6 +132,9 @@ public static class ShortcutsStore
             copy = source.Clone();
             copy.Id = ShortcutDefinition.NewId();
             copy.Name = UniqueName(document, Loc.Format("Shortcuts_Param_CopyOf", source.Name));
+            // Copying the binding would immediately collide with the original in the hotkey
+            // table; a duplicate starts unbound.
+            copy.Hotkey = null;
             copy.UpdatedAt = DateTime.Now;
             foreach (var action in ShortcutTree.Flatten(copy.Actions))
                 action.Id = ShortcutDefinition.NewId();
@@ -301,6 +304,23 @@ public static class ShortcutsStore
                 shortcut.Glyph = string.IsNullOrWhiteSpace(shortcut.Glyph) ? "bolt" : shortcut.Glyph;
 
             shortcut.Color = string.IsNullOrWhiteSpace(shortcut.Color) ? "#534AB7" : shortcut.Color;
+
+            // Canonicalize a valid hotkey; keep an invalid one (trimmed) so the editor can show
+            // "invalid" instead of silently deleting what the user typed.
+            var hotkey = shortcut.Hotkey?.Trim();
+            if (string.IsNullOrEmpty(hotkey))
+            {
+                shortcut.Hotkey = null;
+            }
+            else if (HotkeyGesture.TryParse(hotkey, requireModifier: true, out var gesture, out _))
+            {
+                shortcut.Hotkey = gesture.Text;
+            }
+            else
+            {
+                shortcut.Hotkey = hotkey[..Math.Min(hotkey.Length, 64)];
+            }
+
             shortcut.Actions ??= [];
 
             var actionIds = new HashSet<string>(StringComparer.Ordinal);
@@ -320,6 +340,16 @@ public static class ShortcutsStore
         action.Params ??= [];
         action.Children ??= [];
         action.ElseChildren ??= [];
+
+        // Keep hand-edited sendHotkey values canonical; the executor and chip both parse the
+        // text anyway, but a stable stored form avoids duplicate spellings in the document.
+        if (action.Type == "sendHotkey" &&
+            action.Params.TryGetValue("hotkey", out var hotkey) &&
+            hotkey is { IsVariable: false, Text: { } text } &&
+            HotkeyGesture.TryParse(text, requireModifier: false, out var gesture, out _))
+        {
+            hotkey.Text = gesture.Text;
+        }
     }
 
     /// <summary>Starter shortcuts for a fresh install (also used as panel templates).</summary>

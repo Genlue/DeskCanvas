@@ -17,10 +17,12 @@ using Avalonia.Headless;
 using Avalonia.Skia;
 using Avalonia.Styling;
 using Avalonia.Themes.Fluent;
+using Avalonia.Threading;
 using DeskCanvas.Contracts;
 using DeskCanvas.Runtime;
 using Dice.ViewModels;
 using Music.Models;
+using Music.Services;
 using Music.ViewModels;
 using Picture.Models;
 using Picture.ViewModels;
@@ -47,6 +49,8 @@ void Check(bool condition, string message)
 
 // A minimal 1x1 PNG: enough for PictureImageLoader (Skia codec) to produce a real bitmap.
 const string Png1x1Base64 = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==";
+// A different 1x1 PNG (grey+alpha) — a replaced cover on the same track.
+const string Png1x1WhiteBase64 = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+ip1sAAAAASUVORK5CYII=";
 var pictureDir = Path.Combine(Path.GetTempPath(), "MediaWidgetSessionChecks-" + Guid.NewGuid().ToString("N"));
 Directory.CreateDirectory(pictureDir);
 string WritePng(string name)
@@ -345,6 +349,137 @@ Check(Source("src/Widgets/Picture/ViewModels/PictureViewModel.cs").Contains("Upd
     "6.4 (source) the Picture beats reconcile through a single gating state machine");
 Check(Source("src/Widgets/Music/ViewModels/MusicViewModel.cs").Contains("UpdateProgressTimer"),
     "6.5 (source) the Music progress tick reconciles through a single state machine");
+var musicVmSource = Source("src/Widgets/Music/ViewModels/MusicViewModel.cs");
+var subscribeAt = musicVmSource.IndexOf("mediaService.TrackChanged += OnTrackChanged", StringComparison.Ordinal);
+var replayAt = musicVmSource.IndexOf("mediaService.PublishCurrentTrack()", StringComparison.Ordinal);
+Check(subscribeAt >= 0 && replayAt > subscribeAt,
+    "6.6 (source) the Music view model replays the engine snapshot after subscribing (late-join convergence)");
+
+// =========================================================================================
+// 7. Music: live snapshot refresh — a consumer must converge without a manual refresh
+// =========================================================================================
+Console.WriteLine("--- Music: live snapshot refresh ---");
+
+// The dispatcher has no event loop running in this probe: posted work (the view model's
+// UI-thread marshalling) is drained explicitly.
+void Pump(int milliseconds = 120)
+{
+    var until = Environment.TickCount64 + milliseconds;
+    while (Environment.TickCount64 < until)
+    {
+        Dispatcher.UIThread.RunJobs();
+        Thread.Sleep(5);
+    }
+    Dispatcher.UIThread.RunJobs();
+}
+
+var cover = Convert.FromBase64String(Png1x1Base64);
+SharedMediaSnapshot live = new("qqmusic", "Song A", "Artist A", "Album A", "QQ Music", true,
+    TimeSpan.FromSeconds(3), TimeSpan.FromSeconds(200), true, true, true, cover);
+var liveReads = 0;
+var liveProvider = new MediaSessionSharedProvider((_, _) => { Interlocked.Increment(ref liveReads); return Task.FromResult(live); },
+    TimeSpan.Zero);
+
+// 7.1 fresh consumer: the engine's first round must reach the view model with no explicit refresh
+var liveVm = new MusicViewModel(new MusicModel(), null, liveProvider);
+Pump(300);
+Check(liveVm.TrackTitle == "Song A" && liveVm.Artist == "Artist A" && liveVm.IsPlaying && liveVm.HasTrack,
+    "7.1 a fresh view model shows the first snapshot without a refresh");
+Check(liveVm.CoverBitmap != null, "7.2 the first snapshot's cover is decoded");
+
+// A second engine consumer drives rounds the way the 1.5 s poll would (the injected provider has
+// no timer by design).
+var liveDriver = new MediaManagerService(liveProvider);
+
+// 7.3 track change
+live = new SharedMediaSnapshot("qqmusic", "Song B", "Artist B", "Album B", "QQ Music", true,
+    TimeSpan.Zero, TimeSpan.FromSeconds(180), true, true, true, cover);
+await liveDriver.RefreshActiveSessionAsync();
+Pump();
+Check(liveVm.TrackTitle == "Song B" && liveVm.Artist == "Artist B" && liveVm.Duration == TimeSpan.FromSeconds(180),
+    "7.3 a track change reaches the live view model without a refresh");
+
+// 7.4 playback state change (identity dimension)
+live = live with { IsPlaying = false };
+await liveDriver.RefreshActiveSessionAsync();
+Pump();
+Check(!liveVm.IsPlaying, "7.4 a pause reaches the live view model without a refresh");
+
+// 7.5 progress only
+live = live with { Position = TimeSpan.FromSeconds(42) };
+await liveDriver.RefreshActiveSessionAsync();
+Pump();
+Check(liveVm.Position == TimeSpan.FromSeconds(42), "7.5 a seek reaches the live view model without a refresh");
+
+// 7.6 album art that arrives one round after the track change
+live = new SharedMediaSnapshot("qqmusic", "Song C", "Artist C", "Album C", "QQ Music", true,
+    TimeSpan.Zero, TimeSpan.FromSeconds(180), true, true, true, null);
+await liveDriver.RefreshActiveSessionAsync();
+Pump();
+Check(liveVm.TrackTitle == "Song C" && liveVm.CoverBitmap == null, "7.6 a cover-less track change clears the previous cover");
+live = live with { ThumbnailData = cover };
+await liveDriver.RefreshActiveSessionAsync();
+Pump();
+Check(liveVm.CoverBitmap != null, "7.7 a late-arriving cover is picked up on the next round");
+
+// 7.8 a rebuilt view model (the view disposes on Unloaded and rebuilds on Loaded) must learn the
+// current state on its own: the shared engine is still alive here (liveDriver holds it) and will
+// not repeat TrackChanged for an unchanged identity.
+var rebuiltVm = new MusicViewModel(new MusicModel(), null, liveProvider);
+Pump(300);
+Check(rebuiltVm.TrackTitle == "Song C" && rebuiltVm.Artist == "Artist C" && rebuiltVm.IsPlaying && rebuiltVm.CoverBitmap != null,
+    "7.8 a rebuilt view model adopts the engine's current snapshot");
+
+// 7.9 and it keeps receiving the next changes
+live = new SharedMediaSnapshot("qqmusic", "Song D", "Artist D", "Album D", "QQ Music", false,
+    TimeSpan.Zero, TimeSpan.FromSeconds(90), true, true, true, cover);
+await liveDriver.RefreshActiveSessionAsync();
+Pump();
+Check(rebuiltVm.TrackTitle == "Song D" && !rebuiltVm.IsPlaying, "7.9 a rebuilt view model keeps receiving later changes");
+
+// 7.10 ...and after it is rebuilt again while the engine stays alive (widget refresh cycle).
+rebuiltVm.Dispose();
+var rebuiltAgainVm = new MusicViewModel(new MusicModel(), null, liveProvider);
+Pump(300);
+Check(rebuiltAgainVm.TrackTitle == "Song D" && !rebuiltAgainVm.IsPlaying,
+    "7.10 a second rebuild still adopts the current snapshot");
+
+// 7.11 disposing is idempotent and the disposed view model never applies a queued callback
+rebuiltAgainVm.Dispose();
+rebuiltAgainVm.Dispose();
+var titleAfterDispose = rebuiltAgainVm.TrackTitle;
+live = live with { Title = "Song E" };
+await liveDriver.RefreshActiveSessionAsync();
+Pump();
+Check(rebuiltAgainVm.TrackTitle == titleAfterDispose, "7.11 a disposed view model ignores later snapshots");
+
+// 7.12 a real cover replacing a placeholder on the same track is an identity change too
+var coverBefore = liveVm.CoverBitmap;
+var secondCover = Convert.FromBase64String(Png1x1WhiteBase64);
+live = live with { ThumbnailData = secondCover };
+await liveDriver.RefreshActiveSessionAsync();
+Pump();
+Check(liveVm.CoverBitmap != null && !ReferenceEquals(coverBefore, liveVm.CoverBitmap),
+    "7.12 a replaced cover on the same track reaches the UI");
+
+// 7.13 the host suspension only stops polling; pushed snapshots must still apply, and the poll
+// belongs to the engine again after resume.
+liveVm.Suspend();
+live = live with { Title = "Song F", Artist = "Artist F" };
+await liveDriver.RefreshActiveSessionAsync();
+Pump();
+Check(liveVm.TrackTitle == "Song F" && liveVm.Artist == "Artist F",
+    "7.13 a suspended view model still applies pushed snapshots");
+liveVm.Resume();
+live = live with { Title = "Song G" };
+await liveDriver.RefreshActiveSessionAsync();
+Pump();
+Check(liveVm.TrackTitle == "Song G", "7.14 a resumed view model keeps updating");
+
+liveVm.Dispose();
+liveDriver.Dispose();
+Pump(150);
+Check(liveReads > 0, "7.15 the injected provider was actually read");
 
 // =========================================================================================
 Console.WriteLine();

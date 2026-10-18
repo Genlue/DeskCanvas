@@ -54,6 +54,33 @@ internal sealed class OpenPathExecutor : IActionExecutor
     }
 }
 
+/// <summary>Open a folder in Explorer; the path must exist so a typo fails loudly.</summary>
+internal sealed class OpenFolderExecutor : IActionExecutor
+{
+    public Task<string?> ExecuteAsync(ShortcutAction action, RunContext context)
+    {
+        var path = Environment.ExpandEnvironmentVariables(context.Resolve(action, "path").Trim());
+        if (path.Length == 0)
+            throw new ActionFailedException(Loc.Format("Shortcuts_Error_EmptyParam", Loc.Get("Shortcuts_Param_path")));
+
+        if (!Directory.Exists(path))
+            throw new ActionFailedException(Loc.Format("Shortcuts_Error_PathNotFound", path));
+
+        try
+        {
+            Process.Start(new ProcessStartInfo { FileName = path, UseShellExecute = true });
+        }
+        catch (Exception ex)
+        {
+            throw new ActionFailedException(Loc.Format("Shortcuts_Error_NoApp", path) + " - " + ex.Message);
+        }
+
+        var name = Path.GetFileName(path.TrimEnd('\\', '/'));
+        return Task.FromResult<string?>(Loc.Format("Shortcuts_Output_OpenedFolder",
+            string.IsNullOrEmpty(name) ? path : name));
+    }
+}
+
 /// <summary>Open a URL in the default browser.</summary>
 internal sealed class OpenUrlExecutor : IActionExecutor
 {

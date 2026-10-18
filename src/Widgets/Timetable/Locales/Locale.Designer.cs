@@ -657,5 +657,68 @@ namespace Timetable.Locales {
                 return ResourceManager.GetString("Timetable_WorkflowHint", resourceCulture);
             }
         }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Timetable_AllWeeks.
+        /// </summary>
+        public static string Timetable_AllWeeks {
+            get {
+                return ResourceManager.GetString("Timetable_AllWeeks", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Timetable_WeekView.
+        /// </summary>
+        public static string Timetable_WeekView {
+            get {
+                return ResourceManager.GetString("Timetable_WeekView", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Timetable_PreviousWeek.
+        /// </summary>
+        public static string Timetable_PreviousWeek {
+            get {
+                return ResourceManager.GetString("Timetable_PreviousWeek", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Timetable_NextWeek.
+        /// </summary>
+        public static string Timetable_NextWeek {
+            get {
+                return ResourceManager.GetString("Timetable_NextWeek", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Timetable_BackToCurrentWeek.
+        /// </summary>
+        public static string Timetable_BackToCurrentWeek {
+            get {
+                return ResourceManager.GetString("Timetable_BackToCurrentWeek", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Timetable_ShowAllWeeks.
+        /// </summary>
+        public static string Timetable_ShowAllWeeks {
+            get {
+                return ResourceManager.GetString("Timetable_ShowAllWeeks", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Timetable_ShowWeekView.
+        /// </summary>
+        public static string Timetable_ShowWeekView {
+            get {
+                return ResourceManager.GetString("Timetable_ShowWeekView", resourceCulture);
+            }
+        }
     }
 }
