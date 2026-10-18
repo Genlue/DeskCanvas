@@ -1,10 +1,10 @@
-name: Publish to beta
+name: Release
 
 on:
   workflow_dispatch:
   push:
     branches:
-      - beta
+      - main
 
 # The release job creates a tag and a release, and update-docs pushes to the wiki —
 # both need write access, which the default GITHUB_TOKEN does not carry.
@@ -12,97 +12,38 @@ permissions:
   contents: write
 
 jobs:
-  publish:
+  release:
     runs-on: windows-latest
 
-    strategy:
-      matrix:
-        runtime: [ win-x86, win-x64, win-arm64 ]
-    
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          ref: ${{ github.ref_name }}
 
       - name: Install .NET Core
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 10.0.x
 
-      - name: Build
+      # Inno Setup 6 is preinstalled on the runner image, but installing the package keeps
+      # ISCC.exe guaranteed at one of the paths build.ps1 probes.
+      - name: Install Inno Setup
+        run: choco install innosetup -y --no-progress
+
+      - name: Build solution
         run: dotnet build .\src\DeskCanvas.sln --configuration Release
 
-      - name: Upload build
-        if: ${{ matrix.runtime == 'win-x64' }}
+      # The one canonical packager: single-file self-contained exe into dist\win-x64, then
+      # Inno Setup compiles dist\installer\DeskCanvas-<version>-x64-Setup.exe.
+      # The Setup installer is the ONLY distribution form — no portable zip, no MSI.
+      - name: Package Setup
+        shell: powershell
+        run: .\build.ps1 -Setup
+
+      - name: Upload docs input
         uses: actions/upload-artifact@v4
         with:
           name: build
           path: .\src\DeskCanvas\bin\Release\net10.0
-
-      - name: Publish App
-        run: |
-          dotnet publish .\src\DeskCanvas\DeskCanvas.csproj `
-          --configuration Release `
-          --runtime ${{ matrix.runtime }} `
-          --output .\src\DeskCanvas\bin\Publish\${{ matrix.runtime }} `
-          --self-contained false `
-          /p:PublishReadyToRun=true
-
-      - name: Publish Widgets
-        run: |
-          $widgetsPath = ".\src\Widgets"
-          $publishPath = ".\src\DeskCanvas\bin\Publish\${{ matrix.runtime }}"
-          $outputPath = "$publishPath\Widgets"
-          if (-not (Test-Path -Path $outputPath)) {
-            New-Item -Path $outputPath -ItemType Directory -Force
-          }
-          $widgetCsproj = Get-ChildItem -Path $widgetsPath -Recurse -Filter *.csproj
-          
-          foreach ($csproj in $widgetCsproj) {
-            $widgetName = Split-Path $csproj.DirectoryName -Leaf
-
-            dotnet publish $csproj.FullName `
-              --configuration Release `
-              --runtime ${{ matrix.runtime }} `
-              --output $outputPath `
-              --self-contained false `
-              /p:PublishReadyToRun=true
-          }
-          
-          Get-ChildItem -Path $publishPath -Filter *.pdb -Recurse | Remove-Item -Force
-          Get-ChildItem -Path $publishPath -Filter *.xml -Recurse | Remove-Item -Force
-          Get-ChildItem -Path $publishPath -Filter *.deps.json -Recurse | Remove-Item -Force
-          Get-ChildItem -Path $publishPath -Filter *.runtimeconfig -Recurse | Remove-Item -Force
-
-      - name: Archive
-        run: |
-          Compress-Archive `
-            -Path .\src\DeskCanvas\bin\Publish\${{ matrix.runtime }} `
-            -DestinationPath .\src\DeskCanvas\bin\Publish\${{ matrix.runtime }}.zip
-
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: publish-${{ matrix.runtime }}
-          path: .\src\DeskCanvas\bin\Publish\${{ matrix.runtime }}.zip
-
-  release:
-    runs-on: windows-latest
-    needs: publish
-    
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ github.ref_name }}
-
-      - name: Download artifacts
-        uses: actions/download-artifact@v4
-        with:
-          pattern: publish-*
-          merge-multiple: true
-          path: .\src\DeskCanvas\bin\Publish
 
       - name: Get Assembly Version
         id: version
@@ -132,58 +73,27 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           tag: ${{ steps.version.outputs.version }}
 
-      - name: Create Release
-        id: create_release
-        uses: actions/create-release@v1
+      - name: Create Release (Setup only)
+        uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.version.outputs.version }}
-          release_name: ${{ steps.version.outputs.version }}-beta
+          name: DeskCanvas ${{ steps.version.outputs.version }}
           body: |
             # Changelog:
             ${{ steps.changelog.outputs.changes }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Upload win-x86
-        uses: actions/upload-release-asset@v1
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: .\src\DeskCanvas\bin\Publish\win-x86.zip
-          asset_name: win-x86.zip
-          asset_content_type: application/zip
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Upload win-x64
-        uses: actions/upload-release-asset@v1
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: .\src\DeskCanvas\bin\Publish\win-x64.zip
-          asset_name: win-x64.zip
-          asset_content_type: application/zip
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Upload win-arm64
-        uses: actions/upload-release-asset@v1
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: .\src\DeskCanvas\bin\Publish\win-arm64.zip
-          asset_name: win-arm64.zip
-          asset_content_type: application/zip
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          files: dist/installer/DeskCanvas-*-Setup.exe
+          fail_on_unmatched_files: true
 
   update-docs:
     runs-on: windows-latest
-    needs: publish
-    
-    steps:  
+    needs: release
+
+    steps:
       - name: Install .NET Core
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 10.0.x
-  
+
       - name: Install tool
         run: dotnet tool install -g XMLDoc2Markdown
 
@@ -192,7 +102,7 @@ jobs:
         with:
           pattern: build
           path: .
-  
+
       - name: Run tool
         run: |
           ls .
@@ -201,19 +111,19 @@ jobs:
           --output .\new-wiki\API `
           --platform github-pages `
           --index-page-name API `
-  
+
       - name: Checkout wiki repository
         uses: actions/checkout@v4
         with:
           repository: ${{github.repository}}.wiki
           path: wiki
-  
+
       - name: Update API docs
         run: |
           if (Test-Path -Path wiki\API) { Remove-Item -Recurse -Force wiki\API }
           New-Item -ItemType Directory -Path wiki\API
           Copy-Item -Path new-wiki\API\* -Destination wiki\API -Recurse
-  
+
       - name: Commit & Push changes
         run: |
           cd wiki
