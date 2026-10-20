@@ -171,4 +171,88 @@
     <data name="Countdown_Style_Subtitle" xml:space="preserve">
         <value>Visual layout and focus across card sizes</value>
     </data>
+    <data name="Countdown_FestivalPreset" xml:space="preserve">
+        <value>Festival Presets</value>
+    </data>
+    <data name="Countdown_Festival_Custom" xml:space="preserve">
+        <value>Custom</value>
+    </data>
+    <data name="Countdown_SaveAsPreset" xml:space="preserve">
+        <value>Save as My Preset</value>
+    </data>
+    <data name="Countdown_DeletePreset" xml:space="preserve">
+        <value>Delete preset</value>
+    </data>
+    <data name="Countdown_Festival_NewYear" xml:space="preserve">
+        <value>New Year's Day</value>
+    </data>
+    <data name="Countdown_Festival_ValentinesDay" xml:space="preserve">
+        <value>Valentine's Day</value>
+    </data>
+    <data name="Countdown_Festival_LaborDay" xml:space="preserve">
+        <value>Labor Day</value>
+    </data>
+    <data name="Countdown_Festival_ChildrensDay" xml:space="preserve">
+        <value>Children's Day</value>
+    </data>
+    <data name="Countdown_Festival_TeachersDay" xml:space="preserve">
+        <value>Teachers' Day</value>
+    </data>
+    <data name="Countdown_Festival_NationalDay" xml:space="preserve">
+        <value>National Day</value>
+    </data>
+    <data name="Countdown_Festival_Halloween" xml:space="preserve">
+        <value>Halloween</value>
+    </data>
+    <data name="Countdown_Festival_SinglesDay" xml:space="preserve">
+        <value>Singles' Day</value>
+    </data>
+    <data name="Countdown_Festival_ChristmasEve" xml:space="preserve">
+        <value>Christmas Eve</value>
+    </data>
+    <data name="Countdown_Festival_Christmas" xml:space="preserve">
+        <value>Christmas</value>
+    </data>
+    <data name="Countdown_Festival_SpringFestival" xml:space="preserve">
+        <value>Spring Festival</value>
+    </data>
+    <data name="Countdown_Festival_Lantern" xml:space="preserve">
+        <value>Lantern Festival</value>
+    </data>
+    <data name="Countdown_Festival_Longtaitou" xml:space="preserve">
+        <value>Longtaitou Festival</value>
+    </data>
+    <data name="Countdown_Festival_DragonBoat" xml:space="preserve">
+        <value>Dragon Boat Festival</value>
+    </data>
+    <data name="Countdown_Festival_Qixi" xml:space="preserve">
+        <value>Qixi Festival</value>
+    </data>
+    <data name="Countdown_Festival_Ghost" xml:space="preserve">
+        <value>Ghost Festival</value>
+    </data>
+    <data name="Countdown_Festival_MidAutumn" xml:space="preserve">
+        <value>Mid-Autumn Festival</value>
+    </data>
+    <data name="Countdown_Festival_DoubleNinth" xml:space="preserve">
+        <value>Double Ninth Festival</value>
+    </data>
+    <data name="Countdown_Festival_Laba" xml:space="preserve">
+        <value>Laba Festival</value>
+    </data>
+    <data name="Countdown_Festival_NewYearsEve" xml:space="preserve">
+        <value>Lunar New Year's Eve</value>
+    </data>
+    <data name="Countdown_Festival_MothersDay" xml:space="preserve">
+        <value>Mother's Day</value>
+    </data>
+    <data name="Countdown_Festival_FathersDay" xml:space="preserve">
+        <value>Father's Day</value>
+    </data>
+    <data name="Countdown_Festival_Thanksgiving" xml:space="preserve">
+        <value>Thanksgiving</value>
+    </data>
+    <data name="Countdown_Festival_Qingming" xml:space="preserve">
+        <value>Qingming Festival</value>
+    </data>
 </root>

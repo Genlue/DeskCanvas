@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Avalonia.Controls;
+using Avalonia.Input.Platform;
 using Avalonia.Interactivity;
 using Avalonia.Threading;
 using DeskCanvas.Core.Interfaces;
@@ -185,5 +186,73 @@ public partial class ShortcutsSettings : UserControl
         {
             // Settings persistence is best-effort here; the layout store logs its own failures.
         }
+    }
+
+    // ---- AI authoring -------------------------------------------------------------
+
+    /// <summary>
+    /// Copy the generated JSON spec. This is the whole feature's entry point: the user pastes it
+    /// into any chat model, describes what they want, and imports the reply.
+    /// </summary>
+    private async void OnCopySpecClicked(object? sender, RoutedEventArgs e)
+    {
+        var spec = WorkflowSpecDocument.Build();
+        try
+        {
+            if (TopLevel.GetTopLevel(this)?.Clipboard is { } clipboard)
+                await clipboard.SetTextAsync(spec);
+
+            CopySpecButton.Content = Loc.Get("Shortcuts_Spec_Copied");
+            ShowAiStatus(Loc.Get("Shortcuts_Ai_Copied"), isError: false);
+        }
+        catch (Exception ex)
+        {
+            ShowAiStatus(ex.Message, isError: true);
+        }
+    }
+
+    private void OnPreviewSpecClicked(object? sender, RoutedEventArgs e)
+    {
+        var showing = !SpecPreview.IsVisible;
+        if (showing) SpecPreview.Text = WorkflowSpecDocument.Build();
+        SpecPreview.IsVisible = showing;
+        PreviewSpecButton.Content = Loc.Get(showing
+            ? "Shortcuts_Spec_Hide"
+            : "Shortcuts_Spec_Preview");
+    }
+
+    private async void OnImportJsonClicked(object? sender, RoutedEventArgs e)
+    {
+        try
+        {
+            var owner = TopLevel.GetTopLevel(this) as Window;
+            if (owner == null) return;
+
+            var result = await WorkflowImportWindow.PromptAsync(owner);
+            if (result is not { Success: true }) return;
+
+            foreach (var imported in result.Shortcuts)
+            {
+                imported.UpdatedAt = DateTime.Now;
+                ShortcutsStore.Upsert(imported, this);
+            }
+
+            PopulateShortcutCombo();
+            ShowAiStatus(
+                Loc.Format("Shortcuts_Ai_Imported", result.Shortcuts[0].Name, result.Shortcuts[0].ActionCount),
+                isError: false);
+        }
+        catch (Exception ex)
+        {
+            ShowAiStatus(ex.Message, isError: true);
+        }
+    }
+
+    private void ShowAiStatus(string text, bool isError)
+    {
+        AiStatusText.Text = text;
+        AiStatusText.IsVisible = !string.IsNullOrWhiteSpace(text);
+        AiStatusText.Foreground = new Avalonia.Media.SolidColorBrush(
+            Avalonia.Media.Color.Parse(isError ? "#A32D2D" : "#3B6D11"));
     }
 }

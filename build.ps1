@@ -199,7 +199,7 @@ try {
         Write-Host "==> Building Setup Installer ($Runtime)..." -ForegroundColor Cyan
         $assemblyInfo = Get-Content (Join-Path $root "src\DeskCanvas\AssemblyInfo.cs") -Raw
         $appVerMatch = [regex]::Match($assemblyInfo, 'AssemblyVersion\("([0-9\.]+)"\)')
-        $appVer = if ($appVerMatch.Success) { $appVerMatch.Groups[1].Value } else { "4.0.3" }
+        $appVer = if ($appVerMatch.Success) { $appVerMatch.Groups[1].Value } else { "4.1.0" }
 
         $arch = switch ($Runtime) {
             "win-x64" { "x64" }

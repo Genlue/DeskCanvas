@@ -86,5 +86,33 @@ namespace Countdown.Locales {
         public static string Countdown_TotalEvents => ResourceManager.GetString("Countdown_TotalEvents", resourceCulture) ?? "{0} Events";
         public static string Countdown_Progress => ResourceManager.GetString("Countdown_Progress", resourceCulture) ?? "Progress";
         public static string Countdown_Style_Subtitle => ResourceManager.GetString("Countdown_Style_Subtitle", resourceCulture) ?? "Visual layout and focus across card sizes";
+        public static string Countdown_FestivalPreset => ResourceManager.GetString("Countdown_FestivalPreset", resourceCulture) ?? "Festival Presets";
+        public static string Countdown_Festival_Custom => ResourceManager.GetString("Countdown_Festival_Custom", resourceCulture) ?? "Custom";
+        public static string Countdown_SaveAsPreset => ResourceManager.GetString("Countdown_SaveAsPreset", resourceCulture) ?? "Save as My Preset";
+        public static string Countdown_DeletePreset => ResourceManager.GetString("Countdown_DeletePreset", resourceCulture) ?? "Delete preset";
+        public static string Countdown_Festival_NewYear => ResourceManager.GetString("Countdown_Festival_NewYear", resourceCulture) ?? "New Year's Day";
+        public static string Countdown_Festival_ValentinesDay => ResourceManager.GetString("Countdown_Festival_ValentinesDay", resourceCulture) ?? "Valentine's Day";
+        public static string Countdown_Festival_LaborDay => ResourceManager.GetString("Countdown_Festival_LaborDay", resourceCulture) ?? "Labor Day";
+        public static string Countdown_Festival_ChildrensDay => ResourceManager.GetString("Countdown_Festival_ChildrensDay", resourceCulture) ?? "Children's Day";
+        public static string Countdown_Festival_TeachersDay => ResourceManager.GetString("Countdown_Festival_TeachersDay", resourceCulture) ?? "Teachers' Day";
+        public static string Countdown_Festival_NationalDay => ResourceManager.GetString("Countdown_Festival_NationalDay", resourceCulture) ?? "National Day";
+        public static string Countdown_Festival_Halloween => ResourceManager.GetString("Countdown_Festival_Halloween", resourceCulture) ?? "Halloween";
+        public static string Countdown_Festival_SinglesDay => ResourceManager.GetString("Countdown_Festival_SinglesDay", resourceCulture) ?? "Singles' Day";
+        public static string Countdown_Festival_ChristmasEve => ResourceManager.GetString("Countdown_Festival_ChristmasEve", resourceCulture) ?? "Christmas Eve";
+        public static string Countdown_Festival_Christmas => ResourceManager.GetString("Countdown_Festival_Christmas", resourceCulture) ?? "Christmas";
+        public static string Countdown_Festival_SpringFestival => ResourceManager.GetString("Countdown_Festival_SpringFestival", resourceCulture) ?? "Spring Festival";
+        public static string Countdown_Festival_Lantern => ResourceManager.GetString("Countdown_Festival_Lantern", resourceCulture) ?? "Lantern Festival";
+        public static string Countdown_Festival_Longtaitou => ResourceManager.GetString("Countdown_Festival_Longtaitou", resourceCulture) ?? "Longtaitou Festival";
+        public static string Countdown_Festival_DragonBoat => ResourceManager.GetString("Countdown_Festival_DragonBoat", resourceCulture) ?? "Dragon Boat Festival";
+        public static string Countdown_Festival_Qixi => ResourceManager.GetString("Countdown_Festival_Qixi", resourceCulture) ?? "Qixi Festival";
+        public static string Countdown_Festival_Ghost => ResourceManager.GetString("Countdown_Festival_Ghost", resourceCulture) ?? "Ghost Festival";
+        public static string Countdown_Festival_MidAutumn => ResourceManager.GetString("Countdown_Festival_MidAutumn", resourceCulture) ?? "Mid-Autumn Festival";
+        public static string Countdown_Festival_DoubleNinth => ResourceManager.GetString("Countdown_Festival_DoubleNinth", resourceCulture) ?? "Double Ninth Festival";
+        public static string Countdown_Festival_Laba => ResourceManager.GetString("Countdown_Festival_Laba", resourceCulture) ?? "Laba Festival";
+        public static string Countdown_Festival_NewYearsEve => ResourceManager.GetString("Countdown_Festival_NewYearsEve", resourceCulture) ?? "Lunar New Year's Eve";
+        public static string Countdown_Festival_MothersDay => ResourceManager.GetString("Countdown_Festival_MothersDay", resourceCulture) ?? "Mother's Day";
+        public static string Countdown_Festival_FathersDay => ResourceManager.GetString("Countdown_Festival_FathersDay", resourceCulture) ?? "Father's Day";
+        public static string Countdown_Festival_Thanksgiving => ResourceManager.GetString("Countdown_Festival_Thanksgiving", resourceCulture) ?? "Thanksgiving";
+        public static string Countdown_Festival_Qingming => ResourceManager.GetString("Countdown_Festival_Qingming", resourceCulture) ?? "Qingming Festival";
     }
 }

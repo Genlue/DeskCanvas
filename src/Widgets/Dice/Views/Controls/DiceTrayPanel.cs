@@ -28,6 +28,11 @@ public sealed class DiceTrayPanel : Panel
     // 骰盘四周的安全余量：满行时布局取整可能把最后一项挤出 1px，预留后不会压到按钮。
     private const double EdgeInset = 2d;
 
+    // 骰面边长下限（DIP）。空间再紧也不让骰面大于"装得下的边长"——溢出的骰面会被
+    // 卡片裁掉（2x2 小卡片正是这种场景，用户看到的就是"骰子里的点数溢出被截断"）。
+    // 下限只用于挑选网格：低于它的候选仍然可用，只是不再优先。
+    private const double MinFaceSize = 8d;
+
     private int columns = 1;
     private int rows;
     private double faceSize = 48d;
@@ -56,7 +61,8 @@ public sealed class DiceTrayPanel : Panel
 
         Resolve(availableSize, count, out columns, out rows, out faceSize);
 
-        double box = faceSize * FaceBoxRatio;
+        double box = ClampBox(availableSize, columns, rows, faceSize * FaceBoxRatio);
+        faceSize = box * 6d / 7d;
         double cellWidth = double.IsFinite(availableSize.Width) ? availableSize.Width / columns : box;
         double cellHeight = double.IsFinite(availableSize.Height) ? availableSize.Height / rows : box;
         var constraint = new Size(Math.Max(box, cellWidth), Math.Max(box, cellHeight));
@@ -82,7 +88,12 @@ public sealed class DiceTrayPanel : Panel
 
         Resolve(finalSize, count, out columns, out rows, out faceSize);
 
-        double box = faceSize * FaceBoxRatio;
+        // 二道保险：无论 Resolve 选中了哪个网格，实际排布前再按最终尺寸夹一次。
+        // 骰面只允许比"装得下的最大边长"更小，绝不允许更大——这是骰面/点阵被卡片
+        // 裁掉的根因（旧实现在极端尺寸下退回 MaxFaceSize，直接撑破骰盘）。
+        double box = ClampBox(finalSize, columns, rows, faceSize * FaceBoxRatio);
+        faceSize = box * 6d / 7d;
+
         double originY = (finalSize.Height - (rows * box + (rows - 1) * Gap)) / 2;
 
         for (int row = 0; row < rows; row++)
@@ -121,6 +132,8 @@ public sealed class DiceTrayPanel : Panel
             available.Width <= 0 || available.Height <= 0)
         {
             // 无约束场景（滚动的父级等）：退回接近正方形的默认网格与最大骰面。
+            // 注意这里只处理"无限/零"两种退化输入；有限但很小的尺寸走下面的候选循环，
+            // 由 ClampBox 保证骰面不会大于可用空间。
             bestColumns = Math.Min(count, (int)Math.Ceiling(Math.Sqrt(count)));
             bestRows = (count + bestColumns - 1) / bestColumns;
             bestFace = maxFace;
@@ -164,10 +177,40 @@ public sealed class DiceTrayPanel : Panel
 
         if (bestFace < 0)
         {
-            bestColumns = 1;
-            bestRows = count;
-            bestFace = maxFace;
+            // 所有候选都装不下：此时**不能**退回 maxFace（那会把骰面撑出骰盘被卡片裁掉），
+            // 改为按可用空间反算一个必然装得下的极小骰面，宁可小也不溢出。
+            bestColumns = Math.Max(1, Math.Min(count, (int)Math.Floor(usableWidth / (Gap + 1))));
+            bestRows = (count + bestColumns - 1) / bestColumns;
+            bestFace = Math.Max(0, Math.Min(maxFace, MinFaceSize));
         }
+    }
+
+    /// <summary>
+    /// 把骰面外框夹到"装得下"的范围：骰面只允许比可用空间更小，绝不允许更大。
+    /// 测量与排布都走这里，两遍布局对骰面尺寸的判断因此不会打架。
+    /// </summary>
+    private static double ClampBox(Size available, int columns, int rows, double box)
+    {
+        if (!double.IsFinite(box) || box <= 0)
+        {
+            return 0;
+        }
+
+        if (!double.IsFinite(available.Width) || !double.IsFinite(available.Height) ||
+            available.Width <= 0 || available.Height <= 0)
+        {
+            return box;
+        }
+
+        double byWidth = (available.Width - EdgeInset - Math.Max(0, columns - 1) * Gap) / Math.Max(1, columns);
+        double byHeight = (available.Height - EdgeInset - Math.Max(0, rows - 1) * Gap) / Math.Max(1, rows);
+        double maxBox = Math.Min(byWidth, byHeight);
+        if (!double.IsFinite(maxBox) || maxBox <= 0)
+        {
+            return 0;
+        }
+
+        return Math.Min(box, maxBox);
     }
 
     private static bool IsBetter(

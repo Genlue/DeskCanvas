@@ -6,10 +6,12 @@ using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Media;
 using Avalonia.Threading;
+using Avalonia.VisualTree;
 using DeskCanvas.Services;
 using DeskCanvas.Views;
 using Shortcuts.Models;
 using Shortcuts.Services;
+using Shortcuts.Views.Controls;
 
 namespace Shortcuts.Views;
 
@@ -26,7 +28,6 @@ public partial class ShortcutsEditorWindow : Window
     private ShortcutDefinition shortcut = new();
     private readonly List<string> history = [];
     private int historyIndex = -1;
-    private string? selectedActionId;
     private bool geometryRestored;
     private bool runButtonRunning;
     private int runStateVersion;
@@ -71,8 +72,12 @@ public partial class ShortcutsEditorWindow : Window
         KeyDown += OnWindowKeyDown;
         Closed += OnWindowClosed;
 
+        // 节点库抽屉：点击库外任何地方自动收起（旧版只能 Esc 或再点按钮）。
+        AddHandler(PointerPressedEvent, OnOutsidePressTunnel, RoutingStrategies.Tunnel);
+
         UpdateToolbar();
-        RebuildRows();
+        RebuildCanvas();
+        FitCanvasOnOpen();
         UpdateUndoRedo();
     }
 
@@ -136,9 +141,11 @@ public partial class ShortcutsEditorWindow : Window
         history.Clear();
         history.Add(Snapshot());
         historyIndex = 0;
-        selectedActionId = null;
+        canvas?.Select(null);
+        nodeStates.Clear();
         UpdateToolbar();
-        RebuildRows();
+        ReloadCanvasFromShortcut();
+        FitCanvasOnOpen();
         UpdateUndoRedo();
     }
 
@@ -189,6 +196,12 @@ public partial class ShortcutsEditorWindow : Window
         ShortcutHotkeyService.StateChanged -= OnHotkeyStateChanged;
         ShortcutsRuntime.ReleaseTopLevel(this);
 
+        if (traceHandler != null)
+        {
+            RunHistory.TraceUpdated -= traceHandler;
+            traceHandler = null;
+        }
+
         if (eventsAttached)
         {
             eventsAttached = false;
@@ -204,7 +217,8 @@ public partial class ShortcutsEditorWindow : Window
 
     private string Snapshot() => JsonSerializer.Serialize(shortcut, DocumentJson.Options);
 
-    /// <summary>Push the (already mutated) state to history + store and refresh the UI.</summary>
+    /// <summary>Push the (already mutated) state to history + store and refresh the UI.
+    /// v2 起**不再重建画布**：画布自己做增量更新，这里只负责快照与持久化。</summary>
     private void CommitChange()
     {
         var json = Snapshot();
@@ -224,8 +238,8 @@ public partial class ShortcutsEditorWindow : Window
 
         ShortcutsStore.Upsert(shortcut, this);
         UpdateToolbar();
-        RebuildRows();
         UpdateUndoRedo();
+        ScheduleValidation();
     }
 
     /// <summary>Apply a state without touching history (undo/redo apply their own pointer).</summary>
@@ -234,16 +248,23 @@ public partial class ShortcutsEditorWindow : Window
         var parsed = JsonSerializer.Deserialize<ShortcutDefinition>(json, DocumentJson.Options);
         if (parsed == null) return;
 
+        // 先收起锚在旧卡片上的弹窗，再整体换图 —— 否则旧版这里会产生悬挂锚点。
+        openFlyout?.Hide();
+        openFlyout = null;
+        openParamNode = null;
+
         shortcut = parsed;
         ShortcutsStore.Upsert(shortcut, this);
         UpdateToolbar();
-        RebuildRows();
+        ReloadCanvasFromShortcut();
         UpdateUndoRedo();
     }
 
     private void Undo()
     {
         if (historyIndex <= 0) return;
+        // 手势进行中（拖拽/连线）禁止整体换图：旧版在拖拽中 Ctrl+Z 会把手势状态指到旧图上。
+        if (canvas is { IsGestureActive: true }) return;
         historyIndex--;
         ApplySnapshot(history[historyIndex]);
     }
@@ -251,6 +272,7 @@ public partial class ShortcutsEditorWindow : Window
     private void Redo()
     {
         if (historyIndex >= history.Count - 1) return;
+        if (canvas is { IsGestureActive: true }) return;
         historyIndex++;
         ApplySnapshot(history[historyIndex]);
     }
@@ -349,26 +371,34 @@ public partial class ShortcutsEditorWindow : Window
                 break;
 
             case RunEventKind.StepStarted:
-                if (runEvent.ActionId != null) SetRowRing(runEvent.ActionId, RunRing.Running);
+                if (runEvent.ActionId != null) SetNodeState(runEvent.ActionId, NodeRunState.Running);
                 break;
 
             case RunEventKind.StepFinished:
                 if (runEvent.ActionId != null)
                 {
-                    SetRowRing(runEvent.ActionId, RunRing.None);
-                    SetRowOutput(runEvent.ActionId, runEvent.Detail, failed: false);
+                    SetNodeState(runEvent.ActionId, NodeRunState.Idle);
+                    SetNodeOutput(runEvent.ActionId, runEvent.Detail, failed: false);
                 }
                 break;
 
             case RunEventKind.StepFailed:
                 if (runEvent.ActionId != null)
                 {
-                    SetRowRing(runEvent.ActionId, RunRing.Failed);
-                    SetRowOutput(runEvent.ActionId, runEvent.Detail, failed: true);
+                    SetNodeState(runEvent.ActionId, NodeRunState.Failed);
+                    SetNodeOutput(runEvent.ActionId, runEvent.Detail, failed: true);
                 }
                 break;
 
             case RunEventKind.Finished:
+                SetRunButtonState(false);
+                // A validation failure happens before any step runs, so the node highlight alone
+                // would leave the user with no explanation.
+                if (!runEvent.Success && !string.IsNullOrEmpty(runEvent.Detail))
+                    ShowToast(runEvent.Detail!, isError: true);
+                ScheduleRunCleanup();
+                break;
+
             case RunEventKind.Cancelled:
                 SetRunButtonState(false);
                 ScheduleRunCleanup();
@@ -392,12 +422,7 @@ public partial class ShortcutsEditorWindow : Window
         {
             await Task.Delay(1200);
             if (version != runStateVersion) return;
-            foreach (var actionId in rowVisuals.Keys.ToList())
-            {
-                var ring = GetRowRing(actionId);
-                if (ring == RunRing.Failed) continue;
-                SetRowRing(actionId, RunRing.None);
-            }
+            ClearRunHighlights(keepFailures: true);
         }
         catch
         {
@@ -411,6 +436,11 @@ public partial class ShortcutsEditorWindow : Window
     {
         var ctrl = e.KeyModifiers.HasFlag(KeyModifiers.Control);
         var shift = e.KeyModifiers.HasFlag(KeyModifiers.Shift);
+
+        // 文本编辑中（名称框 / 参数输入框 / 热键录制）时，单键与全选必须留给输入框自己；
+        // 旧版在这里没有守卫，焦点落在输入框上时 Delete 会删掉不可见的选中节点。
+        if (IsTextEditing() && e.Key is not (Key.Escape))
+            return;
 
         if (ctrl && e.Key == Key.Z)
         {
@@ -427,6 +457,11 @@ public partial class ShortcutsEditorWindow : Window
             OpenLibrary(focusSearch: true);
             e.Handled = true;
         }
+        else if (ctrl && e.Key == Key.A)
+        {
+            canvas?.SelectAll();
+            e.Handled = true;
+        }
         else if (e.Key == Key.Delete)
         {
             DeleteSelected();
@@ -437,11 +472,69 @@ public partial class ShortcutsEditorWindow : Window
             DuplicateSelected();
             e.Handled = true;
         }
-        else if (e.Key == Key.Escape && LibraryPanel.IsVisible)
+        else if (!ctrl && e.Key is Key.Left or Key.Right or Key.Up or Key.Down &&
+                 canvas is { SelectedNodeIds.Count: > 0 } && canvas.SelectedLinkId == null)
         {
-            CloseLibrary();
+            var step = shift ? 10 : 1;
+            var dx = e.Key == Key.Left ? -step : e.Key == Key.Right ? step : 0;
+            var dy = e.Key == Key.Up ? -step : e.Key == Key.Down ? step : 0;
+            canvas.Nudge(dx, dy);
             e.Handled = true;
         }
+        else if (e.Key == Key.Escape)
+        {
+            // 收起优先级：节点库 → AI 面板 → 运行详情 → 诊断条 → 清除画布选择。
+            if (LibraryPanel.IsVisible)
+            {
+                CloseLibrary();
+                e.Handled = true;
+            }
+            else if (AiPanel.IsVisible)
+            {
+                AiPanel.IsVisible = false;
+                e.Handled = true;
+            }
+            else if (RunDetailsHost.IsVisible)
+            {
+                RunDetailsHost.IsVisible = false;
+                e.Handled = true;
+            }
+            else if (DiagnosticsBar.IsVisible)
+            {
+                DiagnosticsBar.IsVisible = false;
+                e.Handled = true;
+            }
+            else if (canvas is { })
+            {
+                canvas.ClearSelection();
+                e.Handled = true;
+            }
+        }
+    }
+
+    /// <summary>焦点是否在文本输入控件里（名称框 / 参数编辑器 / 热键录制 / 搜索框）。</summary>
+    private bool IsTextEditing() =>
+        TopLevel.GetTopLevel(this) is { } top
+        && top.FocusManager is { } focusManager
+        && focusManager.GetFocusedElement() is TextBox or NumericUpDown or HotkeyCaptureBox;
+
+    /// <summary>节点库抽屉打开时，点击库外任何地方自动收起。</summary>
+    private void OnOutsidePressTunnel(object? sender, PointerPressedEventArgs e)
+    {
+        if (!LibraryPanel.IsVisible) return;
+
+        var source = e.Source as Visual;
+        if (Within(source, LibraryPanel) || Within(source, AddActionButton)) return;
+        CloseLibrary();
+    }
+
+    private static bool Within(Visual? source, Visual container)
+    {
+        for (var visual = source; visual != null; visual = visual.GetVisualParent())
+        {
+            if (ReferenceEquals(visual, container)) return true;
+        }
+        return false;
     }
 
     // ---- geometry -----------------------------------------------------------------

@@ -1,347 +1,414 @@
-using System.Drawing;
-using System.Drawing.Imaging;
+using System.ComponentModel;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Text;
 using Shortcuts.Models;
 
 namespace Shortcuts.Services.Executors;
 
-/// <summary>Master volume via the Core Audio endpoint (the same interop shape as ControlCenter).</summary>
-internal static class CoreAudio
-{
-    private enum EDataFlow { eRender = 0 }
-
-    private enum ERole { eMultimedia = 1 }
-
-    public static void SetMasterVolume(double percent)
-    {
-        float scalar = (float)Math.Clamp(percent / 100.0, 0.0, 1.0);
-        var endpoint = GetEndpointVolume();
-        if (endpoint == null)
-            throw new ActionFailedException(Loc.Get("Shortcuts_Error_NoService"));
-
-        try
-        {
-            var guid = Guid.Empty;
-            endpoint.SetMasterVolumeLevelScalar(scalar, ref guid);
-            if (scalar > 0.005f)
-            {
-                endpoint.GetMute(out var muted);
-                if (muted) endpoint.SetMute(false, ref guid);
-            }
-        }
-        finally
-        {
-            Marshal.ReleaseComObject(endpoint);
-        }
-    }
-
-    /// <summary>Toggle mute; returns the resulting muted state.</summary>
-    public static bool ToggleMute()
-    {
-        var endpoint = GetEndpointVolume();
-        if (endpoint == null)
-            throw new ActionFailedException(Loc.Get("Shortcuts_Error_NoService"));
-
-        try
-        {
-            endpoint.GetMute(out var muted);
-            var next = !muted;
-            var guid = Guid.Empty;
-            endpoint.SetMute(next, ref guid);
-            return next;
-        }
-        finally
-        {
-            Marshal.ReleaseComObject(endpoint);
-        }
-    }
-
-    private static IAudioEndpointVolume? GetEndpointVolume()
-    {
-        IMMDeviceEnumerator? enumerator = null;
-        IMMDevice? device = null;
-        try
-        {
-            var clsid = new Guid("BCDE0395-E52F-467C-8E3D-C4579291692E");
-            var type = Type.GetTypeFromCLSID(clsid);
-            if (type == null) return null;
-
-            enumerator = (IMMDeviceEnumerator?)Activator.CreateInstance(type);
-            if (enumerator == null) return null;
-
-            if (enumerator.GetDefaultAudioEndpoint(EDataFlow.eRender, ERole.eMultimedia, out device) != 0 || device == null)
-                return null;
-
-            var iid = typeof(IAudioEndpointVolume).GUID;
-            if (device.Activate(ref iid, 0x17 /* CLSCTX_ALL */, IntPtr.Zero, out var obj) == 0 && obj is IAudioEndpointVolume endpoint)
-                return endpoint;
-        }
-        catch
-        {
-            return null;
-        }
-        finally
-        {
-            if (device != null) Marshal.ReleaseComObject(device);
-            if (enumerator != null) Marshal.ReleaseComObject(enumerator);
-        }
-
-        return null;
-    }
-
-    // ---- COM declarations (vtable order must match the SDK interfaces) -----------------
-
-    [ComImport]
-    [Guid("A95664D2-9614-4F35-A746-DE8DB63617E6")]
-    [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-    private interface IMMDeviceEnumerator
-    {
-        [PreserveSig]
-        int EnumAudioEndpoints(EDataFlow dataFlow, uint dwStateMask, out IntPtr ppDevices);
-
-        [PreserveSig]
-        int GetDefaultAudioEndpoint(EDataFlow dataFlow, ERole role, out IMMDevice? ppEndpoint);
-    }
-
-    [ComImport]
-    [Guid("D666063F-1587-4E43-81F1-B948E807363F")]
-    [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-    private interface IMMDevice
-    {
-        [PreserveSig]
-        int Activate(ref Guid iid, uint dwClsCtx, IntPtr pActivationParams, [MarshalAs(UnmanagedType.IUnknown)] out object? ppInterface);
-    }
-
-    [ComImport]
-    [Guid("5CDF2C82-841E-4546-9722-0CF74078229A")]
-    [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-    private interface IAudioEndpointVolume
-    {
-        [PreserveSig] int RegisterControlChangeNotify(IntPtr pNotify);
-        [PreserveSig] int UnregisterControlChangeNotify(IntPtr pNotify);
-        [PreserveSig] int GetChannelCount(out uint pnChannelCount);
-        [PreserveSig] int SetMasterVolumeLevel(float fLevelDB, ref Guid pguidEventContext);
-        [PreserveSig] int SetMasterVolumeLevelScalar(float fLevel, ref Guid pguidEventContext);
-        [PreserveSig] int GetMasterVolumeLevel(out float pfLevelDB);
-        [PreserveSig] int GetMasterVolumeLevelScalar(out float pfLevel);
-        [PreserveSig] int SetChannelVolumeLevel(uint nChannel, float fLevelDB, ref Guid pguidEventContext);
-        [PreserveSig] int SetChannelVolumeLevelScalar(uint nChannel, float fLevel, ref Guid pguidEventContext);
-        [PreserveSig] int GetChannelVolumeLevel(uint nChannel, out float pfLevelDB);
-        [PreserveSig] int GetChannelVolumeLevelScalar(uint nChannel, out float pfLevel);
-        [PreserveSig] int SetMute([MarshalAs(UnmanagedType.Bool)] bool bMute, ref Guid pguidEventContext);
-        [PreserveSig] int GetMute([MarshalAs(UnmanagedType.Bool)] out bool pbMute);
-    }
-}
-
+/// <summary>Volume: sets a level and reports the level the machine actually ended up at.</summary>
 internal sealed class SetVolumeExecutor : IActionExecutor
 {
-    public Task<string?> ExecuteAsync(ShortcutAction action, RunContext context)
+    public Task<ActionResult> ExecuteAsync(ShortcutAction action, RunContext context)
     {
-        var level = Math.Round(context.ResolveNumberClamped(action, "level", 50));
-        CoreAudio.SetMasterVolume(level);
-        return Task.FromResult<string?>(Loc.Format("Shortcuts_Output_Volume", (int)level));
+        var level = context.Number(action, "level");
+        var system = context.Services.System;
+
+        try
+        {
+            system.SetVolume(level);
+            var actual = system.GetVolume();
+            return Task.FromResult(ActionResult.With(
+                new Dictionary<string, RunValue> { ["level"] = RunValue.FromNumber(actual) },
+                Loc.Format("Shortcuts_Output_Volume", actual)));
+        }
+        catch (Exception ex)
+        {
+            return Task.FromResult(ActionResult.Fail("VolumeFailed", ex.Message, "level"));
+        }
     }
 }
 
+/// <summary>Flip mute and report the resulting state (never touches the volume level).</summary>
 internal sealed class MuteToggleExecutor : IActionExecutor
 {
-    public Task<string?> ExecuteAsync(ShortcutAction action, RunContext context)
+    public Task<ActionResult> ExecuteAsync(ShortcutAction action, RunContext context)
     {
-        var muted = CoreAudio.ToggleMute();
-        return Task.FromResult<string?>(Loc.Get(muted ? "Shortcuts_Output_Muted" : "Shortcuts_Output_Unmuted"));
+        var system = context.Services.System;
+        try
+        {
+            var next = !system.GetMute();
+            system.SetMute(next);
+            var actual = system.GetMute();
+            return Task.FromResult(ActionResult.With(
+                new Dictionary<string, RunValue> { ["muted"] = RunValue.FromBoolean(actual) },
+                Loc.Get(actual ? "Shortcuts_Output_Muted" : "Shortcuts_Output_Unmuted")));
+        }
+        catch (Exception ex)
+        {
+            return Task.FromResult(ActionResult.Fail("MuteFailed", ex.Message));
+        }
+    }
+}
+
+/// <summary>Set mute to an explicit value — the deterministic counterpart of the toggle.</summary>
+internal sealed class SetMuteExecutor : IActionExecutor
+{
+    public Task<ActionResult> ExecuteAsync(ShortcutAction action, RunContext context)
+    {
+        var muted = context.Bool(action, "muted");
+        var system = context.Services.System;
+
+        try
+        {
+            system.SetMute(muted);
+            var actual = system.GetMute();
+            return Task.FromResult(ActionResult.With(
+                new Dictionary<string, RunValue> { ["muted"] = RunValue.FromBoolean(actual) },
+                Loc.Get(actual ? "Shortcuts_Output_Muted" : "Shortcuts_Output_Unmuted")));
+        }
+        catch (Exception ex)
+        {
+            return Task.FromResult(ActionResult.Fail("MuteFailed", ex.Message, "muted"));
+        }
     }
 }
 
 internal sealed class LockScreenExecutor : IActionExecutor
 {
-    [DllImport("user32.dll")]
-    private static extern bool LockWorkStation();
-
-    public Task<string?> ExecuteAsync(ShortcutAction action, RunContext context)
+    public Task<ActionResult> ExecuteAsync(ShortcutAction action, RunContext context)
     {
-        if (!LockWorkStation())
-            throw new ActionFailedException(Loc.Get("Shortcuts_Error_NoService"));
-        return Task.FromResult<string?>(Loc.Get("Shortcuts_Output_Locked"));
+        try
+        {
+            context.Services.System.LockWorkStation();
+            return Task.FromResult(ActionResult.Ok(Loc.Get("Shortcuts_Output_Locked")));
+        }
+        catch (Exception ex)
+        {
+            return Task.FromResult(ActionResult.Fail("LockFailed", ex.Message));
+        }
     }
 }
 
 internal sealed class SleepExecutor : IActionExecutor
 {
-    [DllImport("powrprof.dll", SetLastError = true)]
-    private static extern bool SetSuspendState(bool hibernate, bool forceCritical, bool disableWakeEvent);
-
-    public Task<string?> ExecuteAsync(ShortcutAction action, RunContext context)
+    public Task<ActionResult> ExecuteAsync(ShortcutAction action, RunContext context)
     {
-        // Give the output one beat to surface in the UI before the machine suspends.
-        _ = Task.Run(async () =>
+        try
         {
-            await Task.Delay(400).ConfigureAwait(false);
-            try { SetSuspendState(false, false, false); } catch { }
-        });
-        return Task.FromResult<string?>(Loc.Get("Shortcuts_Output_Sleeping"));
+            context.Services.System.Suspend();
+            return Task.FromResult(ActionResult.Ok(Loc.Get("Shortcuts_Output_Sleep")));
+        }
+        catch (Exception ex)
+        {
+            return Task.FromResult(ActionResult.Fail("SleepFailed", ex.Message));
+        }
     }
 }
 
+/// <summary>Capture a screenshot and report the file that was actually written.</summary>
 internal sealed class ScreenshotExecutor : IActionExecutor
 {
-    private const int SmXVirtualScreen = 76;
-    private const int SmYVirtualScreen = 77;
-    private const int SmCxVirtualScreen = 78;
-    private const int SmCyVirtualScreen = 79;
-
-    [DllImport("user32.dll")]
-    private static extern int GetSystemMetrics(int nIndex);
-
-    public async Task<string?> ExecuteAsync(ShortcutAction action, RunContext context)
+    public Task<ActionResult> ExecuteAsync(ShortcutAction action, RunContext context)
     {
-        await Task.Run(() =>
+        var scope = context.Text(action, "scope") == "primary" ? ScreenshotScope.Primary : ScreenshotScope.Virtual;
+        var directory = context.Text(action, "directory");
+
+        try
         {
-            var x = GetSystemMetrics(SmXVirtualScreen);
-            var y = GetSystemMetrics(SmYVirtualScreen);
-            var width = GetSystemMetrics(SmCxVirtualScreen);
-            var height = GetSystemMetrics(SmCyVirtualScreen);
-            if (width <= 0 || height <= 0)
-                throw new ActionFailedException(Loc.Get("Shortcuts_Error_NoService"));
-
-            var directory = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.MyPictures), "Screenshots");
-            Directory.CreateDirectory(directory);
-            var file = Path.Combine(directory, $"Shortcut_{DateTime.Now:yyyyMMdd_HHmmss}.png");
-
-            using var bitmap = new Bitmap(width, height, PixelFormat.Format32bppArgb);
-            using (var graphics = Graphics.FromImage(bitmap))
-            {
-                graphics.CopyFromScreen(x, y, 0, 0, new Size(width, height), CopyPixelOperation.SourceCopy);
-            }
-            bitmap.Save(file, ImageFormat.Png);
-        }).ConfigureAwait(true);
-
-        return Loc.Get("Shortcuts_Output_Screenshot");
+            var file = context.Services.System.CaptureScreenshot(directory, scope);
+            return Task.FromResult(ActionResult.With(
+                new Dictionary<string, RunValue> { ["path"] = RunValue.FromPath(file) },
+                Loc.Format("Shortcuts_Output_Screenshot", file)));
+        }
+        catch (Exception ex)
+        {
+            return Task.FromResult(ActionResult.Fail("ScreenshotFailed", ex.Message, "directory"));
+        }
     }
 }
 
 internal sealed class EmptyRecycleBinExecutor : IActionExecutor
 {
-    private const uint SherbNoConfirmation = 0x00000001;
-    private const uint SherbNoProgressUi = 0x00000002;
-    private const uint SherbNoSound = 0x00000004;
-    private const int E_UNEXPECTED = unchecked((int)0x8000FFFF);
-
-    [DllImport("shell32.dll", CharSet = CharSet.Unicode)]
-    private static extern int SHEmptyRecycleBin(IntPtr hwnd, string? pszRootPath, uint dwFlags);
-
-    public async Task<string?> ExecuteAsync(ShortcutAction action, RunContext context)
+    public Task<ActionResult> ExecuteAsync(ShortcutAction action, RunContext context)
     {
-        if (!await context.ConfirmDestructiveAsync().ConfigureAwait(true))
-            throw new ActionFailedException(Loc.Get("Shortcuts_Error_ConfirmReject"));
-
-        var result = await Task.Run(() =>
-            SHEmptyRecycleBin(IntPtr.Zero, null, SherbNoConfirmation | SherbNoProgressUi | SherbNoSound))
-            .ConfigureAwait(true);
-
-        // S_OK = emptied; E_UNEXPECTED = already empty (treated as success).
-        if (result != 0 && result != E_UNEXPECTED)
-            throw new ActionFailedException("SHEmptyRecycleBin: 0x" + result.ToString("X8"));
-
-        return Loc.Get(result == E_UNEXPECTED
-            ? "Shortcuts_Output_BinAlreadyEmpty"
-            : "Shortcuts_Output_BinEmptied");
-    }
-}
-
-internal sealed class WaitExecutor : IActionExecutor
-{
-    public async Task<string?> ExecuteAsync(ShortcutAction action, RunContext context)
-    {
-        var seconds = Math.Round(context.ResolveNumberClamped(action, "seconds", 1));
-        if (seconds > 0)
-            await Task.Delay(TimeSpan.FromSeconds(seconds), context.Token);
-
-        return Loc.Format("Shortcuts_Param_SecondsUnit", (int)seconds);
-    }
-}
-
-/// <summary>Minimize every top-level window through the shell's own verb (no key injection).</summary>
-internal sealed class MinimizeAllExecutor : IActionExecutor
-{
-    public Task<string?> ExecuteAsync(ShortcutAction action, RunContext context)
-    {
-        object? shell = null;
         try
         {
-            var type = Type.GetTypeFromProgID("Shell.Application");
-            if (type == null)
-                throw new ActionFailedException(Loc.Get("Shortcuts_Error_NoService"));
-
-            shell = Activator.CreateInstance(type);
-            if (shell == null)
-                throw new ActionFailedException(Loc.Get("Shortcuts_Error_NoService"));
-
-            type.InvokeMember("MinimizeAll", System.Reflection.BindingFlags.InvokeMethod,
-                null, shell, null);
-        }
-        catch (ActionFailedException)
-        {
-            throw;
+            context.Services.System.EmptyRecycleBin();
+            return Task.FromResult(ActionResult.Ok(Loc.Get("Shortcuts_Output_RecycleBin")));
         }
         catch (Exception ex)
         {
-            throw new ActionFailedException(Loc.Get("Shortcuts_Error_NoService") + " - " + ex.Message);
+            return Task.FromResult(ActionResult.Fail("RecycleBinFailed", ex.Message));
         }
-        finally
-        {
-            if (shell != null && Marshal.IsComObject(shell))
-                Marshal.ReleaseComObject(shell);
-        }
-
-        return Task.FromResult<string?>(Loc.Get("Shortcuts_Output_Minimized"));
     }
 }
 
-/// <summary>Windows toast notification; falls back to the PowerShell host AUMID for unpackaged apps.</summary>
+/// <summary>Wait for a number of seconds; produces no data, only the exec exit.</summary>
+internal sealed class WaitExecutor : IActionExecutor
+{
+    public async Task<ActionResult> ExecuteAsync(ShortcutAction action, RunContext context)
+    {
+        var seconds = context.Number(action, "seconds");
+        if (seconds < 0) seconds = 0;
+
+        try
+        {
+            await Task.Delay(TimeSpan.FromSeconds(seconds), context.Token).ConfigureAwait(true);
+        }
+        catch (OperationCanceledException) when (context.Token.IsCancellationRequested)
+        {
+            throw;
+        }
+
+        return ActionResult.Ok(Loc.Format("Shortcuts_Output_Waited", seconds));
+    }
+}
+
+/// <summary>Show a notification; the message is the effect, so nothing is returned as data.</summary>
 internal sealed class NotifyExecutor : IActionExecutor
 {
-    private const string PowerShellAumid = "{1AC14E77-02E7-4E5D-B744-2EB1AE5198B7}\\WindowsPowerShell\\v1.0\\powershell.exe";
-
-    public async Task<string?> ExecuteAsync(ShortcutAction action, RunContext context)
+    public Task<ActionResult> ExecuteAsync(ShortcutAction action, RunContext context)
     {
-        var message = context.Resolve(action, "message").Trim();
+        var message = context.Text(action, "message");
         if (message.Length == 0)
-            throw new ActionFailedException(Loc.Format("Shortcuts_Error_EmptyParam", Loc.Get("Shortcuts_Param_message")));
-
-        await Task.Run(() =>
         {
-            try
-            {
-                Show(message, null);
-            }
-            catch
-            {
-                try
-                {
-                    Show(message, PowerShellAumid);
-                }
-                catch
-                {
-                    throw new ActionFailedException(Loc.Get("Shortcuts_Error_Notification"));
-                }
-            }
-        }).ConfigureAwait(true);
+            return Task.FromResult(ActionResult.Fail("EmptyParam",
+                Loc.Format("Shortcuts_Error_EmptyParam", Loc.Get("Shortcuts_Param_message")), "message"));
+        }
 
-        return Loc.Get("Shortcuts_Output_NotificationSent");
+        var title = context.Text(action, "title");
+
+        try
+        {
+            context.Services.System.ShowNotification(message, title.Length == 0 ? null : title);
+            return Task.FromResult(ActionResult.Ok(message));
+        }
+        catch (Exception ex)
+        {
+            return Task.FromResult(ActionResult.Fail("NotifyFailed", ex.Message));
+        }
     }
+}
 
-    private static void Show(string message, string? appUserModelId)
+internal sealed class MinimizeAllExecutor : IActionExecutor
+{
+    public Task<ActionResult> ExecuteAsync(ShortcutAction action, RunContext context)
     {
-        var escaped = System.Security.SecurityElement.Escape(message) ?? string.Empty;
-        var xml = new Windows.Data.Xml.Dom.XmlDocument();
-        xml.LoadXml(
-            "<toast><visual><binding template=\"ToastGeneric\"><text>" + escaped +
-            "</text></binding></visual></toast>");
-        var toast = new Windows.UI.Notifications.ToastNotification(xml);
-        var notifier = appUserModelId == null
-            ? Windows.UI.Notifications.ToastNotificationManager.CreateToastNotifier()
-            : Windows.UI.Notifications.ToastNotificationManager.CreateToastNotifier(appUserModelId);
-        notifier.Show(toast);
+        try
+        {
+            context.Services.System.MinimizeAll();
+            return Task.FromResult(ActionResult.Ok(Loc.Get("Shortcuts_Output_Minimized")));
+        }
+        catch (Exception ex)
+        {
+            return Task.FromResult(ActionResult.Fail("MinimizeFailed", ex.Message));
+        }
     }
+}
+
+/// <summary>Media transport; "no active session" is reported, not thrown.</summary>
+internal sealed class MediaExecutor(MediaAction mediaAction) : IActionExecutor
+{
+    public async Task<ActionResult> ExecuteAsync(ShortcutAction action, RunContext context)
+    {
+        try
+        {
+            var handled = await context.Services.System.MediaTransportAsync(mediaAction).ConfigureAwait(true);
+            return handled
+                ? ActionResult.Ok(Loc.Get("Shortcuts_Output_Media"))
+                : ActionResult.Fail("NoMediaSession", Loc.Get("Shortcuts_Error_NoMedia"));
+        }
+        catch (Exception ex)
+        {
+            return ActionResult.Fail("MediaFailed", ex.Message);
+        }
+    }
+}
+
+/// <summary>
+/// Run a command in PowerShell or cmd and capture its streams. PowerShell receives the script
+/// through <c>-EncodedCommand</c> (base64 UTF-16), so quotes, newlines and non-ASCII text need
+/// no escaping; cmd receives it on stdin, the only channel that runs multi-line cmd input
+/// without a temp file. The step reports <c>stdout</c> / <c>stderr</c> / <c>exitCode</c>, and a
+/// non-zero exit code fails the step while <c>failOnExit</c> is on.
+/// </summary>
+internal sealed class RunCommandExecutor : IActionExecutor
+{
+    public async Task<ActionResult> ExecuteAsync(ShortcutAction action, RunContext context)
+    {
+        var shell = context.Text(action, "shell");
+        if (string.IsNullOrWhiteSpace(shell)) shell = "powershell";
+
+        var command = context.Text(action, "command");
+        if (string.IsNullOrWhiteSpace(command))
+        {
+            return ActionResult.Fail("EmptyParam",
+                Loc.Format("Shortcuts_Error_EmptyParam", Loc.Get("Shortcuts_Param_command")), "command");
+        }
+
+        var workingDir = context.Text(action, "workingDir").Trim();
+        if (workingDir.Length > 0 && !Directory.Exists(workingDir))
+        {
+            return ActionResult.Fail("PathNotFound",
+                Loc.Format("Shortcuts_Error_PathNotFound", workingDir), "workingDir");
+        }
+
+        var timeoutSeconds = context.Number(action, "timeout");
+        if (timeoutSeconds <= 0) timeoutSeconds = 30;
+        var failOnExit = !string.Equals(context.Text(action, "failOnExit"), "false", StringComparison.OrdinalIgnoreCase);
+
+        try
+        {
+            // The run token and the per-parameter timeout are linked: either one stops the child.
+            using var cts = CancellationTokenSource.CreateLinkedTokenSource(context.Token);
+            cts.CancelAfter(TimeSpan.FromSeconds(timeoutSeconds));
+
+            var (stdout, stderr, exitCode) = await RunAsync(shell, command, workingDir, cts.Token);
+
+            var outputs = new Dictionary<string, RunValue>
+            {
+                ["stdout"] = RunValue.FromText(stdout),
+                ["stderr"] = RunValue.FromText(stderr),
+                ["exitCode"] = RunValue.FromNumber(exitCode),
+            };
+
+            if (exitCode != 0 && failOnExit)
+            {
+                var detail = stderr.Trim().Length > 0 ? "\n" + Truncate(stderr.Trim(), 400) : string.Empty;
+                return new ActionResult(outputs, Loc.Format("Shortcuts_Output_CommandExit", exitCode),
+                    ActionError.Of("CommandFailed",
+                        Loc.Format("Shortcuts_Error_CommandFailed", exitCode) + detail, "command"));
+            }
+
+            return ActionResult.With(outputs, Loc.Format("Shortcuts_Output_CommandExit", exitCode));
+        }
+        catch (OperationCanceledException) when (context.Token.IsCancellationRequested)
+        {
+            // The run itself was cancelled — let the runner report it as such.
+            throw;
+        }
+        catch (OperationCanceledException)
+        {
+            return ActionResult.Fail("CommandTimeout",
+                Loc.Format("Shortcuts_Error_CommandTimeout", timeoutSeconds), "timeout");
+        }
+        catch (Win32Exception ex) when (ex.NativeErrorCode == 2)
+        {
+            // Only pwsh can realistically be missing; powershell.exe and cmd.exe ship with Windows.
+            return ActionResult.Fail("ShellNotFound", Loc.Get("Shortcuts_Error_ShellNotFound"), "shell");
+        }
+        catch (Exception ex)
+        {
+            return ActionResult.Fail("CommandFailed", ex.Message, "command");
+        }
+    }
+
+    private static async Task<(string StdOut, string StdErr, int ExitCode)> RunAsync(
+        string shell, string command, string workingDir, CancellationToken token)
+    {
+        using var process = BuildProcess(shell, command, workingDir);
+
+        process.Start();
+
+        // Both streams must be drained while the child runs; reading them only after exit would
+        // deadlock on any command that fills a pipe buffer.
+        var stdoutTask = process.StandardOutput.ReadToEndAsync(token);
+        var stderrTask = process.StandardError.ReadToEndAsync(token);
+
+        if (process.StartInfo.RedirectStandardInput)
+        {
+            await process.StandardInput.WriteAsync(BuildCmdScript(command).AsMemory(), token);
+            process.StandardInput.Close();
+        }
+
+        try
+        {
+            await process.WaitForExitAsync(token);
+        }
+        catch (OperationCanceledException)
+        {
+            // Timeout or cancel: take the whole tree down, then surface the cancellation.
+            try { process.Kill(entireProcessTree: true); } catch { /* already gone */ }
+            throw;
+        }
+
+        return (await stdoutTask, await stderrTask, process.ExitCode);
+    }
+
+    private static Process BuildProcess(string shell, string command, string workingDir)
+    {
+        var isCmd = string.Equals(shell, "cmd", StringComparison.OrdinalIgnoreCase);
+        var isPwsh = string.Equals(shell, "pwsh", StringComparison.OrdinalIgnoreCase);
+
+        var start = new ProcessStartInfo
+        {
+            UseShellExecute = false,
+            CreateNoWindow = true,
+            RedirectStandardInput = isCmd, // PowerShell gets an encoded command line instead
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+        };
+        if (workingDir.Length > 0) start.WorkingDirectory = workingDir;
+
+        if (isCmd)
+        {
+            // cmd writes in the OEM code page (GBK on Chinese systems): decode with the real
+            // code page instead of assuming UTF-8 and garbling every non-ASCII byte. The script
+            // itself is written to stdin in the same encoding, or cmd would misread it.
+            start.FileName = Path.Combine(Environment.SystemDirectory, "cmd.exe");
+            start.Arguments = "/d /q";
+            var oem = OemEncoding();
+            start.StandardInputEncoding = oem;
+            start.StandardOutputEncoding = oem;
+            start.StandardErrorEncoding = oem;
+        }
+        else
+        {
+            start.FileName = isPwsh
+                ? "pwsh"
+                : Path.Combine(Environment.SystemDirectory, "WindowsPowerShell", "v1.0", "powershell.exe");
+
+            // Force UTF-8 console output so the wrapper can decode without guessing the code
+            // page; the assignment is a prefix statement, never part of the user's script.
+            var script = "[Console]::OutputEncoding=[System.Text.Encoding]::UTF8\n" + command;
+            var encoded = Convert.ToBase64String(Encoding.Unicode.GetBytes(script));
+            start.Arguments = "-NoProfile -NonInteractive -ExecutionPolicy Bypass -EncodedCommand " + encoded;
+            start.StandardOutputEncoding = Encoding.UTF8;
+            start.StandardErrorEncoding = Encoding.UTF8;
+        }
+
+        return new Process { StartInfo = start };
+    }
+
+    /// <summary>cmd reads the script from stdin: normalize line endings, then exit.</summary>
+    private static string BuildCmdScript(string command) =>
+        command.Replace("\r\n", "\n").Replace('\r', '\n').Replace("\n", "\r\n") + "\r\nexit\r\n";
+
+    private static Encoding OemEncoding()
+    {
+        try
+        {
+            Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+        }
+        catch
+        {
+            // Already registered or unavailable — the fallback below still holds.
+        }
+
+        try
+        {
+            return Encoding.GetEncoding((int)GetOEMCP());
+        }
+        catch (ArgumentException)
+        {
+            return Encoding.UTF8;
+        }
+    }
+
+    [DllImport("kernel32.dll")]
+    private static extern uint GetOEMCP();
+
+    private static string Truncate(string text, int max) =>
+        text.Length <= max ? text : text[..max] + "…";
 }

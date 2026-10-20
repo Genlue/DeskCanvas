@@ -1,113 +1,192 @@
 using System.Net;
+using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Text;
+using System.Text.Json;
 using Shortcuts.Models;
 
 namespace Shortcuts.Services.Executors;
 
 /// <summary>
-/// Minimal GET/POST action: http/https only, bounded response, explicit timeout. The body
-/// becomes the action output so later steps can read it through a magic variable.
+/// HTTP request with explicit method/headers/query/body, charset-aware decoding and a truncation
+/// flag. A non-2xx response keeps its body as data and still reports an error, so an error route
+/// can inspect what the server said.
 /// </summary>
 internal sealed class HttpRequestExecutor : IActionExecutor
 {
-    private const int MaxResponseChars = 20_000;
+    private const int MaxBodyChars = 20000;
 
-    private static readonly HttpClient Client = CreateClient();
-
-    private static HttpClient CreateClient()
+    private static readonly HttpClient Client = new(new SocketsHttpHandler
     {
-        var client = new HttpClient(new HttpClientHandler
-        {
-            AllowAutoRedirect = true,
-            MaxAutomaticRedirections = 5,
-        })
-        {
-            // Per-request timeout below; the shared client must not impose its own.
-            Timeout = Timeout.InfiniteTimeSpan,
-        };
-        client.DefaultRequestHeaders.UserAgent.ParseAdd("DeskCanvas-Shortcuts/1.0");
-        return client;
-    }
-
-    public async Task<string?> ExecuteAsync(ShortcutAction action, RunContext context)
+        AllowAutoRedirect = true,
+        PooledConnectionLifetime = TimeSpan.FromMinutes(2),
+    })
     {
-        var rawUrl = context.ResolveOrDefault(action, "url").Trim();
-        if (rawUrl.Length == 0 || rawUrl == "https://")
-            throw new ActionFailedException(Loc.Format("Shortcuts_Error_EmptyParam", Loc.Get("Shortcuts_Param_url")));
+        Timeout = Timeout.InfiniteTimeSpan,
+    };
 
-        if (!Uri.TryCreate(rawUrl, UriKind.Absolute, out var uri) ||
+    public async Task<ActionResult> ExecuteAsync(ShortcutAction action, RunContext context)
+    {
+        var url = context.Text(action, "url").Trim();
+        if (!Uri.TryCreate(url, UriKind.Absolute, out var uri) ||
             (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps))
         {
-            throw new ActionFailedException(Loc.Get("Shortcuts_Error_InvalidUrl"));
+            return ActionResult.Fail("InvalidUrl", Loc.Get("Shortcuts_Error_InvalidUrl"), "url");
         }
 
-        var method = context.ResolveOrDefault(action, "method").ToUpperInvariant();
-        if (method is not ("GET" or "POST")) method = "GET";
+        uri = AppendQuery(uri, context.Text(action, "query"));
+        var method = context.Text(action, "method").ToUpperInvariant();
+        var timeout = TimeSpan.FromSeconds(Math.Clamp(context.Number(action, "timeout"), 1, 60));
+        var retries = (int)Math.Clamp(context.Number(action, "retry"), 0, 3);
 
-        var body = context.Resolve(action, "body");
-        var timeoutSeconds = Math.Clamp(context.ResolveNumber(action, "timeout", 15), 1, 60);
+        using var request = new HttpRequestMessage(new HttpMethod(method), uri);
+        ApplyHeaders(request, context.Text(action, "headers"));
 
-        using var request = new HttpRequestMessage(
-            method == "POST" ? HttpMethod.Post : HttpMethod.Get,
-            uri);
-
-        if (method == "POST")
+        if (method is "POST" or "PUT" or "PATCH")
         {
-            var contentType = LooksLikeJson(body) ? "application/json" : "text/plain";
-            request.Content = new StringContent(body, Encoding.UTF8, contentType);
+            var body = context.Text(action, "body");
+            var contentType = context.Text(action, "contentType");
+            request.Content = new StringContent(body, Encoding.UTF8,
+                string.IsNullOrWhiteSpace(contentType) ? "application/json" : contentType);
         }
 
-        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(context.Token);
-        timeout.CancelAfter(TimeSpan.FromSeconds(timeoutSeconds));
+        Exception? lastError = null;
+        for (var attempt = 0; attempt <= retries; attempt++)
+        {
+            context.Token.ThrowIfCancellationRequested();
+            using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(context.Token);
+            timeoutCts.CancelAfter(timeout);
+
+            try
+            {
+                using var response = await Client
+                    .SendAsync(request, HttpCompletionOption.ResponseContentRead, timeoutCts.Token)
+                    .ConfigureAwait(true);
+
+                var bytes = await response.Content.ReadAsByteArrayAsync(timeoutCts.Token).ConfigureAwait(true);
+                var charset = response.Content.Headers.ContentType?.CharSet;
+                var body = Decode(bytes, charset);
+                var truncated = body.Length > MaxBodyChars;
+                if (truncated) body = body[..MaxBodyChars];
+
+                var headers = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                foreach (var header in response.Headers.Concat(response.Content.Headers))
+                    headers[header.Key] = string.Join(", ", header.Value);
+
+                var outputs = new Dictionary<string, RunValue>
+                {
+                    ["body"] = RunValue.FromText(body),
+                    ["statusCode"] = RunValue.FromNumber((int)response.StatusCode),
+                    ["headers"] = RunValue.FromJson(JsonSerializer.Serialize(headers)),
+                    ["truncated"] = RunValue.FromBoolean(truncated),
+                };
+
+                var summary = truncated
+                    ? Loc.Format("Shortcuts_Output_HttpTruncated", (int)response.StatusCode, MaxBodyChars)
+                    : Loc.Format("Shortcuts_Output_Http", (int)response.StatusCode, body.Length);
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    var error = new ActionError("HttpStatus",
+                        Loc.Format("Shortcuts_Error_HttpStatus", (int)response.StatusCode,
+                            response.ReasonPhrase ?? string.Empty));
+                    return new ActionResult(outputs, summary, error);
+                }
+
+                return new ActionResult(outputs, summary, null);
+            }
+            catch (OperationCanceledException) when (context.Token.IsCancellationRequested)
+            {
+                throw;
+            }
+            catch (OperationCanceledException)
+            {
+                lastError = new TimeoutException(Loc.Get("Shortcuts_Error_Timeout"));
+            }
+            catch (HttpRequestException ex)
+            {
+                lastError = ex;
+            }
+            catch (Exception ex) when (ex is IOException or InvalidOperationException)
+            {
+                lastError = ex;
+            }
+
+            if (attempt < retries) await Task.Delay(TimeSpan.FromMilliseconds(400 * (attempt + 1)), context.Token)
+                .ConfigureAwait(true);
+        }
+
+        return ActionResult.Fail("HttpFailed",
+            Loc.Format("Shortcuts_Error_HttpFailed", lastError?.Message ?? string.Empty), "url");
+    }
+
+    private static Uri AppendQuery(Uri uri, string query)
+    {
+        var trimmed = query.Trim().TrimStart('?');
+        if (trimmed.Length == 0) return uri;
+
+        var separator = string.IsNullOrEmpty(uri.Query) ? "?" : "&";
+        return Uri.TryCreate(uri + separator + trimmed, UriKind.Absolute, out var combined) ? combined : uri;
+    }
+
+    /// <summary>Parse "Key: Value" lines; a malformed line is ignored rather than aborting.</summary>
+    private static void ApplyHeaders(HttpRequestMessage request, string raw)
+    {
+        foreach (var line in raw.Split(['\n', '\r'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+        {
+            var index = line.IndexOf(':');
+            if (index <= 0) continue;
+
+            var name = line[..index].Trim();
+            var value = line[(index + 1)..].Trim();
+            if (name.Length == 0) continue;
+
+            if (name.Equals("Content-Type", StringComparison.OrdinalIgnoreCase))
+            {
+                if (request.Content != null &&
+                    MediaTypeHeaderValue.TryParse(value, out var parsedContentType))
+                {
+                    request.Content.Headers.ContentType = parsedContentType;
+                }
+
+                continue;
+            }
+
+            try
+            {
+                request.Headers.TryAddWithoutValidation(name, value);
+            }
+            catch
+            {
+                // A header the platform refuses is skipped: one bad header must not fail the step.
+            }
+        }
+    }
+
+    /// <summary>Decode using the response charset, then UTF-8, then Latin-1 as a last resort.</summary>
+    private static string Decode(byte[] bytes, string? charset)
+    {
+        if (bytes.Length == 0) return string.Empty;
+
+        if (!string.IsNullOrWhiteSpace(charset))
+        {
+            try
+            {
+                return Encoding.GetEncoding(charset.Trim('"')).GetString(bytes);
+            }
+            catch (ArgumentException)
+            {
+                // Unknown charset: fall through to the default.
+            }
+        }
 
         try
         {
-            using var response = await Client
-                .SendAsync(request, HttpCompletionOption.ResponseHeadersRead, timeout.Token)
-                .ConfigureAwait(true);
-
-            var text = await ReadCappedAsync(response, timeout.Token).ConfigureAwait(true);
-            if (!response.IsSuccessStatusCode)
-            {
-                throw new ActionFailedException(Loc.Format("Shortcuts_Error_HttpStatus",
-                    (int)response.StatusCode + " " + response.ReasonPhrase));
-            }
-
-            return text.Length > 0
-                ? text
-                : Loc.Format("Shortcuts_Output_HttpStatus", (int)response.StatusCode);
+            return new UTF8Encoding(false, throwOnInvalidBytes: true).GetString(bytes);
         }
-        catch (OperationCanceledException) when (!context.Token.IsCancellationRequested)
+        catch (DecoderFallbackException)
         {
-            throw new ActionFailedException(Loc.Get("Shortcuts_Error_HttpTimeout"));
+            return Encoding.Latin1.GetString(bytes);
         }
-        catch (HttpRequestException ex)
-        {
-            throw new ActionFailedException(Loc.Format("Shortcuts_Error_HttpStatus", ex.Message));
-        }
-    }
-
-    private static bool LooksLikeJson(string text)
-    {
-        var trimmed = text.TrimStart();
-        return trimmed.StartsWith('{') || trimmed.StartsWith('[');
-    }
-
-    private static async Task<string> ReadCappedAsync(HttpResponseMessage response, CancellationToken token)
-    {
-        await using var stream = await response.Content.ReadAsStreamAsync(token).ConfigureAwait(true);
-        using var reader = new StreamReader(stream, Encoding.UTF8, detectEncodingFromByteOrderMarks: true);
-
-        var buffer = new char[4096];
-        var builder = new StringBuilder(Math.Min(MaxResponseChars, 4096));
-        while (builder.Length < MaxResponseChars)
-        {
-            var read = await reader.ReadAsync(buffer.AsMemory(0,
-                Math.Min(buffer.Length, MaxResponseChars - builder.Length)), token).ConfigureAwait(true);
-            if (read == 0) break;
-            builder.Append(buffer, 0, read);
-        }
-
-        return builder.ToString();
     }
 }

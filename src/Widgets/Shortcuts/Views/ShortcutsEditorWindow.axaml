@@ -13,7 +13,7 @@
         ExtendClientAreaTitleBarHeightHint="52"
         ShowInTaskbar="True"
         CanResize="True"
-        Width="800" Height="660" MinWidth="580" MinHeight="480"
+        Width="1040" Height="720" MinWidth="720" MinHeight="520"
         WindowStartupLocation="CenterScreen">
 
     <Window.Styles>
@@ -100,6 +100,43 @@
             <Setter Property="CornerRadius" Value="13" />
             <Setter Property="Cursor" Value="Hand" />
         </Style>
+
+        <!-- Workflow canvas: node cards. Surface/border come from the shared card tokens so the
+             canvas follows every theme (light / dark / glass) instead of hardcoding colors. -->
+        <Style Selector=":is(Border).wf-node">
+            <Setter Property="Background" Value="{DynamicResource SettingsFloatingCardBackground}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource SettingsFloatingCardBorder}" />
+            <Setter Property="BoxShadow" Value="0 2 10 0 #1F000000" />
+        </Style>
+        <Style Selector=":is(Border).wf-node.selected">
+            <Setter Property="BorderBrush" Value="{DynamicResource SystemControlHighlightAccentBrush}" />
+            <Setter Property="BorderThickness" Value="2" />
+            <Setter Property="BoxShadow" Value="0 4 18 0 #33000000" />
+        </Style>
+        <Style Selector=":is(Border).wf-node.running">
+            <Setter Property="BorderBrush" Value="#E6A15C00" />
+            <Setter Property="BorderThickness" Value="2" />
+        </Style>
+        <!-- 运行中的节点缓慢呼吸，无需逐帧代码驱动。 -->
+        <Style Selector=":is(Border).wf-node.running">
+            <Style.Animations>
+                <Animation Duration="0:0:1.4" IterationCount="INFINITE">
+                    <KeyFrame Cue="0%">
+                        <Setter Property="Opacity" Value="1" />
+                    </KeyFrame>
+                    <KeyFrame Cue="50%">
+                        <Setter Property="Opacity" Value="0.72" />
+                    </KeyFrame>
+                    <KeyFrame Cue="100%">
+                        <Setter Property="Opacity" Value="1" />
+                    </KeyFrame>
+                </Animation>
+            </Style.Animations>
+        </Style>
+        <Style Selector=":is(Border).wf-node.failed">
+            <Setter Property="BorderBrush" Value="#A32D2D" />
+            <Setter Property="BorderThickness" Value="2" />
+        </Style>
     </Window.Styles>
 
     <Border Background="{DynamicResource MenuSurfaceBackground}"
@@ -124,8 +161,8 @@
                         VerticalAlignment="Center" />
             </Grid>
 
-            <!-- Toolbar: shortcut switcher + icon + name + undo/redo + run -->
-            <Grid Grid.Row="1" ColumnDefinitions="Auto,*,Auto" Margin="0,2,0,10">
+            <!-- Toolbar: shortcut switcher + icon + name + undo/redo + AI + run -->
+            <Grid Grid.Row="1" ColumnDefinitions="Auto,*,Auto" Margin="0,2,0,8">
                 <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="2">
                     <Button x:Name="SwitchButton" Classes="toolbar-icon"
                             Click="OnSwitchShortcutClicked"
@@ -169,6 +206,17 @@
                                       Stroke="{DynamicResource SystemControlForegroundBaseHighBrush}" StrokeThickness="1.8"
                                       Width="16" Height="16" />
                     </Button>
+                    <Button x:Name="AiButton" Classes="toolbar-icon" Width="36" Height="36"
+                            Click="OnAiToggleClicked">
+                        <Border x:Name="AiButtonSurface" Width="28" Height="28" CornerRadius="14"
+                                Background="{DynamicResource SettingsFloatingCardBorder}">
+                            <sc:GlyphView x:Name="AiGlyphPath"
+                                          Data="M12 3l1.9 4.9L18.8 9.8l-4.9 1.9L12 16.6l-1.9-4.9L5.2 9.8l4.9-1.9z"
+                                          Stroke="White" StrokeThickness="1.6"
+                                          Width="14" Height="14"
+                                          HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                    </Button>
                     <Button x:Name="RunButton" Classes="toolbar-icon" Width="36" Height="36"
                             Click="OnRunClicked"
                             ToolTip.Tip="{x:Static locales:Locale.Shortcuts_Menu_Run}"
@@ -185,12 +233,11 @@
 
             <!-- Global hotkey: one shared capture field + record/clear. Status stays visible
                  text (never color-only) for conflict / invalid / recording states. -->
-            <Grid Grid.Row="2" ColumnDefinitions="64,*" MaxWidth="470"
-                  HorizontalAlignment="Stretch" Margin="0,0,0,8">
+            <Grid Grid.Row="2" ColumnDefinitions="64,*,Auto" Margin="0,0,0,8">
                 <TextBlock Grid.Column="0"
                            Text="{x:Static locales:Locale.Shortcuts_Hotkey_Label}"
                            FontSize="12" Opacity="0.6" VerticalAlignment="Center" />
-                <StackPanel Grid.Column="1" Spacing="3">
+                <StackPanel Grid.Column="1" Spacing="3" MaxWidth="420" HorizontalAlignment="Left">
                     <sc:HotkeyCaptureBox x:Name="HotkeyCapture"
                                          IsReadOnly="True"
                                          RequireModifier="True"
@@ -199,32 +246,196 @@
                     <TextBlock x:Name="HotkeyStatusText" FontSize="10.5" Opacity="0.6"
                                TextTrimming="CharacterEllipsis" />
                 </StackPanel>
+                <!-- Graph-level commands live with the graph, not the shortcut metadata. -->
+                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="2" VerticalAlignment="Top">
+                    <Button x:Name="AutoLayoutButton" Classes="toolbar-icon" Click="OnAutoLayoutClicked"
+                            ToolTip.Tip="{x:Static locales:Locale.Shortcuts_Canvas_AutoLayout}"
+                            AutomationProperties.Name="{x:Static locales:Locale.Shortcuts_Canvas_AutoLayout}">
+                        <sc:GlyphView Data="M4 6h6v4H4zM14 14h6v4h-6zM7 10v2a2 2 0 0 0 2 2h5"
+                                      Stroke="{DynamicResource SystemControlForegroundBaseHighBrush}" StrokeThickness="1.6"
+                                      Width="16" Height="16" />
+                    </Button>
+                    <Button x:Name="ImportButton" Classes="toolbar-icon" Click="OnImportJsonClicked"
+                            ToolTip.Tip="{x:Static locales:Locale.Shortcuts_Canvas_Import}"
+                            AutomationProperties.Name="{x:Static locales:Locale.Shortcuts_Canvas_Import}">
+                        <sc:GlyphView Data="M12 4v10m0 0l-4-4m4 4l4-4M4 18h16"
+                                      Stroke="{DynamicResource SystemControlForegroundBaseHighBrush}" StrokeThickness="1.7"
+                                      Width="16" Height="16" />
+                    </Button>
+                    <Button x:Name="ExportButton" Classes="toolbar-icon" Click="OnExportJsonClicked"
+                            ToolTip.Tip="{x:Static locales:Locale.Shortcuts_Canvas_Export}"
+                            AutomationProperties.Name="{x:Static locales:Locale.Shortcuts_Canvas_Export}">
+                        <sc:GlyphView Data="M12 14V4m0 0l-4 4m4-4l4 4M4 19h16"
+                                      Stroke="{DynamicResource SystemControlForegroundBaseHighBrush}" StrokeThickness="1.7"
+                                      Width="16" Height="16" />
+                    </Button>
+                    <Button x:Name="SpecButton" Classes="toolbar-icon" Click="OnShowSpecClicked"
+                            ToolTip.Tip="{x:Static locales:Locale.Shortcuts_Canvas_Spec}"
+                            AutomationProperties.Name="{x:Static locales:Locale.Shortcuts_Canvas_Spec}">
+                        <sc:GlyphView Data="M12 3l2.2 5.6L20 9.4l-4.2 3.9L17 19l-5-2.9L7 19l1.2-5.7L4 9.4l5.8-.8z"
+                                      Stroke="{DynamicResource SystemControlForegroundBaseHighBrush}" StrokeThickness="1.5"
+                                      Width="16" Height="16" />
+                    </Button>
+                </StackPanel>
             </Grid>
 
-            <!-- Action list -->
-            <ScrollViewer Grid.Row="3" HorizontalScrollBarVisibility="Disabled" Padding="0,2,0,10">
+            <!-- Execution canvas -->
+            <Border x:Name="CanvasHost"
+                    Grid.Row="3"
+                    CornerRadius="12"
+                    Background="{DynamicResource SettingsContentBackground}"
+                    BorderBrush="{DynamicResource MenuSurfaceBorder}"
+                    BorderThickness="1"
+                    ClipToBounds="True">
                 <Panel>
-                    <StackPanel x:Name="RowsHost" MaxWidth="470" HorizontalAlignment="Stretch" Spacing="6" />
                     <TextBlock x:Name="EmptyHint" IsVisible="False"
                                Text="{x:Static locales:Locale.Shortcuts_NoActions}"
-                               FontSize="12" Opacity="0.45" HorizontalAlignment="Center"
-                               VerticalAlignment="Center" />
+                               FontSize="12" Opacity="0.45"
+                               HorizontalAlignment="Center" VerticalAlignment="Center" />
                 </Panel>
-            </ScrollViewer>
+            </Border>
 
-            <!-- Bottom: add action bar + library drawer -->
-            <StackPanel Grid.Row="4" MaxWidth="470" HorizontalAlignment="Stretch" Spacing="8">
-                <Button x:Name="AddActionButton" Classes="addbar-btn" Click="OnAddActionClicked">
-                    <StackPanel Orientation="Horizontal" Spacing="8">
-                        <sc:GlyphView Data="M12 5.5v13M5.5 12h13" Stroke="{DynamicResource SystemControlForegroundBaseHighBrush}"
-                                      StrokeThickness="1.8" Width="14" Height="14"
-                                      VerticalAlignment="Center" />
-                        <TextBlock Text="{x:Static locales:Locale.Shortcuts_Add_Action}" FontSize="13"
-                                   VerticalAlignment="Center" />
-                    </StackPanel>
-                </Button>
+            <!-- Canvas overlays: zoom + minimap + library + diagnostics + AI + toast -->
+            <Panel Grid.Row="3" IsHitTestVisible="True">
+                <!-- Toast：操作反馈（连线被拒 / 删除结果 / 导出成功…） -->
+                <Border x:Name="ToastBorder" IsVisible="False"
+                        HorizontalAlignment="Center" VerticalAlignment="Top"
+                        Margin="0,10,0,0" MaxWidth="520"
+                        CornerRadius="9" Padding="14,7"
+                        Background="#E64A4A4A"
+                        ClipToBounds="True">
+                    <TextBlock x:Name="ToastText" FontSize="11.5" Foreground="White"
+                               TextWrapping="Wrap" />
+                </Border>
+
+                <StackPanel Orientation="Horizontal" Spacing="2"
+                            HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                            Margin="0,0,12,12">
+                    <Button x:Name="ZoomOutButton" Classes="toolbar-icon" Click="OnZoomOutClicked"
+                            ToolTip.Tip="{x:Static locales:Locale.Shortcuts_Canvas_ZoomOut}">
+                        <TextBlock Text="−" FontSize="15" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Button>
+                    <Button x:Name="ZoomFitButton" Classes="toolbar-icon" Click="OnZoomFitClicked"
+                            ToolTip.Tip="{x:Static locales:Locale.Shortcuts_Canvas_Fit}">
+                        <sc:GlyphView Data="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"
+                                      Stroke="{DynamicResource SystemControlForegroundBaseHighBrush}" StrokeThickness="1.7"
+                                      Width="15" Height="15" />
+                    </Button>
+                    <Button x:Name="ZoomInButton" Classes="toolbar-icon" Click="OnZoomInClicked"
+                            ToolTip.Tip="{x:Static locales:Locale.Shortcuts_Canvas_ZoomIn}">
+                        <TextBlock Text="+" FontSize="15" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Button>
+                    <Button x:Name="RunDetailsButton" Classes="toolbar-icon" Click="OnRunDetailsClicked">
+                        <sc:GlyphView Data="M5 7h14M5 12h14M5 17h9"
+                                      Stroke="{DynamicResource SystemControlForegroundBaseHighBrush}" StrokeThickness="1.7"
+                                      Width="15" Height="15" />
+                    </Button>
+                </StackPanel>
+
+                <!-- 小地图：节点缩略 + 视口框，点击/拖动跳转 -->
+                <Border x:Name="MinimapHost" IsVisible="True"
+                        HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                        Margin="12,12,12,52" Width="204" Height="132"
+                        Background="{DynamicResource MenuSurfaceBackground}"
+                        BorderBrush="{DynamicResource MenuSurfaceBorder}"
+                        BorderThickness="{DynamicResource HostSurfaceBorderThickness}"
+                        CornerRadius="10" Opacity="0.92">
+                    <sc:WorkflowMinimap x:Name="Minimap" Margin="6" />
+                </Border>
+
+                <!-- Run details: what actually executed, per run id -->
+                <Border x:Name="RunDetailsHost" IsVisible="False"
+                        HorizontalAlignment="Right" VerticalAlignment="Stretch"
+                        Width="330" Margin="12"
+                        Background="{DynamicResource MenuSurfaceBackground}"
+                        BorderBrush="{DynamicResource MenuSurfaceBorder}"
+                        BorderThickness="{DynamicResource HostSurfaceBorderThickness}"
+                        CornerRadius="{DynamicResource HostSurfaceCornerRadius}">
+                    <Grid RowDefinitions="Auto,*" Margin="12">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <TextBlock x:Name="RunDetailsTitle"
+                                       FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center" />
+                            <Button Grid.Column="1" Classes="toolbar-icon" Click="OnRunDetailsCloseClicked"
+                                    Width="24" Height="24">
+                                <sc:GlyphView Data="M6.5 6.5l11 11M17.5 6.5l-11 11"
+                                              Stroke="{DynamicResource SystemControlForegroundBaseHighBrush}"
+                                              StrokeThickness="1.7" Width="12" Height="12" />
+                            </Button>
+                        </Grid>
+                        <ScrollViewer Grid.Row="1" Margin="0,8,0,0" HorizontalScrollBarVisibility="Disabled">
+                            <StackPanel x:Name="RunDetailsContent" Spacing="6" />
+                        </ScrollViewer>
+                    </Grid>
+                </Border>
+
+                <!-- AI 助手抽屉：设置 + 自然语言生成工作流 -->
+                <Border x:Name="AiPanel" IsVisible="False"
+                        HorizontalAlignment="Right" VerticalAlignment="Stretch"
+                        Width="330" Margin="12"
+                        Background="{DynamicResource MenuSurfaceBackground}"
+                        BorderBrush="{DynamicResource MenuSurfaceBorder}"
+                        BorderThickness="{DynamicResource HostSurfaceBorderThickness}"
+                        CornerRadius="{DynamicResource HostSurfaceCornerRadius}"
+                        ZIndex="5">
+                    <Grid RowDefinitions="Auto,Auto,Auto,*,Auto,Auto" Margin="14">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <StackPanel Orientation="Horizontal" Spacing="7" VerticalAlignment="Center">
+                                <sc:GlyphView Data="M12 3l1.9 4.9L18.8 9.8l-4.9 1.9L12 16.6l-1.9-4.9L5.2 9.8l4.9-1.9z"
+                                              Stroke="{DynamicResource SystemControlForegroundBaseHighBrush}"
+                                              StrokeThickness="1.6" Width="14" Height="14" />
+                                <TextBlock Text="{x:Static locales:Locale.Shortcuts_AiPanel_Title}"
+                                           FontSize="12.5" FontWeight="SemiBold" VerticalAlignment="Center" />
+                            </StackPanel>
+                            <Button Grid.Column="1" Classes="toolbar-icon" Click="OnAiToggleClicked"
+                                    Width="24" Height="24">
+                                <sc:GlyphView Data="M6.5 6.5l11 11M17.5 6.5l-11 11"
+                                              Stroke="{DynamicResource SystemControlForegroundBaseHighBrush}"
+                                              StrokeThickness="1.7" Width="12" Height="12" />
+                            </Button>
+                        </Grid>
+
+                        <Expander Grid.Row="1" x:Name="AiSettingsExpander" Margin="0,10,0,0"
+                                  Header="{x:Static locales:Locale.Shortcuts_Ai_Settings}"
+                                  IsExpanded="False">
+                            <StackPanel Spacing="7" Margin="0,6,0,0">
+                                <TextBlock Text="{x:Static locales:Locale.Shortcuts_Ai_BaseUrl}" FontSize="10.5" Opacity="0.6" />
+                                <TextBox x:Name="AiBaseUrlBox" FontSize="11.5" Watermark="https://api.openai.com/v1"
+                                         LostFocus="OnAiSettingCommitted" />
+                                <TextBlock Text="{x:Static locales:Locale.Shortcuts_Ai_ApiKey}" FontSize="10.5" Opacity="0.6" />
+                                <TextBox x:Name="AiApiKeyBox" FontSize="11.5" PasswordChar="●"
+                                         Watermark="sk-..."
+                                         LostFocus="OnAiSettingCommitted" />
+                                <TextBlock Text="{x:Static locales:Locale.Shortcuts_Ai_Model}" FontSize="10.5" Opacity="0.6" />
+                                <TextBox x:Name="AiModelBox" FontSize="11.5" Watermark="gpt-4o-mini"
+                                         LostFocus="OnAiSettingCommitted" />
+                                <TextBlock Text="{x:Static locales:Locale.Shortcuts_Ai_SettingsHint}"
+                                           FontSize="10" Opacity="0.5" TextWrapping="Wrap" />
+                            </StackPanel>
+                        </Expander>
+
+                        <TextBlock Grid.Row="2" Text="{x:Static locales:Locale.Shortcuts_Ai_PromptLabel}"
+                                   FontSize="10.5" Opacity="0.6" Margin="0,12,0,4" />
+                        <TextBox Grid.Row="3" x:Name="AiPromptBox" FontSize="12"
+                                 AcceptsReturn="True" TextWrapping="Wrap"
+                                 Watermark="{x:Static locales:Locale.Shortcuts_Ai_PromptWatermark}"
+                                 MinHeight="120" MaxHeight="360" />
+                        <Button Grid.Row="4" x:Name="AiGenerateButton" Margin="0,10,0,0"
+                                HorizontalAlignment="Stretch"
+                                Click="OnAiGenerateClicked">
+                            <TextBlock x:Name="AiGenerateText"
+                                       Text="{x:Static locales:Locale.Shortcuts_Ai_Generate}" FontSize="12" />
+                        </Button>
+                        <StackPanel Grid.Row="5" Spacing="5" Margin="0,8,0,0">
+                            <ProgressBar x:Name="AiProgress" IsIndeterminate="True" IsVisible="False" Height="3" />
+                            <TextBlock x:Name="AiStatusText" FontSize="10.5" Opacity="0.7"
+                                       TextWrapping="Wrap" TextTrimming="CharacterEllipsis" MaxHeight="120" />
+                        </StackPanel>
+                    </Grid>
+                </Border>
 
                 <Border x:Name="LibraryPanel" IsVisible="False"
+                        VerticalAlignment="Bottom" HorizontalAlignment="Center"
+                        Margin="12" Width="560"
                         Background="{DynamicResource MenuSurfaceBackground}"
                         BorderBrush="{DynamicResource MenuSurfaceBorder}"
                         BorderThickness="{DynamicResource HostSurfaceBorderThickness}"
@@ -233,13 +444,60 @@
                         <TextBox x:Name="LibrarySearchBox" FontSize="12"
                                  PlaceholderText="{x:Static locales:Locale.Shortcuts_Library_Search}"
                                  TextChanged="OnLibrarySearchChanged" />
-                        <ScrollViewer Grid.Row="1" MaxHeight="230" Margin="0,8,0,0"
+                        <ScrollViewer Grid.Row="1" MaxHeight="320" Margin="0,8,0,0"
                                       HorizontalScrollBarVisibility="Disabled">
                             <StackPanel x:Name="LibraryHost" Spacing="2" />
                         </ScrollViewer>
                     </Grid>
                 </Border>
-            </StackPanel>
+
+                <!-- 校验诊断条：左下角，可折叠；点条目跳转到对应节点 -->
+                <Border x:Name="DiagnosticsBar" IsVisible="False"
+                        HorizontalAlignment="Left" VerticalAlignment="Bottom"
+                        Margin="12,12,12,12" Width="440" MaxHeight="220"
+                        Background="{DynamicResource MenuSurfaceBackground}"
+                        BorderBrush="{DynamicResource MenuSurfaceBorder}"
+                        BorderThickness="{DynamicResource HostSurfaceBorderThickness}"
+                        CornerRadius="{DynamicResource HostSurfaceCornerRadius}">
+                    <Grid RowDefinitions="Auto,Auto" Margin="10,8,10,10">
+                        <Grid ColumnDefinitions="Auto,*,Auto,Auto">
+                            <TextBlock x:Name="DiagnosticsHeaderText" Grid.Column="0"
+                                       FontSize="11.5" FontWeight="SemiBold"
+                                       VerticalAlignment="Center" Margin="0,0,8,0" />
+                            <Button x:Name="DiagnosticsCollapseButton" Grid.Column="2" Classes="toolbar-icon"
+                                    Click="OnDiagnosticsCollapseClicked" Width="24" Height="24">
+                                <TextBlock x:Name="DiagnosticsCollapseGlyph" Text="▾" FontSize="12" />
+                            </Button>
+                            <Button Grid.Column="3" Classes="toolbar-icon" Click="OnDiagnosticsCloseClicked"
+                                    Width="24" Height="24">
+                                <sc:GlyphView Data="M6.5 6.5l11 11M17.5 6.5l-11 11"
+                                              Stroke="{DynamicResource SystemControlForegroundBaseHighBrush}"
+                                              StrokeThickness="1.7" Width="12" Height="12" />
+                            </Button>
+                        </Grid>
+                        <ScrollViewer x:Name="DiagnosticsScroll" Grid.Row="1" MaxHeight="150"
+                                      Margin="0,8,0,0" HorizontalScrollBarVisibility="Disabled">
+                            <StackPanel x:Name="DiagnosticsContent" Spacing="4" />
+                        </ScrollViewer>
+                    </Grid>
+                </Border>
+            </Panel>
+
+            <!-- Bottom: add action -->
+            <Grid Grid.Row="4" Margin="0,8,0,0" ColumnDefinitions="*,Auto">
+                <Button x:Name="AddActionButton" Grid.Column="0" Classes="addbar-btn" Click="OnAddActionClicked">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <sc:GlyphView Data="M12 5.5v13M5.5 12h13" Stroke="{DynamicResource SystemControlForegroundBaseHighBrush}"
+                                      StrokeThickness="1.8" Width="14" Height="14"
+                                      VerticalAlignment="Center" />
+                        <TextBlock Text="{x:Static locales:Locale.Shortcuts_Add_Action}" FontSize="13"
+                                   VerticalAlignment="Center" />
+                    </StackPanel>
+                </Button>
+                <TextBlock Grid.Column="1" Margin="12,0,0,0" VerticalAlignment="Center"
+                           FontSize="10.5" Opacity="0.45"
+                           Text="{x:Static locales:Locale.Shortcuts_Canvas_Hint}" />
+            </Grid>
         </Grid>
     </Border>
 </Window>

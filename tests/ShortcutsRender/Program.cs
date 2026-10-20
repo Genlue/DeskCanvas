@@ -63,7 +63,7 @@ internal static class Program
 
         ShortcutsStore.ResetForTesting(BuildDocument(scenario));
 
-        if (scenario == "editor")
+        if (scenario is "editor" or "graph")
         {
             var editor = new ShortcutsEditorWindow(ShortcutsStore.Get().Shortcuts[0].Id);
             editor.Show();
@@ -87,6 +87,19 @@ internal static class Program
             Dispatcher.UIThread.RunJobs();
             DumpEditorGeometry(editor);
             Dump(editor);
+            return;
+        }
+
+        if (scenario == "import")
+        {
+            // The AI-import dialog: verifies its XAML loads and the validation text lays out.
+            var dialog = new WorkflowImportWindow();
+            dialog.Show();
+            Dispatcher.UIThread.RunJobs();
+            AvaloniaHeadlessPlatform.ForceRenderTimerTick();
+            Dispatcher.UIThread.RunJobs();
+            dialog.CaptureRenderedFrame()?.Save(outPath);
+            Console.WriteLine("saved import dialog: " + outPath);
             return;
         }
 
@@ -835,6 +848,35 @@ internal static class Program
         };
 
         if (scenario is "small" or "running") shortcuts.RemoveAt(2); // the live card: two tiles + the "new" tile
+
+        if (scenario == "graph")
+        {
+            // A branch + loop graph: the shapes the v1 list editor could not draw at all.
+            var graph = new WorkflowGraph();
+            var start = new WorkflowNode { Type = WorkflowNodeTypes.Start, X = 0, Y = 0 };
+            var clip = WorkflowNode.Create("getClipboard", 300, 0);
+            var branch = WorkflowNode.With("branch", 600, 0,
+                ("left", "{{" + clip.Id + "}}"), ("op", "isEmpty"));
+            var empty = WorkflowNode.With("notify", 900, 0, ("message", "剪贴板是空的"));
+            var loop = WorkflowNode.With("forLoop", 900, 200, ("count", "3"));
+            var body = WorkflowNode.Create("screenshot", 1200, 200);
+            var done = WorkflowNode.With("notify", 1200, 360, ("message", "完成"));
+            graph.Nodes.AddRange([start, clip, branch, empty, loop, body, done]);
+            graph.Links.Add(WorkflowLink.Exec(start.Id, WorkflowNodeTypes.Out, clip.Id));
+            graph.Links.Add(WorkflowLink.Exec(clip.Id, WorkflowNodeTypes.Out, branch.Id));
+            graph.Links.Add(WorkflowLink.Exec(branch.Id, WorkflowNodeTypes.TruePort, empty.Id));
+            graph.Links.Add(WorkflowLink.Exec(branch.Id, WorkflowNodeTypes.FalsePort, loop.Id));
+            graph.Links.Add(WorkflowLink.Exec(loop.Id, WorkflowNodeTypes.BodyPort, body.Id));
+            graph.Links.Add(WorkflowLink.Exec(loop.Id, WorkflowNodeTypes.DonePort, done.Id));
+            graph.Links.Add(WorkflowLink.Data(clip.Id, empty.Id, "message"));
+
+            return new ShortcutsDocument
+            {
+                Version = 2,
+                Shortcuts = [new ShortcutDefinition { Name = "剪贴板工作流", Glyph = "branch", Color = "#534AB7", Graph = graph }],
+            };
+        }
+
 
         if (scenario == "browse")
         {

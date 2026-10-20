@@ -169,9 +169,16 @@ public static class Const
     /// </summary>
     public static string HabitsFile => Path.Combine(ActiveProfileFolder, HabitsFileName);
     /// <summary>
-    /// The path to the unified shortcuts/workflow data file for the currently active profile.
+    /// The path to the unified shortcuts/workflow data file.
+    /// <para>
+    /// Deliberately <b>not</b> inside <see cref="ActiveProfileFolder"/>: shortcuts are one shared
+    /// set for the whole installation, so switching configuration profiles (方案) must not swap
+    /// them out, and removing every Shortcuts widget must not take the data with it. This is the
+    /// same convention the cross-profile shared stores use (<c>hitokoto.json</c>,
+    /// <c>Calculator/state.json</c>).
+    /// </para>
     /// </summary>
-    public static string ShortcutsFile => Path.Combine(ActiveProfileFolder, ShortcutsFileName);
+    public static string ShortcutsFile => Path.Combine(DataFolder, ShortcutsFileName);
     /// <summary>
     /// The path to the unified countdown/events data file for the currently active profile.
     /// </summary>

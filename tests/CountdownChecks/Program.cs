@@ -1,7 +1,9 @@
 using System;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using Avalonia;
+using Countdown.FestivalPreset;
 using Countdown.Models;
 using Countdown.Services;
 using Countdown.ViewModels;
@@ -43,6 +45,8 @@ internal static class Program
 
         TestAssemblyMetadata();
         TestLunarCalendar();
+        TestFestivalPresets();
+        TestCustomPresets();
         TestCalculationEngine();
         TestDataStore();
         TestViewContracts();
@@ -89,6 +93,104 @@ internal static class Program
 
         string midAutumn = LunarCalendarHelper.FormatLunarMonthDay(8, 15, false);
         Check(midAutumn == "八月十五", $"Format Mid-Autumn is 八月十五 (got {midAutumn})");
+    }
+
+    private static void TestFestivalPresets()
+    {
+        Console.WriteLine("\n--- Festival Preset Catalog & Resolver ---");
+
+        var catalog = FestivalPresetCatalog.All;
+        Check(catalog.Count >= 24, $"Catalog has all required presets (got {catalog.Count})");
+        Check(catalog.Select(p => p.Id).Distinct().Count() == catalog.Count, "Preset ids are unique");
+        Check(catalog.All(p => !string.IsNullOrWhiteSpace(p.Title) && p.Title != p.TitleKey),
+            "Every preset resolves a localized title (resx keys exist)");
+
+        // 农历日期由 .NET ChineseLunisolarCalendar 推算（与组件使用的数据源一致）：
+        // 2026 年正月初一 = 02-17，元宵 03-03，龙抬头 03-20，端午 06-19，七夕 08-19，
+        // 中元 08-27，中秋 09-25，重阳 10-18；腊八（腊月初八）落在 2027-01-15。
+        var lunarToday = new DateTime(2026, 2, 17);
+        CheckFestival("festival.spring-festival", lunarToday, new DateTime(2026, 2, 17), "Spring Festival 2026 (today included)");
+        CheckFestival("festival.lantern", lunarToday, new DateTime(2026, 3, 3), "Lantern Festival 2026");
+        CheckFestival("festival.longtaitou", lunarToday, new DateTime(2026, 3, 20), "Longtaitou 2026");
+        CheckFestival("festival.dragon-boat", lunarToday, new DateTime(2026, 6, 19), "Dragon Boat 2026");
+        CheckFestival("festival.qixi", lunarToday, new DateTime(2026, 8, 19), "Qixi 2026");
+        CheckFestival("festival.ghost", lunarToday, new DateTime(2026, 8, 27), "Ghost Festival 2026");
+        CheckFestival("festival.mid-autumn", lunarToday, new DateTime(2026, 9, 25), "Mid-Autumn 2026");
+        CheckFestival("festival.double-ninth", lunarToday, new DateTime(2026, 10, 18), "Double Ninth 2026");
+        CheckFestival("festival.laba", lunarToday, new DateTime(2027, 1, 15), "Laba (12th month) 2026");
+
+        // 除夕：2023 年腊月有 30 天（2024-02-09），2024/2026 年腊月只有 29 天（01-28 / 02-05）。
+        CheckFestival("festival.new-years-eve", new DateTime(2023, 6, 1), new DateTime(2024, 2, 9), "New Year's Eve, 30-day 12th month");
+        CheckFestival("festival.new-years-eve", new DateTime(2025, 1, 1), new DateTime(2025, 1, 28), "New Year's Eve, 29-day 12th month");
+        CheckFestival("festival.new-years-eve", new DateTime(2025, 1, 28), new DateTime(2025, 1, 28), "New Year's Eve includes today");
+        CheckFestival("festival.new-years-eve", new DateTime(2026, 10, 18), new DateTime(2027, 2, 5), "New Year's Eve rolls to next year");
+
+        // 浮动节日：5 月第 2 个周日 / 6 月第 3 个周日 / 11 月第 4 个周四。
+        CheckFestival("festival.mothers-day", new DateTime(2024, 1, 1), new DateTime(2024, 5, 12), "Mother's Day 2024");
+        CheckFestival("festival.mothers-day", new DateTime(2025, 1, 1), new DateTime(2025, 5, 11), "Mother's Day 2025");
+        CheckFestival("festival.mothers-day", new DateTime(2026, 1, 1), new DateTime(2026, 5, 10), "Mother's Day 2026");
+        CheckFestival("festival.mothers-day", new DateTime(2026, 5, 11), new DateTime(2027, 5, 9), "Mother's Day rolls to 2027");
+
+        CheckFestival("festival.fathers-day", new DateTime(2024, 1, 1), new DateTime(2024, 6, 16), "Father's Day 2024");
+        CheckFestival("festival.fathers-day", new DateTime(2025, 1, 1), new DateTime(2025, 6, 15), "Father's Day 2025");
+        CheckFestival("festival.fathers-day", new DateTime(2026, 1, 1), new DateTime(2026, 6, 21), "Father's Day 2026");
+
+        CheckFestival("festival.thanksgiving", new DateTime(2024, 1, 1), new DateTime(2024, 11, 28), "Thanksgiving 2024");
+        CheckFestival("festival.thanksgiving", new DateTime(2025, 1, 1), new DateTime(2025, 11, 27), "Thanksgiving 2025");
+        CheckFestival("festival.thanksgiving", new DateTime(2026, 1, 1), new DateTime(2026, 11, 26), "Thanksgiving 2026");
+
+        // 清明是近似规则：2024/2025-04-04，2026-04-05。
+        CheckFestival("festival.qingming", new DateTime(2024, 1, 1), new DateTime(2024, 4, 4), "Qingming 2024");
+        CheckFestival("festival.qingming", new DateTime(2025, 1, 1), new DateTime(2025, 4, 4), "Qingming 2025");
+        CheckFestival("festival.qingming", new DateTime(2026, 1, 1), new DateTime(2026, 4, 5), "Qingming 2026");
+        CheckFestival("festival.qingming", new DateTime(2026, 4, 6), new DateTime(2027, 4, 5), "Qingming rolls to 2027");
+
+        // 公历固定日期：今年已过顺延到明年；当天算“今天”。
+        CheckFestival("festival.new-year", new DateTime(2026, 10, 18), new DateTime(2027, 1, 1), "New Year's Day rolls to next year");
+        CheckFestival("festival.christmas", new DateTime(2026, 12, 25), new DateTime(2026, 12, 25), "Christmas includes today");
+        CheckFestival("festival.christmas", new DateTime(2026, 12, 26), new DateTime(2027, 12, 25), "Christmas rolls to next year");
+    }
+
+    private static void CheckFestival(string id, DateTime today, DateTime expected, string name)
+    {
+        var preset = FestivalPresetCatalog.Find(id);
+        if (preset == null)
+        {
+            Check(false, $"{name}: preset '{id}' exists");
+            return;
+        }
+
+        var actual = FestivalPresetResolver.ResolveNextOccurrence(preset, today);
+        Check(actual == expected.Date, $"{name}: expected {expected:yyyy-MM-dd}, got {actual:yyyy-MM-dd}");
+    }
+
+    private static void TestCustomPresets()
+    {
+        Console.WriteLine("\n--- Custom Presets (My Presets) ---");
+
+        string id = "check-preset-" + Guid.NewGuid().ToString("N");
+        var preset = new CustomPreset(
+            Id: id,
+            Title: "My Payday",
+            TargetDate: new DateTime(2026, 3, 7),
+            Repeat: RepeatCycle.Monthly,
+            Category: "Life",
+            ColorTag: "#0A84FF");
+
+        CustomPresetStore.Add(preset);
+        var loaded = CustomPresetStore.Get().FirstOrDefault(p => p.Id == id);
+        Check(loaded != null, "Custom preset persisted and reloaded");
+        if (loaded == null) return;
+
+        Check(loaded.Title == "My Payday" && loaded.Repeat == RepeatCycle.Monthly && loaded.ColorTag == "#0A84FF",
+            "Custom preset fields round-trip");
+
+        var next = CountdownCalculationService.ResolveEffectiveTargetDate(
+            loaded.ToCountdownItem(), new DateTime(2026, 10, 18));
+        Check(next == new DateTime(2026, 11, 7), $"Custom monthly preset resolves next payday (got {next:yyyy-MM-dd})");
+
+        Check(CustomPresetStore.Delete(id), "Custom preset deleted");
+        Check(!CustomPresetStore.Get().Any(p => p.Id == id), "Deleted preset is gone after reload");
     }
 
     private static void TestCalculationEngine()

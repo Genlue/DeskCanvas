@@ -39,6 +39,12 @@ public static class KeyboardInput
 
     public static void Send(IReadOnlyList<KeyStroke> strokes) => sender.Send(strokes);
 
+    /// <summary>
+    /// True while a hotkey capture box is recording. Synthesized keystrokes must not be sent
+    /// then: the capture box would swallow them and the shortcut would silently do nothing.
+    /// </summary>
+    public static bool IsRecording { get; set; }
+
     /// <summary>Navigation / right-hand modifiers need KEYEVENTF_EXTENDEDKEY.</summary>
     public static bool IsExtendedKey(ushort virtualKey) => virtualKey is
         0x21 or 0x22 or 0x23 or 0x24 or 0x25 or 0x26 or 0x27 or 0x28 or

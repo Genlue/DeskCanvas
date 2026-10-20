@@ -223,7 +223,7 @@
         <value>Insert variable</value>
     </data>
     <data name="Shortcuts_Param_LastResult" xml:space="preserve">
-        <value>Result of previous step</value>
+        <value>Most recent data result</value>
     </data>
     <data name="Shortcuts_Param_ResultOf" xml:space="preserve">
         <value>Result of "{0}"</value>
@@ -782,5 +782,1499 @@
     </data>
     <data name="Shortcuts_Error_CaptureActive" xml:space="preserve">
         <value>A key capture is active; finish it first</value>
+    </data>
+    <data name="Shortcuts_Action_runCommand" xml:space="preserve">
+        <value>Run Command</value>
+    </data>
+    <data name="Shortcuts_Desc_runCommand" xml:space="preserve">
+        <value>Run a PowerShell or CMD command and capture its output</value>
+    </data>
+    <data name="Shortcuts_Param_shell" xml:space="preserve">
+        <value>Shell</value>
+    </data>
+    <data name="Shortcuts_Shell_powershell" xml:space="preserve">
+        <value>Windows PowerShell</value>
+    </data>
+    <data name="Shortcuts_Shell_pwsh" xml:space="preserve">
+        <value>PowerShell 7 (pwsh)</value>
+    </data>
+    <data name="Shortcuts_Shell_cmd" xml:space="preserve">
+        <value>CMD</value>
+    </data>
+    <data name="Shortcuts_Param_command" xml:space="preserve">
+        <value>Command</value>
+    </data>
+    <data name="Shortcuts_Help_runCommand" xml:space="preserve">
+        <value>Multi-line script. PowerShell runs it as an encoded command; CMD reads it from stdin. Output is available on the stdout / stderr ports.</value>
+    </data>
+    <data name="Shortcuts_Param_workingDir" xml:space="preserve">
+        <value>Working folder</value>
+    </data>
+    <data name="Shortcuts_Help_runCommandDir" xml:space="preserve">
+        <value>Left empty, the command runs in the process's current folder</value>
+    </data>
+    <data name="Shortcuts_Param_failOnExit" xml:space="preserve">
+        <value>Exit code</value>
+    </data>
+    <data name="Shortcuts_FailExit_on" xml:space="preserve">
+        <value>Non-zero fails the step</value>
+    </data>
+    <data name="Shortcuts_FailExit_off" xml:space="preserve">
+        <value>Ignore exit code</value>
+    </data>
+    <data name="Shortcuts_Port_StdOut" xml:space="preserve">
+        <value>stdout</value>
+    </data>
+    <data name="Shortcuts_Port_StdErr" xml:space="preserve">
+        <value>stderr</value>
+    </data>
+    <data name="Shortcuts_Port_ExitCode" xml:space="preserve">
+        <value>exit code</value>
+    </data>
+    <data name="Shortcuts_Output_CommandExit" xml:space="preserve">
+        <value>Done · exit code {0}</value>
+    </data>
+    <data name="Shortcuts_Error_CommandTimeout" xml:space="preserve">
+        <value>Command did not finish within {0} s and was stopped</value>
+    </data>
+    <data name="Shortcuts_Error_CommandFailed" xml:space="preserve">
+        <value>Command exited with code {0}</value>
+    </data>
+    <data name="Shortcuts_Error_ShellNotFound" xml:space="preserve">
+        <value>PowerShell 7 (pwsh) is not installed; pick Windows PowerShell or CMD</value>
+    </data>
+    <data name="Shortcuts_Action_start" xml:space="preserve">
+        <value>Start</value>
+    </data>
+    <data name="Shortcuts_Action_branch" xml:space="preserve">
+        <value>If / Else</value>
+    </data>
+    <data name="Shortcuts_Action_switch" xml:space="preserve">
+        <value>Switch</value>
+    </data>
+    <data name="Shortcuts_Action_forLoop" xml:space="preserve">
+        <value>Repeat N times</value>
+    </data>
+    <data name="Shortcuts_Action_whileLoop" xml:space="preserve">
+        <value>While</value>
+    </data>
+    <data name="Shortcuts_Action_forEach" xml:space="preserve">
+        <value>For each item</value>
+    </data>
+    <data name="Shortcuts_Action_break" xml:space="preserve">
+        <value>Break loop</value>
+    </data>
+    <data name="Shortcuts_Action_continue" xml:space="preserve">
+        <value>Continue</value>
+    </data>
+    <data name="Shortcuts_Action_end" xml:space="preserve">
+        <value>Stop here</value>
+    </data>
+    <data name="Shortcuts_Action_setVar" xml:space="preserve">
+        <value>Set variable</value>
+    </data>
+    <data name="Shortcuts_Action_note" xml:space="preserve">
+        <value>Note</value>
+    </data>
+    <data name="Shortcuts_Param_value" xml:space="preserve">
+        <value>Value</value>
+    </data>
+    <data name="Shortcuts_Param_cases" xml:space="preserve">
+        <value>Cases (separate with |)</value>
+    </data>
+    <data name="Shortcuts_Param_list" xml:space="preserve">
+        <value>List</value>
+    </data>
+    <data name="Shortcuts_Param_separator" xml:space="preserve">
+        <value>Separator</value>
+    </data>
+    <data name="Shortcuts_Param_varName" xml:space="preserve">
+        <value>Variable name</value>
+    </data>
+    <data name="Shortcuts_Param_maxIterations" xml:space="preserve">
+        <value>Max iterations</value>
+    </data>
+    <data name="Shortcuts_Sep_newline" xml:space="preserve">
+        <value>Line break</value>
+    </data>
+    <data name="Shortcuts_Sep_comma" xml:space="preserve">
+        <value>Comma</value>
+    </data>
+    <data name="Shortcuts_Sep_space" xml:space="preserve">
+        <value>Space</value>
+    </data>
+    <data name="Shortcuts_Port_In" xml:space="preserve">
+        <value>in</value>
+    </data>
+    <data name="Shortcuts_Port_Out" xml:space="preserve">
+        <value>next</value>
+    </data>
+    <data name="Shortcuts_Port_Value" xml:space="preserve">
+        <value>result</value>
+    </data>
+    <data name="Shortcuts_Port_True" xml:space="preserve">
+        <value>yes</value>
+    </data>
+    <data name="Shortcuts_Port_False" xml:space="preserve">
+        <value>no</value>
+    </data>
+    <data name="Shortcuts_Port_Body" xml:space="preserve">
+        <value>body</value>
+    </data>
+    <data name="Shortcuts_Port_Done" xml:space="preserve">
+        <value>done</value>
+    </data>
+    <data name="Shortcuts_Port_Default" xml:space="preserve">
+        <value>default</value>
+    </data>
+    <data name="Shortcuts_Port_Case" xml:space="preserve">
+        <value>case</value>
+    </data>
+    <data name="Shortcuts_Canvas_AutoLayout" xml:space="preserve">
+        <value>Auto layout</value>
+    </data>
+    <data name="Shortcuts_Canvas_Import" xml:space="preserve">
+        <value>Import JSON</value>
+    </data>
+    <data name="Shortcuts_Canvas_Spec" xml:space="preserve">
+        <value>AI prompt spec</value>
+    </data>
+    <data name="Shortcuts_Canvas_ZoomIn" xml:space="preserve">
+        <value>Zoom in</value>
+    </data>
+    <data name="Shortcuts_Canvas_ZoomOut" xml:space="preserve">
+        <value>Zoom out</value>
+    </data>
+    <data name="Shortcuts_Canvas_Fit" xml:space="preserve">
+        <value>Fit to view</value>
+    </data>
+    <data name="Shortcuts_Canvas_Hint" xml:space="preserve">
+        <value>Drag to box-select · middle/space drag to pan · wheel to zoom · Delete removes the selection</value>
+    </data>
+    <data name="Shortcuts_Node_Edit" xml:space="preserve">
+        <value>Rename node</value>
+    </data>
+    <data name="Shortcuts_Import_Title" xml:space="preserve">
+        <value>Import workflow JSON</value>
+    </data>
+    <data name="Shortcuts_Import_Hint" xml:space="preserve">
+        <value>Paste the JSON produced from the AI spec, or load a .json file. Ctrl+Enter imports.</value>
+    </data>
+    <data name="Shortcuts_Import_Placeholder" xml:space="preserve">
+        <value>Paste workflow JSON here…</value>
+    </data>
+    <data name="Shortcuts_Import_FromFile" xml:space="preserve">
+        <value>Load from file</value>
+    </data>
+    <data name="Shortcuts_Import_Confirm" xml:space="preserve">
+        <value>Import</value>
+    </data>
+    <data name="Shortcuts_Import_Empty" xml:space="preserve">
+        <value>Nothing to import: the text is empty.</value>
+    </data>
+    <data name="Shortcuts_Import_BadJson" xml:space="preserve">
+        <value>Invalid JSON: {0}</value>
+    </data>
+    <data name="Shortcuts_Import_NoWorkflow" xml:space="preserve">
+        <value>No workflow found. Expected an object with a "nodes" array.</value>
+    </data>
+    <data name="Shortcuts_Import_NoNodes" xml:space="preserve">
+        <value>The workflow has no nodes.</value>
+    </data>
+    <data name="Shortcuts_Import_BadNode" xml:space="preserve">
+        <value>Node #{0} is not an object.</value>
+    </data>
+    <data name="Shortcuts_Import_NodeNoType" xml:space="preserve">
+        <value>Node #{0} has no "type".</value>
+    </data>
+    <data name="Shortcuts_Import_UnknownType" xml:space="preserve">
+        <value>Unknown node type "{0}".</value>
+    </data>
+    <data name="Shortcuts_Import_DuplicateId" xml:space="preserve">
+        <value>Duplicate node id "{0}".</value>
+    </data>
+    <data name="Shortcuts_Import_BadLink" xml:space="preserve">
+        <value>A link is missing "from" or "to".</value>
+    </data>
+    <data name="Shortcuts_Import_LinkMissingNode" xml:space="preserve">
+        <value>Link {0} points at a node that does not exist.</value>
+    </data>
+    <data name="Shortcuts_Import_BadPort" xml:space="preserve">
+        <value>Invalid output port: {0}</value>
+    </data>
+    <data name="Shortcuts_Import_BadParam" xml:space="preserve">
+        <value>Invalid target parameter: {0}</value>
+    </data>
+    <data name="Shortcuts_Import_AutoChained" xml:space="preserve">
+        <value>No links were given — nodes were chained in document order.</value>
+    </data>
+    <data name="Shortcuts_Import_AutoLayout" xml:space="preserve">
+        <value>No coordinates were given — the layout was arranged automatically.</value>
+    </data>
+    <data name="Shortcuts_Import_AddedStart" xml:space="preserve">
+        <value>No start node — one was added and wired to the first entry.</value>
+    </data>
+    <data name="Shortcuts_Import_MultipleStart" xml:space="preserve">
+        <value>Multiple start nodes — only the first was kept.</value>
+    </data>
+    <data name="Shortcuts_Import_DefaultName" xml:space="preserve">
+        <value>Imported shortcut</value>
+    </data>
+    <data name="Shortcuts_Spec_Copy" xml:space="preserve">
+        <value>Copy AI spec</value>
+    </data>
+    <data name="Shortcuts_Spec_Copied" xml:space="preserve">
+        <value>Copied</value>
+    </data>
+    <data name="Shortcuts_Spec_Title" xml:space="preserve">
+        <value>AI prompt spec</value>
+    </data>
+    <data name="Shortcuts_Spec_Hint" xml:space="preserve">
+        <value>Paste this whole text into any chat model, then describe the shortcut you want; import the JSON it replies with.</value>
+    </data>
+    <data name="Shortcuts_Spec_Preview" xml:space="preserve">
+        <value>Preview spec</value>
+    </data>
+    <data name="Shortcuts_Spec_Hide" xml:space="preserve">
+        <value>Hide spec</value>
+    </data>
+    <data name="Shortcuts_Ai_Title" xml:space="preserve">
+        <value>AI authoring</value>
+    </data>
+    <data name="Shortcuts_Ai_Desc" xml:space="preserve">
+        <value>Copy the spec below into an AI chat with your request, then import the JSON it produces. The spec lists every node type, parameter and port, so the result imports cleanly.</value>
+    </data>
+    <data name="Shortcuts_Ai_Copied" xml:space="preserve">
+        <value>Spec copied to the clipboard.</value>
+    </data>
+    <data name="Shortcuts_Ai_Imported" xml:space="preserve">
+        <value>Imported "{0}" ({1} nodes).</value>
+    </data>
+    <data name="Shortcuts_Error_NoStart" xml:space="preserve">
+        <value>The workflow has no start node.</value>
+    </data>
+    <data name="Shortcuts_Error_TooDeep" xml:space="preserve">
+        <value>The workflow nests too deeply to run.</value>
+    </data>
+    <data name="Shortcuts_Error_Cycle" xml:space="preserve">
+        <value>Detected a loop that never ends. Add a loop node or break the cycle.</value>
+    </data>
+    <data name="Shortcuts_Error_TooManySteps" xml:space="preserve">
+        <value>The run exceeded the step limit and was stopped.</value>
+    </data>
+    <data name="Shortcuts_Action_activateWindow" xml:space="preserve">
+        <value>Activate window</value>
+    </data>
+    <data name="Shortcuts_Action_askInput" xml:space="preserve">
+        <value>Ask for input</value>
+    </data>
+    <data name="Shortcuts_Action_boolean" xml:space="preserve">
+        <value>Boolean</value>
+    </data>
+    <data name="Shortcuts_Action_calculate" xml:space="preserve">
+        <value>Calculate</value>
+    </data>
+    <data name="Shortcuts_Action_collect" xml:space="preserve">
+        <value>Collect</value>
+    </data>
+    <data name="Shortcuts_Action_convertValue" xml:space="preserve">
+        <value>Convert value</value>
+    </data>
+    <data name="Shortcuts_Action_createList" xml:space="preserve">
+        <value>Create list</value>
+    </data>
+    <data name="Shortcuts_Action_dateAdd" xml:space="preserve">
+        <value>Add to date</value>
+    </data>
+    <data name="Shortcuts_Action_dateDiff" xml:space="preserve">
+        <value>Date difference</value>
+    </data>
+    <data name="Shortcuts_Action_findWindow" xml:space="preserve">
+        <value>Find window</value>
+    </data>
+    <data name="Shortcuts_Action_formatDate" xml:space="preserve">
+        <value>Format date</value>
+    </data>
+    <data name="Shortcuts_Action_getProperty" xml:space="preserve">
+        <value>Get field</value>
+    </data>
+    <data name="Shortcuts_Action_getVar" xml:space="preserve">
+        <value>Get variable</value>
+    </data>
+    <data name="Shortcuts_Action_joinText" xml:space="preserve">
+        <value>Join text</value>
+    </data>
+    <data name="Shortcuts_Action_listCount" xml:space="preserve">
+        <value>List length</value>
+    </data>
+    <data name="Shortcuts_Action_listFiles" xml:space="preserve">
+        <value>List files</value>
+    </data>
+    <data name="Shortcuts_Action_listItem" xml:space="preserve">
+        <value>List item</value>
+    </data>
+    <data name="Shortcuts_Action_mergeValue" xml:space="preserve">
+        <value>Merge value</value>
+    </data>
+    <data name="Shortcuts_Action_number" xml:space="preserve">
+        <value>Number</value>
+    </data>
+    <data name="Shortcuts_Action_parseJson" xml:space="preserve">
+        <value>Parse JSON</value>
+    </data>
+    <data name="Shortcuts_Action_pathExists" xml:space="preserve">
+        <value>Path exists</value>
+    </data>
+    <data name="Shortcuts_Action_pathInfo" xml:space="preserve">
+        <value>Path info</value>
+    </data>
+    <data name="Shortcuts_Action_pathJoin" xml:space="preserve">
+        <value>Join path</value>
+    </data>
+    <data name="Shortcuts_Action_readTextFile" xml:space="preserve">
+        <value>Read text file</value>
+    </data>
+    <data name="Shortcuts_Action_return" xml:space="preserve">
+        <value>Return</value>
+    </data>
+    <data name="Shortcuts_Action_selectFile" xml:space="preserve">
+        <value>Select file</value>
+    </data>
+    <data name="Shortcuts_Action_selectFolder" xml:space="preserve">
+        <value>Select folder</value>
+    </data>
+    <data name="Shortcuts_Action_sendKeySequence" xml:space="preserve">
+        <value>Send key sequence</value>
+    </data>
+    <data name="Shortcuts_Action_setMute" xml:space="preserve">
+        <value>Set mute</value>
+    </data>
+    <data name="Shortcuts_Action_showResult" xml:space="preserve">
+        <value>Show result</value>
+    </data>
+    <data name="Shortcuts_Action_splitText" xml:space="preserve">
+        <value>Split text</value>
+    </data>
+    <data name="Shortcuts_Action_text" xml:space="preserve">
+        <value>Text</value>
+    </data>
+    <data name="Shortcuts_Action_toJson" xml:space="preserve">
+        <value>To JSON</value>
+    </data>
+    <data name="Shortcuts_Action_typeText" xml:space="preserve">
+        <value>Type text</value>
+    </data>
+    <data name="Shortcuts_Action_waitForWindow" xml:space="preserve">
+        <value>Wait for window</value>
+    </data>
+    <data name="Shortcuts_Action_writeTextFile" xml:space="preserve">
+        <value>Write text file</value>
+    </data>
+    <data name="Shortcuts_Bool_false" xml:space="preserve">
+        <value>false</value>
+    </data>
+    <data name="Shortcuts_Bool_true" xml:space="preserve">
+        <value>true</value>
+    </data>
+    <data name="Shortcuts_Calc_add" xml:space="preserve">
+        <value>Add</value>
+    </data>
+    <data name="Shortcuts_Calc_divide" xml:space="preserve">
+        <value>Divide</value>
+    </data>
+    <data name="Shortcuts_Calc_modulo" xml:space="preserve">
+        <value>Remainder</value>
+    </data>
+    <data name="Shortcuts_Calc_multiply" xml:space="preserve">
+        <value>Multiply</value>
+    </data>
+    <data name="Shortcuts_Calc_subtract" xml:space="preserve">
+        <value>Subtract</value>
+    </data>
+    <data name="Shortcuts_Cancelled" xml:space="preserve">
+        <value>Cancelled</value>
+    </data>
+    <data name="Shortcuts_Case_exact" xml:space="preserve">
+        <value>Exact case</value>
+    </data>
+    <data name="Shortcuts_Case_ignore" xml:space="preserve">
+        <value>Ignore case</value>
+    </data>
+    <data name="Shortcuts_Cat_Data" xml:space="preserve">
+        <value>Data</value>
+    </data>
+    <data name="Shortcuts_Close" xml:space="preserve">
+        <value>Close</value>
+    </data>
+    <data name="Shortcuts_Dark_cycle" xml:space="preserve">
+        <value>Cycle (dark/light/system)</value>
+    </data>
+    <data name="Shortcuts_Dark_toggle" xml:space="preserve">
+        <value>Toggle (dark/light)</value>
+    </data>
+    <data name="Shortcuts_Desc_activateWindow" xml:space="preserve">
+        <value>Bring a window to the foreground.</value>
+    </data>
+    <data name="Shortcuts_Desc_addReminder" xml:space="preserve">
+        <value>Add a reminder to the Reminders widget.</value>
+    </data>
+    <data name="Shortcuts_Desc_askInput" xml:space="preserve">
+        <value>Ask the user for a value while running.</value>
+    </data>
+    <data name="Shortcuts_Desc_boolean" xml:space="preserve">
+        <value>Output true or false.</value>
+    </data>
+    <data name="Shortcuts_Desc_branch" xml:space="preserve">
+        <value>Run one of two paths based on a comparison.</value>
+    </data>
+    <data name="Shortcuts_Desc_break" xml:space="preserve">
+        <value>Leave the enclosing loop.</value>
+    </data>
+    <data name="Shortcuts_Desc_calculate" xml:space="preserve">
+        <value>Add, subtract, multiply, divide or take a remainder.</value>
+    </data>
+    <data name="Shortcuts_Desc_collect" xml:space="preserve">
+        <value>Append a value to the current loop's collection.</value>
+    </data>
+    <data name="Shortcuts_Desc_continue" xml:space="preserve">
+        <value>Skip the rest of this iteration.</value>
+    </data>
+    <data name="Shortcuts_Desc_convertValue" xml:space="preserve">
+        <value>Convert a value to text, number, boolean, date, list or JSON.</value>
+    </data>
+    <data name="Shortcuts_Desc_createList" xml:space="preserve">
+        <value>Build a list from up to four values.</value>
+    </data>
+    <data name="Shortcuts_Desc_currentDate" xml:space="preserve">
+        <value>Output the current date and time.</value>
+    </data>
+    <data name="Shortcuts_Desc_dateAdd" xml:space="preserve">
+        <value>Shift a date by seconds, minutes, hours or days.</value>
+    </data>
+    <data name="Shortcuts_Desc_dateDiff" xml:space="preserve">
+        <value>Difference between two dates in one unit.</value>
+    </data>
+    <data name="Shortcuts_Desc_emptyRecycleBin" xml:space="preserve">
+        <value>Empty the recycle bin without prompting.</value>
+    </data>
+    <data name="Shortcuts_Desc_end" xml:space="preserve">
+        <value>Stop the whole run here.</value>
+    </data>
+    <data name="Shortcuts_Desc_findWindow" xml:space="preserve">
+        <value>Find a window by title and return a handle.</value>
+    </data>
+    <data name="Shortcuts_Desc_forEach" xml:space="preserve">
+        <value>Run the body once per list item.</value>
+    </data>
+    <data name="Shortcuts_Desc_forLoop" xml:space="preserve">
+        <value>Repeat the body a fixed number of times.</value>
+    </data>
+    <data name="Shortcuts_Desc_formatDate" xml:space="preserve">
+        <value>Format a date with a pattern such as yyyy-MM-dd.</value>
+    </data>
+    <data name="Shortcuts_Desc_getClipboard" xml:space="preserve">
+        <value>Read clipboard text and whether it has any.</value>
+    </data>
+    <data name="Shortcuts_Desc_getProperty" xml:space="preserve">
+        <value>Read a field with a dotted path such as a.b[0].c.</value>
+    </data>
+    <data name="Shortcuts_Desc_getVar" xml:space="preserve">
+        <value>Read a variable written by Set variable.</value>
+    </data>
+    <data name="Shortcuts_Desc_httpRequest" xml:space="preserve">
+        <value>Send an HTTP request and read the response.</value>
+    </data>
+    <data name="Shortcuts_Desc_joinText" xml:space="preserve">
+        <value>Join a list into one text.</value>
+    </data>
+    <data name="Shortcuts_Desc_listCount" xml:space="preserve">
+        <value>Number of items in a list.</value>
+    </data>
+    <data name="Shortcuts_Desc_listFiles" xml:space="preserve">
+        <value>List files in a folder, optionally recursive.</value>
+    </data>
+    <data name="Shortcuts_Desc_listItem" xml:space="preserve">
+        <value>Read one item by zero-based index.</value>
+    </data>
+    <data name="Shortcuts_Desc_lockScreen" xml:space="preserve">
+        <value>Lock the workstation.</value>
+    </data>
+    <data name="Shortcuts_Desc_mediaNext" xml:space="preserve">
+        <value>Skip to the next track.</value>
+    </data>
+    <data name="Shortcuts_Desc_mediaPlayPause" xml:space="preserve">
+        <value>Toggle playback of the active media session.</value>
+    </data>
+    <data name="Shortcuts_Desc_mediaPrevious" xml:space="preserve">
+        <value>Go back to the previous track.</value>
+    </data>
+    <data name="Shortcuts_Desc_mergeValue" xml:space="preserve">
+        <value>Pick the value produced by the branch that ran.</value>
+    </data>
+    <data name="Shortcuts_Desc_minimizeAll" xml:space="preserve">
+        <value>Show the desktop by minimizing every window.</value>
+    </data>
+    <data name="Shortcuts_Desc_muteToggle" xml:space="preserve">
+        <value>Flip mute and report the new state.</value>
+    </data>
+    <data name="Shortcuts_Desc_note" xml:space="preserve">
+        <value>A canvas comment; it never runs.</value>
+    </data>
+    <data name="Shortcuts_Desc_notify" xml:space="preserve">
+        <value>Show a desktop notification.</value>
+    </data>
+    <data name="Shortcuts_Desc_number" xml:space="preserve">
+        <value>Output a fixed number.</value>
+    </data>
+    <data name="Shortcuts_Desc_openApp" xml:space="preserve">
+        <value>Launch an application or shell target.</value>
+    </data>
+    <data name="Shortcuts_Desc_openDataFolder" xml:space="preserve">
+        <value>Open the DeskCanvas data folder.</value>
+    </data>
+    <data name="Shortcuts_Desc_openFile" xml:space="preserve">
+        <value>Open a file with its default handler.</value>
+    </data>
+    <data name="Shortcuts_Desc_openFolder" xml:space="preserve">
+        <value>Open a folder in Explorer.</value>
+    </data>
+    <data name="Shortcuts_Desc_openUrl" xml:space="preserve">
+        <value>Open a URL in the default browser.</value>
+    </data>
+    <data name="Shortcuts_Desc_parseJson" xml:space="preserve">
+        <value>Parse JSON text into an object or list.</value>
+    </data>
+    <data name="Shortcuts_Desc_pathExists" xml:space="preserve">
+        <value>Check whether a file or folder exists.</value>
+    </data>
+    <data name="Shortcuts_Desc_pathInfo" xml:space="preserve">
+        <value>Name, extension and parent folder of a path.</value>
+    </data>
+    <data name="Shortcuts_Desc_pathJoin" xml:space="preserve">
+        <value>Combine a base folder with a relative path.</value>
+    </data>
+    <data name="Shortcuts_Desc_randomNumber" xml:space="preserve">
+        <value>Random integer in an inclusive range.</value>
+    </data>
+    <data name="Shortcuts_Desc_readTextFile" xml:space="preserve">
+        <value>Read a text file with charset detection.</value>
+    </data>
+    <data name="Shortcuts_Desc_return" xml:space="preserve">
+        <value>Return a typed value to the calling shortcut.</value>
+    </data>
+    <data name="Shortcuts_Desc_runShortcut" xml:space="preserve">
+        <value>Run another shortcut and get its return value.</value>
+    </data>
+    <data name="Shortcuts_Desc_screenshot" xml:space="preserve">
+        <value>Capture the screen to a PNG file.</value>
+    </data>
+    <data name="Shortcuts_Desc_selectFile" xml:space="preserve">
+        <value>Pick a file with the system dialog.</value>
+    </data>
+    <data name="Shortcuts_Desc_selectFolder" xml:space="preserve">
+        <value>Pick a folder with the system dialog.</value>
+    </data>
+    <data name="Shortcuts_Desc_sendHotkey" xml:space="preserve">
+        <value>Send one key combination.</value>
+    </data>
+    <data name="Shortcuts_Desc_sendKeySequence" xml:space="preserve">
+        <value>Send several key combinations in order.</value>
+    </data>
+    <data name="Shortcuts_Desc_setClipboard" xml:space="preserve">
+        <value>Write text to the clipboard; empty clears it.</value>
+    </data>
+    <data name="Shortcuts_Desc_setMute" xml:space="preserve">
+        <value>Set mute to an explicit value.</value>
+    </data>
+    <data name="Shortcuts_Desc_setVar" xml:space="preserve">
+        <value>Store a value under a name.</value>
+    </data>
+    <data name="Shortcuts_Desc_setVolume" xml:space="preserve">
+        <value>Set the system volume level.</value>
+    </data>
+    <data name="Shortcuts_Desc_showResult" xml:space="preserve">
+        <value>Show a value in a copyable panel.</value>
+    </data>
+    <data name="Shortcuts_Desc_sleep" xml:space="preserve">
+        <value>Put the machine to sleep.</value>
+    </data>
+    <data name="Shortcuts_Desc_splitText" xml:space="preserve">
+        <value>Split text into a list by a separator.</value>
+    </data>
+    <data name="Shortcuts_Desc_switch" xml:space="preserve">
+        <value>Pick a path by matching a value against cases.</value>
+    </data>
+    <data name="Shortcuts_Desc_text" xml:space="preserve">
+        <value>Output a fixed text value.</value>
+    </data>
+    <data name="Shortcuts_Desc_textTransform" xml:space="preserve">
+        <value>Upper, lower, trim or replace text.</value>
+    </data>
+    <data name="Shortcuts_Desc_themeDarkMode" xml:space="preserve">
+        <value>Switch between light and dark.</value>
+    </data>
+    <data name="Shortcuts_Desc_themeSurface" xml:space="preserve">
+        <value>Change the widget surface material.</value>
+    </data>
+    <data name="Shortcuts_Desc_toJson" xml:space="preserve">
+        <value>Serialize any value to JSON text.</value>
+    </data>
+    <data name="Shortcuts_Desc_typeText" xml:space="preserve">
+        <value>Type literal text into the focused window.</value>
+    </data>
+    <data name="Shortcuts_Desc_wait" xml:space="preserve">
+        <value>Pause the workflow for a number of seconds.</value>
+    </data>
+    <data name="Shortcuts_Desc_waitForWindow" xml:space="preserve">
+        <value>Wait until a window appears.</value>
+    </data>
+    <data name="Shortcuts_Desc_webSearch" xml:space="preserve">
+        <value>Search the web with the chosen engine.</value>
+    </data>
+    <data name="Shortcuts_Desc_whileLoop" xml:space="preserve">
+        <value>Repeat the body while a condition holds.</value>
+    </data>
+    <data name="Shortcuts_Desc_widgetsVisibility" xml:space="preserve">
+        <value>Show or hide the desktop widgets.</value>
+    </data>
+    <data name="Shortcuts_Desc_writeTextFile" xml:space="preserve">
+        <value>Write text; create refuses to overwrite.</value>
+    </data>
+    <data name="Shortcuts_Diag_BadParam" xml:space="preserve">
+        <value>Invalid parameter: {0}</value>
+    </data>
+    <data name="Shortcuts_Diag_BadPort" xml:space="preserve">
+        <value>Invalid port: {0}</value>
+    </data>
+    <data name="Shortcuts_Diag_BodyReachesDone" xml:space="preserve">
+        <value>The loop body flows into the after-loop path ({0}); that step would run twice.</value>
+    </data>
+    <data name="Shortcuts_Diag_BreakOutsideLoop" xml:space="preserve">
+        <value>Break is not inside a loop.</value>
+    </data>
+    <data name="Shortcuts_Diag_ContinueOutsideLoop" xml:space="preserve">
+        <value>Continue is not inside a loop.</value>
+    </data>
+    <data name="Shortcuts_Diag_DataPortAsExec" xml:space="preserve">
+        <value>A data port cannot drive execution ({0}).</value>
+    </data>
+    <data name="Shortcuts_Diag_DuplicateDataLink" xml:space="preserve">
+        <value>Parameter {0} is fed by more than one link.</value>
+    </data>
+    <data name="Shortcuts_Diag_DuplicateId" xml:space="preserve">
+        <value>Duplicate node id: {0}</value>
+    </data>
+    <data name="Shortcuts_Diag_EmptyId" xml:space="preserve">
+        <value>A node has no id.</value>
+    </data>
+    <data name="Shortcuts_Diag_EmptyLoopBody" xml:space="preserve">
+        <value>The loop body is empty.</value>
+    </data>
+    <data name="Shortcuts_Diag_ExecFanOut" xml:space="preserve">
+        <value>Port {0} has more than one outgoing execution link.</value>
+    </data>
+    <data name="Shortcuts_Diag_ExecIntoParam" xml:space="preserve">
+        <value>An execution link must land on the input dot, not on parameter {0}.</value>
+    </data>
+    <data name="Shortcuts_Diag_ExecPortAsData" xml:space="preserve">
+        <value>An execution port cannot carry data ({0}).</value>
+    </data>
+    <data name="Shortcuts_Diag_LinkMissingNode" xml:space="preserve">
+        <value>Link points at a missing node: {0}</value>
+    </data>
+    <data name="Shortcuts_Diag_MultipleStart" xml:space="preserve">
+        <value>Only one start node is allowed.</value>
+    </data>
+    <data name="Shortcuts_Diag_NoExecInput" xml:space="preserve">
+        <value>{0} cannot be connected as a next step.</value>
+    </data>
+    <data name="Shortcuts_Diag_NotBindable" xml:space="preserve">
+        <value>Parameter {0} cannot be fed by a link.</value>
+    </data>
+    <data name="Shortcuts_Diag_NotConnected" xml:space="preserve">
+        <value>This node is not connected to the execution flow.</value>
+    </data>
+    <data name="Shortcuts_Diag_NumberInvalid" xml:space="preserve">
+        <value>{0} is not a valid number.</value>
+    </data>
+    <data name="Shortcuts_Diag_NumberOutOfRange" xml:space="preserve">
+        <value>{0} is out of range.</value>
+    </data>
+    <data name="Shortcuts_Diag_RequiredEmpty" xml:space="preserve">
+        <value>{0} is required and cannot be empty.</value>
+    </data>
+    <data name="Shortcuts_Diag_RequiredMissing" xml:space="preserve">
+        <value>{0} is required.</value>
+    </data>
+    <data name="Shortcuts_Diag_SelfLink" xml:space="preserve">
+        <value>A node cannot connect to itself.</value>
+    </data>
+    <data name="Shortcuts_Diag_SourceNotExecuted" xml:space="preserve">
+        <value>The referenced node never runs: {0}</value>
+    </data>
+    <data name="Shortcuts_Diag_SourceNotGuaranteed" xml:space="preserve">
+        <value>The referenced node is not guaranteed to run before this step: {0}</value>
+    </data>
+    <data name="Shortcuts_Diag_TypeMismatch" xml:space="preserve">
+        <value>Type mismatch: {0}</value>
+    </data>
+    <data name="Shortcuts_Diag_UnknownSource" xml:space="preserve">
+        <value>Reference to an unknown source: {0}</value>
+    </data>
+    <data name="Shortcuts_Diag_UnknownType" xml:space="preserve">
+        <value>Unknown action type: {0}</value>
+    </data>
+    <data name="Shortcuts_Encoding_auto" xml:space="preserve">
+        <value>Auto</value>
+    </data>
+    <data name="Shortcuts_Encoding_gbk" xml:space="preserve">
+        <value>GBK</value>
+    </data>
+    <data name="Shortcuts_Encoding_utf8" xml:space="preserve">
+        <value>UTF-8</value>
+    </data>
+    <data name="Shortcuts_Error_Arguments" xml:space="preserve">
+        <value>Arguments must be a JSON object.</value>
+    </data>
+    <data name="Shortcuts_Error_ChildBusy" xml:space="preserve">
+        <value>{0} is already running.</value>
+    </data>
+    <data name="Shortcuts_Error_ChildCancelled" xml:space="preserve">
+        <value>{0} was cancelled.</value>
+    </data>
+    <data name="Shortcuts_Error_ChildFailed" xml:space="preserve">
+        <value>{0} failed: {1}</value>
+    </data>
+    <data name="Shortcuts_Error_CollectOutsideLoop" xml:space="preserve">
+        <value>Collect can only be used inside a loop body.</value>
+    </data>
+    <data name="Shortcuts_Error_CompareNotNumber" xml:space="preserve">
+        <value>An ordering comparison needs numbers on both sides.</value>
+    </data>
+    <data name="Shortcuts_Error_ConfirmUnavailable" xml:space="preserve">
+        <value>No window is available to confirm the run.</value>
+    </data>
+    <data name="Shortcuts_Error_Convert" xml:space="preserve">
+        <value>Cannot convert {0} to {1}.</value>
+    </data>
+    <data name="Shortcuts_Error_DivideByZero" xml:space="preserve">
+        <value>Cannot divide by zero.</value>
+    </data>
+    <data name="Shortcuts_Error_FieldMissing" xml:space="preserve">
+        <value>Field not found: {0}</value>
+    </data>
+    <data name="Shortcuts_Error_FileExists" xml:space="preserve">
+        <value>{0} already exists; choose overwrite or append.</value>
+    </data>
+    <data name="Shortcuts_Error_FileTooLarge" xml:space="preserve">
+        <value>The file is too large ({0} KB).</value>
+    </data>
+    <data name="Shortcuts_Error_FileTooLargeOut" xml:space="preserve">
+        <value>The text is too large to write.</value>
+    </data>
+    <data name="Shortcuts_Error_HttpFailed" xml:space="preserve">
+        <value>Request failed: {0}</value>
+    </data>
+    <data name="Shortcuts_Error_IndexRange" xml:space="preserve">
+        <value>Index {0} is outside the list (0–{1}).</value>
+    </data>
+    <data name="Shortcuts_Error_InputCancelled" xml:space="preserve">
+        <value>Input was cancelled.</value>
+    </data>
+    <data name="Shortcuts_Error_InputMissing" xml:space="preserve">
+        <value>Input is required: {0}</value>
+    </data>
+    <data name="Shortcuts_Error_InvalidGraph" xml:space="preserve">
+        <value>The workflow has errors and cannot run.</value>
+    </data>
+    <data name="Shortcuts_Error_InvalidHotkey" xml:space="preserve">
+        <value>Invalid key combination: {0}</value>
+    </data>
+    <data name="Shortcuts_Error_InvalidJson" xml:space="preserve">
+        <value>Invalid JSON: {0}</value>
+    </data>
+    <data name="Shortcuts_Error_InvalidWindow" xml:space="preserve">
+        <value>Not a window handle: {0}</value>
+    </data>
+    <data name="Shortcuts_Error_IterationLimit" xml:space="preserve">
+        <value>The loop still matched after {0} iterations.</value>
+    </data>
+    <data name="Shortcuts_Error_MergeConflict" xml:space="preserve">
+        <value>More than one branch produced a value to merge.</value>
+    </data>
+    <data name="Shortcuts_Error_MergeEmpty" xml:space="preserve">
+        <value>No branch produced a value to merge.</value>
+    </data>
+    <data name="Shortcuts_Error_MissingParam" xml:space="preserve">
+        <value>{0} is required ({1}).</value>
+    </data>
+    <data name="Shortcuts_Error_NoLastResult" xml:space="preserve">
+        <value>There is no previous data result yet.</value>
+    </data>
+    <data name="Shortcuts_Error_NoMedia" xml:space="preserve">
+        <value>No active media session.</value>
+    </data>
+    <data name="Shortcuts_Error_NotAbsolute" xml:space="preserve">
+        <value>Path must be absolute: {0}</value>
+    </data>
+    <data name="Shortcuts_Error_NotBoolean" xml:space="preserve">
+        <value>{0} is not a boolean: {1}</value>
+    </data>
+    <data name="Shortcuts_Error_NotDate" xml:space="preserve">
+        <value>{0} is not a date: {1}</value>
+    </data>
+    <data name="Shortcuts_Error_NotNumber" xml:space="preserve">
+        <value>{0} is not a number: {1}</value>
+    </data>
+    <data name="Shortcuts_Error_NumberOverflow" xml:space="preserve">
+        <value>The result is not a finite number.</value>
+    </data>
+    <data name="Shortcuts_Error_RangeInvalid" xml:space="preserve">
+        <value>Minimum {0} is greater than maximum {1}.</value>
+    </data>
+    <data name="Shortcuts_Error_Recording" xml:space="preserve">
+        <value>Cannot send keys while recording a hotkey.</value>
+    </data>
+    <data name="Shortcuts_Error_ReminderFile" xml:space="preserve">
+        <value>The reminder file cannot be read.</value>
+    </data>
+    <data name="Shortcuts_Error_ReservedName" xml:space="preserve">
+        <value>{0} is a reserved loop name and cannot be assigned.</value>
+    </data>
+    <data name="Shortcuts_Error_SelectionCancelled" xml:space="preserve">
+        <value>Selection was cancelled.</value>
+    </data>
+    <data name="Shortcuts_Error_SourceNotRun" xml:space="preserve">
+        <value>The referenced source has not run: {0}</value>
+    </data>
+    <data name="Shortcuts_Error_TargetMissing" xml:space="preserve">
+        <value>Shortcut not found: {0}</value>
+    </data>
+    <data name="Shortcuts_Error_UnknownOperator" xml:space="preserve">
+        <value>Unknown operator: {0}</value>
+    </data>
+    <data name="Shortcuts_Error_VariableMissing" xml:space="preserve">
+        <value>Variable not set: {0}</value>
+    </data>
+    <data name="Shortcuts_Error_WindowNotFound" xml:space="preserve">
+        <value>No window matched "{0}".</value>
+    </data>
+    <data name="Shortcuts_Error_WindowTimeout" xml:space="preserve">
+        <value>Window "{0}" did not appear within {1} s.</value>
+    </data>
+    <data name="Shortcuts_Help_arguments" xml:space="preserve">
+        <value>JSON object of input field → value.</value>
+    </data>
+    <data name="Shortcuts_Help_due" xml:space="preserve">
+        <value>Empty means no due time.</value>
+    </data>
+    <data name="Shortcuts_Help_fieldPath" xml:space="preserve">
+        <value>Dot and bracket path, e.g. data.items[0].name.</value>
+    </data>
+    <data name="Shortcuts_Help_forEachSeparator" xml:space="preserve">
+        <value>Only used when the input is plain text.</value>
+    </data>
+    <data name="Shortcuts_Help_forEachVar" xml:space="preserve">
+        <value>Item name available inside the body.</value>
+    </data>
+    <data name="Shortcuts_Help_formatDate" xml:space="preserve">
+        <value>Empty means now.</value>
+    </data>
+    <data name="Shortcuts_Help_httpHeaders" xml:space="preserve">
+        <value>One Key: Value per line.</value>
+    </data>
+    <data name="Shortcuts_Help_httpQuery" xml:space="preserve">
+        <value>k=v&amp;k2=v2</value>
+    </data>
+    <data name="Shortcuts_Help_listItem" xml:space="preserve">
+        <value>Zero-based.</value>
+    </data>
+    <data name="Shortcuts_Help_randomNumber" xml:space="preserve">
+        <value>Inclusive on both ends.</value>
+    </data>
+    <data name="Shortcuts_Help_screenshotDir" xml:space="preserve">
+        <value>Empty uses Pictures\Screenshots.</value>
+    </data>
+    <data name="Shortcuts_Help_sendKeySequence" xml:space="preserve">
+        <value>Separate combinations with commas, e.g. Ctrl+A, Del.</value>
+    </data>
+    <data name="Shortcuts_Help_setClipboard" xml:space="preserve">
+        <value>An empty value clears the clipboard.</value>
+    </data>
+    <data name="Shortcuts_Help_setVarName" xml:space="preserve">
+        <value>Read it with Get variable or {{name}}.</value>
+    </data>
+    <data name="Shortcuts_Help_setVolume" xml:space="preserve">
+        <value>0–100. Leaves the mute state alone.</value>
+    </data>
+    <data name="Shortcuts_Help_themeDarkMode" xml:space="preserve">
+        <value>Toggle is two-state; cycle also reaches system.</value>
+    </data>
+    <data name="Shortcuts_Help_typeText" xml:space="preserve">
+        <value>Sent to the window that currently has focus.</value>
+    </data>
+    <data name="Shortcuts_Help_wait" xml:space="preserve">
+        <value>Decimal seconds, up to 600.</value>
+    </data>
+    <data name="Shortcuts_Help_writeMode" xml:space="preserve">
+        <value>Create refuses to overwrite an existing file.</value>
+    </data>
+    <data name="Shortcuts_Http_DELETE" xml:space="preserve">
+        <value>DELETE</value>
+    </data>
+    <data name="Shortcuts_Http_PATCH" xml:space="preserve">
+        <value>PATCH</value>
+    </data>
+    <data name="Shortcuts_Http_PUT" xml:space="preserve">
+        <value>PUT</value>
+    </data>
+    <data name="Shortcuts_KeepEmpty_off" xml:space="preserve">
+        <value>Drop</value>
+    </data>
+    <data name="Shortcuts_KeepEmpty_on" xml:space="preserve">
+        <value>Keep</value>
+    </data>
+    <data name="Shortcuts_Match_contains" xml:space="preserve">
+        <value>Contains</value>
+    </data>
+    <data name="Shortcuts_Match_equals" xml:space="preserve">
+        <value>Equals</value>
+    </data>
+    <data name="Shortcuts_Match_startsWith" xml:space="preserve">
+        <value>Starts with</value>
+    </data>
+    <data name="Shortcuts_Mute_off" xml:space="preserve">
+        <value>Unmute</value>
+    </data>
+    <data name="Shortcuts_Mute_on" xml:space="preserve">
+        <value>Mute</value>
+    </data>
+    <data name="Shortcuts_Op_greaterOrEqual" xml:space="preserve">
+        <value>≥</value>
+    </data>
+    <data name="Shortcuts_Op_isFalse" xml:space="preserve">
+        <value>is false</value>
+    </data>
+    <data name="Shortcuts_Op_isTrue" xml:space="preserve">
+        <value>is true</value>
+    </data>
+    <data name="Shortcuts_Op_lessOrEqual" xml:space="preserve">
+        <value>≤</value>
+    </data>
+    <data name="Shortcuts_Output_Activated" xml:space="preserve">
+        <value>Window activated</value>
+    </data>
+    <data name="Shortcuts_Output_ChildRan" xml:space="preserve">
+        <value>{0} finished</value>
+    </data>
+    <data name="Shortcuts_Output_ClipEmpty" xml:space="preserve">
+        <value>Clipboard is empty</value>
+    </data>
+    <data name="Shortcuts_Output_Collected" xml:space="preserve">
+        <value>Collected {0} items</value>
+    </data>
+    <data name="Shortcuts_Output_Exists" xml:space="preserve">
+        <value>Path exists</value>
+    </data>
+    <data name="Shortcuts_Output_FileRead" xml:space="preserve">
+        <value>Read {0} characters</value>
+    </data>
+    <data name="Shortcuts_Output_FileWritten" xml:space="preserve">
+        <value>Written to {0}</value>
+    </data>
+    <data name="Shortcuts_Output_Hotkey" xml:space="preserve">
+        <value>Sent {0}</value>
+    </data>
+    <data name="Shortcuts_Output_Http" xml:space="preserve">
+        <value>HTTP {0}, {1} characters</value>
+    </data>
+    <data name="Shortcuts_Output_HttpTruncated" xml:space="preserve">
+        <value>HTTP {0}, truncated to {1} characters</value>
+    </data>
+    <data name="Shortcuts_Output_KeySequence" xml:space="preserve">
+        <value>Sent {0} key combinations</value>
+    </data>
+    <data name="Shortcuts_Output_Launched" xml:space="preserve">
+        <value>Launch request submitted: {0}</value>
+    </data>
+    <data name="Shortcuts_Output_ListCount" xml:space="preserve">
+        <value>{0} items</value>
+    </data>
+    <data name="Shortcuts_Output_Media" xml:space="preserve">
+        <value>Media command sent</value>
+    </data>
+    <data name="Shortcuts_Output_Missing" xml:space="preserve">
+        <value>Path does not exist</value>
+    </data>
+    <data name="Shortcuts_Output_RecycleBin" xml:space="preserve">
+        <value>Recycle bin emptied</value>
+    </data>
+    <data name="Shortcuts_Output_Sleep" xml:space="preserve">
+        <value>Suspending</value>
+    </data>
+    <data name="Shortcuts_Output_Typed" xml:space="preserve">
+        <value>Typed {0} characters</value>
+    </data>
+    <data name="Shortcuts_Output_Waited" xml:space="preserve">
+        <value>Waited {0} s</value>
+    </data>
+    <data name="Shortcuts_Output_Window" xml:space="preserve">
+        <value>Window: {0}</value>
+    </data>
+    <data name="Shortcuts_Param_a" xml:space="preserve">
+        <value>First value</value>
+    </data>
+    <data name="Shortcuts_Param_amount" xml:space="preserve">
+        <value>Amount</value>
+    </data>
+    <data name="Shortcuts_Param_arguments" xml:space="preserve">
+        <value>Arguments (JSON)</value>
+    </data>
+    <data name="Shortcuts_Param_b" xml:space="preserve">
+        <value>Second value</value>
+    </data>
+    <data name="Shortcuts_Param_basePath" xml:space="preserve">
+        <value>Base folder</value>
+    </data>
+    <data name="Shortcuts_Param_calcOp" xml:space="preserve">
+        <value>Operation</value>
+    </data>
+    <data name="Shortcuts_Param_childPath" xml:space="preserve">
+        <value>Child path</value>
+    </data>
+    <data name="Shortcuts_Param_contentType" xml:space="preserve">
+        <value>Content type</value>
+    </data>
+    <data name="Shortcuts_Param_date" xml:space="preserve">
+        <value>Date</value>
+    </data>
+    <data name="Shortcuts_Param_dateUnit" xml:space="preserve">
+        <value>Unit</value>
+    </data>
+    <data name="Shortcuts_Param_defaultValue" xml:space="preserve">
+        <value>Default value</value>
+    </data>
+    <data name="Shortcuts_Param_directory" xml:space="preserve">
+        <value>Folder</value>
+    </data>
+    <data name="Shortcuts_Param_due" xml:space="preserve">
+        <value>Due</value>
+    </data>
+    <data name="Shortcuts_Param_encoding" xml:space="preserve">
+        <value>Encoding</value>
+    </data>
+    <data name="Shortcuts_Param_fieldPath" xml:space="preserve">
+        <value>Field path</value>
+    </data>
+    <data name="Shortcuts_Param_filter" xml:space="preserve">
+        <value>Filter</value>
+    </data>
+    <data name="Shortcuts_Param_from" xml:space="preserve">
+        <value>From</value>
+    </data>
+    <data name="Shortcuts_Param_headers" xml:space="preserve">
+        <value>Headers</value>
+    </data>
+    <data name="Shortcuts_Param_ignoreCase" xml:space="preserve">
+        <value>Case</value>
+    </data>
+    <data name="Shortcuts_Param_index" xml:space="preserve">
+        <value>Index</value>
+    </data>
+    <data name="Shortcuts_Param_inputType" xml:space="preserve">
+        <value>Input type</value>
+    </data>
+    <data name="Shortcuts_Param_item1" xml:space="preserve">
+        <value>Value 1</value>
+    </data>
+    <data name="Shortcuts_Param_item2" xml:space="preserve">
+        <value>Value 2</value>
+    </data>
+    <data name="Shortcuts_Param_item3" xml:space="preserve">
+        <value>Value 3</value>
+    </data>
+    <data name="Shortcuts_Param_item4" xml:space="preserve">
+        <value>Value 4</value>
+    </data>
+    <data name="Shortcuts_Param_keepEmpty" xml:space="preserve">
+        <value>Empty items</value>
+    </data>
+    <data name="Shortcuts_Param_match" xml:space="preserve">
+        <value>Match</value>
+    </data>
+    <data name="Shortcuts_Param_muted" xml:space="preserve">
+        <value>Muted</value>
+    </data>
+    <data name="Shortcuts_Param_notes" xml:space="preserve">
+        <value>Notes</value>
+    </data>
+    <data name="Shortcuts_Param_object" xml:space="preserve">
+        <value>Object</value>
+    </data>
+    <data name="Shortcuts_Param_prompt" xml:space="preserve">
+        <value>Prompt</value>
+    </data>
+    <data name="Shortcuts_Param_recursive" xml:space="preserve">
+        <value>Recursive</value>
+    </data>
+    <data name="Shortcuts_Param_scope" xml:space="preserve">
+        <value>Scope</value>
+    </data>
+    <data name="Shortcuts_Param_separatorText" xml:space="preserve">
+        <value>Custom separator</value>
+    </data>
+    <data name="Shortcuts_Param_targetType" xml:space="preserve">
+        <value>Target type</value>
+    </data>
+    <data name="Shortcuts_Param_to" xml:space="preserve">
+        <value>To</value>
+    </data>
+    <data name="Shortcuts_Param_trim" xml:space="preserve">
+        <value>Trim items</value>
+    </data>
+    <data name="Shortcuts_Param_window" xml:space="preserve">
+        <value>Window handle</value>
+    </data>
+    <data name="Shortcuts_Param_windowTitle" xml:space="preserve">
+        <value>Window title</value>
+    </data>
+    <data name="Shortcuts_Param_writeMode" xml:space="preserve">
+        <value>Write mode</value>
+    </data>
+    <data name="Shortcuts_Port_Amount" xml:space="preserve">
+        <value>amount</value>
+    </data>
+    <data name="Shortcuts_Port_Collected" xml:space="preserve">
+        <value>collected</value>
+    </data>
+    <data name="Shortcuts_Port_Count" xml:space="preserve">
+        <value>count</value>
+    </data>
+    <data name="Shortcuts_Port_Dark" xml:space="preserve">
+        <value>dark</value>
+    </data>
+    <data name="Shortcuts_Port_Date" xml:space="preserve">
+        <value>date</value>
+    </data>
+    <data name="Shortcuts_Port_Due" xml:space="preserve">
+        <value>due</value>
+    </data>
+    <data name="Shortcuts_Port_Error" xml:space="preserve">
+        <value>error</value>
+    </data>
+    <data name="Shortcuts_Port_Exists" xml:space="preserve">
+        <value>exists</value>
+    </data>
+    <data name="Shortcuts_Port_Extension" xml:space="preserve">
+        <value>extension</value>
+    </data>
+    <data name="Shortcuts_Port_HasText" xml:space="preserve">
+        <value>hasText</value>
+    </data>
+    <data name="Shortcuts_Port_Headers" xml:space="preserve">
+        <value>headers</value>
+    </data>
+    <data name="Shortcuts_Port_Input" xml:space="preserve">
+        <value>input</value>
+    </data>
+    <data name="Shortcuts_Port_Level" xml:space="preserve">
+        <value>level</value>
+    </data>
+    <data name="Shortcuts_Port_List" xml:space="preserve">
+        <value>list</value>
+    </data>
+    <data name="Shortcuts_Port_Muted" xml:space="preserve">
+        <value>muted</value>
+    </data>
+    <data name="Shortcuts_Port_Name" xml:space="preserve">
+        <value>name</value>
+    </data>
+    <data name="Shortcuts_Port_Number" xml:space="preserve">
+        <value>number</value>
+    </data>
+    <data name="Shortcuts_Port_Parent" xml:space="preserve">
+        <value>parent</value>
+    </data>
+    <data name="Shortcuts_Port_Path" xml:space="preserve">
+        <value>path</value>
+    </data>
+    <data name="Shortcuts_Port_Result" xml:space="preserve">
+        <value>result</value>
+    </data>
+    <data name="Shortcuts_Port_StatusCode" xml:space="preserve">
+        <value>status</value>
+    </data>
+    <data name="Shortcuts_Port_Surface" xml:space="preserve">
+        <value>surface</value>
+    </data>
+    <data name="Shortcuts_Port_Text" xml:space="preserve">
+        <value>text</value>
+    </data>
+    <data name="Shortcuts_Port_Truncated" xml:space="preserve">
+        <value>truncated</value>
+    </data>
+    <data name="Shortcuts_Port_Url" xml:space="preserve">
+        <value>url</value>
+    </data>
+    <data name="Shortcuts_Port_Visible" xml:space="preserve">
+        <value>visible</value>
+    </data>
+    <data name="Shortcuts_Port_Window" xml:space="preserve">
+        <value>window</value>
+    </data>
+    <data name="Shortcuts_Recursive_off" xml:space="preserve">
+        <value>No</value>
+    </data>
+    <data name="Shortcuts_Recursive_on" xml:space="preserve">
+        <value>Yes</value>
+    </data>
+    <data name="Shortcuts_Scope_primary" xml:space="preserve">
+        <value>Primary screen</value>
+    </data>
+    <data name="Shortcuts_Scope_virtual" xml:space="preserve">
+        <value>All screens</value>
+    </data>
+    <data name="Shortcuts_Sep_custom" xml:space="preserve">
+        <value>Custom</value>
+    </data>
+    <data name="Shortcuts_Trim_off" xml:space="preserve">
+        <value>Keep</value>
+    </data>
+    <data name="Shortcuts_Trim_on" xml:space="preserve">
+        <value>Trim</value>
+    </data>
+    <data name="Shortcuts_Type_any" xml:space="preserve">
+        <value>any</value>
+    </data>
+    <data name="Shortcuts_Type_boolean" xml:space="preserve">
+        <value>boolean</value>
+    </data>
+    <data name="Shortcuts_Type_datetime" xml:space="preserve">
+        <value>date</value>
+    </data>
+    <data name="Shortcuts_Type_json" xml:space="preserve">
+        <value>JSON</value>
+    </data>
+    <data name="Shortcuts_Type_list" xml:space="preserve">
+        <value>list</value>
+    </data>
+    <data name="Shortcuts_Type_null" xml:space="preserve">
+        <value>null</value>
+    </data>
+    <data name="Shortcuts_Type_number" xml:space="preserve">
+        <value>number</value>
+    </data>
+    <data name="Shortcuts_Type_path" xml:space="preserve">
+        <value>path</value>
+    </data>
+    <data name="Shortcuts_Type_text" xml:space="preserve">
+        <value>text</value>
+    </data>
+    <data name="Shortcuts_Unit_Days" xml:space="preserve">
+        <value>days</value>
+    </data>
+    <data name="Shortcuts_Unit_Hours" xml:space="preserve">
+        <value>hours</value>
+    </data>
+    <data name="Shortcuts_Unit_Minutes" xml:space="preserve">
+        <value>minutes</value>
+    </data>
+    <data name="Shortcuts_Unit_Seconds" xml:space="preserve">
+        <value>seconds</value>
+    </data>
+    <data name="Shortcuts_Write_append" xml:space="preserve">
+        <value>Append</value>
+    </data>
+    <data name="Shortcuts_Write_create" xml:space="preserve">
+        <value>Create (no overwrite)</value>
+    </data>
+    <data name="Shortcuts_Write_overwrite" xml:space="preserve">
+        <value>Overwrite</value>
+    </data>
+    <data name="Shortcuts_Import_BadKind" xml:space="preserve">
+        <value>Unknown link kind: {0}</value>
+    </data>
+    <data name="Shortcuts_Import_BadOnError" xml:space="preserve">
+        <value>Unknown error policy: {0}</value>
+    </data>
+    <data name="Shortcuts_Import_RepairPort" xml:space="preserve">
+        <value>Data link re-pointed from the removed `value` port to `{0}`.</value>
+    </data>
+    <data name="Shortcuts_Migrate_Case" xml:space="preserve">
+        <value>Switch cases were rebuilt from the old `|` separated list.</value>
+    </data>
+    <data name="Shortcuts_Migrate_DateFormat" xml:space="preserve">
+        <value>The date format moved from `currentDate` to a separate `formatDate` node.</value>
+    </data>
+    <data name="Shortcuts_Migrate_LastResult" xml:space="preserve">
+        <value>A `@last` reference could not be resolved to a specific source; it now means "the most recent data result".</value>
+    </data>
+    <data name="Shortcuts_Migrate_LinkKind" xml:space="preserve">
+        <value>A link had an unknown kind and was kept as an execution link.</value>
+    </data>
+    <data name="Shortcuts_Migrate_LinkPort" xml:space="preserve">
+        <value>A link used a port that no longer exists ({0}); it was kept and marked for review.</value>
+    </data>
+    <data name="Shortcuts_Migrate_Mute" xml:space="preserve">
+        <value>The old mute action also changed the volume; it is now an explicit `setMute` step.</value>
+    </data>
+    <data name="Shortcuts_Migrate_NewerVersion" xml:space="preserve">
+        <value>This file was written by a newer version of DeskCanvas. It is opened read-only and will not be overwritten.</value>
+    </data>
+    <data name="Shortcuts_Migrate_RemovedOutput" xml:space="preserve">
+        <value>An action no longer produces this output; the step now reports a typed value instead.</value>
+    </data>
+    <data name="Shortcuts_Migrate_SendKeys" xml:space="preserve">
+        <value>The combined `sendKeys` action was split into `typeText` and `sendKeySequence`.</value>
+    </data>
+    <data name="Shortcuts_Migrate_SetVarOutput" xml:space="preserve">
+        <value>`setVar` now exposes its stored value as a real output port.</value>
+    </data>
+    <data name="Shortcuts_Template_Input" xml:space="preserve">
+        <value>Ask and return</value>
+    </data>
+    <data name="Shortcuts_Library_LoopHeader" xml:space="preserve">
+        <value>How loops are wired</value>
+    </data>
+    <data name="Shortcuts_Library_LoopHint" xml:space="preserve">
+        <value>The body goes out of `body`; the step after the loop goes out of `done`. The body does not need a line back — it repeats on its own, and an unconnected tail simply ends the iteration. Use Collect to gather values across iterations.</value>
+    </data>
+    <data name="Shortcuts_Library_NoInput" xml:space="preserve">
+        <value>no input</value>
+    </data>
+    <data name="Shortcuts_Library_NoOutput" xml:space="preserve">
+        <value>no data output</value>
+    </data>
+    <data name="Shortcuts_Node_AddCase" xml:space="preserve">
+        <value>Add case</value>
+    </data>
+    <data name="Shortcuts_Node_EditCases" xml:space="preserve">
+        <value>Edit cases</value>
+    </data>
+    <data name="Shortcuts_Node_ErrorPolicy" xml:space="preserve">
+        <value>Continue through the error exit</value>
+    </data>
+    <data name="Shortcuts_Param_BoundFrom" xml:space="preserve">
+        <value>This value comes from {0}.</value>
+    </data>
+    <data name="Shortcuts_Param_Detach" xml:space="preserve">
+        <value>Disconnect and edit manually</value>
+    </data>
+    <data name="Shortcuts_Param_EditManual" xml:space="preserve">
+        <value>Edit value…</value>
+    </data>
+    <data name="Shortcuts_Param_Incompatible" xml:space="preserve">
+        <value>{0} (no compatible output)</value>
+    </data>
+    <data name="Shortcuts_Param_JumpToSource" xml:space="preserve">
+        <value>Go to source</value>
+    </data>
+    <data name="Shortcuts_Param_ListHint" xml:space="preserve">
+        <value>One item per line.</value>
+    </data>
+    <data name="Shortcuts_Param_NoShortcuts" xml:space="preserve">
+        <value>Create another shortcut first.</value>
+    </data>
+    <data name="Shortcuts_RunDetails_Cancelled" xml:space="preserve">
+        <value>Cancelled</value>
+    </data>
+    <data name="Shortcuts_RunDetails_Empty" xml:space="preserve">
+        <value>Run the shortcut to see what each step received and produced.</value>
+    </data>
+    <data name="Shortcuts_RunDetails_Failed" xml:space="preserve">
+        <value>Failed</value>
+    </data>
+    <data name="Shortcuts_RunDetails_Iteration" xml:space="preserve">
+        <value>iteration {0}</value>
+    </data>
+    <data name="Shortcuts_RunDetails_RunId" xml:space="preserve">
+        <value>Run id</value>
+    </data>
+    <data name="Shortcuts_RunDetails_Running" xml:space="preserve">
+        <value>Running</value>
+    </data>
+    <data name="Shortcuts_RunDetails_Success" xml:space="preserve">
+        <value>Succeeded</value>
+    </data>
+    <data name="Shortcuts_RunDetails_Title" xml:space="preserve">
+        <value>Run details</value>
+    </data>
+    <data name="Shortcuts_Tip_Bound" xml:space="preserve">
+        <value>{0} is fed by {1}.</value>
+    </data>
+    <data name="Shortcuts_Canvas_Export" xml:space="preserve">
+        <value>Export JSON file</value>
+    </data>
+    <data name="Shortcuts_Canvas_Exported" xml:space="preserve">
+        <value>Workflow exported.</value>
+    </data>
+    <data name="Shortcuts_Canvas_ExportFailed" xml:space="preserve">
+        <value>Export failed:</value>
+    </data>
+    <data name="Shortcuts_Canvas_DeleteLink" xml:space="preserve">
+        <value>Delete link</value>
+    </data>
+    <data name="Shortcuts_Canvas_SelectAll" xml:space="preserve">
+        <value>Select all</value>
+    </data>
+    <data name="Shortcuts_Canvas_DeletedOne" xml:space="preserve">
+        <value>Deleted.</value>
+    </data>
+    <data name="Shortcuts_Canvas_DeletedCount" xml:space="preserve">
+        <value>Deleted {0} nodes.</value>
+    </data>
+    <data name="Shortcuts_Diagnostics_HeaderErrors" xml:space="preserve">
+        <value>{0} errors · {1} warnings</value>
+    </data>
+    <data name="Shortcuts_Diagnostics_HeaderWarnings" xml:space="preserve">
+        <value>{0} warnings</value>
+    </data>
+    <data name="Shortcuts_Import_Relayout" xml:space="preserve">
+        <value>Re-layout (ignore original coordinates)</value>
+    </data>
+    <data name="Shortcuts_AiPanel_Title" xml:space="preserve">
+        <value>AI Assistant</value>
+    </data>
+    <data name="Shortcuts_Ai_Settings" xml:space="preserve">
+        <value>API Settings</value>
+    </data>
+    <data name="Shortcuts_Ai_BaseUrl" xml:space="preserve">
+        <value>API base URL (OpenAI-compatible)</value>
+    </data>
+    <data name="Shortcuts_Ai_ApiKey" xml:space="preserve">
+        <value>API Key</value>
+    </data>
+    <data name="Shortcuts_Ai_Model" xml:space="preserve">
+        <value>Model</value>
+    </data>
+    <data name="Shortcuts_Ai_SettingsHint" xml:space="preserve">
+        <value>The key is stored locally in shortcuts-ai.json. Any OpenAI-compatible endpoint (OpenAI, DeepSeek, Qwen, local gateways…) works.</value>
+    </data>
+    <data name="Shortcuts_Ai_PromptLabel" xml:space="preserve">
+        <value>Describe the workflow you want</value>
+    </data>
+    <data name="Shortcuts_Ai_PromptWatermark" xml:space="preserve">
+        <value>e.g. Read the clipboard, extract every e-mail address, and save them to emails.txt on the desktop</value>
+    </data>
+    <data name="Shortcuts_Ai_Generate" xml:space="preserve">
+        <value>Generate &amp; apply</value>
+    </data>
+    <data name="Shortcuts_Ai_NeedKey" xml:space="preserve">
+        <value>Enter your API Key in “API Settings” first.</value>
+    </data>
+    <data name="Shortcuts_Ai_Working" xml:space="preserve">
+        <value>Generating…</value>
+    </data>
+    <data name="Shortcuts_Ai_Failed" xml:space="preserve">
+        <value>Generation failed.</value>
+    </data>
+    <data name="Shortcuts_Ai_Done" xml:space="preserve">
+        <value>Applied. The previous graph is one Ctrl+Z away.</value>
+    </data>
+    <data name="Shortcuts_Ai_ParseFailed" xml:space="preserve">
+        <value>Could not parse the model reply:</value>
+    </data>
+    <data name="Shortcuts_Ai_Applied" xml:space="preserve">
+        <value>AI workflow applied to the canvas.</value>
     </data>
 </root>

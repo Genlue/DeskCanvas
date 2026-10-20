@@ -58,15 +58,29 @@ public partial class ShortcutsEditorWindow
             {
                 LibraryHost.Children.Add(BuildSectionHeader(Loc.Get(ActionCatalog.CategoryLabelKey(category))));
                 var wrap = new WrapPanel();
-                foreach (var definition in ActionCatalog.All.Where(d => d.Category == category))
+                foreach (var definition in ActionCatalog.Visible.Where(d => d.Category == category))
                     wrap.Children.Add(BuildLibraryItem(definition));
                 LibraryHost.Children.Add(wrap);
             }
+
+            // The single most confusing part of the graph model, stated where the user adds a
+            // loop instead of only in the specification document.
+            LibraryHost.Children.Add(BuildSectionHeader(Loc.Get("Shortcuts_Library_LoopHeader")));
+            LibraryHost.Children.Add(new TextBlock
+            {
+                Text = Loc.Get("Shortcuts_Library_LoopHint"),
+                FontSize = 10.5,
+                Opacity = 0.55,
+                TextWrapping = TextWrapping.Wrap,
+                Margin = new Thickness(2, 0, 2, 4),
+            });
         }
         else
         {
-            var matches = ActionCatalog.All
-                .Where(d => Loc.Get(d.TitleKey).Contains(filter, StringComparison.OrdinalIgnoreCase))
+            // Search covers the name, the one-line purpose, the type id and the port names, so
+            // "json" or "剪贴板" both find the right node.
+            var matches = ActionCatalog.Visible
+                .Where(d => Matches(d, filter))
                 .ToList();
 
             if (matches.Count == 0)
@@ -97,12 +111,41 @@ public partial class ShortcutsEditorWindow
         Margin = new Thickness(2, 8, 0, 4),
     };
 
+    /// <summary>Name, purpose, type id and port ids all take part in the search.</summary>
+    private static bool Matches(ActionDefinition definition, string filter)
+    {
+        if (Loc.Get(definition.TitleKey).Contains(filter, StringComparison.OrdinalIgnoreCase)) return true;
+        if (definition.Type.Contains(filter, StringComparison.OrdinalIgnoreCase)) return true;
+
+        if (definition.SummaryKey != null &&
+            Loc.Get(definition.SummaryKey).Contains(filter, StringComparison.OrdinalIgnoreCase)) return true;
+
+        foreach (var port in definition.Outputs)
+        {
+            if (port.Id.Contains(filter, StringComparison.OrdinalIgnoreCase)) return true;
+            if (Loc.Get(port.LabelKey).Contains(filter, StringComparison.OrdinalIgnoreCase)) return true;
+        }
+
+        foreach (var spec in definition.Params)
+        {
+            if (Loc.Get(spec.LabelKey).Contains(filter, StringComparison.OrdinalIgnoreCase)) return true;
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// One library entry: icon + name, a one-line purpose, and its input → output shape. The
+    /// previous drawer showed only a name, so "which one do I need" was guesswork.
+    /// </summary>
     private Button BuildLibraryItem(ActionDefinition definition)
     {
         var button = new Button { Classes = { "library-item" } };
-        var row = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 7 };
 
-        row.Children.Add(new GlyphView
+        var column = new StackPanel { Spacing = 1 };
+
+        var titleRow = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 7 };
+        titleRow.Children.Add(new GlyphView
         {
             Data = GlyphLibrary.GetGeometry(definition.Glyph),
             Stroke = Visuals.Brush(ActionCatalog.CategoryColor(definition.Category)),
@@ -111,42 +154,96 @@ public partial class ShortcutsEditorWindow
             Height = 14,
             VerticalAlignment = VerticalAlignment.Center,
         });
-        row.Children.Add(new TextBlock
+        titleRow.Children.Add(new TextBlock
         {
             Text = Loc.Get(definition.TitleKey),
             FontSize = 12,
             VerticalAlignment = VerticalAlignment.Center,
         });
+        column.Children.Add(titleRow);
 
-        button.Content = row;
+        if (definition.SummaryKey != null)
+        {
+            column.Children.Add(new TextBlock
+            {
+                Text = Loc.Get(definition.SummaryKey),
+                FontSize = 10,
+                Opacity = 0.55,
+                MaxWidth = 210,
+                TextTrimming = TextTrimming.CharacterEllipsis,
+            });
+        }
+
+        var io = IoSummary(definition);
+        if (io.Length > 0)
+        {
+            column.Children.Add(new TextBlock
+            {
+                Text = io,
+                FontSize = 9.5,
+                Opacity = 0.45,
+                MaxWidth = 210,
+                TextTrimming = TextTrimming.CharacterEllipsis,
+            });
+        }
+
+        button.Content = column;
+
+        var tip = new System.Text.StringBuilder();
+        tip.AppendLine(Loc.Get(definition.TitleKey));
+        if (definition.SummaryKey != null) tip.AppendLine(Loc.Get(definition.SummaryKey));
+        if (io.Length > 0) tip.AppendLine(io);
+        foreach (var spec in definition.Params)
+        {
+            if (!spec.Primary && !spec.Required) continue;
+            tip.Append("· ").Append(Loc.Get(spec.LabelKey));
+            if (spec.Required) tip.Append(" *");
+            tip.AppendLine();
+        }
+        if (WorkflowNodeTypes.IsLoop(definition.Type))
+            tip.AppendLine(Loc.Get("Shortcuts_Library_LoopHint"));
+        ToolTip.SetTip(button, tip.ToString().TrimEnd());
+
         button.Click += (_, _) => InsertAction(definition.Type);
         return button;
     }
 
+    /// <summary>"文本 → 文本" style summary built from the contract, never hand-written.</summary>
+    private static string IoSummary(ActionDefinition definition)
+    {
+        var inputs = definition.Params.Where(p => p.Primary).Select(p => Loc.Get(p.LabelKey)).ToList();
+        var outputs = definition.Outputs
+            .Where(o => o.IsData)
+            .Select(o => $"{o.Id}:{Loc.Get(ActionCatalog.TypeLabelKey(o.DataType))}")
+            .ToList();
+
+        if (definition.Outputs.Count == 0 && inputs.Count == 0) return string.Empty;
+
+        var left = inputs.Count == 0 ? Loc.Get("Shortcuts_Library_NoInput") : string.Join(" · ", inputs);
+        var right = outputs.Count == 0 ? Loc.Get("Shortcuts_Library_NoOutput") : string.Join(" · ", outputs);
+        return $"{left} → {right}";
+    }
+
+    /// <summary>
+    /// Add a node at the canvas centre. When a single-output node is selected and still has a
+    /// free continuation, the new node is wired to it — that is what makes "keep adding steps"
+    /// feel like the old list editor while staying a real graph.
+    /// </summary>
     private void InsertAction(string type)
     {
         var definition = ActionCatalog.Get(type);
-        if (definition == null) return;
+        if (definition == null || canvas == null) return;
 
-        var action = ShortcutAction.Create(definition);
-        var (list, index) = ResolveInsertPosition();
-        list.Insert(Math.Clamp(index, 0, list.Count), action);
-        selectedActionId = action.Id;
+        canvas.AddNode(definition);
 
         RecentTypes.Remove(type);
         RecentTypes.Insert(0, type);
         if (RecentTypes.Count > 8) RecentTypes.RemoveAt(RecentTypes.Count - 1);
 
         CommitChange();
-    }
-
-    /// <summary>Insert right after the selected action (same level), or append at the end.</summary>
-    private (List<ShortcutAction> List, int Index) ResolveInsertPosition()
-    {
-        if (selectedActionId != null && FindParent(shortcut.Actions, selectedActionId) is { } location)
-            return (location.List, location.Index + 1);
-
-        return (shortcut.Actions, shortcut.Actions.Count);
+        UpdateSelectionUi();
+        // 选完即收起：画布恢复可见，新节点就在眼前（旧版抽屉一直挡着画布）。
+        CloseLibrary();
     }
 
     // ---- icon & color picker ------------------------------------------------------

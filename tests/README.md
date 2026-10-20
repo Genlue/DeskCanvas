@@ -1,11 +1,11 @@
 # tests/ 本地检查项目登记
 
-本目录共 60 个检查项目（不含 `_shortcuts_tools` Python 辅助脚本目录，2026-10-17 按非 bin/obj 的 csproj 统计）。分类口径：
+本目录共 62 个检查项目（不含 `_shortcuts_tools` Python 辅助脚本目录，2026-10-17 按非 bin/obj 的 csproj 统计）。分类口径：
 
 - **正式门禁**：有明确通过/失败语义（退出码或异常），按改动范围纳入提交/发布门槛。
 - **探针/复现程序**：测量、截图或复现 harness，产出供人工判读，不作门禁。
 
-统一验证入口：`scripts/verify.ps1`（执行结构/约定检查、解决方案构建及下表标注「已验证套件」的项目）。当前入口共 **40 个步骤**：两项结构/约定守卫、解决方案 Debug 构建和 **37 个 Release 检查程序**，覆盖 P1–P8 架构、P10 统一控件库与排版、P11 材质主题、P12 数据 Profile 化、P13 卸载与 Setup 门禁。发布门禁聚合入口：`scripts/release-gate.ps1`（verify 全量 + ApiSnapshot 校验 + UpgradeRollbackChecks + SettingsReleaseChecks,摘要落 dist/release-gate-summary.json）。两项守卫统一由 `pwsh`（PowerShell 7）子进程执行。
+统一验证入口：`scripts/verify.ps1`（执行结构/约定检查、解决方案构建及下表标注「已验证套件」的项目）。当前入口共 **41 个步骤**：两项结构/约定守卫、解决方案 Debug 构建和 **38 个 Release 检查程序**，覆盖 P1–P8 架构、P10 统一控件库与排版、P11 材质主题、P12 数据 Profile 化、P13 卸载与 Setup 门禁。发布门禁聚合入口：`scripts/release-gate.ps1`（verify 全量 + ApiSnapshot 校验 + UpgradeRollbackChecks + SettingsReleaseChecks,摘要落 dist/release-gate-summary.json）。两项守卫统一由 `pwsh`（PowerShell 7）子进程执行。
 
 架构重构门禁：`IdentityStorageChecks`（P1 身份迁移与原子保存）、`ContractsLifecycleChecks`（P2 纯 .NET 契约与会话生命周期）、`SchedulerChecks`（P5 owner 调度租约与失败隔离）。这三项已由 `scripts/verify.ps1` 一并执行。
 
@@ -60,6 +60,8 @@
 | ScrollBarHoverChecks | 正式门禁 | 全局滚动条悬停展开态回归（悬停与空闲像素一致） |
 | SearchVisualChecks | 正式门禁 | Search 组件视觉/布局边界检查（截图产出至 dist/） |
 | ShortcutsSmoke | 正式门禁 | Shortcuts 无头冒烟：字形解析、存储往返、顺序执行、控制流（沙箱运行） |
+| ShortcutsGraphChecks | 正式门禁（已验证套件） | Shortcuts v2 执行图：v1 动作树迁移（起始/容器体连线、id 保留）、真实分支/循环/break/continue、数据连线、模板变量、死循环与步数守卫、JSON 导入校验（未知类型/端口/缺失节点）、AI 规范覆盖全部动作类型、文件往返（49 项） |
+| DiceRender | 探针/复现程序 | 骰子卡片无头渲染：`sweep` 扫描 11 档尺寸 × 1–6 骰 × D6点阵/D20/D100 数字，断言骰面与点阵不越出骰盘/骰面（2x2 点数溢出回归） |
 | TimetableChecks | 正式门禁 | 课程表数据契约：周表达式、导入器、学期计算与配色 |
 | UpdateAtomChecks | 正式门禁 | releases.atom 回退解析器对冻结 fixture 的契约（自述按改动范围作提交门槛） |
 | WidgetReleaseChecks | 正式门禁 | 切换 profile 时组件真实释放的内存契约（跑真实宿主管线） |

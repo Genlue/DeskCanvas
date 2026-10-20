@@ -118,7 +118,9 @@ try {
             'FullscreenChecks',
             'LiquidGlassChecks',
             'UninstallerChecks',
-            'GeometryThreadChecks'
+            'GeometryThreadChecks',
+            'ShortcutsGraphChecks',
+            'ShortcutsSmoke'
         )
         foreach ($suite in $verifiedSuites) {
             Invoke-Step ("run " + $suite + " (Release)") 'dotnet' (@(

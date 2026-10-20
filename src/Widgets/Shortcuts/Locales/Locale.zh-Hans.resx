@@ -223,7 +223,7 @@
         <value>插入变量</value>
     </data>
     <data name="Shortcuts_Param_LastResult" xml:space="preserve">
-        <value>上一步的结果</value>
+        <value>最近的数据结果</value>
     </data>
     <data name="Shortcuts_Param_ResultOf" xml:space="preserve">
         <value>「{0}」的结果</value>
@@ -782,5 +782,1499 @@
     </data>
     <data name="Shortcuts_Error_CaptureActive" xml:space="preserve">
         <value>正在录制按键，请先完成录制</value>
+    </data>
+    <data name="Shortcuts_Action_runCommand" xml:space="preserve">
+        <value>执行命令</value>
+    </data>
+    <data name="Shortcuts_Desc_runCommand" xml:space="preserve">
+        <value>运行 PowerShell 或 CMD 命令并捕获其输出</value>
+    </data>
+    <data name="Shortcuts_Param_shell" xml:space="preserve">
+        <value>解释器</value>
+    </data>
+    <data name="Shortcuts_Shell_powershell" xml:space="preserve">
+        <value>Windows PowerShell</value>
+    </data>
+    <data name="Shortcuts_Shell_pwsh" xml:space="preserve">
+        <value>PowerShell 7 (pwsh)</value>
+    </data>
+    <data name="Shortcuts_Shell_cmd" xml:space="preserve">
+        <value>CMD</value>
+    </data>
+    <data name="Shortcuts_Param_command" xml:space="preserve">
+        <value>命令</value>
+    </data>
+    <data name="Shortcuts_Help_runCommand" xml:space="preserve">
+        <value>支持多行脚本。PowerShell 以编码参数方式运行；CMD 通过标准输入执行。输出可在 stdout / stderr 端口读取。</value>
+    </data>
+    <data name="Shortcuts_Param_workingDir" xml:space="preserve">
+        <value>工作目录</value>
+    </data>
+    <data name="Shortcuts_Help_runCommandDir" xml:space="preserve">
+        <value>留空时在进程当前目录运行</value>
+    </data>
+    <data name="Shortcuts_Param_failOnExit" xml:space="preserve">
+        <value>退出码</value>
+    </data>
+    <data name="Shortcuts_FailExit_on" xml:space="preserve">
+        <value>非零视为失败</value>
+    </data>
+    <data name="Shortcuts_FailExit_off" xml:space="preserve">
+        <value>忽略退出码</value>
+    </data>
+    <data name="Shortcuts_Port_StdOut" xml:space="preserve">
+        <value>标准输出</value>
+    </data>
+    <data name="Shortcuts_Port_StdErr" xml:space="preserve">
+        <value>标准错误</value>
+    </data>
+    <data name="Shortcuts_Port_ExitCode" xml:space="preserve">
+        <value>退出码</value>
+    </data>
+    <data name="Shortcuts_Output_CommandExit" xml:space="preserve">
+        <value>完成 · 退出码 {0}</value>
+    </data>
+    <data name="Shortcuts_Error_CommandTimeout" xml:space="preserve">
+        <value>命令超过 {0} 秒未完成，已终止</value>
+    </data>
+    <data name="Shortcuts_Error_CommandFailed" xml:space="preserve">
+        <value>命令退出码 {0}</value>
+    </data>
+    <data name="Shortcuts_Error_ShellNotFound" xml:space="preserve">
+        <value>未安装 PowerShell 7 (pwsh)，请改用 Windows PowerShell 或 CMD</value>
+    </data>
+    <data name="Shortcuts_Action_start" xml:space="preserve">
+        <value>开始</value>
+    </data>
+    <data name="Shortcuts_Action_branch" xml:space="preserve">
+        <value>条件分支</value>
+    </data>
+    <data name="Shortcuts_Action_switch" xml:space="preserve">
+        <value>多路分支</value>
+    </data>
+    <data name="Shortcuts_Action_forLoop" xml:space="preserve">
+        <value>计数循环</value>
+    </data>
+    <data name="Shortcuts_Action_whileLoop" xml:space="preserve">
+        <value>条件循环</value>
+    </data>
+    <data name="Shortcuts_Action_forEach" xml:space="preserve">
+        <value>遍历列表</value>
+    </data>
+    <data name="Shortcuts_Action_break" xml:space="preserve">
+        <value>跳出循环</value>
+    </data>
+    <data name="Shortcuts_Action_continue" xml:space="preserve">
+        <value>跳过本轮</value>
+    </data>
+    <data name="Shortcuts_Action_end" xml:space="preserve">
+        <value>到此结束</value>
+    </data>
+    <data name="Shortcuts_Action_setVar" xml:space="preserve">
+        <value>设置变量</value>
+    </data>
+    <data name="Shortcuts_Action_note" xml:space="preserve">
+        <value>注释</value>
+    </data>
+    <data name="Shortcuts_Param_value" xml:space="preserve">
+        <value>值</value>
+    </data>
+    <data name="Shortcuts_Param_cases" xml:space="preserve">
+        <value>分支值（用 | 分隔）</value>
+    </data>
+    <data name="Shortcuts_Param_list" xml:space="preserve">
+        <value>列表</value>
+    </data>
+    <data name="Shortcuts_Param_separator" xml:space="preserve">
+        <value>分隔符</value>
+    </data>
+    <data name="Shortcuts_Param_varName" xml:space="preserve">
+        <value>变量名</value>
+    </data>
+    <data name="Shortcuts_Param_maxIterations" xml:space="preserve">
+        <value>最多循环</value>
+    </data>
+    <data name="Shortcuts_Sep_newline" xml:space="preserve">
+        <value>换行</value>
+    </data>
+    <data name="Shortcuts_Sep_comma" xml:space="preserve">
+        <value>逗号</value>
+    </data>
+    <data name="Shortcuts_Sep_space" xml:space="preserve">
+        <value>空格</value>
+    </data>
+    <data name="Shortcuts_Port_In" xml:space="preserve">
+        <value>入</value>
+    </data>
+    <data name="Shortcuts_Port_Out" xml:space="preserve">
+        <value>下一步</value>
+    </data>
+    <data name="Shortcuts_Port_Value" xml:space="preserve">
+        <value>结果</value>
+    </data>
+    <data name="Shortcuts_Port_True" xml:space="preserve">
+        <value>成立</value>
+    </data>
+    <data name="Shortcuts_Port_False" xml:space="preserve">
+        <value>不成立</value>
+    </data>
+    <data name="Shortcuts_Port_Body" xml:space="preserve">
+        <value>循环体</value>
+    </data>
+    <data name="Shortcuts_Port_Done" xml:space="preserve">
+        <value>循环后</value>
+    </data>
+    <data name="Shortcuts_Port_Default" xml:space="preserve">
+        <value>默认</value>
+    </data>
+    <data name="Shortcuts_Port_Case" xml:space="preserve">
+        <value>分支</value>
+    </data>
+    <data name="Shortcuts_Canvas_AutoLayout" xml:space="preserve">
+        <value>自动整理布局</value>
+    </data>
+    <data name="Shortcuts_Canvas_Import" xml:space="preserve">
+        <value>导入 JSON</value>
+    </data>
+    <data name="Shortcuts_Canvas_Spec" xml:space="preserve">
+        <value>AI 提示词规范</value>
+    </data>
+    <data name="Shortcuts_Canvas_ZoomIn" xml:space="preserve">
+        <value>放大</value>
+    </data>
+    <data name="Shortcuts_Canvas_ZoomOut" xml:space="preserve">
+        <value>缩小</value>
+    </data>
+    <data name="Shortcuts_Canvas_Fit" xml:space="preserve">
+        <value>适应画布</value>
+    </data>
+    <data name="Shortcuts_Canvas_Hint" xml:space="preserve">
+        <value>拖动框选 · 中键或空格平移 · 滚轮缩放 · Delete 删除选中 · 点连线可选中</value>
+    </data>
+    <data name="Shortcuts_Node_Edit" xml:space="preserve">
+        <value>重命名节点</value>
+    </data>
+    <data name="Shortcuts_Import_Title" xml:space="preserve">
+        <value>导入工作流 JSON</value>
+    </data>
+    <data name="Shortcuts_Import_Hint" xml:space="preserve">
+        <value>粘贴按「AI 提示词规范」生成的 JSON，或从文件读取。Ctrl+Enter 直接导入。</value>
+    </data>
+    <data name="Shortcuts_Import_Placeholder" xml:space="preserve">
+        <value>在这里粘贴工作流 JSON…</value>
+    </data>
+    <data name="Shortcuts_Import_FromFile" xml:space="preserve">
+        <value>从文件读取</value>
+    </data>
+    <data name="Shortcuts_Import_Confirm" xml:space="preserve">
+        <value>导入</value>
+    </data>
+    <data name="Shortcuts_Import_Empty" xml:space="preserve">
+        <value>内容为空，没有可导入的东西。</value>
+    </data>
+    <data name="Shortcuts_Import_BadJson" xml:space="preserve">
+        <value>JSON 解析失败：{0}</value>
+    </data>
+    <data name="Shortcuts_Import_NoWorkflow" xml:space="preserve">
+        <value>没有找到工作流：需要一个带 "nodes" 数组的对象。</value>
+    </data>
+    <data name="Shortcuts_Import_NoNodes" xml:space="preserve">
+        <value>工作流里没有任何节点。</value>
+    </data>
+    <data name="Shortcuts_Import_BadNode" xml:space="preserve">
+        <value>第 {0} 个节点不是对象。</value>
+    </data>
+    <data name="Shortcuts_Import_NodeNoType" xml:space="preserve">
+        <value>第 {0} 个节点缺少 "type"。</value>
+    </data>
+    <data name="Shortcuts_Import_UnknownType" xml:space="preserve">
+        <value>未知的节点类型 "{0}"。</value>
+    </data>
+    <data name="Shortcuts_Import_DuplicateId" xml:space="preserve">
+        <value>节点 id 重复："{0}"。</value>
+    </data>
+    <data name="Shortcuts_Import_BadLink" xml:space="preserve">
+        <value>有一条连线缺少 "from" 或 "to"。</value>
+    </data>
+    <data name="Shortcuts_Import_LinkMissingNode" xml:space="preserve">
+        <value>连线 {0} 指向不存在的节点。</value>
+    </data>
+    <data name="Shortcuts_Import_BadPort" xml:space="preserve">
+        <value>输出端口不存在：{0}</value>
+    </data>
+    <data name="Shortcuts_Import_BadParam" xml:space="preserve">
+        <value>目标参数不存在：{0}</value>
+    </data>
+    <data name="Shortcuts_Import_AutoChained" xml:space="preserve">
+        <value>没有提供连线：已按节点顺序串成一条链。</value>
+    </data>
+    <data name="Shortcuts_Import_AutoLayout" xml:space="preserve">
+        <value>没有提供坐标：已自动排版。</value>
+    </data>
+    <data name="Shortcuts_Import_AddedStart" xml:space="preserve">
+        <value>缺少开始节点：已自动补上并接到第一个入口。</value>
+    </data>
+    <data name="Shortcuts_Import_MultipleStart" xml:space="preserve">
+        <value>有多个开始节点：只保留了第一个。</value>
+    </data>
+    <data name="Shortcuts_Import_DefaultName" xml:space="preserve">
+        <value>导入的快捷指令</value>
+    </data>
+    <data name="Shortcuts_Spec_Copy" xml:space="preserve">
+        <value>复制 AI 规范</value>
+    </data>
+    <data name="Shortcuts_Spec_Copied" xml:space="preserve">
+        <value>已复制</value>
+    </data>
+    <data name="Shortcuts_Spec_Title" xml:space="preserve">
+        <value>AI 提示词规范</value>
+    </data>
+    <data name="Shortcuts_Spec_Hint" xml:space="preserve">
+        <value>把这段文字整份发给任意对话模型，再说明你想要的快捷指令，然后把它回复的 JSON 导入。</value>
+    </data>
+    <data name="Shortcuts_Spec_Preview" xml:space="preserve">
+        <value>预览规范</value>
+    </data>
+    <data name="Shortcuts_Spec_Hide" xml:space="preserve">
+        <value>收起规范</value>
+    </data>
+    <data name="Shortcuts_Ai_Title" xml:space="preserve">
+        <value>AI 帮写</value>
+    </data>
+    <data name="Shortcuts_Ai_Desc" xml:space="preserve">
+        <value>复制下面的规范，连同你的需求一起发给 AI，再把它生成的 JSON 导入。规范里包含全部节点类型、参数与端口，导入即可用。</value>
+    </data>
+    <data name="Shortcuts_Ai_Copied" xml:space="preserve">
+        <value>规范已复制到剪贴板。</value>
+    </data>
+    <data name="Shortcuts_Ai_Imported" xml:space="preserve">
+        <value>已导入「{0}」（{1} 个节点）。</value>
+    </data>
+    <data name="Shortcuts_Error_NoStart" xml:space="preserve">
+        <value>工作流缺少开始节点。</value>
+    </data>
+    <data name="Shortcuts_Error_TooDeep" xml:space="preserve">
+        <value>工作流嵌套太深，无法执行。</value>
+    </data>
+    <data name="Shortcuts_Error_Cycle" xml:space="preserve">
+        <value>检测到死循环：请用循环节点，或断开回环。</value>
+    </data>
+    <data name="Shortcuts_Error_TooManySteps" xml:space="preserve">
+        <value>执行步数超限，已停止。</value>
+    </data>
+    <data name="Shortcuts_Action_activateWindow" xml:space="preserve">
+        <value>激活窗口</value>
+    </data>
+    <data name="Shortcuts_Action_askInput" xml:space="preserve">
+        <value>询问输入</value>
+    </data>
+    <data name="Shortcuts_Action_boolean" xml:space="preserve">
+        <value>布尔值</value>
+    </data>
+    <data name="Shortcuts_Action_calculate" xml:space="preserve">
+        <value>计算</value>
+    </data>
+    <data name="Shortcuts_Action_collect" xml:space="preserve">
+        <value>收集</value>
+    </data>
+    <data name="Shortcuts_Action_convertValue" xml:space="preserve">
+        <value>转换类型</value>
+    </data>
+    <data name="Shortcuts_Action_createList" xml:space="preserve">
+        <value>创建列表</value>
+    </data>
+    <data name="Shortcuts_Action_dateAdd" xml:space="preserve">
+        <value>日期加减</value>
+    </data>
+    <data name="Shortcuts_Action_dateDiff" xml:space="preserve">
+        <value>日期差</value>
+    </data>
+    <data name="Shortcuts_Action_findWindow" xml:space="preserve">
+        <value>查找窗口</value>
+    </data>
+    <data name="Shortcuts_Action_formatDate" xml:space="preserve">
+        <value>格式化日期</value>
+    </data>
+    <data name="Shortcuts_Action_getProperty" xml:space="preserve">
+        <value>读取字段</value>
+    </data>
+    <data name="Shortcuts_Action_getVar" xml:space="preserve">
+        <value>读取变量</value>
+    </data>
+    <data name="Shortcuts_Action_joinText" xml:space="preserve">
+        <value>合并文本</value>
+    </data>
+    <data name="Shortcuts_Action_listCount" xml:space="preserve">
+        <value>列表长度</value>
+    </data>
+    <data name="Shortcuts_Action_listFiles" xml:space="preserve">
+        <value>列出文件</value>
+    </data>
+    <data name="Shortcuts_Action_listItem" xml:space="preserve">
+        <value>列表项</value>
+    </data>
+    <data name="Shortcuts_Action_mergeValue" xml:space="preserve">
+        <value>合并值</value>
+    </data>
+    <data name="Shortcuts_Action_number" xml:space="preserve">
+        <value>数字</value>
+    </data>
+    <data name="Shortcuts_Action_parseJson" xml:space="preserve">
+        <value>解析 JSON</value>
+    </data>
+    <data name="Shortcuts_Action_pathExists" xml:space="preserve">
+        <value>路径是否存在</value>
+    </data>
+    <data name="Shortcuts_Action_pathInfo" xml:space="preserve">
+        <value>路径信息</value>
+    </data>
+    <data name="Shortcuts_Action_pathJoin" xml:space="preserve">
+        <value>拼接路径</value>
+    </data>
+    <data name="Shortcuts_Action_readTextFile" xml:space="preserve">
+        <value>读取文本文件</value>
+    </data>
+    <data name="Shortcuts_Action_return" xml:space="preserve">
+        <value>返回</value>
+    </data>
+    <data name="Shortcuts_Action_selectFile" xml:space="preserve">
+        <value>选择文件</value>
+    </data>
+    <data name="Shortcuts_Action_selectFolder" xml:space="preserve">
+        <value>选择文件夹</value>
+    </data>
+    <data name="Shortcuts_Action_sendKeySequence" xml:space="preserve">
+        <value>发送按键序列</value>
+    </data>
+    <data name="Shortcuts_Action_setMute" xml:space="preserve">
+        <value>设置静音</value>
+    </data>
+    <data name="Shortcuts_Action_showResult" xml:space="preserve">
+        <value>显示结果</value>
+    </data>
+    <data name="Shortcuts_Action_splitText" xml:space="preserve">
+        <value>拆分文本</value>
+    </data>
+    <data name="Shortcuts_Action_text" xml:space="preserve">
+        <value>文本</value>
+    </data>
+    <data name="Shortcuts_Action_toJson" xml:space="preserve">
+        <value>转为 JSON</value>
+    </data>
+    <data name="Shortcuts_Action_typeText" xml:space="preserve">
+        <value>输入文本</value>
+    </data>
+    <data name="Shortcuts_Action_waitForWindow" xml:space="preserve">
+        <value>等待窗口</value>
+    </data>
+    <data name="Shortcuts_Action_writeTextFile" xml:space="preserve">
+        <value>写入文本文件</value>
+    </data>
+    <data name="Shortcuts_Bool_false" xml:space="preserve">
+        <value>假</value>
+    </data>
+    <data name="Shortcuts_Bool_true" xml:space="preserve">
+        <value>真</value>
+    </data>
+    <data name="Shortcuts_Calc_add" xml:space="preserve">
+        <value>加</value>
+    </data>
+    <data name="Shortcuts_Calc_divide" xml:space="preserve">
+        <value>除</value>
+    </data>
+    <data name="Shortcuts_Calc_modulo" xml:space="preserve">
+        <value>取余</value>
+    </data>
+    <data name="Shortcuts_Calc_multiply" xml:space="preserve">
+        <value>乘</value>
+    </data>
+    <data name="Shortcuts_Calc_subtract" xml:space="preserve">
+        <value>减</value>
+    </data>
+    <data name="Shortcuts_Cancelled" xml:space="preserve">
+        <value>已取消</value>
+    </data>
+    <data name="Shortcuts_Case_exact" xml:space="preserve">
+        <value>区分大小写</value>
+    </data>
+    <data name="Shortcuts_Case_ignore" xml:space="preserve">
+        <value>忽略大小写</value>
+    </data>
+    <data name="Shortcuts_Cat_Data" xml:space="preserve">
+        <value>数据</value>
+    </data>
+    <data name="Shortcuts_Close" xml:space="preserve">
+        <value>关闭</value>
+    </data>
+    <data name="Shortcuts_Dark_cycle" xml:space="preserve">
+        <value>循环（深/浅/跟随系统）</value>
+    </data>
+    <data name="Shortcuts_Dark_toggle" xml:space="preserve">
+        <value>切换（深/浅）</value>
+    </data>
+    <data name="Shortcuts_Desc_activateWindow" xml:space="preserve">
+        <value>把窗口切到前台。</value>
+    </data>
+    <data name="Shortcuts_Desc_addReminder" xml:space="preserve">
+        <value>向提醒组件添加一条提醒。</value>
+    </data>
+    <data name="Shortcuts_Desc_askInput" xml:space="preserve">
+        <value>运行中向用户询问一个值。</value>
+    </data>
+    <data name="Shortcuts_Desc_boolean" xml:space="preserve">
+        <value>输出真或假。</value>
+    </data>
+    <data name="Shortcuts_Desc_branch" xml:space="preserve">
+        <value>按比较结果走两条路径之一。</value>
+    </data>
+    <data name="Shortcuts_Desc_break" xml:space="preserve">
+        <value>跳出所在循环。</value>
+    </data>
+    <data name="Shortcuts_Desc_calculate" xml:space="preserve">
+        <value>加减乘除或取余。</value>
+    </data>
+    <data name="Shortcuts_Desc_collect" xml:space="preserve">
+        <value>把值追加到当前循环的收集列表。</value>
+    </data>
+    <data name="Shortcuts_Desc_continue" xml:space="preserve">
+        <value>跳过本轮剩余步骤。</value>
+    </data>
+    <data name="Shortcuts_Desc_convertValue" xml:space="preserve">
+        <value>把值转换为文本、数字、布尔、日期、列表或 JSON。</value>
+    </data>
+    <data name="Shortcuts_Desc_createList" xml:space="preserve">
+        <value>用最多四个值构建列表。</value>
+    </data>
+    <data name="Shortcuts_Desc_currentDate" xml:space="preserve">
+        <value>输出当前日期时间。</value>
+    </data>
+    <data name="Shortcuts_Desc_dateAdd" xml:space="preserve">
+        <value>按秒/分/时/天偏移日期。</value>
+    </data>
+    <data name="Shortcuts_Desc_dateDiff" xml:space="preserve">
+        <value>按指定单位计算两个日期的差。</value>
+    </data>
+    <data name="Shortcuts_Desc_emptyRecycleBin" xml:space="preserve">
+        <value>清空回收站（不弹确认）。</value>
+    </data>
+    <data name="Shortcuts_Desc_end" xml:space="preserve">
+        <value>在此结束整个运行。</value>
+    </data>
+    <data name="Shortcuts_Desc_findWindow" xml:space="preserve">
+        <value>按标题查找窗口并返回句柄。</value>
+    </data>
+    <data name="Shortcuts_Desc_forEach" xml:space="preserve">
+        <value>对列表中每一项执行一次循环体。</value>
+    </data>
+    <data name="Shortcuts_Desc_forLoop" xml:space="preserve">
+        <value>按固定次数重复循环体。</value>
+    </data>
+    <data name="Shortcuts_Desc_formatDate" xml:space="preserve">
+        <value>用 yyyy-MM-dd 这类模式格式化日期。</value>
+    </data>
+    <data name="Shortcuts_Desc_getClipboard" xml:space="preserve">
+        <value>读取剪贴板文本并判断是否为空。</value>
+    </data>
+    <data name="Shortcuts_Desc_getProperty" xml:space="preserve">
+        <value>按 a.b[0].c 这样的路径读取字段。</value>
+    </data>
+    <data name="Shortcuts_Desc_getVar" xml:space="preserve">
+        <value>读取由“设置变量”写入的变量。</value>
+    </data>
+    <data name="Shortcuts_Desc_httpRequest" xml:space="preserve">
+        <value>发送 HTTP 请求并读取响应。</value>
+    </data>
+    <data name="Shortcuts_Desc_joinText" xml:space="preserve">
+        <value>把列表合并为一段文本。</value>
+    </data>
+    <data name="Shortcuts_Desc_listCount" xml:space="preserve">
+        <value>列表中的项数。</value>
+    </data>
+    <data name="Shortcuts_Desc_listFiles" xml:space="preserve">
+        <value>列出文件夹中的文件，可递归。</value>
+    </data>
+    <data name="Shortcuts_Desc_listItem" xml:space="preserve">
+        <value>按从 0 开始的下标读取一项。</value>
+    </data>
+    <data name="Shortcuts_Desc_lockScreen" xml:space="preserve">
+        <value>锁定当前会话。</value>
+    </data>
+    <data name="Shortcuts_Desc_mediaNext" xml:space="preserve">
+        <value>跳到下一首。</value>
+    </data>
+    <data name="Shortcuts_Desc_mediaPlayPause" xml:space="preserve">
+        <value>切换当前媒体会话的播放状态。</value>
+    </data>
+    <data name="Shortcuts_Desc_mediaPrevious" xml:space="preserve">
+        <value>回到上一首。</value>
+    </data>
+    <data name="Shortcuts_Desc_mergeValue" xml:space="preserve">
+        <value>取实际执行的那条分支产生的值。</value>
+    </data>
+    <data name="Shortcuts_Desc_minimizeAll" xml:space="preserve">
+        <value>最小化所有窗口以显示桌面。</value>
+    </data>
+    <data name="Shortcuts_Desc_muteToggle" xml:space="preserve">
+        <value>切换静音并报告新状态。</value>
+    </data>
+    <data name="Shortcuts_Desc_note" xml:space="preserve">
+        <value>画布注释，不参与执行。</value>
+    </data>
+    <data name="Shortcuts_Desc_notify" xml:space="preserve">
+        <value>显示桌面通知。</value>
+    </data>
+    <data name="Shortcuts_Desc_number" xml:space="preserve">
+        <value>输出一个固定数字。</value>
+    </data>
+    <data name="Shortcuts_Desc_openApp" xml:space="preserve">
+        <value>启动应用或 shell 目标。</value>
+    </data>
+    <data name="Shortcuts_Desc_openDataFolder" xml:space="preserve">
+        <value>打开 DeskCanvas 数据目录。</value>
+    </data>
+    <data name="Shortcuts_Desc_openFile" xml:space="preserve">
+        <value>用默认程序打开文件。</value>
+    </data>
+    <data name="Shortcuts_Desc_openFolder" xml:space="preserve">
+        <value>在资源管理器中打开文件夹。</value>
+    </data>
+    <data name="Shortcuts_Desc_openUrl" xml:space="preserve">
+        <value>用默认浏览器打开网址。</value>
+    </data>
+    <data name="Shortcuts_Desc_parseJson" xml:space="preserve">
+        <value>把 JSON 文本解析为对象或列表。</value>
+    </data>
+    <data name="Shortcuts_Desc_pathExists" xml:space="preserve">
+        <value>检查文件或文件夹是否存在。</value>
+    </data>
+    <data name="Shortcuts_Desc_pathInfo" xml:space="preserve">
+        <value>路径的名称、扩展名与父目录。</value>
+    </data>
+    <data name="Shortcuts_Desc_pathJoin" xml:space="preserve">
+        <value>把基础目录与相对路径组合。</value>
+    </data>
+    <data name="Shortcuts_Desc_randomNumber" xml:space="preserve">
+        <value>在闭区间内取随机整数。</value>
+    </data>
+    <data name="Shortcuts_Desc_readTextFile" xml:space="preserve">
+        <value>读取文本文件，自动识别编码。</value>
+    </data>
+    <data name="Shortcuts_Desc_return" xml:space="preserve">
+        <value>向调用方返回一个类型化值。</value>
+    </data>
+    <data name="Shortcuts_Desc_runShortcut" xml:space="preserve">
+        <value>运行另一个快捷指令并取得返回值。</value>
+    </data>
+    <data name="Shortcuts_Desc_screenshot" xml:space="preserve">
+        <value>截屏并保存为 PNG 文件。</value>
+    </data>
+    <data name="Shortcuts_Desc_selectFile" xml:space="preserve">
+        <value>用系统对话框选择一个文件。</value>
+    </data>
+    <data name="Shortcuts_Desc_selectFolder" xml:space="preserve">
+        <value>用系统对话框选择一个文件夹。</value>
+    </data>
+    <data name="Shortcuts_Desc_sendHotkey" xml:space="preserve">
+        <value>发送一组组合键。</value>
+    </data>
+    <data name="Shortcuts_Desc_sendKeySequence" xml:space="preserve">
+        <value>按顺序发送多组组合键。</value>
+    </data>
+    <data name="Shortcuts_Desc_setClipboard" xml:space="preserve">
+        <value>把文本写入剪贴板；空文本即清空。</value>
+    </data>
+    <data name="Shortcuts_Desc_setMute" xml:space="preserve">
+        <value>把静音设置为明确的值。</value>
+    </data>
+    <data name="Shortcuts_Desc_setVar" xml:space="preserve">
+        <value>把值存到变量名下。</value>
+    </data>
+    <data name="Shortcuts_Desc_setVolume" xml:space="preserve">
+        <value>设置系统音量。</value>
+    </data>
+    <data name="Shortcuts_Desc_showResult" xml:space="preserve">
+        <value>在可复制的面板中显示一个值。</value>
+    </data>
+    <data name="Shortcuts_Desc_sleep" xml:space="preserve">
+        <value>让电脑进入睡眠。</value>
+    </data>
+    <data name="Shortcuts_Desc_splitText" xml:space="preserve">
+        <value>按分隔符把文本拆成列表。</value>
+    </data>
+    <data name="Shortcuts_Desc_switch" xml:space="preserve">
+        <value>按值与分支匹配选择路径。</value>
+    </data>
+    <data name="Shortcuts_Desc_text" xml:space="preserve">
+        <value>输出一段固定文本。</value>
+    </data>
+    <data name="Shortcuts_Desc_textTransform" xml:space="preserve">
+        <value>文本转大写/小写、去空白或替换。</value>
+    </data>
+    <data name="Shortcuts_Desc_themeDarkMode" xml:space="preserve">
+        <value>在浅色与深色之间切换。</value>
+    </data>
+    <data name="Shortcuts_Desc_themeSurface" xml:space="preserve">
+        <value>切换组件表面材质。</value>
+    </data>
+    <data name="Shortcuts_Desc_toJson" xml:space="preserve">
+        <value>把任意值序列化为 JSON 文本。</value>
+    </data>
+    <data name="Shortcuts_Desc_typeText" xml:space="preserve">
+        <value>向当前焦点窗口输入文本。</value>
+    </data>
+    <data name="Shortcuts_Desc_wait" xml:space="preserve">
+        <value>让流程暂停若干秒。</value>
+    </data>
+    <data name="Shortcuts_Desc_waitForWindow" xml:space="preserve">
+        <value>等待窗口出现。</value>
+    </data>
+    <data name="Shortcuts_Desc_webSearch" xml:space="preserve">
+        <value>用指定引擎搜索网页。</value>
+    </data>
+    <data name="Shortcuts_Desc_whileLoop" xml:space="preserve">
+        <value>条件成立时重复循环体。</value>
+    </data>
+    <data name="Shortcuts_Desc_widgetsVisibility" xml:space="preserve">
+        <value>显示或隐藏桌面组件。</value>
+    </data>
+    <data name="Shortcuts_Desc_writeTextFile" xml:space="preserve">
+        <value>写入文本；“新建”模式不覆盖已有文件。</value>
+    </data>
+    <data name="Shortcuts_Diag_BadParam" xml:space="preserve">
+        <value>无效参数：{0}</value>
+    </data>
+    <data name="Shortcuts_Diag_BadPort" xml:space="preserve">
+        <value>无效端口：{0}</value>
+    </data>
+    <data name="Shortcuts_Diag_BodyReachesDone" xml:space="preserve">
+        <value>循环体接到了循环结束后的路径（{0}），该步骤会被重复执行。</value>
+    </data>
+    <data name="Shortcuts_Diag_BreakOutsideLoop" xml:space="preserve">
+        <value>跳出节点不在循环内。</value>
+    </data>
+    <data name="Shortcuts_Diag_ContinueOutsideLoop" xml:space="preserve">
+        <value>跳过节点不在循环内。</value>
+    </data>
+    <data name="Shortcuts_Diag_DataPortAsExec" xml:space="preserve">
+        <value>数据端口不能驱动执行（{0}）。</value>
+    </data>
+    <data name="Shortcuts_Diag_DuplicateDataLink" xml:space="preserve">
+        <value>参数 {0} 有多条数据线输入。</value>
+    </data>
+    <data name="Shortcuts_Diag_DuplicateId" xml:space="preserve">
+        <value>节点 id 重复：{0}</value>
+    </data>
+    <data name="Shortcuts_Diag_EmptyId" xml:space="preserve">
+        <value>存在没有 id 的节点。</value>
+    </data>
+    <data name="Shortcuts_Diag_EmptyLoopBody" xml:space="preserve">
+        <value>循环体为空。</value>
+    </data>
+    <data name="Shortcuts_Diag_ExecFanOut" xml:space="preserve">
+        <value>端口 {0} 有多条执行出线。</value>
+    </data>
+    <data name="Shortcuts_Diag_ExecIntoParam" xml:space="preserve">
+        <value>执行连线必须接到入口圆点，不能接参数 {0}。</value>
+    </data>
+    <data name="Shortcuts_Diag_ExecPortAsData" xml:space="preserve">
+        <value>执行端口不能传递数据（{0}）。</value>
+    </data>
+    <data name="Shortcuts_Diag_LinkMissingNode" xml:space="preserve">
+        <value>连线指向不存在的节点：{0}</value>
+    </data>
+    <data name="Shortcuts_Diag_MultipleStart" xml:space="preserve">
+        <value>只允许一个开始节点。</value>
+    </data>
+    <data name="Shortcuts_Diag_NoExecInput" xml:space="preserve">
+        <value>{0} 不能作为下一步接入。</value>
+    </data>
+    <data name="Shortcuts_Diag_NotBindable" xml:space="preserve">
+        <value>参数 {0} 不支持连线输入。</value>
+    </data>
+    <data name="Shortcuts_Diag_NotConnected" xml:space="preserve">
+        <value>该节点未接入执行流。</value>
+    </data>
+    <data name="Shortcuts_Diag_NumberInvalid" xml:space="preserve">
+        <value>{0} 不是有效数字。</value>
+    </data>
+    <data name="Shortcuts_Diag_NumberOutOfRange" xml:space="preserve">
+        <value>{0} 超出允许范围。</value>
+    </data>
+    <data name="Shortcuts_Diag_RequiredEmpty" xml:space="preserve">
+        <value>{0} 为必填且不能为空。</value>
+    </data>
+    <data name="Shortcuts_Diag_RequiredMissing" xml:space="preserve">
+        <value>{0} 为必填项。</value>
+    </data>
+    <data name="Shortcuts_Diag_SelfLink" xml:space="preserve">
+        <value>节点不能连接自身。</value>
+    </data>
+    <data name="Shortcuts_Diag_SourceNotExecuted" xml:space="preserve">
+        <value>被引用的节点不会执行：{0}</value>
+    </data>
+    <data name="Shortcuts_Diag_SourceNotGuaranteed" xml:space="preserve">
+        <value>被引用的节点不保证在本步骤之前执行：{0}</value>
+    </data>
+    <data name="Shortcuts_Diag_TypeMismatch" xml:space="preserve">
+        <value>类型不匹配：{0}</value>
+    </data>
+    <data name="Shortcuts_Diag_UnknownSource" xml:space="preserve">
+        <value>引用了不存在的来源：{0}</value>
+    </data>
+    <data name="Shortcuts_Diag_UnknownType" xml:space="preserve">
+        <value>未知的动作类型：{0}</value>
+    </data>
+    <data name="Shortcuts_Encoding_auto" xml:space="preserve">
+        <value>自动</value>
+    </data>
+    <data name="Shortcuts_Encoding_gbk" xml:space="preserve">
+        <value>GBK</value>
+    </data>
+    <data name="Shortcuts_Encoding_utf8" xml:space="preserve">
+        <value>UTF-8</value>
+    </data>
+    <data name="Shortcuts_Error_Arguments" xml:space="preserve">
+        <value>参数必须是 JSON 对象。</value>
+    </data>
+    <data name="Shortcuts_Error_ChildBusy" xml:space="preserve">
+        <value>{0} 正在运行。</value>
+    </data>
+    <data name="Shortcuts_Error_ChildCancelled" xml:space="preserve">
+        <value>{0} 已取消。</value>
+    </data>
+    <data name="Shortcuts_Error_ChildFailed" xml:space="preserve">
+        <value>{0} 执行失败：{1}</value>
+    </data>
+    <data name="Shortcuts_Error_CollectOutsideLoop" xml:space="preserve">
+        <value>收集节点只能用在循环体内。</value>
+    </data>
+    <data name="Shortcuts_Error_CompareNotNumber" xml:space="preserve">
+        <value>大小比较需要两侧都是数字。</value>
+    </data>
+    <data name="Shortcuts_Error_ConfirmUnavailable" xml:space="preserve">
+        <value>没有可用于确认的窗口。</value>
+    </data>
+    <data name="Shortcuts_Error_Convert" xml:space="preserve">
+        <value>无法把 {0} 转换为 {1}。</value>
+    </data>
+    <data name="Shortcuts_Error_DivideByZero" xml:space="preserve">
+        <value>除数不能为 0。</value>
+    </data>
+    <data name="Shortcuts_Error_FieldMissing" xml:space="preserve">
+        <value>找不到字段：{0}</value>
+    </data>
+    <data name="Shortcuts_Error_FileExists" xml:space="preserve">
+        <value>{0} 已存在，请改用覆盖或追加。</value>
+    </data>
+    <data name="Shortcuts_Error_FileTooLarge" xml:space="preserve">
+        <value>文件过大（{0} KB）。</value>
+    </data>
+    <data name="Shortcuts_Error_FileTooLargeOut" xml:space="preserve">
+        <value>文本过大，无法写入。</value>
+    </data>
+    <data name="Shortcuts_Error_HttpFailed" xml:space="preserve">
+        <value>请求失败：{0}</value>
+    </data>
+    <data name="Shortcuts_Error_IndexRange" xml:space="preserve">
+        <value>下标 {0} 超出列表范围（0–{1}）。</value>
+    </data>
+    <data name="Shortcuts_Error_InputCancelled" xml:space="preserve">
+        <value>已取消输入。</value>
+    </data>
+    <data name="Shortcuts_Error_InputMissing" xml:space="preserve">
+        <value>缺少输入：{0}</value>
+    </data>
+    <data name="Shortcuts_Error_InvalidGraph" xml:space="preserve">
+        <value>工作流存在错误，无法运行。</value>
+    </data>
+    <data name="Shortcuts_Error_InvalidHotkey" xml:space="preserve">
+        <value>无效的组合键：{0}</value>
+    </data>
+    <data name="Shortcuts_Error_InvalidJson" xml:space="preserve">
+        <value>JSON 无效：{0}</value>
+    </data>
+    <data name="Shortcuts_Error_InvalidWindow" xml:space="preserve">
+        <value>不是有效的窗口句柄：{0}</value>
+    </data>
+    <data name="Shortcuts_Error_IterationLimit" xml:space="preserve">
+        <value>循环达到 {0} 次上限后条件仍成立。</value>
+    </data>
+    <data name="Shortcuts_Error_MergeConflict" xml:space="preserve">
+        <value>有多条分支同时产生了要合并的值。</value>
+    </data>
+    <data name="Shortcuts_Error_MergeEmpty" xml:space="preserve">
+        <value>没有任何分支产生可合并的值。</value>
+    </data>
+    <data name="Shortcuts_Error_MissingParam" xml:space="preserve">
+        <value>{0} 为必填项（{1}）。</value>
+    </data>
+    <data name="Shortcuts_Error_NoLastResult" xml:space="preserve">
+        <value>还没有任何数据结果。</value>
+    </data>
+    <data name="Shortcuts_Error_NoMedia" xml:space="preserve">
+        <value>没有正在播放的媒体。</value>
+    </data>
+    <data name="Shortcuts_Error_NotAbsolute" xml:space="preserve">
+        <value>路径必须是绝对路径：{0}</value>
+    </data>
+    <data name="Shortcuts_Error_NotBoolean" xml:space="preserve">
+        <value>{0} 不是布尔值：{1}</value>
+    </data>
+    <data name="Shortcuts_Error_NotDate" xml:space="preserve">
+        <value>{0} 不是日期：{1}</value>
+    </data>
+    <data name="Shortcuts_Error_NotNumber" xml:space="preserve">
+        <value>{0} 不是数字：{1}</value>
+    </data>
+    <data name="Shortcuts_Error_NumberOverflow" xml:space="preserve">
+        <value>结果不是有限数字。</value>
+    </data>
+    <data name="Shortcuts_Error_RangeInvalid" xml:space="preserve">
+        <value>最小值 {0} 大于最大值 {1}。</value>
+    </data>
+    <data name="Shortcuts_Error_Recording" xml:space="preserve">
+        <value>正在录制热键，无法发送按键。</value>
+    </data>
+    <data name="Shortcuts_Error_ReminderFile" xml:space="preserve">
+        <value>提醒文件无法读取。</value>
+    </data>
+    <data name="Shortcuts_Error_ReservedName" xml:space="preserve">
+        <value>{0} 是循环保留名，不能被赋值。</value>
+    </data>
+    <data name="Shortcuts_Error_SelectionCancelled" xml:space="preserve">
+        <value>已取消选择。</value>
+    </data>
+    <data name="Shortcuts_Error_SourceNotRun" xml:space="preserve">
+        <value>被引用的来源尚未执行：{0}</value>
+    </data>
+    <data name="Shortcuts_Error_TargetMissing" xml:space="preserve">
+        <value>找不到快捷指令：{0}</value>
+    </data>
+    <data name="Shortcuts_Error_UnknownOperator" xml:space="preserve">
+        <value>未知的比较运算符：{0}</value>
+    </data>
+    <data name="Shortcuts_Error_VariableMissing" xml:space="preserve">
+        <value>变量尚未赋值：{0}</value>
+    </data>
+    <data name="Shortcuts_Error_WindowNotFound" xml:space="preserve">
+        <value>没有匹配“{0}”的窗口。</value>
+    </data>
+    <data name="Shortcuts_Error_WindowTimeout" xml:space="preserve">
+        <value>窗口“{0}”未在 {1} 秒内出现。</value>
+    </data>
+    <data name="Shortcuts_Help_arguments" xml:space="preserve">
+        <value>输入字段 → 值的 JSON 对象。</value>
+    </data>
+    <data name="Shortcuts_Help_due" xml:space="preserve">
+        <value>留空表示不设到期时间。</value>
+    </data>
+    <data name="Shortcuts_Help_fieldPath" xml:space="preserve">
+        <value>点与方括号路径，例如 data.items[0].name。</value>
+    </data>
+    <data name="Shortcuts_Help_forEachSeparator" xml:space="preserve">
+        <value>仅当输入是纯文本时使用。</value>
+    </data>
+    <data name="Shortcuts_Help_forEachVar" xml:space="preserve">
+        <value>循环体内可用的当前项名称。</value>
+    </data>
+    <data name="Shortcuts_Help_formatDate" xml:space="preserve">
+        <value>留空表示当前时间。</value>
+    </data>
+    <data name="Shortcuts_Help_httpHeaders" xml:space="preserve">
+        <value>每行一个 Key: Value。</value>
+    </data>
+    <data name="Shortcuts_Help_httpQuery" xml:space="preserve">
+        <value>k=v&amp;k2=v2</value>
+    </data>
+    <data name="Shortcuts_Help_listItem" xml:space="preserve">
+        <value>从 0 开始。</value>
+    </data>
+    <data name="Shortcuts_Help_randomNumber" xml:space="preserve">
+        <value>两端都包含。</value>
+    </data>
+    <data name="Shortcuts_Help_screenshotDir" xml:space="preserve">
+        <value>留空则使用“图片\Screenshots”。</value>
+    </data>
+    <data name="Shortcuts_Help_sendKeySequence" xml:space="preserve">
+        <value>用逗号分隔多组，例如 Ctrl+A, Del。</value>
+    </data>
+    <data name="Shortcuts_Help_setClipboard" xml:space="preserve">
+        <value>留空即清空剪贴板。</value>
+    </data>
+    <data name="Shortcuts_Help_setVarName" xml:space="preserve">
+        <value>可用“读取变量”或 {{name}} 读取。</value>
+    </data>
+    <data name="Shortcuts_Help_setVolume" xml:space="preserve">
+        <value>0–100，不改变静音状态。</value>
+    </data>
+    <data name="Shortcuts_Help_themeDarkMode" xml:space="preserve">
+        <value>“切换”只有深/浅两态，“循环”还会经过跟随系统。</value>
+    </data>
+    <data name="Shortcuts_Help_typeText" xml:space="preserve">
+        <value>发送给当前拥有焦点的窗口。</value>
+    </data>
+    <data name="Shortcuts_Help_wait" xml:space="preserve">
+        <value>可填小数秒，最多 600。</value>
+    </data>
+    <data name="Shortcuts_Help_writeMode" xml:space="preserve">
+        <value>“新建”模式不会覆盖已有文件。</value>
+    </data>
+    <data name="Shortcuts_Http_DELETE" xml:space="preserve">
+        <value>DELETE</value>
+    </data>
+    <data name="Shortcuts_Http_PATCH" xml:space="preserve">
+        <value>PATCH</value>
+    </data>
+    <data name="Shortcuts_Http_PUT" xml:space="preserve">
+        <value>PUT</value>
+    </data>
+    <data name="Shortcuts_KeepEmpty_off" xml:space="preserve">
+        <value>丢弃</value>
+    </data>
+    <data name="Shortcuts_KeepEmpty_on" xml:space="preserve">
+        <value>保留</value>
+    </data>
+    <data name="Shortcuts_Match_contains" xml:space="preserve">
+        <value>包含</value>
+    </data>
+    <data name="Shortcuts_Match_equals" xml:space="preserve">
+        <value>等于</value>
+    </data>
+    <data name="Shortcuts_Match_startsWith" xml:space="preserve">
+        <value>以…开头</value>
+    </data>
+    <data name="Shortcuts_Mute_off" xml:space="preserve">
+        <value>取消静音</value>
+    </data>
+    <data name="Shortcuts_Mute_on" xml:space="preserve">
+        <value>静音</value>
+    </data>
+    <data name="Shortcuts_Op_greaterOrEqual" xml:space="preserve">
+        <value>≥</value>
+    </data>
+    <data name="Shortcuts_Op_isFalse" xml:space="preserve">
+        <value>为假</value>
+    </data>
+    <data name="Shortcuts_Op_isTrue" xml:space="preserve">
+        <value>为真</value>
+    </data>
+    <data name="Shortcuts_Op_lessOrEqual" xml:space="preserve">
+        <value>≤</value>
+    </data>
+    <data name="Shortcuts_Output_Activated" xml:space="preserve">
+        <value>已激活窗口</value>
+    </data>
+    <data name="Shortcuts_Output_ChildRan" xml:space="preserve">
+        <value>{0} 已执行完成</value>
+    </data>
+    <data name="Shortcuts_Output_ClipEmpty" xml:space="preserve">
+        <value>剪贴板为空</value>
+    </data>
+    <data name="Shortcuts_Output_Collected" xml:space="preserve">
+        <value>已收集 {0} 项</value>
+    </data>
+    <data name="Shortcuts_Output_Exists" xml:space="preserve">
+        <value>路径存在</value>
+    </data>
+    <data name="Shortcuts_Output_FileRead" xml:space="preserve">
+        <value>已读取 {0} 个字符</value>
+    </data>
+    <data name="Shortcuts_Output_FileWritten" xml:space="preserve">
+        <value>已写入 {0}</value>
+    </data>
+    <data name="Shortcuts_Output_Hotkey" xml:space="preserve">
+        <value>已发送 {0}</value>
+    </data>
+    <data name="Shortcuts_Output_Http" xml:space="preserve">
+        <value>HTTP {0}，{1} 个字符</value>
+    </data>
+    <data name="Shortcuts_Output_HttpTruncated" xml:space="preserve">
+        <value>HTTP {0}，已截断至 {1} 个字符</value>
+    </data>
+    <data name="Shortcuts_Output_KeySequence" xml:space="preserve">
+        <value>已发送 {0} 组按键</value>
+    </data>
+    <data name="Shortcuts_Output_Launched" xml:space="preserve">
+        <value>已提交启动：{0}</value>
+    </data>
+    <data name="Shortcuts_Output_ListCount" xml:space="preserve">
+        <value>{0} 项</value>
+    </data>
+    <data name="Shortcuts_Output_Media" xml:space="preserve">
+        <value>已发送媒体指令</value>
+    </data>
+    <data name="Shortcuts_Output_Missing" xml:space="preserve">
+        <value>路径不存在</value>
+    </data>
+    <data name="Shortcuts_Output_RecycleBin" xml:space="preserve">
+        <value>已清空回收站</value>
+    </data>
+    <data name="Shortcuts_Output_Sleep" xml:space="preserve">
+        <value>正在进入睡眠</value>
+    </data>
+    <data name="Shortcuts_Output_Typed" xml:space="preserve">
+        <value>已输入 {0} 个字符</value>
+    </data>
+    <data name="Shortcuts_Output_Waited" xml:space="preserve">
+        <value>已等待 {0} 秒</value>
+    </data>
+    <data name="Shortcuts_Output_Window" xml:space="preserve">
+        <value>窗口：{0}</value>
+    </data>
+    <data name="Shortcuts_Param_a" xml:space="preserve">
+        <value>第一个值</value>
+    </data>
+    <data name="Shortcuts_Param_amount" xml:space="preserve">
+        <value>数量</value>
+    </data>
+    <data name="Shortcuts_Param_arguments" xml:space="preserve">
+        <value>参数（JSON）</value>
+    </data>
+    <data name="Shortcuts_Param_b" xml:space="preserve">
+        <value>第二个值</value>
+    </data>
+    <data name="Shortcuts_Param_basePath" xml:space="preserve">
+        <value>基础目录</value>
+    </data>
+    <data name="Shortcuts_Param_calcOp" xml:space="preserve">
+        <value>运算</value>
+    </data>
+    <data name="Shortcuts_Param_childPath" xml:space="preserve">
+        <value>子路径</value>
+    </data>
+    <data name="Shortcuts_Param_contentType" xml:space="preserve">
+        <value>内容类型</value>
+    </data>
+    <data name="Shortcuts_Param_date" xml:space="preserve">
+        <value>日期</value>
+    </data>
+    <data name="Shortcuts_Param_dateUnit" xml:space="preserve">
+        <value>单位</value>
+    </data>
+    <data name="Shortcuts_Param_defaultValue" xml:space="preserve">
+        <value>默认值</value>
+    </data>
+    <data name="Shortcuts_Param_directory" xml:space="preserve">
+        <value>目录</value>
+    </data>
+    <data name="Shortcuts_Param_due" xml:space="preserve">
+        <value>到期时间</value>
+    </data>
+    <data name="Shortcuts_Param_encoding" xml:space="preserve">
+        <value>编码</value>
+    </data>
+    <data name="Shortcuts_Param_fieldPath" xml:space="preserve">
+        <value>字段路径</value>
+    </data>
+    <data name="Shortcuts_Param_filter" xml:space="preserve">
+        <value>过滤</value>
+    </data>
+    <data name="Shortcuts_Param_from" xml:space="preserve">
+        <value>起始</value>
+    </data>
+    <data name="Shortcuts_Param_headers" xml:space="preserve">
+        <value>请求头</value>
+    </data>
+    <data name="Shortcuts_Param_ignoreCase" xml:space="preserve">
+        <value>大小写</value>
+    </data>
+    <data name="Shortcuts_Param_index" xml:space="preserve">
+        <value>下标</value>
+    </data>
+    <data name="Shortcuts_Param_inputType" xml:space="preserve">
+        <value>输入类型</value>
+    </data>
+    <data name="Shortcuts_Param_item1" xml:space="preserve">
+        <value>值 1</value>
+    </data>
+    <data name="Shortcuts_Param_item2" xml:space="preserve">
+        <value>值 2</value>
+    </data>
+    <data name="Shortcuts_Param_item3" xml:space="preserve">
+        <value>值 3</value>
+    </data>
+    <data name="Shortcuts_Param_item4" xml:space="preserve">
+        <value>值 4</value>
+    </data>
+    <data name="Shortcuts_Param_keepEmpty" xml:space="preserve">
+        <value>空项</value>
+    </data>
+    <data name="Shortcuts_Param_match" xml:space="preserve">
+        <value>匹配方式</value>
+    </data>
+    <data name="Shortcuts_Param_muted" xml:space="preserve">
+        <value>静音</value>
+    </data>
+    <data name="Shortcuts_Param_notes" xml:space="preserve">
+        <value>备注</value>
+    </data>
+    <data name="Shortcuts_Param_object" xml:space="preserve">
+        <value>对象</value>
+    </data>
+    <data name="Shortcuts_Param_prompt" xml:space="preserve">
+        <value>提示文字</value>
+    </data>
+    <data name="Shortcuts_Param_recursive" xml:space="preserve">
+        <value>递归</value>
+    </data>
+    <data name="Shortcuts_Param_scope" xml:space="preserve">
+        <value>范围</value>
+    </data>
+    <data name="Shortcuts_Param_separatorText" xml:space="preserve">
+        <value>自定义分隔符</value>
+    </data>
+    <data name="Shortcuts_Param_targetType" xml:space="preserve">
+        <value>目标类型</value>
+    </data>
+    <data name="Shortcuts_Param_to" xml:space="preserve">
+        <value>结束</value>
+    </data>
+    <data name="Shortcuts_Param_trim" xml:space="preserve">
+        <value>去除空白</value>
+    </data>
+    <data name="Shortcuts_Param_window" xml:space="preserve">
+        <value>窗口句柄</value>
+    </data>
+    <data name="Shortcuts_Param_windowTitle" xml:space="preserve">
+        <value>窗口标题</value>
+    </data>
+    <data name="Shortcuts_Param_writeMode" xml:space="preserve">
+        <value>写入方式</value>
+    </data>
+    <data name="Shortcuts_Port_Amount" xml:space="preserve">
+        <value>数值</value>
+    </data>
+    <data name="Shortcuts_Port_Collected" xml:space="preserve">
+        <value>已收集</value>
+    </data>
+    <data name="Shortcuts_Port_Count" xml:space="preserve">
+        <value>数量</value>
+    </data>
+    <data name="Shortcuts_Port_Dark" xml:space="preserve">
+        <value>深色</value>
+    </data>
+    <data name="Shortcuts_Port_Date" xml:space="preserve">
+        <value>日期</value>
+    </data>
+    <data name="Shortcuts_Port_Due" xml:space="preserve">
+        <value>到期</value>
+    </data>
+    <data name="Shortcuts_Port_Error" xml:space="preserve">
+        <value>错误</value>
+    </data>
+    <data name="Shortcuts_Port_Exists" xml:space="preserve">
+        <value>存在</value>
+    </data>
+    <data name="Shortcuts_Port_Extension" xml:space="preserve">
+        <value>扩展名</value>
+    </data>
+    <data name="Shortcuts_Port_HasText" xml:space="preserve">
+        <value>有文本</value>
+    </data>
+    <data name="Shortcuts_Port_Headers" xml:space="preserve">
+        <value>响应头</value>
+    </data>
+    <data name="Shortcuts_Port_Input" xml:space="preserve">
+        <value>输入</value>
+    </data>
+    <data name="Shortcuts_Port_Level" xml:space="preserve">
+        <value>音量</value>
+    </data>
+    <data name="Shortcuts_Port_List" xml:space="preserve">
+        <value>列表</value>
+    </data>
+    <data name="Shortcuts_Port_Muted" xml:space="preserve">
+        <value>静音</value>
+    </data>
+    <data name="Shortcuts_Port_Name" xml:space="preserve">
+        <value>名称</value>
+    </data>
+    <data name="Shortcuts_Port_Number" xml:space="preserve">
+        <value>数字</value>
+    </data>
+    <data name="Shortcuts_Port_Parent" xml:space="preserve">
+        <value>父目录</value>
+    </data>
+    <data name="Shortcuts_Port_Path" xml:space="preserve">
+        <value>路径</value>
+    </data>
+    <data name="Shortcuts_Port_Result" xml:space="preserve">
+        <value>结果</value>
+    </data>
+    <data name="Shortcuts_Port_StatusCode" xml:space="preserve">
+        <value>状态码</value>
+    </data>
+    <data name="Shortcuts_Port_Surface" xml:space="preserve">
+        <value>材质</value>
+    </data>
+    <data name="Shortcuts_Port_Text" xml:space="preserve">
+        <value>文本</value>
+    </data>
+    <data name="Shortcuts_Port_Truncated" xml:space="preserve">
+        <value>已截断</value>
+    </data>
+    <data name="Shortcuts_Port_Url" xml:space="preserve">
+        <value>网址</value>
+    </data>
+    <data name="Shortcuts_Port_Visible" xml:space="preserve">
+        <value>可见</value>
+    </data>
+    <data name="Shortcuts_Port_Window" xml:space="preserve">
+        <value>窗口</value>
+    </data>
+    <data name="Shortcuts_Recursive_off" xml:space="preserve">
+        <value>否</value>
+    </data>
+    <data name="Shortcuts_Recursive_on" xml:space="preserve">
+        <value>是</value>
+    </data>
+    <data name="Shortcuts_Scope_primary" xml:space="preserve">
+        <value>主屏</value>
+    </data>
+    <data name="Shortcuts_Scope_virtual" xml:space="preserve">
+        <value>所有屏幕</value>
+    </data>
+    <data name="Shortcuts_Sep_custom" xml:space="preserve">
+        <value>自定义</value>
+    </data>
+    <data name="Shortcuts_Trim_off" xml:space="preserve">
+        <value>保留</value>
+    </data>
+    <data name="Shortcuts_Trim_on" xml:space="preserve">
+        <value>去除</value>
+    </data>
+    <data name="Shortcuts_Type_any" xml:space="preserve">
+        <value>任意</value>
+    </data>
+    <data name="Shortcuts_Type_boolean" xml:space="preserve">
+        <value>布尔</value>
+    </data>
+    <data name="Shortcuts_Type_datetime" xml:space="preserve">
+        <value>日期</value>
+    </data>
+    <data name="Shortcuts_Type_json" xml:space="preserve">
+        <value>JSON</value>
+    </data>
+    <data name="Shortcuts_Type_list" xml:space="preserve">
+        <value>列表</value>
+    </data>
+    <data name="Shortcuts_Type_null" xml:space="preserve">
+        <value>空值</value>
+    </data>
+    <data name="Shortcuts_Type_number" xml:space="preserve">
+        <value>数字</value>
+    </data>
+    <data name="Shortcuts_Type_path" xml:space="preserve">
+        <value>路径</value>
+    </data>
+    <data name="Shortcuts_Type_text" xml:space="preserve">
+        <value>文本</value>
+    </data>
+    <data name="Shortcuts_Unit_Days" xml:space="preserve">
+        <value>天</value>
+    </data>
+    <data name="Shortcuts_Unit_Hours" xml:space="preserve">
+        <value>小时</value>
+    </data>
+    <data name="Shortcuts_Unit_Minutes" xml:space="preserve">
+        <value>分钟</value>
+    </data>
+    <data name="Shortcuts_Unit_Seconds" xml:space="preserve">
+        <value>秒</value>
+    </data>
+    <data name="Shortcuts_Write_append" xml:space="preserve">
+        <value>追加</value>
+    </data>
+    <data name="Shortcuts_Write_create" xml:space="preserve">
+        <value>新建（不覆盖）</value>
+    </data>
+    <data name="Shortcuts_Write_overwrite" xml:space="preserve">
+        <value>覆盖</value>
+    </data>
+    <data name="Shortcuts_Import_BadKind" xml:space="preserve">
+        <value>未知的连线类型：{0}</value>
+    </data>
+    <data name="Shortcuts_Import_BadOnError" xml:space="preserve">
+        <value>未知的错误策略：{0}</value>
+    </data>
+    <data name="Shortcuts_Import_RepairPort" xml:space="preserve">
+        <value>数据线已从被移除的 `value` 端口改接到 `{0}`。</value>
+    </data>
+    <data name="Shortcuts_Migrate_Case" xml:space="preserve">
+        <value>switch 分支已从旧的 `|` 分隔列表重建。</value>
+    </data>
+    <data name="Shortcuts_Migrate_DateFormat" xml:space="preserve">
+        <value>日期格式已从 `currentDate` 拆分到独立的 `formatDate` 节点。</value>
+    </data>
+    <data name="Shortcuts_Migrate_LastResult" xml:space="preserve">
+        <value>`@last` 引用无法确定具体来源，现表示“最近的数据结果”。</value>
+    </data>
+    <data name="Shortcuts_Migrate_LinkKind" xml:space="preserve">
+        <value>存在未知类型的连线，已按执行连线保留。</value>
+    </data>
+    <data name="Shortcuts_Migrate_LinkPort" xml:space="preserve">
+        <value>连线使用了已不存在的端口（{0}），已保留并标记待修正。</value>
+    </data>
+    <data name="Shortcuts_Migrate_Mute" xml:space="preserve">
+        <value>旧的静音动作会连带改变音量，现已改为明确的 `setMute` 步骤。</value>
+    </data>
+    <data name="Shortcuts_Migrate_NewerVersion" xml:space="preserve">
+        <value>该文件由更新版本的 DeskCanvas 写入，现以只读方式打开，且不会被覆盖。</value>
+    </data>
+    <data name="Shortcuts_Migrate_RemovedOutput" xml:space="preserve">
+        <value>该动作不再提供此输出，现改为返回类型化值。</value>
+    </data>
+    <data name="Shortcuts_Migrate_SendKeys" xml:space="preserve">
+        <value>组合的 `sendKeys` 已拆分为 `typeText` 与 `sendKeySequence`。</value>
+    </data>
+    <data name="Shortcuts_Migrate_SetVarOutput" xml:space="preserve">
+        <value>`setVar` 现在把存入的值作为真正的输出端口暴露。</value>
+    </data>
+    <data name="Shortcuts_Template_Input" xml:space="preserve">
+        <value>询问并返回</value>
+    </data>
+    <data name="Shortcuts_Library_LoopHeader" xml:space="preserve">
+        <value>循环的接法</value>
+    </data>
+    <data name="Shortcuts_Library_LoopHint" xml:space="preserve">
+        <value>循环体从 `body` 接出，循环结束后的步骤从 `done` 接出。循环体不需要画回边，它会自动重复；尾部不接线即表示本轮结束。跨轮收集请用“收集”节点。</value>
+    </data>
+    <data name="Shortcuts_Library_NoInput" xml:space="preserve">
+        <value>无输入</value>
+    </data>
+    <data name="Shortcuts_Library_NoOutput" xml:space="preserve">
+        <value>无数据输出</value>
+    </data>
+    <data name="Shortcuts_Node_AddCase" xml:space="preserve">
+        <value>添加分支</value>
+    </data>
+    <data name="Shortcuts_Node_EditCases" xml:space="preserve">
+        <value>编辑分支</value>
+    </data>
+    <data name="Shortcuts_Node_ErrorPolicy" xml:space="preserve">
+        <value>错误时走错误出口</value>
+    </data>
+    <data name="Shortcuts_Param_BoundFrom" xml:space="preserve">
+        <value>该值来自 {0}。</value>
+    </data>
+    <data name="Shortcuts_Param_Detach" xml:space="preserve">
+        <value>断开连接并改为手动值</value>
+    </data>
+    <data name="Shortcuts_Param_EditManual" xml:space="preserve">
+        <value>编辑数值…</value>
+    </data>
+    <data name="Shortcuts_Param_Incompatible" xml:space="preserve">
+        <value>{0}（没有类型匹配的输出）</value>
+    </data>
+    <data name="Shortcuts_Param_JumpToSource" xml:space="preserve">
+        <value>跳转来源</value>
+    </data>
+    <data name="Shortcuts_Param_ListHint" xml:space="preserve">
+        <value>每行一项。</value>
+    </data>
+    <data name="Shortcuts_Param_NoShortcuts" xml:space="preserve">
+        <value>请先创建另一个快捷指令。</value>
+    </data>
+    <data name="Shortcuts_RunDetails_Cancelled" xml:space="preserve">
+        <value>已取消</value>
+    </data>
+    <data name="Shortcuts_RunDetails_Empty" xml:space="preserve">
+        <value>运行一次后，这里会显示每一步的输入与输出。</value>
+    </data>
+    <data name="Shortcuts_RunDetails_Failed" xml:space="preserve">
+        <value>失败</value>
+    </data>
+    <data name="Shortcuts_RunDetails_Iteration" xml:space="preserve">
+        <value>第 {0} 轮</value>
+    </data>
+    <data name="Shortcuts_RunDetails_RunId" xml:space="preserve">
+        <value>运行 ID</value>
+    </data>
+    <data name="Shortcuts_RunDetails_Running" xml:space="preserve">
+        <value>运行中</value>
+    </data>
+    <data name="Shortcuts_RunDetails_Success" xml:space="preserve">
+        <value>成功</value>
+    </data>
+    <data name="Shortcuts_RunDetails_Title" xml:space="preserve">
+        <value>运行详情</value>
+    </data>
+    <data name="Shortcuts_Tip_Bound" xml:space="preserve">
+        <value>{0} 由 {1} 提供。</value>
+    </data>
+    <data name="Shortcuts_Canvas_Export" xml:space="preserve">
+        <value>导出 JSON 文件</value>
+    </data>
+    <data name="Shortcuts_Canvas_Exported" xml:space="preserve">
+        <value>已导出 JSON 文件。</value>
+    </data>
+    <data name="Shortcuts_Canvas_ExportFailed" xml:space="preserve">
+        <value>导出失败：</value>
+    </data>
+    <data name="Shortcuts_Canvas_DeleteLink" xml:space="preserve">
+        <value>删除连线</value>
+    </data>
+    <data name="Shortcuts_Canvas_SelectAll" xml:space="preserve">
+        <value>全选</value>
+    </data>
+    <data name="Shortcuts_Canvas_DeletedOne" xml:space="preserve">
+        <value>已删除。</value>
+    </data>
+    <data name="Shortcuts_Canvas_DeletedCount" xml:space="preserve">
+        <value>已删除 {0} 个节点。</value>
+    </data>
+    <data name="Shortcuts_Diagnostics_HeaderErrors" xml:space="preserve">
+        <value>{0} 个错误 · {1} 个警告</value>
+    </data>
+    <data name="Shortcuts_Diagnostics_HeaderWarnings" xml:space="preserve">
+        <value>{0} 个警告</value>
+    </data>
+    <data name="Shortcuts_Import_Relayout" xml:space="preserve">
+        <value>重新排版（忽略原坐标）</value>
+    </data>
+    <data name="Shortcuts_AiPanel_Title" xml:space="preserve">
+        <value>AI 助手</value>
+    </data>
+    <data name="Shortcuts_Ai_Settings" xml:space="preserve">
+        <value>API 设置</value>
+    </data>
+    <data name="Shortcuts_Ai_BaseUrl" xml:space="preserve">
+        <value>API 地址（OpenAI 兼容）</value>
+    </data>
+    <data name="Shortcuts_Ai_ApiKey" xml:space="preserve">
+        <value>API Key</value>
+    </data>
+    <data name="Shortcuts_Ai_Model" xml:space="preserve">
+        <value>模型</value>
+    </data>
+    <data name="Shortcuts_Ai_SettingsHint" xml:space="preserve">
+        <value>密钥只保存在本机 shortcuts-ai.json。支持任何 OpenAI 兼容端点（OpenAI、DeepSeek、通义千问、本地网关…）。</value>
+    </data>
+    <data name="Shortcuts_Ai_PromptLabel" xml:space="preserve">
+        <value>描述你想搭建的流程</value>
+    </data>
+    <data name="Shortcuts_Ai_PromptWatermark" xml:space="preserve">
+        <value>例如：读取剪贴板文本，提取其中所有邮箱地址，保存到桌面 emails.txt</value>
+    </data>
+    <data name="Shortcuts_Ai_Generate" xml:space="preserve">
+        <value>生成并应用</value>
+    </data>
+    <data name="Shortcuts_Ai_NeedKey" xml:space="preserve">
+        <value>请先在「API 设置」中填写 API Key。</value>
+    </data>
+    <data name="Shortcuts_Ai_Working" xml:space="preserve">
+        <value>正在生成…</value>
+    </data>
+    <data name="Shortcuts_Ai_Failed" xml:space="preserve">
+        <value>生成失败。</value>
+    </data>
+    <data name="Shortcuts_Ai_Done" xml:space="preserve">
+        <value>已应用。上一步的画布内容可用 Ctrl+Z 撤销恢复。</value>
+    </data>
+    <data name="Shortcuts_Ai_ParseFailed" xml:space="preserve">
+        <value>无法解析模型回复：</value>
+    </data>
+    <data name="Shortcuts_Ai_Applied" xml:space="preserve">
+        <value>AI 工作流已应用到画布。</value>
     </data>
 </root>

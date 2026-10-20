@@ -276,21 +276,10 @@ public partial class ShortcutsView : UserControl, IWidgetSelfRefreshing
             var shortcut = viewModel.FindShortcut(tile.ShortcutId);
             if (shortcut == null) return;
 
-            if (model.ConfirmBeforeRun || shortcut.ConfirmBeforeRun)
-            {
-                var owner = TopLevel.GetTopLevel(this) as Window;
-                if (owner != null)
-                {
-                    var ok = await ConfirmDialog.ConfirmAsync(
-                        owner,
-                        Loc.Format("Shortcuts_ConfirmRunMessage", shortcut.Name),
-                        Loc.Get("Shortcuts_ConfirmRunOk"),
-                        Loc.Get("Shortcuts_Cancel"));
-                    if (!ok) return;
-                }
-            }
-
-            await ShortcutRunner.RunAsync(shortcut, ShortcutsRuntime.CreateRunServices(this));
+            // Confirmation lives in the single run entry point: the component switch and the
+            // shortcut switch are both passed in, and the user is asked exactly once.
+            await ShortcutRunner.RunAsync(shortcut, ShortcutsRuntime.CreateRunServices(this),
+                new RunOptions { RequireConfirm = model.ConfirmBeforeRun });
         }
         catch
         {
@@ -311,7 +300,8 @@ public partial class ShortcutsView : UserControl, IWidgetSelfRefreshing
     {
         try
         {
-            await ShortcutRunner.RunAsync(shortcut, ShortcutsRuntime.CreateRunServices(this));
+            await ShortcutRunner.RunAsync(shortcut, ShortcutsRuntime.CreateRunServices(this),
+                new RunOptions { RequireConfirm = model.ConfirmBeforeRun });
         }
         catch
         {

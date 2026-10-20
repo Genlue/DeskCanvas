@@ -232,7 +232,13 @@ public static class ShortcutHotkeyService
             first = captureDepth == 1;
         }
 
-        if (first) Suspend();
+        if (first)
+        {
+            // Synthesized keystrokes must not be injected while the box is recording: they
+            // would be swallowed by the capture and the shortcut would do nothing.
+            KeyboardInput.IsRecording = true;
+            Suspend();
+        }
     }
 
     /// <summary>End a capture session; resumes registrations when the last one closes.</summary>
@@ -246,7 +252,11 @@ public static class ShortcutHotkeyService
             last = captureDepth == 0;
         }
 
-        if (last) Resume();
+        if (last)
+        {
+            KeyboardInput.IsRecording = false;
+            Resume();
+        }
     }
 
     /// <summary>Re-register the most recent document (or the store's current one) after recording.</summary>
@@ -297,8 +307,9 @@ public static class ShortcutHotkeyService
     }
 
     /// <summary>
-    /// Run a shortcut by id from the hotkey path. Honours the shortcut's own ConfirmBeforeRun;
-    /// without a visible owner window a destructive shortcut is not run silently.
+    /// Run a shortcut by id from the hotkey path. Confirmation is decided once, inside the single
+    /// run entry point, so the hotkey behaves exactly like the card and the panel; a shortcut that
+    /// needs a dialog and has no owner window fails instead of running silently.
     /// </summary>
     public static async Task<bool> ExecuteShortcutAsync(string shortcutId)
     {
@@ -315,24 +326,6 @@ public static class ShortcutHotkeyService
         if (shortcut == null) return false;
 
         var owner = ResolveOwnerWindow();
-        if (shortcut.ConfirmBeforeRun)
-        {
-            if (owner == null) return false;
-
-            try
-            {
-                var ok = await ConfirmDialog.ConfirmAsync(
-                    owner,
-                    Loc.Format("Shortcuts_ConfirmRunMessage", shortcut.Name),
-                    Loc.Get("Shortcuts_ConfirmRunOk"),
-                    Loc.Get("Shortcuts_Cancel"));
-                if (!ok) return false;
-            }
-            catch
-            {
-                return false;
-            }
-        }
 
         try
         {

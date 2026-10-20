@@ -171,4 +171,88 @@
     <data name="Countdown_Style_Subtitle" xml:space="preserve">
         <value>应用于各尺寸卡片的外观布局表现</value>
     </data>
+    <data name="Countdown_FestivalPreset" xml:space="preserve">
+        <value>节日预设</value>
+    </data>
+    <data name="Countdown_Festival_Custom" xml:space="preserve">
+        <value>自定义</value>
+    </data>
+    <data name="Countdown_SaveAsPreset" xml:space="preserve">
+        <value>存为我的预设</value>
+    </data>
+    <data name="Countdown_DeletePreset" xml:space="preserve">
+        <value>删除预设</value>
+    </data>
+    <data name="Countdown_Festival_NewYear" xml:space="preserve">
+        <value>元旦</value>
+    </data>
+    <data name="Countdown_Festival_ValentinesDay" xml:space="preserve">
+        <value>情人节</value>
+    </data>
+    <data name="Countdown_Festival_LaborDay" xml:space="preserve">
+        <value>劳动节</value>
+    </data>
+    <data name="Countdown_Festival_ChildrensDay" xml:space="preserve">
+        <value>儿童节</value>
+    </data>
+    <data name="Countdown_Festival_TeachersDay" xml:space="preserve">
+        <value>教师节</value>
+    </data>
+    <data name="Countdown_Festival_NationalDay" xml:space="preserve">
+        <value>国庆节</value>
+    </data>
+    <data name="Countdown_Festival_Halloween" xml:space="preserve">
+        <value>万圣节</value>
+    </data>
+    <data name="Countdown_Festival_SinglesDay" xml:space="preserve">
+        <value>双十一</value>
+    </data>
+    <data name="Countdown_Festival_ChristmasEve" xml:space="preserve">
+        <value>平安夜</value>
+    </data>
+    <data name="Countdown_Festival_Christmas" xml:space="preserve">
+        <value>圣诞节</value>
+    </data>
+    <data name="Countdown_Festival_SpringFestival" xml:space="preserve">
+        <value>春节</value>
+    </data>
+    <data name="Countdown_Festival_Lantern" xml:space="preserve">
+        <value>元宵节</value>
+    </data>
+    <data name="Countdown_Festival_Longtaitou" xml:space="preserve">
+        <value>龙抬头</value>
+    </data>
+    <data name="Countdown_Festival_DragonBoat" xml:space="preserve">
+        <value>端午节</value>
+    </data>
+    <data name="Countdown_Festival_Qixi" xml:space="preserve">
+        <value>七夕</value>
+    </data>
+    <data name="Countdown_Festival_Ghost" xml:space="preserve">
+        <value>中元节</value>
+    </data>
+    <data name="Countdown_Festival_MidAutumn" xml:space="preserve">
+        <value>中秋节</value>
+    </data>
+    <data name="Countdown_Festival_DoubleNinth" xml:space="preserve">
+        <value>重阳节</value>
+    </data>
+    <data name="Countdown_Festival_Laba" xml:space="preserve">
+        <value>腊八节</value>
+    </data>
+    <data name="Countdown_Festival_NewYearsEve" xml:space="preserve">
+        <value>除夕</value>
+    </data>
+    <data name="Countdown_Festival_MothersDay" xml:space="preserve">
+        <value>母亲节</value>
+    </data>
+    <data name="Countdown_Festival_FathersDay" xml:space="preserve">
+        <value>父亲节</value>
+    </data>
+    <data name="Countdown_Festival_Thanksgiving" xml:space="preserve">
+        <value>感恩节</value>
+    </data>
+    <data name="Countdown_Festival_Qingming" xml:space="preserve">
+        <value>清明</value>
+    </data>
 </root>

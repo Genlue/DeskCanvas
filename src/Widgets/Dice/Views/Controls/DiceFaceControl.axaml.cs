@@ -24,6 +24,12 @@ public partial class DiceFaceControl : UserControl
 
     private const double BaseFaceSize = 48d;
 
+    /// <summary>设计基准内容区（= 48 - 2 * 6 padding）：点阵与数字都画在这个方框里。</summary>
+    private const double DesignContentSize = 36d;
+
+    /// <summary>设计基准下的字号（单位数）。多位数字按位数收敛，避免撑破 36 的设计宽度。</summary>
+    private const double DesignNumberFontSize = 24d;
+
     public int Value
     {
         get => GetValue(ValueProperty);
@@ -63,16 +69,23 @@ public partial class DiceFaceControl : UserControl
         UpdateVisuals();
     }
 
+    private void UpdateFaceSize() => ApplyFaceSize(FaceSize);
+
     /// <summary>
-    /// 按 <see cref="FaceSize"/> 等比缩放骰面几何（圆角、边距、点径、字号）。
-    /// 默认尺寸 48 时所有数值与历史实现完全一致。
+    /// 按实际骰面边长设置外框；圆角、投影留白与内边距等比缩放。
+    /// 点阵/数字本身不在这里缩放——它们固定画在 36x36 的设计基准里，由 Viewbox
+    /// 统一等比缩放到实际内容区，因此任何尺寸下都不会溢出骰面。
     /// </summary>
-    private void UpdateFaceSize()
+    private void ApplyFaceSize(double size)
     {
-        double size = FaceSize;
         if (!double.IsFinite(size) || size <= 0)
         {
             size = BaseFaceSize;
+        }
+
+        if (Math.Abs(FaceBorder.Width - size) < 0.01 && Math.Abs(FaceBorder.Height - size) < 0.01)
+        {
+            return;
         }
 
         double scale = size / BaseFaceSize;
@@ -80,24 +93,14 @@ public partial class DiceFaceControl : UserControl
         FaceBorder.Width = size;
         FaceBorder.Height = size;
         FaceBorder.CornerRadius = new CornerRadius(10 * scale);
+        FaceBorder.Padding = new Thickness(6 * scale);
+        // 投影呼吸边距：始终给 blur 2 留出 4*scale 的余量（小骰面下也按比例收）。
         FaceBorder.Margin = new Thickness(4 * scale);
-        ContentPanel.Margin = new Thickness(6 * scale);
-        NumberText.FontSize = 24 * scale;
 
-        SetDotSize(DotTL, 9 * scale);
-        SetDotSize(DotML, 9 * scale);
-        SetDotSize(DotBL, 9 * scale);
-        SetDotSize(DotTR, 9 * scale);
-        SetDotSize(DotMR, 9 * scale);
-        SetDotSize(DotBR, 9 * scale);
-        SetDotSize(DotCenter, 10 * scale);
-        SetDotSize(DotCenterAccent, 10 * scale);
-    }
-
-    private static void SetDotSize(Avalonia.Controls.Shapes.Ellipse dot, double diameter)
-    {
-        dot.Width = diameter;
-        dot.Height = diameter;
+        // 内容区在设计基准里是固定 36x36，Viewbox 负责缩放；这里只需保证
+        // 数字在设计基准内不超宽。
+        ContentPanel.Width = DesignContentSize;
+        ContentPanel.Height = DesignContentSize;
     }
 
     private void UpdateVisuals()
@@ -123,7 +126,17 @@ public partial class DiceFaceControl : UserControl
         {
             DotsGrid.IsVisible = false;
             NumberText.IsVisible = true;
-            NumberText.Text = val.ToString();
+            var text = val.ToString();
+            NumberText.Text = text;
+
+            // 设计基准宽度 36：单位数用 24 号，两位数/三位数按位数收敛，
+            // 使 100（D100）也不会超出设计宽度而被裁切。
+            NumberText.FontSize = text.Length switch
+            {
+                <= 1 => DesignNumberFontSize,
+                2 => DesignNumberFontSize * 0.82,
+                _ => DesignNumberFontSize * 0.64,
+            };
         }
     }
 }

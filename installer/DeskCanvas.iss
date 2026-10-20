@@ -2,7 +2,7 @@
 ; Produces DeskCanvas-Setup.exe with native uninstallation (unins000.exe) and dynamic data directory cleanup support.
 
 #ifndef MyAppVersion
-#define MyAppVersion "4.0.3"
+#define MyAppVersion "4.1.0"
 #endif
 
 #ifndef MyRuntime

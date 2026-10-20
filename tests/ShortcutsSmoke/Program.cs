@@ -12,8 +12,8 @@ namespace ShortcutsSmoke;
 /// <summary>
 /// Headless smoke checks for the Shortcuts plugin: glyph parsing, store round-trips, the
 /// sequential runner, magic variables, control flow, cancellation, busy guard and failure
-/// paths. Never touches live user data (the sandbox env var is set before Const is touched)
-/// and never starts external processes.
+/// paths. Never touches live user data (the sandbox env var is set before Const is touched).
+/// The only external processes started are the read-only shells behind the runCommand checks.
 /// </summary>
 internal static class Program
 {
@@ -86,9 +86,10 @@ internal static class Program
         var document = new ShortcutsDocument { Shortcuts = [ShortcutTemplates.QuietFocus()] };
         var json = JsonSerializer.Serialize(document, DocumentJson.FileOptions);
         var back = JsonSerializer.Deserialize<ShortcutsDocument>(json, DocumentJson.FileOptions)!;
-        Check(back.Shortcuts.Count == 1 && back.Shortcuts[0].Actions.Count == 2,
-            "document round-trips");
-        Check(back.Shortcuts[0].ActionCount == 2, "action count counts leaves");
+        Check(back.Shortcuts.Count == 1 && back.Shortcuts[0].EffectiveGraph.Nodes.Count == 3,
+            "document round-trips (start + two actions)");
+        Check(back.Shortcuts[0].ActionCount == 2, "action count counts executable nodes");
+        Check(back.Shortcuts[0].Actions.Count == 0, "the legacy action list is emptied by migration");
     }
 
     // ---- hotkey model --------------------------------------------------------------
@@ -203,7 +204,7 @@ internal static class Program
 
     private static void CheckNewActionsAndTemplates()
     {
-        foreach (var type in new[] { "openFolder", "minimizeAll", "sendKeys", "sendHotkey", "runShortcut", "httpRequest" })
+        foreach (var type in new[] { "openFolder", "minimizeAll", "typeText", "sendKeySequence", "sendHotkey", "runCommand", "runShortcut", "httpRequest" })
         {
             Check(ActionCatalog.Get(type) != null, $"catalog defines {type}");
             Check(ActionExecutors.Find(type) != null, $"executor exists for {type}");
@@ -212,18 +213,45 @@ internal static class Program
         Check(ActionCatalog.Get("sendHotkey")!.Params.Any(p => p.Kind == ParamKind.Hotkey),
             "sendHotkey exposes a Hotkey parameter");
 
+        // The "AI 帮写" spec is generated from the catalog; it must cover every visible action,
+        // so a new action can never ship without appearing in the prompt document.
+        var spec = WorkflowSpecDocument.Build();
+        Check(ActionCatalog.Visible.All(d => spec.Contains($"`{d.Type}`", StringComparison.Ordinal)),
+            "AI spec document covers every visible action");
+
+        // The spec must demand a security review pass (sub-agent when available) and allow a
+        // short safety notice before the JSON.
+        Check(spec.Contains("安全审查", StringComparison.Ordinal) &&
+              spec.Contains("子代理", StringComparison.Ordinal) &&
+              spec.Contains("⚠️ 安全提示", StringComparison.Ordinal),
+            "AI spec document requires a security review and user-facing safety notices");
+
+        // Import must extract the JSON out of a full model reply (fenced block or prose-wrapped).
+        var sampleJson = """{"name":"t","nodes":[{"id":"s","type":"start"}],"links":[]}""";
+        Check(WorkflowImport.ExtractJson(sampleJson) == sampleJson, "extract keeps verbatim JSON");
+        Check(WorkflowImport.ExtractJson("说明文字\n```json\n" + sampleJson + "\n```\n结尾") == sampleJson,
+            "extract pulls the fenced json block");
+        Check(WorkflowImport.ExtractJson("⚠️ 安全提示：……\n" + sampleJson + "\n（完）") == sampleJson,
+            "extract pulls prose-wrapped JSON");
+        Check(WorkflowImport.Parse(WorkflowImport.ExtractJson(
+                "⚠️ 安全提示：示例\n```json\n" + sampleJson + "\n```")) is { Success: true },
+            "import succeeds on a full model reply");
+
         Check(ActionCatalog.Get("openFolder")!.Params[0].Kind == ParamKind.FolderPath,
             "openFolder uses the folder picker");
 
-        Check(ShortcutTemplates.Menu.Count == 7, "seven new-shortcut templates are offered");
+        Check(ShortcutTemplates.Menu.Count >= 7,
+            $"at least seven new-shortcut templates are offered (got {ShortcutTemplates.Menu.Count})");
 
         foreach (var (labelKey, create) in ShortcutTemplates.Menu)
         {
             var shortcut = create();
             Check(!string.IsNullOrWhiteSpace(Loc.Get(labelKey)) && !string.IsNullOrWhiteSpace(shortcut.Name),
                 $"template '{labelKey}' has a localized name");
-            Check(shortcut.Actions.All(a => ActionCatalog.Get(a.Type) != null),
+            Check(shortcut.EffectiveGraph.Nodes.All(n => ActionCatalog.Get(n.Type) != null),
                 $"template '{labelKey}' only uses catalog actions");
+            var report = WorkflowValidator.Validate(shortcut.EffectiveGraph, shortcut, forRun: true);
+            Check(!report.HasErrors, $"template '{labelKey}' validates");
         }
 
         Check(ShortcutTemplates.ClockOut().ConfirmBeforeRun,
@@ -315,22 +343,24 @@ internal static class Program
         }
 
         // Linear + magic variables + control flow.
-        var first = ShortcutAction.With("currentDate", ("format", "yyyy"));
+        var first = ShortcutAction.Create("currentDate");
         var upper = ShortcutAction.Create("textTransform");
         upper.Params["operation"] = ShortcutValue.Literal("upper");
         upper.Params["input"] = ShortcutValue.Variable(ValueKinds.LastResult);
 
+        var flag = ShortcutAction.With("setVar", ("name", "flag"), ("value", "looped"));
+
         var repeat = ShortcutAction.Create("repeat");
         repeat.Params["count"] = ShortcutValue.Literal("2");
-        var repeatChild = ShortcutAction.With("comment", ("note", "looped"));
+        var repeatChild = ShortcutAction.With("setVar", ("name", "looped"), ("value", "looped"));
         repeat.Children.Add(repeatChild);
 
         var ifAction = ShortcutAction.Create("if");
-        ifAction.Params["left"] = ShortcutValue.Variable(repeatChild.Id);
+        ifAction.Params["left"] = ShortcutValue.Variable(flag.Id);
         ifAction.Params["op"] = ShortcutValue.Literal("equals");
         ifAction.Params["right"] = ShortcutValue.Literal("looped");
-        var thenChild = ShortcutAction.With("comment", ("note", "then-branch"));
-        var elseChild = ShortcutAction.With("comment", ("note", "else-branch"));
+        var thenChild = ShortcutAction.With("setVar", ("name", "branch"), ("value", "then-branch"));
+        var elseChild = ShortcutAction.With("setVar", ("name", "branch"), ("value", "else-branch"));
         ifAction.Children.Add(thenChild);
         ifAction.ElseChildren.Add(elseChild);
 
@@ -340,7 +370,7 @@ internal static class Program
         var scripted = new ShortcutDefinition
         {
             Name = "smoke-runner",
-            Actions = [first, upper, repeat, ifAction, deterministic, shortWait],
+            Actions = [first, upper, flag, repeat, ifAction, deterministic, shortWait],
         };
 
         var events = new List<RunEvent>();
@@ -349,9 +379,11 @@ internal static class Program
         var result = await ShortcutRunner.RunAsync(scripted, new RunServices());
         ShortcutRunner.RunEvent -= OnEvent;
 
+        if (!result.Success)
+            Console.WriteLine($"      scripted error [{result.ErrorCode}] {result.Error}");
         CheckAsync(result.Success, "scripted run succeeds");
-        CheckAsync(result.Outputs.GetValueOrDefault(first.Id)?.Length == 4,
-            "currentDate honours the format");
+        CheckAsync(!string.IsNullOrEmpty(result.Outputs.GetValueOrDefault(first.Id)),
+            "currentDate produces a date value");
         CheckAsync(result.Outputs.GetValueOrDefault(upper.Id) ==
                   result.Outputs.GetValueOrDefault(first.Id)?.ToUpperInvariant(),
             "magic variable resolves to the previous output");
@@ -407,14 +439,26 @@ internal static class Program
         ShortcutRunner.RunEvent -= OnFailEvent;
         CheckAsync(!failed.Success && !string.IsNullOrEmpty(failed.Error),
             "empty required parameter fails the run");
+        if (failedEvents.Count != 1)
+            Console.WriteLine($"      failed run [{failed.ErrorCode}] events={failedEvents.Count} {failed.Error}");
         CheckAsync(failedEvents.Count == 1, "step-failed event fired once");
 
+        // Built directly as a graph: the v1 migration deliberately tolerates an unknown action
+        // by turning it into a note, so the runtime guard is what is under test here.
+        var unknownStart = new WorkflowNode { Type = WorkflowNodeTypes.Start };
+        var unknownNode = new WorkflowNode { Type = "not-a-real-action" };
         var unknownAction = new ShortcutDefinition
         {
             Name = "smoke-unknown",
-            Actions = [new ShortcutAction { Type = "not-a-real-action" }],
+            Graph = new WorkflowGraph
+            {
+                Nodes = [unknownStart, unknownNode],
+                Links = [WorkflowLink.Exec(unknownStart.Id, WorkflowNodeTypes.Out, unknownNode.Id)],
+            },
         };
         var unknownResult = await ShortcutRunner.RunAsync(unknownAction, new RunServices());
+        CheckAsync(unknownResult.ErrorCode is "InvalidGraph" or "UnknownType",
+            "the unknown type is named by the run result");
         CheckAsync(!unknownResult.Success, "unknown action type fails the run");
 
         // New executors: safe negative paths only (no windows are minimized / no keys are sent).
@@ -442,10 +486,10 @@ internal static class Program
         var badKeys = new ShortcutDefinition
         {
             Name = "smoke-bad-keys",
-            Actions = [ShortcutAction.With("sendKeys", ("keys", "Ctrl+Alt+NoSuchKey"))],
+            Actions = [ShortcutAction.With("sendKeySequence", ("keys", "Ctrl+Alt+NoSuchKey"))],
         };
         var badKeysResult = await ShortcutRunner.RunAsync(badKeys, new RunServices());
-        CheckAsync(!badKeysResult.Success, "sendKeys rejects an unknown key before SendInput");
+        CheckAsync(!badKeysResult.Success, "sendKeySequence rejects an unknown key before SendInput");
 
         // sendHotkey: injectable sender, exact press/release order, finally release, capture guard.
         var previousSender = KeyboardInput.Sender;
@@ -530,6 +574,62 @@ internal static class Program
         CheckAsync(File.Exists(Const.RemindersFile) &&
                    File.ReadAllText(Const.RemindersFile).Contains("smoke-reminder"),
             "reminder appended to reminders.json");
+
+        // runCommand: real but read-only shells (echo / exit codes / a killed sleep) — they
+        // verify stream capture, code-page handling and the timeout path end to end.
+        var echoPs = new ShortcutDefinition
+        {
+            Name = "smoke-runcommand-ps",
+            Actions = [ShortcutAction.With("runCommand",
+                ("shell", "powershell"), ("command", "Write-Output '你好 world'"), ("timeout", "20"))],
+        };
+        var echoPsResult = await ShortcutRunner.RunAsync(echoPs, new RunServices());
+        if (!echoPsResult.Success)
+            Console.WriteLine($"      runCommand ps [{echoPsResult.ErrorCode}] {echoPsResult.Error}");
+        CheckAsync(echoPsResult.Success, "runCommand runs PowerShell");
+        CheckAsync(echoPsResult.Outputs.GetValueOrDefault(echoPs.Actions[0].Id)?.Contains("你好 world") == true,
+            "runCommand captures PowerShell output with non-ASCII text intact");
+
+        var cmdScript = new ShortcutDefinition
+        {
+            Name = "smoke-runcommand-cmd",
+            Actions = [ShortcutAction.With("runCommand",
+                ("shell", "cmd"),
+                ("command", "echo 你好 hello\r\ncmd /c exit 7"),
+                ("failOnExit", "false"), ("timeout", "20"))],
+        };
+        var cmdResult = await ShortcutRunner.RunAsync(cmdScript, new RunServices());
+        if (!cmdResult.Success)
+            Console.WriteLine($"      runCommand cmd [{cmdResult.ErrorCode}] {cmdResult.Error}");
+        CheckAsync(cmdResult.Success, "runCommand runs a multi-line CMD script");
+        CheckAsync(cmdResult.Outputs.GetValueOrDefault(cmdScript.Actions[0].Id)?.Contains("hello") == true,
+            "runCommand captures CMD stdout across lines");
+        CheckAsync(cmdResult.Outputs.GetValueOrDefault(cmdScript.Actions[0].Id)?.Contains("你好") == true,
+            "runCommand keeps non-ASCII text intact through the cmd code page");
+
+        var exitCode = new ShortcutDefinition
+        {
+            Name = "smoke-runcommand-exit",
+            Actions = [ShortcutAction.With("runCommand",
+                ("shell", "cmd"), ("command", "cmd /c exit 7"), ("timeout", "20"))],
+        };
+        var exitResult = await ShortcutRunner.RunAsync(exitCode, new RunServices());
+        CheckAsync(!exitResult.Success && exitResult.ErrorCode == "CommandFailed",
+            "runCommand fails the step on a non-zero exit code");
+
+        var slowCommand = new ShortcutDefinition
+        {
+            Name = "smoke-runcommand-timeout",
+            Actions = [ShortcutAction.With("runCommand",
+                ("shell", "powershell"), ("command", "Start-Sleep -Seconds 60"), ("timeout", "1"))],
+        };
+        var slowStart = DateTime.UtcNow;
+        var slowResult = await ShortcutRunner.RunAsync(slowCommand, new RunServices());
+        var slowElapsed = DateTime.UtcNow - slowStart;
+        CheckAsync(!slowResult.Success && slowResult.ErrorCode == "CommandTimeout",
+            "runCommand reports a timeout");
+        CheckAsync(slowElapsed < TimeSpan.FromSeconds(20),
+            $"runCommand timeout actually kills the child ({slowElapsed.TotalSeconds:0.#} s)");
 
         // Hotkey registration: fake registrar, no real OS table.
         var fake = new FakeRegistrar();

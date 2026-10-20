@@ -22,6 +22,14 @@ public partial class DiceView : UserControl, IWidgetSelfRefreshing, IWidgetSurfa
     private readonly DiceViewModel viewModel;
     private WidgetTier currentTier = (WidgetTier)(-1);
 
+    /// <summary>
+    /// 2x2 内容区窄于此值时隐藏总和 pill，给详情按钮让出空间。
+    /// 只在下限附近让位：pill(~68) + 详情按钮(28) + 边距(12) ≈ 108，
+    /// 标题列是 * 列会先截断，所以 110 以上保留总和——旧阈值 150 会在正常
+    /// 的 140 宽卡片上把总和藏掉，看起来像功能退步。
+    /// </summary>
+    private const double SumPillMinWidth = 112d;
+
     public DiceView() : this((IWidgetLayoutProvider?)null, null) { }
 
     public DiceView(IWidgetLayoutProvider layoutProvider) : this(layoutProvider, null) { }
@@ -94,12 +102,31 @@ public partial class DiceView : UserControl, IWidgetSelfRefreshing, IWidgetSurfa
     private void ApplySize(Size size)
     {
         var tier = ResolveTier(size);
-        if (tier == currentTier) return;
-        currentTier = tier;
+        if (tier != currentTier)
+        {
+            currentTier = tier;
 
-        CellLayout.IsVisible = tier == WidgetTier.Cell;
-        SmallLayout.IsVisible = tier == WidgetTier.Small;
-        WideLayout.IsVisible = tier is WidgetTier.Medium or WidgetTier.Large;
+            CellLayout.IsVisible = tier == WidgetTier.Cell;
+            SmallLayout.IsVisible = tier == WidgetTier.Small;
+            WideLayout.IsVisible = tier is WidgetTier.Medium or WidgetTier.Large;
+        }
+
+        // 每次尺寸变化都要重估 header 的降级（不能只在换档时做）：2x2 卡片被拉窄时
+        // 总和 pill 必须让位，否则标题 + pill + 按钮会顶出卡片，详情按钮被裁掉。
+        ApplyHeaderDegradation(size.Width);
+    }
+
+    /// <summary>
+    /// Header 的空间降级：宽度不足以同时容纳标题、总和与详情按钮时，先隐藏总和 pill
+    /// （信息可在二级面板看全），保证详情按钮——卡片唯一的面板入口——永远在卡片内。
+    /// </summary>
+    private void ApplyHeaderDegradation(double width)
+    {
+        bool showSum = viewModel.Model.ShowSum;
+        bool roomForSum = !double.IsFinite(width) || width <= 0 || width >= SumPillMinWidth;
+
+        SmallSumPill.IsVisible = showSum && roomForSum;
+        WideSumPill.IsVisible = showSum;
     }
 
     private WidgetTier ResolveTier(Size size)
@@ -140,8 +167,8 @@ public partial class DiceView : UserControl, IWidgetSelfRefreshing, IWidgetSurfa
             WideDiceTray.Children.Add(CreateFace(val));
         }
 
-        SmallSumPill.IsVisible = viewModel.Model.ShowSum;
-        WideSumPill.IsVisible = viewModel.Model.ShowSum;
+        // 总和 pill 的显隐同时受模型开关与当前宽度约束，统一走降级逻辑。
+        ApplyHeaderDegradation(Bounds.Width);
 
         string sumText = $"{Locale.Dice_Sum}: {viewModel.Sum}"
             + (viewModel.IsCriticalMax ? $" · {Locale.Dice_NaturalMax}" : "");

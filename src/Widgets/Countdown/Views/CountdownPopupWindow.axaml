@@ -39,6 +39,18 @@
             <Setter Property="Background" Value="#30FF3B30" />
             <Setter Property="Foreground" Value="#FF3B30" />
         </Style>
+        <!-- 预设 chip 复用 pill-btn 的形状，仅收窄尺寸；选中态沿用全局 accent 资源。 -->
+        <Style Selector="Button.preset-chip">
+            <Setter Property="Height" Value="24" />
+            <Setter Property="Padding" Value="9,2" />
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="CornerRadius" Value="12" />
+        </Style>
+        <Style Selector="Button.preset-chip.active">
+            <Setter Property="Background" Value="{DynamicResource SystemControlHighlightAccentBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource AccentContrastForegroundBrush}" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+        </Style>
     </Window.Styles>
 
     <controls:SecondaryPanelShell>
@@ -166,6 +178,16 @@
                             <TextBox x:Name="EventTitleTextBox" PlaceholderText="{x:Static locales:Locale.Countdown_EventTitle}" />
                         </StackPanel>
 
+                        <!-- Festival Presets: one tap fills the whole draft, still editable afterwards -->
+                        <StackPanel Spacing="4">
+                            <TextBlock Text="{x:Static locales:Locale.Countdown_FestivalPreset}" FontSize="12" Opacity="0.75" />
+                            <ScrollViewer HorizontalScrollBarVisibility="Auto"
+                                          VerticalScrollBarVisibility="Disabled"
+                                          Height="36">
+                                <StackPanel x:Name="PresetChipsPanel" Orientation="Horizontal" Spacing="6" />
+                            </ScrollViewer>
+                        </StackPanel>
+
                         <!-- DatePicker -->
                         <StackPanel Spacing="4">
                             <TextBlock Text="{x:Static locales:Locale.Countdown_TargetDate}" FontSize="12" Opacity="0.75" />
@@ -225,6 +247,9 @@
 
                         <!-- Action Buttons -->
                         <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right" Margin="0,10,0,0">
+                            <Button x:Name="SaveAsPresetButton" Classes="pill-btn"
+                                    Content="{x:Static locales:Locale.Countdown_SaveAsPreset}"
+                                    Click="OnSaveAsPresetClicked" />
                             <Button Classes="pill-btn" Content="{x:Static locales:Locale.Countdown_Cancel}" Click="OnCancelEditClicked" />
                             <Button Classes="pill-btn" Background="#FF5A5F" Foreground="White"
                                     Content="{x:Static locales:Locale.Countdown_Save}" Click="OnSaveEditClicked" />

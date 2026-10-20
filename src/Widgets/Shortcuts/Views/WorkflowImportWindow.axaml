@@ -1,0 +1,63 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:locales="clr-namespace:Shortcuts.Locales"
+        x:Class="Shortcuts.Views.WorkflowImportWindow"
+        Title="{x:Static locales:Locale.Shortcuts_Import_Title}"
+        WindowDecorations="None"
+        Background="Transparent"
+        TransparencyLevelHint="Transparent"
+        TransparencyBackgroundFallback="{DynamicResource SettingsBackground}"
+        CanResize="False"
+        ShowInTaskbar="False"
+        WindowStartupLocation="CenterOwner"
+        SizeToContent="WidthAndHeight">
+
+    <Border Background="{DynamicResource MenuSurfaceBackground}"
+            BorderBrush="{DynamicResource MenuSurfaceBorder}"
+            BorderThickness="{DynamicResource HostSurfaceBorderThickness}"
+            CornerRadius="{DynamicResource HostSurfaceCornerRadius}"
+            BoxShadow="0 4 16 0 #80000000"
+            Padding="22"
+            Margin="16">
+        <StackPanel Spacing="12" Width="620">
+            <TextBlock Text="{x:Static locales:Locale.Shortcuts_Import_Title}"
+                       FontWeight="SemiBold" FontSize="15" />
+            <TextBlock Text="{x:Static locales:Locale.Shortcuts_Import_Hint}"
+                       FontSize="12" Opacity="0.65" TextWrapping="Wrap" />
+
+            <CheckBox x:Name="RelayoutCheck"
+                      IsChecked="True"
+                      FontSize="12"
+                      HorizontalContentAlignment="Left" />
+
+            <TextBox x:Name="JsonBox"
+                     Height="300"
+                     AcceptsReturn="True"
+                     TextWrapping="NoWrap"
+                     FontFamily="Consolas,Menlo,monospace"
+                     FontSize="11.5"
+                     VerticalContentAlignment="Top"
+                     PlaceholderText="{x:Static locales:Locale.Shortcuts_Import_Placeholder}"
+                     ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                     ScrollViewer.VerticalScrollBarVisibility="Auto" />
+
+            <TextBlock x:Name="StatusText"
+                       FontSize="11.5"
+                       TextWrapping="Wrap"
+                       IsVisible="False"
+                       MaxHeight="120" />
+
+            <Grid ColumnDefinitions="Auto,*,Auto,Auto">
+                <Button x:Name="LoadFileButton" Grid.Column="0"
+                        Content="{x:Static locales:Locale.Shortcuts_Import_FromFile}"
+                        Click="OnLoadFileClicked" />
+                <Button x:Name="CancelButton" Grid.Column="2"
+                        Content="{x:Static locales:Locale.Shortcuts_Cancel}"
+                        Click="OnCancelClicked" Margin="0,0,8,0" />
+                <Button x:Name="ImportButton" Grid.Column="3" Classes="accent"
+                        Content="{x:Static locales:Locale.Shortcuts_Import_Confirm}"
+                        Click="OnImportClicked" />
+            </Grid>
+        </StackPanel>
+    </Border>
+</Window>

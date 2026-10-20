@@ -4,9 +4,10 @@ using System.Runtime.InteropServices;
 namespace Shortcuts.Services;
 
 /// <summary>
-/// Native Windows file / folder picker (IFileOpenDialog), the same approach the Folders widget
-/// uses — the OS dialog is far more reliable inside this desktop-widget app than the managed
-/// storage provider, and FOS_NODEREFERENCELINKS keeps .lnk paths intact (needed by "Open App").
+/// Native Windows file / folder picker (IFileOpenDialog) and saver (IFileSaveDialog), the same
+/// approach the Folders widget uses — the OS dialog is far more reliable inside this
+/// desktop-widget app than the managed storage provider, and FOS_NODEREFERENCELINKS keeps .lnk
+/// paths intact (needed by "Open App").
 /// Returns null when the user cancels or the dialog cannot open.
 /// </summary>
 public static class FileDialogs
@@ -55,6 +56,14 @@ public static class FileDialogs
     [ComImport, Guid("DC1C5A9C-E88A-4dde-A5A1-60F82A20AEF7")]
     private class FileOpenDialogCoClass { }
 
+    // The save dialog CLSID. IFileSaveDialog extends IFileOpenDialog, and we only need the
+    // vtable-prefix members (Show/SetOptions/SetFileName/SetTitle/SetDefaultExtension/
+    // GetResult), so the full IFileSaveDialog interface is never declared — the existing
+    // IFileOpenDialog declaration (above) is cast-compatible for those calls.
+    [ComImport, Guid("C0B4E2F3-BA21-4773-8DBA-335EC946EB8B")]
+    private class FileSaveDialogCoClass { }
+
+    private const uint FOS_OVERWRITEPROMPT = 0x00000002;
     private const uint FOS_PICKFOLDERS = 0x00000020;
     private const uint FOS_FORCEFILESYSTEM = 0x00000040;
     private const uint FOS_FILEMUSTEXIST = 0x00001000;
@@ -68,6 +77,13 @@ public static class FileDialogs
     /// </summary>
     public static Func<bool, string?, string?>? TestOverride { get; set; }
 
+    /// <summary>
+    /// Test seam for the save dialog (headless check harnesses only): when non-null,
+    /// <see cref="PutFile"/> delegates to it instead of opening the real dialog. Signature:
+    /// (defaultName) -> full save path or null.
+    /// </summary>
+    public static Func<string?, string?>? TestSaveOverride { get; set; }
+
     /// <summary>Pick a file (shortcuts are not dereferenced); null on cancel.</summary>
     public static string? PickFile(IntPtr ownerHwnd, string? title = null) =>
         TestOverride?.Invoke(false, title) ?? Show(ownerHwnd, title, pickFolder: false);
@@ -75,6 +91,44 @@ public static class FileDialogs
     /// <summary>Pick a folder; null on cancel.</summary>
     public static string? PickFolder(IntPtr ownerHwnd, string? title = null) =>
         TestOverride?.Invoke(true, title) ?? Show(ownerHwnd, title, pickFolder: true);
+
+    /// <summary>
+    /// Native save dialog: asks for a full file path to write to. <paramref name="defaultName"/>
+    /// seeds the file name box, <paramref name="defaultExtension"/> is appended when the user
+    /// omits one, and the shell handles the overwrite prompt. Null on cancel or failure.
+    /// </summary>
+    public static string? PutFile(IntPtr ownerHwnd, string? title, string? defaultName, string? defaultExtension)
+    {
+        if (TestSaveOverride != null) return TestSaveOverride(defaultName);
+
+        try
+        {
+            // Same interface shape as the open dialog (IFileSaveDialog is a strict superset).
+            var dialog = (IFileOpenDialog)new FileSaveDialogCoClass();
+            dialog.GetOptions(out var options);
+            dialog.SetOptions(options | FOS_OVERWRITEPROMPT | FOS_FORCEFILESYSTEM);
+            if (!string.IsNullOrEmpty(title))
+                dialog.SetTitle(title);
+            if (!string.IsNullOrEmpty(defaultName))
+                dialog.SetFileName(defaultName);
+            if (!string.IsNullOrEmpty(defaultExtension))
+                dialog.SetDefaultExtension(defaultExtension);
+
+            var hr = dialog.Show(ownerHwnd);
+            if (hr != 0) return null; // cancelled or failed
+
+            dialog.GetResult(out var item);
+            if (item == null) return null;
+
+            item.GetDisplayName(SIGDN_FILESYSPATH, out var path);
+            return string.IsNullOrEmpty(path) ? null : path;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"[Shortcuts.FileDialogs] Native save dialog failed: {ex.Message}");
+            return null;
+        }
+    }
 
     private static string? Show(IntPtr ownerHwnd, string? title, bool pickFolder)
     {
