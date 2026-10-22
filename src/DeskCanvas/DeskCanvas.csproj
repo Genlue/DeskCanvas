@@ -27,9 +27,13 @@
         <PackageReference Include="Avalonia.Themes.Fluent" />
         <PackageReference Include="Avalonia.Fonts.Inter" />
         <PackageReference Include="SkiaSharp" />
+        <PackageReference Include="System.Drawing.Common" />
         <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
         <PackageReference Include="Microsoft.Win32.SystemEvents" />
         <PackageReference Include="System.Management" />
+        <!-- PDF first-page rendering for the Spotlight preview pane. Bundles pdfium per RID;
+             no managed dependency beyond the runtime, so nothing else in the graph moves. -->
+        <PackageReference Include="Docnet.Core" />
     </ItemGroup>
 
     <ItemGroup>

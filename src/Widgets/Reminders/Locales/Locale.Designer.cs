@@ -137,5 +137,8 @@ namespace Reminders.Locales {
         public static string Reminders_Add_Placeholder => ResourceManager.GetString("Reminders_Add_Placeholder", resourceCulture) ?? "Add a new item... (Press Enter)";
         public static string Reminders_Add => ResourceManager.GetString("Reminders_Add", resourceCulture) ?? "Add";
         public static string Reminders_ZeroItems => ResourceManager.GetString("Reminders_ZeroItems", resourceCulture) ?? "0 items";
+        public static string Reminders_Spotlight_Group => ResourceManager.GetString("Reminders_Spotlight_Group", resourceCulture) ?? "Checklist";
+        public static string Reminders_Spotlight_Done => ResourceManager.GetString("Reminders_Spotlight_Done", resourceCulture) ?? "Done";
+        public static string Reminders_Spotlight_Pending => ResourceManager.GetString("Reminders_Spotlight_Pending", resourceCulture) ?? "Not done";
     }
 }

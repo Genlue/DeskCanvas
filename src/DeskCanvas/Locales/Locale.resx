@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 
 <root>
     <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
@@ -134,6 +134,42 @@
     </data>
     <data name="Settings_General_Language_Subtitle" xml:space="preserve">
         <value>DeskCanvas will appear in this language</value>
+    </data>
+    <data name="Settings_General_DefaultRegion" xml:space="preserve">
+        <value>Default region</value>
+    </data>
+    <data name="Settings_General_DefaultRegion_Title" xml:space="preserve">
+        <value>Default region</value>
+    </data>
+    <data name="Settings_General_DefaultRegion_Placeholder" xml:space="preserve">
+        <value>City name, e.g. Hangzhou</value>
+    </data>
+    <data name="Settings_General_DefaultRegion_Search" xml:space="preserve">
+        <value>Search</value>
+    </data>
+    <data name="Settings_General_DefaultRegion_Clear" xml:space="preserve">
+        <value>Clear</value>
+    </data>
+    <data name="Settings_General_DefaultRegion_Results_Title" xml:space="preserve">
+        <value>Search result</value>
+    </data>
+    <data name="Settings_General_DefaultRegion_NotSet" xml:space="preserve">
+        <value>Not set · every widget keeps its own location</value>
+    </data>
+    <data name="Settings_General_DefaultRegion_Current" xml:space="preserve">
+        <value>Current: {0} ({1:0.0000}, {2:0.0000})</value>
+    </data>
+    <data name="Settings_General_DefaultRegion_Searching" xml:space="preserve">
+        <value>Searching…</value>
+    </data>
+    <data name="Settings_General_DefaultRegion_NoResult" xml:space="preserve">
+        <value>No city matched that name</value>
+    </data>
+    <data name="Settings_General_DefaultRegion_Results" xml:space="preserve">
+        <value>{0} result(s) — pick one to use it as the default region</value>
+    </data>
+    <data name="Settings_General_DefaultRegion_Failed" xml:space="preserve">
+        <value>Search failed — check the network or proxy</value>
     </data>
     <data name="Settings_Advanced_WidgetMargin_Subtitle" xml:space="preserve">
         <value>Margin between a widget and the grid lines in pixels</value>
@@ -1240,4 +1276,262 @@ Migrate (copy) the current data there? Choosing "Switch without migrating" start
   <data name="WidgetCategory_Utilities" xml:space="preserve"><value>Utilities</value></data>
   <data name="WidgetCategory_Container" xml:space="preserve"><value>Containers</value></data>
   <data name="WidgetCategory_Uncategorized" xml:space="preserve"><value>Other</value></data>
+  <data name="Spotlight_Placeholder" xml:space="preserve"><value>Search apps, files, actions or clipboard</value></data>
+  <data name="Spotlight_EmptyFolder_Title" xml:space="preserve"><value>Add shortcuts to this folder</value></data>
+  <data name="Spotlight_EmptyFolder_Hint" xml:space="preserve"><value>Drop .lnk or .url shortcuts into the folder and they appear here.</value></data>
+  <data name="Spotlight_OpenFolder" xml:space="preserve"><value>Open folder</value></data>
+  <data name="Spotlight_NoResults" xml:space="preserve"><value>No matching results</value></data>
+  <data name="Spotlight_Hint" xml:space="preserve"><value>↑↓ Select · Enter Open · Esc Close</value></data>
+  <data name="Settings_Spotlight" xml:space="preserve"><value>Spotlight Search</value></data>
+  <data name="Settings_Spotlight_Section_General" xml:space="preserve"><value>General &amp; hotkey</value></data>
+  <data name="Settings_Spotlight_Enable_Title" xml:space="preserve"><value>Enable Spotlight Search</value></data>
+  <data name="Settings_Spotlight_Enable_Subtitle" xml:space="preserve"><value>Summon an app launcher over any window with a global shortcut.</value></data>
+  <data name="Settings_Spotlight_Hotkey_Title" xml:space="preserve"><value>Shortcut</value></data>
+  <data name="Settings_Spotlight_Hotkey_Subtitle" xml:space="preserve"><value>Click the field, then press the combination. Win+Space belongs to the Windows input-language switch, so Alt+Space is the default.</value></data>
+  <data name="Settings_Spotlight_Hotkey_Record" xml:space="preserve"><value>Record</value></data>
+  <data name="Settings_Spotlight_Hotkey_Recording" xml:space="preserve"><value>Press keys…</value></data>
+  <data name="Settings_Spotlight_Hotkey_Reset" xml:space="preserve"><value>Reset</value></data>
+  <data name="Settings_Spotlight_Hotkey_Preview" xml:space="preserve"><value>Preview</value></data>
+  <data name="Settings_Spotlight_Hotkey_NeedModifier" xml:space="preserve"><value>Use at least one modifier (Ctrl/Alt/Shift/Win), or a function key.</value></data>
+  <data name="Settings_Spotlight_Hotkey_UnknownKey" xml:space="preserve"><value>That key cannot be used in a shortcut.</value></data>
+  <data name="Settings_Spotlight_Hotkey_MissingKey" xml:space="preserve"><value>The combination has no main key.</value></data>
+  <data name="Settings_Spotlight_Hotkey_Invalid" xml:space="preserve"><value>That shortcut cannot be used.</value></data>
+  <data name="Settings_Spotlight_Status_Registered" xml:space="preserve"><value>Active — {0}</value></data>
+  <data name="Settings_Spotlight_Status_Conflict" xml:space="preserve"><value>Inactive: another program already owns this shortcut.</value></data>
+  <data name="Settings_Spotlight_Status_Invalid" xml:space="preserve"><value>Inactive: the shortcut could not be read.</value></data>
+  <data name="Settings_Spotlight_Status_Unavailable" xml:space="preserve"><value>Inactive: the system hotkey window could not be created.</value></data>
+  <data name="Settings_Spotlight_Status_Disabled" xml:space="preserve"><value>Off.</value></data>
+  <data name="Settings_Spotlight_Section_Folder" xml:space="preserve"><value>App Folder</value></data>
+  <data name="Settings_Spotlight_Folder_Title" xml:space="preserve"><value>Shortcuts folder</value></data>
+  <data name="Settings_Spotlight_Folder_Subtitle" xml:space="preserve"><value>Only .lnk and .url files directly in this folder are listed (no subfolders). Add or remove shortcuts here and the grid follows.</value></data>
+  <data name="Settings_Spotlight_Folder_Open" xml:space="preserve"><value>Open folder</value></data>
+  <data name="Settings_Spotlight_Folder_Change" xml:space="preserve"><value>Change…</value></data>
+  <data name="Settings_Spotlight_Folder_PickTitle" xml:space="preserve"><value>Choose the shortcuts folder</value></data>
+  <data name="Settings_Spotlight_Columns_Title" xml:space="preserve"><value>Columns</value></data>
+  <data name="Settings_Spotlight_Columns_Subtitle" xml:space="preserve"><value>How many tiles per row in the app grid.</value></data>
+  <data name="Settings_Spotlight_Height_Title" xml:space="preserve"><value>Maximum Height</value></data>
+  <data name="Settings_Spotlight_Height_Subtitle" xml:space="preserve"><value>Maximum vertical height of the Spotlight window when expanded.</value></data>
+  <data name="Settings_Spotlight_Section_Blacklist" xml:space="preserve"><value>Blacklist</value></data>
+  <data name="Settings_Spotlight_BlockFullscreen_Title" xml:space="preserve"><value>Block full-screen processes</value></data>
+  <data name="Settings_Spotlight_BlockFullscreen_Subtitle" xml:space="preserve"><value>Suppress the shortcut when a game or full-screen app owns the screen.</value></data>
+  <data name="Settings_Spotlight_Blacklist_Title" xml:space="preserve"><value>Do not open in these apps</value></data>
+  <data name="Settings_Spotlight_Blacklist_Subtitle" xml:space="preserve"><value>While one of these apps is in front, the shortcut does nothing. Apps running as administrator cannot be detected.</value></data>
+  <data name="Settings_Spotlight_Blacklist_AddPlaceholder" xml:space="preserve"><value>Process name, e.g. chrome</value></data>
+  <data name="Settings_Spotlight_Blacklist_Add" xml:space="preserve"><value>Add</value></data>
+  <data name="Settings_Spotlight_Blacklist_AddCurrent" xml:space="preserve"><value>Pick from running apps…</value></data>
+  <data name="Settings_Spotlight_Blacklist_Empty" xml:space="preserve"><value>No apps are blocked yet.</value></data>
+  <data name="Settings_Spotlight_Blacklist_Remove" xml:space="preserve"><value>Remove</value></data>
+  <data name="Settings_Spotlight_Blacklist_Added" xml:space="preserve"><value>Added {0}.</value></data>
+  <data name="Settings_Spotlight_Blacklist_AddedMany" xml:space="preserve"><value>Added {0} apps.</value></data>
+  <data name="Settings_Spotlight_Blacklist_Already" xml:space="preserve"><value>{0} is already on the list.</value></data>
+  <data name="Settings_Spotlight_Blacklist_AlreadyAll" xml:space="preserve"><value>Already on the list.</value></data>
+  <data name="Settings_Spotlight_Blacklist_Invalid" xml:space="preserve"><value>That name cannot be used.</value></data>
+  <data name="Settings_Spotlight_Section_Appearance" xml:space="preserve"><value>Appearance</value></data>
+  <data name="Settings_Spotlight_Appearance_FollowGlobal" xml:space="preserve"><value>Follow global</value></data>
+  <data name="Settings_Spotlight_Appearance_Acrylic" xml:space="preserve"><value>Acrylic</value></data>
+  <data name="Settings_Spotlight_Appearance_LiquidGlass" xml:space="preserve"><value>Liquid glass</value></data>
+  <data name="Settings_Spotlight_Appearance_FullColor" xml:space="preserve"><value>Full color</value></data>
+  <data name="Settings_Spotlight_Appearance_FollowSystem" xml:space="preserve"><value>Follow system</value></data>
+  <data name="Settings_Spotlight_Appearance_Light" xml:space="preserve"><value>Light</value></data>
+  <data name="Settings_Spotlight_Appearance_Dark" xml:space="preserve"><value>Dark</value></data>
+  <data name="Settings_Spotlight_Appearance_Theme_Title" xml:space="preserve"><value>Follow the global theme</value></data>
+  <data name="Settings_Spotlight_Appearance_Theme_Subtitle" xml:space="preserve"><value>Off lets this launcher use its own material, light/dark mode and opacity without touching the rest of the app.</value></data>
+  <data name="Settings_Spotlight_Appearance_Surface_Title" xml:space="preserve"><value>Material</value></data>
+  <data name="Settings_Spotlight_Appearance_Surface_Subtitle" xml:space="preserve"><value>Which material the launcher card is drawn with.</value></data>
+  <data name="Settings_Spotlight_Appearance_DarkMode_Title" xml:space="preserve"><value>Light / dark</value></data>
+  <data name="Settings_Spotlight_Appearance_DarkMode_Subtitle" xml:space="preserve"><value>Follow global = the same mode as the widgets; Follow system = Windows' own light/dark, even when the app is pinned the other way.</value></data>
+  <data name="Settings_Spotlight_Appearance_Opacity_Title" xml:space="preserve"><value>Opacity</value></data>
+  <data name="Settings_Spotlight_Appearance_Opacity_Subtitle" xml:space="preserve"><value>Card fill opacity. Acrylic uses it to tint the native blur.</value></data>
+  <data name="Settings_Spotlight_Appearance_Radius_Title" xml:space="preserve"><value>Corner radius</value></data>
+  <data name="Settings_Spotlight_Appearance_Radius_Subtitle" xml:space="preserve"><value>0–100 px. Independent of the widget cards unless you follow them.</value></data>
+  <data name="Settings_Spotlight_Appearance_Radius_Follow" xml:space="preserve"><value>Follow the widget radius</value></data>
+  <data name="Settings_Spotlight_Appearance_Radius_Follow_Subtitle" xml:space="preserve"><value>Use the radius configured for the desktop widget cards (外观 → 组件圆角).</value></data>
+  <data name="Settings_Spotlight_Section_Glass" xml:space="preserve"><value>Liquid glass</value></data>
+  <data name="Settings_Spotlight_Glass_Screen_Title" xml:space="preserve"><value>Real-time sampling</value></data>
+  <data name="Settings_Spotlight_Glass_Screen_Subtitle" xml:space="preserve"><value>Refract what is actually behind the launcher instead of the wallpaper. The launcher's own windows are excluded from the capture.</value></data>
+  <data name="Settings_Spotlight_Sort_Title" xml:space="preserve"><value>App order</value></data>
+  <data name="Settings_Spotlight_Sort_Subtitle" xml:space="preserve"><value>How the app grid is ordered. Pinned apps always stay in front.</value></data>
+  <data name="Settings_Spotlight_Sort_Name" xml:space="preserve"><value>Name</value></data>
+  <data name="Settings_Spotlight_Sort_LastUsed" xml:space="preserve"><value>Recently used</value></data>
+  <data name="Settings_Spotlight_Sort_MostUsed" xml:space="preserve"><value>Most used</value></data>
+  <data name="Settings_Spotlight_Animation_Title" xml:space="preserve"><value>Open animation</value></data>
+  <data name="Settings_Spotlight_Animation_Subtitle" xml:space="preserve"><value>Play the fade and micro-scale when the launcher opens. Off shows it instantly.</value></data>
+  <data name="Spotlight_Category_All" xml:space="preserve"><value>All</value></data>
+  <data name="Spotlight_Category_Apps" xml:space="preserve"><value>Apps</value></data>
+  <data name="Spotlight_Category_Images" xml:space="preserve"><value>Images</value></data>
+
+  <data name="Spotlight_Category_Files" xml:space="preserve"><value>Files</value></data>
+  <data name="Spotlight_Category_Folders" xml:space="preserve"><value>Folders</value></data>
+
+  <data name="Spotlight_Category_Clipboard" xml:space="preserve"><value>Clipboard</value></data>
+  <data name="Spotlight_Category_Web" xml:space="preserve"><value>Web</value></data>
+  <data name="Spotlight_Web_Group" xml:space="preserve"><value>Web</value></data>
+  <data name="Spotlight_Web_Row_Title" xml:space="preserve"><value>Search {0} for “{1}”</value></data>
+  <data name="Spotlight_Web_Row_Subtitle" xml:space="preserve"><value>{0} · {1}</value></data>
+  <data name="Spotlight_Preview_Kind_Web" xml:space="preserve"><value>Web search</value></data>
+  <data name="Spotlight_Preview_Label_Engine" xml:space="preserve"><value>Engine</value></data>
+  <data name="Spotlight_Preview_Label_Browser" xml:space="preserve"><value>Browser</value></data>
+  <data name="Spotlight_Preview_Label_Address" xml:space="preserve"><value>Address</value></data>
+  <data name="Settings_Spotlight_Section_Web" xml:space="preserve"><value>Web search</value></data>
+  <data name="Settings_Spotlight_Web_Enable_Title" xml:space="preserve"><value>Search the web from the results</value></data>
+  <data name="Settings_Spotlight_Web_Enable_Subtitle" xml:space="preserve"><value>Every query also gets a “search the web” row; Enter opens the browser.</value></data>
+  <data name="Settings_Spotlight_Web_Engine_Title" xml:space="preserve"><value>Search engine</value></data>
+  <data name="Settings_Spotlight_Web_Engine_Subtitle" xml:space="preserve"><value>Which site the web row searches on.</value></data>
+  <data name="Settings_Spotlight_Web_Engine_Custom" xml:space="preserve"><value>Custom…</value></data>
+  <data name="Settings_Spotlight_Web_Engine_CustomName" xml:space="preserve"><value>Custom</value></data>
+  <data name="Settings_Spotlight_Web_Custom_Title" xml:space="preserve"><value>Custom search address</value></data>
+  <data name="Settings_Spotlight_Web_Custom_Subtitle" xml:space="preserve"><value>The typed query replaces {q}. Anything else in the address is kept as written.</value></data>
+  <data name="Settings_Spotlight_Web_Custom_Placeholder" xml:space="preserve"><value>https://example.com/search?q={q}</value></data>
+  <data name="Settings_Spotlight_Web_Custom_Invalid" xml:space="preserve"><value>The address must be a full URL containing {q}, otherwise the query cannot be passed on.</value></data>
+  <data name="Settings_Spotlight_Web_Browser_Title" xml:space="preserve"><value>Browser</value></data>
+  <data name="Settings_Spotlight_Web_Browser_Subtitle" xml:space="preserve"><value>Which browser opens the result. The default browser follows Windows’ default apps.</value></data>
+  <data name="Settings_Spotlight_Web_Browser_Default" xml:space="preserve"><value>Default browser</value></data>
+  <data name="Settings_Spotlight_Web_Preview" xml:space="preserve"><value>Enter opens in {0}: {1}</value></data>
+  <data name="Settings_Spotlight_Web_SampleQuery" xml:space="preserve"><value>DeskCanvas</value></data>
+  <data name="Spotlight_Category_Shortcuts" xml:space="preserve"><value>Shortcuts</value></data>
+  <data name="Spotlight_Category_Widgets" xml:space="preserve"><value>Widgets</value></data>
+  <data name="Spotlight_Placeholder_Category" xml:space="preserve"><value>Search {0}…</value></data>
+
+  <data name="Spotlight_Category_NoHotkey" xml:space="preserve"><value>No shortcut</value></data>
+
+  <data name="Spotlight_Recent_Header" xml:space="preserve"><value>Recently used</value></data>
+  <data name="Spotlight_Broken" xml:space="preserve"><value>Target unavailable</value></data>
+  <data name="Spotlight_Preview_Empty" xml:space="preserve"><value>Nothing selected</value></data>
+  <data name="Spotlight_Preview_Kind_App" xml:space="preserve"><value>Application</value></data>
+  <data name="Spotlight_Preview_Kind_File" xml:space="preserve"><value>File</value></data>
+  <data name="Spotlight_Preview_Kind_Folder" xml:space="preserve"><value>Folder</value></data>
+  <data name="Spotlight_Preview_Kind_Clipboard" xml:space="preserve"><value>Clipboard content</value></data>
+  <data name="Spotlight_Preview_Kind_Workflow" xml:space="preserve"><value>Shortcut workflow</value></data>
+  <data name="Spotlight_Preview_Kind_Widget" xml:space="preserve"><value>Widget data</value></data>
+  <data name="Spotlight_Preview_Kind_Image" xml:space="preserve"><value>Image</value></data>
+  <data name="Spotlight_Preview_Kind_Pdf" xml:space="preserve"><value>PDF document</value></data>
+  <data name="Spotlight_Preview_Kind_Document" xml:space="preserve"><value>Document</value></data>
+  <data name="Spotlight_Preview_Kind_Presentation" xml:space="preserve"><value>Presentation</value></data>
+  <data name="Spotlight_Preview_Kind_Spreadsheet" xml:space="preserve"><value>Spreadsheet</value></data>
+  <data name="Spotlight_Preview_Kind_Text" xml:space="preserve"><value>Text</value></data>
+  <data name="Spotlight_Preview_Kind_Video" xml:space="preserve"><value>Video</value></data>
+  <data name="Spotlight_Preview_Kind_Audio" xml:space="preserve"><value>Audio</value></data>
+  <data name="Spotlight_Preview_Kind_Archive" xml:space="preserve"><value>Archive</value></data>
+  <data name="Spotlight_Preview_Open" xml:space="preserve"><value>Open</value></data>
+  <data name="Spotlight_Preview_Reveal" xml:space="preserve"><value>Show in Explorer</value></data>
+  <data name="Spotlight_Preview_Run" xml:space="preserve"><value>Run</value></data>
+  <data name="Spotlight_Preview_Copy" xml:space="preserve"><value>Copy</value></data>
+  <data name="Spotlight_Preview_Label_Target" xml:space="preserve"><value>Target</value></data>
+  <data name="Spotlight_Preview_Label_Location" xml:space="preserve"><value>Location</value></data>
+  <data name="Spotlight_Preview_Label_Size" xml:space="preserve"><value>Size</value></data>
+  <data name="Spotlight_Preview_Label_Recent" xml:space="preserve"><value>Last used</value></data>
+  <data name="Spotlight_Preview_Label_Launches" xml:space="preserve"><value>Launches</value></data>
+  <data name="Spotlight_Preview_Label_Hotkey" xml:space="preserve"><value>Hotkey</value></data>
+
+  <data name="Spotlight_Preview_Label_Captured" xml:space="preserve"><value>Captured</value></data>
+  <data name="Spotlight_Preview_Label_Source" xml:space="preserve"><value>Source</value></data>
+  <data name="Spotlight_Preview_Label_Dimensions" xml:space="preserve"><value>Dimensions</value></data>
+  <data name="Spotlight_Preview_Label_Modified" xml:space="preserve"><value>Modified</value></data>
+  <data name="Spotlight_Preview_Label_Items" xml:space="preserve"><value>Items</value></data>
+  <data name="Spotlight_Preview_Label_Sheets" xml:space="preserve"><value>Sheets</value></data>
+  <data name="Spotlight_Preview_Label_Pages" xml:space="preserve"><value>Pages</value></data>
+  <data name="Spotlight_Clipboard_Empty" xml:space="preserve"><value>Clipboard history is empty</value></data>
+  <data name="Spotlight_Copied" xml:space="preserve"><value>Copied</value></data>
+  <data name="Settings_Spotlight_Section_Scope" xml:space="preserve"><value>Search scope</value></data>
+  <data name="Settings_Spotlight_Section_Results" xml:space="preserve"><value>Results</value></data>
+  <data name="Settings_Spotlight_Section_CategoryKeys" xml:space="preserve"><value>Category keys</value></data>
+
+  <data name="Settings_Spotlight_CategoryKeys_Desc" xml:space="preserve"><value>Press F1–F8 in the launcher to lock a category; ← / → walk the same bar while you are searching (wrapping at both ends). A key follows its category when you reorder the list with ↑ / ↓ — 全部 stays first because it is “no filter”. Click a box or Record to rebind; only function keys or a modifier combination are accepted, so typing never gets swallowed.</value></data>
+
+  <data name="Settings_Spotlight_CategoryKeys_Record" xml:space="preserve"><value>Record</value></data>
+
+  <data name="Settings_Spotlight_CategoryKeys_None" xml:space="preserve"><value>Not set</value></data>
+
+  <data name="Settings_Spotlight_CategoryKeys_Clear" xml:space="preserve"><value>Clear</value></data>
+
+  <data name="Settings_Spotlight_CategoryKeys_Reset" xml:space="preserve"><value>Restore defaults (F1–F8)</value></data>
+
+  <data name="Settings_Spotlight_CategoryKeys_Invalid" xml:space="preserve"><value>Use a modifier, or F1–F24.</value></data>
+
+  <data name="Settings_Spotlight_CategoryKeys_Taken" xml:space="preserve"><value>{0} is already used by {1}.</value></data>
+
+  <data name="Settings_Spotlight_Section_Clipboard" xml:space="preserve"><value>Clipboard</value></data>
+  <data name="Settings_Spotlight_Recent_Title" xml:space="preserve"><value>Show recently used</value></data>
+  <data name="Settings_Spotlight_Recent_Subtitle" xml:space="preserve"><value>Show one row of recently used apps above the grid when the query is empty, using the grid's own icons and columns.</value></data>
+  <data name="Settings_Spotlight_Recent_Clear" xml:space="preserve"><value>Clear usage data</value></data>
+  <data name="Settings_Spotlight_Recent_Cleared" xml:space="preserve"><value>Usage data cleared.</value></data>
+  <data name="Settings_Spotlight_Preview_Title" xml:space="preserve"><value>Show preview pane</value></data>
+  <data name="Settings_Spotlight_Preview_Subtitle" xml:space="preserve"><value>Show details for the selected result on the right; hides on narrow windows.</value></data>
+  <data name="Settings_Spotlight_Clipboard_Title" xml:space="preserve"><value>Clipboard history</value></data>
+  <data name="Settings_Spotlight_Clipboard_Subtitle" xml:space="preserve"><value>Keep copied text and links (up to 100). Stored locally only; content is never logged.</value></data>
+  <data name="Settings_Spotlight_Clipboard_Retention_Title" xml:space="preserve"><value>Retention</value></data>
+  <data name="Settings_Spotlight_Clipboard_Retention_Subtitle" xml:space="preserve"><value>Entries older than this are removed automatically.</value></data>
+  <data name="Settings_Spotlight_Clipboard_Days" xml:space="preserve"><value>{0} days</value></data>
+  <data name="Settings_Spotlight_Clipboard_Clear" xml:space="preserve"><value>Clear history</value></data>
+  <data name="Settings_Spotlight_Clipboard_Cleared" xml:space="preserve"><value>Clipboard history cleared.</value></data>
+  <data name="Settings_Spotlight_Clipboard_Count" xml:space="preserve"><value>{0} entries</value></data>
+  <data name="Settings_Spotlight_Clipboard_Excluded_Title" xml:space="preserve"><value>Excluded apps</value></data>
+  <data name="Settings_Spotlight_Clipboard_Excluded_Subtitle" xml:space="preserve"><value>Clipboard changes are not recorded while one of these apps is in front.</value></data>
+  <data name="Settings_Spotlight_Clipboard_Excluded_AddPlaceholder" xml:space="preserve"><value>Process name, e.g. word</value></data>
+  <data name="Settings_Spotlight_Clipboard_Excluded_Add" xml:space="preserve"><value>Add</value></data>
+  <data name="Settings_Spotlight_Clipboard_Excluded_Empty" xml:space="preserve"><value>No apps excluded.</value></data>
+  <data name="Settings_Spotlight_Clipboard_Excluded_Remove" xml:space="preserve"><value>Remove</value></data>
+  <data name="Settings_Spotlight_Glass_Clarity_Title" xml:space="preserve"><value>Backdrop clarity</value></data>
+  <data name="Settings_Spotlight_Glass_Clarity_Subtitle" xml:space="preserve"><value>Resolution the backdrop is sampled at. Lower is cheaper.</value></data>
+  <data name="Settings_Spotlight_Glass_Blur_Title" xml:space="preserve"><value>Blur</value></data>
+  <data name="Settings_Spotlight_Glass_Blur_Subtitle" xml:space="preserve"><value>Blur strength of the sampled backdrop.</value></data>
+  <data name="Settings_Spotlight_Glass_Refraction_Title" xml:space="preserve"><value>Refraction</value></data>
+  <data name="Settings_Spotlight_Glass_Refraction_Subtitle" xml:space="preserve"><value>Lens displacement at the card's edge.</value></data>
+  <data name="Settings_Spotlight_Glass_Highlight_Title" xml:space="preserve"><value>Highlight</value></data>
+  <data name="Settings_Spotlight_Glass_Highlight_Subtitle" xml:space="preserve"><value>Specular rim strength.</value></data>
+  <data name="Settings_Spotlight_Glass_Vibrancy_Title" xml:space="preserve"><value>Vibrancy</value></data>
+  <data name="Settings_Spotlight_Glass_Vibrancy_Subtitle" xml:space="preserve"><value>Saturation boost of the refracted content.</value></data>
+  <data name="Settings_Spotlight_Glass_Dispersion_Title" xml:space="preserve"><value>Dispersion</value></data>
+  <data name="Settings_Spotlight_Glass_Dispersion_Subtitle" xml:space="preserve"><value>Chromatic aberration at the edges.</value></data>
+  <data name="Settings_Spotlight_Names_Title" xml:space="preserve"><value>Show names</value></data>
+  <data name="Settings_Spotlight_Names_Subtitle" xml:space="preserve"><value>Draw the app name under each icon. Off leaves an icon-only grid; the filtered list still shows names.</value></data>
+  <data name="Settings_Spotlight_NameLines_Title" xml:space="preserve"><value>Name lines</value></data>
+  <data name="Settings_Spotlight_NameLines_Subtitle" xml:space="preserve"><value>How many lines a name may take. Every tile reserves that much space, so all icons in a row stay on one baseline; longer names end with an ellipsis.</value></data>
+  <data name="Settings_Spotlight_SearchHotkey_Title" xml:space="preserve"><value>Search bar shortcut</value></data>
+  <data name="Settings_Spotlight_SearchHotkey_Subtitle" xml:space="preserve"><value>Summons the launcher as a bare search field — no app grid, one row tall until results arrive. Must differ from the app-list shortcut above.</value></data>
+  <data name="Settings_Spotlight_SearchHotkey_Same" xml:space="preserve"><value>The search-bar shortcut must differ from the app-list shortcut.</value></data>
+  <data name="Settings_Spotlight_Status_SearchConflict" xml:space="preserve"><value>That combination is taken (or equals the app-list shortcut), so the search bar has no gesture.</value></data>
+  <data name="Settings_Spotlight_Background_Title" xml:space="preserve"><value>Background colour</value></data>
+  <data name="Settings_Spotlight_Background_Subtitle" xml:space="preserve"><value>While following, the card takes the global solid background colour that matches the launcher's own light/dark mode; off lets you set one colour per mode. Translucency stays the material's and 不透明度's job.</value></data>
+  <data name="Settings_Spotlight_Background_Follow" xml:space="preserve"><value>Follow global colour</value></data>
+  <data name="Settings_Spotlight_Background_Light" xml:space="preserve"><value>Light</value></data>
+  <data name="Settings_Spotlight_Background_Dark" xml:space="preserve"><value>Dark</value></data>
+  <data name="Settings_Spotlight_Background_Current_Hint" xml:space="preserve"><value>Currently using {1} in {0} mode.</value></data>
+  <data name="Spotlight_SearchMode_Hint" xml:space="preserve"><value>Type to search · Enter opens · Esc closes</value></data>
+  <data name="Spotlight_Calc_Hint" xml:space="preserve"><value>Press Enter to copy the result</value></data>
+  <data name="Spotlight_Search_FilesHeader" xml:space="preserve"><value>Files</value></data>
+  <data name="Spotlight_Search_InvalidRegex" xml:space="preserve"><value>That regular expression is not valid.</value></data>
+  <data name="Spotlight_Search_EverythingElevated" xml:space="preserve"><value>Everything is running as administrator, so its index cannot be queried.</value></data>
+  <data name="Spotlight_Search_EverythingUnresponsive" xml:space="preserve"><value>Everything is running but did not answer the query — searching local folders instead. If you are using Everything Lite, note that it does not support IPC; install the full version.</value></data>
+
+  <data name="Spotlight_Search_LocalIndex" xml:space="preserve"><value>Local folders only — start Everything to search the whole disk.</value></data>
+  <data name="Spotlight_Searching" xml:space="preserve"><value>Searching…</value></data>
+  <data name="Settings_Spotlight_Gap_Title" xml:space="preserve"><value>Column gap</value></data>
+  <data name="Settings_Spotlight_Gap_Subtitle" xml:space="preserve"><value>Gutter between two cells as a percentage of a cell. The icon size is derived from the column count and this gap, so the grid always fills the row exactly.</value></data>
+  <data name="Settings_Spotlight_RowGap_Title" xml:space="preserve"><value>Row gap</value></data>
+  <data name="Settings_Spotlight_RowGap_Subtitle" xml:space="preserve"><value>Vertical gutter between two rows, as a percentage of a cell. With app names on, the label block already makes a row taller — this is the air added on top of it, so it can be tightened to 0.</value></data>
+  <data name="Settings_Spotlight_Section_Files" xml:space="preserve"><value>File search</value></data>
+  <data name="Settings_Spotlight_Files_Title" xml:space="preserve"><value>Search files</value></data>
+  <data name="Settings_Spotlight_Files_Subtitle" xml:space="preserve"><value>Show file results under the app matches. Everything answers when its client is running; otherwise the built-in folder index does.</value></data>
+  <data name="Settings_Spotlight_Files_AutoStart_Title" xml:space="preserve"><value>Start Everything on demand</value></data>
+  <data name="Settings_Spotlight_Files_AutoStart_Subtitle" xml:space="preserve"><value>Everything's index is only reachable while its client runs. The launcher starts it minimised the first time a file query needs it.</value></data>
+  <data name="Settings_Spotlight_Files_Status_Connected" xml:space="preserve"><value>Everything connected — whole-disk results.</value></data>
+  <data name="Settings_Spotlight_Files_Status_NotRunning" xml:space="preserve"><value>Everything is installed but not running — using the built-in folder index.</value></data>
+  <data name="Settings_Spotlight_Files_Status_NotInstalled" xml:space="preserve"><value>Everything is not installed — searching desktop, documents, downloads, pictures, music and videos only.</value></data>
+  <data name="Settings_Spotlight_Files_Status_Elevated" xml:space="preserve"><value>Everything runs as administrator, so a normal-integrity launcher cannot query it. Restart Everything without elevation for whole-disk results.</value></data>
+  <data name="Settings_Spotlight_Files_Status_Unresponsive" xml:space="preserve"><value>Everything is running, but the last query did not answer — using the built-in folder index. If you are using the Lite build, note that it does not support IPC; install the full version.</value></data>
+
+  <data name="Settings_Spotlight_Files_Start" xml:space="preserve"><value>Start Everything</value></data>
+  <data name="Settings_Spotlight_Files_Refresh" xml:space="preserve"><value>Rebuild index</value></data>
+  <data name="Settings_Spotlight_Glass_Interval_Title" xml:space="preserve"><value>Sampling interval</value></data>
+  <data name="Settings_Spotlight_Glass_Interval_Subtitle" xml:space="preserve"><value>How often the screen behind the launcher is re-captured, in milliseconds. Shorter keeps motion alive and costs more.</value></data>
+  <data name="Settings_Spotlight_Gap_Preview" xml:space="preserve"><value>Icon {0:F0} px · gap {1:F0} px · cell {2:F0} px · row {3:F0} px</value></data>
+  <data name="Settings_Spotlight_Files_Engine_Title" xml:space="preserve"><value>Everything index</value></data>
+  <data name="Settings_Spotlight_Glass_Sample_Off" xml:space="preserve"><value>Screen sampling is off — the glass refracts the wallpaper.</value></data>
+  <data name="Settings_Spotlight_Glass_Sample_None" xml:space="preserve"><value>No screen frame yet — summon the launcher once to capture one.</value></data>
+  <data name="Settings_Spotlight_Glass_Sample_Ok" xml:space="preserve"><value>Screen sampling active — {0} frame(s) captured, last mean {1}.</value></data>
+  <data name="Settings_Spotlight_Web_Results_Title" xml:space="preserve"><value>Inline web results</value></data>
+  <data name="Settings_Spotlight_Web_Results_Subtitle" xml:space="preserve"><value>How many real results the launcher lists under 在浏览器中搜索 while you type (the preview comes from Bing; the row above still opens your own engine). 0 leaves only the action row — the launcher then makes no network request.</value></data>
+  <data name="Settings_Spotlight_CategoryKeys_MoveUp" xml:space="preserve"><value>Move up</value></data>
+  <data name="Settings_Spotlight_CategoryKeys_MoveDown" xml:space="preserve"><value>Move down</value></data>
 </root>

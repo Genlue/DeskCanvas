@@ -67,6 +67,8 @@ namespace Shortcuts.Locales {
         public static string Shortcuts_Menu_Duplicate => ResourceManager.GetString("Shortcuts_Menu_Duplicate", resourceCulture) ?? "Duplicate";
         public static string Shortcuts_Menu_Delete => ResourceManager.GetString("Shortcuts_Menu_Delete", resourceCulture) ?? "Delete";
         public static string Shortcuts_Menu_New => ResourceManager.GetString("Shortcuts_Menu_New", resourceCulture) ?? "New Shortcut";
+        public static string Shortcuts_Menu_MoveUp => ResourceManager.GetString("Shortcuts_Menu_MoveUp", resourceCulture) ?? "Move up";
+        public static string Shortcuts_Menu_MoveDown => ResourceManager.GetString("Shortcuts_Menu_MoveDown", resourceCulture) ?? "Move down";
         public static string Shortcuts_Menu_Stop => ResourceManager.GetString("Shortcuts_Menu_Stop", resourceCulture) ?? "Stop";
         public static string Shortcuts_Delete_Message => ResourceManager.GetString("Shortcuts_Delete_Message", resourceCulture) ?? "Delete \"{0}\"? This cannot be undone.";
         public static string Shortcuts_Delete_Ok => ResourceManager.GetString("Shortcuts_Delete_Ok", resourceCulture) ?? "Delete";

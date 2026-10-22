@@ -70,7 +70,7 @@
                                         CornerRadius="10"
                                         Background="{Binding TintBrush}"
                                         PointerPressed="OnRowPressed">
-                                    <Grid ColumnDefinitions="Auto,*,Auto,Auto">
+                                    <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto,Auto">
                                         <Border Grid.Column="0" Width="28" Height="28" CornerRadius="8"
                                                 Background="{Binding IconBrush}" VerticalAlignment="Center">
                                             <sc:GlyphView Data="{Binding GlyphGeometry}" Stroke="White"
@@ -92,7 +92,28 @@
                                                        Foreground="{Binding StateBrush}"
                                                        IsVisible="{Binding StateVisible}" />
                                         </StackPanel>
+                                        <!-- 手动排序：列表顺序即卡片顺序，上移/下移直接写回 shortcuts.json -->
                                         <Button Grid.Column="2" Classes="dc-icon-button"
+                                                Click="OnMoveUpClicked"
+                                                ToolTip.Tip="{x:Static locales:Locale.Shortcuts_Menu_MoveUp}"
+                                                AutomationProperties.Name="{x:Static locales:Locale.Shortcuts_Menu_MoveUp}"
+                                                VerticalAlignment="Center">
+                                            <sc:GlyphView Data="M6 14l6-6 6 6"
+                                                          Stroke="{Binding SubBrush}"
+                                                          StrokeThickness="1.8"
+                                                          Width="14" Height="14" />
+                                        </Button>
+                                        <Button Grid.Column="3" Classes="dc-icon-button"
+                                                Click="OnMoveDownClicked"
+                                                ToolTip.Tip="{x:Static locales:Locale.Shortcuts_Menu_MoveDown}"
+                                                AutomationProperties.Name="{x:Static locales:Locale.Shortcuts_Menu_MoveDown}"
+                                                VerticalAlignment="Center">
+                                            <sc:GlyphView Data="M6 10l6 6 6-6"
+                                                          Stroke="{Binding SubBrush}"
+                                                          StrokeThickness="1.8"
+                                                          Width="14" Height="14" />
+                                        </Button>
+                                        <Button Grid.Column="4" Classes="dc-icon-button"
                                                 Click="OnRunClicked"
                                                 ToolTip.Tip="{x:Static locales:Locale.Shortcuts_Menu_Run}"
                                                 AutomationProperties.Name="{x:Static locales:Locale.Shortcuts_Menu_Run}"
@@ -102,7 +123,7 @@
                                                           StrokeThickness="1.8"
                                                           Width="14" Height="14" />
                                         </Button>
-                                        <Button Grid.Column="3" Classes="dc-icon-button"
+                                        <Button Grid.Column="5" Classes="dc-icon-button"
                                                 Click="OnEditClicked"
                                                 ToolTip.Tip="{x:Static locales:Locale.Shortcuts_Menu_Edit}"
                                                 AutomationProperties.Name="{x:Static locales:Locale.Shortcuts_Menu_Edit}"

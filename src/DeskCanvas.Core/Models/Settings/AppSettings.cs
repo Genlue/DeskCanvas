@@ -35,6 +35,16 @@ namespace DeskCanvas.Core.Models.Settings;
 /// by a fullscreen or maximized application. <c>null</c> (old configurations) means
 /// <see cref="FullscreenBehavior.Hide"/> — the historical behaviour.
 /// </param>
+/// <param name="DefaultRegion">
+/// 默认地区: the location weather / map widgets start from when they have no location of their
+/// own. <c>null</c> (old configurations) means "not configured" — each widget keeps its own
+/// historical fallback.
+/// </param>
+/// <param name="Launcher">
+/// 聚焦搜索 settings. <c>null</c> (old configurations) means "never configured" — the launcher
+/// then reads <see cref="LauncherSettings"/> defaults, which keep the feature off until the user
+/// enables it.
+/// </param>
 public record AppSettings(
     Theme Theme,
     Theme[] Templates,
@@ -56,7 +66,9 @@ public record AppSettings(
     Dictionary<string, Theme>? SurfaceThemes = null,
     string? LastUpdateCheckStatus = null,
     FocusLinkSettings? FocusLink = null,
-    FullscreenBehavior? FullscreenBehavior = null)
+    FullscreenBehavior? FullscreenBehavior = null,
+    DefaultRegion? DefaultRegion = null,
+    LauncherSettings? Launcher = null)
 {
     /// <summary>
     /// Gets the saved theme configuration for the specified surface, falling back to default presets.
@@ -146,4 +158,18 @@ public record AppSettings(
     /// when <see cref="TitleBarSize"/> is not set.
     /// </summary>
     public double EffectiveTitleBarSize => TitleBarSize ?? DefaultTitleBarSize;
+
+    /// <summary>
+    /// The usable 默认地区, or <c>null</c> when nothing (or nothing valid) is configured.
+    /// Consumers fall back to their own historical location in that case.
+    /// </summary>
+    public DefaultRegion? EffectiveDefaultRegion =>
+        DefaultRegion is { } region && region.IsValid ? region.Normalized() : null;
+
+    /// <summary>
+    /// The 聚焦搜索 settings with every value inside its supported range. Never <c>null</c>: an
+    /// unconfigured launcher reads the record's defaults (feature off), so consumers never need a
+    /// null check of their own.
+    /// </summary>
+    public LauncherSettings EffectiveLauncher => (Launcher ?? new LauncherSettings()).Normalize();
 }

@@ -23,6 +23,8 @@ public class SettingsViewModel : ReactiveObject
     private readonly IWidgetFactory<Window, UserControl> widgetFactory;
     private readonly ProfileService profileService;
     private readonly UpdateService updateService;
+    private readonly SpotlightService spotlightService;
+    private readonly FileSearchService fileSearchService;
 
     private UserControl? currentPage;
     public UserControl? CurrentPage
@@ -52,7 +54,9 @@ public class SettingsViewModel : ReactiveObject
         DisplayMonitorService displayMonitor,
         IWidgetFactory<Window, UserControl> widgetFactory,
         ProfileService profileService,
-        UpdateService updateService)
+        UpdateService updateService,
+        SpotlightService spotlightService,
+        FileSearchService fileSearchService)
     {
         this.appSettingsProvider = appSettingsProvider;
         this.assemblyProvider = assemblyProvider;
@@ -61,6 +65,8 @@ public class SettingsViewModel : ReactiveObject
         this.widgetFactory = widgetFactory;
         this.profileService = profileService;
         this.updateService = updateService;
+        this.spotlightService = spotlightService;
+        this.fileSearchService = fileSearchService;
         profileService.ActiveProfileChanged += (_, _) => pageCache.Clear();
 
         // 1. Load and deduplicate widget assemblies
@@ -111,6 +117,7 @@ public class SettingsViewModel : ReactiveObject
             new(null, null, isZh ? "系统设置" : "System Settings"),
             new(typeof(General), GetIcon(nameof(General)), Locale.Settings_General),
             new(typeof(Appearance), GetIcon(nameof(Appearance)), Locale.Settings_Appearance),
+            new(typeof(Spotlight), GetIcon(nameof(Spotlight)), Locale.Settings_Spotlight),
             new(typeof(MultiScreen), GetIcon(nameof(MultiScreen)), Locale.Settings_MultiScreen),
             new(typeof(Advanced), GetIcon(nameof(Advanced)), Locale.Settings_Advanced),
             new(typeof(Profiles), SafeParseIcon("M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"), Locale.Settings_Profiles ?? (isZh ? "配置方案" : "Profiles")),
@@ -189,6 +196,7 @@ public class SettingsViewModel : ReactiveObject
                     var type when type == typeof(Profiles) => new Profiles(profileService),
                     var type when type == typeof(Advanced) => new Advanced(appSettingsProvider, layoutProvider, displayMonitor, profileService),
                     var type when type == typeof(MultiScreen) => new MultiScreen(appSettingsProvider, layoutProvider, displayMonitor),
+                    var type when type == typeof(Spotlight) => new Spotlight(appSettingsProvider, spotlightService, fileSearchService),
                     _ => (UserControl?) Activator.CreateInstance(pageType, appSettingsProvider)
                 };
             }

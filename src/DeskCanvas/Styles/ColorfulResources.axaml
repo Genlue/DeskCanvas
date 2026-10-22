@@ -235,6 +235,8 @@
                     <SolidColorBrush x:Key="ClockDigitalCardBackground" Color="#FFFFFF" />
                     <SolidColorBrush x:Key="ClockDigitalTimeBrush" Color="#1C1C1E" />
                     <SolidColorBrush x:Key="ClockDigitalDateBrush" Color="#007AFF" />
+                    <!-- 刻度时钟（TickClock）：参考稿是纯白方卡 (Light) -->
+                    <SolidColorBrush x:Key="TickClockCardBackground" Color="#FFFFFF" />
 
                     <!-- Calendar 日历卡片背景 (Light) -->
                     <SolidColorBrush x:Key="CalendarCardBackground" Color="#FFFFFF" />
@@ -501,6 +503,8 @@
                     <SolidColorBrush x:Key="ClockDigitalCardBackground" Color="#FFFFFF" />
                     <SolidColorBrush x:Key="ClockDigitalTimeBrush" Color="#1C1C1E" />
                     <SolidColorBrush x:Key="ClockDigitalDateBrush" Color="#007AFF" />
+                    <!-- 刻度时钟（TickClock）：参考稿是纯白方卡 (Light) -->
+                    <SolidColorBrush x:Key="TickClockCardBackground" Color="#FFFFFF" />
 
                     <!-- Calendar 日历卡片背景 (Light) -->
                     <SolidColorBrush x:Key="CalendarCardBackground" Color="#FFFFFF" />
@@ -766,6 +770,8 @@
                     <SolidColorBrush x:Key="ClockDigitalCardBackground" Color="#1C1C1E" />
                     <SolidColorBrush x:Key="ClockDigitalTimeBrush" Color="#FFFFFF" />
                     <SolidColorBrush x:Key="ClockDigitalDateBrush" Color="#FF9F0A" />
+                    <!-- 刻度时钟（TickClock）：暗色档换成等值炭黑卡 (Dark) -->
+                    <SolidColorBrush x:Key="TickClockCardBackground" Color="#1C1C1E" />
 
                     <!-- Calendar 日历卡片背景 (Dark) -->
                     <SolidColorBrush x:Key="CalendarCardBackground" Color="#1C1C1E" />

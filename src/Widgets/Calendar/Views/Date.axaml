@@ -3,30 +3,26 @@
              xmlns:viewModels="clr-namespace:Calendar.ViewModels"
              x:Class="Calendar.Views.Date"
              x:DataType="viewModels:DateCalendarViewModel">
-    <Viewbox Stretch="Uniform">
-        <Grid RowDefinitions="*,4*" ColumnDefinitions="*,*">
-            <TextBlock Grid.Row="0" Grid.Column="0" Margin="0,0,2,0" FontWeight="Bold"
-                       Foreground="{DynamicResource CalendarHeaderBrush}" 
-                       Text="{Binding DayOfWeek}" 
-                       VerticalAlignment="Bottom" HorizontalAlignment="Right" />
-            <TextBlock Grid.Row="0" Grid.Column="1" Opacity="0.5" FontWeight="Bold"
-                       Text="{Binding Month}" 
-                       VerticalAlignment="Bottom" HorizontalAlignment="Left" />
-            <!-- 日号：交给内层 Viewbox（Uniform）负责 —— 行 1 整格就是它的容器，
-                 容器本身永不被截断，数字在其中等比拉伸，直到宽/高任一边贴到容器
-                 边缘为止，即"填满可用空间"。
-                 此前用 RenderTransform 横向拉伸 8%：它不参与布局，文字按自然宽度
-                 测量居中后视觉再变宽，墨迹溢出布局盒，经外层 Viewbox 放大后正好
-                 被卡片右缘裁掉 —— 这就是右侧截断的根源，已移除。
-                 行盒约束同前：LineHeight 不能小于字体自然行高（约 1.2 × FontSize），
-                 否则 Avalonia 按行盒把字形底部平切；上/下负 Margin（-12/-8）只收
-                 行盒的空白区（顶部空行与底部降部），墨迹仍留在布局盒内。
-                 LetterSpacing=-3 会在末字符之后也计入间距，使测量宽度比墨迹短
-                 3px，故右缘补 3px Margin 抵消，保证墨迹不出布局盒。 -->
-            <Viewbox Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" Stretch="Uniform">
-                <TextBlock LetterSpacing="-3" FontSize="50" LineHeight="60"
-                           Text="{Binding Day}" FontWeight="SemiBold" Margin="0,-12,3,-8" />
-            </Viewbox>
-        </Grid>
-    </Viewbox>
+    <!-- 无外层 Viewbox：日号字号由代码按卡片实际渲染的物理像素数直接推算
+         （见 Date.axaml.cs 的 ApplyFontSizes）。Viewbox 的等比重归一化会把任何
+         字号折算回同一视觉比例，"按实际像素定字号"就失去意义；行比保持原版
+         1*,4*，比例对齐参考图（表头墨迹 ≈ 卡高 14%，日号墨迹 = 卡高 70%）。 -->
+    <Grid RowDefinitions="*,4*" ColumnDefinitions="*,*">
+        <TextBlock x:Name="WeekdayLabel" Grid.Row="0" Grid.Column="0" Margin="0,0,2,0"
+                   FontWeight="Bold"
+                   Foreground="{DynamicResource CalendarHeaderBrush}"
+                   Text="{Binding DayOfWeek}"
+                   VerticalAlignment="Bottom" HorizontalAlignment="Right" />
+        <TextBlock x:Name="MonthLabel" Grid.Row="0" Grid.Column="1" Opacity="0.5"
+                   FontWeight="Bold"
+                   Text="{Binding Month}"
+                   VerticalAlignment="Bottom" HorizontalAlignment="Left" />
+        <!-- 日号：字体与原版一致（跟随应用默认字族），字号按实际 DPI 的物理像素数
+             推导（ApplyFontSizes），墨迹目标 = 卡高 70%。顶端对齐 + 代码算出的上
+             Margin（基线锚定补偿，行盒被格高钳制时墨迹会随基线下坠）使墨迹中心恒
+             在日号格中心；普通 TextBlock 的墨迹天然留在自己的布局盒内，不会截断。 -->
+        <TextBlock x:Name="DayLabel" Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2"
+                   Text="{Binding Day}" FontWeight="SemiBold"
+                   VerticalAlignment="Top" HorizontalAlignment="Center" />
+    </Grid>
 </UserControl>

@@ -720,5 +720,8 @@ namespace Timetable.Locales {
                 return ResourceManager.GetString("Timetable_ShowWeekView", resourceCulture);
             }
         }
+
+        public static string Timetable_Spotlight_Group => ResourceManager.GetString("Timetable_Spotlight_Group", resourceCulture) ?? "Courses";
+        public static string Timetable_Spotlight_Slot => ResourceManager.GetString("Timetable_Spotlight_Slot", resourceCulture) ?? "Periods {0}";
     }
 }

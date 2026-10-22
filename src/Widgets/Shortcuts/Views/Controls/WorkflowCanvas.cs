@@ -209,8 +209,51 @@ public sealed class WorkflowCanvas : Canvas
 
     // ---- 加载与增量更新 ------------------------------------------------------------
 
-    /// <summary>全量重建（仅用于打开 / 切换 / 撤销 / 导入；日常编辑走增量 API）。</summary>
+    /// <summary>True while <see cref="Load"/> is rebuilding; a nested request is queued instead.</summary>
+    private bool loading;
+
+    /// <summary>A rebuild requested from inside a rebuild (card created / selection changed).</summary>
+    private (WorkflowGraph Graph, bool ResetView)? pendingLoad;
+
+    /// <summary>
+    /// 全量重建（仅用于打开 / 切换 / 撤销 / 导入；日常编辑走增量 API）。
+    /// <para>
+    /// 重建会触发 <see cref="NodeCardCreated"/> 与 <see cref="SelectionChanged"/>，编辑器的处理器
+    /// 完全可能在这些回调里再请求一次重建（撤销、切换卡片、删除后刷新）。嵌套执行会让
+    /// <see cref="LoadCore"/> 把共享的 <see cref="linkLayer"/> 加到一个已经持有它的画布上，
+    /// 抛 "already has a visual parent Canvas" —— 旧版删除节点崩溃的同一类根因。所以这里把
+    /// 后续请求排队，当前这次重建结束后再顺序执行，画布永远只有一个连线层。
+    /// </para>
+    /// </summary>
     public void Load(WorkflowGraph graph, bool resetView = false)
+    {
+        if (loading)
+        {
+            // 排队期间任何一次请求要求复位视图，最终那次就复位（更宽的请求赢）。
+            pendingLoad = (graph, resetView || (pendingLoad?.ResetView ?? false));
+            return;
+        }
+
+        loading = true;
+        try
+        {
+            // 处理器每次重建都再请求一次时不允许无限自旋：最多连做 4 轮，余下的请求丢弃，
+            // 画布停在最近一次的图上——界面不会卡死，也不会留下半重建状态。
+            for (var pass = 0; pass < 4; pass++)
+            {
+                pendingLoad = null;
+                LoadCore(graph, resetView);
+                if (pendingLoad is not { } queued) return;
+                (graph, resetView) = queued;
+            }
+        }
+        finally
+        {
+            loading = false;
+        }
+    }
+
+    private void LoadCore(WorkflowGraph graph, bool resetView)
     {
         Graph = graph;
         graph.Invalidate();
@@ -224,7 +267,7 @@ public sealed class WorkflowCanvas : Canvas
         hoveredLinkId = null;
         linkGeometry.Clear();
         diagnosticsByNode.Clear();
-        graphRoot.Children.Add(linkLayer);
+        AttachLinkLayer();
 
         foreach (var node in graph.Nodes)
             AddCard(node);
@@ -235,6 +278,18 @@ public sealed class WorkflowCanvas : Canvas
         ApplyTransform();
         ApplySelectionVisuals();
         linkLayer.InvalidateVisual();
+    }
+
+    /// <summary>
+    /// 把长期复用的连线层挂回图根：先确保它已从任何旧父级摘除。<c>Children.Clear()</c> 本身会
+    /// 解除父子关系，但这一层是唯一被跨重建复用的实例——任何一条没清理干净的路径（嵌套重建、
+    /// 上一次重建中途抛异常）都会让它带着旧父级进入下一次 <c>Add</c>。这里做一次幂等挂载，
+    /// 把这类崩溃从"必现"降级为"不可能"。
+    /// </summary>
+    private void AttachLinkLayer()
+    {
+        if (linkLayer.Parent is Panel staleOwner) staleOwner.Children.Remove(linkLayer);
+        graphRoot.Children.Add(linkLayer);
     }
 
     private void AddCard(WorkflowNode node)

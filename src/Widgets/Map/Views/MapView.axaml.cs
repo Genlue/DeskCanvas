@@ -67,7 +67,7 @@ public partial class MapView : UserControl, IWidgetSelfRefreshing, IWidgetSurfac
     {
         this.widgetLayoutProvider = widgetLayoutProvider;
         this.appSettingsProvider = appSettingsProvider;
-        viewModel = new MapViewModel(model);
+        viewModel = new MapViewModel(ResolveModel(model, widgetLayoutProvider, appSettingsProvider));
         DataContext = viewModel;
 
         tileService = new MapTileService();
@@ -90,6 +90,36 @@ public partial class MapView : UserControl, IWidgetSelfRefreshing, IWidgetSurfac
             Application.Current.ActualThemeVariantChanged += OnThemeVariantChanged;
 
         ApplyCurrentTheme();
+    }
+
+    /// <summary>
+    /// A map that never stored its own center follows the app-wide 默认地区 (设置 › 通用);
+    /// a map with stored settings keeps the place the user chose there. The layout provider is
+    /// the widget's own entry, so "no model" means "nothing was ever configured".
+    /// </summary>
+    private static MapModel ResolveModel(
+        MapModel model, IWidgetLayoutProvider? layoutProvider, IAppSettingsProvider? settingsProvider)
+    {
+        try
+        {
+            if (layoutProvider?.Get().GetModel<MapModel>() != null) return model;
+
+            var region = settingsProvider?.Get().EffectiveDefaultRegion;
+            if (region == null) return model;
+
+            return model with
+            {
+                Latitude = region.Latitude,
+                Longitude = region.Longitude,
+                LocationName = region.Name,
+                LocationDescription = null
+            };
+        }
+        catch
+        {
+            // Unreadable settings must never keep the widget from opening.
+            return model;
+        }
     }
 
     private void OnLoaded(object? sender, RoutedEventArgs e)

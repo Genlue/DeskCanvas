@@ -241,7 +241,11 @@ public partial class Widget : Window, INotifyPropertyChanged, IFocusThemedWindow
         DataContext = this;
         
         SetMinMaxSize(false);
-        TextOptions.SetTextRenderingMode(this, TextRenderingMode.Antialias);
+        // Text AA follows the card material (see ApplyTextRenderingMode): subpixel over the
+        // opaque 多彩 card — the historic "grey mush" guard for 11–12 px labels — grayscale
+        // over the translucent 毛玻璃/液态玻璃 materials, whose alpha compositing turns a
+        // subpixel mask into red/green fringing.
+        ApplyTextRenderingMode();
         UpdateContentSize();
         
         // Manual grid: the span (size steppers / occupancy) is derived from the stored
@@ -1415,6 +1419,7 @@ public partial class Widget : Window, INotifyPropertyChanged, IFocusThemedWindow
     private void RefreshThemeVisuals()
     {
         ApplyTransparencyHint();
+        ApplyTextRenderingMode();
         Notify(nameof(GlassMaterial));
         Notify(nameof(ShowsGlassMaterial));
         Notify(nameof(WidgetMargin));
@@ -1434,6 +1439,26 @@ public partial class Widget : Window, INotifyPropertyChanged, IFocusThemedWindow
         // materials share one 高光 angle), so the layer may still hold the previous surface's
         // raster. Repaint it explicitly once the native clip for the new material is applied.
         SpecularRimLayer?.InvalidateVisual();
+    }
+
+    /// <summary>
+    /// (Re-)resolve the window's text antialiasing from the live card material, per
+    /// <see cref="PanelAppearanceResolver.ResolveTextRenderingMode(DeskCanvas.Core.Models.Settings.Theme)"/>:
+    /// the ClearType-class subpixel mask is only correct over opaque pixels, so translucent
+    /// materials (毛玻璃 native blur, 液态玻璃 rendered glass) must render grayscale — a subpixel
+    /// mask alpha-composited with the live desktop reads as red/green fringing (色散), while the
+    /// opaque 多彩 card keeps subpixel, which is what keeps 11–12 px labels crisp. Re-run by
+    /// <see cref="RefreshThemeVisuals"/> (settings saves, 失焦自动切换 material swaps) and
+    /// <see cref="RefreshFramelessState"/> so a runtime switch re-resolves with the material.
+    /// </summary>
+    private void ApplyTextRenderingMode()
+    {
+        // Frameless widgets paint their own glyph geometry (FramelessGlyphGeometry's own SK
+        // pipeline, tuned separately) — keep their historic explicit subpixel untouched.
+        var mode = isFrameless
+            ? TextRenderingMode.SubpixelAntialias
+            : PanelAppearanceResolver.ResolveTextRenderingMode(GlassMaterial);
+        SurfaceTextRendering.Apply(this, mode);
     }
 
     /// <summary>
@@ -1667,6 +1692,10 @@ public partial class Widget : Window, INotifyPropertyChanged, IFocusThemedWindow
             Border.ClearValue(Border.BorderBrushProperty);
             Border.ClearValue(Border.BackgroundProperty);
         }
+
+        // The frameless flip changes which pipeline paints the card, so the text AA the
+        // constructor resolved for the old mode no longer matches the material.
+        ApplyTextRenderingMode();
 
         Notify(nameof(IsFrameless));
         Notify(nameof(ShowsGlassMaterial));

@@ -60,4 +60,13 @@
     <data name="Reminders_ZeroItems" xml:space="preserve">
         <value>0 items</value>
     </data>
+    <data name="Reminders_Spotlight_Group" xml:space="preserve">
+        <value>Checklist</value>
+    </data>
+    <data name="Reminders_Spotlight_Done" xml:space="preserve">
+        <value>Done</value>
+    </data>
+    <data name="Reminders_Spotlight_Pending" xml:space="preserve">
+        <value>Not done</value>
+    </data>
 </root>

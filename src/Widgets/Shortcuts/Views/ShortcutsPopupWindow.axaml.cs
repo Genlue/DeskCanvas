@@ -191,6 +191,20 @@ public partial class ShortcutsPopupWindow : SecondaryPanelWindow
         ShortcutsEditorWindow.ShowEditor(tile.ShortcutId, this);
     }
 
+    private void OnMoveUpClicked(object? sender, RoutedEventArgs e) => MoveRow(sender, -1);
+
+    private void OnMoveDownClicked(object? sender, RoutedEventArgs e) => MoveRow(sender, 1);
+
+    /// <summary>
+    /// 手动排序: the list order is the card order, so moving a row here also moves the tile on
+    /// every Shortcuts card (the store broadcasts the change).
+    /// </summary>
+    private void MoveRow(object? sender, int delta)
+    {
+        if ((sender as Control)?.DataContext is not ShortcutTileViewModel tile || tile.IsCreate) return;
+        ShortcutsStore.Move(tile.ShortcutId, delta, this);
+    }
+
     private async Task RunOrCancelAsync(ShortcutTileViewModel tile)
     {
         try

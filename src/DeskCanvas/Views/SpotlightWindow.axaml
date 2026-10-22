@@ -1,0 +1,732 @@
+﻿<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="clr-namespace:DeskCanvas.ViewModels"
+        xmlns:controls="clr-namespace:DeskCanvas.Views.Controls"
+        xmlns:loc="clr-namespace:DeskCanvas.Locales"
+        xmlns:local="clr-namespace:DeskCanvas.Views"
+        x:Class="DeskCanvas.Views.SpotlightWindow"
+        x:DataType="vm:SpotlightViewModel"
+        Title="Spotlight"
+        Background="Transparent"
+        TransparencyLevelHint="Transparent"
+        TransparencyBackgroundFallback="Transparent"
+        WindowDecorations="None"
+        WindowStartupLocation="Manual"
+        ShowInTaskbar="False"
+        Topmost="True"
+        CanResize="False"
+        Width="820" Height="560">
+
+    <!--
+        聚焦搜索 overlay（macOS 26 Tahoe 对标）.
+
+        The three materials are NOT branched here: PanelAppearanceResolver decides the card fill,
+        the hairline, the native transparency level and whether the rendered-glass surface paints
+        the card. This file only supplies the named parts the window drives:
+          - GlassSurface    : the liquid-glass layer (visible only for 液态玻璃)
+          - Card            : the fill/border/clip every material shares
+          - CardColumns     : result column / preview hairline / preview pane
+        See SpotlightWindow.ApplyAppearance.
+
+        Text rendering mode is set in code (SpotlightWindow.ApplyAppearance): it must follow the
+        resolved material — subpixel AA over the opaque 全彩 card keeps 11–12 px labels crisp, while
+        the translucent 毛玻璃/液态玻璃 cards must render grayscale (a subpixel mask
+        alpha-composited with the desktop reads as red/green fringing).
+    -->
+    <Window.Resources>
+        <!-- Defaults; ApplyAppearance overwrites them from the resolved material so the whole
+             visual tree follows one rule (no per-control theme branching). -->
+        <SolidColorBrush x:Key="SpotlightPrimaryText" Color="#1D1D1F" />
+        <SolidColorBrush x:Key="SpotlightSecondaryText" Color="#8A8A8E" />
+        <SolidColorBrush x:Key="SpotlightPlaceholderBrush" Color="#14000000" />
+        <SolidColorBrush x:Key="SpotlightSelectionBrush" Color="#330A84FF" />
+        <SolidColorBrush x:Key="SpotlightTileHoverBrush" Color="#0F000000" />
+        <!-- Icon size and row pitch are derived at runtime from the grid's real width and the
+             column count (LauncherGridMetrics.Compute): neither is a setting. -->
+        <x:Double x:Key="SpotlightIconSize">64</x:Double>
+        <x:Double x:Key="SpotlightTileWidth">96</x:Double>
+        <x:Double x:Key="SpotlightTileHeight">104</x:Double>
+        <!-- The label box every tile reserves: 应用名称行数 × line height, with names off it is 0
+             and the tiles collapse onto their icons. Written by ApplyMetrics. -->
+        <x:Double x:Key="SpotlightLabelHeight">34</x:Double>
+        <!-- icon + gap + label box: the tile's own height, identical for every app. -->
+        <x:Double x:Key="SpotlightTileContentHeight">104</x:Double>
+        <!-- Width the tile's name may use: the selection halo's width, so a long name can never
+             stick out of the highlight. Rewritten with the other metrics by UpdateGridMetrics. -->
+        <x:Double x:Key="SpotlightLabelWidth">96</x:Double>
+
+        <!-- Broken shortcuts keep their row (dimmed, no dead icon): the boolean gates below are
+             one-line converters living next to the window (Folder.axaml.cs precedent). -->
+        <local:SpotlightNotBrokenConverter x:Key="SpotlightNotBroken" />
+        <local:SpotlightBrokenOpacityConverter x:Key="SpotlightBrokenOpacity" />
+        <local:SpotlightHasTextConverter x:Key="SpotlightHasText" />
+        <!-- The field's leading mark follows the kind of the current search object: the user's
+             App Store artwork for apps, the document artwork for files, drawn marks otherwise. -->
+        <local:SpotlightGlyphFillConverter x:Key="SpotlightGlyphFill" />
+        <local:SpotlightGlyphStrokeConverter x:Key="SpotlightGlyphStroke" />
+
+        <!-- One tile: icon on top, name below in a FIXED-HEIGHT box. The fixed box is the whole
+             alignment rule — a tile with a one-line name keeps its icon on the same baseline as
+             the two-line name beside it, because both tiles are exactly the same height and the
+             container centres them identically. ApplyTileGeometry rewrites the height, the line
+             budget and the icon size per realized container. -->
+        <DataTemplate x:Key="SpotlightTileTemplate" x:DataType="vm:SpotlightItem">
+            <StackPanel x:Name="TileRoot" Spacing="6"
+                        Width="{DynamicResource SpotlightTileWidth}"
+                        Height="{DynamicResource SpotlightTileContentHeight}"
+                        HorizontalAlignment="Center">
+                <Grid x:Name="TileIcon"
+                      Width="{DynamicResource SpotlightIconSize}"
+                      Height="{DynamicResource SpotlightIconSize}"
+                      HorizontalAlignment="Center">
+                    <!-- Fallback tile: the name's first character, so an icon that is still
+                         loading never looks like a broken image. -->
+                    <Border CornerRadius="10" IsVisible="{Binding !HasIcon}"
+                            Background="{DynamicResource SpotlightPlaceholderBrush}">
+                        <TextBlock Text="{Binding Initial}"
+                                   FontSize="22"
+                                   FontWeight="Medium"
+                                   HorizontalAlignment="Center"
+                                   VerticalAlignment="Center"
+                                   Foreground="{DynamicResource SpotlightSecondaryText}" />
+                    </Border>
+                    <Image Source="{Binding Icon}"
+                           Stretch="Uniform"
+                           RenderOptions.BitmapInterpolationMode="HighQuality"
+                           IsVisible="{Binding HasIcon}" />
+                </Grid>
+                <TextBlock x:Name="TileLabel"
+                           Text="{Binding Name}"
+                           IsVisible="{Binding ShowName}"
+                           FontSize="12"
+                           MaxLines="2"
+                           Height="{DynamicResource SpotlightLabelHeight}"
+                           TextWrapping="Wrap"
+                           TextAlignment="Center"
+                           VerticalAlignment="Top"
+                           TextTrimming="CharacterEllipsis"
+                           MaxWidth="{DynamicResource SpotlightLabelWidth}"
+                           Foreground="{DynamicResource SpotlightPrimaryText}" />
+            </StackPanel>
+        </DataTemplate>
+
+        <DataTemplate x:Key="SpotlightRowTemplate" x:DataType="vm:SpotlightItem">
+            <Panel>
+                <!-- Group caption ("文件"). Non-selectable: the window skips these rows when
+                     moving the selection, so the header reads as a label, not as an item. -->
+                <TextBlock Text="{Binding Name}"
+                           IsVisible="{Binding !IsSelectable}"
+                           FontSize="11.5"
+                           FontWeight="SemiBold"
+                           Margin="14,8,14,2"
+                           Foreground="{DynamicResource SpotlightSecondaryText}" />
+
+                <!-- Result row: ~48 DIP content, 28 icon, optional badge, dimmed when broken. -->
+                <Grid x:Name="RowRoot"
+                      ColumnDefinitions="Auto,12,*,Auto"
+                      MinHeight="48"
+                      Margin="12,0"
+                      VerticalAlignment="Center"
+                      IsVisible="{Binding IsSelectable}"
+                      Opacity="{Binding IsBroken, Converter={StaticResource SpotlightBrokenOpacity}}">
+                    <Grid Width="28" Height="28">
+                        <Panel IsVisible="{Binding IsBroken, Converter={StaticResource SpotlightNotBroken}}">
+                            <Border CornerRadius="7" IsVisible="{Binding !HasIcon}"
+                                    Background="{DynamicResource SpotlightPlaceholderBrush}">
+                                <TextBlock Text="{Binding Initial}"
+                                           FontSize="13"
+                                           HorizontalAlignment="Center"
+                                           VerticalAlignment="Center"
+                                           Foreground="{DynamicResource SpotlightSecondaryText}" />
+                            </Border>
+                            <Image Source="{Binding Icon}"
+                                   Stretch="Uniform"
+                                   RenderOptions.BitmapInterpolationMode="HighQuality"
+                                   IsVisible="{Binding HasIcon}" />
+                        </Panel>
+                        <!-- 断链占位: circle + slash, never a bitmap or a glyph. -->
+                        <Border CornerRadius="7" IsVisible="{Binding IsBroken}"
+                                Background="{DynamicResource SpotlightPlaceholderBrush}">
+                            <Path Width="18" Height="18"
+                                  Stretch="Uniform"
+                                  Stroke="{DynamicResource SpotlightSecondaryText}"
+                                  StrokeThickness="1.5"
+                                  StrokeLineCap="Round"
+                                  HorizontalAlignment="Center"
+                                  VerticalAlignment="Center"
+                                  Data="M15,8.5 A6.5,6.5 0 1 1 2,8.5 A6.5,6.5 0 1 1 15,8.5 M6.4,11.6 L11.6,6.4" />
+                        </Border>
+                    </Grid>
+                    <StackPanel Grid.Column="2" Spacing="1" VerticalAlignment="Center">
+                        <TextBlock Text="{Binding Name}"
+                                   FontSize="14"
+                                   FontWeight="Medium"
+                                   TextTrimming="CharacterEllipsis"
+                                   Foreground="{DynamicResource SpotlightPrimaryText}" />
+                        <TextBlock Text="{Binding Subtitle}"
+                                   FontSize="11.5"
+                                   TextTrimming="CharacterEllipsis"
+                                   Foreground="{DynamicResource SpotlightSecondaryText}" />
+                    </StackPanel>
+                    <Border Grid.Column="3"
+                            CornerRadius="999"
+                            BorderThickness="1"
+                            BorderBrush="{DynamicResource SpotlightSecondaryText}"
+                            Padding="7,1.5"
+                            VerticalAlignment="Center"
+                            IsVisible="{Binding Badge, Converter={StaticResource SpotlightHasText}}">
+                        <TextBlock Text="{Binding Badge}"
+                                   FontSize="11"
+                                   Foreground="{DynamicResource SpotlightSecondaryText}" />
+                    </Border>
+                </Grid>
+            </Panel>
+        </DataTemplate>
+
+        <!-- 空查询 · 最近使用: the grid's OWN tile, on the grid's own pitch — one row, no small
+             variant. The Button adds only the pointer affordance (the grid gets its hover and
+             click from ListBoxItem); icon size, label box and tile width come from the same
+             template and the same derived resources, so an icon in this row is exactly the size
+             of the same icon in the grid below it. -->
+        <DataTemplate x:Key="SpotlightRecentTileTemplate" x:DataType="vm:SpotlightItem">
+            <Button Classes="recent-tile"
+                    Click="OnRecentTileClick"
+                    Content="{Binding}"
+                    ContentTemplate="{StaticResource SpotlightTileTemplate}" />
+        </DataTemplate>
+
+        <!-- 预览栏 · label/value 行. -->
+        <!-- One line per value, trimmed at the end: a 280 DIP pane cannot show a full path, and
+             letting it wrap turned one row into six ("C:\Users\…" broken mid-word). The tooltip
+             carries the untruncated value. -->
+        <DataTemplate x:Key="SpotlightPreviewRowTemplate" x:DataType="vm:SpotlightPreviewRow">
+            <Grid ColumnDefinitions="76,*" Margin="0,3">
+                <TextBlock Text="{Binding Label}"
+                           FontSize="11.5"
+                           VerticalAlignment="Top"
+                           Foreground="{DynamicResource SpotlightSecondaryText}" />
+                <TextBlock Grid.Column="1"
+                           Text="{Binding Value}"
+                           ToolTip.Tip="{Binding Value}"
+                           FontSize="12"
+                           TextWrapping="NoWrap"
+                           TextTrimming="CharacterEllipsis"
+                           Foreground="{DynamicResource SpotlightPrimaryText}" />
+            </Grid>
+        </DataTemplate>
+    </Window.Resources>
+
+    <Window.Styles>
+        <!-- The search field is a bare caret: Fluent's box is removed in EVERY state, not just at
+             rest. Overriding only the base state left the field painting itself on hover and on
+             focus (pointer-over and focus are both true while typing), which is the solid
+             black/white input box that showed through the glass card. -->
+        <Style Selector="TextBox#QueryBox">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="MinHeight" Value="36" />
+            <Setter Property="FontSize" Value="22" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="PlaceholderForeground" Value="{DynamicResource SpotlightSecondaryText}" />
+        </Style>
+        <Style Selector="TextBox#QueryBox /template/ Border#PART_BorderElement">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+        </Style>
+        <Style Selector="TextBox#QueryBox:pointerover /template/ Border#PART_BorderElement">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+        </Style>
+        <Style Selector="TextBox#QueryBox:focus /template/ Border#PART_BorderElement">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+        </Style>
+        <Style Selector="TextBox#QueryBox:disabled /template/ Border#PART_BorderElement">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+        </Style>
+
+        <!-- ⊗ clear button: a flattened transparent button carrying the vector glyph; visible
+             only while the query is non-empty (window code). -->
+        <Style Selector="Button.clear-button">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="Width" Value="24" />
+            <Setter Property="Height" Value="24" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+        </Style>
+        <Style Selector="Button.clear-button /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+        </Style>
+        <Style Selector="Button.clear-button:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource SpotlightTileHoverBrush}" />
+            <Setter Property="CornerRadius" Value="12" />
+        </Style>
+
+        <!-- Category chips: transparent capsules; the selected one gets the accent-tinted pill
+             the window writes into SpotlightSelectionBrush plus primary text. -->
+        <Style Selector="Button.category-chip">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="12,4" />
+            <Setter Property="CornerRadius" Value="999" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="Foreground" Value="{DynamicResource SpotlightSecondaryText}" />
+        </Style>
+        <Style Selector="Button.category-chip /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+        </Style>
+        <Style Selector="Button.category-chip:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource SpotlightTileHoverBrush}" />
+        </Style>
+        <Style Selector="Button.category-chip.selected">
+            <Setter Property="Foreground" Value="{DynamicResource SpotlightPrimaryText}" />
+        </Style>
+        <Style Selector="Button.category-chip.selected /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource SpotlightSelectionBrush}" />
+        </Style>
+
+        <!-- 最近使用 tile: a flattened button that adds nothing of its own. Zero padding and a
+             centred content box keep the tile's geometry byte-for-byte the grid's; the halo inset
+             that the grid writes onto its ListBoxItem presenter is written onto this button
+             instead (ApplyTileGeometry), so both rows highlight the same area. -->
+        <Style Selector="Button.recent-tile">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="CornerRadius" Value="12" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+        </Style>
+        <Style Selector="Button.recent-tile /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="CornerRadius" Value="12" />
+        </Style>
+        <Style Selector="Button.recent-tile:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource SpotlightTileHoverBrush}" />
+        </Style>
+        <Style Selector="Button.recent-tile:pressed /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource SpotlightTileHoverBrush}" />
+        </Style>
+
+        <Style Selector="ListBox#GridList, ListBox#ResultList">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="FocusAdorner" Value="{x:Null}" />
+        </Style>
+
+        <Style Selector="ListBoxItem">
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="Margin" Value="0" />
+            <Setter Property="CornerRadius" Value="10" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="FocusAdorner" Value="{x:Null}" />
+        </Style>
+
+        <!-- Grid tiles: content centered in the cell. The highlight itself is inset from the cell by
+             UpdateGridMetrics (a cell-sized box around a small icon reads as an empty rectangle);
+             only its corner radius is static, because a halo of any size reads right at 12. -->
+        <Style Selector="ListBox#GridList ListBoxItem">
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="CornerRadius" Value="12" />
+        </Style>
+
+        <!-- Result rows stay nearly full width (a list row must read as a row), just inset from the
+             card edge like macOS Spotlight's highlight. -->
+        <Style Selector="ListBox#ResultList ListBoxItem /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Margin" Value="4,2" />
+            <Setter Property="CornerRadius" Value="10" />
+        </Style>
+
+        <!-- Hover / selection use the shared semantic brushes plus the accent-tinted selection
+             the window writes into its own resources, so all three materials read the same. -->
+        <Style Selector="ListBoxItem:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource SpotlightTileHoverBrush}" />
+        </Style>
+        <Style Selector="ListBoxItem:selected /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource SpotlightSelectionBrush}" />
+        </Style>
+        <Style Selector="ListBoxItem:selected:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource SpotlightSelectionBrush}" />
+        </Style>
+
+        <Style Selector="ListBox#GridList ScrollViewer, ListBox#ResultList ScrollViewer">
+            <Setter Property="VerticalScrollBarVisibility" Value="Auto" />
+            <Setter Property="HorizontalScrollBarVisibility" Value="Disabled" />
+        </Style>
+
+        <Style Selector="ScrollViewer#PreviewScroll">
+            <Setter Property="VerticalScrollBarVisibility" Value="Auto" />
+            <Setter Property="HorizontalScrollBarVisibility" Value="Disabled" />
+        </Style>
+    </Window.Styles>
+
+    <Grid x:Name="SurfaceRoot" RenderTransformOrigin="0.5,0.5">
+        <!-- 液态玻璃 layer. Hidden for 毛玻璃 / 全彩 (the Card paints those). -->
+        <controls:LiquidGlassSurface x:Name="GlassSurface" IsVisible="False" />
+
+        <Border x:Name="Card" BorderThickness="1" ClipToBounds="True" RenderTransformOrigin="0.5,0.5">
+            <Grid x:Name="CardColumns" ColumnDefinitions="*,Auto,280">
+                <!-- ===================== left: search + results ===================== -->
+                <Grid Grid.Column="0" RowDefinitions="Auto,Auto,Auto,*,Auto">
+                    <!-- search row: 52–58 DIP tall, continuous with the card (no hairline; the
+                         category bar and the content below are separated by air alone). -->
+                    <Grid Grid.Row="0" x:Name="SearchRow" ColumnDefinitions="Auto,12,*,Auto,Auto" Margin="26,15,20,15" VerticalAlignment="Center">
+                        <!-- The leading mark is contextual (macOS): App Store artwork while the
+                             grid/a hit is apps, the document artwork for files, drawn marks for a
+                             calculation or an unmatched query. Filled artwork carries no colour of
+                             its own — the theme's primary brush paints it, so it stays black on the
+                             light card and light on the dark one. -->
+                        <Panel x:Name="SearchGlyph" Width="20" Height="20"
+                               VerticalAlignment="Center">
+                            <Path x:Name="SearchGlyphFilled"
+                                  Stretch="Uniform"
+                                  Data="{Binding QueryGlyph, Converter={StaticResource SpotlightGlyphFill}}"
+                                  Fill="{DynamicResource SpotlightPrimaryText}"
+                                  IsVisible="{Binding GlyphIsFilled}" />
+                            <Path x:Name="SearchGlyphStroked"
+                                  Stretch="Uniform"
+                                  Data="{Binding QueryGlyph, Converter={StaticResource SpotlightGlyphStroke}}"
+                                  Stroke="{DynamicResource SpotlightPrimaryText}"
+                                  StrokeThickness="1.7"
+                                  StrokeLineCap="Round"
+                                  IsVisible="{Binding !GlyphIsFilled}" />
+                        </Panel>
+                        <TextBox x:Name="QueryBox"
+                                 Grid.Column="2"
+                                 PlaceholderText="{Binding PlaceholderText}"
+                                 Foreground="{DynamicResource SpotlightPrimaryText}" />
+                        <!-- Inline calculator: the answer to an arithmetic query, in the field's
+                             own row so it never displaces the grid. Enter copies it. -->
+                        <Border x:Name="CalculationPill"
+                                Grid.Column="3"
+                                Margin="10,0,0,0"
+                                Padding="10,2,8,2"
+                                CornerRadius="999"
+                                VerticalAlignment="Center"
+                                IsVisible="{Binding HasCalculation}"
+                                Background="{DynamicResource SpotlightTileHoverBrush}"
+                                ToolTip.Tip="{x:Static loc:Locale.Spotlight_Calc_Hint}">
+                            <StackPanel Orientation="Horizontal" Spacing="7">
+                                <TextBlock Text="{Binding Calculation}"
+                                           FontSize="16"
+                                           FontWeight="Medium"
+                                           VerticalAlignment="Center"
+                                           MaxWidth="240"
+                                           TextTrimming="CharacterEllipsis"
+                                           Foreground="{DynamicResource SpotlightPrimaryText}" />
+                                <!-- ↵ — the only affordance that says Enter copies the answer. -->
+                                <Path Width="11" Height="11"
+                                      Stretch="Uniform"
+                                      VerticalAlignment="Center"
+                                      Stroke="{DynamicResource SpotlightSecondaryText}"
+                                      StrokeThickness="1.3"
+                                      StrokeLineCap="Round"
+                                      StrokeJoin="Round"
+                                      Data="M9,3 L9,9.2 M5.6,6.6 L9,10 L12.4,6.6" />
+                            </StackPanel>
+                        </Border>
+                        <Button x:Name="ClearButton"
+                                Grid.Column="4"
+                                Classes="clear-button"
+                                IsVisible="False"
+                                Click="OnClearQuery"
+                                Margin="8,0,0,0">
+                            <Path Width="16" Height="16"
+                                  Stretch="Uniform"
+                                  Stroke="{DynamicResource SpotlightSecondaryText}"
+                                  StrokeThickness="1.4"
+                                  StrokeLineCap="Round"
+                                  Data="M10,10 m-8,0 a8,8 0 1,0 16,0 a8,8 0 1,0 -16,0 M7.2,7.2 L12.8,12.8 M12.8,7.2 L7.2,12.8" />
+                        </Button>
+                    </Grid>
+
+                    <!-- category bar: only while filtering (collapsed for the empty query). -->
+                    <StackPanel x:Name="CategoryBar"
+                                Grid.Row="1"
+                                Orientation="Horizontal"
+                                Spacing="6"
+                                Margin="24,0,20,12"
+                                IsVisible="{Binding IsFiltering}" />
+
+                    <!-- Search status: only present while it has something to say (a running query, an
+                         invalid regex, or a degraded backend). Collapses to nothing otherwise. -->
+                    <StackPanel Grid.Row="2" Margin="26,2,26,0" Spacing="2">
+                        <TextBlock x:Name="SearchingText"
+                                   Text="{x:Static loc:Locale.Spotlight_Searching}"
+                                   IsVisible="{Binding IsSearching}"
+                                   FontSize="11.5"
+                                   Foreground="{DynamicResource SpotlightSecondaryText}" />
+                        <TextBlock x:Name="SearchHintText"
+                                   Text="{Binding SearchHint}"
+                                   IsVisible="{Binding HasSearchHint}"
+                                   FontSize="11.5"
+                                   TextWrapping="Wrap"
+                                   Foreground="{DynamicResource SpotlightSecondaryText}" />
+                    </StackPanel>
+
+                    <Grid Grid.Row="3" RowDefinitions="Auto,*">
+                        <!-- 空查询 · 最近使用行: one row of the grid's own tiles.
+                             The strip is inset by the grid's 18 px margin, not the text rows' 26,
+                             because its tiles have to land on the grid's columns; the caption
+                             keeps the extra 8 so it still lines up with the search field. The row
+                             ends in a hairline plus air: the tiles above it are literally the same
+                             tiles as the grid below, so only a drawn rule can say "this row is
+                             recents, everything under it is the folder".
+                             The item panel is built in code (ApplyLayout) — its ItemWidth is the
+                             derived cell width, which an ItemsPanelTemplate cannot read. -->
+                        <StackPanel x:Name="RecentRow"
+                                    Grid.Row="0"
+                                    Margin="18,14,18,0"
+                                    IsVisible="False">
+                            <TextBlock x:Name="RecentHeader"
+                                       Text="{x:Static loc:Locale.Spotlight_Recent_Header}"
+                                       FontSize="11.5"
+                                       FontWeight="SemiBold"
+                                       Margin="8,0,0,6"
+                                       Foreground="{DynamicResource SpotlightSecondaryText}" />
+                            <ItemsControl x:Name="RecentItemsControl">
+                                <ItemsControl.ItemTemplate>
+                                    <StaticResource ResourceKey="SpotlightRecentTileTemplate" />
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                            <!-- The rule sits in the middle of the gap, measured between cells (the
+                                 grid adds its own 10 px top margin below it): 14 above, 8 + 10
+                                 below. Measured to the ink instead, the label box's reserved
+                                 second line already puts more air above it. -->
+                            <Border x:Name="RecentDivider"
+                                    Height="1"
+                                    Margin="8,14,8,8"
+                                    Background="{DynamicResource SeparatorBrush}" />
+                        </StackPanel>
+
+                        <Panel Grid.Row="1">
+                            <!-- Grid state (empty query): the Launchpad-style app grid. -->
+                            <ListBox x:Name="GridList"
+                                     ItemTemplate="{StaticResource SpotlightTileTemplate}"
+                                     Margin="18,10,18,4"
+                                     ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                            </ListBox>
+
+                            <!-- Filter state: a precise, keyboard-friendly list. -->
+                            <ListBox x:Name="ResultList"
+                                     IsVisible="False"
+                                     ItemTemplate="{StaticResource SpotlightRowTemplate}"
+                                     Margin="10,6,10,4" />
+
+                            <!-- Empty folder: the import hint. -->
+                            <StackPanel x:Name="EmptyState"
+                                        IsVisible="False"
+                                        Spacing="8"
+                                        MaxWidth="460"
+                                        HorizontalAlignment="Center"
+                                        VerticalAlignment="Center">
+                                <TextBlock x:Name="EmptyTitle"
+                                           Text="{x:Static loc:Locale.Spotlight_EmptyFolder_Title}"
+                                           FontSize="16"
+                                           FontWeight="Medium"
+                                           TextAlignment="Center"
+                                           TextWrapping="Wrap"
+                                           Foreground="{DynamicResource SpotlightPrimaryText}" />
+                                <TextBlock Text="{x:Static loc:Locale.Spotlight_EmptyFolder_Hint}"
+                                           FontSize="12"
+                                           TextAlignment="Center"
+                                           TextWrapping="Wrap"
+                                           Foreground="{DynamicResource SpotlightSecondaryText}" />
+                                <TextBlock x:Name="EmptyFolderPath"
+                                           FontSize="11.5"
+                                           TextAlignment="Center"
+                                           TextWrapping="Wrap"
+                                           Foreground="{DynamicResource SpotlightSecondaryText}" />
+                                <Button x:Name="OpenFolderButton"
+                                        Content="{x:Static loc:Locale.Spotlight_OpenFolder}"
+                                        Classes="dc-pill"
+                                        HorizontalAlignment="Center"
+                                        Margin="0,6,0,0" />
+                            </StackPanel>
+
+                            <!-- Query matched nothing. -->
+                            <TextBlock x:Name="NoResultState"
+                                       IsVisible="False"
+                                       Text="{x:Static loc:Locale.Spotlight_NoResults}"
+                                       FontSize="13"
+                                       HorizontalAlignment="Center"
+                                       VerticalAlignment="Center"
+                                       Foreground="{DynamicResource SpotlightSecondaryText}" />
+
+                        </Panel>
+                    </Grid>
+
+                    <!-- No footer: the keyboard hint line was removed on request. The card ends with
+                         the list, which also gives the grid its full height. -->
+                    <Border Grid.Row="4" Height="10" />
+                </Grid>
+
+                <!-- ===================== right: preview pane ===================== -->
+                <!-- The 1 px hairline is its own column so the pane can collapse to nothing on
+                     narrow windows (UpdatePreviewVisibility zeroes both columns). -->
+                <Border x:Name="PreviewHairline"
+                        Grid.Column="1"
+                        Width="1"
+                        Background="{DynamicResource SeparatorBrush}"
+                        IsVisible="False" />
+
+                <Grid x:Name="PreviewPane" Grid.Column="2" IsVisible="False">
+                    <!-- The scroller is ALWAYS present and always sized: a child that becomes
+                         visible later (the pane content) is laid out by the scroller itself, not
+                         by the card grid, so the pane can never keep a zero rect. -->
+                    <ScrollViewer x:Name="PreviewScroll">
+                        <StackPanel x:Name="PreviewContent"
+                                    Margin="20,16,20,14" Spacing="9"
+                                    IsVisible="{Binding Preview.HasItem}">
+                            <!-- Hero slot. It carries no Height: the image inside measures Uniform
+                                 against the pane's own width, so the box takes the content's own
+                                 aspect — a 2:3 photo is 240 × 360 instead of being flattened into
+                                 a 150 DIP band. 150 stays as the floor (the icon-only state, and a
+                                 very wide strip), and the ceiling is computed from the real layout
+                                 in UpdatePreviewMediaMaxHeight: everything under the hero keeps
+                                 its measured height, so the image may take the rest of the card
+                                 and no more. -->
+                            <Border x:Name="PreviewMediaFrame"
+                                    MinHeight="150"
+                                    CornerRadius="12"
+                                    ClipToBounds="True"
+                                    BorderThickness="1"
+                                    BorderBrush="{DynamicResource SeparatorBrush}"
+                                    Background="{DynamicResource SpotlightPlaceholderBrush}"
+                                    IsVisible="{Binding Preview.HasMediaSlot}">
+                                <Panel>
+                                    <!-- No thumbnail (folder, a type with no handler): the type's
+                                         icon, centred in the slot — a fixed 96 DIP glyph, so it
+                                         does not grow with the hero. -->
+                                    <Image Source="{Binding Preview.Icon}"
+                                           Width="96"
+                                           Height="96"
+                                           Stretch="Uniform"
+                                           HorizontalAlignment="Center"
+                                           VerticalAlignment="Center"
+                                           RenderOptions.BitmapInterpolationMode="HighQuality"
+                                           IsVisible="{Binding !Preview.HasMedia}" />
+                                    <!-- The real thumbnail: a photo, a PDF page, a slide. Uniform
+                                         (not UniformToFill) — cropping a document page to fill a
+                                         16:9 box hides exactly the part the user is previewing.
+                                         Stretched alignment (not centered) so a hero capped by the
+                                         pane's remaining height letterboxes instead of cropping:
+                                         a centered child is arranged at its full desired height
+                                         and the clip would eat the top and bottom of the page. -->
+                                    <Image Source="{Binding Preview.Media}"
+                                           Stretch="Uniform"
+                                           HorizontalAlignment="Stretch"
+                                           VerticalAlignment="Stretch"
+                                           RenderOptions.BitmapInterpolationMode="HighQuality"
+                                           IsVisible="{Binding Preview.HasMedia}" />
+                                </Panel>
+                            </Border>
+
+                            <!-- Non-file rows (an app, a clipboard entry) keep the 72 px icon. -->
+                            <Grid Width="72" Height="72" HorizontalAlignment="Left"
+                                  IsVisible="{Binding !Preview.HasMediaSlot}">
+                                <Border CornerRadius="16" IsVisible="{Binding !Preview.HasIcon}"
+                                        Background="{DynamicResource SpotlightPlaceholderBrush}" />
+                                <Image Source="{Binding Preview.Icon}"
+                                       Stretch="Uniform"
+                                       RenderOptions.BitmapInterpolationMode="HighQuality"
+                                       IsVisible="{Binding Preview.HasIcon}" />
+                            </Grid>
+                            <TextBlock Text="{Binding Preview.Title}"
+                                       FontSize="15"
+                                       FontWeight="Medium"
+                                       TextWrapping="Wrap"
+                                       Foreground="{DynamicResource SpotlightPrimaryText}" />
+                            <TextBlock Text="{Binding Preview.KindLabel}"
+                                       FontSize="11.5"
+                                       Foreground="{DynamicResource SpotlightSecondaryText}" />
+
+                            <!-- The head of a text/document file. Monospace because that is what
+                                 the content usually is (code, config, logs, extracted slide text)
+                                 and a proportional face makes it read as prose. -->
+                            <Border IsVisible="{Binding Preview.HasExcerpt}"
+                                    CornerRadius="10"
+                                    Padding="10,8"
+                                    Background="{DynamicResource SpotlightTileHoverBrush}">
+                                <TextBlock Text="{Binding Preview.Excerpt}"
+                                           FontFamily="Cascadia Mono,Consolas,Courier New"
+                                           FontSize="11.5"
+                                           LineHeight="16"
+                                           MaxLines="9"
+                                           TextWrapping="Wrap"
+                                           TextTrimming="CharacterEllipsis"
+                                           Foreground="{DynamicResource SpotlightPrimaryText}" />
+                            </Border>
+
+                            <ItemsControl ItemsSource="{Binding Preview.Rows}"
+                                          ItemTemplate="{StaticResource SpotlightPreviewRowTemplate}" />
+                            <TextBlock Text="{Binding Preview.ContentText}"
+                                       FontSize="12"
+                                       TextWrapping="Wrap"
+                                       IsVisible="{Binding Preview.ContentText, Converter={StaticResource SpotlightHasText}}"
+                                       Foreground="{DynamicResource SpotlightPrimaryText}" />
+                            <!-- WrapPanel has no Spacing in Avalonia 12; the pills carry
+                                 their own 8 px gutter. -->
+                            <WrapPanel Orientation="Horizontal">
+                                <Button x:Name="PreviewOpenButton"
+                                        Classes="dc-pill"
+                                        Margin="0,0,8,8"
+                                        Content="{x:Static loc:Locale.Spotlight_Preview_Open}"
+                                        IsVisible="{Binding Preview.HasOpen}"
+                                        Click="OnPreviewOpen" />
+                                <Button x:Name="PreviewRevealButton"
+                                        Classes="dc-pill"
+                                        Margin="0,0,8,8"
+                                        Content="{x:Static loc:Locale.Spotlight_Preview_Reveal}"
+                                        IsVisible="{Binding Preview.HasReveal}"
+                                        Click="OnPreviewReveal" />
+                                <Button x:Name="PreviewRunButton"
+                                        Classes="dc-pill"
+                                        Margin="0,0,8,8"
+                                        Content="{x:Static loc:Locale.Spotlight_Preview_Run}"
+                                        IsVisible="{Binding Preview.HasRun}"
+                                        Click="OnPreviewRun" />
+                                <Button x:Name="PreviewCopyButton"
+                                        Classes="dc-pill"
+                                        Margin="0,0,8,8"
+                                        Content="{x:Static loc:Locale.Spotlight_Preview_Copy}"
+                                        IsVisible="{Binding Preview.HasCopy}"
+                                        Click="OnPreviewCopy" />
+                            </WrapPanel>
+                        </StackPanel>
+                    </ScrollViewer>
+
+                    <!-- Nothing selected: a faint magnifier + the localized hint, drawn over the
+                         (empty, transparent) scroller so the scroller itself never has to be
+                         collapsed — that collapse is what used to leave the pane blank. -->
+                    <StackPanel IsVisible="{Binding !Preview.HasItem}"
+                                Spacing="10"
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Center">
+                        <Path Width="36" Height="36"
+                              Stretch="Uniform"
+                              Stroke="{DynamicResource SpotlightPlaceholderBrush}"
+                              StrokeThickness="1.6"
+                              StrokeLineCap="Round"
+                              HorizontalAlignment="Center"
+                              Data="M16.5,9 A7.5,7.5 0 1 1 1.5,9 A7.5,7.5 0 1 1 16.5,9 M14.6,14.6 L19.5,19.5" />
+                        <TextBlock Text="{x:Static loc:Locale.Spotlight_Preview_Empty}"
+                                   FontSize="12"
+                                   HorizontalAlignment="Center"
+                                   Foreground="{DynamicResource SpotlightSecondaryText}" />
+                    </StackPanel>
+                </Grid>
+            </Grid>
+        </Border>
+    </Grid>
+</Window>

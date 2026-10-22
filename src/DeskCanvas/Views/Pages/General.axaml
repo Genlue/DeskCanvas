@@ -23,6 +23,35 @@
             </ComboBox>
         </controls:Setting>
         <TextBlock FontSize="14" FontWeight="SemiBold" Margin="0 20 0 10" 
+                   Text="{x:Static locales:Locale.Settings_General_DefaultRegion}"/>
+        <controls:Setting Icon="{DynamicResource Move}"
+                          Title="{x:Static locales:Locale.Settings_General_DefaultRegion_Title}"
+                          Subtitle="{Binding DefaultRegionSummary}">
+            <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                <TextBox Width="150" Text="{Binding RegionQuery}"
+                         PlaceholderText="{x:Static locales:Locale.Settings_General_DefaultRegion_Placeholder}" />
+                <Button Content="{x:Static locales:Locale.Settings_General_DefaultRegion_Search}"
+                        IsEnabled="{Binding !IsSearchingRegion}"
+                        Click="OnSearchRegionClicked" />
+                <Button Content="{x:Static locales:Locale.Settings_General_DefaultRegion_Clear}"
+                        IsVisible="{Binding HasDefaultRegion}"
+                        Click="OnClearRegionClicked" />
+            </StackPanel>
+        </controls:Setting>
+        <controls:Setting Icon="{DynamicResource Move}"
+                          Title="{x:Static locales:Locale.Settings_General_DefaultRegion_Results_Title}"
+                          Subtitle="{Binding RegionStatus}">
+            <ComboBox MinWidth="230"
+                      ItemsSource="{Binding RegionResults}"
+                      SelectedItem="{Binding SelectedRegionResult}">
+                <ComboBox.ItemTemplate>
+                    <DataTemplate>
+                        <TextBlock Text="{Binding Display}" Margin="0 4" />
+                    </DataTemplate>
+                </ComboBox.ItemTemplate>
+            </ComboBox>
+        </controls:Setting>
+        <TextBlock FontSize="14" FontWeight="SemiBold" Margin="0 20 0 10" 
                    Text="{x:Static locales:Locale.Settings_General_Startup}"/>
         <controls:Setting Icon="{DynamicResource Play}" AdminRequired="True"
                           Title="{x:Static locales:Locale.Settings_General_Startup_Title}"

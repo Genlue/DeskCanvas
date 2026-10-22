@@ -232,6 +232,72 @@ public class FullscreenWatcherService : IDisposable
         return candidates;
     }
 
+    /// <summary>
+    /// Checks whether an actual fullscreen application (a D3D game, a presentation, or a
+    /// borderless fullscreen window covering the entire screen) is currently active in the foreground.
+    /// <para>
+    /// Unlike <see cref="IsFullscreen"/> (which includes ordinary maximized windows to pause desktop
+    /// widgets), this strictly identifies genuine full-screen processes. Normal maximized
+    /// windows (e.g. browsers, editors) return false.
+    /// </para>
+    /// </summary>
+    public static bool IsForegroundFullscreen(out string? processName)
+    {
+        processName = null;
+        if (!OperatingSystem.IsWindows()) return false;
+
+        try
+        {
+            var foreground = GetForegroundWindow();
+            if (foreground == IntPtr.Zero) return false;
+
+            GetWindowThreadProcessId(foreground, out var pid);
+            if (pid == Environment.ProcessId) return false;
+
+            var className = GetClassNameString(foreground);
+            if (IsShellClassName(className)) return false;
+            if (IsIconic(foreground) || !IsWindowVisible(foreground) || IsCloaked(foreground)) return false;
+            if (IsDesktopOverlay(foreground)) return false;
+
+            // Exclusive fullscreen or presentation mode (e.g. DirectX games, PowerPoint).
+            if (SHQueryUserNotificationState(out var state) == 0 &&
+                (state == QUNS_RUNNING_D3D_FULL_SCREEN || state == QUNS_PRESENTATION_MODE))
+            {
+                processName = ForegroundProcess.GetProcessName(foreground);
+                return true;
+            }
+
+            // A maximized window is NOT a fullscreen game/app: it leaves the taskbar visible
+            // (or is a standard maximized desktop window).
+            if (IsZoomed(foreground)) return false;
+
+            // Check if this borderless foreground window covers the entire monitor (Bounds, not WorkArea).
+            var hMonitor = MonitorFromWindow(foreground, MONITOR_DEFAULTTONEAREST);
+            if (hMonitor == IntPtr.Zero) return false;
+
+            var info = new MONITORINFO { cbSize = Marshal.SizeOf<MONITORINFO>() };
+            if (!GetMonitorInfo(hMonitor, ref info)) return false;
+
+            if (!TryGetExtendedFrameBounds(foreground, out var bounds) && !GetWindowRect(foreground, out bounds))
+                return false;
+
+            var windowRect = ToRect(bounds);
+            var screenBounds = ToRect(info.rcMonitor);
+
+            if (Covers(windowRect, screenBounds))
+            {
+                processName = ForegroundProcess.GetProcessName(foreground);
+                return true;
+            }
+
+            return false;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
     private static bool IsShellWindow(IntPtr hwnd) => IsShellClassName(GetClassNameString(hwnd));
 
     private static bool IsShellClassName(string className) => className is

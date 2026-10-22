@@ -49,8 +49,8 @@ Weather forecast, reminders, big folders, clipboard and notes open in shared sec
 ### 4. 📐 Advanced Desktop Grid Management
 Custom square-cell grid (m×n cells stored as percentages, responsive across resolutions and DPI); widgets always snap to cells with customizable margins and corner radius, and stay pinned to the desktop bottom band.
 
-### 5. 🧩 Widget Ecosystem (25 built-in widgets)
-⏰ Clock (analog ×3 / digital / flip / frameless) · 📅 Calendar · 🌤️ Weather (7-day forecast, 4-day square card, sun times, UV, AQI, pressure, proxy) · 📊 System Monitor · 📝 Notes (Markdown typography, secondary panel) · ✅ Reminders (interactive checklist with secondary panel) · 🗓️ Timetable · 🔁 Habits · ⏳ Countdown · 🎲 Dice · 🔗 Shortcuts · 📁 Folders (desktop quick launcher with live file watching) · 🎵 Music controls · 🔍 Search · 📈 Progress · 🖼️ Picture · 🔋 Batteries · 🗺️ Map · 🍅 Pomodoro · 📚 Stack · 🧰 Tools (clipboard, translator, calculator) · 🎛️ Control Center · 💽 Storage · 💬 Hitokoto Quotes (poetry / literature / anime quote card) · 📌 Fixed (multi-widget aggregate cards)
+### 5. 🧩 Widget Ecosystem (26 built-in widgets)
+⏰ Clock (analog ×3 / digital / flip / frameless) · 🕘 Tick Clock (dial-edged square card) · 📅 Calendar · 🌤️ Weather (7-day forecast, 4-day square card, sun times, UV, AQI, pressure, proxy) · 📊 System Monitor · 📝 Notes (Markdown typography, secondary panel) · ✅ Reminders (interactive checklist with secondary panel) · 🗓️ Timetable · 🔁 Habits · ⏳ Countdown · 🎲 Dice · 🔗 Shortcuts · 📁 Folders (desktop quick launcher with live file watching) · 🎵 Music controls · 🔍 Search · 📈 Progress · 🖼️ Picture · 🔋 Batteries · 🗺️ Map · 🍅 Pomodoro · 📚 Stack · 🧰 Tools (clipboard, translator, calculator) · 🎛️ Control Center · 💽 Storage · 💬 Hitokoto Quotes (poetry / literature / anime quote card) · 📌 Fixed (multi-widget aggregate cards)
 
 ### 6. 🚀 Standalone Single-File Distribution
 Builds to a self-contained `DeskCanvas.exe` with a content-hash-verified embedded widget bundle; widgets are extracted to `%LocalAppData%\DeskCanvas` on first run and stay hot-updatable. Releases ship **only** the Inno Setup `DeskCanvas-<version>-x64-Setup.exe` (with the standalone uninstaller UI and optional data-directory cleanup); MSI and portable zips are no longer distributed.
@@ -103,5 +103,7 @@ This project would not exist without the following open-source projects:
 | [Material Design 3](https://m3.material.io/styles/motion/easing-and-duration/tokens-specs) | CC BY 4.0 (spec) | Motion easing tokens (`emphasized decelerate/accelerate`) for the secondary-panel open/close animations |
 | [Avalonia UI](https://github.com/AvaloniaUI/Avalonia) | MIT | Cross-platform .NET UI framework |
 | [SkiaSharp](https://github.com/mono/SkiaSharp) | MIT | 2D graphics and the runtime shader used by the GPU glass compositors |
+| [Docnet.Core](https://github.com/GowenGit/Docnet.Core) | MIT | Renders a PDF's first page for the Spotlight preview pane (bundles PDFium) |
+| [PDFium](https://pdfium.googlesource.com/pdfium/) | BSD-3-Clause | PDF rendering engine shipped inside Docnet.Core |
 
 > Note: the project was formerly published as **uWidgetsPlus** (a fork of uWidgets); it has been renamed to **DeskCanvas** since v2.7.0. Data in `%LocalAppData%\uWidgets` is migrated to `%LocalAppData%\DeskCanvas` automatically on first launch.

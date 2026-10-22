@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <root>
     <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
         <xsd:element name="root" msdata:IsDataSet="true" />
@@ -86,6 +86,12 @@
     </data>
     <data name="Shortcuts_Menu_New" xml:space="preserve">
         <value>New Shortcut</value>
+    </data>
+    <data name="Shortcuts_Menu_MoveUp" xml:space="preserve">
+        <value>Move up</value>
+    </data>
+    <data name="Shortcuts_Menu_MoveDown" xml:space="preserve">
+        <value>Move down</value>
     </data>
     <data name="Shortcuts_Menu_Stop" xml:space="preserve">
         <value>Stop</value>

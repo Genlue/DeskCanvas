@@ -50,6 +50,11 @@
                                 <MenuItem Header="{x:Static locales:Locale.Shortcuts_Menu_Duplicate}"
                                           Click="OnTileMenuDuplicate" />
                                 <Separator />
+                                <MenuItem Header="{x:Static locales:Locale.Shortcuts_Menu_MoveUp}"
+                                          Click="OnTileMenuMoveUp" />
+                                <MenuItem Header="{x:Static locales:Locale.Shortcuts_Menu_MoveDown}"
+                                          Click="OnTileMenuMoveDown" />
+                                <Separator />
                                 <MenuItem Header="{x:Static locales:Locale.Shortcuts_Menu_Delete}"
                                           Click="OnTileMenuDelete" />
                             </ContextMenu>

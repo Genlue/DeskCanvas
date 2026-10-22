@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
@@ -31,7 +31,7 @@ public partial class WeatherPopupWindow : SecondaryPanelWindow
 
     private static bool IsZh => System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName.Equals("zh", StringComparison.OrdinalIgnoreCase);
 
-    public WeatherPopupWindow() : this(new ForecastViewModel(new Models.ForecastModel(IsZh ? "北京" : "Beijing", 39.9042, 116.4074, "celsius")), null) { }
+    public WeatherPopupWindow() : this(new ForecastViewModel(Services.DefaultLocation.Resolve(fallbackName: IsZh ? "北京" : "Beijing")), null) { }
 
     public WeatherPopupWindow(ForecastViewModel viewModel, Point? screenCenter = null, double? cornerRadius = null)
     {

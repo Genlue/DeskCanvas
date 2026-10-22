@@ -192,7 +192,10 @@ var widgetImportWhitelist = new Dictionary<string, int>
     ["src/Widgets/Shortcuts/Services/ISystemAdapter.cs"] = 11,
     ["src/Widgets/Shortcuts/Services/Executors/SystemExecutors.cs"] = 1,
     ["src/Widgets/Shortcuts/Services/KeyboardInput.cs"] = 1,
-    ["src/Widgets/Shortcuts/Services/ShortcutHotkeyService.cs"] = 8,
+    // src/Widgets/Shortcuts/Services/ShortcutHotkeyService.cs is deliberately absent: the hotkey
+    // interop moved to the host (DeskCanvas/Services/GlobalHotkeyRegistrar.cs), so it has no
+    // [DllImport] left. An entry with a count of 0 would itself be reported as drift, because only
+    // files that actually import something appear in the scanned set.
     ["src/Widgets/Tools/Services/ClipboardNative.cs"] = 12,
 };
 

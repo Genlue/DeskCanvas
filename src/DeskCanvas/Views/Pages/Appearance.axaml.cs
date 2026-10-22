@@ -47,12 +47,6 @@ public partial class Appearance : UserControl
     private void RefreshLiquidGlassWallpaper(object? sender, RoutedEventArgs e) =>
         ((AppearanceViewModel)DataContext!).RefreshLiquidGlassWallpaper();
 
-    private void ToggleOpticsExpanded(object? sender, RoutedEventArgs e)
-    {
-        if (DataContext is AppearanceViewModel viewModel)
-            viewModel.OpticsExpanded = !viewModel.OpticsExpanded;
-    }
-
     private void OpenWallpaperAlign(object? sender, RoutedEventArgs e) =>
         new WallpaperAlignDialog(appSettingsProvider).Show();
 

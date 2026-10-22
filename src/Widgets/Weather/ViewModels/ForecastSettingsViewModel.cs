@@ -1,16 +1,17 @@
-using System.Text.Json;
+﻿using System.Text.Json;
 using ReactiveUI;
 using DeskCanvas.Core.Interfaces;
 using Weather.Locales;
 using Weather.Models;
 using Weather.Models.Geocoding;
+using Weather.Services;
 
 namespace Weather.ViewModels;
 
 public class ForecastSettingsViewModel(IWidgetLayoutProvider widgetLayoutProvider) : ReactiveObject
 {
     private ForecastModel forecastModel = widgetLayoutProvider.Get().GetModel<ForecastModel>() 
-                                          ?? new ForecastModel("Beijing", 39.9042, 116.4074, "celsius");
+                                          ?? DefaultLocation.Resolve();
     
     public City Location
     {

@@ -33,6 +33,9 @@ public partial class List : UserControl, IWidgetSelfRefreshing, IWidgetSurfaceHi
         Unloaded += OnUnloaded;
         RemindersStore.ModelChanged += OnStoreModelChanged;
         InitializeComponent();
+
+        // A live Reminders widget is what makes the checklist searchable from 聚焦搜索.
+        SpotlightBridge.EnsureRegistered();
     }
 
     private void OnStoreModelChanged(RemindersListModel newModel, object? sender)

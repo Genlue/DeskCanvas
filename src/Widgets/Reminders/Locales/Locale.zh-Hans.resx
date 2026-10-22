@@ -100,4 +100,13 @@
   <data name="Reminders_ZeroItems" xml:space="preserve">
     <value>0 项</value>
   </data>
+  <data name="Reminders_Spotlight_Group" xml:space="preserve">
+    <value>清单</value>
+  </data>
+  <data name="Reminders_Spotlight_Done" xml:space="preserve">
+    <value>已完成</value>
+  </data>
+  <data name="Reminders_Spotlight_Pending" xml:space="preserve">
+    <value>未完成</value>
+  </data>
 </root>

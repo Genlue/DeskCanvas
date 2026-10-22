@@ -175,6 +175,9 @@ public partial class Timetable : UserControl, IWidgetSelfRefreshing, IWidgetSurf
         TimetableStore.ModelChanged -= OnStoreModelChanged;
         TimetableStore.ModelChanged += OnStoreModelChanged;
         UpdateLiveState();
+
+        // A live timetable is what makes 聚焦搜索 able to find a course and open this schedule.
+        SpotlightBridge.Attach(this);
     }
 
     private void OnUnloaded(object? sender, RoutedEventArgs e)
@@ -182,6 +185,7 @@ public partial class Timetable : UserControl, IWidgetSelfRefreshing, IWidgetSurf
         attached = false;
         UpdateTickSubscription();
         TimetableStore.ModelChanged -= OnStoreModelChanged;
+        SpotlightBridge.Detach(this);
     }
 
     /// <summary>

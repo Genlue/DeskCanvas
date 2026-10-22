@@ -337,6 +337,7 @@ public class InteropService
     [DllImport("dwmapi.dll")]
     private static extern int DwmSetWindowAttribute(IntPtr hwnd, uint attribute, ref uint value, int size);
 
+    private const uint DWMWA_TRANSITIONS_FORCEDISABLED = 3;
     private const uint DWMWA_BORDER_COLOR = 34;
     private const uint DWMWA_CAPTION_COLOR = 35;
     private const uint DWMWA_TEXT_COLOR = 36;
@@ -349,6 +350,22 @@ public class InteropService
     /// so the menu only renders its own single unified border and corner radius without a mismatched
     /// DWM outer stroke.
     /// </summary>
+    /// <summary>
+    /// Disables Windows DWM native window open/close transition animations for the given HWND
+    /// so the application's own compositor-driven transitions can run smoothly without running
+    /// consecutively or conflicting with the OS window animation.
+    /// </summary>
+    public static void DisableWindowTransitions(IntPtr hwnd)
+    {
+        if (!OperatingSystem.IsWindows() || hwnd == IntPtr.Zero) return;
+        try
+        {
+            uint disable = 1;
+            DwmSetWindowAttribute(hwnd, DWMWA_TRANSITIONS_FORCEDISABLED, ref disable, sizeof(uint));
+        }
+        catch { }
+    }
+
     public static void DisableWindowBorder(IntPtr hwnd)
     {
         if (!OperatingSystem.IsWindows() || hwnd == IntPtr.Zero) return;

@@ -3,6 +3,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Threading;
+using DeskCanvas.Services;
 using DeskCanvas.Views;
 using Shortcuts.Models;
 
@@ -477,161 +478,35 @@ public static class ShortcutHotkeyService
 }
 
 /// <summary>
-/// Message-only window (HWND_MESSAGE) that owns the RegisterHotKey ids. Created lazily on the
-/// first registration; the WndProc delegate is kept in a field so the native window never
-/// calls into collected managed memory.
+/// Adapter over the host's <see cref="GlobalHotkeyRegistrar"/>.
+/// <para>
+/// The Win32 message-only window used to live here. It moved to the host when 聚焦搜索 became a
+/// second consumer: one process must own exactly one <c>RegisterHotKey</c> host, not one per
+/// feature (开发规范 §1.2). This class now only maps the plugin's <see cref="HotkeyModifiers"/>
+/// onto the host's flags — the numeric values are identical by design, so the cast is exact.
+/// </para>
 /// </summary>
 internal sealed class Win32HotkeyRegistrar : IHotkeyRegistrar
 {
-    private const int WmHotkey = 0x0312;
-    private const int HwndMessage = -3;
-    private const uint ModNoRepeat = 0x4000;
-    private const int ErrorClassAlreadyExists = 1410;
-
-    private readonly object gate = new();
-    private readonly string className = "DeskCanvasShortcutHotkey_" + Guid.NewGuid().ToString("N");
-    private readonly WndProcDelegate wndProc;
-
-    private IntPtr hwnd;
-    private ushort classAtom;
+    private readonly GlobalHotkeyRegistrar inner = new();
     private bool disposed;
 
     public Win32HotkeyRegistrar()
     {
-        wndProc = WndProc;
+        inner.Pressed += id => Pressed?.Invoke(id);
     }
 
     public event Action<int>? Pressed;
 
     public bool Register(int registrationId, HotkeyModifiers modifiers, uint virtualKey)
-    {
-        lock (gate)
-        {
-            if (disposed || !EnsureWindowLocked()) return false;
-            return RegisterHotKey(hwnd, registrationId, (uint)modifiers | ModNoRepeat, virtualKey);
-        }
-    }
+        => inner.Register(registrationId, (GlobalHotkeyModifiers)(uint)modifiers, virtualKey);
 
-    public void Unregister(int registrationId)
-    {
-        lock (gate)
-        {
-            if (hwnd == IntPtr.Zero) return;
-            try { UnregisterHotKey(hwnd, registrationId); } catch { }
-        }
-    }
+    public void Unregister(int registrationId) => inner.Unregister(registrationId);
 
     public void Dispose()
     {
-        lock (gate)
-        {
-            if (disposed) return;
-            disposed = true;
-
-            if (hwnd != IntPtr.Zero)
-            {
-                try { DestroyWindow(hwnd); } catch { }
-                hwnd = IntPtr.Zero;
-            }
-
-            if (classAtom != 0)
-            {
-                try { UnregisterClass(className, GetModuleHandle(null)); } catch { }
-                classAtom = 0;
-            }
-        }
+        if (disposed) return;
+        disposed = true;
+        inner.Dispose();
     }
-
-    private bool EnsureWindowLocked()
-    {
-        if (hwnd != IntPtr.Zero) return true;
-
-        var instance = GetModuleHandle(null);
-        var windowClass = new WNDCLASSEX
-        {
-            cbSize = (uint)Marshal.SizeOf<WNDCLASSEX>(),
-            lpfnWndProc = Marshal.GetFunctionPointerForDelegate(wndProc),
-            hInstance = instance,
-            lpszClassName = className,
-        };
-
-        classAtom = RegisterClassEx(ref windowClass);
-        if (classAtom == 0 && Marshal.GetLastWin32Error() != ErrorClassAlreadyExists)
-            return false;
-
-        hwnd = CreateWindowEx(0, className, className, 0, 0, 0, 0, 0,
-            new IntPtr(HwndMessage), IntPtr.Zero, instance, IntPtr.Zero);
-
-        if (hwnd == IntPtr.Zero)
-        {
-            if (classAtom != 0)
-            {
-                try { UnregisterClass(className, instance); } catch { }
-                classAtom = 0;
-            }
-            return false;
-        }
-
-        return true;
-    }
-
-    private IntPtr WndProc(IntPtr window, uint message, IntPtr wParam, IntPtr lParam)
-    {
-        if (message == WmHotkey)
-        {
-            try { Pressed?.Invoke(wParam.ToInt32()); } catch { }
-            return IntPtr.Zero;
-        }
-
-        return DefWindowProc(window, message, wParam, lParam);
-    }
-
-    // ---- interop -----------------------------------------------------------------
-
-    [UnmanagedFunctionPointer(CallingConvention.Winapi)]
-    private delegate IntPtr WndProcDelegate(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam);
-
-    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-    private struct WNDCLASSEX
-    {
-        public uint cbSize;
-        public uint style;
-        public IntPtr lpfnWndProc;
-        public int cbClsExtra;
-        public int cbWndExtra;
-        public IntPtr hInstance;
-        public IntPtr hIcon;
-        public IntPtr hCursor;
-        public IntPtr hbrBackground;
-        public string? lpszMenuName;
-        public string? lpszClassName;
-        public IntPtr hIconSm;
-    }
-
-    [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-    private static extern IntPtr GetModuleHandle(string? moduleName);
-
-    [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-    private static extern ushort RegisterClassEx(ref WNDCLASSEX windowClass);
-
-    [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-    private static extern bool UnregisterClass(string className, IntPtr instance);
-
-    [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-    private static extern IntPtr CreateWindowEx(
-        uint exStyle, string className, string? windowName, uint style,
-        int x, int y, int width, int height,
-        IntPtr parent, IntPtr menu, IntPtr instance, IntPtr param);
-
-    [DllImport("user32.dll")]
-    private static extern IntPtr DefWindowProc(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam);
-
-    [DllImport("user32.dll")]
-    private static extern bool DestroyWindow(IntPtr hWnd);
-
-    [DllImport("user32.dll", SetLastError = true)]
-    private static extern bool RegisterHotKey(IntPtr hWnd, int id, uint modifiers, uint virtualKey);
-
-    [DllImport("user32.dll")]
-    private static extern bool UnregisterHotKey(IntPtr hWnd, int id);
 }

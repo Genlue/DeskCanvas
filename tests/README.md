@@ -1,6 +1,6 @@
 # tests/ 本地检查项目登记
 
-本目录共 62 个检查项目（不含 `_shortcuts_tools` Python 辅助脚本目录，2026-10-17 按非 bin/obj 的 csproj 统计）。分类口径：
+本目录共 64 个检查项目（不含 `_shortcuts_tools` Python 辅助脚本目录，2026-10-21 按非 bin/obj 的 csproj 统计）。分类口径：
 
 - **正式门禁**：有明确通过/失败语义（退出码或异常），按改动范围纳入提交/发布门槛。
 - **探针/复现程序**：测量、截图或复现 harness，产出供人工判读，不作门禁。
@@ -54,14 +54,17 @@
 | PictureMemoryChecks | 正式门禁 | 图片组件内存释放契约 |
 | HitokotoMemoryChecks | 正式门禁 | 一言组件内存释放契约 |
 | CalendarHollowChecks | 正式门禁 | 日历/聚合仪表盘「今天」镂空标记回归（明暗双主题像素验证） |
+| DateInkChecks | 正式门禁 | 日期组件日号字号回归：字号按卡片实际渲染物理像素数（DIP×DPI×宿主 ContentScale）经 FormattedText 墨迹占比推导（墨迹高 = 卡高 70%，用户基准），基线锚定 Margin 使墨迹居中于日号格（行盒被格高钳制时墨迹随基线下坠的补偿），普通 TextBlock 墨迹不截断（200×200 与 96×96 双尺寸像素验证 + 2× 光栅化密度不变性）；旧版内层 Viewbox+负 Margin 的顶部截断由本套件钉死 |
 | CountdownChecks | 正式门禁 | Countdown 组件模型/服务/视图契约 |
 | FixedSpanChecks | 正式门禁 | 固定组件 4×2 卡片的跨度晶格（2:1 等比整数跨度） |
 | HabitsChecks | 正式门禁 | Habits 组件模型/服务/视图契约 |
 | ScrollBarHoverChecks | 正式门禁 | 全局滚动条悬停展开态回归（悬停与空闲像素一致） |
 | SearchVisualChecks | 正式门禁 | Search 组件视觉/布局边界检查（截图产出至 dist/） |
 | ShortcutsSmoke | 正式门禁 | Shortcuts 无头冒烟：字形解析、存储往返、顺序执行、控制流（沙箱运行） |
+| SpotlightVisualChecks | 正式门禁 | 聚焦搜索三种材质（毛玻璃/液态玻璃/全彩）解析与网格布局断言，并输出浅/深色截图 |
 | ShortcutsGraphChecks | 正式门禁（已验证套件） | Shortcuts v2 执行图：v1 动作树迁移（起始/容器体连线、id 保留）、真实分支/循环/break/continue、数据连线、模板变量、死循环与步数守卫、JSON 导入校验（未知类型/端口/缺失节点）、AI 规范覆盖全部动作类型、文件往返（49 项） |
 | DiceRender | 探针/复现程序 | 骰子卡片无头渲染：`sweep` 扫描 11 档尺寸 × 1–6 骰 × D6点阵/D20/D100 数字，断言骰面与点阵不越出骰盘/骰面（2x2 点数溢出回归） |
+| TickClockRender | 探针/复现程序 | 刻度时钟无头渲染：按任意卡片尺寸输出截图；`sweep` 扫描 1x1/2x2/4x4/横向长条/竖向长条共 14 档，断言时间盒与星期/日期不越出卡片且时间永不塌缩 |
 | TimetableChecks | 正式门禁 | 课程表数据契约：周表达式、导入器、学期计算与配色 |
 | UpdateAtomChecks | 正式门禁 | releases.atom 回退解析器对冻结 fixture 的契约（自述按改动范围作提交门槛） |
 | WidgetReleaseChecks | 正式门禁 | 切换 profile 时组件真实释放的内存契约（跑真实宿主管线） |

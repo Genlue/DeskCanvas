@@ -1,9 +1,10 @@
-using Avalonia.Controls;
+﻿using Avalonia.Controls;
 using Avalonia.Interactivity;
 using DeskCanvas.Contracts;
 using DeskCanvas.Core.Interfaces;
 using DeskCanvas.Runtime;
 using Weather.Models;
+using Weather.Services;
 using Weather.ViewModels;
 
 namespace Weather.Views;
@@ -14,7 +15,7 @@ public partial class AirQuality : UserControl, IWidgetActivityConsumer
     private readonly IWidgetSession? session;
     private AirQualityViewModel? viewModel;
 
-    public AirQuality() : this(new ForecastModel("Beijing", 39.9042, 116.4074, "celsius")) {}
+    public AirQuality() : this(DefaultLocation.Resolve()) {}
 
     /// <summary>
     /// <paramref name="session"/> is injected by WidgetFactory when the host runs the session

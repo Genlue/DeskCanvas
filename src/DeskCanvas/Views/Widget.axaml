@@ -6,6 +6,7 @@
         x:Class="DeskCanvas.Views.Widget"
         Background="Transparent"
         ShowInTaskbar="False"
+        ShowActivated="False"
         ToolTip.Placement="BottomEdgeAlignedRight"
         ToolTip.VerticalOffset="-25"
         ToolTip.HorizontalOffset="7"

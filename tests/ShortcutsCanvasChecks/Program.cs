@@ -65,6 +65,7 @@ internal static class Program
         CheckCardLifecycle();
         CheckIncrementalEdits();
         CheckLinkSelectionAndDeletion();
+        CheckReloadAndNestedLoad();
         CheckDiagnosticsBadges();
         CheckMinimapViewState();
         CheckLayoutEngine();
@@ -73,6 +74,82 @@ internal static class Program
         CheckAiServiceValidation();
         CheckRunnerUiAffinity();
     }
+
+    /// <summary>
+    /// 全量重建的幂等性：撤销 / 导入 / 切换卡片都是"同一个画布再 Load 一次"，而 Load 会在
+    /// 回调里触发编辑器的处理器，处理器又可能请求一次重建。共享的连线层因此必须做到
+    /// "挂载前先摘除、嵌套请求排队执行"，否则会抛
+    /// "LinkLayer already has a visual parent Canvas"（旧版删除节点崩溃的根因）。
+    /// </summary>
+    private static void CheckReloadAndNestedLoad()
+    {
+        Console.WriteLine("--- reload / nested rebuild ---");
+        var canvas = new WorkflowCanvas();
+        var window = ShowWindow(canvas);
+
+        var first = BuildGraph();
+        canvas.Load(first);
+        Check(CountLinkLayers(canvas) == 1, "Load attaches exactly one link layer");
+
+        var reloadThrew = false;
+        try
+        {
+            canvas.Load(first);
+            canvas.Load(BuildGraph());
+        }
+        catch (Exception ex)
+        {
+            reloadThrew = true;
+            Console.WriteLine($"      {ex.GetType().Name}: {ex.Message}");
+        }
+
+        Check(!reloadThrew, "reloading the same canvas never re-adds the shared link layer");
+        Check(CountLinkLayers(canvas) == 1, "still exactly one link layer after reloads");
+
+        var nested = BuildGraph();
+        var interrupted = BuildGraph();
+        var requested = 0;
+
+        void OnCardCreated(WorkflowNodeCard card)
+        {
+            if (Interlocked.Increment(ref requested) == 1) canvas.Load(nested);
+        }
+
+        canvas.NodeCardCreated += OnCardCreated;
+        var nestedThrew = false;
+        try
+        {
+            canvas.Load(interrupted);
+        }
+        catch (Exception ex)
+        {
+            nestedThrew = true;
+            Console.WriteLine($"      {ex.GetType().Name}: {ex.Message}");
+        }
+        finally
+        {
+            canvas.NodeCardCreated -= OnCardCreated;
+        }
+
+        Check(!nestedThrew, "a rebuild requested from NodeCardCreated is queued, not nested");
+        Check(ReferenceEquals(canvas.Graph, nested), "the queued rebuild becomes the visible graph");
+        Check(CountLinkLayers(canvas) == 1, "still exactly one link layer after a queued rebuild");
+        Check(canvas.CardOf(nested.Start.Id) != null, "the queued rebuild produced cards");
+
+        // 排队（而不是嵌套）的真正判据：被中断的那次重建不能把它的卡片留在画布上。
+        // 嵌套执行时，内层重建清空画布后外层循环继续把剩余卡片贴上来 —— 画布上就出现了
+        // 属于"看不见的图"的孤儿卡片。
+        Check(canvas.CardOf(interrupted.Nodes[1].Id) == null,
+            "the interrupted rebuild leaves no orphan card on the canvas");
+        Check(nested.Nodes.All(node => canvas.CardOf(node.Id) != null),
+            "every card of the visible graph is on the canvas");
+
+        window.Close();
+    }
+
+    /// <summary>The link layer is a private nested type; counting by name keeps the check honest.</summary>
+    private static int CountLinkLayers(Control canvas) =>
+        canvas.GetVisualDescendants().Count(visual => visual.GetType().Name == "LinkLayer");
 
     private static Window ShowWindow(Control content)
     {

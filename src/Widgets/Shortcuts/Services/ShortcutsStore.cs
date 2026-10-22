@@ -114,6 +114,37 @@ public static class ShortcutsStore
         NotifyModelChanged(cachedDocument!, sender);
     }
 
+    /// <summary>
+    /// Move one shortcut one slot earlier (<paramref name="delta"/> = -1) or later (+1) in the
+    /// shared order. The list order IS the card order, so this is the whole manual-sorting story:
+    /// the card, the panel and the editor all read the same document.
+    /// Returns false at the edges (nothing to move) and for an unknown id.
+    /// </summary>
+    public static bool Move(string shortcutId, int delta, object? sender = null)
+    {
+        if (delta == 0) return false;
+
+        var moved = false;
+        lock (FileLock)
+        {
+            var document = cachedDocument ??= LoadOrCreateLocked();
+            document.Shortcuts ??= [];
+
+            var index = document.Shortcuts.FindIndex(s => s != null && s.Id == shortcutId);
+            var target = index + delta;
+            if (index < 0 || target < 0 || target >= document.Shortcuts.Count) return false;
+
+            var item = document.Shortcuts[index];
+            document.Shortcuts.RemoveAt(index);
+            document.Shortcuts.Insert(target, item);
+            SaveInternal(document);
+            moved = true;
+        }
+
+        if (moved) NotifyModelChanged(cachedDocument!, sender);
+        return moved;
+    }
+
     /// <summary>Delete a shortcut by id; returns true when it existed.</summary>
     public static bool Delete(string shortcutId, object? sender = null)
     {

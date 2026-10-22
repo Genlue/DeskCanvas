@@ -1,0 +1,23 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="clr-namespace:DeskCanvas.Views.Controls;assembly=DeskCanvas"
+             xmlns:locales="clr-namespace:TickClock.Locales"
+             x:Class="TickClock.Views.Settings.TickClockSettings"
+             controls:SettingsPage.ScrollOwnership="Host">
+
+    <StackPanel Orientation="Vertical" Spacing="5" Margin="0,0,10,0">
+
+        <controls:Setting Title="{x:Static locales:Locale.TickClock_ShowWeekday}">
+            <ToggleSwitch x:Name="ShowWeekdayToggle" IsCheckedChanged="OnToggleChanged" OnContent="" OffContent="" />
+        </controls:Setting>
+
+        <controls:Setting Title="{x:Static locales:Locale.TickClock_ShowDate}">
+            <ToggleSwitch x:Name="ShowDateToggle" IsCheckedChanged="OnToggleChanged" OnContent="" OffContent="" />
+        </controls:Setting>
+
+        <controls:Setting Title="{x:Static locales:Locale.TickClock_Use24Hour}">
+            <ToggleSwitch x:Name="Use24HourToggle" IsCheckedChanged="OnToggleChanged" OnContent="" OffContent="" />
+        </controls:Setting>
+
+    </StackPanel>
+</UserControl>

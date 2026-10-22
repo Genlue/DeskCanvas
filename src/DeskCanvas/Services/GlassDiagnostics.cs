@@ -106,11 +106,15 @@ internal static class GlassDiagnostics
         int worst;
         lock (Gate)
         {
-            if (windowStarted == 0) windowStarted = now;
+            var first = windowStarted == 0;
+            if (first) windowStarted = now;
             windowCount++;
             windowTotalMs += elapsedMs;
             if (elapsedMs > windowWorstMs) windowWorstMs = (int)elapsedMs;
-            if (now - windowStarted < 1000) return;
+            // The very first publish is written immediately: it carries the sampling source, which
+            // is the one thing a "the glass still looks like the wallpaper" report needs, and a
+            // short-lived overlay may never produce a second publish to flush the window with.
+            if (!first && now - windowStarted < 1000) return;
             count = windowCount;
             total = windowTotalMs;
             worst = windowWorstMs;

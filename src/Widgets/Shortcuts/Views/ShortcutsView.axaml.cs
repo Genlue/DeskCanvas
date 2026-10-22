@@ -66,6 +66,7 @@ public partial class ShortcutsView : UserControl, IWidgetSelfRefreshing
         ApplyCardRadius();
         viewModel.ApplyTheme(ActualThemeVariant == ThemeVariant.Dark);
         EnsureHotkeys();
+        SpotlightBridge.EnsureRegistered(); // 聚焦搜索 exposes workflows only while a widget exists.
         if (Bounds.Width > 0 && Bounds.Height > 0)
             ApplySize(Bounds.Size);
         else
@@ -319,6 +320,17 @@ public partial class ShortcutsView : UserControl, IWidgetSelfRefreshing
     {
         if ((sender as MenuItem)?.DataContext is not ShortcutTileViewModel tile || tile.IsCreate) return;
         ShortcutsStore.Duplicate(tile.ShortcutId, this);
+    }
+
+    /// <summary>手动排序：卡片右键把这一格前移/后移一位，顺序写回 shortcuts.json。</summary>
+    private void OnTileMenuMoveUp(object? sender, RoutedEventArgs e) => MoveTile(sender, -1);
+
+    private void OnTileMenuMoveDown(object? sender, RoutedEventArgs e) => MoveTile(sender, 1);
+
+    private void MoveTile(object? sender, int delta)
+    {
+        if ((sender as MenuItem)?.DataContext is not ShortcutTileViewModel tile || tile.IsCreate) return;
+        ShortcutsStore.Move(tile.ShortcutId, delta, this);
     }
 
     private async void OnTileMenuDelete(object? sender, RoutedEventArgs e)

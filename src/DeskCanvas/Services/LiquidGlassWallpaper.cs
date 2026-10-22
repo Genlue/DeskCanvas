@@ -1566,6 +1566,16 @@ public static class DesktopCapturer
     [DllImport("user32.dll")]
     private static extern int GetSystemMetrics(int index);
 
+    /// <summary>
+    /// <c>DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2</c>. Set on the capturing thread so the
+    /// virtual-desktop metrics and the BitBlt agree on physical pixels — see
+    /// <see cref="CaptureScreenSnapshot"/>.
+    /// </summary>
+    private static readonly IntPtr DpiAwarenessPerMonitorV2 = new(-4);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    private static extern IntPtr SetThreadDpiAwarenessContext(IntPtr context);
+
     [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
     private static extern bool PrintWindow(IntPtr hwnd, IntPtr hdc, uint flags);
 
@@ -1578,8 +1588,19 @@ public static class DesktopCapturer
     [DllImport("user32.dll")]
     private static extern bool IsWindowVisible(IntPtr hwnd);
 
+
+
     [DllImport("user32.dll")]
     private static extern bool IsWindow(IntPtr hwnd);
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct WindowRect
+    {
+        public int Left, Top, Right, Bottom;
+    }
+
+    [DllImport("user32.dll")]
+    private static extern bool GetWindowRect(IntPtr hwnd, out WindowRect rect);
 
     [DllImport("user32.dll", CharSet = CharSet.Unicode)]
     private static extern int GetClassName(IntPtr hwnd, StringBuilder buffer, int maxCount);
@@ -1625,6 +1646,18 @@ public static class DesktopCapturer
     [DllImport("user32.dll")]
     private static extern uint GetWindowThreadProcessId(IntPtr hwnd, out uint processId);
 
+    [DllImport("user32.dll")]
+    private static extern IntPtr GetWindow(IntPtr hwnd, uint command);
+
+    /// <summary>GW_HWNDPREV: the window immediately <b>above</b> this one in z-order.</summary>
+    private const uint GwHwndPrev = 0x0003;
+
+    /// <summary>
+    /// Safety stop for the z-order walk. A top-level chain is a few dozen windows long; anything
+    /// near this bound means the handle we started from was not in the chain at all.
+    /// </summary>
+    private const int MaxZOrderWalk = 512;
+
     private delegate bool EnumWindowsProc(IntPtr hwnd, IntPtr extraData);
 
     // SM_* virtual desktop metrics (physical pixels; the process is DPI aware).
@@ -1661,6 +1694,14 @@ public static class DesktopCapturer
         Environment.GetEnvironmentVariable("DESKCANVAS_GLASS_CAPTURE")?.Trim().ToLowerInvariant();
 
     /// <summary>
+    /// <c>DESKCANVAS_GLASS_CAPTURABLE=1</c> keeps this process's windows inside screen captures.
+    /// A diagnostics switch only: it makes the overlay visible in screenshots at the cost of the
+    /// self-sampling feedback the capture affinity normally prevents.
+    /// </summary>
+    private static readonly bool StayCapturable =
+        Environment.GetEnvironmentVariable("DESKCANVAS_GLASS_CAPTURABLE") == "1";
+
+    /// <summary>
     /// 1 while captures come from the screen BitBlt instead of a wallpaper host window — pinned by
     /// <c>DESKCANVAS_GLASS_CAPTURE=screen</c> for diagnostics only. UIPI no longer switches the
     /// source: a screen frame is the composited desktop, not the wallpaper (see
@@ -1670,6 +1711,16 @@ public static class DesktopCapturer
 
     /// <summary>Tick of the last capture-affinity pass; see <see cref="EnsureCaptureVisibilityExclusion"/>.</summary>
     private static long lastExclusionPassAt;
+
+    /// <summary>
+    /// The window the current affinity pass was computed for (0 = "exclude everything of ours").
+    /// A different sampler must take effect immediately instead of waiting out the throttle: the
+    /// caller just opened its overlay and is about to draw the frame built from this capture.
+    /// </summary>
+    private static IntPtr lastExclusionSampler;
+
+    /// <summary>Last "excluded:included:mode" signature written to the trace.</summary>
+    private static string lastExclusionSignature = string.Empty;
 
     /// <summary>1 once <see cref="EnsureCaptureVisibilityExclusion"/> actually excluded a window.</summary>
     private static int exclusionApplied;
@@ -2160,29 +2211,60 @@ public static class DesktopCapturer
     }
 
     /// <summary>
-    /// Capture the composited desktop itself — <b>diagnostics only</b>, pinned by
-    /// <c>DESKCANVAS_GLASS_CAPTURE=screen</c>.
+    /// Capture the composited virtual desktop as a glass source — the 聚焦搜索 pipeline.
     /// <para>
-    /// This is <i>not</i> a wallpaper source: it contains every visible window and the desktop
-    /// icons, so glass fed from it shows whatever sits behind the widget instead of the wallpaper.
-    /// It used to be the automatic answer to a UIPI refusal; that is the reported
-    /// "采样对象出错". Kept because it is the only way to exercise the pre-DWM capture path on a
-    /// machine where window printing works.
+    /// Deliberately different from <see cref="Get"/>: that one answers "what wallpaper is under the
+    /// card", this one answers "what is actually on screen behind the card". A Spotlight-style
+    /// overlay floats over real window content, so refracting the wallpaper would show a desktop
+    /// that is not there.
     /// </para>
     /// <para>
-    /// <see cref="EnsureCaptureVisibilityExclusion"/> keeps this process's own windows out of the
-    /// frame (the pixels behind them show through instead) so the glass cannot sample a stale copy
-    /// of itself.
+    /// <paramref name="excludeWindow"/> is the overlay that will sample this frame: it — and any of
+    /// our windows drawn above it — is excluded from the capture so the glass cannot feed back a
+    /// copy of itself (<see cref="EnsureCaptureVisibilityExclusion"/>). Everything else, including
+    /// this process's own panels and widgets <i>behind</i> the overlay, stays in the frame: that is
+    /// the screen the user is looking at.
     /// </para>
     /// <para>
-    /// Same virtual-desktop geometry as <see cref="CaptureWindow"/>: the bitmap is the desktop
-    /// at physical pixels from <c>(SM_XVIRTUALSCREEN, SM_YVIRTUALSCREEN)</c>, which is exactly
-    /// the space the renderer's live-capture placement expects.
+    /// Same virtual-desktop geometry as the wallpaper captures: the bitmap is the desktop at
+    /// physical pixels from <c>(SM_XVIRTUALSCREEN, SM_YVIRTUALSCREEN)</c>, which is exactly the
+    /// space the renderer's live-capture placement expects. The caller owns the returned snapshot
+    /// and must dispose it; the bitmap is reference counted through its lease.
     /// </para>
     /// </summary>
-    private static SKBitmap? TryScreenCapture(int width, int height, SKBitmap? reuse)
+    public static WallpaperSnapshot? CaptureScreenSnapshot(IntPtr excludeWindow = default)
     {
-        EnsureCaptureVisibilityExclusion();
+        // Pin the DPI context for the whole capture. GDI virtualises the desktop for a thread whose
+        // awareness differs from the process's: a per-monitor-aware app can get a *scaled* frame
+        // (2560×1440 requested, 2048×1152 returned) when the call lands on a thread with another
+        // context. That frame is then drawn into desktop space at the wrong size, so the shader
+        // samples a region of the desktop that is not behind the card — which reads exactly as
+        // "the glass is sampling the wallpaper".
+        var previousContext = SetThreadDpiAwarenessContext(DpiAwarenessPerMonitorV2);
+        try
+        {
+            var width = GetSystemMetrics(SmCXVirtualScreen);
+            var height = GetSystemMetrics(SmCYVirtualScreen);
+            if (width < 1 || height < 1) return null;
+
+            var bitmap = TryScreenCapture(width, height, null, excludeWindow);
+            if (bitmap == null) return null;
+
+            // Same flags the diagnostic screen source uses: "live" marks a composited-desktop frame
+            // rather than a wallpaper image, and style "10" fills the desktop rect.
+            return WallpaperSnapshot.FromBitmap(null, new SKColor(32, 38, 48), bitmap, live: true);
+        }
+        finally
+        {
+            // A null/zero previous context means "no per-thread context was set"; restoring it is
+            // still valid (SetThreadDpiAwarenessContext accepts the NULL handle).
+            SetThreadDpiAwarenessContext(previousContext);
+        }
+    }
+
+    private static SKBitmap? TryScreenCapture(int width, int height, SKBitmap? reuse, IntPtr excludeWindow = default)
+    {
+        EnsureCaptureVisibilityExclusion(excludeWindow);
 
         var screenDc = GetDC(IntPtr.Zero);
         if (screenDc == IntPtr.Zero)
@@ -2248,40 +2330,108 @@ public static class DesktopCapturer
     }
 
     /// <summary>
-    /// Keep this process's own windows out of the screen capture.
+    /// Keep the sampler's own pixels out of the screen capture — and nothing else of ours.
     /// <para>
-    /// A screen capture contains every visible window — the widgets included — and feeding a
-    /// glass card its own pixels is a feedback loop: the card would refract a slightly stale
-    /// copy of itself, visibly echoing, and a neighbouring card's pixels would bleed through
-    /// the blur the same way. WDA_EXCLUDEFROMCAPTURE removes a window from every capture source
-    /// at the DWM level — what shows through is the content behind it, which is precisely "the
-    /// desktop minus ourselves". Only a window's own process may set it; all of them are ours.
+    /// Feeding a glass card its own pixels is a feedback loop: the card would refract a slightly
+    /// stale copy of itself, visibly echoing. WDA_EXCLUDEFROMCAPTURE removes a window from every
+    /// capture source at the DWM level, so what shows through is the content behind it. Only a
+    /// window's own process may set it; every candidate here is ours.
+    /// </para>
+    /// <para>
+    /// <b>Which windows:</b> only <paramref name="sampler"/> and whatever of ours is drawn
+    /// <i>above</i> it in z-order. Excluding the whole process was the reason the launcher "still
+    /// sampled the wallpaper": the overlay is summoned from the settings page (or drifts over a
+    /// panel) — that window is ours, was excluded too, and the capture at the card's position
+    /// therefore contained the wallpaper behind it. A window <i>below</i> the overlay is exactly
+    /// what the user sees behind the glass, so it must stay in the frame; that is the whole point
+    /// of sampling the screen. Windows above the sampler are excluded because they can be drawn
+    /// over the card, and their pixels would then be fed back into it.
+    /// </para>
+    /// <para>
+    /// <paramref name="sampler"/> = 0 means "exclude every own window" — the diagnostic
+    /// <c>DESKCANVAS_GLASS_CAPTURE=screen</c> source, where widgets themselves sample the screen
+    /// and every one of them is potential feedback.
     /// </para>
     /// <para>
     /// Throttled and best-effort. The pass re-enumerates instead of tracking handles, so new
     /// widgets, popups and the settings window are covered without a call site each — a window
-    /// created moments ago is excluded within <see cref="ExclusionPassIntervalMs"/>. A failure
+    /// created moments ago is handled within <see cref="ExclusionPassIntervalMs"/>. A failure
     /// (an OS build without WDA_EXCLUDEFROMCAPTURE, a window that refuses the affinity) costs
     /// one call per window per pass and leaves that window merely included, as before.
     /// </para>
     /// </summary>
-    private static void EnsureCaptureVisibilityExclusion()
+    private static void EnsureCaptureVisibilityExclusion(IntPtr sampler)
     {
+        // Diagnostics switch: keep every window in captures so the overlay itself shows up in a
+        // screenshot (bug reports, visual review). The price is exactly the feedback loop this
+        // method exists to prevent — the card samples its own previous frame — so the material
+        // it produces is for inspecting the LAYOUT, never for judging the glass.
+        if (StayCapturable) return;
+
         var now = Environment.TickCount64;
-        if (now - Interlocked.Read(ref lastExclusionPassAt) < ExclusionPassIntervalMs) return;
+        // A new sampler (first summon, a re-summon on another screen) must not wait out the
+        // throttle: the very next capture is the one its overlay is about to be drawn from.
+        var samplerChanged = Interlocked.Exchange(ref lastExclusionSampler, sampler) != sampler;
+        if (!samplerChanged && now - Interlocked.Read(ref lastExclusionPassAt) < ExclusionPassIntervalMs) return;
         Interlocked.Exchange(ref lastExclusionPassAt, now);
 
-        var applied = 0;
+        // 0 (or a handle that no longer exists) keeps the historic "everything of ours" mode.
+        var targeted = sampler != IntPtr.Zero && IsWindow(sampler);
+        var above = targeted ? OwnWindowsAtOrAbove(sampler) : null;
+
+        var excluded = 0;
+        var restored = 0;
         EnumWindows((hwnd, _) =>
         {
-            if (IsWindowVisible(hwnd) && IsOwnWindow(hwnd) &&
-                SetWindowDisplayAffinity(hwnd, WdaExcludeFromCapture))
+            if (!IsWindowVisible(hwnd) || !IsOwnWindow(hwnd)) return true;
+
+            var role = WindowRoles.GetRole(hwnd);
+            var isExcludedRole = role is WindowRole.Settings or WindowRole.Dialog or WindowRole.Spotlight or WindowRole.Anchor;
+            var shouldExclude = isExcludedRole || above == null || above.Contains(hwnd);
+            if (shouldExclude)
             {
-                applied++;
+                if (SetWindowDisplayAffinity(hwnd, WdaExcludeFromCapture)) excluded++;
+                return true;
             }
+
+            // Below the sampler: this is content the user actually sees behind the glass, so a
+            // window left excluded by an earlier pass has to be put back into captures.
+            if (SetWindowDisplayAffinity(hwnd, WdaNone)) restored++;
             return true;
         }, IntPtr.Zero);
-        if (applied > 0) Volatile.Write(ref exclusionApplied, 1);
+
+        if (excluded > 0) Volatile.Write(ref exclusionApplied, 1);
+
+        // Written when the split CHANGES, not on every pass: "how much of the desktop is ours,
+        // and how much of it survives into the sample" is the first thing to check when a capture
+        // looks emptier than the screen, and it is exactly what a support report needs.
+        var signature = $"{excluded}:{restored}:{(targeted ? "targeted" : "all")}";
+        if (signature != lastExclusionSignature)
+        {
+            lastExclusionSignature = signature;
+            GlassDiagnostics.Event(
+                $"[capture] screen sampling: {excluded} own window(s) excluded, {restored} restored " +
+                $"({(targeted ? $"only window 0x{sampler:X} and windows above it" : "every own window")})");
+        }
+    }
+
+    /// <summary>
+    /// The sampler plus every own top-level window drawn above it. GW_HWNDPREV walks up the
+    /// z-order chain, so the result is exactly "what could paint over the sampling surface".
+    /// </summary>
+    private static HashSet<IntPtr> OwnWindowsAtOrAbove(IntPtr sampler)
+    {
+        var set = new HashSet<IntPtr> { sampler };
+
+        var cursor = sampler;
+        for (var step = 0; step < MaxZOrderWalk; step++)
+        {
+            cursor = GetWindow(cursor, GwHwndPrev);
+            if (cursor == IntPtr.Zero) break;
+            if (IsWindowVisible(cursor) && IsOwnWindow(cursor)) set.Add(cursor);
+        }
+
+        return set;
     }
 
     /// <summary>Undo <see cref="EnsureCaptureVisibilityExclusion"/>: the windows capture again.</summary>

@@ -3,6 +3,7 @@ using System.Threading;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Media;
+using Avalonia.Platform;
 using Avalonia.Styling;
 using DeskCanvas.Core.Interfaces;
 using DeskCanvas.Core.Models.Settings;
@@ -169,6 +170,30 @@ public static class PanelAppearanceResolver
     public static bool IsDark(Theme theme, ThemeVariant actualVariant)
         => theme.DarkMode ?? actualVariant == ThemeVariant.Dark;
 
+    /// <summary>
+    /// Whether <b>Windows</b> is currently dark, independent of the app's own variant.
+    /// <para>
+    /// 跟随系统 must answer to the OS even while the app is pinned light or dark — the window's
+    /// <c>ActualThemeVariant</c> is the app's answer, so it cannot stand in for the system's.
+    /// </para>
+    /// </summary>
+    /// <param name="fallback">Used when the platform has no opinion (headless checks, start-up).</param>
+    public static bool IsSystemDark(bool fallback)
+    {
+        try
+        {
+            var variant = Application.Current?.PlatformSettings?.GetColorValues().ThemeVariant;
+            if (variant == PlatformThemeVariant.Dark) return true;
+            if (variant == PlatformThemeVariant.Light) return false;
+        }
+        catch
+        {
+            // Platform settings are optional; a failure must not break the open path.
+        }
+
+        return fallback;
+    }
+
     /// <summary>Pure resolution of the shell appearance. No Avalonia object is touched.</summary>
     public static PanelAppearance Resolve(Theme theme, bool isDark, double cornerRadius)
     {
@@ -248,6 +273,30 @@ public static class PanelAppearanceResolver
         => isDark
             ? new SolidColorBrush(Color.FromArgb(200, 255, 255, 255))
             : new SolidColorBrush(Color.FromArgb(180, 0, 0, 0));
+
+    // ---- text antialiasing ------------------------------------------------------------------
+
+    /// <summary>
+    /// The text antialiasing a card material may use. The ClearType-class subpixel mask blends
+    /// each channel separately assuming the pixels under the glyphs are opaque; on a translucent
+    /// card the window surface is then alpha-composited with the live desktop, and the mask's
+    /// leftover per-channel coverage survives that composite as red/green fringing (色散) —
+    /// the same reason Windows itself forces grayscale AA over acrylic. The opaque 多彩 card
+    /// keeps subpixel: blending is correct there, and it is what keeps 11–12 px CJK stems one
+    /// pixel wide (the historic "grey mush" complaint under plain grayscale).
+    /// <para>
+    /// 毛玻璃 resolves translucent by construction (the acrylic branch clamps the card alpha to
+    /// ≤ 240), 液态玻璃 because the glass layer itself carries partial alpha.
+    /// </para>
+    /// </summary>
+    public static TextRenderingMode ResolveTextRenderingMode(Theme theme)
+        => theme.IsFullColor ? TextRenderingMode.SubpixelAntialias : TextRenderingMode.Antialias;
+
+    /// <summary>The resolved-shell entry: same rule keyed on the <see cref="PanelAppearance"/>.</summary>
+    public static TextRenderingMode ResolveTextRenderingMode(PanelAppearance appearance)
+        => !appearance.UseRenderedGlass && appearance.Surface == SurfaceStyle.Colorful
+            ? TextRenderingMode.SubpixelAntialias
+            : TextRenderingMode.Antialias;
 }
 
 /// <summary>
@@ -326,6 +375,13 @@ public sealed class PanelAppearanceBinder
         // touches business content, so plugin-specific brushes applied afterwards survive.
         shell.SurfaceAppearance = appearance;
         window.TransparencyLevelHint = appearance.TransparencyLevels;
+
+        // Text AA follows the material (same physics as the spotlight overlay): the
+        // ClearType-class subpixel mask is only correct over opaque pixels, so the translucent
+        // 毛玻璃/液态玻璃 panels render grayscale — see
+        // PanelAppearanceResolver.ResolveTextRenderingMode(PanelAppearance).
+        SurfaceTextRendering.Apply(window, PanelAppearanceResolver.ResolveTextRenderingMode(appearance));
+
         if (window is Views.SecondaryPanelWindow spw)
         {
             spw.ApplyWindowRegion();

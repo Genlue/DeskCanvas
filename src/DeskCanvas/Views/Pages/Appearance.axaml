@@ -1,4 +1,4 @@
-<UserControl xmlns="https://github.com/avaloniaui"
+﻿<UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:controls="clr-namespace:DeskCanvas.Views.Controls"
              xmlns:viewModels="clr-namespace:DeskCanvas.ViewModels"
@@ -154,82 +154,75 @@
                                         AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_Glass_HighlightAngle}" />
             </controls:Setting>
         </StackPanel>
-        <StackPanel IsVisible="{Binding ShowGlassOpticsSettings}" Spacing="3" Margin="0 16 0 6">
-            <!-- The optics rows (实时采样 → 染色扩散) are expert knobs: collapsed by default,
-                 the theme works out of the box without them. -->
-            <Button Click="ToggleOpticsExpanded" HorizontalAlignment="Left" Margin="0 0 6 0"
-                    Padding="0" BorderThickness="0" Background="Transparent">
-                <StackPanel Orientation="Horizontal" Spacing="8">
-                    <TextBlock FontSize="16" FontWeight="SemiBold" VerticalAlignment="Center"
-                               Text="{Binding GlassOpticsTitle}" />
-                    <PathIcon Width="12" Height="12" VerticalAlignment="Center"
-                              Data="M 1.6 3.2 L 6 7.6 L 10.4 3.2 L 10.4 5 L 6 9.4 L 1.6 5 Z"
-                              IsVisible="{Binding !OpticsExpanded}" />
-                    <PathIcon Width="12" Height="12" VerticalAlignment="Center"
-                              Data="M 1.6 8.8 L 6 4.4 L 10.4 8.8 L 10.4 7 L 6 2.6 L 1.6 7 Z"
-                              IsVisible="{Binding OpticsExpanded}" />
+        <controls:CollapsibleSection IsVisible="{Binding ShowGlassOpticsSettings}"
+                                     Margin="0 16 0 6"
+                                     Header="{Binding GlassOpticsTitle}"
+                                     IsExpanded="{Binding OpticsExpanded}">
+            <!-- The optics rows (实时采样 → 染色扩散) are expert knobs: the theme works out of the
+                 box without them, so they stay folded behind the section title. -->
+            <controls:CollapsibleSection.SectionContent>
+                <StackPanel Spacing="3">
+                    <controls:Setting Title="{x:Static locales:Locale.Settings_Appearance_Glass_LiveSampling}"
+                                      Subtitle="{x:Static locales:Locale.Settings_Appearance_Glass_LiveSamplingHint}">
+                        <ToggleSwitch IsChecked="{Binding LiveSampling}" HorizontalAlignment="Right"
+                                      AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_Glass_LiveSampling}" />
+                    </controls:Setting>
+                    <controls:Setting Title="{x:Static locales:Locale.Settings_Appearance_Glass_LiveSamplingInterval}"
+                                      Subtitle="{x:Static locales:Locale.Settings_Appearance_Glass_LiveSamplingIntervalHint}"
+                                      IsVisible="{Binding LiveSampling}">
+                        <NumericUpDown MinWidth="130" Minimum="3" Maximum="1000" Increment="10" FormatString="F0"
+                                       Value="{Binding LiveSamplingInterval}"
+                                       AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_Glass_LiveSamplingInterval}" />
+                    </controls:Setting>
+                    <controls:Setting Title="{x:Static locales:Locale.Settings_Appearance_Glass_Blur}"
+                                      Subtitle="{x:Static locales:Locale.Settings_Appearance_Glass_BlurHint}">
+                        <controls:LabeledSlider Width="264" Margin="14 0 0 0"
+                                                Minimum="0" Maximum="100" Step="1"
+                                                ShowEditableValue="True" DisplayFormat="F0"
+                                                Value="{Binding GlassBlur}" ValueCommitted="CommitThemeSliders"
+                                                AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_Glass_Blur}" />
+                    </controls:Setting>
+                    <controls:Setting Title="{x:Static locales:Locale.Settings_Appearance_Glass_Refraction}"
+                                      Subtitle="{x:Static locales:Locale.Settings_Appearance_Glass_RefractionHint}">
+                        <controls:LabeledSlider Width="264" Margin="14 0 0 0"
+                                                Minimum="0" Maximum="100" Step="1"
+                                                ShowEditableValue="True" DisplayFormat="F0"
+                                                Value="{Binding GlassRefraction}" ValueCommitted="CommitThemeSliders"
+                                                AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_Glass_Refraction}" />
+                    </controls:Setting>
+                    <controls:Setting Title="{x:Static locales:Locale.Settings_Appearance_Glass_Dispersion}"
+                                      Subtitle="{x:Static locales:Locale.Settings_Appearance_Glass_DispersionHint}">
+                        <controls:LabeledSlider Width="264" Margin="14 0 0 0"
+                                                Minimum="0" Maximum="100" Step="1"
+                                                ShowEditableValue="True" DisplayFormat="F0"
+                                                Value="{Binding GlassDispersion}" ValueCommitted="CommitThemeSliders"
+                                                AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_Glass_Dispersion}" />
+                    </controls:Setting>
+                    <controls:Setting Title="{x:Static locales:Locale.Settings_Appearance_Glass_Vibrancy}"
+                                      Subtitle="{x:Static locales:Locale.Settings_Appearance_Glass_VibrancyHint}">
+                        <controls:LabeledSlider Width="264" Margin="14 0 0 0"
+                                                Minimum="0" Maximum="100" Step="1"
+                                                ShowEditableValue="True" DisplayFormat="F0"
+                                                Value="{Binding GlassVibrancy}" ValueCommitted="CommitThemeSliders"
+                                                AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_Glass_Vibrancy}" />
+                    </controls:Setting>
+                    <controls:Setting Title="{x:Static locales:Locale.Settings_Appearance_Glass_BackdropClarity}"
+                                      Subtitle="{x:Static locales:Locale.Settings_Appearance_Glass_BackdropClarityHint}">
+                        <controls:LabeledSlider Width="264" Margin="14 0 0 0"
+                                                Minimum="25" Maximum="100" Step="5"
+                                                ShowEditableValue="True" DisplayFormat="F0"
+                                                Value="{Binding GlassBackdropClarity}" ValueCommitted="CommitThemeSliders"
+                                                AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_Glass_BackdropClarity}" />
+                    </controls:Setting>
                 </StackPanel>
-            </Button>
-            <StackPanel IsVisible="{Binding OpticsExpanded}" Spacing="3">
-                <controls:Setting Title="{x:Static locales:Locale.Settings_Appearance_Glass_LiveSampling}"
-                                  Subtitle="{x:Static locales:Locale.Settings_Appearance_Glass_LiveSamplingHint}">
-                    <ToggleSwitch IsChecked="{Binding LiveSampling}" HorizontalAlignment="Right"
-                                  AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_Glass_LiveSampling}" />
-                </controls:Setting>
-                <controls:Setting Title="{x:Static locales:Locale.Settings_Appearance_Glass_LiveSamplingInterval}"
-                                  Subtitle="{x:Static locales:Locale.Settings_Appearance_Glass_LiveSamplingIntervalHint}"
-                                  IsVisible="{Binding LiveSampling}">
-                    <NumericUpDown MinWidth="130" Minimum="3" Maximum="1000" Increment="10" FormatString="F0"
-                                   Value="{Binding LiveSamplingInterval}"
-                                   AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_Glass_LiveSamplingInterval}" />
-                </controls:Setting>
-                <controls:Setting Title="{x:Static locales:Locale.Settings_Appearance_Glass_Blur}"
-                                  Subtitle="{x:Static locales:Locale.Settings_Appearance_Glass_BlurHint}">
-                    <controls:LabeledSlider Width="264" Margin="14 0 0 0"
-                                            Minimum="0" Maximum="100" Step="1"
-                                            ShowEditableValue="True" DisplayFormat="F0"
-                                            Value="{Binding GlassBlur}" ValueCommitted="CommitThemeSliders"
-                                            AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_Glass_Blur}" />
-                </controls:Setting>
-                <controls:Setting Title="{x:Static locales:Locale.Settings_Appearance_Glass_Refraction}"
-                                  Subtitle="{x:Static locales:Locale.Settings_Appearance_Glass_RefractionHint}">
-                    <controls:LabeledSlider Width="264" Margin="14 0 0 0"
-                                            Minimum="0" Maximum="100" Step="1"
-                                            ShowEditableValue="True" DisplayFormat="F0"
-                                            Value="{Binding GlassRefraction}" ValueCommitted="CommitThemeSliders"
-                                            AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_Glass_Refraction}" />
-                </controls:Setting>
-                <controls:Setting Title="{x:Static locales:Locale.Settings_Appearance_Glass_Dispersion}"
-                                  Subtitle="{x:Static locales:Locale.Settings_Appearance_Glass_DispersionHint}">
-                    <controls:LabeledSlider Width="264" Margin="14 0 0 0"
-                                            Minimum="0" Maximum="100" Step="1"
-                                            ShowEditableValue="True" DisplayFormat="F0"
-                                            Value="{Binding GlassDispersion}" ValueCommitted="CommitThemeSliders"
-                                            AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_Glass_Dispersion}" />
-                </controls:Setting>
-                <controls:Setting Title="{x:Static locales:Locale.Settings_Appearance_Glass_Vibrancy}"
-                                  Subtitle="{x:Static locales:Locale.Settings_Appearance_Glass_VibrancyHint}">
-                    <controls:LabeledSlider Width="264" Margin="14 0 0 0"
-                                            Minimum="0" Maximum="100" Step="1"
-                                            ShowEditableValue="True" DisplayFormat="F0"
-                                            Value="{Binding GlassVibrancy}" ValueCommitted="CommitThemeSliders"
-                                            AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_Glass_Vibrancy}" />
-                </controls:Setting>
-                <controls:Setting Title="{x:Static locales:Locale.Settings_Appearance_Glass_BackdropClarity}"
-                                  Subtitle="{x:Static locales:Locale.Settings_Appearance_Glass_BackdropClarityHint}">
-                    <controls:LabeledSlider Width="264" Margin="14 0 0 0"
-                                            Minimum="25" Maximum="100" Step="5"
-                                            ShowEditableValue="True" DisplayFormat="F0"
-                                            Value="{Binding GlassBackdropClarity}" ValueCommitted="CommitThemeSliders"
-                                            AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_Glass_BackdropClarity}" />
-                </controls:Setting>
-            </StackPanel>
-            <WrapPanel Orientation="Horizontal" Margin="0 8 0 0">
-                <Button Content="{x:Static locales:Locale.Settings_Appearance_Glass_Align}" Click="OpenWallpaperAlign" Margin="0 0 8 6" />
-                <Button Content="{x:Static locales:Locale.Settings_Appearance_Glass_Reset}" Click="ResetLiquidGlass" Margin="0 0 8 6" />
-                <Button Content="{x:Static locales:Locale.Settings_Appearance_Glass_Refresh}" Click="RefreshLiquidGlassWallpaper" Margin="0 0 0 6" />
-            </WrapPanel>
-        </StackPanel>
+            </controls:CollapsibleSection.SectionContent>
+        </controls:CollapsibleSection>
+        <!-- The three actions are not parameters: they stay outside the fold, right under the title. -->
+        <WrapPanel Orientation="Horizontal" Margin="0 8 0 0">
+            <Button Content="{x:Static locales:Locale.Settings_Appearance_Glass_Align}" Click="OpenWallpaperAlign" Margin="0 0 8 6" />
+            <Button Content="{x:Static locales:Locale.Settings_Appearance_Glass_Reset}" Click="ResetLiquidGlass" Margin="0 0 8 6" />
+            <Button Content="{x:Static locales:Locale.Settings_Appearance_Glass_Refresh}" Click="RefreshLiquidGlassWallpaper" Margin="0 0 0 6" />
+        </WrapPanel>
         <TextBlock FontSize="14" FontWeight="SemiBold" Margin="0 20 0 10" 
                    Text="{x:Static locales:Locale.Settings_Appearance_Colors}"/>
         <controls:Setting Icon="{DynamicResource Brush}" 

@@ -261,4 +261,10 @@
   <data name="Timetable_ShowWeekView" xml:space="preserve">
     <value>切换为单周视图</value>
   </data>
+  <data name="Timetable_Spotlight_Group" xml:space="preserve">
+    <value>课程</value>
+  </data>
+  <data name="Timetable_Spotlight_Slot" xml:space="preserve">
+    <value>第 {0} 节</value>
+  </data>
 </root>

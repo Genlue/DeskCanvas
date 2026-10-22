@@ -7,7 +7,7 @@
       1. scripts/check-structure.ps1
       2. scripts/check-ui-conventions.ps1
       3. dotnet build src/DeskCanvas.sln -c Debug
-      4. dotnet run --project <suite> -c Release for the 37 verified check suites,
+      4. dotnet run --project <suite> -c Release for the 38 verified check suites,
          including the P1-P8 architecture gates, the P10/P11 UI and material gates,
          P12 profile storage and P13 uninstaller/setup contracts.
 
@@ -120,7 +120,8 @@ try {
             'UninstallerChecks',
             'GeometryThreadChecks',
             'ShortcutsGraphChecks',
-            'ShortcutsSmoke'
+            'ShortcutsSmoke',
+            'SpotlightVisualChecks'
         )
         foreach ($suite in $verifiedSuites) {
             Invoke-Step ("run " + $suite + " (Release)") 'dotnet' (@(

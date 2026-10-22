@@ -42,9 +42,11 @@ public partial class Settings : Window
 
     public Settings(IAppSettingsProvider appSettingsProvider, IAssemblyProvider assemblyProvider,
         ILayoutProvider layoutProvider, DisplayMonitorService displayMonitor, IWidgetFactory<Window, UserControl> widgetFactory,
-        ProfileService profileService, UpdateService updateService)
+        ProfileService profileService, UpdateService updateService, SpotlightService spotlightService,
+        FileSearchService fileSearchService)
     {
-        viewModel = new SettingsViewModel(appSettingsProvider, assemblyProvider, layoutProvider, displayMonitor, widgetFactory, profileService, updateService);
+        viewModel = new SettingsViewModel(appSettingsProvider, assemblyProvider, layoutProvider, displayMonitor,
+            widgetFactory, profileService, updateService, spotlightService, fileSearchService);
         this.appSettingsProvider = appSettingsProvider;
         DataContext = viewModel;
         Resized += OnResized;

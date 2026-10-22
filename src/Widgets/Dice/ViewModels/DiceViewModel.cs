@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -72,15 +72,20 @@ public class DiceViewModel : INotifyPropertyChanged
     private void EnsureDiceCount()
     {
         int count = Math.Clamp(model.DiceCount, 1, 6);
-        if (CurrentDice.Count != count)
+        int maxVal = (int)model.Type;
+
+        // 骰子类型切换（D6 → D20 等）不会改变数量，但旧点数可能超出新骰面的范围
+        // （例如从 D20 切到 D4 后仍留着 17 点），骰面显示与总和都会失真，所以
+        // 类型或数量任一变化都重掷一轮。
+        bool outOfRange = CurrentDice.Any(v => v < 1 || v > maxVal);
+        if (CurrentDice.Count != count || outOfRange)
         {
             CurrentDice.Clear();
-            int maxVal = (int)model.Type;
             for (int i = 0; i < count; i++)
             {
                 CurrentDice.Add(Rnd.Next(1, maxVal + 1));
             }
-            Sum = CurrentDice.Sum();
+            PublishSum(CurrentDice.Sum());
         }
     }
 
@@ -103,7 +108,7 @@ public class DiceViewModel : INotifyPropertyChanged
                     CurrentDice[i] = Rnd.Next(1, maxVal + 1);
                 }
             }
-            Sum = CurrentDice.Sum();
+            PublishSum(CurrentDice.Sum());
             await Task.Delay(40 + frame * 15);
         }
 
@@ -115,10 +120,29 @@ public class DiceViewModel : INotifyPropertyChanged
                 CurrentDice[i] = result.Values[i];
             }
         }
-        Sum = result.Sum;
+        PublishSum(result.Sum);
         IsCriticalMax = result.IsCriticalMax;
 
         IsRolling = false;
+    }
+
+    /// <summary>
+    /// 先写总和，再保证骰面一定重绘。
+    /// <para>
+    /// 骰面值的集合实例从不被替换，而视图只在 Sum / CurrentDice / Model 变更时重绘；两次投掷
+    /// 恰好同和（3+4 → 5+2）时 Sum 不变，骰面就会停在上一轮的点数上——用户看到的正是
+    /// "点数与总和标签对不上"。同和时补发一次 CurrentDice 通知，不同和时由 Sum 的通知完成重绘，
+    /// 每帧只重绘一次。
+    /// </para>
+    /// </summary>
+    private void PublishSum(int newSum)
+    {
+        bool changed = Sum != newSum;
+        Sum = newSum;
+        if (!changed)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(CurrentDice)));
+        }
     }
 
     private void LoadRecentHistory()

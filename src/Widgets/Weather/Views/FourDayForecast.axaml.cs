@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using Avalonia;
 using Avalonia.Controls;
@@ -8,6 +8,7 @@ using DeskCanvas.Core.Interfaces;
 using DeskCanvas.Core.Models;
 using DeskCanvas.Runtime;
 using Weather.Models;
+using Weather.Services;
 using Weather.ViewModels;
 
 namespace Weather.Views;
@@ -45,7 +46,7 @@ public partial class FourDayForecast : UserControl, IFixedSizeWidget, IWidgetSel
 
     private static bool IsZh => System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName.Equals("zh", StringComparison.OrdinalIgnoreCase);
 
-    public FourDayForecast() : this(new ForecastModel(IsZh ? "杭州" : "Hangzhou", 30.2741, 120.1551, "celsius")) {}
+    public FourDayForecast() : this(DefaultLocation.Resolve(fallbackName: IsZh ? "杭州" : "Hangzhou")) {}
 
     /// <summary>
     /// <paramref name="session"/> is injected by WidgetFactory when the host runs the session
@@ -120,7 +121,7 @@ public partial class FourDayForecast : UserControl, IFixedSizeWidget, IWidgetSel
 
     public void Refresh(WidgetLayout layout)
     {
-        var newModel = layout.GetModel<ForecastModel>() ?? new ForecastModel(IsZh ? "杭州" : "Hangzhou", 30.2741, 120.1551, "celsius");
+        var newModel = layout.GetModel<ForecastModel>() ?? DefaultLocation.Resolve(fallbackName: IsZh ? "杭州" : "Hangzhou");
         model = newModel;
         if (viewModel != null)
         {

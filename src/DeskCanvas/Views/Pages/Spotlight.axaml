@@ -1,0 +1,827 @@
+﻿<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="clr-namespace:DeskCanvas.Views.Controls"
+             xmlns:ui="using:DeskCanvas.UI.Controls"
+             xmlns:locales="clr-namespace:DeskCanvas.Locales"
+             xmlns:viewModels="clr-namespace:DeskCanvas.ViewModels"
+             xmlns:sys="using:System"
+             x:Class="DeskCanvas.Views.Pages.Spotlight"
+             x:DataType="viewModels:SpotlightSettingsViewModel">
+    <StackPanel Orientation="Vertical" Spacing="3">
+        <!-- ============ 启用与快捷键 ============ -->
+        <TextBlock FontSize="14" FontWeight="SemiBold" Margin="0 0 0 10"
+                   Text="{x:Static locales:Locale.Settings_Spotlight_Section_General}"/>
+
+        <controls:Setting Icon="{DynamicResource Spotlight}"
+                          Title="{x:Static locales:Locale.Settings_Spotlight_Enable_Title}"
+                          Subtitle="{x:Static locales:Locale.Settings_Spotlight_Enable_Subtitle}">
+            <ToggleSwitch IsChecked="{Binding Enabled}"
+                          AutomationProperties.Name="{x:Static locales:Locale.Settings_Spotlight_Enable_Title}" />
+        </controls:Setting>
+
+        <controls:Setting Icon="{DynamicResource Refresh}"
+                          Title="{x:Static locales:Locale.Settings_Spotlight_Hotkey_Title}"
+                          Subtitle="{x:Static locales:Locale.Settings_Spotlight_Hotkey_Subtitle}">
+            <StackPanel Spacing="6">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <!-- Read-only by design: the gesture is recorded, never typed. Clicking the box
+                         (or the record button) starts capture, and the live registration is
+                         suspended meanwhile so the combination can be pressed at all. -->
+                    <TextBox x:Name="HotkeyBox"
+                             Width="168"
+                             IsReadOnly="True"
+                             Text="{Binding HotkeyText, Mode=OneWay}"
+                             PointerPressed="OnHotkeyBoxPressed"
+                             KeyDown="OnHotkeyKeyDown"
+                             AutomationProperties.Name="{x:Static locales:Locale.Settings_Spotlight_Hotkey_Title}" />
+                    <Button x:Name="RecordButton"
+                            Classes="dc-pill"
+                            Content="{Binding RecordButtonText}"
+                            Click="OnRecordHotkey" />
+                    <Button Classes="dc-pill ghost"
+                            Content="{x:Static locales:Locale.Settings_Spotlight_Hotkey_Reset}"
+                            Click="OnResetHotkey" />
+                    <Button Classes="dc-pill ghost"
+                            Content="{x:Static locales:Locale.Settings_Spotlight_Hotkey_Preview}"
+                            Click="OnPreview" />
+                </StackPanel>
+                <TextBlock Text="{Binding StatusText}"
+                           FontSize="12"
+                           TextWrapping="Wrap"
+                           Foreground="{DynamicResource SecondaryTextBrush}" />
+            </StackPanel>
+        </controls:Setting>
+
+        <!-- 第二种唤出：搜索栏。Same recorder, its own gesture — the two modes are separate
+             surfaces, so one gesture could never choose between them. -->
+        <controls:Setting Icon="{DynamicResource Spotlight}"
+                          Title="{x:Static locales:Locale.Settings_Spotlight_SearchHotkey_Title}"
+                          Subtitle="{x:Static locales:Locale.Settings_Spotlight_SearchHotkey_Subtitle}">
+            <StackPanel Spacing="8">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <TextBox x:Name="SearchHotkeyBox"
+                             Width="168"
+                             IsReadOnly="True"
+                             Text="{Binding SearchHotkeyText, Mode=OneWay}"
+                             PointerPressed="OnSearchHotkeyBoxPressed"
+                             KeyDown="OnSearchHotkeyKeyDown"
+                             AutomationProperties.Name="{x:Static locales:Locale.Settings_Spotlight_SearchHotkey_Title}" />
+                    <Button x:Name="SearchRecordButton"
+                            Classes="dc-pill"
+                            Content="{Binding SearchRecordButtonText}"
+                            Click="OnRecordSearchHotkey" />
+                    <Button Classes="dc-pill ghost"
+                            Content="{x:Static locales:Locale.Settings_Spotlight_Hotkey_Reset}"
+                            Click="OnResetSearchHotkey" />
+                </StackPanel>
+                <TextBlock Text="{Binding SearchStatusText}"
+                           FontSize="12"
+                           TextWrapping="Wrap"
+                           Foreground="{DynamicResource SecondaryTextBrush}" />
+            </StackPanel>
+        </controls:Setting>
+
+        <!-- ============ 黑名单 ============ -->
+        <TextBlock FontSize="14" FontWeight="SemiBold" Margin="0 20 0 10"
+                   Text="{x:Static locales:Locale.Settings_Spotlight_Section_Blacklist}"/>
+
+        <controls:Setting Icon="{DynamicResource Lock}"
+                          Title="{x:Static locales:Locale.Settings_Spotlight_BlockFullscreen_Title}"
+                          Subtitle="{x:Static locales:Locale.Settings_Spotlight_BlockFullscreen_Subtitle}">
+            <ToggleSwitch IsChecked="{Binding BlockFullscreen}"
+                          AutomationProperties.Name="{x:Static locales:Locale.Settings_Spotlight_BlockFullscreen_Title}" />
+        </controls:Setting>
+
+        <controls:Setting Icon="{DynamicResource Lock}"
+                          Title="{x:Static locales:Locale.Settings_Spotlight_Blacklist_Title}"
+                          Subtitle="{x:Static locales:Locale.Settings_Spotlight_Blacklist_Subtitle}">
+            <StackPanel Spacing="8">
+                <Grid ColumnDefinitions="*,Auto">
+                    <TextBox x:Name="ProcessBox"
+                             PlaceholderText="{x:Static locales:Locale.Settings_Spotlight_Blacklist_AddPlaceholder}"
+                             AutomationProperties.Name="{x:Static locales:Locale.Settings_Spotlight_Blacklist_AddPlaceholder}" />
+                    <Button Grid.Column="1"
+                            Classes="dc-pill"
+                            Margin="8,0,0,0"
+                            Content="{x:Static locales:Locale.Settings_Spotlight_Blacklist_Add}"
+                            Click="OnAddManualProcess" />
+                </Grid>
+                <Button Classes="dc-pill ghost"
+                        HorizontalAlignment="Left"
+                        Content="{x:Static locales:Locale.Settings_Spotlight_Blacklist_AddCurrent}"
+                        Click="OnPickProcesses" />
+            </StackPanel>
+        </controls:Setting>
+
+        <TextBlock Text="{x:Static locales:Locale.Settings_Spotlight_Blacklist_Empty}"
+                   IsVisible="{Binding IsBlacklistEmpty}"
+                   FontSize="12"
+                   Margin="4,6,0,0"
+                   Foreground="{DynamicResource SecondaryTextBrush}" />
+
+        <ItemsControl ItemsSource="{Binding Blacklist}" Margin="0,4,0,0">
+            <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="sys:String">
+                    <Border Classes="dc-inner-card" Margin="0 2" Padding="12 6">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <TextBlock Text="{Binding}"
+                                       VerticalAlignment="Center"
+                                       FontSize="13" />
+                            <Button Grid.Column="1"
+                                    Classes="dc-icon-button compact"
+                                    Click="OnRemoveProcess"
+                                    ToolTip.Tip="{x:Static locales:Locale.Settings_Spotlight_Blacklist_Remove}">
+                                <!-- Vector glyph: emoji / dingbats are banned as functional icons. -->
+                                <Path Data="M4,4 L10,10 M10,4 L4,10"
+                                      Width="10" Height="10"
+                                      Stretch="Uniform"
+                                      Stroke="{DynamicResource SecondaryTextBrush}"
+                                      StrokeThickness="1.6"
+                                      StrokeLineCap="Round" />
+                            </Button>
+                        </Grid>
+                    </Border>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
+
+        <!-- ============ 搜索范围 ============ -->
+        <TextBlock FontSize="14" FontWeight="SemiBold" Margin="0 20 0 10"
+                   Text="{x:Static locales:Locale.Settings_Spotlight_Section_Scope}"/>
+
+        <controls:Setting Icon="{DynamicResource Layers}"
+                          Title="{x:Static locales:Locale.Settings_Spotlight_Folder_Title}"
+                          Subtitle="{x:Static locales:Locale.Settings_Spotlight_Folder_Subtitle}">
+            <StackPanel Spacing="6">
+                <TextBlock Text="{Binding FolderPath}"
+                           FontSize="12"
+                           TextWrapping="Wrap"
+                           Foreground="{DynamicResource SecondaryTextBrush}" />
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <Button Classes="dc-pill"
+                            Content="{x:Static locales:Locale.Settings_Spotlight_Folder_Open}"
+                            Click="OnOpenFolder" />
+                    <Button Classes="dc-pill ghost"
+                            Content="{x:Static locales:Locale.Settings_Spotlight_Folder_Change}"
+                            Click="OnChangeFolder" />
+                </StackPanel>
+            </StackPanel>
+        </controls:Setting>
+
+        <controls:Setting Icon="{DynamicResource WidgetSize}"
+                          Title="{x:Static locales:Locale.Settings_Spotlight_Columns_Title}"
+                          Subtitle="{x:Static locales:Locale.Settings_Spotlight_Columns_Subtitle}">
+            <ui:LabeledSlider Width="264" Margin="14 0 0 0"
+                              Minimum="3" Maximum="12" Step="1"
+                              ShowEditableValue="True" DisplayFormat="F0"
+                              Value="{Binding Columns}"
+                              ValueCommitted="OnGridMetricsCommitted"
+                              AutomationProperties.Name="{x:Static locales:Locale.Settings_Spotlight_Columns_Title}" />
+        </controls:Setting>
+
+        <!-- 应用排序: the grid's order. Pinned tiles stay in front in every mode, so this is a
+             preference about the rest of the grid, not a way to unpin anything. -->
+        <controls:Setting Icon="{DynamicResource Sort}"
+                          Title="{x:Static locales:Locale.Settings_Spotlight_Sort_Title}"
+                          Subtitle="{x:Static locales:Locale.Settings_Spotlight_Sort_Subtitle}">
+            <ComboBox ItemsSource="{Binding SortOptions}"
+                      SelectedItem="{Binding SelectedSort}"
+                      MinWidth="150"
+                      AutomationProperties.Name="{x:Static locales:Locale.Settings_Spotlight_Sort_Title}">
+                <ComboBox.ItemTemplate>
+                    <DataTemplate DataType="viewModels:LauncherSortOption">
+                        <TextBlock Text="{Binding Label}" Margin="0 4" />
+                    </DataTemplate>
+                </ComboBox.ItemTemplate>
+            </ComboBox>
+        </controls:Setting>
+
+        <controls:Setting Icon="{DynamicResource WidgetSize}"
+                          Title="{x:Static locales:Locale.Settings_Spotlight_Height_Title}"
+                          Subtitle="{x:Static locales:Locale.Settings_Spotlight_Height_Subtitle}">
+            <ui:LabeledSlider Width="264" Margin="14 0 0 0"
+                              Minimum="320" Maximum="1200" Step="10"
+                              ShowEditableValue="True" DisplayFormat="F0" Unit=" px"
+                              Value="{Binding Height}"
+                              ValueCommitted="OnGridMetricsCommitted"
+                              AutomationProperties.Name="{x:Static locales:Locale.Settings_Spotlight_Height_Title}" />
+        </controls:Setting>
+
+        <controls:Setting Icon="{DynamicResource WidgetSize}"
+                          Title="{x:Static locales:Locale.Settings_Spotlight_Gap_Title}"
+                          Subtitle="{x:Static locales:Locale.Settings_Spotlight_Gap_Subtitle}">
+            <StackPanel Spacing="4">
+                <ui:LabeledSlider Width="264" Margin="14 0 0 0"
+                                  Minimum="0" Maximum="45" Step="1"
+                                  ShowEditableValue="True" DisplayFormat="F0" Unit="%"
+                                  Value="{Binding GapPercent}"
+                                  ValueCommitted="OnGridMetricsCommitted"
+                                  AutomationProperties.Name="{x:Static locales:Locale.Settings_Spotlight_Gap_Title}" />
+                <!-- The icon size is derived, so this line is the only place it can be read. -->
+                <TextBlock Text="{Binding GapPreview}"
+                           Margin="14 0 0 0"
+                           FontSize="12"
+                           Foreground="{DynamicResource SecondaryTextBrush}" />
+            </StackPanel>
+        </controls:Setting>
+
+        <controls:Setting Icon="{DynamicResource WidgetSize}"
+                          Title="{x:Static locales:Locale.Settings_Spotlight_RowGap_Title}"
+                          Subtitle="{x:Static locales:Locale.Settings_Spotlight_RowGap_Subtitle}">
+            <ui:LabeledSlider Width="264" Margin="14 0 0 0"
+                              Minimum="0" Maximum="60" Step="1"
+                              ShowEditableValue="True" DisplayFormat="F0" Unit="%"
+                              Value="{Binding RowGapPercent}"
+                              ValueCommitted="OnGridMetricsCommitted"
+                              AutomationProperties.Name="{x:Static locales:Locale.Settings_Spotlight_RowGap_Title}" />
+        </controls:Setting>
+
+        <controls:Setting Icon="{DynamicResource Layers}"
+                          Title="{x:Static locales:Locale.Settings_Spotlight_Names_Title}"
+                          Subtitle="{x:Static locales:Locale.Settings_Spotlight_Names_Subtitle}">
+            <ToggleSwitch IsChecked="{Binding ShowNames}"
+                          AutomationProperties.Name="{x:Static locales:Locale.Settings_Spotlight_Names_Title}" />
+        </controls:Setting>
+
+        <!-- 名称行数: the label box every tile reserves. It is what keeps the icons of a row on one
+             baseline, so it belongs right next to 显示名称 and is disabled with it. -->
+        <controls:Setting Icon="{DynamicResource Layers}"
+                          Title="{x:Static locales:Locale.Settings_Spotlight_NameLines_Title}"
+                          Subtitle="{x:Static locales:Locale.Settings_Spotlight_NameLines_Subtitle}"
+                          IsEnabled="{Binding ShowNames}">
+            <ui:LabeledSlider Width="264" Margin="14 0 0 0"
+                              Minimum="1" Maximum="3" Step="1"
+                              ShowEditableValue="True" DisplayFormat="F0"
+                              Value="{Binding NameLines}"
+                              ValueCommitted="OnGridMetricsCommitted"
+                              AutomationProperties.Name="{x:Static locales:Locale.Settings_Spotlight_NameLines_Title}" />
+        </controls:Setting>
+
+        <!-- ============ 结果行为 ============ -->
+        <TextBlock FontSize="14" FontWeight="SemiBold" Margin="0 20 0 10"
+                   Text="{x:Static locales:Locale.Settings_Spotlight_Section_Results}"/>
+
+        <controls:Setting Icon="{DynamicResource Spotlight}"
+                          Title="{x:Static locales:Locale.Settings_Spotlight_Files_Title}"
+                          Subtitle="{x:Static locales:Locale.Settings_Spotlight_Files_Subtitle}">
+            <ToggleSwitch IsChecked="{Binding FileSearch}"
+                          AutomationProperties.Name="{x:Static locales:Locale.Settings_Spotlight_Files_Title}" />
+        </controls:Setting>
+
+        <controls:Setting Icon="{DynamicResource Spotlight}"
+                          Title="{x:Static locales:Locale.Settings_Spotlight_Files_AutoStart_Title}"
+                          Subtitle="{x:Static locales:Locale.Settings_Spotlight_Files_AutoStart_Subtitle}"
+                          IsEnabled="{Binding IsFileSearchEnabled}">
+            <ToggleSwitch IsChecked="{Binding AutoStartEverything}"
+                          AutomationProperties.Name="{x:Static locales:Locale.Settings_Spotlight_Files_AutoStart_Title}" />
+        </controls:Setting>
+
+        <controls:Setting Icon="{DynamicResource Refresh}"
+                          Title="{x:Static locales:Locale.Settings_Spotlight_Files_Engine_Title}"
+                          Subtitle="{Binding FileSearchStatusText}"
+                          IsEnabled="{Binding IsFileSearchEnabled}">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+                <Button Classes="dc-pill"
+                        Content="{x:Static locales:Locale.Settings_Spotlight_Files_Start}"
+                        IsVisible="{Binding CanStartEverything}"
+                        Click="OnStartEverything" />
+                <Button Classes="dc-pill ghost"
+                        Content="{x:Static locales:Locale.Settings_Spotlight_Files_Refresh}"
+                        Click="OnRefreshIndex" />
+            </StackPanel>
+        </controls:Setting>
+
+        <controls:Setting Icon="{DynamicResource Spotlight}"
+                          Title="{x:Static locales:Locale.Settings_Spotlight_Recent_Title}"
+                          Subtitle="{x:Static locales:Locale.Settings_Spotlight_Recent_Subtitle}">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+                <ToggleSwitch IsChecked="{Binding RecentApps}"
+                              AutomationProperties.Name="{x:Static locales:Locale.Settings_Spotlight_Recent_Title}" />
+                <Button Classes="dc-pill ghost"
+                        VerticalContentAlignment="Center"
+                        Content="{x:Static locales:Locale.Settings_Spotlight_Recent_Clear}"
+                        Click="OnClearUsage" />
+            </StackPanel>
+        </controls:Setting>
+
+        <TextBlock Text="{Binding RecentStatusText}"
+                   IsVisible="{Binding HasRecentStatus}"
+                   FontSize="12"
+                   Margin="4,0,0,6"
+                   Foreground="{DynamicResource SecondaryTextBrush}" />
+
+        <controls:Setting Icon="{DynamicResource Appearance}"
+                          Title="{x:Static locales:Locale.Settings_Spotlight_Preview_Title}"
+                          Subtitle="{x:Static locales:Locale.Settings_Spotlight_Preview_Subtitle}">
+            <ToggleSwitch IsChecked="{Binding PreviewBar}"
+                          AutomationProperties.Name="{x:Static locales:Locale.Settings_Spotlight_Preview_Title}" />
+        </controls:Setting>
+
+        <!-- 打开动画: on by default; off makes the summon instantaneous. -->
+        <controls:Setting Icon="{DynamicResource Appearance}"
+                          Title="{x:Static locales:Locale.Settings_Spotlight_Animation_Title}"
+                          Subtitle="{x:Static locales:Locale.Settings_Spotlight_Animation_Subtitle}">
+            <ToggleSwitch IsChecked="{Binding AnimateSummon}"
+                          AutomationProperties.Name="{x:Static locales:Locale.Settings_Spotlight_Animation_Title}" />
+        </controls:Setting>
+
+        <!-- ============ 网页搜索 ============ -->
+        <!-- The launcher's own web row: same idea as the 搜索 component (an engine, a query, the
+             browser), except it answers "I typed something here and want to keep going" instead of
+             needing a second widget on the desktop. Engine and browser are two settings because they
+             are two independent choices — 默认浏览器 is the value that keeps the second one open. -->
+        <TextBlock FontSize="14" FontWeight="SemiBold" Margin="0 20 0 10"
+                   Text="{x:Static locales:Locale.Settings_Spotlight_Section_Web}"/>
+
+        <controls:Setting Icon="{DynamicResource Spotlight}"
+                          Title="{x:Static locales:Locale.Settings_Spotlight_Web_Enable_Title}"
+                          Subtitle="{x:Static locales:Locale.Settings_Spotlight_Web_Enable_Subtitle}">
+            <ToggleSwitch IsChecked="{Binding WebSearch}"
+                          AutomationProperties.Name="{x:Static locales:Locale.Settings_Spotlight_Web_Enable_Title}" />
+        </controls:Setting>
+
+        <controls:Setting Icon="{DynamicResource Spotlight}"
+                          Title="{x:Static locales:Locale.Settings_Spotlight_Web_Engine_Title}"
+                          Subtitle="{x:Static locales:Locale.Settings_Spotlight_Web_Engine_Subtitle}"
+                          IsEnabled="{Binding IsWebSearchEnabled}">
+            <ComboBox ItemsSource="{Binding WebEngineOptions}"
+                      SelectedItem="{Binding SelectedWebEngine}"
+                      MinWidth="150"
+                      AutomationProperties.Name="{x:Static locales:Locale.Settings_Spotlight_Web_Engine_Title}">
+                <ComboBox.ItemTemplate>
+                    <DataTemplate DataType="viewModels:LauncherWebEngineOption">
+                        <TextBlock Text="{Binding Label}" Margin="0 4" />
+                    </DataTemplate>
+                </ComboBox.ItemTemplate>
+            </ComboBox>
+        </controls:Setting>
+
+        <!-- 自定义地址: only while 自定义… is the engine. The box is never corrected silently —
+             a template that cannot carry the query is reported under it instead. -->
+        <controls:Setting Icon="{DynamicResource Spotlight}"
+                          Title="{x:Static locales:Locale.Settings_Spotlight_Web_Custom_Title}"
+                          Subtitle="{x:Static locales:Locale.Settings_Spotlight_Web_Custom_Subtitle}"
+                          IsVisible="{Binding IsCustomWebEngine}"
+                          IsEnabled="{Binding IsWebSearchEnabled}">
+            <StackPanel Spacing="4">
+                <!-- LostFocus, not per keystroke: every write here rewrites the settings file and
+                     wakes every DataChanged subscriber (theme, hotkeys, the launcher's own query).
+                     A typo is not worth dozens of those. -->
+                <TextBox Text="{Binding SearchEngineUrl, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
+                         MinWidth="300"
+                         PlaceholderText="{x:Static locales:Locale.Settings_Spotlight_Web_Custom_Placeholder}"
+                         AutomationProperties.Name="{x:Static locales:Locale.Settings_Spotlight_Web_Custom_Title}" />
+                <TextBlock Text="{Binding WebTemplateError}"
+                           IsVisible="{Binding HasWebTemplateError}"
+                           FontSize="12"
+                           TextWrapping="Wrap"
+                           Foreground="{DynamicResource ValidationErrorBrush}" />
+            </StackPanel>
+        </controls:Setting>
+
+        <controls:Setting Icon="{DynamicResource Spotlight}"
+                          Title="{x:Static locales:Locale.Settings_Spotlight_Web_Browser_Title}"
+                          Subtitle="{x:Static locales:Locale.Settings_Spotlight_Web_Browser_Subtitle}"
+                          IsEnabled="{Binding IsWebSearchEnabled}">
+            <ComboBox ItemsSource="{Binding WebBrowserOptions}"
+                      SelectedItem="{Binding SelectedWebBrowser}"
+                      MinWidth="180"
+                      AutomationProperties.Name="{x:Static locales:Locale.Settings_Spotlight_Web_Browser_Title}">
+                <ComboBox.ItemTemplate>
+                    <DataTemplate DataType="viewModels:LauncherBrowserOption">
+                        <TextBlock Text="{Binding Label}" Margin="0 4" />
+                    </DataTemplate>
+                </ComboBox.ItemTemplate>
+            </ComboBox>
+        </controls:Setting>
+
+        <!-- Inline hits: the launcher lists the engine's own answers under the action row. 0 is a
+             real choice (no request leaves the machine), so the slider starts there. -->
+        <controls:Setting Icon="{DynamicResource Spotlight}"
+                          Title="{x:Static locales:Locale.Settings_Spotlight_Web_Results_Title}"
+                          Subtitle="{x:Static locales:Locale.Settings_Spotlight_Web_Results_Subtitle}"
+                          IsEnabled="{Binding IsWebSearchEnabled}">
+            <ui:LabeledSlider Width="264" Margin="14 0 0 0"
+                              Minimum="0" Maximum="10" Step="1"
+                              ShowEditableValue="True" DisplayFormat="F0"
+                              Value="{Binding WebResultCount}"
+                              ValueCommitted="OnWebResultCountCommitted"
+                              AutomationProperties.Name="{x:Static locales:Locale.Settings_Spotlight_Web_Results_Title}" />
+        </controls:Setting>
+
+        <!-- What Enter would actually do, spelled out: the two choices only meet in the address,
+             and this line is the only place to see them meet without opening the launcher. -->
+        <TextBlock Text="{Binding WebPreviewText}"
+                   IsVisible="{Binding IsWebSearchEnabled}"
+                   FontSize="12"
+                   Margin="4,0,0,6"
+                   TextWrapping="Wrap"
+                   Foreground="{DynamicResource SecondaryTextBrush}" />
+
+        <!-- ============ 类别快捷键 ============ -->
+        <!-- Folded: the chips already work without a single key bound, and seven rows of recorders
+             are the longest block on this page. Same fold as 应用主题 › 液态玻璃 (CollapsibleSection). -->
+        <controls:CollapsibleSection Margin="0 20 0 6"
+                                     Header="{x:Static locales:Locale.Settings_Spotlight_Section_CategoryKeys}"
+                                     IsExpanded="{Binding CategoryKeysExpanded}">
+            <controls:CollapsibleSection.SectionContent>
+                <StackPanel Spacing="3">
+                    <TextBlock Text="{x:Static locales:Locale.Settings_Spotlight_CategoryKeys_Desc}"
+                            FontSize="12"
+                            Margin="4,4,0,10"
+                            TextWrapping="Wrap"
+                            Foreground="{DynamicResource SecondaryTextBrush}" />
+
+                    <ItemsControl ItemsSource="{Binding CategoryKeys}" Margin="0,4,0,0">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="viewModels:CategoryKeyRowViewModel">
+                                <Border Classes="dc-inner-card" Margin="0 2" Padding="12 6">
+                                    <StackPanel Spacing="4">
+                                        <Grid ColumnDefinitions="Auto,Auto,*,Auto,Auto,Auto">
+                                            <!-- 排序: the chip order. 全部 is nailed to the front (its
+                                                 arrows stay disabled) — it is "no filter", not a
+                                                 category of results. -->
+                                            <Button Classes="dc-icon-button compact"
+                                                    VerticalAlignment="Center"
+                                                    IsEnabled="{Binding CanMoveUp}"
+                                                    Click="OnMoveCategoryUp"
+                                                    ToolTip.Tip="{x:Static locales:Locale.Settings_Spotlight_CategoryKeys_MoveUp}">
+                                                <Path Data="M2,7 L5,3 L8,7"
+                                                      Width="11" Height="11"
+                                                      Stretch="Uniform"
+                                                      Stroke="{DynamicResource SecondaryTextBrush}"
+                                                      StrokeThickness="1.8"
+                                                      StrokeLineCap="Round"
+                                                      StrokeJoin="Round" />
+                                            </Button>
+                                            <Button Grid.Column="1"
+                                                    Classes="dc-icon-button compact"
+                                                    VerticalAlignment="Center"
+                                                    IsEnabled="{Binding CanMoveDown}"
+                                                    Click="OnMoveCategoryDown"
+                                                    ToolTip.Tip="{x:Static locales:Locale.Settings_Spotlight_CategoryKeys_MoveDown}">
+                                                <Path Data="M2,3 L5,7 L8,3"
+                                                      Width="11" Height="11"
+                                                      Stretch="Uniform"
+                                                      Stroke="{DynamicResource SecondaryTextBrush}"
+                                                      StrokeThickness="1.8"
+                                                      StrokeLineCap="Round"
+                                                      StrokeJoin="Round" />
+                                            </Button>
+                                            <TextBlock Grid.Column="2"
+                                                       Text="{Binding Label}"
+                                                       Margin="2,0,0,0"
+                                                       VerticalAlignment="Center"
+                                                       FontSize="13"
+                                                       TextTrimming="CharacterEllipsis" />
+                                            <!-- Read-only by design: the gesture is recorded, never typed.
+                                                 Clicking the box (or 录制) starts capture; Escape cancels. -->
+                                            <TextBox Grid.Column="3"
+                                                     Width="110"
+                                                     Margin="8,0,0,0"
+                                                     IsReadOnly="True"
+                                                     Text="{Binding DisplayText, Mode=OneWay}"
+                                                     PointerPressed="OnCategoryKeyBoxPressed"
+                                                     KeyDown="OnCategoryKeyDown"
+                                                     AutomationProperties.Name="{Binding Label}" />
+                                            <Button Grid.Column="4"
+                                                    Classes="dc-pill ghost"
+                                                    Margin="8,0,0,0"
+                                                    Content="{x:Static locales:Locale.Settings_Spotlight_CategoryKeys_Record}"
+                                                    Click="OnRecordCategoryKey" />
+                                            <Button Grid.Column="5"
+                                                    Classes="dc-icon-button compact"
+                                                    Margin="8,0,0,0"
+                                                    Click="OnClearCategoryKey"
+                                                    ToolTip.Tip="{x:Static locales:Locale.Settings_Spotlight_CategoryKeys_Clear}">
+                                                <Path Data="M4,4 L10,10 M10,4 L4,10"
+                                                      Width="10" Height="10"
+                                                      Stretch="Uniform"
+                                                      Stroke="{DynamicResource SecondaryTextBrush}"
+                                                      StrokeThickness="1.6"
+                                                      StrokeLineCap="Round" />
+                                            </Button>
+                                        </Grid>
+                                        <TextBlock Text="{Binding Error}"
+                                                   IsVisible="{Binding HasError}"
+                                                   FontSize="12"
+                                                   TextWrapping="Wrap"
+                                                   Foreground="{DynamicResource ValidationErrorBrush}" />
+                                    </StackPanel>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <Button Classes="dc-pill ghost"
+                            HorizontalAlignment="Left"
+                            Margin="4,8,0,0"
+                            Content="{x:Static locales:Locale.Settings_Spotlight_CategoryKeys_Reset}"
+                            Click="OnResetCategoryKeys" />
+                </StackPanel>
+            </controls:CollapsibleSection.SectionContent>
+        </controls:CollapsibleSection>
+
+        <!-- ============ 剪贴板 ============ -->
+        <TextBlock FontSize="14" FontWeight="SemiBold" Margin="0 20 0 10"
+                   Text="{x:Static locales:Locale.Settings_Spotlight_Section_Clipboard}"/>
+
+        <controls:Setting Icon="{DynamicResource Layers}"
+                          Title="{x:Static locales:Locale.Settings_Spotlight_Clipboard_Title}"
+                          Subtitle="{x:Static locales:Locale.Settings_Spotlight_Clipboard_Subtitle}">
+            <ToggleSwitch IsChecked="{Binding ClipboardHistory}"
+                          AutomationProperties.Name="{x:Static locales:Locale.Settings_Spotlight_Clipboard_Title}" />
+        </controls:Setting>
+
+        <StackPanel Orientation="Horizontal" Spacing="8" Margin="4,0,0,6">
+            <TextBlock Text="{Binding ClipboardCountText}"
+                       FontSize="12"
+                       VerticalAlignment="Center"
+                       Foreground="{DynamicResource SecondaryTextBrush}" />
+            <Button Classes="dc-pill ghost"
+                    Content="{x:Static locales:Locale.Settings_Spotlight_Clipboard_Clear}"
+                    Click="OnClearClipboard" />
+            <TextBlock Text="{Binding ClipboardStatusText}"
+                       IsVisible="{Binding HasClipboardStatus}"
+                       FontSize="12"
+                       VerticalAlignment="Center"
+                       Foreground="{DynamicResource SecondaryTextBrush}" />
+        </StackPanel>
+
+        <controls:Setting Icon="{DynamicResource WidgetSize}"
+                          Title="{x:Static locales:Locale.Settings_Spotlight_Clipboard_Retention_Title}"
+                          Subtitle="{x:Static locales:Locale.Settings_Spotlight_Clipboard_Retention_Subtitle}">
+            <ui:LabeledSlider Width="264" Margin="14 0 0 0"
+                              Minimum="1" Maximum="30" Step="1"
+                              ShowEditableValue="True" DisplayFormat="F0"
+                              Unit="{Binding ClipboardRetentionUnit}"
+                              Value="{Binding ClipboardRetentionDays}"
+                              ValueCommitted="OnClipboardRetentionCommitted"
+                              AutomationProperties.Name="{x:Static locales:Locale.Settings_Spotlight_Clipboard_Retention_Title}" />
+        </controls:Setting>
+
+        <controls:Setting Icon="{DynamicResource Lock}"
+                          Title="{x:Static locales:Locale.Settings_Spotlight_Clipboard_Excluded_Title}"
+                          Subtitle="{x:Static locales:Locale.Settings_Spotlight_Clipboard_Excluded_Subtitle}">
+            <Grid ColumnDefinitions="*,Auto">
+                <TextBox x:Name="ClipboardExcludedBox"
+                         PlaceholderText="{x:Static locales:Locale.Settings_Spotlight_Clipboard_Excluded_AddPlaceholder}"
+                         AutomationProperties.Name="{x:Static locales:Locale.Settings_Spotlight_Clipboard_Excluded_AddPlaceholder}" />
+                <Button Grid.Column="1"
+                        Classes="dc-pill"
+                        Margin="8,0,0,0"
+                        Content="{x:Static locales:Locale.Settings_Spotlight_Clipboard_Excluded_Add}"
+                        Click="OnAddClipboardExclusion" />
+            </Grid>
+        </controls:Setting>
+
+        <TextBlock Text="{x:Static locales:Locale.Settings_Spotlight_Clipboard_Excluded_Empty}"
+                   IsVisible="{Binding IsClipboardExcludedEmpty}"
+                   FontSize="12"
+                   Margin="4,6,0,0"
+                   Foreground="{DynamicResource SecondaryTextBrush}" />
+
+        <ItemsControl ItemsSource="{Binding ClipboardExcluded}" Margin="0,4,0,0">
+            <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="sys:String">
+                    <Border Classes="dc-inner-card" Margin="0 2" Padding="12 6">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <TextBlock Text="{Binding}"
+                                       VerticalAlignment="Center"
+                                       FontSize="13" />
+                            <Button Grid.Column="1"
+                                    Classes="dc-icon-button compact"
+                                    Click="OnRemoveClipboardExclusion"
+                                    ToolTip.Tip="{x:Static locales:Locale.Settings_Spotlight_Clipboard_Excluded_Remove}">
+                                <Path Data="M4,4 L10,10 M10,4 L4,10"
+                                      Width="10" Height="10"
+                                      Stretch="Uniform"
+                                      Stroke="{DynamicResource SecondaryTextBrush}"
+                                      StrokeThickness="1.6"
+                                      StrokeLineCap="Round" />
+                            </Button>
+                        </Grid>
+                    </Border>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
+
+        <!-- ============ 外观（独立于全局主题） ============ -->
+        <TextBlock FontSize="14" FontWeight="SemiBold" Margin="0 20 0 10"
+                   Text="{x:Static locales:Locale.Settings_Spotlight_Section_Appearance}"/>
+
+        <controls:Setting Icon="{DynamicResource Appearance}"
+                          Title="{x:Static locales:Locale.Settings_Spotlight_Appearance_Theme_Title}"
+                          Subtitle="{x:Static locales:Locale.Settings_Spotlight_Appearance_Theme_Subtitle}">
+            <ToggleSwitch IsChecked="{Binding UseGlobalTheme}"
+                          AutomationProperties.Name="{x:Static locales:Locale.Settings_Spotlight_Appearance_Theme_Title}" />
+        </controls:Setting>
+
+        <controls:Setting Icon="{DynamicResource Appearance}"
+                          Title="{x:Static locales:Locale.Settings_Spotlight_Appearance_Surface_Title}"
+                          Subtitle="{x:Static locales:Locale.Settings_Spotlight_Appearance_Surface_Subtitle}"
+                          IsVisible="{Binding IsAppearanceOverridden}">
+            <ComboBox ItemsSource="{Binding SurfaceOptions}"
+                      SelectedItem="{Binding SelectedSurface}"
+                      MinWidth="150">
+                <ComboBox.ItemTemplate>
+                    <DataTemplate DataType="viewModels:LauncherSurfaceOption">
+                        <TextBlock Text="{Binding Label}" Margin="0 4" />
+                    </DataTemplate>
+                </ComboBox.ItemTemplate>
+            </ComboBox>
+        </controls:Setting>
+
+        <controls:Setting Icon="{DynamicResource Appearance}"
+                          Title="{x:Static locales:Locale.Settings_Spotlight_Appearance_DarkMode_Title}"
+                          Subtitle="{x:Static locales:Locale.Settings_Spotlight_Appearance_DarkMode_Subtitle}"
+                          IsVisible="{Binding IsAppearanceOverridden}">
+            <ComboBox ItemsSource="{Binding DarkModeOptions}"
+                      SelectedItem="{Binding SelectedDarkMode}"
+                      MinWidth="150">
+                <ComboBox.ItemTemplate>
+                    <DataTemplate DataType="viewModels:LauncherDarkModeOption">
+                        <TextBlock Text="{Binding Label}" Margin="0 4" />
+                    </DataTemplate>
+                </ComboBox.ItemTemplate>
+            </ComboBox>
+        </controls:Setting>
+
+        <controls:Setting Icon="{DynamicResource Appearance}"
+                          Title="{x:Static locales:Locale.Settings_Spotlight_Appearance_Opacity_Title}"
+                          Subtitle="{x:Static locales:Locale.Settings_Spotlight_Appearance_Opacity_Subtitle}"
+                          IsVisible="{Binding IsAppearanceOverridden}">
+            <ui:LabeledSlider Width="264" Margin="14 0 0 0"
+                              Minimum="0" Maximum="100" Step="1"
+                              ShowEditableValue="True" DisplayFormat="F0" Unit="%"
+                              Value="{Binding OpacityPercent}"
+                              ValueCommitted="OnAppearanceCommitted"
+                              AutomationProperties.Name="{x:Static locales:Locale.Settings_Spotlight_Appearance_Opacity_Title}" />
+        </controls:Setting>
+
+        <controls:Setting Icon="{DynamicResource Appearance}"
+                          Title="{x:Static locales:Locale.Settings_Spotlight_Appearance_Radius_Title}"
+                          Subtitle="{x:Static locales:Locale.Settings_Spotlight_Appearance_Radius_Subtitle}">
+            <StackPanel Spacing="6">
+                <ui:LabeledSlider Width="264" Margin="14 0 0 0"
+                                  Minimum="0" Maximum="100" Step="1"
+                                  ShowEditableValue="True" DisplayFormat="F0" Unit=" px"
+                                  IsEnabled="{Binding IsCornerRadiusEditable}"
+                                  Value="{Binding CornerRadius}"
+                                  ValueCommitted="OnAppearanceCommitted"
+                                  AutomationProperties.Name="{x:Static locales:Locale.Settings_Spotlight_Appearance_Radius_Title}" />
+                <CheckBox Content="{x:Static locales:Locale.Settings_Spotlight_Appearance_Radius_Follow}"
+                          IsChecked="{Binding FollowWidgetRadius}"
+                          ToolTip.Tip="{x:Static locales:Locale.Settings_Spotlight_Appearance_Radius_Follow_Subtitle}" />
+            </StackPanel>
+        </controls:Setting>
+
+        <!-- 背景色: its own follow switch, and one colour per mode. The pair is resolved against
+             the launcher's OWN light/dark mode (明暗模式 above), so a launcher pinned dark takes the
+             dark colour even while the rest of the app is light. -->
+        <controls:Setting Icon="{DynamicResource Color}"
+                          Title="{x:Static locales:Locale.Settings_Spotlight_Background_Title}"
+                          Subtitle="{x:Static locales:Locale.Settings_Spotlight_Background_Subtitle}">
+            <StackPanel Spacing="8" VerticalAlignment="Center">
+                <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Right">
+                    <TextBlock MinWidth="46" VerticalAlignment="Center"
+                               Text="{x:Static locales:Locale.Settings_Spotlight_Background_Light}" />
+                    <controls:ColorInput x:Name="BackgroundLightInput"
+                                         Value="{Binding BackgroundColorLight}"
+                                         AllowEmpty="True"
+                                         ColorFormat="Rgb"
+                                         AlphaPolicy="ForceOpaque"
+                                         IsEnabled="{Binding IsBackgroundColorEditable}"
+                                         AutomationProperties.Name="{x:Static locales:Locale.Settings_Spotlight_Background_Light}" />
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Right">
+                    <TextBlock MinWidth="46" VerticalAlignment="Center"
+                               Text="{x:Static locales:Locale.Settings_Spotlight_Background_Dark}" />
+                    <controls:ColorInput x:Name="BackgroundDarkInput"
+                                         Value="{Binding BackgroundColorDark}"
+                                         AllowEmpty="True"
+                                         ColorFormat="Rgb"
+                                         AlphaPolicy="ForceOpaque"
+                                         IsEnabled="{Binding IsBackgroundColorEditable}"
+                                         AutomationProperties.Name="{x:Static locales:Locale.Settings_Spotlight_Background_Dark}" />
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Spacing="12" HorizontalAlignment="Right">
+                    <TextBlock x:Name="BackgroundHintText"
+                               Text="{Binding BackgroundColorHint}"
+                               FontSize="12"
+                               VerticalAlignment="Center"
+                               Foreground="{DynamicResource SecondaryTextBrush}" />
+                    <ToggleSwitch IsChecked="{Binding FollowGlobalBackground}"
+                                  OnContent="{x:Static locales:Locale.Settings_Spotlight_Background_Follow}"
+                                  OffContent="{x:Static locales:Locale.Settings_Spotlight_Background_Follow}" />
+                </StackPanel>
+            </StackPanel>
+        </controls:Setting>
+
+        <!-- ============ 液态玻璃（聚焦搜索自己的采样管线） ============ -->
+        <!-- Folded exactly like 应用主题 › 液态玻璃: the launcher works out of the box on the defaults,
+             and these eight rows are tuning knobs. -->
+        <controls:CollapsibleSection IsVisible="{Binding IsGlassSectionVisible}"
+                                     Margin="0 20 0 6"
+                                     Header="{x:Static locales:Locale.Settings_Spotlight_Section_Glass}"
+                                     IsExpanded="{Binding GlassSectionExpanded}">
+            <controls:CollapsibleSection.SectionContent>
+                <StackPanel Spacing="3">
+                    <controls:Setting Icon="{DynamicResource Layers}"
+                                      Title="{x:Static locales:Locale.Settings_Spotlight_Glass_Screen_Title}"
+                                      Subtitle="{x:Static locales:Locale.Settings_Spotlight_Glass_Screen_Subtitle}">
+                        <ToggleSwitch IsChecked="{Binding GlassSampleScreen}"
+                                      AutomationProperties.Name="{x:Static locales:Locale.Settings_Spotlight_Glass_Screen_Title}" />
+                    </controls:Setting>
+
+                    <controls:Setting Icon="{DynamicResource Layers}"
+                                      Title="{x:Static locales:Locale.Settings_Spotlight_Glass_Interval_Title}"
+                                      Subtitle="{x:Static locales:Locale.Settings_Spotlight_Glass_Interval_Subtitle}"
+                                      IsEnabled="{Binding IsGlassIntervalEditable}">
+                        <ui:LabeledSlider Width="264" Margin="14 0 0 0"
+                                          Minimum="3" Maximum="2000" Step="1"
+                                          ShowEditableValue="True" DisplayFormat="F0" Unit=" ms"
+                                          Value="{Binding GlassSampleInterval}" ValueCommitted="OnGlassCommitted"
+                                          AutomationProperties.Name="{x:Static locales:Locale.Settings_Spotlight_Glass_Interval_Title}" />
+                    </controls:Setting>
+
+                    <!-- Live state of the screen pipeline: off / no frame yet / N frames + the last frame's
+                         mean colour. This is what makes "it still looks like the wallpaper" answerable. -->
+                    <TextBlock Text="{Binding ScreenSamplingStatusText}"
+                               IsVisible="{Binding IsGlassSectionVisible}"
+                               FontSize="12"
+                               Margin="4,2,0,6"
+                               TextWrapping="Wrap"
+                               Foreground="{DynamicResource SecondaryTextBrush}" />
+
+                    <controls:Setting Icon="{DynamicResource Layers}"
+                                      Title="{x:Static locales:Locale.Settings_Spotlight_Glass_Clarity_Title}"
+                                      Subtitle="{x:Static locales:Locale.Settings_Spotlight_Glass_Clarity_Subtitle}">
+                        <ui:LabeledSlider Width="264" Margin="14 0 0 0"
+                                          Minimum="25" Maximum="100" Step="5"
+                                          ShowEditableValue="True" DisplayFormat="F0" Unit="%"
+                                          Value="{Binding GlassClarity}" ValueCommitted="OnGlassCommitted"
+                                          AutomationProperties.Name="{x:Static locales:Locale.Settings_Spotlight_Glass_Clarity_Title}" />
+                    </controls:Setting>
+
+                    <controls:Setting Icon="{DynamicResource Layers}"
+                                      Title="{x:Static locales:Locale.Settings_Spotlight_Glass_Blur_Title}"
+                                      Subtitle="{x:Static locales:Locale.Settings_Spotlight_Glass_Blur_Subtitle}">
+                        <ui:LabeledSlider Width="264" Margin="14 0 0 0"
+                                          Minimum="0" Maximum="100" Step="1"
+                                          ShowEditableValue="True" DisplayFormat="F0"
+                                          Value="{Binding GlassBlur}" ValueCommitted="OnGlassCommitted"
+                                          AutomationProperties.Name="{x:Static locales:Locale.Settings_Spotlight_Glass_Blur_Title}" />
+                    </controls:Setting>
+
+                    <controls:Setting Icon="{DynamicResource Layers}"
+                                      Title="{x:Static locales:Locale.Settings_Spotlight_Glass_Refraction_Title}"
+                                      Subtitle="{x:Static locales:Locale.Settings_Spotlight_Glass_Refraction_Subtitle}">
+                        <ui:LabeledSlider Width="264" Margin="14 0 0 0"
+                                          Minimum="0" Maximum="100" Step="1"
+                                          ShowEditableValue="True" DisplayFormat="F0"
+                                          Value="{Binding GlassRefraction}" ValueCommitted="OnGlassCommitted"
+                                          AutomationProperties.Name="{x:Static locales:Locale.Settings_Spotlight_Glass_Refraction_Title}" />
+                    </controls:Setting>
+
+                    <controls:Setting Icon="{DynamicResource Layers}"
+                                      Title="{x:Static locales:Locale.Settings_Spotlight_Glass_Highlight_Title}"
+                                      Subtitle="{x:Static locales:Locale.Settings_Spotlight_Glass_Highlight_Subtitle}">
+                        <ui:LabeledSlider Width="264" Margin="14 0 0 0"
+                                          Minimum="0" Maximum="100" Step="1"
+                                          ShowEditableValue="True" DisplayFormat="F0"
+                                          Value="{Binding GlassHighlight}" ValueCommitted="OnGlassCommitted"
+                                          AutomationProperties.Name="{x:Static locales:Locale.Settings_Spotlight_Glass_Highlight_Title}" />
+                    </controls:Setting>
+
+                    <controls:Setting Icon="{DynamicResource Layers}"
+                                      Title="{x:Static locales:Locale.Settings_Spotlight_Glass_Vibrancy_Title}"
+                                      Subtitle="{x:Static locales:Locale.Settings_Spotlight_Glass_Vibrancy_Subtitle}">
+                        <ui:LabeledSlider Width="264" Margin="14 0 0 0"
+                                          Minimum="0" Maximum="100" Step="1"
+                                          ShowEditableValue="True" DisplayFormat="F0"
+                                          Value="{Binding GlassVibrancy}" ValueCommitted="OnGlassCommitted"
+                                          AutomationProperties.Name="{x:Static locales:Locale.Settings_Spotlight_Glass_Vibrancy_Title}" />
+                    </controls:Setting>
+
+                    <controls:Setting Icon="{DynamicResource Layers}"
+                                      Title="{x:Static locales:Locale.Settings_Spotlight_Glass_Dispersion_Title}"
+                                      Subtitle="{x:Static locales:Locale.Settings_Spotlight_Glass_Dispersion_Subtitle}">
+                        <ui:LabeledSlider Width="264" Margin="14 0 0 0"
+                                          Minimum="0" Maximum="100" Step="1"
+                                          ShowEditableValue="True" DisplayFormat="F0"
+                                          Value="{Binding GlassDispersion}" ValueCommitted="OnGlassCommitted"
+                                          AutomationProperties.Name="{x:Static locales:Locale.Settings_Spotlight_Glass_Dispersion_Title}" />
+                    </controls:Setting>
+                </StackPanel>
+            </controls:CollapsibleSection.SectionContent>
+        </controls:CollapsibleSection>
+
+        <TextBlock Text="{Binding Message}"
+                   IsVisible="{Binding HasMessage}"
+                   FontSize="12"
+                   Margin="4,8,0,0"
+                   TextWrapping="Wrap"
+                   Foreground="{DynamicResource SecondaryTextBrush}" />
+    </StackPanel>
+</UserControl>

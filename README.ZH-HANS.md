@@ -50,8 +50,8 @@
 ### 4. 📐 灵活桌面网格系统
 自定义方格网格（m×n 方格按百分比存储，跨分辨率/跨 DPI 自适应）；组件恒吸附单元格，边距与圆角自定义，永久钉在桌面置底层。
 
-### 5. 🧩 丰富的小组件生态（25 款内置）
-⏰ 时钟（模拟×3 / 数字 / 翻页 / 无边框）· 📅 日历 · 🌤️ 天气（7 日预报、四日方格卡、日出日落、紫外线、空气质量、气压、代理）· 📊 系统监控 · 📝 笔记（Markdown 排版、二级面板）· ✅ 清单（交互式待办 + 二级面板）· 🗓️ 课表 · 🔁 习惯打卡 · ⏳ 倒计时 · 🎲 骰子 · 🔗 快捷方式 · 📁 文件夹（桌面快速启动器 + 实时文件监听）· 🎵 音乐控制 · 🔍 搜索 · 📈 进度 · 🖼️ 相册 · 🔋 电池 · 🗺️ 地图 · 🍅 番茄钟 · 📚 堆叠 · 🧰 工具（剪贴板、翻译、计算器）· 🎛️ 系统控制中心 · 💽 磁盘存储 · 💬 一言（诗词 / 文学 / 动漫语录卡）· 📌 固定（多组件聚合卡）
+### 5. 🧩 丰富的小组件生态（26 款内置）
+⏰ 时钟（模拟×3 / 数字 / 翻页 / 无边框）· 🕘 刻度时钟（刻度方卡）· 📅 日历 · 🌤️ 天气（7 日预报、四日方格卡、日出日落、紫外线、空气质量、气压、代理）· 📊 系统监控 · 📝 笔记（Markdown 排版、二级面板）· ✅ 清单（交互式待办 + 二级面板）· 🗓️ 课表 · 🔁 习惯打卡 · ⏳ 倒计时 · 🎲 骰子 · 🔗 快捷方式 · 📁 文件夹（桌面快速启动器 + 实时文件监听）· 🎵 音乐控制 · 🔍 搜索 · 📈 进度 · 🖼️ 相册 · 🔋 电池 · 🗺️ 地图 · 🍅 番茄钟 · 📚 堆叠 · 🧰 工具（剪贴板、翻译、计算器）· 🎛️ 系统控制中心 · 💽 磁盘存储 · 💬 一言（诗词 / 文学 / 动漫语录卡）· 📌 固定（多组件聚合卡）
 
 ### 6. 🚀 单文件分发
 构建产出自带组件包（内容哈希校验、首次启动解包）的单文件 `DeskCanvas.exe`；组件解包到 `%LocalAppData%\DeskCanvas`，可直接替换 DLL 热更新。每个版本**只**提供 Inno Setup 打包的 `DeskCanvas-<版本>-x64-Setup.exe`（自带独立卸载界面，可选择性清理数据目录），不再分发 MSI、便携 zip 等其它安装形式。
@@ -104,5 +104,7 @@ DeskCanvas 采用 [知识共享 署名-非商业性使用-相同方式共享 4.0
 | [Material Design 3](https://m3.material.io/styles/motion/easing-and-duration/tokens-specs) | CC BY 4.0（规范） | 二级面板开合动画的缓动令牌（`emphasized decelerate/accelerate`） |
 | [Avalonia UI](https://github.com/AvaloniaUI/Avalonia) | MIT | 跨平台 .NET UI 框架 |
 | [SkiaSharp](https://github.com/mono/SkiaSharp) | MIT | 2D 图形库与 GPU 玻璃合成器使用的运行时着色器 |
+| [Docnet.Core](https://github.com/GowenGit/Docnet.Core) | MIT | 聚焦搜索预览栏渲染 PDF 首页（内置 PDFium） |
+| [PDFium](https://pdfium.googlesource.com/pdfium/) | BSD-3-Clause | Docnet.Core 内置的 PDF 渲染引擎 |
 
 > 说明：本项目曾以 **uWidgetsPlus**（uWidgets 的 fork）名义发布，自 v2.7.0 起更名为 **DeskCanvas**。旧数据目录 `%LocalAppData%\uWidgets` 会在首次启动时自动迁移到 `%LocalAppData%\DeskCanvas`。

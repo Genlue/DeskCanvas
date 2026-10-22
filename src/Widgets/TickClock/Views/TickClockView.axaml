@@ -1,0 +1,56 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="clr-namespace:TickClock.Views.Controls"
+             xmlns:vm="clr-namespace:TickClock.ViewModels"
+             x:Class="TickClock.Views.TickClockView"
+             x:DataType="vm:TickClockViewModel"
+             Classes="Flush"
+             Background="Transparent">
+
+    <!-- 卡片内容自己铺满整张卡：刻度环是贴着卡片内缘的一圈装饰，
+         任何宿主内边距都会把环从卡片边上拉开，所以用 Flush（Margin=0）。 -->
+    <Grid x:Name="Root" ClipToBounds="True" Background="Transparent">
+
+        <!-- 一圈刻度：颜色取主题前景，靠 Opacity 压成参考图里的浅灰 -->
+        <controls:DialTicksControl x:Name="DialTicks"
+                                   TickBrush="{DynamicResource SystemControlForegroundBaseHighBrush}"
+                                   Opacity="0.75"
+                                   IsHitTestVisible="False" />
+
+        <!-- 行高比例照参考图量取：15% 顶白 / 13% 星期 / 5% 间隔 / 35% 时间 / 8% 间隔 / 14% 日期 / 10% 底白 -->
+        <Grid x:Name="TextGrid" RowDefinitions="11*,13*,6*,38*,7*,11*,14*">
+
+            <TextBlock x:Name="WeekdayLabel"
+                       Grid.Row="1"
+                       Text="{Binding WeekdayText}"
+                       HorizontalAlignment="Center"
+                       VerticalAlignment="Center"
+                       FontSize="54"
+                       FontWeight="ExtraBold"
+                       LetterSpacing="2"
+                       Foreground="{DynamicResource SystemControlForegroundAccentBrush}" />
+
+            <!-- 时间：墨迹直接填满 84%×35% 的盒子（InkText 按墨迹而非行盒缩放），
+                 天生窄的字体 + 盒子锁 2.37 宽高比，得到参考图“高瘦且粗”的数字。 -->
+            <controls:TimeInkText x:Name="TimeLabel"
+                              Grid.Row="3"
+                              HorizontalAlignment="Center"
+                              VerticalAlignment="Center"
+                              Text="{Binding TimeText}"
+                              FontWeight="Bold"
+                              FontFamily="Segoe UI"
+                              Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}" />
+
+            <TextBlock x:Name="DateLabel"
+                       Grid.Row="5"
+                       Text="{Binding DateText}"
+                       HorizontalAlignment="Center"
+                       VerticalAlignment="Center"
+                       FontSize="54"
+                       FontWeight="Bold"
+                       FontFamily="Segoe UI"
+                       LetterSpacing="0"
+                       Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}" />
+        </Grid>
+    </Grid>
+</UserControl>

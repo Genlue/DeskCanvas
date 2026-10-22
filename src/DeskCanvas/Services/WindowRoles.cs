@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Runtime.CompilerServices;
 using Avalonia.Controls;
 
@@ -27,6 +28,13 @@ public enum WindowRole
     /// <summary>Reserved for a future preview window. No implementation exists yet; the profile
     /// is an all-inert placeholder so the role is already addressable.</summary>
     Preview,
+
+    /// <summary>
+    /// The 聚焦搜索 overlay (<c>SpotlightWindow</c>): an ordinary z-order citizen that is raised
+    /// above the foreground app on demand, takes focus while open, hides instead of closing, and
+    /// is never desktop furniture.
+    /// </summary>
+    Spotlight,
 
     /// <summary>The invisible 1×1 anchor window that keeps an Avalonia TopLevel alive for
     /// screen enumeration and watcher services for the whole app lifetime.</summary>
@@ -114,6 +122,11 @@ public sealed record WindowRoleProfile(
 /// GeneralViewModel.cs:249, UpdateService.cs:125). The registration point, not the profile,
 /// carries those nuances today.</item>
 /// <item><b>Preview</b> — reserved placeholder, all-inert (no implementation exists yet).</item>
+/// <item><b>Spotlight</b> — ShowInTaskbar=false, ZBand=None (summoned above whatever is in front,
+/// not pinned to a band), ActivatesOnShow=true (<c>SpotlightWindow.Summon</c> calls
+/// <c>Activate</c> so the search field takes the keyboard), TracksFocusTheme=false (the overlay
+/// resolves its material through <see cref="PanelAppearanceResolver"/> on every open instead),
+/// CloseOnDisplayChange=false (it hides on dismiss and is re-summoned on demand).</item>
 /// <item><b>Anchor</b> — ShowInTaskbar=false (WidgetAnchorWindow.cs:25), ZBand=BottomBand
 /// (App.axaml.cs:199 the anchor is pinned to the widget band so the band predicate never sees a
 /// visible non-member below a widget), ActivatesOnShow=false (1×1, off-screen, WindowDecorations.None,
@@ -129,6 +142,7 @@ public static class WindowRoles
     /// individually thread-safe, so no extra gate is needed. The role is stored boxed — the
     /// table only accepts reference-type values.</summary>
     private static readonly ConditionalWeakTable<Window, object> registered = [];
+    private static readonly ConcurrentDictionary<IntPtr, WindowRole> hwndRoles = new();
 
     private static readonly WindowRoleProfile[] profiles =
     [
@@ -147,6 +161,10 @@ public static class WindowRoles
         // Preview: reserved placeholder — nothing is implemented for it yet.
         new WindowRoleProfile(ShowInTaskbar: false, WindowZBand.None,
             ActivatesOnShow: false, TracksFocusTheme: false, CloseOnDisplayChange: false),
+        // Spotlight: summoned above the foreground app, takes focus while open, hides on dismiss
+        // (never closes, so the next summon is instant), and is not tied to the widget bands.
+        new WindowRoleProfile(ShowInTaskbar: false, WindowZBand.None,
+            ActivatesOnShow: true, TracksFocusTheme: false, CloseOnDisplayChange: false),
         // Anchor: invisible lifetime anchor, member of the widget bottom band.
         new WindowRoleProfile(ShowInTaskbar: false, WindowZBand.BottomBand,
             ActivatesOnShow: false, TracksFocusTheme: false, CloseOnDisplayChange: false),
@@ -161,10 +179,36 @@ public static class WindowRoles
         ArgumentNullException.ThrowIfNull(window);
         registered.Remove(window);
         registered.Add(window, role);
+
+        if (window.TryGetPlatformHandle()?.Handle is { } handle and not 0)
+        {
+            hwndRoles[handle] = role;
+        }
+
+        window.Opened += (s, _) =>
+        {
+            if (s is Window w && w.TryGetPlatformHandle()?.Handle is { } h and not 0)
+                hwndRoles[h] = role;
+        };
+        window.Closed += (s, _) =>
+        {
+            if (s is Window w && w.TryGetPlatformHandle()?.Handle is { } h and not 0)
+                hwndRoles.TryRemove(h, out var _);
+        };
     }
 
-    /// <summary>The role declared for <paramref name="window"/>, or <c>null</c> when the window
-    /// never went through <see cref="Register"/>.</summary>
+
+
+    /// <summary>The role declared for native handle <paramref name="hwnd"/>, or <c>null</c> when unknown.</summary>
+    public static WindowRole? GetRole(IntPtr hwnd) =>
+        hwnd != IntPtr.Zero && hwndRoles.TryGetValue(hwnd, out var role) ? role : null;
+
+    /// <summary>Explicitly associate an HWND with a role (for early native bindings).</summary>
+    public static void RegisterHwnd(IntPtr hwnd, WindowRole role)
+    {
+        if (hwnd != IntPtr.Zero) hwndRoles[hwnd] = role;
+    }
+
     public static WindowRole? GetRole(Window window) =>
         window != null && registered.TryGetValue(window, out var boxed) ? (WindowRole)boxed : null;
 
@@ -179,5 +223,9 @@ public static class WindowRoles
 
     /// <summary>Check-fixture escape hatch: clears every registration so a probe can start from
     /// a pristine table. Not for production use.</summary>
-    internal static void ResetForChecks() => registered.Clear();
+    internal static void ResetForChecks()
+    {
+        registered.Clear();
+        hwndRoles.Clear();
+    }
 }

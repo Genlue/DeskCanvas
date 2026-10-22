@@ -15,3 +15,7 @@ DeskCanvas.sln.DotSettings.user
 # ShortcutsRender 探针运行截图产出（每轮运行重生成，不入库）
 /tests/ShortcutsRender/*.png
 .workbuddy/
+# 根目录瞬时产物：误建的 --nologo 截图目录、AI 工作目录、开发草稿与 spike 工程
+/--nologo/
+.workbuddy-ai/
+/doc/_scratch/

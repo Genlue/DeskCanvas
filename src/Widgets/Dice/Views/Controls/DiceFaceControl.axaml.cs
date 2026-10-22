@@ -111,16 +111,22 @@ public partial class DiceFaceControl : UserControl
             NumberText.IsVisible = false;
             DotsGrid.IsVisible = true;
 
-            DotTL.IsVisible = val is 4 or 5 or 6 or 2 or 3;
+            // 标准骰面点阵：2 只在对角（左上 + 右下），3 再加中心；把 2/3 也算进四角
+            // 会让 2 看起来是 4 点、3 看起来是 5 点——骰面点数与总和标签对不上，正是
+            // "总和算错了" 的观感来源。
+            bool corners = val is 4 or 5 or 6;
+            bool diagonal = val is 2 or 3;
+
+            DotTL.IsVisible = corners || diagonal;
             DotML.IsVisible = val is 6;
-            DotBL.IsVisible = val is 4 or 5 or 6 or 2 or 3;
+            DotBL.IsVisible = corners;
 
             DotCenter.IsVisible = val is 3 or 5;
             DotCenterAccent.IsVisible = val == 1;
 
-            DotTR.IsVisible = val is 4 or 5 or 6 or 2 or 3;
+            DotTR.IsVisible = corners;
             DotMR.IsVisible = val is 6;
-            DotBR.IsVisible = val is 4 or 5 or 6 or 2 or 3;
+            DotBR.IsVisible = corners || diagonal;
         }
         else
         {

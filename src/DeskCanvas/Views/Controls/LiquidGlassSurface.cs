@@ -171,6 +171,17 @@ public class LiquidGlassSurface : GlassSurfaceBase
         AvaloniaProperty.Register<LiquidGlassSurface, bool>(nameof(SettingsSurface));
 
     /// <summary>
+    /// Sample the <b>live screen</b> instead of the wallpaper (<see cref="ScreenSnapshotProvider"/>).
+    /// <para>
+    /// Set by consumers that float over other applications (聚焦搜索): the wallpaper pipeline would
+    /// refract a desktop that is not actually behind the panel. A capture failure falls back to the
+    /// wallpaper, so the surface never goes blank because of this flag.
+    /// </para>
+    /// </summary>
+    public static readonly StyledProperty<bool> ScreenSamplingProperty =
+        AvaloniaProperty.Register<LiquidGlassSurface, bool>(nameof(ScreenSampling));
+
+    /// <summary>
     /// Compute the wallpaper sampling origin from <b>layout offsets only</b>, ignoring every
     /// ancestor render transform on the way to the window. DEFAULT <c>true</c> for every
     /// wallpaper-sampling surface.
@@ -195,6 +206,7 @@ public class LiquidGlassSurface : GlassSurfaceBase
     public override CornerRadius CornerRadius { get => GetValue(CornerRadiusProperty); set => SetValue(CornerRadiusProperty, value); }
     public bool Preview { get => GetValue(PreviewProperty); set => SetValue(PreviewProperty, value); }
     public bool SettingsSurface { get => GetValue(SettingsSurfaceProperty); set => SetValue(SettingsSurfaceProperty, value); }
+    public bool ScreenSampling { get => GetValue(ScreenSamplingProperty); set => SetValue(ScreenSamplingProperty, value); }
     public bool IgnoresAncestorTransform { get => GetValue(IgnoresAncestorTransformProperty); set => SetValue(IgnoresAncestorTransformProperty, value); }
 
     private readonly DispatcherTimer debounce;
@@ -268,6 +280,7 @@ public class LiquidGlassSurface : GlassSurfaceBase
         debounce = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(90) };
         debounce.Tick += (_, _) => { debounce.Stop(); RenderMaterial(); };
         ActualThemeVariantChanged += (_, _) => RequestRender();
+        ScreenSamplingProperty.Changed.AddClassHandler<LiquidGlassSurface>((surface, _) => surface.RequestRender());
     }
 
     protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
@@ -364,7 +377,7 @@ public class LiquidGlassSurface : GlassSurfaceBase
     /// be lost for good (see <see cref="pendingSampledFrame"/>).
     /// </para>
     /// </summary>
-    private void RequestSampledFrame()
+    internal void RequestSampledFrame()
     {
         if (!attached || !IsEffectivelyVisible || Material?.UsesRenderedGlass != true) return;
         if (busy)
@@ -428,15 +441,24 @@ public class LiquidGlassSurface : GlassSurfaceBase
 
             if (!attached || revision != current) return;
             var preview = Preview;
+            // Read the styled property here: the prepare below runs on a worker thread, and a
+            // StyledProperty must not be touched from there.
+            var screenSampling = ScreenSampling;
             // Compiling the runtime shader is a one-off cost, so it is resolved off the UI
             // thread together with the first backdrop.
             var wantGpu = Volatile.Read(ref gpuState) != 2;
-            var result = await Task.Run<(GlassSource? Source, WallpaperSnapshot Wallpaper, int CaptureMs, int BackdropMs)>(() =>
+            var result = await Task.Run<(GlassSource? Source, WallpaperSnapshot Wallpaper, int CaptureMs, int BackdropMs, string Sample)>(() =>
             {
                 // Split the two stages that actually cost: grabbing the desktop, and building the
                 // shared blurred backdrop from it. Both are per capture, not per pixel of the card.
                 var captureStarted = Environment.TickCount64;
-                var snapshot = LiquidGlassWallpaper.Get();
+                // The launcher's own pipeline (live screen), with the wallpaper as the fallback so a
+                // refused capture still yields a usable backdrop. Which one answered is recorded in
+                // the trace: "the glass still shows the wallpaper" is otherwise unanswerable from
+                // the outside, and the fallback is silent by design.
+                var screen = screenSampling ? ScreenSnapshotProvider.Get() : null;
+                var snapshot = screen ?? LiquidGlassWallpaper.Get();
+                var sample = screen != null ? "screen" : "wallpaper";
                 var captureMs = (int)(Environment.TickCount64 - captureStarted);
                 // The preview only overrides the wallpaper's placement. The copy takes its own
                 // reference, so exactly one reference leaves this lambda on every path.
@@ -451,10 +473,10 @@ public class LiquidGlassSurface : GlassSurfaceBase
                         var backdropMs = (int)(Environment.TickCount64 - backdropStarted);
                         if (shared != null)
                         {
-                            return (shared, sampled, captureMs, backdropMs);
+                            return (shared, sampled, captureMs, backdropMs, sample);
                         }
                     }
-                    return (null, sampled, captureMs, 0);
+                    return (null, sampled, captureMs, 0, sample);
                 }
                 catch
                 {
@@ -518,8 +540,8 @@ public class LiquidGlassSurface : GlassSurfaceBase
             var previous = Interlocked.Exchange(ref prepared, new Prepared(nextSource, frame, nextCpu, wallpaper.CaptureId));
             RetirePrepared(previous);
             GlassDiagnostics.Published(Environment.TickCount64 - started,
-                $"{path} {frame.Width}x{frame.Height} capture {result.CaptureMs}ms backdrop {result.BackdropMs}ms " +
-                $"captures {LiquidGlassWallpaper.CaptureCount}");
+                $"{path} {frame.Width}x{frame.Height} sample {result.Sample} capture {result.CaptureMs}ms " +
+                $"backdrop {result.BackdropMs}ms captures {LiquidGlassWallpaper.CaptureCount}");
             InvalidateVisual();
         }
         catch (Exception ex)

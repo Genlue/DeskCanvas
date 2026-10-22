@@ -11,7 +11,7 @@ namespace DeskCanvas.Core.Services;
 /// missing settings file is treated as "first run" and materialised instead of throwing: the
 /// file is genuinely optional — a fresh folder, a hand-deleted file, a half-migrated upgrade and
 /// a check harness on a temp folder all look the same — while every consumer reads it via
-/// <see cref="Get"/> without a guard of its own.
+/// <see cref="IDataProvider{T}.Get"/> without a guard of its own.
 /// </param>
 public class AppSettingsProvider(Func<AppSettings>? defaults = null) : JsonParser<AppSettings>(() => Const.AppSettingsFile), IAppSettingsProvider
 {
@@ -87,6 +87,16 @@ public class AppSettingsProvider(Func<AppSettings>? defaults = null) : JsonParse
             ? behavior
             : null;
 
+        // 默认地区: tolerate hand-edited files — an unusable entry (blank name, impossible
+        // coordinates) degrades to "not configured" instead of being clamped into a wrong city.
+        var defaultRegion = settings.DefaultRegion is { IsValid: true } region ? region.Normalized() : null;
+
+        // 聚焦搜索: same tolerance rule — clamp columns / icon size / card size into their
+        // supported ranges (NaN included) and drop blank gesture/folder tokens so they fall back
+        // to the record defaults. A null entry stays null: "never configured" is a real state
+        // (feature off) and must not be materialised into the file by a read.
+        LauncherSettings? launcher = settings.Launcher?.Normalize();
+
         return settings with
         {
             Grid = settings.Grid ?? Grid.Default,
@@ -95,7 +105,9 @@ public class AppSettingsProvider(Func<AppSettings>? defaults = null) : JsonParse
             SurfaceThemes = surfaceThemes,
             Layout = layout,
             FocusLink = focusLink,
-            FullscreenBehavior = fullscreenBehavior
+            FullscreenBehavior = fullscreenBehavior,
+            DefaultRegion = defaultRegion,
+            Launcher = launcher
         };
     }
 

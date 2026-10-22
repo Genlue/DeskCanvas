@@ -52,6 +52,23 @@ public class App : Application
             .AddSingleton<IWidgetFactory<Window, UserControl>>(sp => sp.GetRequiredService<WidgetFactory>())
             .AddSingleton<ProfileService>()
             .AddSingleton<Settings, Settings>()
+            // 聚焦搜索: one catalogue, one icon cache, one hotkey host for the process.
+            .AddSingleton<ShellIconService>()
+            .AddSingleton<LauncherCatalog>()
+            .AddSingleton<FileSearchService>()
+            // The unified result pipeline: providers feed the router, the router feeds the VM.
+            .AddSingleton<SpotlightUsageStore>()
+            .AddSingleton<SpotlightClipboardService>()
+            .AddSingleton<SpotlightExternalResults>()
+            .AddSingleton<SpotlightAppProvider>()
+            .AddSingleton<SpotlightFileProvider>()
+            .AddSingleton<SpotlightClipboardProvider>()
+            .AddSingleton<SpotlightWebProvider>()
+            // The inline web hits: a network source, queried after the local ones, never inside
+            // their WhenAll — see SpotlightViewModel.LoadWebResultsAsync.
+            .AddSingleton<SpotlightWebResults>()
+            .AddSingleton<SpotlightQueryRouter>()
+            .AddSingleton<SpotlightService>()
             // One settings window for the whole process: widgets (and a hand-over from a second
             // launch) resolve this same instance instead of each building their own.
             .AddSingleton<Func<Settings>>(sp => () => sp.GetRequiredService<Settings>())
@@ -257,8 +274,41 @@ public class App : Application
         var tray = new TrayIconService(appSettingsProvider, SharedSettingsWindow, widgetFactory);
         tray.Start();
 
+        // 聚焦搜索: start after the anchor exists (it needs a TopLevel for screen enumeration) and
+        // before any window is shown, so the global hotkey is live from the first moment. The
+        // overlay itself is created lazily on the first summon; only the folder index runs now.
+        var spotlight = services.GetRequiredService<SpotlightService>();
+        spotlight.Start();
+
+        // The overlay's "open settings" affordance funnels through here: one shared settings
+        // window for the process, landing on the 聚焦搜索 page.
+        spotlight.OpenSettingsRequested += () => Dispatcher.UIThread.Post(() =>
+        {
+            try
+            {
+                var settingsWindow = SharedSettingsWindow();
+                settingsWindow.ShowAndActivate();
+                settingsWindow.SelectPage(typeof(Views.Pages.Spotlight));
+            }
+            catch (Exception ex)
+            {
+                GlassDiagnostics.Event($"spotlight open-settings failed: {ex.GetType().Name}: {ex.Message}");
+            }
+        });
+
         if ((ApplicationLifetime is IClassicDesktopStyleApplicationLifetime { Args.Length: > 0 } desktop && desktop.Args[0] == "--settings") || !widgetFactory.HasWidgets)
             SharedSettingsWindow().ShowAndActivate();
+
+        // Development / shortcut entry: open 聚焦搜索 immediately instead of waiting for the
+        // global hotkey. Only meaningful on the first launch — a second launch hands over to the
+        // running instance and does not forward its arguments.
+        if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime { Args.Length: > 0 } spotlightArgs
+            && spotlightArgs.Args[0] == "--spotlight")
+        {
+            Dispatcher.UIThread.Post(
+                () => services.GetRequiredService<SpotlightService>().Toggle(bypassBlacklist: true),
+                DispatcherPriority.Background);
+        }
         
         services.GetRequiredService<UpdateService>().CheckForUpdates();
 

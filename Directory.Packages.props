@@ -36,6 +36,10 @@
     <!-- 小组件第三方依赖 -->
     <PackageVersion Include="TimeZoneNames" Version="6.0.0" />
     <PackageVersion Include="Markdig" Version="0.34.0" />
+
+    <!-- PDF 首页渲染（聚焦搜索预览栏）。Docnet.Core 自带各平台 pdfium 原生库，
+         不依赖 SkiaSharp，因此与 Avalonia 12 的 SkiaSharp 3.x 不会冲突。 -->
+    <PackageVersion Include="Docnet.Core" Version="2.6.0" />
   </ItemGroup>
 
 </Project>

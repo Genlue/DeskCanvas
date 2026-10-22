@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <root>
     <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
         <xsd:element name="root" msdata:IsDataSet="true" />
@@ -87,6 +87,12 @@
     <data name="Shortcuts_Menu_New" xml:space="preserve">
         <value>新建指令</value>
     </data>
+  <data name="Shortcuts_Menu_MoveUp" xml:space="preserve">
+    <value>上移</value>
+  </data>
+  <data name="Shortcuts_Menu_MoveDown" xml:space="preserve">
+    <value>下移</value>
+  </data>
     <data name="Shortcuts_Menu_Stop" xml:space="preserve">
         <value>停止</value>
     </data>
