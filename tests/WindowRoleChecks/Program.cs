@@ -183,11 +183,10 @@ var widgetImportWhitelist = new Dictionary<string, int>
 {
     ["src/Widgets/Batteries/Services/PowerService.cs"] = 5,
     ["src/Widgets/ControlCenter/Services/SystemControlService.cs"] = 13,
-    ["src/Widgets/Folders/Services/WidgetOleDropTarget.cs"] = 12,
+    ["src/Widgets/Folders/Services/WidgetOleDropTarget.cs"] = 13,
     ["src/Widgets/Folders/Services/FolderIconService.cs"] = 12,
     ["src/Widgets/Folders/Views/BigFolder.axaml.cs"] = 1,
     ["src/Widgets/Folders/Views/Folder.axaml.cs"] = 1,
-    ["src/Widgets/Folders/Views/SingleFile.axaml.cs"] = 1,
     ["src/Widgets/Picture/Views/PictureView.axaml.cs"] = 1,
     ["src/Widgets/Shortcuts/Services/ISystemAdapter.cs"] = 11,
     ["src/Widgets/Shortcuts/Services/Executors/SystemExecutors.cs"] = 1,

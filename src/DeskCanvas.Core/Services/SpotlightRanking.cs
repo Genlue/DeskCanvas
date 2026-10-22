@@ -128,9 +128,9 @@ public static class SpotlightRanking
 
         if (best <= 0)
         {
-            // No text channel hit at all: keep the entry rankable but strictly below every
-            // matched tier by scaling usage down into a sub-band under the alias floor.
-            return usageEpsilon;
+            // When a query is typed, entries with no text match must NOT match.
+            // Recents should only be displayed in empty-query state, never leaked into search results.
+            return 0;
         }
 
         return best + usageEpsilon;

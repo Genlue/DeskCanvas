@@ -2656,5 +2656,21 @@ namespace DeskCanvas.Locales {
         public static string Settings_Spotlight_CategoryKeys_MoveUp => ResourceManager.GetString("Settings_Spotlight_CategoryKeys_MoveUp", resourceCulture);
 
         public static string Settings_Spotlight_CategoryKeys_MoveDown => ResourceManager.GetString("Settings_Spotlight_CategoryKeys_MoveDown", resourceCulture);
+
+        public static string Settings_Spotlight_SearchPlaceholder => ResourceManager.GetString("Settings_Spotlight_SearchPlaceholder", resourceCulture);
+
+        public static string Settings_Spotlight_SearchPlaceholder_Hint => ResourceManager.GetString("Settings_Spotlight_SearchPlaceholder_Hint", resourceCulture);
+
+        public static string Settings_Spotlight_SearchPlaceholder_Reset => ResourceManager.GetString("Settings_Spotlight_SearchPlaceholder_Reset", resourceCulture);
+
+        public static string Settings_Spotlight_SpaceRecent_Title => ResourceManager.GetString("Settings_Spotlight_SpaceRecent_Title", resourceCulture);
+
+        public static string Settings_Spotlight_SpaceRecent_Subtitle => ResourceManager.GetString("Settings_Spotlight_SpaceRecent_Subtitle", resourceCulture);
+
+        public static string Settings_Spotlight_SpaceRecentCount_Title => ResourceManager.GetString("Settings_Spotlight_SpaceRecentCount_Title", resourceCulture);
+
+        public static string Settings_Spotlight_SpaceRecentCount_Subtitle => ResourceManager.GetString("Settings_Spotlight_SpaceRecentCount_Subtitle", resourceCulture);
+
+        public static string Spotlight_RecentLaunches_Header => ResourceManager.GetString("Spotlight_RecentLaunches_Header", resourceCulture);
     }
 }

@@ -1,4 +1,4 @@
-﻿<UserControl xmlns="https://github.com/avaloniaui"
+<UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:controls="clr-namespace:DeskCanvas.Views.Controls"
              xmlns:ui="using:DeskCanvas.UI.Controls"
@@ -78,6 +78,20 @@
                            FontSize="12"
                            TextWrapping="Wrap"
                            Foreground="{DynamicResource SecondaryTextBrush}" />
+            </StackPanel>
+        </controls:Setting>
+
+        <controls:Setting Icon="{DynamicResource Spotlight}"
+                          Title="{x:Static locales:Locale.Settings_Spotlight_SearchPlaceholder}"
+                          Subtitle="{x:Static locales:Locale.Settings_Spotlight_SearchPlaceholder_Hint}">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+                <TextBox Width="260"
+                         Text="{Binding SearchPlaceholder, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
+                         PlaceholderText="{x:Static locales:Locale.Spotlight_Placeholder}"
+                         AutomationProperties.Name="{x:Static locales:Locale.Settings_Spotlight_SearchPlaceholder}" />
+                <Button Classes="dc-pill ghost"
+                        Content="{x:Static locales:Locale.Settings_Spotlight_SearchPlaceholder_Reset}"
+                        Command="{Binding ResetSearchPlaceholderCommand}" />
             </StackPanel>
         </controls:Setting>
 
@@ -309,6 +323,25 @@
                    FontSize="12"
                    Margin="4,0,0,6"
                    Foreground="{DynamicResource SecondaryTextBrush}" />
+
+        <controls:Setting Icon="{DynamicResource Spotlight}"
+                          Title="{x:Static locales:Locale.Settings_Spotlight_SpaceRecent_Title}"
+                          Subtitle="{x:Static locales:Locale.Settings_Spotlight_SpaceRecent_Subtitle}">
+            <ToggleSwitch IsChecked="{Binding SpaceShowsRecentLaunches}"
+                          AutomationProperties.Name="{x:Static locales:Locale.Settings_Spotlight_SpaceRecent_Title}" />
+        </controls:Setting>
+
+        <controls:Setting Icon="{DynamicResource WidgetSize}"
+                          Title="{x:Static locales:Locale.Settings_Spotlight_SpaceRecentCount_Title}"
+                          Subtitle="{x:Static locales:Locale.Settings_Spotlight_SpaceRecentCount_Subtitle}"
+                          IsEnabled="{Binding IsSpaceRecentLaunchesCountEditable}">
+            <ui:LabeledSlider Width="264" Margin="14 0 0 0"
+                              Minimum="3" Maximum="20" Step="1"
+                              ShowEditableValue="True" DisplayFormat="F0"
+                              Value="{Binding SpaceRecentLaunchesCount}"
+                              ValueCommitted="OnSpaceRecentLaunchesCountCommitted"
+                              AutomationProperties.Name="{x:Static locales:Locale.Settings_Spotlight_SpaceRecentCount_Title}" />
+        </controls:Setting>
 
         <controls:Setting Icon="{DynamicResource Appearance}"
                           Title="{x:Static locales:Locale.Settings_Spotlight_Preview_Title}"

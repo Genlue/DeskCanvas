@@ -18,13 +18,19 @@ using Avalonia.Skia;
 using Avalonia.Styling;
 using Avalonia.Themes.Fluent;
 using Avalonia.Threading;
+using Avalonia.VisualTree;
 using DeskCanvas.Contracts;
+using DeskCanvas.Core.Models.Attributes;
 using DeskCanvas.Runtime;
 using DeskCanvas.Services;
 using DeskCanvas.Views;
+using Folders.Models;
+using Folders.Services;
+using Folders.Views;
 using Notes.Models;
 using Notes.Services;
 using Notes.Views;
+using SkiaSharp;
 
 // UseHeadlessDrawing=false gives the probe REAL Win32 window handles (the SessionHookChecks
 // rig) — the panel windows open for real through SecondaryPanelWindow's native z-order work.
@@ -192,6 +198,101 @@ if (failures.Count > 0)
     return 1;
 }
 Console.WriteLine($"Quick access session checks passed: {checks}/{checks}.");
+// =========================================================================================
+// 9. SingleLink: the link widget (the 27th widget)
+// =========================================================================================
+Console.WriteLine("--- single link widget ---");
+
+// 9.1 the registration: a widget the host can actually instantiate and configure.
+var linkInfo = typeof(SingleLink).Assembly
+    .GetCustomAttributes<WidgetInfoAttribute>()
+    .FirstOrDefault(a => a.ViewType == typeof(SingleLink));
+Check(linkInfo != null, "single link: the view is registered on the Folders assembly");
+Check(linkInfo?.ModelType == typeof(SingleLinkModel),
+    "single link: the registration carries its model");
+Check(linkInfo?.EditModelViewType?.Name == "SingleLinkSettings",
+    "single link: the registration carries its settings view");
+Check(linkInfo is { DefaultColumns: 1, DefaultRows: 1 },
+    "single link: it starts as a 1x1 card");
+Check((linkInfo?.PresetSpanList ?? string.Empty).Contains("1x1"),
+    "single link: 1x1 is one of its presets");
+Check(linkInfo?.Title == "Folders_SingleLink_Title" && linkInfo?.Subtitle == "Folders_SingleLink_Subtitle",
+    "single link: title and subtitle come from the locale keys");
+
+// 9.2 all three icon sources exist, and every one of them lands in the local cache.
+var iconService = typeof(LinkIconService);
+Check(iconService.GetMethod("SaveLocalFileAsync") != null,
+    "single link: a local file can be picked as the icon");
+Check(iconService.GetMethod("DownloadFromUrlAsync") != null,
+    "single link: an image URL can be downloaded as the icon");
+Check(iconService.GetMethod("FetchFaviconAsync") != null,
+    "single link: the site's own icon can be fetched from the link");
+
+var linkSandbox = Path.Combine(Path.GetTempPath(), "DeskCanvas-LinkIcon-" + Guid.NewGuid().ToString("N")[..8]);
+Directory.CreateDirectory(linkSandbox);
+var iconFile = Path.Combine(linkSandbox, "site-icon.png");
+using (var bitmap = new SKBitmap(64, 64))
+{
+    bitmap.Erase(new SKColor(0x22, 0x88, 0xCC));
+    using var image = SKImage.FromBitmap(bitmap);
+    using var encoded = image.Encode(SKEncodedImageFormat.Png, 100);
+    File.WriteAllBytes(iconFile, encoded.ToArray());
+}
+
+// Off the UI thread, then blocked on: this harness has a UI-thread synchronization context,
+// so awaiting the file IO here would post its continuation back to a thread that is busy
+// waiting for it (a classic deadlock), and a top-level await would instead resume on a pool
+// thread where the Avalonia controls built below may not be created.
+var savedFirst = Task.Run(() => LinkIconService.SaveLocalFileAsync(iconFile)).GetAwaiter().GetResult();
+Check(savedFirst != null && File.Exists(savedFirst),
+    "single link: a picked local file is copied into the cache");
+Check(savedFirst != null && Path.GetDirectoryName(savedFirst) == LinkIconService.IconFolder,
+    "single link: the copy lands in the LinkIcons cache folder");
+
+// The point of caching: fetching the same thing twice must not create a second file, and the
+// widget must be able to render from the cache with no network involved.
+var savedAgain = Task.Run(() => LinkIconService.SaveLocalFileAsync(iconFile)).GetAwaiter().GetResult();
+Check(savedFirst != null && savedAgain != null && savedFirst == savedAgain,
+    "single link: the same icon reuses one cached copy");
+var cachedCount = Directory.Exists(LinkIconService.IconFolder)
+    ? Directory.GetFiles(LinkIconService.IconFolder).Length
+    : 0;
+Check(cachedCount == 1, $"single link: two saves leave exactly one cached file (got {cachedCount})");
+Check(LinkIconService.LoadIcon(savedFirst) != null,
+    "single link: the cached file loads back into a bitmap");
+
+// 9.3 the view renders the cached icon and keeps the URL on its tooltip.
+var link = new SingleLink(
+    new SingleLinkModel(Url: "https://example.com", Title: "示例站点", CustomIconPath: savedFirst), null!);
+var linkTip = ToolTip.GetTip(link) as string;
+Check(linkTip != null && linkTip.Contains("https://example.com"),
+    "single link: the tooltip carries the target URL");
+link.Measure(new Size(160, 160));
+link.Arrange(new Rect(0, 0, 160, 160));
+// The control is never attached to a visual root, so the visual tree to walk is not built:
+// read the XAML-generated field directly instead.
+var linkImage = (Image?)typeof(SingleLink)
+    .GetField("IconImage", BindingFlags.Instance | BindingFlags.NonPublic)
+    ?.GetValue(link);
+Check(linkImage != null, "single link: the view holds an image element");
+Check(linkImage?.Source != null,
+    $"single link: the cached icon is what the card paints (source {(linkImage?.Source == null ? "null" : "set")})");
+Check(linkImage is { IsVisible: true }, "single link: the cached icon is shown, not the fallback");
+
+// 9.4 opening: a chosen browser is used, otherwise the URL goes to the default handler.
+var singleLinkSource = ReadSource("src", "Widgets", "Folders", "Views", "SingleLink.axaml.cs");
+Check(singleLinkSource.Contains("File.Exists(model.BrowserPath)"),
+    "single link: a browser is only used while its executable is still there");
+Check(singleLinkSource.Contains("Process.Start(new ProcessStartInfo(targetUrl)"),
+    "single link: with no browser chosen the URL goes to the default handler");
+Check(singleLinkSource.Contains("UseShellExecute = true"),
+    "single link: the URL is opened by the shell (a URL is not an executable)");
+
+// 9.5 the default model is an empty card at 70%.
+Check(new SingleLinkModel() is { Url: null, BrowserPath: null, CustomIconPath: null }
+      && Math.Abs(new SingleLinkModel().IconPercent - 70.0) < 0.001,
+    "single link: the default model is an empty 70% card");
+
 return 0;
 
 // =========================================================================================

@@ -123,8 +123,14 @@ public partial class ShortcutsView : UserControl, IWidgetSelfRefreshing
 
     private void OnAppSettingsChanged(object? sender, AppSettings? oldData, AppSettings newData)
     {
-        if (Dispatcher.UIThread.CheckAccess()) ApplyCardRadius();
-        else Dispatcher.UIThread.Post(ApplyCardRadius);
+        void Refresh()
+        {
+            ApplyCardRadius();
+            viewModel.ApplyTheme(ActualThemeVariant == ThemeVariant.Dark);
+        }
+
+        if (Dispatcher.UIThread.CheckAccess()) Refresh();
+        else Dispatcher.UIThread.Post(Refresh);
     }
 
     /// <summary>Start the OS hotkey host only once a shortcut actually has a binding.</summary>

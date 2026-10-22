@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using DeskCanvas.Core.Interfaces;
 using DeskCanvas.ViewModels;
 using DeskCanvas.Views;
@@ -40,6 +40,7 @@ public sealed class SpotlightService : IDisposable
     private readonly SpotlightClipboardService clipboard;
     private readonly SpotlightExternalResults external;
     private readonly SpotlightWebResults webResults;
+    private readonly SpotlightRecentLaunchStore recentLaunches;
 
     private GlobalHotkeyRegistrar? registrar;
     private SpotlightWindow? window;
@@ -58,7 +59,8 @@ public sealed class SpotlightService : IDisposable
         SpotlightUsageStore usage,
         SpotlightClipboardService clipboard,
         SpotlightExternalResults external,
-        SpotlightWebResults webResults)
+        SpotlightWebResults webResults,
+        SpotlightRecentLaunchStore? recentLaunches = null)
     {
         this.settings = settings;
         this.catalog = catalog;
@@ -70,7 +72,11 @@ public sealed class SpotlightService : IDisposable
         this.clipboard = clipboard;
         this.external = external;
         this.webResults = webResults;
+        this.recentLaunches = recentLaunches ?? new SpotlightRecentLaunchStore();
     }
+
+    /// <summary>Persistent store of items opened through search results.</summary>
+    public SpotlightRecentLaunchStore RecentLaunches => recentLaunches;
 
     /// <summary>The per-entry usage store (settings page: quick keys, pinned cleanup).</summary>
     public SpotlightUsageStore Usage => usage;
@@ -371,7 +377,7 @@ public sealed class SpotlightService : IDisposable
         if (window != null) return window;
 
         viewModel = new SpotlightViewModel(router, catalog, icons, usage, clipboard, files, settings,
-            new SpotlightPreviewService(icons), webResults);
+            new SpotlightPreviewService(icons), webResults, recentLaunches);
         viewModel.Start();
         viewModel.OpenSettingsRequested += () => OpenSettingsRequested?.Invoke();
 

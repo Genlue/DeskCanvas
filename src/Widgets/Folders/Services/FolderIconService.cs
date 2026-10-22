@@ -785,6 +785,92 @@ public static class FolderIconService
         }
     }
 
+    /// <summary>
+    /// Trims transparent edges from a bitmap so that the icon artwork is tightly centered.
+    /// Returns the cropped bitmap, or the original if trimming is not needed or not possible.
+    /// </summary>
+    public static Bitmap TrimTransparent(Bitmap source)
+    {
+        WriteableBitmap wb;
+        if (source is WriteableBitmap direct)
+        {
+            wb = direct;
+        }
+        else
+        {
+            try
+            {
+                wb = new WriteableBitmap(source.PixelSize, source.Dpi, PixelFormat.Bgra8888, AlphaFormat.Premul);
+                using var fb = wb.Lock();
+                source.CopyPixels(fb);
+            }
+            catch
+            {
+                return source;
+            }
+        }
+
+        int w = wb.PixelSize.Width;
+        int h = wb.PixelSize.Height;
+        if (w <= 0 || h <= 0) return source;
+
+        int minX = w, maxX = -1, minY = h, maxY = -1;
+        using (var fb = wb.Lock())
+        {
+            byte[] row = new byte[fb.RowBytes];
+            for (int y = 0; y < h; y++)
+            {
+                Marshal.Copy(fb.Address + y * fb.RowBytes, row, 0, fb.RowBytes);
+                for (int x = 0; x < w; x++)
+                {
+                    byte a = row[x * 4 + 3];
+                    if (a > 10)
+                    {
+                        if (x < minX) minX = x;
+                        if (x > maxX) maxX = x;
+                        if (y < minY) minY = y;
+                        if (y > maxY) maxY = y;
+                    }
+                }
+            }
+        }
+
+        if (maxX < minX || maxY < minY) return source;
+
+        int cropW = maxX - minX + 1;
+        int cropH = maxY - minY + 1;
+
+        if (cropW >= w - 3 && cropH >= h - 3) return source;
+
+        try
+        {
+            var cropped = new WriteableBitmap(
+                new PixelSize(cropW, cropH),
+                wb.Dpi,
+                PixelFormat.Bgra8888,
+                AlphaFormat.Premul);
+
+            using (var srcFb = wb.Lock())
+            using (var dstFb = cropped.Lock())
+            {
+                byte[] row = new byte[cropW * 4];
+                for (int y = 0; y < cropH; y++)
+                {
+                    IntPtr srcRowPtr = srcFb.Address + (minY + y) * srcFb.RowBytes + minX * 4;
+                    IntPtr dstRowPtr = dstFb.Address + y * dstFb.RowBytes;
+                    Marshal.Copy(srcRowPtr, row, 0, row.Length);
+                    Marshal.Copy(row, 0, dstRowPtr, row.Length);
+                }
+            }
+
+            return cropped;
+        }
+        catch
+        {
+            return source;
+        }
+    }
+
     [DllImport("user32.dll", CharSet = CharSet.Unicode)]
     private static extern int PrivateExtractIcons(string lpszFile, int nIconIndex, int cx, int cy,
         IntPtr[] phicon, int[] piconid, int nIcons, uint uFlags);

@@ -145,7 +145,8 @@ public sealed class EverythingIpc : IDisposable
     /// <param name="regex">Interpret <paramref name="search"/> as a regular expression.</param>
     /// <param name="matchCase">Case-sensitive match.</param>
     /// <param name="max">Result cap.</param>
-    public IReadOnlyList<EverythingHit> Query(string search, bool regex, bool matchCase, int max)
+    /// <param name="matchPath">Match full path rather than file name only.</param>
+    public IReadOnlyList<EverythingHit> Query(string search, bool regex, bool matchCase, int max, bool matchPath = false)
     {
         if (string.IsNullOrWhiteSpace(search)) return [];
         if (disposed) return [];
@@ -157,7 +158,7 @@ public sealed class EverythingIpc : IDisposable
             return [];
         }
 
-        var request = new Request(search, regex, matchCase, Math.Max(1, max));
+        var request = new Request(search, regex, matchCase, Math.Max(1, max), matchPath);
         lock (queueGate) queue.Enqueue(request);
 
         if (!PostMessageW(replyWindow, WmAppQuery, IntPtr.Zero, IntPtr.Zero))
@@ -386,7 +387,7 @@ public sealed class EverythingIpc : IDisposable
         pendingHits = new List<EverythingHit>();
         replyReceived = false;
 
-        var flags = MatchPath
+        var flags = (request.MatchPath ? MatchPath : 0)
                     | (request.Regex ? RegexFlag : 0)
                     | (request.MatchCase ? MatchCase : 0);
 
@@ -505,12 +506,13 @@ public sealed class EverythingIpc : IDisposable
         return text ?? string.Empty;
     }
 
-    private sealed class Request(string search, bool regex, bool matchCase, int max)
+    private sealed class Request(string search, bool regex, bool matchCase, int max, bool matchPath)
     {
         public string Search { get; } = search;
         public bool Regex { get; } = regex;
         public bool MatchCase { get; } = matchCase;
         public int Max { get; } = max;
+        public bool MatchPath { get; } = matchPath;
         public ManualResetEventSlim Done { get; } = new(false);
         public IReadOnlyList<EverythingHit>? Hits { get; set; }
     }

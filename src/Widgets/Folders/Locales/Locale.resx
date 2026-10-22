@@ -261,4 +261,64 @@
     <data name="Folders_BigFolder_PopupShowExtensions" xml:space="preserve">
         <value>Show File Extensions</value>
     </data>
+    <data name="Folders_SingleLink_Title" xml:space="preserve">
+        <value>Single Link</value>
+    </data>
+    <data name="Folders_SingleLink_Subtitle" xml:space="preserve">
+        <value>Web link shortcut with custom browser and icon</value>
+    </data>
+    <data name="Folders_SingleLink_Url" xml:space="preserve">
+        <value>Web Link (URL)</value>
+    </data>
+    <data name="Folders_SingleLink_LinkTitle" xml:space="preserve">
+        <value>Title / Tooltip</value>
+    </data>
+    <data name="Folders_SingleLink_LinkTitlePlaceholder" xml:space="preserve">
+        <value>Optional display name</value>
+    </data>
+    <data name="Folders_SingleLink_Browser" xml:space="preserve">
+        <value>Open With Browser</value>
+    </data>
+    <data name="Folders_SingleLink_Browser_Default" xml:space="preserve">
+        <value>System Default Browser</value>
+    </data>
+    <data name="Folders_SingleLink_CustomIcon" xml:space="preserve">
+        <value>Icon Settings</value>
+    </data>
+    <data name="Folders_SingleLink_PickLocalIcon" xml:space="preserve">
+        <value>Local File...</value>
+    </data>
+    <data name="Folders_SingleLink_FetchFavicon" xml:space="preserve">
+        <value>Fetch from Link</value>
+    </data>
+    <data name="Folders_SingleLink_WebIconPlaceholder" xml:space="preserve">
+        <value>Or enter image URL (https://...)</value>
+    </data>
+    <data name="Folders_SingleLink_DownloadIcon" xml:space="preserve">
+        <value>Download</value>
+    </data>
+    <data name="Folders_SingleLink_EmptyHint" xml:space="preserve">
+        <value>Click to set up URL</value>
+    </data>
+    <data name="Folders_SingleLink_OpenLink" xml:space="preserve">
+        <value>Open Link</value>
+    </data>
+    <data name="Folders_SingleLink_CopyLink" xml:space="preserve">
+        <value>Copy Link</value>
+    </data>
+    <data name="Folders_SingleLink_Edit" xml:space="preserve">
+        <value>Edit Link...</value>
+    </data>
+    <data name="Folders_SingleLink_Help" xml:space="preserve">
+        <value>Tip: You can select a local icon, download from a web image URL, or fetch the favicon automatically from the link.</value>
+    </data>
+    <data name="Folders_SingleLink_Fetching" xml:space="preserve">
+        <value>Fetching icon...</value>
+    </data>
+    <data name="Folders_SingleLink_FetchSuccess" xml:space="preserve">
+        <value>Icon acquired successfully</value>
+    </data>
+    <data name="Folders_SingleLink_FetchFailed" xml:space="preserve">
+        <value>Failed to fetch icon. Please check the URL.</value>
+    </data>
 </root>

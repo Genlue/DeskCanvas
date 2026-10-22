@@ -330,4 +330,23 @@ public static class WidgetOleDropTarget
         var root = GetAncestor(hwnd, 2); // GA_ROOT
         return root == IntPtr.Zero ? hwnd : root;
     }
+
+    /// <summary>
+    /// Whether Ctrl is held while a pointer event arrives.
+    /// <para>
+    /// The event carries the modifiers Avalonia knows about, which are the ones it saw; a gesture
+    /// that started outside our window (or while it had no focus) comes through with none, so the
+    /// real key state is consulted as well. Both views that support "Ctrl+click opens the target
+    /// itself" share this helper — a P/Invoke per view is exactly what the widget interop
+    /// boundary forbids.
+    /// </para>
+    /// </summary>
+    public static bool IsControlHeld(Avalonia.Input.KeyModifiers keyModifiers) =>
+        keyModifiers.HasFlag(Avalonia.Input.KeyModifiers.Control)
+        || (GetKeyState(VkControl) & 0x8000) != 0;
+
+    private const int VkControl = 0x11;
+
+    [DllImport("user32.dll")]
+    private static extern short GetKeyState(int nVirtKey);
 }

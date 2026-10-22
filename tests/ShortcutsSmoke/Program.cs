@@ -2,6 +2,8 @@ using System.Text.Json;
 using Avalonia;
 using Avalonia.Headless;
 using DeskCanvas.Core;
+using DeskCanvas.Core.Interfaces;
+using DeskCanvas.Core.Models.Settings;
 using Shortcuts.Models;
 using Shortcuts.Services;
 using Shortcuts.Services.Executors;
@@ -40,6 +42,9 @@ internal static class Program
         CheckNewActionsAndTemplates();
         CheckStoreCrud();
         CheckViewsConstruct();
+        // After the view checks: this one publishes a monochrome theme into the plugin runtime,
+        // and the runtime only ever takes the first publisher.
+        CheckMonochromeTiles();
 
         // The runner is exercised off the dispatcher thread; the process has no running
         // message loop, and nothing here depends on one.
@@ -198,6 +203,60 @@ internal static class Program
         hotkeyTile.SetTileSize(220, 40);
         Check(hotkeyTile.HasHotkeyBadge && hotkeyTile.ShowActionCountText,
             "roomy tile shows both the badge and the action count");
+
+        // The card and the quick panel must read their geometry from the same view-model
+        // properties: a row on the panel and a tile on the card are the same rectangle with
+        // the same radius, whatever the widget's own radius is.
+        var cardXaml = ReadSource("Views", "ShortcutsView.axaml");
+        var panelXaml = ReadSource("Views", "ShortcutsPopupWindow.axaml");
+        var panelCs = ReadSource("Views", "ShortcutsPopupWindow.axaml.cs");
+
+        Check(cardXaml.Contains("Classes=\"shortcut-tile\"") && cardXaml.Contains("CornerRadius=\"{Binding TileCornerRadius}\""),
+            "the card's tile button carries the tile radius (not the Fluent default)");
+        Check(panelXaml.Contains("CornerRadius=\"{Binding TileCornerRadius}\""),
+            "the panel row carries the tile radius too");
+        Check(panelXaml.Contains("CornerRadius=\"{Binding IconCornerRadius}\""),
+            "the panel's icon block stays concentric with its row");
+        Check(panelCs.Contains("tile.SetCardRadius(cardCornerRadius)"),
+            "the panel pushes the host card radius into its rows");
+    }
+
+    /// <summary>
+    /// 单色模式下指令也要是单色的：图标块、字形描边、标题与副标题都得换成单色分支的画笔。
+    /// 断言的是「两种模式下的画笔必须是不同实例」——具体色值取决于主题设置，不该被这条检查钉死。
+    /// </summary>
+    private static void CheckMonochromeTiles()
+    {
+        // Colored first: the monochrome branch is the one that has to differ from it.
+        var colored = new ShortcutTileViewModel(new ShortcutDefinition { Name = "colored", Glyph = "bolt", Color = "#3366CC" });
+        colored.SetCardRadius(16);
+        colored.ApplyTheme(true);
+        var coloredIcon = colored.IconBrush;
+        var coloredStroke = colored.GlyphStrokeBrush;
+        var coloredName = colored.NameBrush;
+
+        ShortcutsRuntime.Publish(new MonochromeSettingsProvider(), null);
+
+        var mono = new ShortcutTileViewModel(new ShortcutDefinition { Name = "mono", Glyph = "bolt", Color = "#3366CC" });
+        mono.SetCardRadius(16);
+        mono.ApplyTheme(true);
+
+        Check(!ReferenceEquals(mono.IconBrush, coloredIcon),
+            "monochrome repaints the tile's icon block");
+        Check(!ReferenceEquals(mono.GlyphStrokeBrush, coloredStroke),
+            "monochrome gives the glyph a contrasting stroke");
+        Check(!ReferenceEquals(mono.NameBrush, coloredName),
+            "monochrome repaints the name and subtitle");
+    }
+
+    /// <summary>Reads a file from the Shortcuts plugin folder.</summary>
+    private static string ReadSource(params string[] parts)
+    {
+        var dir = new DirectoryInfo(AppContext.BaseDirectory);
+        while (dir != null && !Directory.Exists(Path.Combine(dir.FullName, "scripts")))
+            dir = dir.Parent!;
+
+        return File.ReadAllText(Path.Combine(new[] { dir!.FullName, "src", "Widgets", "Shortcuts" }.Concat(parts).ToArray()));
     }
 
     // ---- ecosystem -----------------------------------------------------------------
@@ -735,6 +794,32 @@ internal static class Program
 
     private static string DescribeStrokes(IEnumerable<KeyStroke> strokes) =>
         string.Join(",", strokes.Select(s => s.VirtualKey.ToString("X2") + (s.IsKeyUp ? "↑" : "↓")));
+
+    /// <summary>
+    /// A read-only settings provider whose theme is monochrome: the tile has to read the
+    /// monochrome branch from it.
+    /// </summary>
+    private sealed class MonochromeSettingsProvider : IAppSettingsProvider
+    {
+        private readonly AppSettings data = new(
+            new Theme(false, null, 1.0, true, false, "Segoe UI"),
+            [],
+            new Layout(GridMode.Manual, true, false, true, false),
+            new Dimensions(160, 12, 24),
+            new Region("en-US"),
+            false,
+            null);
+
+        public AppSettings Get() => data;
+
+        public void Save(AppSettings data) { }
+
+        // Explicit accessors rather than a field-like event: a field-like event in a private
+        // nested class is never invoked, which the compiler reports (CS0067).
+        public event DataChangedEvent<AppSettings>? DataChanging { add { } remove { } }
+
+        public event DataChangedEvent<AppSettings>? DataChanged { add { } remove { } }
+    }
 
     private sealed class FakeKeyboardInput : IKeyboardInputSender
     {

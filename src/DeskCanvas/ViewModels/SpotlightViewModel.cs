@@ -55,6 +55,8 @@ public sealed class SpotlightViewModel : INotifyPropertyChanged, IDisposable
 
 	private readonly SpotlightUsageStore usage;
 
+	private readonly SpotlightRecentLaunchStore recentLaunches;
+
 	private readonly SpotlightClipboardService clipboard;
 
 	private readonly FileSearchService files;
@@ -64,6 +66,12 @@ public sealed class SpotlightViewModel : INotifyPropertyChanged, IDisposable
 	private string query = string.Empty;
 
 	private int activeCategory;
+
+	private bool prefixOverrodeCategory;
+
+	private int categoryBeforePrefix;
+
+	private bool isSettingCategoryInternal;
 
 	private int iconGeneration;
 
@@ -209,7 +217,7 @@ public sealed class SpotlightViewModel : INotifyPropertyChanged, IDisposable
 
 	public event PropertyChangedEventHandler? PropertyChanged;
 
-	public SpotlightViewModel(SpotlightQueryRouter router, LauncherCatalog catalog, ShellIconService icons, SpotlightUsageStore usage, SpotlightClipboardService clipboard, FileSearchService files, IAppSettingsProvider settings, SpotlightPreviewService previews, SpotlightWebResults webResults)
+	public SpotlightViewModel(SpotlightQueryRouter router, LauncherCatalog catalog, ShellIconService icons, SpotlightUsageStore usage, SpotlightClipboardService clipboard, FileSearchService files, IAppSettingsProvider settings, SpotlightPreviewService previews, SpotlightWebResults webResults, SpotlightRecentLaunchStore? recentLaunches = null)
 	{
 		this.router = router;
 		this.catalog = catalog;
@@ -220,6 +228,7 @@ public sealed class SpotlightViewModel : INotifyPropertyChanged, IDisposable
 		this.files = files;
 		this.settings = settings;
 		this.webResults = webResults;
+		this.recentLaunches = recentLaunches ?? new SpotlightRecentLaunchStore();
 		categories = BuildCategories(SavedCategoryOrder());
 		catalog.Changed += OnCatalogChanged;
 		settings.DataChanged += OnSettingsChanged;
@@ -313,6 +322,11 @@ public sealed class SpotlightViewModel : INotifyPropertyChanged, IDisposable
 		int num = Math.Clamp(index, 0, Categories.Count - 1);
 		if (activeCategory != num)
 		{
+			if (!isSettingCategoryInternal)
+			{
+				prefixOverrodeCategory = false;
+				categoryBeforePrefix = num;
+			}
 			activeCategory = num;
 			OnPropertyChanged("ActiveCategory");
 			OnPropertyChanged("PlaceholderText");
@@ -320,12 +334,87 @@ public sealed class SpotlightViewModel : INotifyPropertyChanged, IDisposable
 		}
 	}
 
+	public void SetCategoryByKind(SpotlightCategoryKind kind)
+	{
+		var index = categories.FindIndex(c => c.Kind == kind);
+		if (index >= 0)
+		{
+			var prevInternal = isSettingCategoryInternal;
+			isSettingCategoryInternal = true;
+			try
+			{
+				SetCategory(index);
+			}
+			finally
+			{
+				isSettingCategoryInternal = prevInternal;
+			}
+		}
+	}
+
+	public static bool TryMatchPrefix(string text, out SpotlightCategoryKind kind, out string strippedQuery)
+	{
+		kind = SpotlightCategoryKind.All;
+		strippedQuery = string.Empty;
+		if (string.IsNullOrEmpty(text)) return false;
+
+		(string Prefix, SpotlightCategoryKind Kind)[] wordPrefixes =
+		[
+			("clipboard:", SpotlightCategoryKind.Clipboard),
+			("folder:", SpotlightCategoryKind.Folders),
+			("widget:", SpotlightCategoryKind.Widgets),
+			("image:", SpotlightCategoryKind.Images),
+			("file:", SpotlightCategoryKind.Files),
+			("app:", SpotlightCategoryKind.Apps),
+			("img:", SpotlightCategoryKind.Images),
+			("dir:", SpotlightCategoryKind.Folders),
+			("web:", SpotlightCategoryKind.Web),
+			("cb:", SpotlightCategoryKind.Clipboard),
+			("sc:", SpotlightCategoryKind.Widgets),
+		];
+
+		foreach (var (prefix, catKind) in wordPrefixes)
+		{
+			if (text.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+			{
+				kind = catKind;
+				strippedQuery = text[prefix.Length..].TrimStart();
+				return true;
+			}
+		}
+
+		char first = text[0];
+		SpotlightCategoryKind? symbolKind = first switch
+		{
+			'>' => SpotlightCategoryKind.Apps,
+			'#' => SpotlightCategoryKind.Files,
+			'%' => SpotlightCategoryKind.Images,
+			'/' => SpotlightCategoryKind.Folders,
+			'@' => SpotlightCategoryKind.Widgets,
+			'!' => SpotlightCategoryKind.Web,
+			'?' => SpotlightCategoryKind.Web,
+			'$' => SpotlightCategoryKind.Clipboard,
+			_ => null
+		};
+
+		if (symbolKind.HasValue)
+		{
+			kind = symbolKind.Value;
+			strippedQuery = text[1..].TrimStart();
+			return true;
+		}
+
+		return false;
+	}
+
 	/// <summary>
 	/// The field's placeholder. A locked category says so ("搜索图片…") — the only immediate
 	/// feedback a category key can give while the query is still empty.
 	/// </summary>
 	public string PlaceholderText => ActiveKind == SpotlightCategoryKind.All
-		? Locale.Spotlight_Placeholder
+		? (!string.IsNullOrWhiteSpace(settings.Get().EffectiveLauncher.SearchPlaceholder)
+			? settings.Get().EffectiveLauncher.SearchPlaceholder!
+			: Locale.Spotlight_Placeholder)
 		: string.Format(Locale.Spotlight_Placeholder_Category, Categories[activeCategory].Label);
 
 	/// <summary>
@@ -419,6 +508,7 @@ public sealed class SpotlightViewModel : INotifyPropertyChanged, IDisposable
 	{
 		try
 		{
+			bool launched = false;
 			switch (item.Kind)
 			{
 			case SpotlightItemKind.App:
@@ -435,7 +525,8 @@ public sealed class SpotlightViewModel : INotifyPropertyChanged, IDisposable
 				}
 				LauncherCatalog.Launch(entry);
 				RecordLaunch(item);
-				return true;
+				launched = true;
+				break;
 			}
 			case SpotlightItemKind.File:
 			{
@@ -450,7 +541,8 @@ public sealed class SpotlightViewModel : INotifyPropertyChanged, IDisposable
 					return true;
 				}
 				LauncherCatalog.OpenPath(path);
-				return true;
+				launched = true;
+				break;
 			}
 			case SpotlightItemKind.Clipboard:
 			case SpotlightItemKind.Workflow:
@@ -463,11 +555,19 @@ public sealed class SpotlightViewModel : INotifyPropertyChanged, IDisposable
 				{
 					return false;
 				}
-				return await run().ConfigureAwait(continueOnCapturedContext: true);
+				launched = await run().ConfigureAwait(continueOnCapturedContext: true);
+				break;
 			}
 			default:
 				return false;
 			}
+
+			if (launched && !reveal && IsFiltering)
+			{
+				recentLaunches.RecordLaunch(item);
+			}
+
+			return launched;
 		}
 		catch
 		{
@@ -475,11 +575,19 @@ public sealed class SpotlightViewModel : INotifyPropertyChanged, IDisposable
 		}
 	}
 
+	public async Task<bool> OpenItem(SpotlightItem item) => await ActivateAsync(item);
+
+	public async Task<bool> LaunchSelected() => selected != null ? await ActivateAsync(selected) : false;
+
 	public void RecordLaunch(SpotlightItem item)
 	{
 		usage.RecordLaunch(item.Id);
 		ApplyUsage(item);
 		RefreshRecentsAsync();
+		if (IsFiltering)
+		{
+			recentLaunches.RecordLaunch(item);
+		}
 	}
 
 	public void Start()
@@ -551,7 +659,40 @@ public sealed class SpotlightViewModel : INotifyPropertyChanged, IDisposable
 
 	public void SetQuery(string? text)
 	{
-		Query = text?.Trim() ?? string.Empty;
+		var raw = text ?? string.Empty;
+		if (string.IsNullOrWhiteSpace(raw) && raw.Length > 0 && settings.Get().EffectiveLauncher.SpaceShowsRecentLaunches)
+		{
+			if (prefixOverrodeCategory)
+			{
+				prefixOverrodeCategory = false;
+				SetCategory(categoryBeforePrefix);
+			}
+			Query = raw;
+			StartQuery();
+			return;
+		}
+
+		var trimmed = raw.Trim();
+		if (TryMatchPrefix(trimmed, out var targetKind, out var stripped))
+		{
+			if (!prefixOverrodeCategory)
+			{
+				categoryBeforePrefix = activeCategory;
+				prefixOverrodeCategory = true;
+			}
+			SetCategoryByKind(targetKind);
+			Query = trimmed;
+			StartQuery(targetKind, stripped);
+			return;
+		}
+
+		if (prefixOverrodeCategory)
+		{
+			prefixOverrodeCategory = false;
+			SetCategory(categoryBeforePrefix);
+		}
+
+		Query = trimmed;
 		StartQuery();
 	}
 
@@ -570,29 +711,181 @@ public sealed class SpotlightViewModel : INotifyPropertyChanged, IDisposable
 		files.InvalidateIndex();
 	}
 
-	private void StartQuery()
+	private void StartQuery(SpotlightCategoryKind? targetKind = null, string? strippedQuery = null)
 	{
-		if (!disposed)
+		if (disposed) return;
+
+		int generation = Interlocked.Increment(ref searchGeneration);
+		searchCancellation?.Cancel();
+		searchCancellation?.Dispose();
+		searchCancellation = null;
+
+		// Single space or only whitespace query with SpaceShowsRecentLaunches enabled:
+		// Display recently opened items from search results.
+		if (string.IsNullOrWhiteSpace(query) && query.Length > 0 && settings.Get().EffectiveLauncher.SpaceShowsRecentLaunches)
 		{
-			int generation = Interlocked.Increment(ref searchGeneration);
-			searchCancellation?.Cancel();
-			searchCancellation?.Dispose();
-			searchCancellation = null;
-			if (!IsFiltering)
+			IsSearching = false;
+			SearchHint = null;
+			lastGroups = Array.Empty<SpotlightGroup>();
+			var maxCount = settings.Get().EffectiveLauncher.SpaceRecentLaunchesCount;
+			var recents = recentLaunches.GetRecent(maxCount);
+			Results.Clear();
+			if (recents.Count > 0)
 			{
-				IsSearching = false;
-				SearchHint = null;
-				lastGroups = Array.Empty<SpotlightGroup>();
-				ApplyResults();
-				RefreshRecentsAsync();
+				Results.Add(SpotlightItem.CreateHeader(Locale.Spotlight_RecentLaunches_Header));
+				int iconGen = Volatile.Read(in iconGeneration);
+				foreach (var recent in recents)
+				{
+					var item = MapRecentLaunch(recent, iconGen);
+					if (item != null)
+					{
+						Results.Add(item);
+					}
+				}
 			}
-			else
+			OnPropertyChanged("IsEmptyResult");
+			OnPropertyChanged("Results");
+			UpdateGlyph();
+			return;
+		}
+
+		if (!IsFiltering)
+		{
+			IsSearching = false;
+			SearchHint = null;
+			lastGroups = Array.Empty<SpotlightGroup>();
+			ApplyResults();
+			RefreshRecentsAsync();
+			return;
+		}
+
+		if (!targetKind.HasValue && TryMatchPrefix(query, out var matchedKind, out var stripped))
+		{
+			targetKind = matchedKind;
+			strippedQuery = stripped;
+		}
+
+		// When query is just the prefix (stripped query is empty):
+		// Switch category chip and show category default list / app list.
+		if (targetKind.HasValue && string.IsNullOrEmpty(strippedQuery))
+		{
+			IsSearching = false;
+			SearchHint = null;
+			lastGroups = Array.Empty<SpotlightGroup>();
+			Results.Clear();
+
+			if (targetKind.Value == SpotlightCategoryKind.Apps)
 			{
-				CancellationTokenSource cancellationTokenSource = (searchCancellation = new CancellationTokenSource());
-				IsSearching = true;
-				_ = RouteFastAppsAsync(query, generation, cancellationTokenSource.Token);
-				RouteAsync(query, generation, cancellationTokenSource.Token);
+				Results.Add(SpotlightItem.CreateHeader(Locale.Spotlight_Category_Apps));
+				foreach (var item in Items)
+				{
+					Results.Add(item);
+				}
 			}
+			else if (targetKind.Value == SpotlightCategoryKind.Clipboard)
+			{
+				var entries = clipboard.Entries;
+				if (entries.Count > 0)
+				{
+					Results.Add(SpotlightItem.CreateHeader(Locale.Spotlight_Category_Clipboard));
+					foreach (var entry in entries)
+					{
+						var captured = entry;
+						Results.Add(SpotlightItem.ForClipboard(
+							entry.Id, entry.Text, entry.IsLink, entry.CapturedUtc, entry.SourceProcess,
+							() => Task.FromResult(clipboard.CopyBack(captured.Id) is not null)));
+					}
+				}
+			}
+
+			OnPropertyChanged("IsEmptyResult");
+			OnPropertyChanged("Results");
+			UpdateGlyph();
+			return;
+		}
+
+		string searchText = strippedQuery ?? query;
+		CancellationTokenSource cancellationTokenSource = (searchCancellation = new CancellationTokenSource());
+		IsSearching = true;
+		_ = RouteFastAppsAsync(searchText, generation, cancellationTokenSource.Token);
+		RouteAsync(searchText, generation, cancellationTokenSource.Token);
+	}
+
+	private SpotlightItem? MapRecentLaunch(SpotlightRecentLaunch recent, int generation)
+	{
+		switch (recent.Kind)
+		{
+		case SpotlightItemKind.App:
+		{
+			var entry = catalog.Entries.FirstOrDefault(e => e.Key == recent.Id || e.Target == recent.Target)
+				?? new LauncherEntry(recent.Display, recent.Target ?? recent.Id, recent.Target, IsBroken: false);
+			var item = new SpotlightItem(entry)
+			{
+				Subtitle = recent.Sub ?? entry.ShortcutPath
+			};
+			ApplyUsage(item);
+			if (!string.IsNullOrEmpty(entry.ShortcutPath))
+			{
+				LoadResultIconAsync(item, entry.ShortcutPath, generation);
+			}
+			return item;
+		}
+		case SpotlightItemKind.File:
+		{
+			var path = recent.Target ?? recent.Id;
+			bool isFolder = Directory.Exists(path);
+			long size = 0L;
+			if (!isFolder && File.Exists(path))
+			{
+				try { size = new FileInfo(path).Length; } catch { }
+			}
+			var item = new SpotlightItem(new FileSearchHit(recent.Display, path, isFolder, size, 0));
+			if (!string.IsNullOrEmpty(recent.Sub))
+			{
+				item.Subtitle = recent.Sub;
+			}
+			LoadResultIconAsync(item, path, generation);
+			return item;
+		}
+		case SpotlightItemKind.Clipboard:
+		{
+			var capturedId = recent.Id.StartsWith("clip:", StringComparison.Ordinal)
+				? recent.Id["clip:".Length..]
+				: recent.Id;
+			return SpotlightItem.ForClipboard(
+				capturedId, recent.Display, isLink: false, recent.Timestamp, recent.Sub,
+				() => Task.FromResult(clipboard.CopyBack(capturedId) is not null));
+		}
+		case SpotlightItemKind.Web:
+		case SpotlightItemKind.WebResult:
+		{
+			var url = recent.Target ?? recent.Id;
+			return SpotlightItem.ForWebHit(
+				new SpotlightWebHit(recent.Display, url, recent.Sub ?? string.Empty),
+				() =>
+				{
+					var browser = settings.Get().EffectiveLauncher.EffectiveSearchBrowser;
+					if (!SpotlightWebProvider.Open(new SpotlightWebQuery(string.Empty, string.Empty, string.Empty, url, string.Empty, browser)))
+					{
+						LauncherCatalog.OpenPath(url);
+					}
+					return Task.FromResult(true);
+				});
+		}
+		default:
+		{
+			return SpotlightItem.ForWorkflow(
+				recent.Id, recent.Display, recent.Sub, null,
+				() =>
+				{
+					if (!string.IsNullOrEmpty(recent.Target))
+					{
+						LauncherCatalog.OpenPath(recent.Target);
+						return Task.FromResult(true);
+					}
+					return Task.FromResult(false);
+				});
+		}
 		}
 	}
 
@@ -1471,6 +1764,10 @@ public sealed class SpotlightViewModel : INotifyPropertyChanged, IDisposable
 
 	private void OnSettingsChanged(object? sender, AppSettings? oldData, AppSettings newData)
 	{
+		if (oldData?.EffectiveLauncher.SearchPlaceholder != newData.EffectiveLauncher.SearchPlaceholder)
+		{
+			Dispatcher.UIThread.Post(() => OnPropertyChanged("PlaceholderText"));
+		}
 		if (oldData?.EffectiveLauncher.ShowNames != newData.EffectiveLauncher.ShowNames)
 		{
 			bool showNames = newData.EffectiveLauncher.ShowNames;

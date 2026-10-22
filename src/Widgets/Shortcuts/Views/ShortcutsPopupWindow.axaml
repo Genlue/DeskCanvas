@@ -67,13 +67,14 @@
                                 <Border Classes="popup-row"
                                         Margin="0,2"
                                         Padding="10,8"
-                                        CornerRadius="10"
+                                        CornerRadius="{Binding TileCornerRadius}"
                                         Background="{Binding TintBrush}"
                                         PointerPressed="OnRowPressed">
                                     <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto,Auto">
-                                        <Border Grid.Column="0" Width="28" Height="28" CornerRadius="8"
+                                        <Border Grid.Column="0" Width="28" Height="28"
+                                                CornerRadius="{Binding IconCornerRadius}"
                                                 Background="{Binding IconBrush}" VerticalAlignment="Center">
-                                            <sc:GlyphView Data="{Binding GlyphGeometry}" Stroke="White"
+                                            <sc:GlyphView Data="{Binding GlyphGeometry}" Stroke="{Binding GlyphStrokeBrush}"
                                                           StrokeThickness="1.7"
                                                           Width="15" Height="15"
                                                           HorizontalAlignment="Center" VerticalAlignment="Center" />

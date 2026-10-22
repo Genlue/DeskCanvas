@@ -1534,4 +1534,12 @@ Migrate (copy) the current data there? Choosing "Switch without migrating" start
   <data name="Settings_Spotlight_Web_Results_Subtitle" xml:space="preserve"><value>How many real results the launcher lists under 在浏览器中搜索 while you type (the preview comes from Bing; the row above still opens your own engine). 0 leaves only the action row — the launcher then makes no network request.</value></data>
   <data name="Settings_Spotlight_CategoryKeys_MoveUp" xml:space="preserve"><value>Move up</value></data>
   <data name="Settings_Spotlight_CategoryKeys_MoveDown" xml:space="preserve"><value>Move down</value></data>
+  <data name="Settings_Spotlight_SearchPlaceholder" xml:space="preserve"><value>Custom Search Placeholder</value></data>
+  <data name="Settings_Spotlight_SearchPlaceholder_Hint" xml:space="preserve"><value>Customize the search placeholder text in All category. Leave blank to use the default.</value></data>
+  <data name="Settings_Spotlight_SearchPlaceholder_Reset" xml:space="preserve"><value>Reset to Default</value></data>
+  <data name="Settings_Spotlight_SpaceRecent_Title" xml:space="preserve"><value>Space Shows Recent Launches</value></data>
+  <data name="Settings_Spotlight_SpaceRecent_Subtitle" xml:space="preserve"><value>When entering only a space in the search field, show items recently opened via search.</value></data>
+  <data name="Settings_Spotlight_SpaceRecentCount_Title" xml:space="preserve"><value>Recent Launches Count</value></data>
+  <data name="Settings_Spotlight_SpaceRecentCount_Subtitle" xml:space="preserve"><value>Number of recently opened items to show when typing space (3–20).</value></data>
+  <data name="Spotlight_RecentLaunches_Header" xml:space="preserve"><value>Recently Opened</value></data>
 </root>

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq;
 using Avalonia.Controls;
 using Avalonia.Input;
@@ -285,6 +285,9 @@ public partial class Spotlight : UserControl
         => viewModel.CommitWebResultCount();
 
     // ---- results: recents -----------------------------------------------------------
+
+    private void OnSpaceRecentLaunchesCountCommitted(object? sender, LabeledSliderValueCommittedEventArgs e)
+        => viewModel.CommitSpaceRecentLaunchesCount();
 
     private void OnClearUsage(object? sender, RoutedEventArgs e) => viewModel.ClearUsage();
 

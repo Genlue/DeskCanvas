@@ -105,6 +105,7 @@ internal static class Program
         RunCalculatorChecks(catalog, icons);
         RunLauncherModeChecks(catalog, icons);
         RunFileSearchChecks();
+        RunPrefixAndRecentLaunchChecks(catalog, icons);
         RunBlacklistChecks();
         RunAppearanceChecks();
         RunSpotlightSurfaceChecks(folder, catalog, icons);
@@ -2524,6 +2525,175 @@ internal static class Program
             .ResolveTheme(widgetGlass, isDark: false);
         Check(Math.Abs(tunedGlass.EffectiveLiquidGlass.Blur - 12) < 0.001,
             "glass: the launcher's own optics are what the card renders with");
+    }
+
+    /// <summary>
+    /// 第十批的三件事：类别前缀、单空格的「最近通过搜索打开」、自定义占位符——加上托住它们的两条
+    /// 规则：Everything 的 MATCHPATH 何时开，以及应用结果里不再混进「最近使用」。
+    /// <para>
+    /// 全部是纯函数或视图模型级断言：不需要窗口，也不需要真的打开文件。打开动作直接用
+    /// <c>RecordLaunch</c> 记账——真启动进程的无头检查只会把沙箱弄脏。
+    /// </para>
+    /// </summary>
+    private static void RunPrefixAndRecentLaunchChecks(LauncherCatalog catalog, ShellIconService icons)
+    {
+        Console.WriteLine("\n--- prefixes / space-recent / placeholder ---");
+
+        // ---- 1. 前缀解析（纯函数） ----
+        (string Text, SpotlightCategoryKind Kind, string Stripped)[] symbols =
+        [
+            (">calc", SpotlightCategoryKind.Apps, "calc"),
+            ("#report", SpotlightCategoryKind.Files, "report"),
+            ("%photo", SpotlightCategoryKind.Images, "photo"),
+            ("/src", SpotlightCategoryKind.Folders, "src"),
+            ("@clock", SpotlightCategoryKind.Widgets, "clock"),
+            ("!weather", SpotlightCategoryKind.Web, "weather"),
+            ("?weather", SpotlightCategoryKind.Web, "weather"),
+            ("$text", SpotlightCategoryKind.Clipboard, "text"),
+        ];
+
+        foreach (var (text, kind, stripped) in symbols)
+        {
+            Check(SpotlightViewModel.TryMatchPrefix(text, out var got, out var rest)
+                  && got == kind && rest == stripped,
+                $"prefix: '{text}' locks {kind} and leaves '{stripped}'");
+        }
+
+        (string Text, SpotlightCategoryKind Kind)[] words =
+        [
+            ("app:notes", SpotlightCategoryKind.Apps),
+            ("file:notes", SpotlightCategoryKind.Files),
+            ("img:notes", SpotlightCategoryKind.Images),
+            ("dir:notes", SpotlightCategoryKind.Folders),
+            ("widget:notes", SpotlightCategoryKind.Widgets),
+            ("web:notes", SpotlightCategoryKind.Web),
+            ("clipboard:notes", SpotlightCategoryKind.Clipboard),
+        ];
+
+        foreach (var (text, kind) in words)
+        {
+            Check(SpotlightViewModel.TryMatchPrefix(text, out var got, out var rest)
+                  && got == kind && rest == "notes",
+                $"prefix: the word form '{text}' locks {kind}");
+        }
+
+        Check(SpotlightViewModel.TryMatchPrefix(">  calc", out _, out var padded) && padded == "calc",
+            "prefix: whitespace after the prefix is dropped");
+        Check(SpotlightViewModel.TryMatchPrefix("APP:notes", out var upper, out _) && upper == SpotlightCategoryKind.Apps,
+            "prefix: the word forms are case-insensitive");
+        Check(!SpotlightViewModel.TryMatchPrefix("calc", out _, out _),
+            "prefix: a plain word is not a prefix");
+        Check(!SpotlightViewModel.TryMatchPrefix("a > b", out _, out _),
+            "prefix: only the head of the query counts as a prefix");
+        Check(SpotlightViewModel.TryMatchPrefix("@", out var bare, out var bareRest)
+              && bare == SpotlightCategoryKind.Widgets && bareRest.Length == 0,
+            "prefix: the prefix alone locks the category with an empty body");
+
+        // ---- 2. Everything 的 MATCHPATH：默认只按文件名，路径查询才开 ----
+        Check(!FileSearchService.NeedsMatchPath(FileSearchQuery.Parse("annual")),
+            "everything: a plain word stays name-only (MATCHPATH off)");
+        Check(FileSearchService.NeedsMatchPath(FileSearchQuery.Parse("path:docs annual")),
+            "everything: path: turns MATCHPATH on");
+        Check(FileSearchService.NeedsMatchPath(FileSearchQuery.Parse(@"docs\annual")),
+            "everything: a term carrying a separator turns MATCHPATH on");
+
+        // ---- 3. 无文本命中就是 0：搜索结果里不再浮起「最近使用」 ----
+        Check(SpotlightRanking.Score("Aurora Notes", "zzz", new LauncherUsage(LaunchCount: 50)) == 0,
+            "ranking: a frequently used app with no text hit scores 0 (recents stay in the grid)");
+        Check(SpotlightRanking.Score("Aurora Notes", "aurora", new LauncherUsage()) > 0,
+            "ranking: the same app still matches when its name matches");
+
+        // ---- 4. 单空格：最近通过搜索打开的条目 ----
+        var seedDir = Path.Combine(sandbox, "recent-launch-seed");
+        Directory.CreateDirectory(seedDir);
+
+        // Five real files: the row is rebuilt from the path, so it needs a size and an icon.
+        var seeds = Enumerable.Range(1, 5)
+            .Select(i => Path.Combine(seedDir, $"seed-{i}.txt"))
+            .ToList();
+        foreach (var seed in seeds) File.WriteAllText(seed, "seed");
+
+        var capped = BuildSettings(SurfaceStyle.Acrylic, dark: false) with
+        {
+            Launcher = new LauncherSettings(Enabled: true, Columns: 7, GapPercent: 18, WebResultCount: 0,
+                SpaceShowsRecentLaunches: true, SpaceRecentLaunchesCount: 3),
+        };
+        var cappedProvider = new FakeSettingsProvider(capped);
+        var cappedVm = BuildViewModel(cappedProvider, catalog, icons, "usage-recentlaunches.json");
+        cappedVm.Reload();
+
+        // RecordLaunch only books the item while the field is filtering: the store must not
+        // collect entries opened from the empty-query app grid.
+        cappedVm.SetQuery("seed-query");
+        foreach (var seed in seeds)
+        {
+            cappedVm.RecordLaunch(new SpotlightItem(
+                new FileSearchHit(Path.GetFileName(seed), seed, false, 4, 0)));
+        }
+
+        cappedVm.SetQuery(" ");
+        var rows = cappedVm.Results.Where(item => item.Kind != SpotlightItemKind.Header).ToList();
+        Check(cappedVm.Results.Any(item => item.Kind == SpotlightItemKind.Header),
+            "space: a single space opens with a 最近打开 header");
+        Check(rows.Count == 3,
+            $"space: the count setting caps the list (expected 3, got {rows.Count})");
+        Check(rows.All(item => item.Kind == SpotlightItemKind.File),
+            "space: every row is a real item, not a filler");
+        // The newest launch is the one recorded last.
+        Check(rows.Count > 0 && rows[0].Name == "seed-5.txt",
+            $"space: the newest launch leads (got '{rows.FirstOrDefault()?.Name}')");
+
+        // A tab is whitespace too; an empty field is not a space and stays in grid mode.
+        cappedVm.SetQuery("\t");
+        Check(cappedVm.Results.Any(item => item.Kind != SpotlightItemKind.Header),
+            "space: any whitespace-only input counts, not just the space bar");
+
+        var off = capped with
+        {
+            Launcher = new LauncherSettings(Enabled: true, Columns: 7, GapPercent: 18, WebResultCount: 0,
+                SpaceShowsRecentLaunches: false, SpaceRecentLaunchesCount: 3),
+        };
+        var offVm = BuildViewModel(new FakeSettingsProvider(off), catalog, icons, "usage-recentlaunches.json");
+        offVm.Reload();
+        offVm.SetQuery(" ");
+        Check(!offVm.Results.Any(item => item.Kind != SpotlightItemKind.Header),
+            "space: the setting off leaves the single space with no recent rows");
+
+        Check(new LauncherSettings(SpaceRecentLaunchesCount: 99).Normalize().SpaceRecentLaunchesCount
+                  == LauncherSettings.MaxSpaceRecentLaunchesCount
+              && new LauncherSettings(SpaceRecentLaunchesCount: 1).Normalize().SpaceRecentLaunchesCount
+                  == LauncherSettings.MinSpaceRecentLaunchesCount,
+            "space: the count is clamped into 3–20");
+
+        // ---- 5. 自定义占位符（只作用于「全部」，留空即恢复默认） ----
+        var custom = BuildSettings(SurfaceStyle.Acrylic, dark: false) with
+        {
+            Launcher = new LauncherSettings(Enabled: true, Columns: 7, GapPercent: 18, WebResultCount: 0,
+                SearchPlaceholder: "找点什么"),
+        };
+        var customVm = BuildViewModel(new FakeSettingsProvider(custom), catalog, icons);
+        customVm.Reload();
+        Check(customVm.PlaceholderText == "找点什么",
+            $"placeholder: the custom text is what the empty field shows (got '{customVm.PlaceholderText}')");
+
+        var blank = BuildSettings(SurfaceStyle.Acrylic, dark: false) with
+        {
+            Launcher = new LauncherSettings(Enabled: true, Columns: 7, GapPercent: 18, WebResultCount: 0,
+                SearchPlaceholder: "   "),
+        };
+        var blankVm = BuildViewModel(new FakeSettingsProvider(blank), catalog, icons);
+        blankVm.Reload();
+        Check(blankVm.PlaceholderText == Locale.Spotlight_Placeholder,
+            "placeholder: a blank custom text falls back to the localized default");
+
+        var defaultVm = BuildViewModel(new FakeSettingsProvider(BuildSettings(SurfaceStyle.Acrylic, dark: false)), catalog, icons);
+        defaultVm.Reload();
+        Check(defaultVm.PlaceholderText == Locale.Spotlight_Placeholder,
+            "placeholder: unset reads as the default");
+
+        defaultVm.SetCategoryByKind(SpotlightCategoryKind.Files);
+        Check(defaultVm.PlaceholderText != Locale.Spotlight_Placeholder,
+            "placeholder: a locked category says which one it is, not the custom text");
     }
 
     /// <summary>

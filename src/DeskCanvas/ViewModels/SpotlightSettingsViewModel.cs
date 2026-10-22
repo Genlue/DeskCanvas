@@ -1,10 +1,11 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Windows.Input;
 using Avalonia;
 using Avalonia.Styling;
 using DeskCanvas.Core.Interfaces;
@@ -204,6 +205,9 @@ public class SpotlightSettingsViewModel : ReactiveObject, IDisposable
         cornerRadiusDraft = launcher.CornerRadius;
         opacityDraft = launcher.OpacityLevel ?? settings.Get().Theme.OpacityLevel;
         clipboardRetentionDraft = launcher.ClipboardRetentionDays;
+        spaceRecentLaunchesCountDraft = launcher.SpaceRecentLaunchesCount;
+        spaceRecentLaunchesCountDraft = launcher.SpaceRecentLaunchesCount;
+        ResetSearchPlaceholderCommand = ReactiveCommand.Create(ResetSearchPlaceholder);
         SeedGlassDrafts(launcher);
 
         SurfaceOptions =
@@ -259,6 +263,62 @@ public class SpotlightSettingsViewModel : ReactiveObject, IDisposable
     }
 
     // ---- state ---------------------------------------------------------------------
+
+    public string SearchPlaceholder
+    {
+        get => settings.Get().EffectiveLauncher.SearchPlaceholder ?? string.Empty;
+        set
+        {
+            if (string.Equals(value, settings.Get().EffectiveLauncher.SearchPlaceholder, StringComparison.Ordinal)) return;
+            Save(launcher => launcher with { SearchPlaceholder = string.IsNullOrWhiteSpace(value) ? null : value.Trim() });
+            this.RaisePropertyChanged();
+        }
+    }
+
+    public ICommand ResetSearchPlaceholderCommand { get; }
+
+    public void ResetSearchPlaceholder()
+    {
+        SearchPlaceholder = string.Empty;
+    }
+
+    public bool SpaceShowsRecentLaunches
+    {
+        get => settings.Get().EffectiveLauncher.SpaceShowsRecentLaunches;
+        set
+        {
+            if (value == SpaceShowsRecentLaunches) return;
+            Save(launcher => launcher with { SpaceShowsRecentLaunches = value });
+            this.RaisePropertyChanged();
+            this.RaisePropertyChanged(nameof(IsSpaceRecentLaunchesCountEditable));
+        }
+    }
+
+    public bool IsSpaceRecentLaunchesCountEditable => SpaceShowsRecentLaunches;
+
+    private double spaceRecentLaunchesCountDraft;
+
+    public double SpaceRecentLaunchesCount
+    {
+        get => spaceRecentLaunchesCountDraft;
+        set
+        {
+            var count = Math.Clamp(
+                Math.Round(value),
+                LauncherSettings.MinSpaceRecentLaunchesCount,
+                LauncherSettings.MaxSpaceRecentLaunchesCount);
+            if (Math.Abs(count - spaceRecentLaunchesCountDraft) < 0.001) return;
+            spaceRecentLaunchesCountDraft = count;
+            this.RaisePropertyChanged();
+        }
+    }
+
+    public void CommitSpaceRecentLaunchesCount()
+    {
+        var count = (int)Math.Round(spaceRecentLaunchesCountDraft);
+        if (count == settings.Get().EffectiveLauncher.SpaceRecentLaunchesCount) return;
+        Save(launcher => launcher with { SpaceRecentLaunchesCount = count });
+    }
 
     public bool Enabled
     {
@@ -1801,6 +1861,10 @@ public class SpotlightSettingsViewModel : ReactiveObject, IDisposable
             string.Equals(o.Path, launcher.EffectiveSearchBrowser, StringComparison.OrdinalIgnoreCase))
             ?? WebBrowserOptions[0];
 
+        this.RaisePropertyChanged(nameof(SearchPlaceholder));
+        this.RaisePropertyChanged(nameof(SpaceShowsRecentLaunches));
+        this.RaisePropertyChanged(nameof(IsSpaceRecentLaunchesCountEditable));
+        this.RaisePropertyChanged(nameof(SpaceRecentLaunchesCount));
         this.RaisePropertyChanged(nameof(Enabled));
         this.RaisePropertyChanged(nameof(BlockFullscreen));
         this.RaisePropertyChanged(nameof(HotkeyText));

@@ -16,6 +16,13 @@ namespace Shortcuts.Views;
 public partial class ShortcutsPopupWindow : SecondaryPanelWindow
 {
     private readonly Point? spawnScreenCenter;
+
+    /// <summary>
+    /// The host card's corner radius. The panel's rows derive their radius from the same source
+    /// as the card's tiles, so a row and a tile on the same widget always share one geometry.
+    /// </summary>
+    private readonly double cardCornerRadius;
+
     private readonly ObservableCollection<ShortcutTileViewModel> items = [];
     private readonly Dictionary<string, ShortcutTileViewModel> cache = new(StringComparer.Ordinal);
     private bool eventsAttached;
@@ -29,6 +36,7 @@ public partial class ShortcutsPopupWindow : SecondaryPanelWindow
     public ShortcutsPopupWindow(Point? screenCenter, double? cornerRadius = null)
     {
         spawnScreenCenter = screenCenter;
+        cardCornerRadius = cornerRadius ?? 0;
 
         InitializeComponent();
         InitializePanel(cornerRadius);
@@ -138,6 +146,7 @@ public partial class ShortcutsPopupWindow : SecondaryPanelWindow
             if (!cache.TryGetValue(shortcut.Id, out var tile))
             {
                 tile = new ShortcutTileViewModel(shortcut);
+                tile.SetCardRadius(cardCornerRadius);
                 tile.ApplyTheme(ActualThemeVariant == ThemeVariant.Dark);
                 cache[shortcut.Id] = tile;
             }
@@ -145,6 +154,7 @@ public partial class ShortcutsPopupWindow : SecondaryPanelWindow
             {
                 // Reused rows must pick up renames / new hotkeys from the shared document.
                 tile.Apply(shortcut);
+                tile.SetCardRadius(cardCornerRadius);
                 tile.ApplyTheme(ActualThemeVariant == ThemeVariant.Dark);
             }
 

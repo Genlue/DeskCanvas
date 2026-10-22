@@ -2,6 +2,8 @@ using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using Avalonia;
 using Avalonia.Media;
+using Avalonia.Styling;
+using DeskCanvas.Core.Models.Settings;
 using Shortcuts.Models;
 using Shortcuts.Services;
 
@@ -31,6 +33,7 @@ public sealed class ShortcutTileViewModel : INotifyPropertyChanged
     private string actionCountText = string.Empty;
     private IBrush tintBrush = Brushes.Transparent;
     private IBrush iconBrush = Brushes.Gray;
+    private IBrush glyphStrokeBrush = Brushes.White;
     private string hotkeyText = string.Empty;
 
     // Corner geometry: the outer tile follows the card radius, the icon block is concentric
@@ -126,6 +129,17 @@ public sealed class ShortcutTileViewModel : INotifyPropertyChanged
         }
     }
 
+    public IBrush GlyphStrokeBrush
+    {
+        get => glyphStrokeBrush;
+        private set
+        {
+            if (ReferenceEquals(glyphStrokeBrush, value)) return;
+            glyphStrokeBrush = value;
+            OnPropertyChanged();
+        }
+    }
+
     public IBrush NameBrush => nameBrush;
 
     public IBrush SubBrush => subBrush;
@@ -183,10 +197,8 @@ public sealed class ShortcutTileViewModel : INotifyPropertyChanged
             ? Loc.Get("Shortcuts_Actions_CountOne")
             : Loc.Format("Shortcuts_Actions_Count", actionCount);
 
-        TintBrush = Visuals.Tint(shortcut.Color, 0x2E);
-        IconBrush = Visuals.Brush(shortcut.Color);
         HotkeyText = shortcut.Hotkey ?? string.Empty;
-        UpdateTextBrushes();
+        UpdateVisualBrushes();
     }
 
     /// <summary>Card radius (already scaled by the host) used to derive the tile radius.</summary>
@@ -243,32 +255,138 @@ public sealed class ShortcutTileViewModel : INotifyPropertyChanged
     }
 
     /// <summary>
-    /// Swap the text brushes for the active theme. <see cref="Visuals.Shade"/> only darkens
-    /// (text on a light tint); on a dark card the same darkened accent sits at ~1.2:1 against
-    /// the tile and disappears — the dark variant lightens instead, so names and subtitles stay
-    /// readable on both variants. Called by the card/panel views on construction and on every
-    /// ActualThemeVariant change.
+    /// Swap the brushes for the active theme. In monochrome mode, adapts icon, glyph stroke,
+    /// tint, and text colors to the configured monochrome variant.
     /// </summary>
     public void ApplyTheme(bool isDark)
     {
         darkTheme = isDark;
-        UpdateTextBrushes();
+        UpdateVisualBrushes();
     }
 
-    private void UpdateTextBrushes()
+    private void UpdateVisualBrushes()
     {
         IBrush nextName;
         IBrush nextSub;
+        IBrush nextIcon;
+        IBrush nextGlyphStroke;
+        IBrush nextTint;
 
         if (IsCreate)
         {
             nextName = darkTheme ? CreateNameDark : CreateNameLight;
             nextSub = darkTheme ? CreateSubDark : CreateSubLight;
+            nextIcon = new SolidColorBrush(Color.Parse("#B4B2A9"));
+            nextGlyphStroke = Brushes.White;
+            nextTint = Brushes.Transparent;
         }
         else
         {
-            nextName = darkTheme ? Visuals.Lighten(colorHex, 1.65) : Visuals.Shade(colorHex);
-            nextSub = darkTheme ? Visuals.Lighten(colorHex, 1.3) : Visuals.Brush(colorHex);
+            var theme = ShortcutsRuntime.AppSettings?.Get()?.Theme;
+            var isMonochrome = theme != null && !theme.IsColorful && theme.Monochrome;
+
+            if (isMonochrome)
+            {
+                var variant = darkTheme ? ThemeVariant.Dark : ThemeVariant.Light;
+
+                // Resolve IconBrush
+                if (Application.Current != null &&
+                    Application.Current.TryGetResource("SystemControlForegroundAccentBrush", variant, out var ab) &&
+                    ab is IBrush accentB)
+                {
+                    nextIcon = accentB;
+                }
+                else if (theme != null && theme.EffectiveMonochromeVariant == MonochromeStyle.BlackWhite)
+                {
+                    nextIcon = darkTheme ? Brushes.White : Brushes.Black;
+                }
+                else if (theme != null && theme.EffectiveMonochromeVariant == MonochromeStyle.BackgroundColor)
+                {
+                    var hex = darkTheme ? theme.EffectiveSolidBackgroundLight : theme.EffectiveSolidBackgroundDark;
+                    nextIcon = new SolidColorBrush(Color.TryParse(hex, out var bg) ? bg : (darkTheme ? Colors.White : Colors.Black));
+                }
+                else
+                {
+                    var accent = theme?.AccentColor;
+                    if (!string.IsNullOrWhiteSpace(accent) && Color.TryParse(accent, out var parsedAccent))
+                        nextIcon = new SolidColorBrush(parsedAccent);
+                    else
+                        nextIcon = darkTheme ? new SolidColorBrush(Color.Parse("#70A5FF")) : new SolidColorBrush(Color.Parse("#0078D4"));
+                }
+
+                // Resolve GlyphStrokeBrush (high contrast against IconBrush)
+                if (Application.Current != null &&
+                    Application.Current.TryGetResource("AccentContrastForegroundBrush", variant, out var cb) &&
+                    cb is IBrush contrastB)
+                {
+                    nextGlyphStroke = contrastB;
+                }
+                else
+                {
+                    nextGlyphStroke = darkTheme ? Brushes.Black : Brushes.White;
+                }
+
+                // Resolve TintBrush (subtle card pill background)
+                if (nextIcon is ISolidColorBrush scb)
+                {
+                    nextTint = new SolidColorBrush(Color.FromArgb(0x1C, scb.Color.R, scb.Color.G, scb.Color.B));
+                }
+                else
+                {
+                    nextTint = darkTheme
+                        ? new SolidColorBrush(Color.FromArgb(0x18, 255, 255, 255))
+                        : new SolidColorBrush(Color.FromArgb(0x12, 0, 0, 0));
+                }
+
+                // Resolve NameBrush & SubBrush
+                if (Application.Current != null &&
+                    Application.Current.TryGetResource("SystemControlForegroundBaseHighBrush", variant, out var bh) &&
+                    bh is IBrush highBrush)
+                {
+                    nextName = highBrush;
+                }
+                else
+                {
+                    nextName = darkTheme ? Brushes.White : Brushes.Black;
+                }
+
+                if (Application.Current != null &&
+                    Application.Current.TryGetResource("SystemControlForegroundBaseMediumBrush", variant, out var bm) &&
+                    bm is IBrush medBrush)
+                {
+                    nextSub = medBrush;
+                }
+                else
+                {
+                    nextSub = darkTheme ? new SolidColorBrush(Color.Parse("#A0A0A0")) : new SolidColorBrush(Color.Parse("#606060"));
+                }
+            }
+            else
+            {
+                nextIcon = Visuals.Brush(colorHex);
+                nextGlyphStroke = Brushes.White;
+                nextTint = Visuals.Tint(colorHex, 0x2E);
+                nextName = darkTheme ? Visuals.Lighten(colorHex, 1.65) : Visuals.Shade(colorHex);
+                nextSub = darkTheme ? Visuals.Lighten(colorHex, 1.3) : Visuals.Brush(colorHex);
+            }
+        }
+
+        if (!ReferenceEquals(iconBrush, nextIcon))
+        {
+            iconBrush = nextIcon;
+            OnPropertyChanged(nameof(IconBrush));
+        }
+
+        if (!ReferenceEquals(glyphStrokeBrush, nextGlyphStroke))
+        {
+            glyphStrokeBrush = nextGlyphStroke;
+            OnPropertyChanged(nameof(GlyphStrokeBrush));
+        }
+
+        if (!ReferenceEquals(tintBrush, nextTint))
+        {
+            tintBrush = nextTint;
+            OnPropertyChanged(nameof(TintBrush));
         }
 
         if (!ReferenceEquals(nameBrush, nextName))

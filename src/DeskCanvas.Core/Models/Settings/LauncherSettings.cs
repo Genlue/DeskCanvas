@@ -285,6 +285,15 @@ public enum LauncherSortMode
 /// it is the "no filter" entry and always stays first, so a saved order only lists the filters.
 /// <c>null</c> means <see cref="LauncherCategoryKeys.Order"/>.
 /// </param>
+/// <param name="SearchPlaceholder">
+/// Custom placeholder text for the search box when in All category. null/blank means use default.
+/// </param>
+/// <param name="SpaceShowsRecentLaunches">
+/// Whether entering only a space in search mode displays recently opened items from search results.
+/// </param>
+/// <param name="SpaceRecentLaunchesCount">
+/// How many recently opened items to show when typing space (3–20).
+/// </param>
 public record LauncherSettings(
     bool Enabled = false,
     string? Hotkey = null,
@@ -326,7 +335,10 @@ public record LauncherSettings(
     string? SearchEngineUrl = null,
     string? SearchBrowser = null,
     int WebResultCount = LauncherSettings.DefaultWebResultCount,
-    List<string>? CategoryOrder = null)
+    List<string>? CategoryOrder = null,
+    string? SearchPlaceholder = null,
+    bool SpaceShowsRecentLaunches = true,
+    int SpaceRecentLaunchesCount = LauncherSettings.DefaultSpaceRecentLaunchesCount)
 {
     /// <summary>Alt+Space — the closest usable analogue to macOS Cmd+Space (Win+Space is the
     /// Windows input-language switch and cannot be taken).</summary>
@@ -453,6 +465,13 @@ public record LauncherSettings(
 
     /// <summary>Hard cap of inline web hits. Each one is a row the keyboard has to walk.</summary>
     public const int MaxWebResultCount = 10;
+
+    /// <summary>Default number of recently opened items to show on space.</summary>
+    public const int DefaultSpaceRecentLaunchesCount = 10;
+    /// <summary>Minimum number of recently opened items to show on space.</summary>
+    public const int MinSpaceRecentLaunchesCount = 3;
+    /// <summary>Maximum number of recently opened items to show on space.</summary>
+    public const int MaxSpaceRecentLaunchesCount = 20;
 
     /// <summary>
     /// The default shortcut folder: <c>&lt;data folder&gt;\Launcher</c>.
@@ -664,6 +683,9 @@ public record LauncherSettings(
         SortMode = Enum.IsDefined(SortMode) ? SortMode : LauncherSortMode.Name,
         CategoryHotkeys = NormalizeCategoryHotkeys(CategoryHotkeys),
         CategoryOrder = NormalizeCategoryOrder(CategoryOrder),
+        SearchPlaceholder = string.IsNullOrWhiteSpace(SearchPlaceholder) ? null : SearchPlaceholder.Trim(),
+        SpaceShowsRecentLaunches = SpaceShowsRecentLaunches,
+        SpaceRecentLaunchesCount = Math.Clamp(SpaceRecentLaunchesCount, MinSpaceRecentLaunchesCount, MaxSpaceRecentLaunchesCount),
         WebResultCount = Math.Clamp(WebResultCount, MinWebResultCount, MaxWebResultCount),
         OpacityLevel = OpacityLevel is { } opacity && double.IsFinite(opacity)
             ? Math.Clamp(opacity, 0.0, 1.0)

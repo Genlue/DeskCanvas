@@ -414,6 +414,126 @@ namespace Folders.Locales {
             }
         }
 
+        public static string Folders_SingleLink_Title {
+            get {
+                return ResourceManager.GetString("Folders_SingleLink_Title", resourceCulture);
+            }
+        }
+
+        public static string Folders_SingleLink_Subtitle {
+            get {
+                return ResourceManager.GetString("Folders_SingleLink_Subtitle", resourceCulture);
+            }
+        }
+
+        public static string Folders_SingleLink_Url {
+            get {
+                return ResourceManager.GetString("Folders_SingleLink_Url", resourceCulture);
+            }
+        }
+
+        public static string Folders_SingleLink_LinkTitle {
+            get {
+                return ResourceManager.GetString("Folders_SingleLink_LinkTitle", resourceCulture);
+            }
+        }
+
+        public static string Folders_SingleLink_LinkTitlePlaceholder {
+            get {
+                return ResourceManager.GetString("Folders_SingleLink_LinkTitlePlaceholder", resourceCulture);
+            }
+        }
+
+        public static string Folders_SingleLink_Browser {
+            get {
+                return ResourceManager.GetString("Folders_SingleLink_Browser", resourceCulture);
+            }
+        }
+
+        public static string Folders_SingleLink_Browser_Default {
+            get {
+                return ResourceManager.GetString("Folders_SingleLink_Browser_Default", resourceCulture);
+            }
+        }
+
+        public static string Folders_SingleLink_CustomIcon {
+            get {
+                return ResourceManager.GetString("Folders_SingleLink_CustomIcon", resourceCulture);
+            }
+        }
+
+        public static string Folders_SingleLink_PickLocalIcon {
+            get {
+                return ResourceManager.GetString("Folders_SingleLink_PickLocalIcon", resourceCulture);
+            }
+        }
+
+        public static string Folders_SingleLink_FetchFavicon {
+            get {
+                return ResourceManager.GetString("Folders_SingleLink_FetchFavicon", resourceCulture);
+            }
+        }
+
+        public static string Folders_SingleLink_WebIconPlaceholder {
+            get {
+                return ResourceManager.GetString("Folders_SingleLink_WebIconPlaceholder", resourceCulture);
+            }
+        }
+
+        public static string Folders_SingleLink_DownloadIcon {
+            get {
+                return ResourceManager.GetString("Folders_SingleLink_DownloadIcon", resourceCulture);
+            }
+        }
+
+        public static string Folders_SingleLink_EmptyHint {
+            get {
+                return ResourceManager.GetString("Folders_SingleLink_EmptyHint", resourceCulture);
+            }
+        }
+
+        public static string Folders_SingleLink_OpenLink {
+            get {
+                return ResourceManager.GetString("Folders_SingleLink_OpenLink", resourceCulture);
+            }
+        }
+
+        public static string Folders_SingleLink_CopyLink {
+            get {
+                return ResourceManager.GetString("Folders_SingleLink_CopyLink", resourceCulture);
+            }
+        }
+
+        public static string Folders_SingleLink_Edit {
+            get {
+                return ResourceManager.GetString("Folders_SingleLink_Edit", resourceCulture);
+            }
+        }
+
+        public static string Folders_SingleLink_Help {
+            get {
+                return ResourceManager.GetString("Folders_SingleLink_Help", resourceCulture);
+            }
+        }
+
+        public static string Folders_SingleLink_Fetching {
+            get {
+                return ResourceManager.GetString("Folders_SingleLink_Fetching", resourceCulture);
+            }
+        }
+
+        public static string Folders_SingleLink_FetchSuccess {
+            get {
+                return ResourceManager.GetString("Folders_SingleLink_FetchSuccess", resourceCulture);
+            }
+        }
+
+        public static string Folders_SingleLink_FetchFailed {
+            get {
+                return ResourceManager.GetString("Folders_SingleLink_FetchFailed", resourceCulture);
+            }
+        }
+
         public static string Folders_BigFolder_Title {
             get {
                 return ResourceManager.GetString("Folders_BigFolder_Title", resourceCulture);

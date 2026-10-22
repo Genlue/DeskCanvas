@@ -50,7 +50,7 @@ public sealed class FileSearchService : IDisposable
     public const int MaxResults = 40;
 
     /// <summary>Everything is asked for more than we show, then re-ranked locally.</summary>
-    private const int EverythingOverFetch = 4;
+    private const int EverythingOverFetch = 20;
 
     private readonly IAppSettingsProvider settings;
     private readonly LocalFileIndex index = new();
@@ -107,6 +107,21 @@ public sealed class FileSearchService : IDisposable
     /// <summary>Drop the fallback index so the next query re-reads the folders.</summary>
     public void InvalidateIndex() => index.Invalidate();
 
+    /// <summary>
+    /// Whether this query has to be answered against the whole path instead of the file name.
+    /// <para>
+    /// Everything's default is name-only; MATCHPATH is the exception, not the rule. Leaving it on
+    /// for every query is what made a common word unfindable: "图标" then also matches every file
+    /// under every folder whose name contains 图标, the candidate pool is thousands of rows, and
+    /// Everything hands back its first <c>MaxResults × EverythingOverFetch</c> rows in its own
+    /// order — the file the user wanted is usually past that cut.
+    /// </para>
+    /// </summary>
+    public static bool NeedsMatchPath(FileSearchQuery query) =>
+        query.PathTerms.Count > 0
+        || query.Terms.Any(t => t.Contains('\\') || t.Contains('/'))
+        || query.Raw.Contains("path:", StringComparison.OrdinalIgnoreCase);
+
     private async Task<IReadOnlyList<FileSearchHit>?> TryEverythingAsync(
         FileSearchQuery query, Core.Models.Settings.LauncherSettings launcher, CancellationToken cancellationToken)
     {
@@ -124,8 +139,10 @@ public sealed class FileSearchService : IDisposable
             if (!await Task.Run(ipc.TryStartClient, cancellationToken).ConfigureAwait(false)) return null;
         }
 
+        var matchPath = NeedsMatchPath(query);
+
         var raw = await Task.Run(
-            () => ipc.Query(query.EverythingSyntax, query.IsRegex, matchCase: false, MaxResults * EverythingOverFetch),
+            () => ipc.Query(query.EverythingSyntax, query.IsRegex, matchCase: false, MaxResults * EverythingOverFetch, matchPath),
             cancellationToken).ConfigureAwait(false);
 
         if (ipc.Status != EverythingStatus.Connected) return null;

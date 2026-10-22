@@ -1,0 +1,100 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="clr-namespace:DeskCanvas.Views.Controls;assembly=DeskCanvas"
+             xmlns:locales="clr-namespace:Folders.Locales"
+             x:Class="Folders.Views.Settings.SingleLinkSettings"
+             controls:SettingsPage.ScrollOwnership="Host">
+
+    <StackPanel Orientation="Vertical" Spacing="6" Margin="{DynamicResource SettingsPagePadding}">
+
+        <TextBlock Classes="dc-section-header" Text="{x:Static locales:Locale.Folders_Group_Content}" />
+
+        <!-- URL Input -->
+        <controls:Setting Title="{x:Static locales:Locale.Folders_SingleLink_Url}" EditorHorizontalAlignment="Stretch">
+            <Grid ColumnDefinitions="*,Auto">
+                <TextBox x:Name="UrlBox" Grid.Column="0" FontSize="12"
+                         VerticalContentAlignment="Center"
+                         PlaceholderText="https://example.com" />
+                <Button Grid.Column="1" Classes="dc-icon-button compact" Margin="4,0,0,0"
+                        Content="✕" Click="OnClearUrl"
+                        ToolTip.Tip="{x:Static locales:Locale.Folders_Clear}" />
+            </Grid>
+        </controls:Setting>
+
+        <!-- Title / Tooltip Input -->
+        <controls:Setting Title="{x:Static locales:Locale.Folders_SingleLink_LinkTitle}" EditorHorizontalAlignment="Stretch">
+            <TextBox x:Name="TitleBox" FontSize="12"
+                     VerticalContentAlignment="Center"
+                     PlaceholderText="{x:Static locales:Locale.Folders_SingleLink_LinkTitlePlaceholder}" />
+        </controls:Setting>
+
+        <!-- Browser Selection -->
+        <controls:Setting Title="{x:Static locales:Locale.Folders_SingleLink_Browser}" EditorHorizontalAlignment="Stretch">
+            <ComboBox x:Name="BrowserComboBox" HorizontalAlignment="Stretch" FontSize="12" />
+        </controls:Setting>
+
+        <TextBlock Classes="dc-section-header" Text="{x:Static locales:Locale.Folders_Group_Appearance}" />
+
+        <!-- Icon Size Percentage Slider -->
+        <controls:Setting Title="{x:Static locales:Locale.Folders_SingleFile_IconPercent}">
+            <controls:LabeledSlider x:Name="IconPercentSlider" Width="200" Minimum="20" Maximum="100" Step="1" Unit="%"
+                                    ValueCommitted="OnIconPercentCommitted" />
+        </controls:Setting>
+
+        <!-- Custom Icon Management -->
+        <controls:Setting Title="{x:Static locales:Locale.Folders_SingleLink_CustomIcon}" EditorHorizontalAlignment="Stretch">
+            <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto" Margin="0,4,0,0">
+                <!-- Icon Preview Border -->
+                <Border Grid.Row="0" Grid.RowSpan="2" Grid.Column="0"
+                        Width="52" Height="52" Margin="0,0,12,0"
+                        CornerRadius="8"
+                        BorderThickness="1"
+                        BorderBrush="{DynamicResource SystemControlForegroundBaseMediumLowBrush}"
+                        Background="#10888888">
+                    <Panel HorizontalAlignment="Center" VerticalAlignment="Center">
+                        <Image x:Name="IconPreviewImage" Width="40" Height="40" Stretch="Uniform"
+                               RenderOptions.BitmapInterpolationMode="HighQuality" />
+                        <PathIcon x:Name="IconPreviewFallback"
+                                  Data="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z"
+                                  Width="22" Height="22" Opacity="0.5" />
+                    </Panel>
+                </Border>
+
+                <!-- Icon Options Row 1: Pick local file, Fetch from link, Clear -->
+                <StackPanel Grid.Row="0" Grid.Column="1" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                    <Button Classes="dc-toolbar-button"
+                            Content="{x:Static locales:Locale.Folders_SingleLink_PickLocalIcon}"
+                            Click="OnPickLocalIcon" />
+                    <Button x:Name="FetchFaviconButton" Classes="dc-toolbar-button"
+                            Content="{x:Static locales:Locale.Folders_SingleLink_FetchFavicon}"
+                            Click="OnFetchFavicon" />
+                    <Button x:Name="ClearIconButton" Classes="dc-icon-button compact"
+                            Content="✕" Click="OnClearIcon"
+                            ToolTip.Tip="{x:Static locales:Locale.Folders_Clear}" />
+                </StackPanel>
+
+                <!-- Icon Options Row 2: Direct web image URL -->
+                <Grid Grid.Row="1" Grid.Column="1" ColumnDefinitions="*,Auto" Margin="0,6,0,0">
+                    <TextBox x:Name="WebIconUrlBox" Grid.Column="0" FontSize="11"
+                             VerticalContentAlignment="Center"
+                             PlaceholderText="{x:Static locales:Locale.Folders_SingleLink_WebIconPlaceholder}" />
+                    <Button Grid.Column="1" Classes="dc-toolbar-button" Margin="6,0,0,0"
+                            Content="{x:Static locales:Locale.Folders_SingleLink_DownloadIcon}"
+                            Click="OnDownloadWebIcon" />
+                </Grid>
+            </Grid>
+        </controls:Setting>
+
+        <!-- Status Message -->
+        <TextBlock x:Name="StatusMessageText"
+                   FontSize="{DynamicResource FontSizeCaption}"
+                   Foreground="{DynamicResource SecondaryTextBrush}"
+                   Margin="0,2,0,0"
+                   IsVisible="False"
+                   TextWrapping="Wrap" />
+
+        <TextBlock Text="{x:Static locales:Locale.Folders_SingleLink_Help}"
+                   FontSize="{DynamicResource FontSizeCaption}" TextWrapping="Wrap" Margin="0,4,0,0"
+                   Foreground="{DynamicResource SecondaryTextBrush}" />
+    </StackPanel>
+</UserControl>

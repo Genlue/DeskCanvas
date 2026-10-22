@@ -1,5 +1,4 @@
 using System.Diagnostics;
-using System.Runtime.InteropServices;
 using System.Text.Json;
 using Avalonia;
 using Avalonia.Animation;
@@ -41,6 +40,7 @@ public partial class SingleFile : UserControl, IWidgetSelfRefreshing
         Loaded += OnLoaded;
         Unloaded += OnUnloaded;
         SizeChanged += OnSizeChanged;
+        ContainerPanel.SizeChanged += (s, e) => UpdateIconSize();
 
         AddHandler(DragDrop.DragOverEvent, OnDragOver);
         AddHandler(DragDrop.DragLeaveEvent, OnDragLeave);
@@ -112,7 +112,8 @@ public partial class SingleFile : UserControl, IWidgetSelfRefreshing
 
         if (hasValidPath)
         {
-            IconImage.Source = FolderIconService.GetIcon(model.Path!);
+            var rawIcon = FolderIconService.GetIcon(model.Path!);
+            IconImage.Source = rawIcon != null ? FolderIconService.TrimTransparent(rawIcon) : null;
             IconImage.IsVisible = true;
             EmptyPlaceholder.IsVisible = false;
             ToolTip.SetTip(this, model.Path);
@@ -130,8 +131,8 @@ public partial class SingleFile : UserControl, IWidgetSelfRefreshing
 
     private void UpdateIconSize()
     {
-        var w = ContainerPanel.Bounds.Width;
-        var h = ContainerPanel.Bounds.Height;
+        var w = ContainerPanel.Bounds.Width > 0 ? ContainerPanel.Bounds.Width : Bounds.Width;
+        var h = ContainerPanel.Bounds.Height > 0 ? ContainerPanel.Bounds.Height : Bounds.Height;
         var minSide = Math.Min(w, h);
         if (minSide <= 0) return;
 
@@ -191,14 +192,8 @@ public partial class SingleFile : UserControl, IWidgetSelfRefreshing
         AnimateScale(EmptyPlaceholder, 1.0);
     }
 
-    [DllImport("user32.dll")]
-    private static extern short GetKeyState(int nVirtKey);
-
     private static bool IsControlPressed(PointerPressedEventArgs e)
-    {
-        return e.KeyModifiers.HasFlag(KeyModifiers.Control)
-               || (GetKeyState(0x11) & 0x8000) != 0; // VK_CONTROL
-    }
+        => WidgetOleDropTarget.IsControlHeld(e.KeyModifiers);
 
     private void OnPointerPressed(object? sender, PointerPressedEventArgs e)
     {
