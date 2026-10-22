@@ -294,6 +294,13 @@ public enum LauncherSortMode
 /// <param name="SpaceRecentLaunchesCount">
 /// How many recently opened items to show when typing space (3–20).
 /// </param>
+/// <param name="TakeOverSystemHotkeys">
+/// When the configured gesture cannot be registered because Windows reserves it or another
+/// program owns it (Win+S is the canonical example), take it over with a low-level keyboard hook
+/// instead of reporting a conflict. Off by default: a hook sees every keystroke and removes the
+/// combination from the system UI, so this must be an explicit choice. Requires the app to run
+/// elevated to cover elevated foreground windows; the UI says so separately.
+/// </param>
 public record LauncherSettings(
     bool Enabled = false,
     string? Hotkey = null,
@@ -338,7 +345,8 @@ public record LauncherSettings(
     List<string>? CategoryOrder = null,
     string? SearchPlaceholder = null,
     bool SpaceShowsRecentLaunches = true,
-    int SpaceRecentLaunchesCount = LauncherSettings.DefaultSpaceRecentLaunchesCount)
+    int SpaceRecentLaunchesCount = LauncherSettings.DefaultSpaceRecentLaunchesCount,
+    bool TakeOverSystemHotkeys = false)
 {
     /// <summary>Alt+Space — the closest usable analogue to macOS Cmd+Space (Win+Space is the
     /// Windows input-language switch and cannot be taken).</summary>

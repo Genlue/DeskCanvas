@@ -96,6 +96,9 @@ public sealed class SpotlightService : IDisposable
         /// <summary>Registered and ready.</summary>
         Registered,
 
+        /// <summary>Taken over by the low-level keyboard hook because the OS would not register it.</summary>
+        TakenOver,
+
         /// <summary>The stored gesture text could not be parsed.</summary>
         InvalidGesture,
 
@@ -113,6 +116,16 @@ public sealed class SpotlightService : IDisposable
 
     /// <summary>Raised whenever <see cref="Status"/> / <see cref="Gesture"/> change (settings page).</summary>
     public event Action? StateChanged;
+
+    /// <summary>
+    /// Raised on the UI thread when the recorder captured a combination through the low-level
+    /// hook. The settings page applies it exactly like a window key event; the hook is what makes
+    /// Win+S (and other system-reserved combinations) recordable at all.
+    /// </summary>
+    public event Action<string>? GestureCaptured;
+
+    /// <summary>Raised on the UI thread when the recorder was cancelled with Escape.</summary>
+    public event Action? GestureCaptureCancelled;
 
     /// <summary>
     /// Raised when the overlay asks for the settings window (forwarded from the view model, which
@@ -235,6 +248,20 @@ public sealed class SpotlightService : IDisposable
         }
 
         UnregisterHotkey();
+
+        // The recorder also runs through the low-level hook: Win+S never reaches a normal window,
+        // so a KeyDown-only recorder would silently ignore the very combination this feature is
+        // for. If the hook cannot start, the window key events remain the fallback.
+        registrar ??= CreateRegistrar();
+        if (registrar != null
+            && !registrar.BeginGestureCapture(
+                text => GestureCaptured?.Invoke(text),
+                () => GestureCaptureCancelled?.Invoke()))
+        {
+            GlassDiagnostics.Event(
+                $"[spotlight] recorder hook unavailable (win32 {registrar.LastError}); " +
+                "falling back to window key events");
+        }
     }
 
     /// <summary>Resume listening and re-register the (possibly new) gesture.</summary>
@@ -246,11 +273,17 @@ public sealed class SpotlightService : IDisposable
             if (--captureDepth != 0) return;
         }
 
+        registrar?.EndGestureCapture();
         ApplyHotkey();
     }
 
     private void ApplyHotkey()
     {
+        // The recorder's captured-gesture event saves the new setting while captureDepth is still
+        // 1. Re-registering here would swap the hook under the active recorder; EndCapture applies
+        // the saved gesture once the capture is over.
+        if (IsCapturing) return;
+
         UnregisterHotkey();
 
         var launcher = settings.Get().EffectiveLauncher;
@@ -285,20 +318,16 @@ public sealed class SpotlightService : IDisposable
             return;
         }
 
-        if (!registrar.Register(HotkeyId, gesture.Modifiers, gesture.VirtualKey))
+        Status = RegisterGesture(HotkeyId, gesture, launcher.TakeOverSystemHotkeys);
+        if (Status is HotkeyStatus.Conflict or HotkeyStatus.Unavailable)
         {
-            GlassDiagnostics.Event(
-                $"[spotlight] RegisterHotKey('{gesture.Text}') failed (win32 {registrar.LastError}) — " +
-                "another process owns it");
-            Status = HotkeyStatus.Conflict;
             Gesture = null;
-            SearchStatus = HotkeyStatus.Conflict;
+            SearchStatus = Status;
             StateChanged?.Invoke();
             return;
         }
 
         Gesture = gesture;
-        Status = HotkeyStatus.Registered;
 
         // The second gesture is independent: one combination cannot mean two modes, so an equal
         // gesture is reported as a conflict instead of silently registering the same key twice
@@ -312,14 +341,11 @@ public sealed class SpotlightService : IDisposable
         {
             SearchStatus = HotkeyStatus.InvalidGesture;
         }
-        else if (registrar.Register(SearchHotkeyId, searchGesture.Modifiers, searchGesture.VirtualKey))
-        {
-            SearchGesture = searchGesture;
-            SearchStatus = HotkeyStatus.Registered;
-        }
         else
         {
-            SearchStatus = HotkeyStatus.Conflict;
+            SearchStatus = RegisterGesture(SearchHotkeyId, searchGesture, launcher.TakeOverSystemHotkeys);
+            if (SearchStatus is HotkeyStatus.Registered or HotkeyStatus.TakenOver)
+                SearchGesture = searchGesture;
         }
 
         // One line per (re)registration: which gesture opens which surface, and whether Windows
@@ -329,6 +355,38 @@ public sealed class SpotlightService : IDisposable
             $"search='{launcher.EffectiveSearchHotkey}' {SearchStatus}");
 
         StateChanged?.Invoke();
+    }
+
+    /// <summary>
+    /// Register one gesture, falling back to the low-level hook when the user allowed takeover.
+    /// <c>RegisterHotKey</c> is always tried first: it is cheaper, survives UI stalls and does not
+    /// see every keystroke. The hook is only for combinations the OS refuses (Win+S).
+    /// </summary>
+    private HotkeyStatus RegisterGesture(int registrationId, GlobalHotkeyGesture gesture, bool allowTakeover)
+    {
+        if (registrar == null) return HotkeyStatus.Unavailable;
+
+        if (registrar.Register(registrationId, gesture.Modifiers, gesture.VirtualKey))
+            return HotkeyStatus.Registered;
+
+        var registerError = registrar.LastError;
+
+        if (allowTakeover
+            && registrar.RegisterWithHook(registrationId, gesture.Modifiers, gesture.VirtualKey))
+        {
+            GlassDiagnostics.Event(
+                $"[spotlight] hook takeover '{gesture.Text}' " +
+                $"(RegisterHotKey failed, win32 {registerError})");
+            return HotkeyStatus.TakenOver;
+        }
+
+        GlassDiagnostics.Event(
+            $"[spotlight] RegisterHotKey('{gesture.Text}') failed (win32 {registerError})" +
+            (allowTakeover
+                ? $" — hook takeover also failed (win32 {registrar.LastError})"
+                : " — another process owns it, and system-hotkey takeover is off"));
+
+        return HotkeyStatus.Conflict;
     }
 
     private GlobalHotkeyRegistrar? CreateRegistrar()
@@ -401,6 +459,7 @@ public sealed class SpotlightService : IDisposable
 
         if (previous == null
             || previous.Enabled != current.Enabled
+            || previous.TakeOverSystemHotkeys != current.TakeOverSystemHotkeys
             || !string.Equals(previous.EffectiveHotkey, current.EffectiveHotkey, StringComparison.OrdinalIgnoreCase)
             || !string.Equals(previous.EffectiveSearchHotkey, current.EffectiveSearchHotkey, StringComparison.OrdinalIgnoreCase))
         {

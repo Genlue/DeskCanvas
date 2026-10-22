@@ -1287,7 +1287,9 @@ Migrate (copy) the current data there? Choosing "Switch without migrating" start
   <data name="Settings_Spotlight_Enable_Title" xml:space="preserve"><value>Enable Spotlight Search</value></data>
   <data name="Settings_Spotlight_Enable_Subtitle" xml:space="preserve"><value>Summon an app launcher over any window with a global shortcut.</value></data>
   <data name="Settings_Spotlight_Hotkey_Title" xml:space="preserve"><value>Shortcut</value></data>
-  <data name="Settings_Spotlight_Hotkey_Subtitle" xml:space="preserve"><value>Click the field, then press the combination. Win+Space belongs to the Windows input-language switch, so Alt+Space is the default.</value></data>
+  <data name="Settings_Spotlight_Hotkey_Subtitle" xml:space="preserve"><value>Click the field, then press the combination. Win+S and other system-owned combinations can be recorded directly; whether they take effect depends on the takeover switch below. Win+Space belongs to the Windows input-language switch, so Alt+Space is the default.</value></data>
+  <data name="Settings_Spotlight_TakeOver_Title" xml:space="preserve"><value>Take over system shortcuts</value></data>
+  <data name="Settings_Spotlight_TakeOver_Subtitle" xml:space="preserve"><value>If Windows or another app already owns a shortcut (Win+S is the usual example), take it over with a low-level keyboard hook instead of reporting a conflict. While DeskCanvas runs, that shortcut no longer opens the system surface. If the foreground window is itself elevated, DeskCanvas must also run as administrator to intercept the key.</value></data>
   <data name="Settings_Spotlight_Hotkey_Record" xml:space="preserve"><value>Record</value></data>
   <data name="Settings_Spotlight_Hotkey_Recording" xml:space="preserve"><value>Press keys…</value></data>
   <data name="Settings_Spotlight_Hotkey_Reset" xml:space="preserve"><value>Reset</value></data>
@@ -1296,7 +1298,9 @@ Migrate (copy) the current data there? Choosing "Switch without migrating" start
   <data name="Settings_Spotlight_Hotkey_UnknownKey" xml:space="preserve"><value>That key cannot be used in a shortcut.</value></data>
   <data name="Settings_Spotlight_Hotkey_MissingKey" xml:space="preserve"><value>The combination has no main key.</value></data>
   <data name="Settings_Spotlight_Hotkey_Invalid" xml:space="preserve"><value>That shortcut cannot be used.</value></data>
+  <data name="Settings_Spotlight_Hotkey_Reserved" xml:space="preserve"><value>Windows reserves this combination (Win+L / Ctrl+Alt+Del); it cannot be taken over.</value></data>
   <data name="Settings_Spotlight_Status_Registered" xml:space="preserve"><value>Active — {0}</value></data>
+  <data name="Settings_Spotlight_Status_TakenOver" xml:space="preserve"><value>Active — {0} (taken over; admin needed for elevated windows)</value></data>
   <data name="Settings_Spotlight_Status_Conflict" xml:space="preserve"><value>Inactive: another program already owns this shortcut.</value></data>
   <data name="Settings_Spotlight_Status_Invalid" xml:space="preserve"><value>Inactive: the shortcut could not be read.</value></data>
   <data name="Settings_Spotlight_Status_Unavailable" xml:space="preserve"><value>Inactive: the system hotkey window could not be created.</value></data>

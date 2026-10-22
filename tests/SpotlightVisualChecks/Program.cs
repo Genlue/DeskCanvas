@@ -2901,6 +2901,29 @@ internal static class Program
 
         Check(GlobalHotkeyGesture.TryParse(null, out _, out _) == false,
             "hotkey: null text is rejected instead of throwing");
+
+        Check(GlobalHotkeyGesture.TryParse("Win+S", out var winS, out _)
+              && winS.Modifiers == GlobalHotkeyModifiers.Win
+              && winS.VirtualKey == 0x53
+              && winS.Text == "Win+S",
+            "hotkey: Win+S parses (takeover is a registration concern, not a parser one)");
+
+        Check(GlobalHotkeyGesture.Describe(GlobalHotkeyModifiers.Win, 0x53) == "Win+S",
+            "hotkey: the hook recorder spells a virtual key exactly like the parser");
+
+        Check(!GlobalHotkeyGesture.TryParse("Win+L", out _, out var reservedLock)
+              && reservedLock == "reserved",
+            "hotkey: Win+L is rejected (the OS locks before any user-mode hook)");
+
+        Check(!GlobalHotkeyGesture.TryParse("Ctrl+Alt+Delete", out _, out var reservedSas)
+              && reservedSas == "reserved",
+            "hotkey: Ctrl+Alt+Delete is rejected (secure attention sequence)");
+
+        Check(!new LauncherSettings().TakeOverSystemHotkeys,
+            "hotkey: system-shortcut takeover is off by default");
+
+        Check(new LauncherSettings(TakeOverSystemHotkeys: true).Normalize().TakeOverSystemHotkeys,
+            "hotkey: takeover survives normalization");
     }
 
     /// <summary>
@@ -3009,6 +3032,8 @@ internal static class Program
             Check(page.FindControl<Control>("HotkeyBox") != null, "settings page: hotkey field present");
             Check(page.FindControl<Control>("ProcessBox") != null, "settings page: manual process field present");
             Check(page.FindControl<Control>("RecordButton") != null, "settings page: record button present");
+            Check(page.FindControl<Control>("TakeOverToggle") != null,
+                "settings page: system-shortcut takeover toggle present");
 
             // 外观 → 背景色: one picker per mode, disabled while following, plus the line that
             // spells out which colour the launcher actually paints.
@@ -3025,6 +3050,9 @@ internal static class Program
             var settingsVm = page.DataContext as SpotlightSettingsViewModel;
             Check(settingsVm is { DarkModeOptions.Count: 4 },
                 $"settings page: 明暗模式 offers 跟随全局/跟随系统/浅色/深色 ({settingsVm?.DarkModeOptions.Count})");
+
+            Check(settingsVm != null && !settingsVm.ApplyCapturedGesture("Ctrl+Alt+9"),
+                "settings page: a capture without an active recorder is ignored");
 
             // 类别快捷键 is a fold now (same affordance as 应用主题 › 液态玻璃): it starts closed, and
             // opening it is what the page's own property sees — the control is the only writer.

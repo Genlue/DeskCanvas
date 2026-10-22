@@ -1386,7 +1386,9 @@
   <data name="Settings_Spotlight_Enable_Title" xml:space="preserve"><value>启用聚焦搜索</value></data>
   <data name="Settings_Spotlight_Enable_Subtitle" xml:space="preserve"><value>用全局快捷键在任何窗口之上唤出应用启动器。</value></data>
   <data name="Settings_Spotlight_Hotkey_Title" xml:space="preserve"><value>唤出快捷键</value></data>
-  <data name="Settings_Spotlight_Hotkey_Subtitle" xml:space="preserve"><value>点击输入框后按下组合键。Win+Space 被 Windows 输入法切换占用，因此默认是 Alt+Space。</value></data>
+  <data name="Settings_Spotlight_Hotkey_Subtitle" xml:space="preserve"><value>点击输入框后按下组合键。Win+S 等被系统占用的组合也可以直接录制，是否生效取决于下方的接管开关。Win+Space 被 Windows 输入法切换占用，因此默认是 Alt+Space。</value></data>
+  <data name="Settings_Spotlight_TakeOver_Title" xml:space="preserve"><value>接管系统快捷键</value></data>
+  <data name="Settings_Spotlight_TakeOver_Subtitle" xml:space="preserve"><value>当快捷键已被 Windows 或其他程序占用时（例如 Win+S），改用低层键盘钩子接管，而不是提示冲突。DeskCanvas 运行期间该组合不再触发系统搜索等系统功能。若前台窗口本身以管理员权限运行，需要以管理员身份运行 DeskCanvas 才能拦截。</value></data>
   <data name="Settings_Spotlight_Hotkey_Record" xml:space="preserve"><value>录制</value></data>
   <data name="Settings_Spotlight_Hotkey_Recording" xml:space="preserve"><value>请按下按键…</value></data>
   <data name="Settings_Spotlight_Hotkey_Reset" xml:space="preserve"><value>恢复默认</value></data>
@@ -1395,7 +1397,9 @@
   <data name="Settings_Spotlight_Hotkey_UnknownKey" xml:space="preserve"><value>这个按键不能用于快捷键。</value></data>
   <data name="Settings_Spotlight_Hotkey_MissingKey" xml:space="preserve"><value>组合键里缺少主按键。</value></data>
   <data name="Settings_Spotlight_Hotkey_Invalid" xml:space="preserve"><value>这个快捷键不可用。</value></data>
+  <data name="Settings_Spotlight_Hotkey_Reserved" xml:space="preserve"><value>Windows 保留了这个组合（Win+L / Ctrl+Alt+Del），无法接管。</value></data>
   <data name="Settings_Spotlight_Status_Registered" xml:space="preserve"><value>已生效 — {0}</value></data>
+  <data name="Settings_Spotlight_Status_TakenOver" xml:space="preserve"><value>已生效 — {0}（已接管；管理员窗口需以管理员身份运行）</value></data>
   <data name="Settings_Spotlight_Status_Conflict" xml:space="preserve"><value>未生效：该快捷键已被其他程序占用。</value></data>
   <data name="Settings_Spotlight_Status_Invalid" xml:space="preserve"><value>未生效：无法识别这个快捷键。</value></data>
   <data name="Settings_Spotlight_Status_Unavailable" xml:space="preserve"><value>未生效：无法创建系统热键窗口。</value></data>

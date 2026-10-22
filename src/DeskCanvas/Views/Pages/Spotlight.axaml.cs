@@ -22,6 +22,7 @@ namespace DeskCanvas.Views.Pages;
 public partial class Spotlight : UserControl
 {
     private readonly SpotlightSettingsViewModel viewModel;
+    private Window? hostWindow;
 
     public Spotlight(IAppSettingsProvider appSettingsProvider, SpotlightService? spotlightService = null,
         FileSearchService? fileSearchService = null)
@@ -33,8 +34,38 @@ public partial class Spotlight : UserControl
         // The settings window caches pages and detaches the current one on close, so the pair must
         // be able to cycle: Loaded re-subscribes, Unloaded unsubscribes (and re-registers a
         // gesture left suspended by a half-finished recording).
-        Loaded += (_, _) => viewModel.Attach();
-        Unloaded += (_, _) => viewModel.Dispose();
+        Loaded += OnLoaded;
+        Unloaded += OnUnloaded;
+    }
+
+    private void OnLoaded(object? sender, RoutedEventArgs e)
+    {
+        viewModel.Attach();
+
+        if (hostWindow != null) hostWindow.Deactivated -= OnHostDeactivated;
+        hostWindow = TopLevel.GetTopLevel(this) as Window;
+        if (hostWindow != null) hostWindow.Deactivated += OnHostDeactivated;
+    }
+
+    private void OnUnloaded(object? sender, RoutedEventArgs e)
+    {
+        if (hostWindow != null)
+        {
+            hostWindow.Deactivated -= OnHostDeactivated;
+            hostWindow = null;
+        }
+
+        viewModel.Dispose();
+    }
+
+    /// <summary>
+    /// A recorder owns a global keyboard hook; leaving the window focused elsewhere must not leave
+    /// it swallowing keystrokes in the background.
+    /// </summary>
+    private void OnHostDeactivated(object? sender, EventArgs e)
+    {
+        if (viewModel.IsRecording || viewModel.IsSearchRecording)
+            viewModel.CancelRecording();
     }
 
     // ---- hotkey recording -----------------------------------------------------------

@@ -81,6 +81,17 @@
             </StackPanel>
         </controls:Setting>
 
+        <!-- The hook fallback. Deliberately below both recorders: it changes how either gesture
+             is registered, not the gesture itself. The admin caveat lives in the subtitle because
+             the setting is editable without elevation; it only limits coverage. -->
+        <controls:Setting Icon="{DynamicResource Lock}"
+                          Title="{x:Static locales:Locale.Settings_Spotlight_TakeOver_Title}"
+                          Subtitle="{x:Static locales:Locale.Settings_Spotlight_TakeOver_Subtitle}">
+            <ToggleSwitch x:Name="TakeOverToggle"
+                          IsChecked="{Binding TakeOverSystemHotkeys}"
+                          AutomationProperties.Name="{x:Static locales:Locale.Settings_Spotlight_TakeOver_Title}" />
+        </controls:Setting>
+
         <controls:Setting Icon="{DynamicResource Spotlight}"
                           Title="{x:Static locales:Locale.Settings_Spotlight_SearchPlaceholder}"
                           Subtitle="{x:Static locales:Locale.Settings_Spotlight_SearchPlaceholder_Hint}">

@@ -2305,6 +2305,8 @@ namespace DeskCanvas.Locales {
         public static string Settings_Spotlight_Enable_Subtitle => ResourceManager.GetString("Settings_Spotlight_Enable_Subtitle", resourceCulture);
         public static string Settings_Spotlight_Hotkey_Title => ResourceManager.GetString("Settings_Spotlight_Hotkey_Title", resourceCulture);
         public static string Settings_Spotlight_Hotkey_Subtitle => ResourceManager.GetString("Settings_Spotlight_Hotkey_Subtitle", resourceCulture);
+        public static string Settings_Spotlight_TakeOver_Title => ResourceManager.GetString("Settings_Spotlight_TakeOver_Title", resourceCulture);
+        public static string Settings_Spotlight_TakeOver_Subtitle => ResourceManager.GetString("Settings_Spotlight_TakeOver_Subtitle", resourceCulture);
         public static string Settings_Spotlight_Hotkey_Record => ResourceManager.GetString("Settings_Spotlight_Hotkey_Record", resourceCulture);
         public static string Settings_Spotlight_Hotkey_Recording => ResourceManager.GetString("Settings_Spotlight_Hotkey_Recording", resourceCulture);
         public static string Settings_Spotlight_Hotkey_Reset => ResourceManager.GetString("Settings_Spotlight_Hotkey_Reset", resourceCulture);
@@ -2313,7 +2315,9 @@ namespace DeskCanvas.Locales {
         public static string Settings_Spotlight_Hotkey_UnknownKey => ResourceManager.GetString("Settings_Spotlight_Hotkey_UnknownKey", resourceCulture);
         public static string Settings_Spotlight_Hotkey_MissingKey => ResourceManager.GetString("Settings_Spotlight_Hotkey_MissingKey", resourceCulture);
         public static string Settings_Spotlight_Hotkey_Invalid => ResourceManager.GetString("Settings_Spotlight_Hotkey_Invalid", resourceCulture);
+        public static string Settings_Spotlight_Hotkey_Reserved => ResourceManager.GetString("Settings_Spotlight_Hotkey_Reserved", resourceCulture);
         public static string Settings_Spotlight_Status_Registered => ResourceManager.GetString("Settings_Spotlight_Status_Registered", resourceCulture);
+        public static string Settings_Spotlight_Status_TakenOver => ResourceManager.GetString("Settings_Spotlight_Status_TakenOver", resourceCulture);
         public static string Settings_Spotlight_Status_Conflict => ResourceManager.GetString("Settings_Spotlight_Status_Conflict", resourceCulture);
         public static string Settings_Spotlight_Status_Invalid => ResourceManager.GetString("Settings_Spotlight_Status_Invalid", resourceCulture);
         public static string Settings_Spotlight_Status_Unavailable => ResourceManager.GetString("Settings_Spotlight_Status_Unavailable", resourceCulture);

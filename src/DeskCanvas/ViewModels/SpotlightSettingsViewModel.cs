@@ -332,6 +332,23 @@ public class SpotlightSettingsViewModel : ReactiveObject, IDisposable
         }
     }
 
+    /// <summary>
+    /// Take over combinations <c>RegisterHotKey</c> cannot own (Win+S and friends) with the
+    /// low-level keyboard hook. Off by default: the hook sees every keystroke and removes the
+    /// combination from the system UI, so this is an explicit, administrator-grade choice.
+    /// </summary>
+    public bool TakeOverSystemHotkeys
+    {
+        get => settings.Get().EffectiveLauncher.TakeOverSystemHotkeys;
+        set
+        {
+            if (value == TakeOverSystemHotkeys) return;
+            Save(launcher => launcher with { TakeOverSystemHotkeys = value });
+            this.RaisePropertyChanged();
+            RaiseStatusChanged();
+        }
+    }
+
     /// <summary>The stored gesture text ("Alt+Space"). Writing it validates and saves.</summary>
     public string HotkeyText
     {
@@ -374,6 +391,8 @@ public class SpotlightSettingsViewModel : ReactiveObject, IDisposable
     {
         SpotlightService.HotkeyStatus.Registered =>
             string.Format(Locale.Settings_Spotlight_Status_Registered, service.SearchGesture?.Text ?? SearchHotkeyText),
+        SpotlightService.HotkeyStatus.TakenOver =>
+            string.Format(Locale.Settings_Spotlight_Status_TakenOver, service.SearchGesture?.Text ?? SearchHotkeyText),
         SpotlightService.HotkeyStatus.Conflict => Locale.Settings_Spotlight_Status_SearchConflict,
         SpotlightService.HotkeyStatus.InvalidGesture => Locale.Settings_Spotlight_Status_Invalid,
         SpotlightService.HotkeyStatus.Unavailable => Locale.Settings_Spotlight_Status_Unavailable,
@@ -385,6 +404,8 @@ public class SpotlightSettingsViewModel : ReactiveObject, IDisposable
     {
         SpotlightService.HotkeyStatus.Registered =>
             string.Format(Locale.Settings_Spotlight_Status_Registered, service.Gesture?.Text ?? HotkeyText),
+        SpotlightService.HotkeyStatus.TakenOver =>
+            string.Format(Locale.Settings_Spotlight_Status_TakenOver, service.Gesture?.Text ?? HotkeyText),
         SpotlightService.HotkeyStatus.Conflict => Locale.Settings_Spotlight_Status_Conflict,
         SpotlightService.HotkeyStatus.InvalidGesture => Locale.Settings_Spotlight_Status_Invalid,
         SpotlightService.HotkeyStatus.Unavailable => Locale.Settings_Spotlight_Status_Unavailable,
@@ -392,7 +413,9 @@ public class SpotlightSettingsViewModel : ReactiveObject, IDisposable
     };
 
     /// <summary>True when the gesture is live — drives the status dot colour.</summary>
-    public bool IsHotkeyLive => service?.Status == SpotlightService.HotkeyStatus.Registered;
+    public bool IsHotkeyLive =>
+        service?.Status is SpotlightService.HotkeyStatus.Registered
+            or SpotlightService.HotkeyStatus.TakenOver;
 
     public string FolderPath => settings.Get().EffectiveLauncher.EffectiveFolder;
 
@@ -1511,9 +1534,12 @@ public class SpotlightSettingsViewModel : ReactiveObject, IDisposable
     public void BeginRecording(SpotlightHotkeyTarget target)
     {
         if (recordingTarget != null) return;
-        service?.BeginCapture();
+
+        // Set the target before the capture hook starts: the hook reports on the UI thread, and a
+        // very fast key press must not arrive before the view model knows which field it belongs to.
         recordingTarget = target;
         Message = null;
+        service?.BeginCapture();
         RaiseRecordingChanged();
     }
 
@@ -1540,7 +1566,10 @@ public class SpotlightSettingsViewModel : ReactiveObject, IDisposable
     /// </summary>
     public bool ApplyCapturedGesture(string? text, SpotlightHotkeyTarget target = SpotlightHotkeyTarget.Launcher)
     {
-        if (recordingTarget == null) BeginRecording(target);
+        // The hook recorder and the window's KeyDown handler are two paths to the same gesture.
+        // Whichever arrives first wins; the other must not restart recording (the previous
+        // defensive BeginRecording call did exactly that).
+        if (recordingTarget == null) return false;
 
         recordingTarget = null;
         var accepted = target == SpotlightHotkeyTarget.Search
@@ -1570,6 +1599,7 @@ public class SpotlightSettingsViewModel : ReactiveObject, IDisposable
                 "modifier-required" => Locale.Settings_Spotlight_Hotkey_NeedModifier,
                 "unknown-key" => Locale.Settings_Spotlight_Hotkey_UnknownKey,
                 "missing-key" => Locale.Settings_Spotlight_Hotkey_MissingKey,
+                "reserved" => Locale.Settings_Spotlight_Hotkey_Reserved,
                 _ => Locale.Settings_Spotlight_Hotkey_Invalid,
             };
             return false;
@@ -1602,6 +1632,7 @@ public class SpotlightSettingsViewModel : ReactiveObject, IDisposable
                 "modifier-required" => Locale.Settings_Spotlight_Hotkey_NeedModifier,
                 "unknown-key" => Locale.Settings_Spotlight_Hotkey_UnknownKey,
                 "missing-key" => Locale.Settings_Spotlight_Hotkey_MissingKey,
+                "reserved" => Locale.Settings_Spotlight_Hotkey_Reserved,
                 _ => Locale.Settings_Spotlight_Hotkey_Invalid,
             };
             return false;
@@ -1797,6 +1828,8 @@ public class SpotlightSettingsViewModel : ReactiveObject, IDisposable
         if (service != null)
         {
             service.StateChanged += OnServiceStateChanged;
+            service.GestureCaptured += OnGestureCaptured;
+            service.GestureCaptureCancelled += OnGestureCaptureCancelled;
             // Clipboard events may fire on any thread; the handler marshals to the UI thread
             // itself (same contract as StateChanged below).
             service.Clipboard.Changed += OnClipboardChanged;
@@ -1812,6 +1845,8 @@ public class SpotlightSettingsViewModel : ReactiveObject, IDisposable
         if (service != null)
         {
             service.StateChanged -= OnServiceStateChanged;
+            service.GestureCaptured -= OnGestureCaptured;
+            service.GestureCaptureCancelled -= OnGestureCaptureCancelled;
             service.Clipboard.Changed -= OnClipboardChanged;
         }
 
@@ -1866,6 +1901,7 @@ public class SpotlightSettingsViewModel : ReactiveObject, IDisposable
         this.RaisePropertyChanged(nameof(IsSpaceRecentLaunchesCountEditable));
         this.RaisePropertyChanged(nameof(SpaceRecentLaunchesCount));
         this.RaisePropertyChanged(nameof(Enabled));
+        this.RaisePropertyChanged(nameof(TakeOverSystemHotkeys));
         this.RaisePropertyChanged(nameof(BlockFullscreen));
         this.RaisePropertyChanged(nameof(HotkeyText));
         this.RaisePropertyChanged(nameof(FolderPath));
@@ -1924,6 +1960,20 @@ public class SpotlightSettingsViewModel : ReactiveObject, IDisposable
     private void OnClipboardChanged()
         => Avalonia.Threading.Dispatcher.UIThread.Post(
             () => this.RaisePropertyChanged(nameof(ClipboardCountText)));
+
+    /// <summary>A combination captured by the service's hook recorder.</summary>
+    private void OnGestureCaptured(string text)
+    {
+        if (recordingTarget is not { } target) return;
+        ApplyCapturedGesture(text, target);
+    }
+
+    /// <summary>Escape pressed while the hook recorder was waiting.</summary>
+    private void OnGestureCaptureCancelled()
+    {
+        if (recordingTarget == null) return;
+        CancelRecording();
+    }
 
     private void OnServiceStateChanged()
         => Avalonia.Threading.Dispatcher.UIThread.Post(RaiseStatusChanged);
