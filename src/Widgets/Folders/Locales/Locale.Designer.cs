@@ -120,6 +120,11 @@ namespace Folders.Locales {
                 return ResourceManager.GetString("Folders_Help", resourceCulture);
             }
         }
+        public static string Folders_ContextMenu_Hint {
+            get {
+                return ResourceManager.GetString("Folders_ContextMenu_Hint", resourceCulture);
+            }
+        }
     public static string Folders_ShowNames {
             get {
                 return ResourceManager.GetString("Folders_ShowNames", resourceCulture);

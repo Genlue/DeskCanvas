@@ -46,11 +46,20 @@ public enum FileSearchBackend
 /// </summary>
 public sealed class FileSearchService : IDisposable
 {
-    /// <summary>Hard cap on what one query may return (the list shows far fewer).</summary>
-    public const int MaxResults = 40;
+    /// <summary>
+    /// Hard cap on what one query may return. This is a ceiling, not a page size: the list
+    /// renders every hit and scrolls, so the cap only exists to keep a one-letter query from
+    /// turning into a five-figure list.
+    /// </summary>
+    public const int MaxResults = 200;
 
-    /// <summary>Everything is asked for more than we show, then re-ranked locally.</summary>
-    private const int EverythingOverFetch = 20;
+    /// <summary>
+    /// How many candidates Everything is asked for before the local re-rank. Everything answers
+    /// in its own order (name/path), not by relevance, so a narrow pool silently drops the file
+    /// the user meant before it is ever scored — the pool has to be an order of magnitude wider
+    /// than what is shown.
+    /// </summary>
+    private const int EverythingCandidatePool = 2000;
 
     private readonly IAppSettingsProvider settings;
     private readonly LocalFileIndex index = new();
@@ -113,7 +122,7 @@ public sealed class FileSearchService : IDisposable
     /// Everything's default is name-only; MATCHPATH is the exception, not the rule. Leaving it on
     /// for every query is what made a common word unfindable: "图标" then also matches every file
     /// under every folder whose name contains 图标, the candidate pool is thousands of rows, and
-    /// Everything hands back its first <c>MaxResults × EverythingOverFetch</c> rows in its own
+    /// Everything hands back its first <see cref="EverythingCandidatePool"/> rows in its own
     /// order — the file the user wanted is usually past that cut.
     /// </para>
     /// </summary>
@@ -142,7 +151,7 @@ public sealed class FileSearchService : IDisposable
         var matchPath = NeedsMatchPath(query);
 
         var raw = await Task.Run(
-            () => ipc.Query(query.EverythingSyntax, query.IsRegex, matchCase: false, MaxResults * EverythingOverFetch, matchPath),
+            () => ipc.Query(query.EverythingSyntax, query.IsRegex, matchCase: false, EverythingCandidatePool, matchPath),
             cancellationToken).ConfigureAwait(false);
 
         if (ipc.Status != EverythingStatus.Connected) return null;

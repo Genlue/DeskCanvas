@@ -1,0 +1,157 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:viewModels="clr-namespace:Calendar.ViewModels"
+             xmlns:locales="clr-namespace:Calendar.Locales"
+             x:Class="Calendar.Views.Controls.ScheduleMedium"
+             x:DataType="viewModels:ScheduleViewModel"
+             Margin="10,8,10,10">
+
+    <UserControl.Styles>
+        <Style Selector="Button.ActionBtn">
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="0" />
+        </Style>
+        <Style Selector="Button.ActionBtn:pointerover">
+            <Setter Property="Background" Value="{DynamicResource ControlHoverBrush}" />
+        </Style>
+        <Style Selector="Button.EventRowBtn">
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="4,2" />
+            <Setter Property="CornerRadius" Value="8" />
+        </Style>
+        <Style Selector="Button.EventRowBtn:pointerover">
+            <Setter Property="Background" Value="{DynamicResource ControlHoverBrush}" />
+        </Style>
+    </UserControl.Styles>
+
+    <Grid ColumnDefinitions="100,*">
+        <!-- Left Column: Big Date Badge (Clickable to open secondary panel) -->
+        <Button Grid.Column="0" Classes="ActionBtn" Click="OnDateBadgeClicked"
+                HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+                ToolTip.Tip="{x:Static locales:Locale.Calendar_Schedule_OpenPanel}">
+            <Grid RowDefinitions="Auto,Auto,Auto,*" Margin="0,0,10,0">
+                <!-- Row 0: Red Weekday (15px Bold) -->
+                <TextBlock Grid.Row="0"
+                           Text="{Binding DayOfWeekFull}"
+                           FontSize="15"
+                           FontWeight="Bold"
+                           Foreground="{DynamicResource CalendarHeaderBrush}" />
+
+                <!-- Row 1: Day Numeral (36px Bold) - unconstrained line height, perfectly visible with no clipping -->
+                <TextBlock Grid.Row="1"
+                           Text="{Binding Day}"
+                           FontSize="36"
+                           FontWeight="Bold"
+                           Margin="0,0,0,0" />
+
+                <!-- Row 2: Month (13px SemiBold) -->
+                <TextBlock Grid.Row="2"
+                           Text="{Binding Month}"
+                           FontSize="13"
+                           FontWeight="SemiBold"
+                           Opacity="0.55"
+                           Margin="0,1,0,0" />
+
+                <!-- Row 3: Bottom Badge & Secondary Panel Action -->
+                <StackPanel Grid.Row="3" VerticalAlignment="Bottom" Spacing="4">
+                    <Border Background="{DynamicResource ControlHoverBrush}"
+                            CornerRadius="5" Padding="5,2" HorizontalAlignment="Left">
+                        <TextBlock Text="{Binding EventsCountText}"
+                                   FontSize="10.5"
+                                   FontWeight="SemiBold"
+                                   Opacity="0.8" />
+                    </Border>
+                </StackPanel>
+            </Grid>
+        </Button>
+
+        <!-- Right Column: Schedule Stream or Empty State -->
+        <Panel Grid.Column="1" Margin="4,0,0,0">
+            <!-- Event items list -->
+            <ScrollViewer IsVisible="{Binding HasEvents}" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+                <ItemsControl ItemsSource="{Binding UpcomingEvents}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate DataType="viewModels:ScheduleItemViewModel">
+                            <Button Classes="EventRowBtn" HorizontalAlignment="Stretch"
+                                    DataContext="{Binding}"
+                                    Tag="{Binding Id}"
+                                    Click="OnEventRowClicked"
+                                    Margin="0,0,0,3">
+                                <Grid ColumnDefinitions="Auto,*,Auto">
+                                    <!-- Category Color Accent Pill -->
+                                    <Border Grid.Column="0"
+                                            Width="3.5" Height="26" CornerRadius="2"
+                                            Background="{Binding ColorBrush}"
+                                            Margin="0,0,7,0"
+                                            VerticalAlignment="Center" />
+
+                                    <!-- Event Title & Location -->
+                                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="1">
+                                        <StackPanel Orientation="Horizontal" Spacing="4">
+                                            <TextBlock Text="{Binding Title}"
+                                                       FontSize="12.5"
+                                                       FontWeight="Bold"
+                                                       TextTrimming="CharacterEllipsis"
+                                                       MaxLines="1" />
+                                            <!-- Now Badge if ongoing -->
+                                            <Border IsVisible="{Binding IsNow}"
+                                                    Background="{DynamicResource CalendarHeaderBrush}"
+                                                    CornerRadius="3" Padding="3,0.5" VerticalAlignment="Center">
+                                                <TextBlock Text="{x:Static locales:Locale.Calendar_Schedule_Now}"
+                                                           FontSize="9" FontWeight="Bold"
+                                                           Foreground="White" />
+                                            </Border>
+                                        </StackPanel>
+                                        <TextBlock Text="{Binding Location}"
+                                                   IsVisible="{Binding Location, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                                                   FontSize="10"
+                                                   Opacity="0.5"
+                                                   TextTrimming="CharacterEllipsis"
+                                                   MaxLines="1" />
+                                    </StackPanel>
+
+                                    <!-- Time Range Text -->
+                                    <StackPanel Grid.Column="2" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="6,0,0,0">
+                                        <TextBlock Text="{Binding StartTimeText}"
+                                                   FontSize="12"
+                                                   FontWeight="Bold"
+                                                   HorizontalAlignment="Right" />
+                                        <TextBlock Text="{Binding EndTimeText}"
+                                                   IsVisible="{Binding !IsAllDay}"
+                                                   FontSize="10"
+                                                   Opacity="0.5"
+                                                   HorizontalAlignment="Right" />
+                                    </StackPanel>
+                                </Grid>
+                            </Button>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
+
+            <!-- Empty State -->
+            <StackPanel IsVisible="{Binding !HasEvents}" VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="3">
+                <Path Data="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                      Stroke="{DynamicResource TextControlForeground}"
+                      StrokeThickness="1.5" StrokeLineCap="Round"
+                      Width="28" Height="28" Stretch="Uniform"
+                      Opacity="0.25" HorizontalAlignment="Center" />
+                <TextBlock Text="{x:Static locales:Locale.Calendar_Schedule_NoMoreEvents}"
+                           FontSize="12.5"
+                           FontWeight="Bold"
+                           Opacity="0.5"
+                           HorizontalAlignment="Center" />
+                <Button Classes="ActionBtn" Click="OnDateBadgeClicked" HorizontalAlignment="Center">
+                    <TextBlock Text="点击打开二级面板添加"
+                               FontSize="11"
+                               Opacity="0.4"
+                               TextDecorations="Underline" />
+                </Button>
+            </StackPanel>
+        </Panel>
+    </Grid>
+</UserControl>

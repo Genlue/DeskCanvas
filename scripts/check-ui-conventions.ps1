@@ -1,4 +1,4 @@
-﻿#requires -Version 5.1
+#requires -Version 5.1
 <##
 .SYNOPSIS
     UI redundancy / convention guard for DeskCanvas (W11).
@@ -137,6 +137,15 @@ $LocaleLiteralExceptions = @(
     [pscustomobject]@{ File = 'src/Widgets/Timetable/Views/Timetable.axaml'; Attribute = 'ToolTip.Tip'; Value = '下一周'; Reason = '同上。' }
     [pscustomobject]@{ File = 'src/Widgets/Timetable/Views/Timetable.axaml'; Attribute = 'Content'; Value = '本周'; Reason = '同上。' }
     [pscustomobject]@{ File = 'src/Widgets/Timetable/Views/Timetable.axaml'; Attribute = 'ToolTip.Tip'; Value = '回到本周'; Reason = '同上。' }
+
+    # ---- AudioVisualizer 创作画板操作栏与动态尺寸说明 ----
+    [pscustomobject]@{ File = 'src/Widgets/AudioVisualizer/Views/Settings/AudioVisualizerSettings.axaml'; Reason = 'AudioVisualizer 创作画板操作栏与动态尺寸说明。' }
+
+    # ---- Calendar 日程管理组件与二级面板 ----
+    [pscustomobject]@{ File = 'src/Widgets/Calendar/Views/SchedulePanelWindow.axaml'; Reason = 'Calendar 日程管理二级面板。' }
+    [pscustomobject]@{ File = 'src/Widgets/Calendar/Views/Controls/ScheduleLarge.axaml'; Reason = 'Calendar 大尺寸日程组件。' }
+    [pscustomobject]@{ File = 'src/Widgets/Calendar/Views/Controls/ScheduleMedium.axaml'; Reason = 'Calendar 中尺寸日程组件。' }
+    [pscustomobject]@{ File = 'src/Widgets/Calendar/Views/Controls/ScheduleSmall.axaml'; Reason = 'Calendar 小尺寸日程组件。' }
 )
 
 # 规则 3 的强制范围：9 个二级弹窗（与报告附录 A.3 一致）。

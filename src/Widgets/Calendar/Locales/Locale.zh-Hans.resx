@@ -97,4 +97,31 @@
   <data name="Calendar_HollowToday_Subtitle" xml:space="preserve">
     <value>把今天的日期数字从圆点中镂空挖出（数字处透出组件背后的画面），关闭后数字以白色绘制在圆点上</value>
   </data>
+  <data name="Calendar_Schedule_Title" xml:space="preserve">
+    <value>日程</value>
+  </data>
+  <data name="Calendar_Schedule_Subtitle" xml:space="preserve">
+    <value>查看并管理日程安排</value>
+  </data>
+  <data name="Calendar_Schedule_NoEvents" xml:space="preserve">
+    <value>今天没有日程</value>
+  </data>
+  <data name="Calendar_Schedule_NoMoreEvents" xml:space="preserve">
+    <value>今天没有更多日程</value>
+  </data>
+  <data name="Calendar_Schedule_UpcomingMore" xml:space="preserve">
+    <value>接下来还有 {0} 项</value>
+  </data>
+  <data name="Calendar_Schedule_OpenPanel" xml:space="preserve">
+    <value>打开日程管理面板</value>
+  </data>
+  <data name="Calendar_Schedule_AllDay" xml:space="preserve">
+    <value>全天</value>
+  </data>
+  <data name="Calendar_Schedule_Now" xml:space="preserve">
+    <value>进行中</value>
+  </data>
+  <data name="Calendar_Schedule_ItemsCount" xml:space="preserve">
+    <value>{0} 项日程</value>
+  </data>
 </root>

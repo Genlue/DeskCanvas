@@ -1,0 +1,242 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:controls="clr-namespace:DeskCanvas.Views.Controls;assembly=DeskCanvas"
+        xmlns:views="clr-namespace:Calendar.Views"
+        xmlns:models="clr-namespace:Calendar.Models"
+        x:Class="Calendar.Views.SchedulePanelWindow"
+        Title="Schedule"
+        WindowDecorations="None"
+        Background="Transparent"
+        TransparencyLevelHint="Transparent"
+        ShowInTaskbar="False"
+        CanResize="False"
+        Width="660"
+        Height="480">
+
+    <Window.Styles>
+        <Style Selector="Button.pill-btn">
+            <Setter Property="Height" Value="26" />
+            <Setter Property="Padding" Value="8,2" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="CornerRadius" Value="13" />
+            <Setter Property="Background" Value="#15808080" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="Cursor" Value="Hand" />
+        </Style>
+        <Style Selector="Button.pill-btn:pointerover">
+            <Setter Property="Background" Value="#30808080" />
+        </Style>
+        <Style Selector="Button.time-chip-btn">
+            <Setter Property="Height" Value="22" />
+            <Setter Property="Padding" Value="6,1" />
+            <Setter Property="FontSize" Value="10.5" />
+            <Setter Property="CornerRadius" Value="6" />
+            <Setter Property="Background" Value="#15808080" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Opacity" Value="0.8" />
+        </Style>
+        <Style Selector="Button.time-chip-btn:pointerover">
+            <Setter Property="Background" Value="#30808080" />
+            <Setter Property="Opacity" Value="1.0" />
+        </Style>
+        <Style Selector="Button.delete-btn">
+            <Setter Property="Width" Value="22" />
+            <Setter Property="Height" Value="22" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="CornerRadius" Value="11" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Opacity" Value="0.4" />
+            <Setter Property="Cursor" Value="Hand" />
+        </Style>
+        <Style Selector="Button.delete-btn:pointerover">
+            <Setter Property="Opacity" Value="1.0" />
+            <Setter Property="Background" Value="#30FF3B30" />
+            <Setter Property="Foreground" Value="#FF3B30" />
+        </Style>
+        <Style Selector="TextBox">
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="Padding" Value="8,5" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="Background" Value="{DynamicResource ControlHoverBrush}" />
+        </Style>
+    </Window.Styles>
+
+    <controls:SecondaryPanelShell>
+        <!-- Header Content: Title & Date Switcher -->
+        <controls:SecondaryPanelShell.HeaderContent>
+            <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                <TextBlock Text="日程管理"
+                           FontSize="16"
+                           FontWeight="Bold"
+                           VerticalAlignment="Center" />
+
+                <!-- Date Navigator -->
+                <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center" Margin="8,0,0,0">
+                    <Button Classes="pill-btn" Width="26" Click="OnPrevDayClicked" Content="‹" HorizontalContentAlignment="Center" />
+                    <TextBlock x:Name="CurrentDateText"
+                               FontSize="13"
+                               FontWeight="SemiBold"
+                               VerticalAlignment="Center"
+                               Margin="4,0" />
+                    <Button Classes="pill-btn" Width="26" Click="OnNextDayClicked" Content="›" HorizontalContentAlignment="Center" />
+                    <Button Classes="pill-btn" Click="OnTodayClicked" Content="今天" Margin="4,0,0,0" />
+                </StackPanel>
+            </StackPanel>
+        </controls:SecondaryPanelShell.HeaderContent>
+
+        <!-- Main Body: Two Columns (Left List, Right Form) -->
+        <Grid ColumnDefinitions="*,280" Margin="0,2,0,0">
+            <!-- Left Column: Event List -->
+            <Grid Grid.Column="0" RowDefinitions="Auto,*" Margin="0,0,14,0">
+                <TextBlock Grid.Row="0" x:Name="ListCountText"
+                           FontSize="11.5" FontWeight="SemiBold"
+                           Opacity="0.6" Margin="0,0,0,6" />
+
+                <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+                    <StackPanel Spacing="5" Margin="0,0,4,0">
+                        <ItemsControl x:Name="EventsItemsControl">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate DataType="models:ScheduleEventModel">
+                                    <Border Background="{DynamicResource ControlHoverBrush}"
+                                            CornerRadius="10" Padding="8,7" Margin="0,0,0,5">
+                                        <Grid ColumnDefinitions="Auto,*,Auto">
+                                            <!-- Color Accent -->
+                                            <Border Grid.Column="0" Width="3.5" CornerRadius="2"
+                                                    Background="{Binding Color}"
+                                                    Margin="0,0,8,0" VerticalAlignment="Stretch" />
+
+                                            <!-- Details -->
+                                            <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+                                                <TextBlock Text="{Binding Title}"
+                                                           FontSize="12.5" FontWeight="Bold"
+                                                           TextTrimming="CharacterEllipsis" MaxLines="1" />
+                                                <StackPanel Orientation="Horizontal" Spacing="4">
+                                                    <TextBlock Text="{Binding StartTime, StringFormat='{}{0:HH:mm}'}"
+                                                               FontSize="11" Opacity="0.6" FontWeight="SemiBold" />
+                                                    <TextBlock Text="-" FontSize="11" Opacity="0.4"
+                                                               IsVisible="{Binding !IsAllDay}" />
+                                                    <TextBlock Text="{Binding EndTime, StringFormat='{}{0:HH:mm}'}"
+                                                               FontSize="11" Opacity="0.6" FontWeight="SemiBold"
+                                                               IsVisible="{Binding !IsAllDay}" />
+                                                    <TextBlock Text="·" FontSize="11" Opacity="0.4"
+                                                               IsVisible="{Binding Location, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                                                    <TextBlock Text="{Binding Location}"
+                                                               FontSize="11" Opacity="0.5"
+                                                               TextTrimming="CharacterEllipsis" MaxLines="1" />
+                                                </StackPanel>
+                                            </StackPanel>
+
+                                            <!-- Actions: Edit & Delete -->
+                                            <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                                                <Button Classes="pill-btn" Content="编辑"
+                                                        Tag="{Binding Id}" Click="OnEditEventClicked" />
+                                                <Button Classes="delete-btn" Content="✕"
+                                                        Tag="{Binding Id}" Click="OnDeleteEventClicked"
+                                                        ToolTip.Tip="删除日程" />
+                                            </StackPanel>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+
+                        <!-- Empty Placeholder -->
+                        <StackPanel x:Name="EmptyNotice" IsVisible="False" VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="3" Margin="0,36,0,0">
+                            <TextBlock Text="该日期暂无日程安排" FontSize="13" FontWeight="Bold" Opacity="0.45" HorizontalAlignment="Center" />
+                            <TextBlock Text="可通过右侧表单快速添加" FontSize="11" Opacity="0.35" HorizontalAlignment="Center" />
+                        </StackPanel>
+                    </StackPanel>
+                </ScrollViewer>
+            </Grid>
+
+            <!-- Right Column: Add / Edit Event Form -->
+            <Border Grid.Column="1" Background="{DynamicResource ControlHoverBrush}"
+                    CornerRadius="14" Padding="14,12">
+                <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,*,Auto">
+                    <!-- Row 0: Form Title -->
+                    <TextBlock Grid.Row="0" x:Name="FormTitleText"
+                               Text="新建日程" FontSize="13"
+                               FontWeight="Bold" Margin="0,0,0,8" />
+
+                    <!-- Row 1: Title Input -->
+                    <StackPanel Grid.Row="1" Spacing="2" Margin="0,0,0,6">
+                        <TextBlock Text="日程名称" FontSize="10.5" Opacity="0.6" FontWeight="SemiBold" />
+                        <TextBox x:Name="EventTitleInput" PlaceholderText="输入标题（例：项目站会）" MaxLength="60" />
+                    </StackPanel>
+
+                    <!-- Row 2: Time Header & All Day Switch -->
+                    <Grid Grid.Row="2" ColumnDefinitions="*,Auto" Margin="0,0,0,4">
+                        <TextBlock Text="时间安排" FontSize="10.5" Opacity="0.6" FontWeight="SemiBold" VerticalAlignment="Center" />
+                        <CheckBox x:Name="IsAllDayCheckBox" Grid.Column="1"
+                                  Content="全天" FontSize="11"
+                                  VerticalAlignment="Center" Padding="4,0,0,0"
+                                  IsCheckedChanged="OnAllDayCheckChanged" />
+                    </Grid>
+
+                    <!-- Row 3: Compact Start / End Time Inputs -->
+                    <Grid Grid.Row="3" x:Name="TimeInputsGrid" ColumnDefinitions="*,Auto,*" Margin="0,0,0,4">
+                        <TextBox Grid.Column="0" x:Name="StartTimeInput"
+                                 Text="09:00" PlaceholderText="09:00"
+                                 TextAlignment="Center" FontWeight="SemiBold"
+                                 FontFamily="Consolas, monospace, Segoe UI"
+                                 LostFocus="OnTimeInputLostFocus" />
+                        <TextBlock Grid.Column="1" Text="至"
+                                   FontSize="11" Opacity="0.5"
+                                   VerticalAlignment="Center" HorizontalAlignment="Center"
+                                   Margin="8,0" />
+                        <TextBox Grid.Column="2" x:Name="EndTimeInput"
+                                 Text="10:00" PlaceholderText="10:00"
+                                 TextAlignment="Center" FontWeight="SemiBold"
+                                 FontFamily="Consolas, monospace, Segoe UI"
+                                 LostFocus="OnTimeInputLostFocus" />
+                    </Grid>
+
+                    <!-- Row 4: Quick Duration Chips -->
+                    <StackPanel Grid.Row="4" x:Name="QuickPresetsRow" Orientation="Horizontal" Spacing="4" Margin="0,0,0,6">
+                        <Button Classes="time-chip-btn" Content="+30分" Click="OnAdd30MinClicked" />
+                        <Button Classes="time-chip-btn" Content="+1小时" Click="OnAdd1HourClicked" />
+                        <Button Classes="time-chip-btn" Content="+2小时" Click="OnAdd2HourClicked" />
+                        <Button Classes="time-chip-btn" Content="下午" Click="OnPresetAfternoonClicked" />
+                    </StackPanel>
+
+                    <!-- Row 5: Category & Color Picker -->
+                    <StackPanel Grid.Row="5" Spacing="2" Margin="0,0,0,6">
+                        <TextBlock Text="分类与标签色" FontSize="10.5" Opacity="0.6" FontWeight="SemiBold" />
+                        <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,2,0,0">
+                            <RadioButton x:Name="ColorBlue" GroupName="EventColors" IsChecked="True" Content="工作" Foreground="#007AFF" />
+                            <RadioButton x:Name="ColorOrange" GroupName="EventColors" Content="会议" Foreground="#FF9500" />
+                            <RadioButton x:Name="ColorGreen" GroupName="EventColors" Content="生活" Foreground="#34C759" />
+                            <RadioButton x:Name="ColorRed" GroupName="EventColors" Content="重要" Foreground="#FF3B30" />
+                        </StackPanel>
+                    </StackPanel>
+
+                    <!-- Row 6: Location Input -->
+                    <StackPanel Grid.Row="6" Spacing="2" Margin="0,0,0,6">
+                        <TextBlock Text="地点 / 线上会议号" FontSize="10.5" Opacity="0.6" FontWeight="SemiBold" />
+                        <TextBox x:Name="EventLocationInput" PlaceholderText="例：腾讯会议 892-124 或 会议室" />
+                    </StackPanel>
+
+                    <!-- Row 7: Notes Input -->
+                    <StackPanel Grid.Row="7" Spacing="2" Margin="0,0,0,8">
+                        <TextBlock Text="备忘说明" FontSize="10.5" Opacity="0.6" FontWeight="SemiBold" />
+                        <TextBox x:Name="EventNotesInput" PlaceholderText="备忘详情..." Height="42" AcceptsReturn="True" />
+                    </StackPanel>
+
+                    <!-- Row 8: Submit / Cancel Buttons -->
+                    <StackPanel Grid.Row="8" Orientation="Horizontal" Spacing="6" HorizontalAlignment="Right">
+                        <Button x:Name="CancelEditBtn" Classes="pill-btn" Content="取消编辑"
+                                IsVisible="False" Click="OnCancelEditClicked" />
+                        <Button Classes="pill-btn" Background="{DynamicResource CalendarHeaderBrush}"
+                                Foreground="White" FontWeight="Bold"
+                                Content="保存日程" Click="OnSaveEventClicked" />
+                    </StackPanel>
+                </Grid>
+            </Border>
+        </Grid>
+    </controls:SecondaryPanelShell>
+</Window>

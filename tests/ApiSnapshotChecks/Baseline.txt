@@ -242,6 +242,7 @@ property DeskCanvas.Core.Const DiceFile -> System.String
 property DeskCanvas.Core.Const HabitsFile -> System.String
 property DeskCanvas.Core.Const LayoutFile -> System.String
 property DeskCanvas.Core.Const RemindersFile -> System.String
+property DeskCanvas.Core.Const ScheduleFile -> System.String
 property DeskCanvas.Core.Const ShortcutsFile -> System.String
 property DeskCanvas.Core.Const TimetableFile -> System.String
 field DeskCanvas.Core.Const ActiveProfilePointerFileName -> System.String
@@ -714,7 +715,7 @@ field DeskCanvas.Core.Models.Settings.LauncherGridMetrics LabelLineHeight -> Sys
 field DeskCanvas.Core.Models.Settings.LauncherGridMetrics LabelSpacing -> System.Double
 field DeskCanvas.Core.Models.Settings.LauncherGridMetrics TwoLineLabelHeight -> System.Double
 type DeskCanvas.Core.Models.Settings.LauncherSettings
-method DeskCanvas.Core.Models.Settings.LauncherSettings Deconstruct(System.Boolean,System.String,System.String,System.Int32,System.Int32,System.Int32,System.Double,System.Double,System.Collections.Generic.List<System.String>,System.Double,System.Boolean,System.Boolean,System.Nullable<DeskCanvas.Core.Models.Settings.SurfaceStyle>,DeskCanvas.Core.Models.Settings.LauncherThemeMode,System.Nullable<System.Double>,DeskCanvas.Core.Models.Settings.LiquidGlassSettings,System.Boolean,System.Int32,System.Boolean,System.Int32,System.Boolean,System.Boolean,System.Boolean,DeskCanvas.Core.Models.Settings.LauncherSortMode,System.Boolean,System.Boolean,System.Boolean,System.Int32,System.Collections.Generic.List<System.String>,System.String,System.Boolean,System.String,System.String,System.Boolean,System.Collections.Generic.Dictionary<System.String,System.String>,System.Boolean,System.String,System.String,System.String,System.Int32,System.Collections.Generic.List<System.String>,System.String,System.Boolean,System.Int32) -> System.Void
+method DeskCanvas.Core.Models.Settings.LauncherSettings Deconstruct(System.Boolean,System.String,System.String,System.Int32,System.Int32,System.Int32,System.Double,System.Double,System.Collections.Generic.List<System.String>,System.Double,System.Boolean,System.Boolean,System.Nullable<DeskCanvas.Core.Models.Settings.SurfaceStyle>,DeskCanvas.Core.Models.Settings.LauncherThemeMode,System.Nullable<System.Double>,DeskCanvas.Core.Models.Settings.LiquidGlassSettings,System.Boolean,System.Int32,System.Boolean,System.Int32,System.Boolean,System.Boolean,System.Boolean,DeskCanvas.Core.Models.Settings.LauncherSortMode,System.Boolean,System.Boolean,System.Boolean,System.Int32,System.Collections.Generic.List<System.String>,System.String,System.Boolean,System.String,System.String,System.Boolean,System.Collections.Generic.Dictionary<System.String,System.String>,System.Boolean,System.String,System.String,System.String,System.Int32,System.Collections.Generic.List<System.String>,System.String,System.Boolean,System.Int32,System.Boolean) -> System.Void
 method DeskCanvas.Core.Models.Settings.LauncherSettings EffectiveCornerRadius(System.Double) -> System.Double
 method DeskCanvas.Core.Models.Settings.LauncherSettings Equals(System.Object) -> System.Boolean
 method DeskCanvas.Core.Models.Settings.LauncherSettings Equals(DeskCanvas.Core.Models.Settings.LauncherSettings) -> System.Boolean
@@ -790,6 +791,7 @@ property DeskCanvas.Core.Models.Settings.LauncherSettings SortMode -> DeskCanvas
 property DeskCanvas.Core.Models.Settings.LauncherSettings SpaceRecentLaunchesCount -> System.Int32
 property DeskCanvas.Core.Models.Settings.LauncherSettings SpaceShowsRecentLaunches -> System.Boolean
 property DeskCanvas.Core.Models.Settings.LauncherSettings Surface -> System.Nullable<DeskCanvas.Core.Models.Settings.SurfaceStyle>
+property DeskCanvas.Core.Models.Settings.LauncherSettings TakeOverSystemHotkeys -> System.Boolean
 property DeskCanvas.Core.Models.Settings.LauncherSettings ThemeMode -> DeskCanvas.Core.Models.Settings.LauncherThemeMode
 property DeskCanvas.Core.Models.Settings.LauncherSettings UseGlobalTheme -> System.Boolean
 property DeskCanvas.Core.Models.Settings.LauncherSettings UseWidgetCornerRadius -> System.Boolean

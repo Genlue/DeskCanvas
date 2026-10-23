@@ -264,6 +264,9 @@ public partial class Widget : Window, INotifyPropertyChanged, IFocusThemedWindow
         Resized += OnResized;
         PointerPressed += OnPointerPressed;
         AddHandler(PointerPressedEvent, OnPreviewPointerPressed, RoutingStrategies.Tunnel);
+        // Ctrl + 右键 = 组件菜单（见 OnWidgetContextRequested）。必须走隧道：内容视图自己的
+        // 右键菜单在冒泡阶段比宿主更靠近事件源，晚一步就只能看着它先打开。
+        AddHandler(ContextRequestedEvent, OnWidgetContextRequested, RoutingStrategies.Tunnel, handledEventsToo: true);
         // handledEventsToo: an inner control that marks the release as handled (Button,
         // ToggleSwitch, a drag-aware view…) used to stop the route before the window and
         // silently skip the position commit — the widget then jumped back to its stored
@@ -1724,11 +1727,18 @@ public partial class Widget : Window, INotifyPropertyChanged, IFocusThemedWindow
     private void OnPreviewPointerPressed(object? sender, PointerPressedEventArgs e)
     {
         var point = e.GetCurrentPoint(this);
+
+        // Ctrl + 右键 的修饰键状态只能在这一刻取到（ContextRequestedEventArgs 不带修饰键），
+        // 记下来给 OnWidgetContextRequested 用：右键按下必然先于上下文请求（松开时）到达。
+        if (point.Properties.IsRightButtonPressed)
+        {
+            contextRequestWithControl = IsControlModifier(e.KeyModifiers);
+            return;
+        }
+
         if (!point.Properties.IsLeftButtonPressed) return;
 
-        var isCtrl = e.KeyModifiers.HasFlag(KeyModifiers.Control)
-                     || (OperatingSystem.IsWindows() && (GetKeyState(0x11) & 0x8000) != 0);
-        if (!isCtrl) return;
+        if (!IsControlModifier(e.KeyModifiers)) return;
 
         if (appSettingsProvider.Get().Layout.LockPosition) return;
 
@@ -1744,6 +1754,61 @@ public partial class Widget : Window, INotifyPropertyChanged, IFocusThemedWindow
         e.Handled = true;
         BeginMoveDragWithCommit(e);
     }
+
+    /// <summary>
+    /// 最近一次右键按下时 Ctrl 是否按着。组件窗口从不获得焦点（ShowActivated=False），
+    /// 键盘事件到不了它，所以只能在指针事件里顺手记下修饰键状态。
+    /// </summary>
+    private bool contextRequestWithControl;
+
+    /// <summary>
+    /// Ctrl + 右键：忽略组件交互，直接打开宿主（组件）菜单——与 Ctrl + 左键拖动同一套修饰键
+    /// 语义（「按住 Ctrl，这一下不算组件的」）。
+    /// <para>
+    /// 为什么需要这条通道：内容视图可以自带右键菜单（单链接组件就有一个），而
+    /// <see cref="InputElement.ContextRequested"/> 是冒泡事件——内容比宿主更靠近事件源，
+    /// 先一步打开自己的菜单并标记 Handled，宿主的菜单便再也不会出现。图标比例调到最大时，
+    /// 卡片上几乎每一寸都是内容，于是「编辑 / 尺寸 / 缩放 / 移除 / 设置」这一层彻底够不到。
+    /// 这里在隧道阶段抢先处理：Ctrl 按住时吞掉这次上下文请求，改开宿主菜单，内容菜单连
+    /// 打开的机会都没有。不按 Ctrl 时原样放行（内容菜单照旧）。
+    /// </para>
+    /// </summary>
+    private void OnWidgetContextRequested(object? sender, ContextRequestedEventArgs e)
+    {
+        if (ContextMenu is not { } menu) return;
+
+        var withControl = contextRequestWithControl || IsControlKeyHeld();
+        contextRequestWithControl = false;
+        if (!withControl) return;
+
+        e.Handled = true;
+        if (menu.IsOpen) return;
+
+        try
+        {
+            // PlacementTarget 固定成窗口本身：默认路径会把目标设成 e.Source（内容里的
+            // 某个控件），Pointer 定位下虽无差别，但菜单重开时留着旧锚点会飘。
+            menu.PlacementTarget = this;
+            menu.Open(this);
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[Widget] Ctrl+右键 打开组件菜单失败: {ex.Message}");
+        }
+    }
+
+    /// <summary>Ctrl 是否按着：优先取指针事件自带的修饰键，其次问系统（Windows）。</summary>
+    private static bool IsControlModifier(KeyModifiers modifiers) =>
+        modifiers.HasFlag(KeyModifiers.Control)
+        || (OperatingSystem.IsWindows() && (GetKeyState(0x11) & 0x8000) != 0);
+
+    /// <summary>
+    /// Ctrl 是否真的按着。<see cref="ContextRequestedEventArgs"/> 不带修饰键状态，而组件窗口
+    /// 从不获得焦点（ShowActivated=False），键盘事件也到不了——只能问系统，与 Ctrl + 左键
+    /// 拖动那条路径用的是同一个兜底。
+    /// </summary>
+    private static bool IsControlKeyHeld() =>
+        OperatingSystem.IsWindows() && (GetKeyState(0x11) & 0x8000) != 0;
 
     public void OnPointerPressed(object? sender, PointerPressedEventArgs e)
     {

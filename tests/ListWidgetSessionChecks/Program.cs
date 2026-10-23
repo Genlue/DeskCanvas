@@ -124,6 +124,7 @@ mixedVm.Start();
 Check(mixedVm.TickSubscriptionCountForChecks == 1, "2.10 Start reconciles the subscription after both transitions");
 
 // The 24-hour window drives the tier through a real store change (the ModelChanged push).
+CountdownStore.Save([]);
 var idD = WidgetInstanceId.New();
 var sD = WidgetSessionRegistry.GetOrCreate(idD);
 var autoVm = new CountdownViewModel(new CountdownModel { Granularity = CountdownGranularity.Auto24Hours }, sD);

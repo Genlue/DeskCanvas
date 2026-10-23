@@ -43,5 +43,11 @@
         <TextBlock Text="{x:Static locales:Locale.Folders_Help}"
                    FontSize="{DynamicResource FontSizeCaption}" TextWrapping="Wrap" Margin="0,2,0,0"
                    Foreground="{DynamicResource SecondaryTextBrush}" />
+
+        <!-- 图标可以铺满整张卡片，那时右键点到的是图标本身；组件菜单改由 Ctrl + 右键唤出。
+             提示必须写在用户会来看的地方（设置页），不能只留在代码注释里。 -->
+        <TextBlock Text="{x:Static locales:Locale.Folders_ContextMenu_Hint}"
+                   FontSize="{DynamicResource FontSizeCaption}" TextWrapping="Wrap" Margin="0,2,0,0"
+                   Foreground="{DynamicResource SecondaryTextBrush}" />
     </StackPanel>
 </UserControl>

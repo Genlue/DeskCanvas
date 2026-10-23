@@ -10,8 +10,16 @@ namespace DeskCanvas.Services;
 
 /// <summary>一次聚焦搜索查询。Limit 是每个结果源各自的上限（不是总量）。</summary>
 /// <param name="Query">原始查询文本；空白查询 → 只出 Recents。</param>
-/// <param name="Limit">每个结果源各自的上限，默认 40。</param>
-public sealed record SpotlightQueryRequest(string Query, int Limit = 40);
+/// <param name="Limit">应用 / 剪贴板 / 外部提供者各自的上限，默认 40。</param>
+/// <param name="FileLimit">
+/// 文件源的上限，默认 <see cref="FileSearchService.MaxResults"/>。文件与其它源分开定容：
+/// 其它源天然只有几十条候选，而一次文件名查询在整盘索引里能命中成千上万条——文件列表
+/// 必须给足，否则用户要找的那个文件根本进不了结果（见 FileSearchService 的候选池说明）。
+/// </param>
+public sealed record SpotlightQueryRequest(
+    string Query,
+    int Limit = 40,
+    int FileLimit = FileSearchService.MaxResults);
 
 /// <summary>
 /// 一个结果分组。Kind 的顺序即展示顺序（由 <see cref="SpotlightQueryRouter"/> 固定），
@@ -107,6 +115,7 @@ public sealed class SpotlightQueryRouter
     public async Task<SpotlightQueryOutcome> RouteAsync(SpotlightQueryRequest request, CancellationToken ct)
     {
         var limit = request is { Limit: > 0 } ? request.Limit : DefaultLimit;
+        var fileLimit = request is { FileLimit: > 0 } ? request.FileLimit : FileSearchService.MaxResults;
         var query = request?.Query?.Trim() ?? string.Empty;
 
         var recents = SafeRecents(limit);
@@ -130,7 +139,7 @@ public sealed class SpotlightQueryRouter
         var workflowTask = GuardGroupsAsync(() => QueryExternalAsync(query, limit, ct));
         var clipboardTask = GuardAsync(() => clipboard.QueryAsync(query, limit, ct));
         var filesTask = filesEnabled
-            ? GuardAsync(() => files.QueryAsync(query, limit, ct))
+            ? GuardAsync(() => files.QueryAsync(query, fileLimit, ct))
             : Task.FromResult((Items: EmptyResults, Faulted: false));
 
         await Task.WhenAll(appsTask, filesTask, clipboardTask, workflowTask).ConfigureAwait(false);

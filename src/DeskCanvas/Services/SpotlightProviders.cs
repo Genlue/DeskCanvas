@@ -124,7 +124,10 @@ public sealed class SpotlightAppProvider
 /// </summary>
 public sealed class SpotlightFileProvider
 {
-    /// <summary>首个命中的分数；步长 5 → limit 40 时末位仍有 305，与 usage-only 带（≤600）重叠但由调用方分组隔离。</summary>
+    /// <summary>
+    /// 首个命中的分数；步长 5。分数只用于组内保序（文件组与其它组天然隔离），所以列表再长
+    /// 也只是把顺序翻译成分数，末位为负不影响显示。
+    /// </summary>
     private const double FirstHitScore = 500;
 
     /// <summary>相邻命中之间的分差。</summary>

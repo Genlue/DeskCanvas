@@ -51,6 +51,9 @@
     <data name="Folders_Help" xml:space="preserve">
         <value>Tip: you can also drag files and folders directly onto the widget</value>
     </data>
+    <data name="Folders_ContextMenu_Hint" xml:space="preserve">
+        <value>Tip: hold Ctrl and right-click to open the widget menu (Edit / Size / Remove / Settings) — a plain right-click belongs to the icon. Hold Ctrl and drag with the left button to move the widget.</value>
+    </data>
     <data name="Folders_ShowNames" xml:space="preserve">
         <value>Show item names</value>
     </data>

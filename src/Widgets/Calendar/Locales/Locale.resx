@@ -57,4 +57,31 @@
     <data name="Calendar_HollowToday_Subtitle" xml:space="preserve">
         <value>Punches today's day number out of the marker disc (the numeral shows what is behind the card). Turn off to paint the number on the disc in white instead</value>
     </data>
+    <data name="Calendar_Schedule_Title" xml:space="preserve">
+        <value>Schedule</value>
+    </data>
+    <data name="Calendar_Schedule_Subtitle" xml:space="preserve">
+        <value>View and manage schedule events</value>
+    </data>
+    <data name="Calendar_Schedule_NoEvents" xml:space="preserve">
+        <value>No events today</value>
+    </data>
+    <data name="Calendar_Schedule_NoMoreEvents" xml:space="preserve">
+        <value>No more events today</value>
+    </data>
+    <data name="Calendar_Schedule_UpcomingMore" xml:space="preserve">
+        <value>{0} more upcoming</value>
+    </data>
+    <data name="Calendar_Schedule_OpenPanel" xml:space="preserve">
+        <value>Open schedule panel</value>
+    </data>
+    <data name="Calendar_Schedule_AllDay" xml:space="preserve">
+        <value>All day</value>
+    </data>
+    <data name="Calendar_Schedule_Now" xml:space="preserve">
+        <value>Now</value>
+    </data>
+    <data name="Calendar_Schedule_ItemsCount" xml:space="preserve">
+        <value>{0} items</value>
+    </data>
 </root>

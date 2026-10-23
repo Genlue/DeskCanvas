@@ -96,5 +96,11 @@
         <TextBlock Text="{x:Static locales:Locale.Folders_SingleLink_Help}"
                    FontSize="{DynamicResource FontSizeCaption}" TextWrapping="Wrap" Margin="0,4,0,0"
                    Foreground="{DynamicResource SecondaryTextBrush}" />
+
+        <!-- 图标铺满卡片时，不按 Ctrl 的右键属于图标（组件自己的菜单）；组件菜单改由
+             Ctrl + 右键唤出，提示写在设置页——用户不会去翻代码注释。 -->
+        <TextBlock Text="{x:Static locales:Locale.Folders_ContextMenu_Hint}"
+                   FontSize="{DynamicResource FontSizeCaption}" TextWrapping="Wrap" Margin="0,2,0,0"
+                   Foreground="{DynamicResource SecondaryTextBrush}" />
     </StackPanel>
 </UserControl>

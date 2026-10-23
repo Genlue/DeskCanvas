@@ -1,0 +1,133 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="clr-namespace:DeskCanvas.Views.Controls;assembly=DeskCanvas"
+             xmlns:locales="clr-namespace:AudioVisualizer.Locales"
+             xmlns:visualizerControls="clr-namespace:AudioVisualizer.Views.Controls"
+             x:Class="AudioVisualizer.Views.Settings.AudioVisualizerSettings"
+             controls:SettingsPage.ScrollOwnership="Host">
+
+    <StackPanel Orientation="Vertical" Spacing="8" Margin="0,2,8,16">
+        <!-- 创作面板标题与尺寸提示 -->
+        <TextBlock Classes="dc-section-header" Text="{x:Static locales:Locale.Visualizer_SectionCreation}" />
+
+        <Border Background="#1800E5FF" BorderBrush="#3300E5FF" BorderThickness="1"
+                CornerRadius="{DynamicResource ControlCornerRadius}" Padding="12,8" Margin="0,0,0,4">
+            <Grid ColumnDefinitions="*,Auto">
+                <StackPanel Grid.Column="0" Orientation="Vertical" Spacing="2">
+                    <TextBlock x:Name="CanvasSizeTitleText" Text="画板尺寸: 380 × 190 px"
+                               FontWeight="SemiBold" FontSize="13"
+                               Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}" />
+                    <TextBlock Text="左键点击添加节点或拖拽调整，右键点击节点可删除；画板自带律动延展安全区，100% 完整显示不裁切"
+                               FontSize="11" Opacity="0.75" />
+                </StackPanel>
+                <ToggleSwitch Grid.Column="1" x:Name="LivePreviewToggle"
+                              OnContent="实时律动开" OffContent="实时律动关"
+                              IsChecked="True" IsCheckedChanged="OnLivePreviewToggleChanged" />
+            </Grid>
+        </Border>
+
+        <!-- 画板操作工具栏 -->
+        <Border Background="#10808080" CornerRadius="{DynamicResource ControlCornerRadius}" Padding="8,6" Margin="0,0,0,4">
+            <StackPanel Orientation="Vertical" Spacing="6">
+                <!-- 第一行：绘制模式、闭合开关、经典预设 -->
+                <WrapPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <StackPanel Orientation="Horizontal" Spacing="4" Margin="0,2,12,2" VerticalAlignment="Center">
+                        <TextBlock Text="模式:" FontSize="12" VerticalAlignment="Center" Opacity="0.8" />
+                        <ComboBox x:Name="DrawModeCombo" MinWidth="110" SelectionChanged="OnDrawModeChanged" />
+                    </StackPanel>
+
+                    <StackPanel Orientation="Horizontal" Spacing="4" Margin="0,2,12,2" VerticalAlignment="Center">
+                        <TextBlock Text="闭合:" FontSize="12" VerticalAlignment="Center" Opacity="0.8" />
+                        <ToggleSwitch x:Name="ClosedShapeToggle" IsCheckedChanged="OnClosedShapeChanged" />
+                    </StackPanel>
+
+                    <StackPanel Orientation="Horizontal" Spacing="4" Margin="0,2,12,2" VerticalAlignment="Center">
+                        <TextBlock Text="预设:" FontSize="12" VerticalAlignment="Center" Opacity="0.8" />
+                        <ComboBox x:Name="PresetsCombo" MinWidth="130" PlaceholderText="选择经典形状" SelectionChanged="OnPresetSelected" />
+                    </StackPanel>
+                </WrapPanel>
+
+                <!-- 第二行：快捷辅助操作按钮 -->
+                <WrapPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <Button Content="📐 居中对齐" Click="OnCenterClicked" FontSize="11" Padding="8,4" Margin="0,0,6,0"
+                            ToolTip.Tip="将当前绘制的图形水平与垂直居中" />
+                    <Button Content="✨ 平滑线条" Click="OnSmoothClicked" FontSize="11" Padding="8,4" Margin="0,0,6,0"
+                            ToolTip.Tip="消除手绘尖角，自动平滑为流线型样条曲线" />
+                    <Button x:Name="UndoBtn" Content="↩ 撤销" Click="OnUndoClicked" FontSize="11" Padding="8,4" Margin="0,0,6,0" />
+                    <Button x:Name="ClearBtn" Content="🗑 清空重画" Click="OnClearClicked" FontSize="11" Padding="8,4" />
+                </WrapPanel>
+            </StackPanel>
+        </Border>
+
+        <!-- 交互式创作画板容器 (外围预留律动延展安全区，100% 完整显示不裁切) -->
+        <Border Background="Transparent" CornerRadius="{DynamicResource ControlCornerRadius}" Padding="2" Margin="0,0,0,10"
+                HorizontalAlignment="Center">
+            <visualizerControls:DrawingBoardControl x:Name="DrawingBoard" />
+        </Border>
+
+        <!-- 律动表现形式与外观 -->
+        <TextBlock Classes="dc-section-header" Text="{x:Static locales:Locale.Visualizer_SectionAppearance}" />
+
+        <controls:Setting Title="{x:Static locales:Locale.Visualizer_Style}" Subtitle="{x:Static locales:Locale.Visualizer_Style_Subtitle}">
+            <ComboBox x:Name="StyleCombo" MinWidth="180" SelectionChanged="OnStyleChanged" />
+        </controls:Setting>
+
+        <controls:Setting Title="{x:Static locales:Locale.Visualizer_Direction}" Subtitle="{x:Static locales:Locale.Visualizer_Direction_Subtitle}">
+            <ComboBox x:Name="DirectionCombo" MinWidth="180" SelectionChanged="OnDirectionChanged" />
+        </controls:Setting>
+
+        <controls:Setting Title="{x:Static locales:Locale.Visualizer_Frameless}" Subtitle="{x:Static locales:Locale.Visualizer_Frameless_Subtitle}">
+            <ToggleSwitch x:Name="FramelessToggle" IsCheckedChanged="OnFramelessChanged" />
+        </controls:Setting>
+
+        <controls:Setting Title="{x:Static locales:Locale.Visualizer_StrokeWidth}" Subtitle="{x:Static locales:Locale.Visualizer_StrokeWidth_Subtitle}">
+            <NumericUpDown x:Name="StrokeWidthBox" MinWidth="128" Minimum="1" Maximum="20"
+                           Increment="1" FormatString="F0" ParsingNumberStyle="Integer"
+                           ValueChanged="OnStrokeWidthChanged" />
+        </controls:Setting>
+
+        <controls:Setting Title="{x:Static locales:Locale.Visualizer_MaxAmplitude}" Subtitle="{x:Static locales:Locale.Visualizer_MaxAmplitude_Subtitle}">
+            <NumericUpDown x:Name="MaxAmplitudeBox" MinWidth="128" Minimum="10" Maximum="250"
+                           Increment="5" FormatString="F0" ParsingNumberStyle="Integer"
+                           ValueChanged="OnMaxAmplitudeChanged" />
+        </controls:Setting>
+
+        <controls:Setting Title="{x:Static locales:Locale.Visualizer_BarCount}" Subtitle="{x:Static locales:Locale.Visualizer_BarCount_Subtitle}">
+            <ComboBox x:Name="BarCountCombo" MinWidth="180" SelectionChanged="OnBarCountChanged" />
+        </controls:Setting>
+
+        <!-- 音频识别源与响应 -->
+        <TextBlock Classes="dc-section-header" Text="{x:Static locales:Locale.Visualizer_SectionAudio}" />
+
+        <controls:Setting Title="{x:Static locales:Locale.Visualizer_AudioSource}" Subtitle="{x:Static locales:Locale.Visualizer_AudioSource_Subtitle}">
+            <ComboBox x:Name="AudioSourceCombo" MinWidth="200" SelectionChanged="OnAudioSourceChanged" />
+        </controls:Setting>
+
+        <controls:Setting Title="{x:Static locales:Locale.Visualizer_Sensitivity}" Subtitle="{x:Static locales:Locale.Visualizer_Sensitivity_Subtitle}">
+            <NumericUpDown x:Name="SensitivityBox" MinWidth="128" Minimum="0.2" Maximum="5.0"
+                           Increment="0.1" FormatString="F1"
+                           ValueChanged="OnSensitivityChanged" />
+        </controls:Setting>
+
+        <controls:Setting Title="{x:Static locales:Locale.Visualizer_Smoothing}" Subtitle="{x:Static locales:Locale.Visualizer_Smoothing_Subtitle}">
+            <NumericUpDown x:Name="SmoothingBox" MinWidth="128" Minimum="0.30" Maximum="0.98"
+                           Increment="0.05" FormatString="F2"
+                           ValueChanged="OnSmoothingChanged" />
+        </controls:Setting>
+
+        <!-- 色彩与发光特效 -->
+        <TextBlock Classes="dc-section-header" Text="{x:Static locales:Locale.Visualizer_ColorTheme}" />
+
+        <controls:Setting Title="{x:Static locales:Locale.Visualizer_ColorTheme}" Subtitle="{x:Static locales:Locale.Visualizer_ColorTheme_Subtitle}">
+            <ComboBox x:Name="ColorThemeCombo" MinWidth="180" SelectionChanged="OnColorThemeChanged" />
+        </controls:Setting>
+
+        <controls:Setting Title="{x:Static locales:Locale.Visualizer_ShowGlow}" Subtitle="{x:Static locales:Locale.Visualizer_ShowGlow_Subtitle}">
+            <ToggleSwitch x:Name="ShowGlowToggle" IsCheckedChanged="OnGlowChanged" />
+        </controls:Setting>
+
+        <controls:Setting Title="{x:Static locales:Locale.Visualizer_ShowBaseline}" Subtitle="{x:Static locales:Locale.Visualizer_ShowBaseline_Subtitle}">
+            <ToggleSwitch x:Name="ShowBaselineToggle" IsCheckedChanged="OnBaselineChanged" />
+        </controls:Setting>
+    </StackPanel>
+</UserControl>

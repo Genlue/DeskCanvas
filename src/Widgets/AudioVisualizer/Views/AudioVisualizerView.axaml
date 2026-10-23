@@ -1,0 +1,11 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="clr-namespace:AudioVisualizer.Views.Controls"
+             x:Class="AudioVisualizer.Views.AudioVisualizerView">
+
+    <Grid x:Name="RootGrid" Background="Transparent">
+        <controls:VisualizerCanvas x:Name="Canvas"
+                                   HorizontalAlignment="Stretch"
+                                   VerticalAlignment="Stretch" />
+    </Grid>
+</UserControl>

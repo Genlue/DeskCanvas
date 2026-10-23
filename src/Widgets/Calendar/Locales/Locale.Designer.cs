@@ -175,5 +175,59 @@ namespace Calendar.Locales {
                 return ResourceManager.GetString("Calendar_HollowToday_Subtitle", resourceCulture);
             }
         }
+
+        public static string Calendar_Schedule_Title {
+            get {
+                return ResourceManager.GetString("Calendar_Schedule_Title", resourceCulture) ?? "日程";
+            }
+        }
+
+        public static string Calendar_Schedule_Subtitle {
+            get {
+                return ResourceManager.GetString("Calendar_Schedule_Subtitle", resourceCulture) ?? "查看并管理日程安排";
+            }
+        }
+
+        public static string Calendar_Schedule_NoEvents {
+            get {
+                return ResourceManager.GetString("Calendar_Schedule_NoEvents", resourceCulture) ?? "今天没有日程";
+            }
+        }
+
+        public static string Calendar_Schedule_NoMoreEvents {
+            get {
+                return ResourceManager.GetString("Calendar_Schedule_NoMoreEvents", resourceCulture) ?? "今天没有更多日程";
+            }
+        }
+
+        public static string Calendar_Schedule_UpcomingMore {
+            get {
+                return ResourceManager.GetString("Calendar_Schedule_UpcomingMore", resourceCulture) ?? "接下来还有 {0} 项";
+            }
+        }
+
+        public static string Calendar_Schedule_OpenPanel {
+            get {
+                return ResourceManager.GetString("Calendar_Schedule_OpenPanel", resourceCulture) ?? "打开日程管理面板";
+            }
+        }
+
+        public static string Calendar_Schedule_AllDay {
+            get {
+                return ResourceManager.GetString("Calendar_Schedule_AllDay", resourceCulture) ?? "全天";
+            }
+        }
+
+        public static string Calendar_Schedule_Now {
+            get {
+                return ResourceManager.GetString("Calendar_Schedule_Now", resourceCulture) ?? "进行中";
+            }
+        }
+
+        public static string Calendar_Schedule_ItemsCount {
+            get {
+                return ResourceManager.GetString("Calendar_Schedule_ItemsCount", resourceCulture) ?? "{0} 项日程";
+            }
+        }
     }
 }

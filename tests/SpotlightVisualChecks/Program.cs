@@ -694,6 +694,11 @@ internal static class Program
         Check(new LauncherSettings(WebResultCount: 99).Normalize().WebResultCount == LauncherSettings.MaxWebResultCount
               && new LauncherSettings(WebResultCount: -4).Normalize().WebResultCount == LauncherSettings.MinWebResultCount,
             "web results: the count is clamped to 0–10 in the settings file");
+        // 文件是唯一"候选成千上万"的源：一页 40 条时用户要找的那个文件常常根本进不了结果
+        // （Everything 按自己的顺序返回候选池）。这条检查防止上限被悄悄改回一页。
+        Check(new SpotlightQueryRequest("x").FileLimit == FileSearchService.MaxResults
+              && FileSearchService.MaxResults >= 100,
+            $"file results: the list is not cut to a short page (cap {FileSearchService.MaxResults})");
         orderModel.Dispose();
 
         wideViewModel.SetQuery("aurora");
