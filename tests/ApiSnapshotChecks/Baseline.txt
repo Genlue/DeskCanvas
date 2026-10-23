@@ -1455,6 +1455,19 @@ method DeskCanvas.Runtime.WidgetSessionRegistry Remove(DeskCanvas.Contracts.Widg
 method DeskCanvas.Runtime.WidgetSessionRegistry ReportActivity(DeskCanvas.Contracts.WidgetInstanceId,DeskCanvas.Contracts.ActivitySnapshot) -> System.Void
 method DeskCanvas.Runtime.WidgetSessionRegistry ResetForChecks() -> System.Void
 method DeskCanvas.Runtime.WidgetSessionRegistry TryGet(DeskCanvas.Contracts.WidgetInstanceId) -> DeskCanvas.Contracts.IWidgetSession
+type DeskCanvas.UI.Animation.Spring
+method DeskCanvas.UI.Animation.Spring IsMoving() -> System.Boolean
+method DeskCanvas.UI.Animation.Spring SetTarget(System.Double) -> System.Void
+method DeskCanvas.UI.Animation.Spring SnapTo(System.Double) -> System.Void
+method DeskCanvas.UI.Animation.Spring Step(System.Double,System.Double,System.Double) -> System.Boolean
+property DeskCanvas.UI.Animation.Spring Target -> System.Double
+property DeskCanvas.UI.Animation.Spring Value -> System.Double
+property DeskCanvas.UI.Animation.Spring Velocity -> System.Double
+type DeskCanvas.UI.Animation.SpringMotion
+method DeskCanvas.UI.Animation.SpringMotion CreateEasing(System.Double) -> Avalonia.Animation.Easings.SpringEasing
+field DeskCanvas.UI.Animation.SpringMotion Bounce -> System.Double
+field DeskCanvas.UI.Animation.SpringMotion Lively -> System.Double
+field DeskCanvas.UI.Animation.SpringMotion Smooth -> System.Double
 type DeskCanvas.UI.ClockStatusPresenter
 method DeskCanvas.UI.ClockStatusPresenter ShowTime(System.String) -> System.Void
 method DeskCanvas.UI.ClockStatusPresenter ShowUnavailable() -> System.Void

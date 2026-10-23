@@ -111,6 +111,7 @@ internal static partial class Program
         CheckSettingsPagesBatchTwo();
         CheckHostDecoupling();
         CheckSpecularRim();
+        CheckMotion();
         CheckRedundancyGuard();
 
         Console.WriteLine();

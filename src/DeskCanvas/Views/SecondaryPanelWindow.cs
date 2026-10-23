@@ -15,6 +15,7 @@ using Avalonia.Platform;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using DeskCanvas.Services;
+using DeskCanvas.UI.Animation;
 using DeskCanvas.Views.Controls;
 // The panel drives the glass through the shared port; the alias disambiguates it from the host
 // shell namespace, which also comes in via using above.
@@ -27,9 +28,9 @@ namespace DeskCanvas.Views;
 /// big folder, clipboard). Everything a panel needs to behave identically lives here:
 ///   - spawn position: centered on the opening widget (clamped to the screen's work area),
 ///   - open transition: the card scales up straight out of the opening widget (render
-///     transform origin pinned to the widget's center) while fading in, on the Material 3
-///     "emphasized decelerate" curve,
-///   - close transition: the card folds back into the widget on the "emphasized accelerate" curve,
+///     transform origin pinned to the widget's center) while fading in, on the mod's damped
+///     spring (a restrained overshoot, then settle),
+///   - close transition: the card folds back into the widget on the critically-damped spring,
 ///   - dismissal: Escape, focus loss (after a grace period), outside click, or an explicit Close(),
 ///   - glass: the card is drawn by the same <see cref="LiquidGlassSurface"/> the widget card
 ///     uses, and the surface is fed the zoom's interpolated scale so its optics animate with
@@ -99,10 +100,14 @@ public abstract class SecondaryPanelWindow : Window, IFocusThemedWindow
     /// public entry point the widget host calls stays unchanged.</remarks>
     public static void CloseForDisplayChange() => PanelService.CloseForDisplayChange();
 
-    // Material Design 3 motion tokens (https://m3.material.io/styles/motion/easing-and-duration/tokens-specs):
-    // emphasized decelerate going in, emphasized accelerate going out.
-    private static readonly SplineEasing OpenEasing = new(new KeySpline(0.05, 0.7, 0.1, 1.0));
-    private static readonly SplineEasing CloseEasing = new(new KeySpline(0.3, 0.0, 0.8, 0.15));
+    // Motion ported from the Windhawk "Mac Island & Dock" mod (DeskCanvas.UI.Animation):
+    // the card's zoom is a damped spring rather than a fixed easing curve, so it overshoots
+    // by ~3.9% and settles instead of arriving dead on a spline. The overshoot is what makes
+    // the panel read as physical; the mod's island opens exactly this way (kBounceDamping).
+    // Opacity and the closing zoom keep critical damping: an overshooting alpha would clip at
+    // 1 and dip back, and a shrinking card must not undershoot past its target.
+    private static readonly SpringEasing OpenEasing = SpringMotion.CreateEasing(SpringMotion.Bounce);
+    private static readonly SpringEasing SmoothEasing = SpringMotion.CreateEasing(SpringMotion.Smooth);
 
     private static readonly TimeSpan OpenDuration = TimeSpan.FromMilliseconds(320);
     private static readonly TimeSpan CloseDuration = TimeSpan.FromMilliseconds(180);
@@ -674,7 +679,7 @@ public abstract class SecondaryPanelWindow : Window, IFocusThemedWindow
 
         card.Transitions = new Transitions
         {
-            new DoubleTransition { Property = Visual.OpacityProperty, Duration = OpenDuration, Easing = OpenEasing }
+            new DoubleTransition { Property = Visual.OpacityProperty, Duration = OpenDuration, Easing = SmoothEasing }
         };
 
         if (TransformAnimationEnabled && cardScale != null)
@@ -831,7 +836,7 @@ public abstract class SecondaryPanelWindow : Window, IFocusThemedWindow
 
         card.Transitions = new Transitions
         {
-            new DoubleTransition { Property = Visual.OpacityProperty, Duration = CloseDuration, Easing = CloseEasing }
+            new DoubleTransition { Property = Visual.OpacityProperty, Duration = CloseDuration, Easing = SmoothEasing }
         };
         card.Opacity = 0.0;
 
@@ -839,8 +844,8 @@ public abstract class SecondaryPanelWindow : Window, IFocusThemedWindow
         {
             cardScale.Transitions = new Transitions
             {
-                new DoubleTransition { Property = ScaleTransform.ScaleXProperty, Duration = CloseDuration, Easing = CloseEasing },
-                new DoubleTransition { Property = ScaleTransform.ScaleYProperty, Duration = CloseDuration, Easing = CloseEasing }
+                new DoubleTransition { Property = ScaleTransform.ScaleXProperty, Duration = CloseDuration, Easing = SmoothEasing },
+                new DoubleTransition { Property = ScaleTransform.ScaleYProperty, Duration = CloseDuration, Easing = SmoothEasing }
             };
 
             cardScale.ScaleX = CloseScaleTo;

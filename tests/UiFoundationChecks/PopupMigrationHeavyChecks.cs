@@ -123,6 +123,36 @@ internal static partial class Program
         Check(!popup.IsVisible, $"{label}: the framework close finished the dismissal");
     }
 
+    /// <summary>
+    /// Let the open transition finish before any hit test is taken.
+    /// <para>
+    /// The card carries a render transform for the whole open animation, so a press taken
+    /// mid-flight resolves against a <b>scaled</b> card whose rendered rect depends on the
+    /// spawn anchor — for a panel that spawns up-left of its own card the scaled card can
+    /// start at (0,0) and swallow the (2,2) corner the backdrop test relies on. That made the
+    /// check depend on the easing curve rather than on the dismissal rule. At rest the card
+    /// sits at its layout rect, which is exactly the state a user clicks in.
+    /// </para>
+    /// </summary>
+    private static void SettleOpenTransition(SecondaryPanelWindow popup)
+    {
+        if (popup.Content is not SecondaryPanelShell shell) return;
+        for (var i = 0; i < 120; i++)
+        {
+            AvaloniaHeadlessPlatform.ForceRenderTimerTick();
+            RunJobs();
+            var scale = ReadField<ScaleTransform?>(popup, "cardScale");
+            if (shell.CardBorder is null || scale is null) return;
+            if (Math.Abs(shell.CardBorder.Opacity - 1.0) < 1e-9
+                && Math.Abs(scale.ScaleX - 1.0) < 1e-9
+                && Math.Abs(scale.ScaleY - 1.0) < 1e-9)
+            {
+                return;
+            }
+            System.Threading.Thread.Sleep(5);
+        }
+    }
+
     private static void CheckHeavyBackdropAndInsideCard(Func<SecondaryPanelWindow> create, string label)
     {
         // A press on the in-window area outside the card (PART_Backdrop only — the rounded
@@ -130,8 +160,9 @@ internal static partial class Program
         var popup = create();
         popup.Show();
         RunJobs();
-        // The renderer's hit tester only exists after a render pass.
-        AvaloniaHeadlessPlatform.ForceRenderTimerTick();
+        // The renderer's hit tester only exists after a render pass, and the card must be at
+        // its resting rect before the corner means what the check assumes it means.
+        SettleOpenTransition(popup);
         var shell = (SecondaryPanelShell)popup.Content!;
         var backdropRequests = 0;
         shell.AddHandler(SecondaryPanelShell.CloseRequestedEvent, (_, _) => backdropRequests++,
@@ -149,7 +180,7 @@ internal static partial class Program
         var inside = create();
         inside.Show();
         RunJobs();
-        AvaloniaHeadlessPlatform.ForceRenderTimerTick();
+        SettleOpenTransition(inside);
         var insideShell = (SecondaryPanelShell)inside.Content!;
         var insideRequests = 0;
         insideShell.AddHandler(SecondaryPanelShell.CloseRequestedEvent, (_, _) => insideRequests++,
