@@ -6,7 +6,7 @@ using System.Linq;
 using System.Text.Json;
 using Avalonia;
 using Avalonia.Animation;
-using Avalonia.Animation.Easings;
+using DeskCanvas.UI.Animation;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Input.Platform;
@@ -230,14 +230,14 @@ public partial class SingleLink : UserControl, IWidgetSelfRefreshing
             new DoubleTransition
             {
                 Property = ScaleTransform.ScaleXProperty,
-                Duration = TimeSpan.FromMilliseconds(150),
-                Easing = new CubicEaseOut()
+                Duration = TimeSpan.FromMilliseconds(220),
+                Easing = SpringMotion.CreateEasing(SpringMotion.Bounce)
             },
             new DoubleTransition
             {
                 Property = ScaleTransform.ScaleYProperty,
-                Duration = TimeSpan.FromMilliseconds(150),
-                Easing = new CubicEaseOut()
+                Duration = TimeSpan.FromMilliseconds(220),
+                Easing = SpringMotion.CreateEasing(SpringMotion.Bounce)
             }
         };
 

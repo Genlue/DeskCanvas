@@ -112,6 +112,7 @@ internal static partial class Program
         CheckHostDecoupling();
         CheckSpecularRim();
         CheckMotion();
+        CheckAnimationFrameProbe();
         CheckGlassShapePort();
         CheckRedundancyGuard();
 

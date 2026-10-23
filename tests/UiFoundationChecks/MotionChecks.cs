@@ -97,6 +97,36 @@ internal static partial class Program
     }
 
     /// <summary>
+    /// Probe for <c>TopLevel.RequestAnimationFrame</c> under the headless platform (动效交接
+    /// §4.2/§8.2: the spring integrator's driver must be verified BEFORE anything is built on it,
+    /// or the checks would hang). The callback must fire from the dispatcher jobs or from a forced
+    /// render tick — whichever it is, the integrator's self-recursive frame loop is safe to drive
+    /// in this harness.
+    /// </summary>
+    private static void CheckAnimationFrameProbe()
+    {
+        Console.WriteLine("--- motion: RequestAnimationFrame probe (headless) ---");
+
+        var window = new Window { Width = 120, Height = 90, WindowDecorations = WindowDecorations.None };
+        window.Show();
+        Dispatcher.UIThread.RunJobs();
+
+        var fired = 0;
+        window.RequestAnimationFrame(_ => fired++);
+        Dispatcher.UIThread.RunJobs();
+        var afterJobs = fired;
+
+        Avalonia.Headless.AvaloniaHeadlessPlatform.ForceRenderTimerTick();
+        Dispatcher.UIThread.RunJobs();
+
+        Check(fired > 0 && (afterJobs > 0 || fired > afterJobs),
+            $"RequestAnimationFrame fires headlessly (jobs {afterJobs}, after a forced render tick {fired})");
+
+        window.Close();
+        Dispatcher.UIThread.RunJobs();
+    }
+
+    /// <summary>
     /// The glass shape-morph port (聚焦搜索 bar → card): the rect feed, the at-rest judgement,
     /// the mutual exclusion with the uniform-scale feed, and — the one mapping the whole morph
     /// stands or falls on — the animated frame's <b>desktop</b> sampling origin. A rect-shaped

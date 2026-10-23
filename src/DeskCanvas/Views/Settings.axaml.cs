@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using Avalonia;
+using Avalonia.Animation;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Input;
@@ -10,6 +11,7 @@ using Avalonia.Threading;
 using DeskCanvas.Core.Interfaces;
 using DeskCanvas.Core.Models.Settings;
 using DeskCanvas.Services;
+using DeskCanvas.UI.Animation;
 using DeskCanvas.ViewModels;
 
 namespace DeskCanvas.Views;
@@ -62,6 +64,14 @@ public partial class Settings : Window
             ApplyTitleBarStyle();
         };
         InitializeComponent();
+        // 页面切换走临界阻尼弹簧、180 ms（动效交接 §6）：大面积滑动不能带过冲——面板级的
+        // bounce 用在一整页内容上是晕动而不是弹性。
+        if (PageHost.PageTransition is CompositePageTransition composite
+            && composite.PageTransitions.FirstOrDefault(transition => transition is PageSlide) is PageSlide slide)
+        {
+            slide.Duration = TimeSpan.FromMilliseconds(180);
+            slide.SlideInEasing = SpringMotion.CreateEasing(SpringMotion.Smooth);
+        }
         WindowRoles.Register(this, WindowRole.Settings);
         ListBox.SelectedItem = viewModel.DefaultItem;
         ApplyTransparencyHint();

@@ -359,6 +359,18 @@
             <Setter Property="Background" Value="{DynamicResource SpotlightSelectionBrush}" />
         </Style>
 
+        <!-- The RESULT list's selection is NOT painted by the row: ResultHighlight (a floating
+             bar over the list) carries it, driven by the spring integrator so the highlight
+             glides between rows as the keyboard moves the selection — the row's own instant
+             paint would teleport, which is exactly what the integrator exists for. The generic
+             rules above stay for the app grid's cell-shaped selection. -->
+        <Style Selector="ListBox#ResultList ListBoxItem:selected /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="Transparent" />
+        </Style>
+        <Style Selector="ListBox#ResultList ListBoxItem:selected:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="Transparent" />
+        </Style>
+
         <Style Selector="ListBox#GridList ScrollViewer, ListBox#ResultList ScrollViewer">
             <Setter Property="VerticalScrollBarVisibility" Value="Auto" />
             <Setter Property="HorizontalScrollBarVisibility" Value="Disabled" />
@@ -566,6 +578,16 @@
                                        HorizontalAlignment="Center"
                                        VerticalAlignment="Center"
                                        Foreground="{DynamicResource SpotlightSecondaryText}" />
+
+                            <!-- The results' selection highlight, a floating bar over the list.
+                                 Driven by the spring integrator (SpotlightWindow), so it GLIDES
+                                 between rows as the keyboard moves the selection instead of
+                                 teleporting; hit-test transparent so the rows keep their input. -->
+                            <Border x:Name="ResultHighlight"
+                                    IsVisible="False"
+                                    IsHitTestVisible="False"
+                                    CornerRadius="10"
+                                    Background="{DynamicResource SpotlightSelectionBrush}" />
 
                         </Panel>
                     </Grid>

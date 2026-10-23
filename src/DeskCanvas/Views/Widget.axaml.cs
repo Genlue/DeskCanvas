@@ -20,6 +20,7 @@ using DeskCanvas.Contracts;
 using DeskCanvas.Locales;
 using DeskCanvas.Runtime;
 using DeskCanvas.Services;
+using DeskCanvas.UI.Animation;
 using DeskCanvas.Views.Controls;
 
 namespace DeskCanvas.Views;
@@ -2039,10 +2040,15 @@ public partial class Widget : Window, INotifyPropertyChanged, IFocusThemedWindow
         pendingSpan = (columns, rows);
         manualSpan = (columns, rows);
         SetMinMaxSize(false);
+        // The span change rides the mod's bounce spring (动效交接 §6): a restrained ~3.8%
+        // overshoot before the window settles on the target span. 亚克力 re-cuts the region on
+        // every step of this window-level resize; the overshoot adds no new steps beyond what
+        // the old linear 300 ms already cost.
+        var spanEasing = SpringMotion.CreateEasing(SpringMotion.Bounce);
         Transitions = new Transitions
         {
-            new DoubleTransition { Property = WidthProperty, Duration = TimeSpan.FromMilliseconds(300) },
-            new DoubleTransition { Property = HeightProperty, Duration = TimeSpan.FromMilliseconds(300) }
+            new DoubleTransition { Property = WidthProperty, Duration = TimeSpan.FromMilliseconds(300), Easing = spanEasing },
+            new DoubleTransition { Property = HeightProperty, Duration = TimeSpan.FromMilliseconds(300), Easing = spanEasing }
         };
         gridService.SetSize(this, columns, rows);
         await Task.Delay(320);

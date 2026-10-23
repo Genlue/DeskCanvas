@@ -7,7 +7,7 @@ using System.Text;
 using System.Text.Json;
 using Avalonia;
 using Avalonia.Animation;
-using Avalonia.Animation.Easings;
+using DeskCanvas.UI.Animation;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Data.Converters;
@@ -423,14 +423,14 @@ public partial class Folder : UserControl, IWidgetSelfRefreshing, INotifyPropert
             new DoubleTransition
             {
                 Property = ScaleTransform.ScaleXProperty,
-                Duration = TimeSpan.FromMilliseconds(150),
-                Easing = new CubicEaseOut()
+                Duration = TimeSpan.FromMilliseconds(220),
+                Easing = SpringMotion.CreateEasing(SpringMotion.Bounce)
             },
             new DoubleTransition
             {
                 Property = ScaleTransform.ScaleYProperty,
-                Duration = TimeSpan.FromMilliseconds(150),
-                Easing = new CubicEaseOut()
+                Duration = TimeSpan.FromMilliseconds(220),
+                Easing = SpringMotion.CreateEasing(SpringMotion.Bounce)
             }
         };
         transform.ScaleX = scale;

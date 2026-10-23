@@ -1812,7 +1812,9 @@ internal static class Program
             var settings = BuildSettings(surface, dark: false) with
             {
                 Dimensions = new Dimensions(160, 12, 40),
-                Launcher = new LauncherSettings(Enabled: true, Columns: 7, GapPercent: 18, CornerRadius: 40),
+                Launcher = new LauncherSettings(
+                    Enabled: true, Columns: 7, GapPercent: 18, CornerRadius: 40,
+                    WebSearch: false, WebResultCount: 0),
             };
             var configuredRadius = settings.EffectiveLauncher.EffectiveCornerRadius(40);
             var capsuleRadius = Math.Min(configuredRadius, 68 / 2.0);
@@ -1874,8 +1876,71 @@ internal static class Program
                     $"{name}: the settle restores the translucent card ({restored?.Color.A})");
             }
 
+            // ---- the floating selection highlight snaps onto the selected row ----
+            // (The GLIDE between rows is the spring integrator's job — pinned by MotionChecks'
+            // retarget assertions and the RAF probe; this asserts the geometry it lands on.)
             viewModel.Dispose();
             window.Close();
+
+            // ---- the floating selection highlight snaps onto the selected row ----
+            // (The GLIDE between rows is the spring integrator's job — pinned by MotionChecks'
+            // retarget assertions and the RAF probe; this asserts the geometry it lands on.)
+            //
+            // The assertion window is built AFTER the query (ShowPreview's precedent): a
+            // never-shown window lays its tree out exactly once, and that one pass must already
+            // contain the visible result list. The highlight then snaps from the list's own
+            // LayoutUpdated — exactly the event that drives it in production.
+            var highlightViewModel = BuildViewModel(provider, catalog, icons);
+            highlightViewModel.Reload();
+            highlightViewModel.SetQuery("a");
+            PumpUntil(() => !highlightViewModel.IsSearching);
+            var highlightWindow = new SpotlightWindow(highlightViewModel, provider);
+            highlightWindow.ApplyAppearanceForChecks();
+            highlightWindow.ApplySummonModeForChecks(SpotlightSummonMode.Search);
+            highlightWindow.SetQueryForChecks("a");
+
+            // A never-shown window never receives EffectiveViewportChanged, so the list's
+            // virtualizing panel would realize no container at all (the grid list works in other
+            // checks only because its panel is a plain WrapPanel). The harness swaps in a
+            // non-virtualized panel for this one assertion — production never runs this code.
+            if (highlightWindow.FindControl<ListBox>("ResultList") is { } virtualized)
+            {
+                virtualized.ItemsPanel = new FuncTemplate<Panel?>(() => new StackPanel());
+            }
+
+            Pin(highlightWindow, (int)highlightWindow.Width, (int)highlightWindow.Height);
+
+            var highlightList = highlightWindow.FindControl<ListBox>("ResultList");
+            if (highlightList is { SelectedIndex: >= 0, ItemCount: > 0 }
+                && highlightList.ContainerFromIndex(highlightList.SelectedIndex) is Control selected)
+            {
+                var presenter = selected.GetVisualDescendants()
+                    .OfType<Avalonia.Controls.Presenters.ContentPresenter>()
+                    .FirstOrDefault();
+                var source = presenter ?? selected;
+                var host = (Control?)highlightWindow.FindControl<Border>("ResultHighlight")?.Parent;
+                if (host != null && source.TranslatePoint(new Point(0, 0), host) is { } topLeft)
+                {
+                    var expected = new Rect(topLeft, source.Bounds.Size);
+                    var actual = highlightWindow.ResultHighlightRectForChecks;
+                    Check(highlightWindow.ResultHighlightVisibleForChecks
+                          && Math.Abs(actual.Y - expected.Y) < 0.5
+                          && Math.Abs(actual.Height - expected.Height) < 0.5,
+                        $"{name}: the selection highlight lands on the selected row " +
+                        $"({actual.Y:F0}+{actual.Height:F0} of {expected.Y:F0}+{expected.Height:F0})");
+                }
+                else
+                {
+                    Check(false, $"{name}: the selected row could be located for the highlight assertion");
+                }
+            }
+            else
+            {
+                Check(false, $"{name}: the query produced a selected row for the highlight assertion");
+            }
+
+            highlightViewModel.Dispose();
+            highlightWindow.Close();
         }
     }
 

@@ -379,6 +379,8 @@ public partial class SpotlightWindow : Window
             morphSettleTimer = null;
             cardMorphRunning = false;
             windowMorphRunning = false;
+            highlightDriving = false;
+            ResultList.LayoutUpdated -= OnResultListLayoutUpdated;
             GridList.LayoutUpdated -= OnGridLayoutUpdated;
             PreviewScroll.LayoutUpdated -= OnPreviewLayoutUpdated;
             summonAnimationCts?.Cancel();
@@ -400,6 +402,11 @@ public partial class SpotlightWindow : Window
             settings.DataChanged -= OnSettingsChanged;
         };
         ResultList.SelectionChanged += (_, _) => SyncSelectionFrom(ResultList);
+        // The highlight bar has to follow the SELECTED ROW, not just the selection index: a
+        // scroll or a late-realized container moves the row under a constant index. Both events
+        // are cheap to satisfy — the schedule call is idempotent and no-ops at rest.
+        ResultList.LayoutUpdated += OnResultListLayoutUpdated;
+        ResultList.ContainerPrepared += (_, _) => ScheduleResultHighlightUpdate();
         GridList.DoubleTapped += (_, _) => _ = ActivateSelectedAsync();
         ResultList.DoubleTapped += (_, _) => _ = ActivateSelectedAsync();
         OpenFolderButton.Click += (_, _) => LauncherCatalog.OpenFolder(viewModel.Folder);
@@ -838,6 +845,17 @@ public partial class SpotlightWindow : Window
 
     /// <summary>Checks-only seam: land the morph's resting geometry synchronously.</summary>
     public void SettleCardMorphForChecks() => SettleCardMorph();
+
+    /// <summary>Checks-only seam: whether the results' floating highlight bar is shown.</summary>
+    public bool ResultHighlightVisibleForChecks => ResultHighlight.IsVisible;
+
+    /// <summary>
+    /// Checks-only seam: the highlight bar's rect in its host panel (x/y from the margin, plus
+    /// the explicit size), for asserting it lands on the selected row.
+    /// </summary>
+    public Rect ResultHighlightRectForChecks => new(
+        ResultHighlight.Margin.Left, ResultHighlight.Margin.Top,
+        ResultHighlight.Width, ResultHighlight.Height);
 
     // ---- appearance ---------------------------------------------------------------
 
@@ -1547,6 +1565,8 @@ public partial class SpotlightWindow : Window
 
     private void OnGridLayoutUpdated(object? sender, EventArgs e) => UpdateGridMetrics();
 
+    private void OnResultListLayoutUpdated(object? sender, EventArgs e) => ScheduleResultHighlightUpdate();
+
     /// <summary>
     /// Derive the cell, the icon and the row height from the width the tiles actually get.
     /// <para>
@@ -1999,6 +2019,7 @@ public partial class SpotlightWindow : Window
         if (ResultList.SelectedIndex != target) ResultList.SelectedIndex = target;
         ResultList.ScrollIntoView(target);
         ValidateFocusZone();
+        ScheduleResultHighlightUpdate();
     }
 
     /// <summary>Switch between grid / list / empty states and keep the selection valid.</summary>
@@ -2047,6 +2068,10 @@ public partial class SpotlightWindow : Window
         active.SelectedIndex = target;
         active.ScrollIntoView(target);
         ValidateFocusZone();
+
+        // The mode swap may have realized (or dropped) the selected row's container — the
+        // highlight bar retargets after the swap, not only on selection changes.
+        ScheduleResultHighlightUpdate();
     }
 
     /// <summary>The empty-query rows are driven by counts alone (the VM fills them per settings).</summary>
@@ -2087,6 +2112,134 @@ public partial class SpotlightWindow : Window
         // The preview pane binds through the view model, so every selection change — pointer,
         // keyboard, or mode swap — has to reach SetSelected. Container content IS the row object.
         viewModel.SetSelected(list.SelectedItem as SpotlightItem);
+
+        if (ReferenceEquals(list, ResultList)) ScheduleResultHighlightUpdate();
+    }
+
+    // ---- result-highlight spring: the integrator's first real consumer ----------------
+    //
+    // The results' selection is a floating bar (ResultHighlight) whose target moves with every
+    // arrow press, every rebuilt result set and every scroll step. A transition would restart
+    // from rest on each retarget — the bar would teleport, then animate. The Spring keeps its
+    // velocity across retargets (动效交接 §5.2-3), so holding ↓ reads as one continuous glide.
+
+    // NOT readonly: Spring is a struct, and a mutating call on a readonly field compiles to a
+    // defensive copy — the spring's state would silently never move (the bar would pin at 0).
+    private Spring highlightY = new();
+    private Spring highlightHeight = new();
+    private bool highlightDriving;
+    private TimeSpan highlightLastFrame;
+    private bool highlightHasFrame;
+
+    /// <summary>
+    /// Retarget the highlight bar at the currently selected row: snap on first appearance, glide
+    /// afterwards, hide when there is nothing selectable. Idempotent — the layout and selection
+    /// events that call it fire far more often than the target actually moves.
+    /// </summary>
+    private void ScheduleResultHighlightUpdate()
+    {
+        if (ResultHighlightTarget() is not { } rect)
+        {
+            highlightDriving = false;
+            ResultHighlight.IsVisible = false;
+            return;
+        }
+
+        if (!ResultHighlight.IsVisible)
+        {
+            // First appearance: arrive exactly on the row, no glide from nowhere.
+            highlightY.SnapTo(rect.Y);
+            highlightHeight.SnapTo(rect.Height);
+            PositionResultHighlight(rect);
+            ResultHighlight.IsVisible = true;
+            return;
+        }
+
+        highlightY.SetTarget(rect.Y);
+        highlightHeight.SetTarget(rect.Height);
+        if (!highlightDriving)
+        {
+            highlightDriving = true;
+            highlightHasFrame = false;
+            DriveResultHighlight();
+        }
+    }
+
+    /// <summary>
+    /// One frame of the highlight loop: re-read the target (a scroll or a rebuilt list may have
+    /// moved the selected row), step both springs on the frame's dt, and re-arm the render-clock
+    /// callback while either spring still moves. A headless harness only ticks this clock when a
+    /// check forces it, so the loop simply parks between checks.
+    /// </summary>
+    private void DriveResultHighlight()
+    {
+        RequestAnimationFrame(frame =>
+        {
+            if (!highlightDriving) return;
+
+            var dt = highlightHasFrame
+                ? Math.Max(0, (frame - highlightLastFrame).TotalSeconds)
+                : 1.0 / 60.0;
+            highlightLastFrame = frame;
+            highlightHasFrame = true;
+
+            if (ResultHighlightTarget() is not { } rect)
+            {
+                highlightDriving = false;
+                ResultHighlight.IsVisible = false;
+                return;
+            }
+
+            highlightY.SetTarget(rect.Y);
+            highlightHeight.SetTarget(rect.Height);
+
+            var moving = highlightY.Step(dt, 0.26, SpringMotion.Lively);
+            moving = highlightHeight.Step(dt, 0.26, SpringMotion.Lively) || moving;
+            PositionResultHighlight(new Rect(rect.X, highlightY.Value, rect.Width, highlightHeight.Value));
+
+            if (moving)
+            {
+                DriveResultHighlight();
+            }
+            else
+            {
+                highlightDriving = false;
+            }
+        });
+    }
+
+    private void PositionResultHighlight(Rect rect)
+    {
+        ResultHighlight.Margin = new Thickness(rect.X, rect.Y, 0, 0);
+        ResultHighlight.Width = Math.Max(4, rect.Width);
+        ResultHighlight.Height = Math.Max(8, rect.Height);
+        ResultHighlight.HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Left;
+    }
+
+    /// <summary>
+    /// The selected row's highlight rectangle in the highlight bar's own coordinate space (the
+    /// panel the bar floats in), taken from the row's content presenter so the bar lands exactly
+    /// where the row's own background used to.
+    /// </summary>
+    private Rect? ResultHighlightTarget()
+    {
+        if (!ResultList.IsVisible || ResultList.SelectedIndex < 0) return null;
+        if (ResultList.ContainerFromIndex(ResultList.SelectedIndex) is not Control container) return null;
+        if (ResultHighlight.Parent is not Control host) return null;
+
+        var presenter = container.GetVisualDescendants()
+            .OfType<Avalonia.Controls.Presenters.ContentPresenter>()
+            .FirstOrDefault();
+        var source = presenter ?? container;
+
+        // A row still being laid out (its arrange has not run yet) reports a zero-height rect —
+        // snapping onto that would flash the bar at the list's top edge. LayoutUpdated fires
+        // again once the row has its real rect, which is when the bar may follow it.
+        if (source.Bounds.Height < 1 || source.Bounds.Width < 1) return null;
+
+        return source.TranslatePoint(new Point(0, 0), host) is { } topLeft
+            ? new Rect(topLeft, source.Bounds.Size)
+            : null;
     }
 
     private async Task ActivateSelectedAsync(bool reveal = false)
