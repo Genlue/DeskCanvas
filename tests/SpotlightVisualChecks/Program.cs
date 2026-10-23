@@ -114,6 +114,7 @@ internal static class Program
         RunPreviewHeroChecks(folder, icons, outDir);
         RunHotkeyChecks();
         RunSettingsPageSmoke();
+        RunCardMorphChecks(catalog, icons);
         RunWebVisualChecks(catalog, icons, outDir);
 
         Console.WriteLine();
@@ -1773,9 +1774,109 @@ internal static class Program
             Console.WriteLine($"  PASS: {what}");
             return;
         }
-
         failures++;
         Console.WriteLine($"  FAIL: {what}");
+    }
+
+    /// <summary>Read a private field off a control, for asserting state no public seam exposes.</summary>
+    private static T? ReadField<T>(object instance, string field) where T : struct
+        => instance.GetType().GetField(field, BindingFlags.Instance | BindingFlags.NonPublic)
+            ?.GetValue(instance) is T value ? value : null;
+
+    /// <summary>
+    /// The bar ↔ card height morph's geometry contract (动效交接 §5.6/§7): whatever the material,
+    /// once a morph settles, the card and the window must describe the SAME rectangle — the card
+    /// fills the client area, the radius is the configured one, and the glass is back at rest.
+    /// The per-frame shape feed is asserted mid-flight (the glass must follow the card's edge, not
+    /// the window's), and 亚克力's morph degradation must engage and release.
+    /// <para>
+    /// A headless harness has no render clock, so the transition itself never advances here —
+    /// which is exactly what the flight-phase assertions rely on: the card stays at its departure
+    /// height, the glass is fed that rect, and the settle pass (driven synchronously through the
+    /// checks seam) lands the geometry. The curve the flight follows is pinned separately, by
+    /// MotionChecks.
+    /// </para>
+    /// </summary>
+    private static void RunCardMorphChecks(LauncherCatalog catalog, ShellIconService icons)
+    {
+        Console.WriteLine("\n--- card morph (bar ↔ card) ---");
+
+        foreach (var (surface, name) in new[]
+                 {
+                     (SurfaceStyle.LiquidGlass, "liquidglass"),
+                     (SurfaceStyle.Acrylic, "acrylic"),
+                     (SurfaceStyle.FullColor, "fullcolor"),
+                 })
+        {
+            // A launcher radius bigger than half the bar: the capsule rule must clamp it mid-morph.
+            var settings = BuildSettings(surface, dark: false) with
+            {
+                Dimensions = new Dimensions(160, 12, 40),
+                Launcher = new LauncherSettings(Enabled: true, Columns: 7, GapPercent: 18, CornerRadius: 40),
+            };
+            var configuredRadius = settings.EffectiveLauncher.EffectiveCornerRadius(40);
+            var capsuleRadius = Math.Min(configuredRadius, 68 / 2.0);
+            var provider = new FakeSettingsProvider(settings);
+            var viewModel = BuildViewModel(provider, catalog, icons);
+            viewModel.Reload();
+            var window = new SpotlightWindow(viewModel, provider);
+            window.ApplyAppearanceForChecks();
+            window.ApplySummonModeForChecks(SpotlightSummonMode.Search);
+            Pin(window, (int)settings.EffectiveLauncher.Width, 68);
+
+            // ---- the instant path: bar height and radius agree on card and window ----
+            Check(Math.Abs(window.CardHeightForChecks - 68) < 0.5 && Math.Abs(window.Height - 68) < 0.5,
+                $"{name}: the resting bar is one row on card and window alike " +
+                $"({window.CardHeightForChecks:F0}/{window.Height:F0})");
+            Check(Math.Abs(window.CardRadiusForChecks - configuredRadius) < 0.5,
+                $"{name}: the resting radius is the configured one ({window.CardRadiusForChecks:F0})");
+
+            // ---- the morph, mid-flight ----
+            var target = settings.EffectiveLauncher.Height;
+            window.AnimateCardGeometryForChecks(target);
+            Check(window.CardMorphRunningForChecks, $"{name}: the morph is in flight");
+            Check(Math.Abs(window.CardRadiusForChecks - capsuleRadius) < 0.5,
+                $"{name}: the morphing radius follows the capsule rule " +
+                $"({window.CardRadiusForChecks:F0} of {capsuleRadius:F0})");
+
+            if (surface != SurfaceStyle.Acrylic)
+            {
+                // 液态玻璃 / 全彩: the window is final on the first frame; only the card travels.
+                // (The glass's shape feed itself is pinned headlessly in UiFoundationChecks —
+                // this harness never shows a window, so the surface never attaches.)
+                Check(Math.Abs(window.Height - target) < 0.5,
+                    $"{name}: the window lands at its final size on the first frame ({window.Height:F0})");
+            }
+            else
+            {
+                Check(window.TransparencyLevelHint.SequenceEqual(new[] { WindowTransparencyLevel.Transparent }),
+                    $"{name}: the morph degrades the material to a plain card");
+                var degraded = window.CardForChecks.Background as ISolidColorBrush;
+                Check(degraded is { Color.A: 255 },
+                    $"{name}: the degraded card paints itself opaque ({degraded?.Color.A})");
+            }
+
+            // ---- the settle: card, window and glass agree again ----
+            window.SettleCardMorphForChecks();
+            Check(!window.CardMorphRunningForChecks, $"{name}: the settle pass ends the flight");
+            Check(Math.Abs(window.CardHeightForChecks - target) < 0.5 && Math.Abs(window.Height - target) < 0.5,
+                $"{name}: after the settle the card and the window describe the same height " +
+                $"({window.CardHeightForChecks:F0}/{window.Height:F0})");
+            Check(Math.Abs(window.CardRadiusForChecks - configuredRadius) < 0.5,
+                $"{name}: after the settle the radius is the configured one again ({window.CardRadiusForChecks:F0})");
+
+            if (surface == SurfaceStyle.Acrylic)
+            {
+                Check(window.TransparencyLevelHint.Contains(WindowTransparencyLevel.AcrylicBlur),
+                    $"{name}: the settle restores the native acrylic backdrop");
+                var restored = window.CardForChecks.Background as ISolidColorBrush;
+                Check(restored is { Color.A: > 0 and < 255 },
+                    $"{name}: the settle restores the translucent card ({restored?.Color.A})");
+            }
+
+            viewModel.Dispose();
+            window.Close();
+        }
     }
 
     // ---- model-level checks ---------------------------------------------------------

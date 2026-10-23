@@ -1504,6 +1504,7 @@ property DeskCanvas.UI.Controls.ColorInputValueCommittedEventArgs Value -> Syste
 type DeskCanvas.UI.Controls.GlassSurfaceBase
 method DeskCanvas.UI.Controls.GlassSurfaceBase RequestRender(System.Boolean) -> System.Void
 method DeskCanvas.UI.Controls.GlassSurfaceBase SetAnimationFrameScale(System.Double,Avalonia.Point) -> System.Void
+method DeskCanvas.UI.Controls.GlassSurfaceBase SetAnimationFrameShape(Avalonia.Rect,System.Double) -> System.Void
 property DeskCanvas.UI.Controls.GlassSurfaceBase CornerRadius -> Avalonia.CornerRadius
 type DeskCanvas.UI.Controls.LabeledSlider
 method DeskCanvas.UI.Controls.LabeledSlider InitializeComponent(System.Boolean) -> System.Void

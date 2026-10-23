@@ -32,4 +32,18 @@ public abstract class GlassSurfaceBase : Control
     /// point inside the surface's bounds, so the optics animate with the visible transition.
     /// </summary>
     public abstract void SetAnimationFrameScale(double scale, Point anchorRelativeToSurface);
+
+    /// <summary>
+    /// Feed the card rectangle the current animation frame covers — DIP, relative to the
+    /// surface's top-left — plus the radius that rect is drawn with, so the optics can follow a
+    /// <b>shape morph</b> (the search bar growing into the results card): a morph changes width,
+    /// height and radius independently and cannot be expressed as a uniform scale.
+    /// <para>
+    /// A host that has no rect-aware pipeline keeps working through the default degradation to
+    /// the uniform-scale port; the one production implementation overrides this. Passing the
+    /// surface's own bounds and styled radius returns the material to rest.
+    /// </para>
+    /// </summary>
+    public virtual void SetAnimationFrameShape(Rect rect, double cornerRadius)
+        => SetAnimationFrameScale(Bounds.Width > 0 ? rect.Width / Bounds.Width : 1.0, default);
 }

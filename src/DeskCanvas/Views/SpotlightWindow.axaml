@@ -374,7 +374,11 @@
         <!-- 液态玻璃 layer. Hidden for 毛玻璃 / 全彩 (the Card paints those). -->
         <controls:LiquidGlassSurface x:Name="GlassSurface" IsVisible="False" />
 
-        <Border x:Name="Card" BorderThickness="1" ClipToBounds="True" RenderTransformOrigin="0.5,0.5">
+        <!-- VerticalAlignment=Top: during the bar→card height morph the card is shorter than the
+             (already final) window — it must grow downward out of the search bar, not float in
+             the middle of the window (SpotlightWindow.AnimateCardGeometry). -->
+        <Border x:Name="Card" BorderThickness="1" ClipToBounds="True" RenderTransformOrigin="0.5,0.5"
+                VerticalAlignment="Top">
             <Grid x:Name="CardColumns" ColumnDefinitions="*,Auto,280">
                 <!-- ===================== left: search + results ===================== -->
                 <Grid Grid.Column="0" RowDefinitions="Auto,Auto,Auto,*,Auto">

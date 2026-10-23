@@ -25,6 +25,7 @@ using DeskCanvas.Core.Interfaces;
 using DeskCanvas.Core.Models.Settings;
 using DeskCanvas.Locales;
 using DeskCanvas.Services;
+using DeskCanvas.UI.Animation;
 using DeskCanvas.ViewModels;
 
 namespace DeskCanvas.Views;
@@ -113,11 +114,32 @@ public partial class SpotlightWindow : Window
     /// </summary>
     private const double SearchBarHeight = 68;
 
-    /// <summary>Summon fade + micro-scale duration (Dismiss is an immediate hide).</summary>
-    private const int SummonAnimationMs = 180;
+    /// <summary>Summon fade duration — critically damped: an overshooting alpha would clip at 1.</summary>
+    private const int SummonFadeMs = 200;
+
+    /// <summary>
+    /// Summon micro-scale + rise duration, on the mod's bounce spring (岛展开 0.42 s / kBounceDamping
+    /// — the same budget the secondary panels open with).
+    /// </summary>
+    private const int SummonScaleMs = 320;
 
     /// <summary>Starting scale for the summon micro-scale transition.</summary>
     private const double SummonScaleFrom = 0.94;
+
+    /// <summary>Where the summon rise starts, in DIP above the resting position (自上而下落定).</summary>
+    private const double SummonRiseFrom = -7;
+
+    /// <summary>
+    /// The bar → card height morph (搜索条 ↔ 结果卡), on the bounce spring. Only the height and
+    /// the radius travel; the width branch of <see cref="ApplyCardGeometry"/> never animates.
+    /// </summary>
+    private const int CardMorphMs = 320;
+
+    /// <summary>Padding over the morph duration, so the settle pass never races the last frame.</summary>
+    private const int CardMorphSettlePadMs = 60;
+
+    /// <summary>Dismiss fade + reverse morph; Hide() follows once this flight lands.</summary>
+    private const int DismissAnimationMs = 180;
 
     private readonly SpotlightViewModel viewModel;
     private readonly IAppSettingsProvider settings;
@@ -222,6 +244,33 @@ public partial class SpotlightWindow : Window
 
     private CancellationTokenSource? summonAnimationCts;
 
+    // ---- card-height morph (动效交接 §5): the shared easing pair, the in-flight flags and the
+    // settle timer that re-arms the resting geometry once the flight lands. ----
+    private static readonly SpringEasing CardMorphEasing = SpringMotion.CreateEasing(SpringMotion.Bounce);
+    private static readonly SpringEasing CardFadeEasing = SpringMotion.CreateEasing(SpringMotion.Smooth);
+
+    /// <summary>True while the card's own height morph is in flight (液态玻璃 / 全彩).</summary>
+    private bool cardMorphRunning;
+
+    /// <summary>True while the window-height morph is in flight (亚克力 — the window IS the shape).</summary>
+    private bool windowMorphRunning;
+
+    /// <summary>The height the running morph is heading for; the settle pass lands on it.</summary>
+    private double morphTargetHeight;
+
+    /// <summary>The configured card radius cached at morph start (never re-read per frame).</summary>
+    private double morphConfigRadius;
+
+    /// <summary>The settle timer that follows a morph and re-arms the resting card geometry.</summary>
+    private DispatcherTimer? morphSettleTimer;
+
+    /// <summary>
+    /// True while 亚克力 temporarily degraded to an opaque card for a window-height morph: the
+    /// OS blur is a property of the HWND, so while the window itself is mid-resize the card must
+    /// paint itself instead of relying on the backdrop (动效交接 §5.3 — “卡片长出来之后玻璃才凝住”).
+    /// </summary>
+    private bool acrylicMorphDegraded;
+
     /// <summary>Whether this summon ever owned the foreground (see <see cref="OnWindowMessage"/>).</summary>
     private bool activatedSinceSummon;
 
@@ -296,6 +345,11 @@ public partial class SpotlightWindow : Window
         // when the window is re-arranged at a different width by the host. Every change recomputes
         // the tile width, which is what keeps N tiles exactly filling the row.
         boundsSubscription = GridList.GetObservable(BoundsProperty).Subscribe(_ => UpdateGridMetrics());
+        // The height morph drives three things per frame — the capsule radius, the glass's covered
+        // rect and (亚克力) the card that follows the animating window — off the two properties
+        // that actually animate, so everything stays in phase with the visible transition.
+        Card.PropertyChanged += OnCardHeightAnimated;
+        PropertyChanged += OnWindowHeightAnimated;
         // 毛玻璃 clips the HWND to the card's rounded rectangle (ApplyWindowRegion). That region
         // is measured from ClientSize, so a width change — the preview column growing the card by
         // 280 DIP is the one that matters — must re-cut it or the new column stays outside the
@@ -319,6 +373,12 @@ public partial class SpotlightWindow : Window
         Closed += (_, _) =>
         {
             boundsSubscription?.Dispose();
+            Card.PropertyChanged -= OnCardHeightAnimated;
+            PropertyChanged -= OnWindowHeightAnimated;
+            morphSettleTimer?.Stop();
+            morphSettleTimer = null;
+            cardMorphRunning = false;
+            windowMorphRunning = false;
             GridList.LayoutUpdated -= OnGridLayoutUpdated;
             PreviewScroll.LayoutUpdated -= OnPreviewLayoutUpdated;
             summonAnimationCts?.Cancel();
@@ -507,7 +567,17 @@ public partial class SpotlightWindow : Window
         }
     }
 
-    /// <summary>Hide without tearing the window down — the next summon reuses it.</summary>
+    /// <summary>
+    /// Hide without tearing the window down — the next summon reuses it.
+    /// <para>
+    /// The hide itself is <b>deferred</b> behind the exit animation (reverse morph + fade, on the
+    /// spring vocabulary): the overlay folds back toward the search bar instead of vanishing. The
+    /// four call sites (hotkey, deactivation, Enter, Escape) keep their meaning — only the moment
+    /// of <see cref="Hide"/> moves. A summon during the flight cancels the pending hide through
+    /// <see cref="summonAnimationCts"/> (the same gate the summon animation uses), so
+    /// "收起中再唤出" interrupts cleanly instead of stacking two animations.
+    /// </para>
+    /// </summary>
     /// <param name="reason">
     /// Why it closed. Recorded because "the overlay vanished on its own" is otherwise untraceable:
     /// the four paths (hotkey, deactivation, Enter, Escape) look identical from the outside.
@@ -515,17 +585,85 @@ public partial class SpotlightWindow : Window
     public void Dismiss(string reason = "api")
     {
         if (!IsVisible && !IsReallyVisible()) return;
+
         summonAnimationCts?.Cancel();
         summonAnimationCts?.Dispose();
-        summonAnimationCts = null;
+        var cts = new CancellationTokenSource();
+        summonAnimationCts = cts;
+        var token = cts.Token;
 
-        // Dismiss is instant: no exit animation, the overlay is simply gone.
-        SurfaceRoot.Transitions = null;
-        if (SurfaceRoot.RenderTransform is ScaleTransform srs) srs.Transitions = null;
+        var animate = settings.Get().EffectiveLauncher.AnimateSummon;
+        var delayMs = 0;
+        if (animate)
+        {
+            delayMs = DismissAnimationMs + CardMorphSettlePadMs;
+            PlayDismissAnimation();
+        }
+        else
+        {
+            // 打开动画 off: the overlay disappears at once, exactly as before.
+            SurfaceRoot.Transitions = null;
+            ResetSurfaceRootTransform();
+            SurfaceRoot.Opacity = 0;
+        }
+
+        DispatcherTimer.RunOnce(() =>
+        {
+            if (token.IsCancellationRequested) return;
+            FinishDismiss(reason);
+        }, TimeSpan.FromMilliseconds(delayMs));
+    }
+
+    /// <summary>
+    /// The exit flight: the card folds back down-and-smaller while fading out on the critically
+    /// damped spring, and — when the bar ever grew into the card (搜索栏式 with results) — the
+    /// height morphes back toward the search bar first, so the leave reads as the summon reversed.
+    /// </summary>
+    private void PlayDismissAnimation()
+    {
+        var fadeDuration = TimeSpan.FromMilliseconds(DismissAnimationMs);
+
+        SurfaceRoot.Transitions = new Transitions
+        {
+            new DoubleTransition { Property = Visual.OpacityProperty, Duration = fadeDuration, Easing = CardFadeEasing }
+        };
+
+        if (SurfaceRootRenderTransforms() is { } transforms)
+        {
+            var scaleDuration = TimeSpan.FromMilliseconds(SummonScaleMs);
+            transforms.Rise.Transitions = null;
+            transforms.Scale.Transitions = new Transitions
+            {
+                new DoubleTransition { Property = ScaleTransform.ScaleXProperty, Duration = scaleDuration, Easing = CardMorphEasing },
+                new DoubleTransition { Property = ScaleTransform.ScaleYProperty, Duration = scaleDuration, Easing = CardMorphEasing },
+            };
+
+            transforms.Scale.ScaleX = SummonScaleFrom;
+            transforms.Scale.ScaleY = SummonScaleFrom;
+            transforms.Rise.Y = SummonRiseFrom;
+        }
+
         SurfaceRoot.Opacity = 0;
 
+        if (summonMode == SpotlightSummonMode.Search && Card.Height > SearchBarHeight + 1)
+        {
+            AnimateCardGeometry(SearchBarHeight);
+        }
+    }
+
+    /// <summary>The real hide, plus every piece of teardown the old synchronous Dismiss did.</summary>
+    private void FinishDismiss(string reason)
+    {
+        // Snap any still-armed morph to rest so the next summon starts from a clean geometry.
+        morphSettleTimer?.Stop();
+        morphSettleTimer = null;
+        cardMorphRunning = false;
+        windowMorphRunning = false;
         Card.Transitions = null;
-        GlassSurface.Transitions = null;
+        Transitions = null;
+
+        SurfaceRoot.Transitions = null;
+        ResetSurfaceRootTransform();
         if (Card.RenderTransform is ScaleTransform cs) cs.Transitions = null;
         if (GlassSurface.RenderTransform is ScaleTransform gs) gs.Transitions = null;
         Card.Opacity = 1;
@@ -538,8 +676,10 @@ public partial class SpotlightWindow : Window
 
         // Drop the full-desktop frame while the overlay is closed: the next summon captures a fresh
         // one before it shows (see <see cref="Summon"/>), so nothing is lost but an idle ~14 MiB
-        // bitmap that keeps the screen of a minute ago alive.
+        // bitmap that keeps the screen of a minute ago alive. The morph degradation is released
+        // here too — AFTER the hide, so the glass never samples through a torn-down capture.
         ScreenSnapshotProvider.Release();
+        ExitAcrylicMorphDegradation();
     }
 
     /// <summary>
@@ -680,6 +820,25 @@ public partial class SpotlightWindow : Window
     /// <summary>Checks-only seam: the liquid-glass layer, for visibility assertions.</summary>
     public Control GlassSurfaceForChecks => GlassSurface;
 
+    /// <summary>Checks-only seam: the card's explicit height, for morph-geometry assertions.</summary>
+    public double CardHeightForChecks => Card.Height;
+
+    /// <summary>Checks-only seam: the card's current radius, for morph-geometry assertions.</summary>
+    public double CardRadiusForChecks => Card.CornerRadius.TopLeft;
+
+    /// <summary>Checks-only seam: whether a height morph is in flight.</summary>
+    public bool CardMorphRunningForChecks => cardMorphRunning || windowMorphRunning;
+
+    /// <summary>
+    /// Checks-only seam: run the height morph without the "overlay is visible" gate a headless
+    /// harness cannot pass. The transition itself needs a render clock, so a check follows this
+    /// with <see cref="SettleCardMorphForChecks"/> to land on the resting geometry.
+    /// </summary>
+    public void AnimateCardGeometryForChecks(double height) => AnimateCardGeometry(height);
+
+    /// <summary>Checks-only seam: land the morph's resting geometry synchronously.</summary>
+    public void SettleCardMorphForChecks() => SettleCardMorph();
+
     // ---- appearance ---------------------------------------------------------------
 
     /// <summary>
@@ -742,6 +901,12 @@ public partial class SpotlightWindow : Window
             $"sampler=0x{sampler:X} exclude=0x{ScreenSnapshotProvider.ExcludeWindow:X}");
 
         TransparencyLevelHint = appearance.TransparencyLevels;
+
+        // A mid-morph settings change must not undo the 亚克力 morph degradation: the window is
+        // mid-resize with no OS blur behind it, so the translucent level has to stay off until
+        // the settle pass restores it (ExitAcrylicMorphDegradation).
+        if (acrylicMorphDegraded)
+            TransparencyLevelHint = new[] { WindowTransparencyLevel.Transparent };
 
         // Text AA follows the material (see PanelAppearanceResolver.ResolveTextRenderingMode):
         // the ClearType-class subpixel mask blends per channel assuming opaque pixels, so over
@@ -988,7 +1153,9 @@ public partial class SpotlightWindow : Window
     /// <para>
     /// The same rule drives the search-mode summon: an empty query there is a search <b>bar</b>
     /// (one row), not a 560 DIP card with a hole in it, and it grows to full height the moment the
-    /// first result arrives.
+    /// first result arrives — that growth is the <b>height morph</b>: instant while the overlay is
+    /// not on screen (and in every headless check), on the bounce spring when it is. The width
+    /// branch never animates (动效交接 §5.7: a width change also repositions the window).
     /// </para>
     /// </summary>
     private void ApplyCardGeometry(LauncherSettings launcher, bool force = false)
@@ -1020,9 +1187,261 @@ public partial class SpotlightWindow : Window
         }
 
         if (widthChanged || force) Width = width;
-        if (Math.Abs(Height - height) > 0.5 || force) Height = height;
+
+        if (Math.Abs(Height - height) > 0.5 || force)
+        {
+            if (CanAnimateCardMorph(height))
+            {
+                AnimateCardGeometry(height);
+            }
+            else
+            {
+                ApplyCardGeometryInstant(height);
+            }
+        }
 
         UpdatePreviewVisibility();
+    }
+
+    /// <summary>
+    /// Whether the bar ↔ card height change may morph: only a visible overlay with the animation
+    /// enabled. Everything else (first layout, headless checks, settings re-layouts while hidden)
+    /// takes the instant path, so no check ever sees a half-way height.
+    /// </summary>
+    private bool CanAnimateCardMorph(double height)
+        => IsVisible
+           && settings.Get().EffectiveLauncher.AnimateSummon
+           && !applyingLayout
+           && Math.Abs(Card.Height - height) > 0.5;
+
+    /// <summary>
+    /// Resize the window and the card to a height with no transition at all: the resting geometry
+    /// every non-animated path (and every headless check) lands on.
+    /// </summary>
+    private void ApplyCardGeometryInstant(double height)
+    {
+        morphSettleTimer?.Stop();
+        morphSettleTimer = null;
+        cardMorphRunning = false;
+        windowMorphRunning = false;
+        Card.Transitions = null;
+        if (Transitions != null) Transitions = null;
+        ExitAcrylicMorphDegradation();
+
+        morphTargetHeight = height;
+        morphConfigRadius = ConfiguredCardRadius();
+
+        Height = height;
+        Card.Height = height;
+        Card.CornerRadius = new CornerRadius(morphConfigRadius);
+        if (GlassSurface.IsVisible)
+            GlassSurface.SetAnimationFrameShape(new Rect(0, 0, Width, height), morphConfigRadius);
+    }
+
+    /// <summary>
+    /// The bar ↔ card height morph, split by material exactly as the material physics demand
+    /// (动效交接 §5.3):
+    /// <list type="bullet">
+    /// <item><description><b>液态玻璃 / 全彩</b> — the window lands at its final size at once (no
+    /// <c>SetWindowPos</c> storm, no region re-cut) and the <b>card</b> morphs inside it; the glass
+    /// follows the covered rect every frame through <see cref="GlassSurfaceBase.SetAnimationFrameShape"/>.</description></item>
+    /// <item><description><b>亚克力</b> — the window IS the shape, so the window height itself
+    /// animates (every step is a resize + a region re-cut in <see cref="RefreshWindowRegion"/>),
+    /// and the card temporarily paints itself opaque because there is no OS blur behind a
+    /// mid-resize window.</description></item>
+    /// </list>
+    /// </summary>
+    private void AnimateCardGeometry(double height)
+    {
+        morphTargetHeight = height;
+        morphConfigRadius = ConfiguredCardRadius();
+        var fromHeight = Height;
+        morphSettleTimer?.Stop();
+
+        var duration = TimeSpan.FromMilliseconds(CardMorphMs);
+        if (UsesNativeBlurTheme())
+        {
+            EnterAcrylicMorphDegradation();
+            Card.Transitions = null;
+            Card.Height = fromHeight;
+            windowMorphRunning = true;
+            cardMorphRunning = false;
+            Transitions = new Transitions
+            {
+                new DoubleTransition { Property = HeightProperty, Duration = duration, Easing = CardMorphEasing },
+            };
+            Height = height;
+            // The capsule radius starts from the departure height like the other materials; the
+            // per-step sync then rides the window's own height events.
+            SyncMorphingCardShape(fromHeight);
+        }
+        else
+        {
+            ExitAcrylicMorphDegradation();
+            // The window is final from the first frame; only the card (and the glass) travel.
+            Height = height;
+            windowMorphRunning = false;
+            cardMorphRunning = true;
+            Card.Transitions = new Transitions
+            {
+                new DoubleTransition { Property = HeightProperty, Duration = duration, Easing = CardMorphEasing },
+            };
+            Card.Height = height;
+            // The first frame the transition covers is still the pre-morph rect (the property's
+            // animated value starts at the departure height), so that is what the glass is fed.
+            SyncMorphingCardShape(fromHeight);
+        }
+
+        morphSettleTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(CardMorphMs + CardMorphSettlePadMs) };
+        morphSettleTimer.Tick += (_, _) =>
+        {
+            morphSettleTimer?.Stop();
+            morphSettleTimer = null;
+            SettleCardMorph();
+        };
+        morphSettleTimer.Start();
+
+        // The rows' entrance belongs to the one morph that means "results just arrived": the bar
+        // growing into the card. A per-keystroke filter rebuild changes nothing here (the height
+        // never moves), so the list cannot flicker on typing.
+        if (fromHeight <= SearchBarHeight + 1 && height > fromHeight + 1 && viewModel.IsFiltering)
+        {
+            StaggerResultRows();
+        }
+    }
+
+    /// <summary>The morph is over (or the window hid mid-flight): land on the resting geometry.</summary>
+    private void SettleCardMorph()
+    {
+        morphSettleTimer = null;
+        cardMorphRunning = false;
+        windowMorphRunning = false;
+        Card.Transitions = null;
+        Transitions = null;
+
+        // Always land, hidden or not: a dismiss that outran the morph leaves the card on its
+        // animated height, and the next summon must start from the resting geometry whatever
+        // path it takes. (The glass's shape feed and the region are both no-ops while hidden.)
+        Card.Height = morphTargetHeight;
+        Height = morphTargetHeight;
+        Card.CornerRadius = new CornerRadius(morphConfigRadius);
+        if (GlassSurface.IsVisible)
+            GlassSurface.SetAnimationFrameShape(new Rect(0, 0, Width, morphTargetHeight), morphConfigRadius);
+        ExitAcrylicMorphDegradation();
+    }
+
+    /// <summary>The card radius the settings resolve right now (the morph caches it once per flight).</summary>
+    private double ConfiguredCardRadius()
+        => settings.Get().EffectiveLauncher.EffectiveCornerRadius(settings.Get().Dimensions.Radius);
+
+    /// <summary>Whether the launcher currently resolves to the OS-blurred material (亚克力).</summary>
+    private bool UsesNativeBlurTheme()
+        => ResolveLauncherTheme(settings.Get().EffectiveLauncher).Theme.UsesNativeBlur;
+
+    /// <summary>The capsule rule while the card morphs: never wider than half the current height.</summary>
+    private double MorphRadius(double height) => Math.Min(morphConfigRadius, height / 2);
+
+    /// <summary>
+    /// Per morph frame: keep the card's radius a capsule of its current height and feed the glass
+    /// the rect that is actually covered, so the refraction follows the card's edge instead of
+    /// the window's.
+    /// </summary>
+    private void SyncMorphingCardShape(double height)
+    {
+        var radius = MorphRadius(height);
+        if (Math.Abs(Card.CornerRadius.TopLeft - radius) > 0.01)
+            Card.CornerRadius = new CornerRadius(radius);
+        if (GlassSurface.IsVisible)
+            GlassSurface.SetAnimationFrameShape(new Rect(0, 0, Math.Max(1, Width), height), radius);
+    }
+
+    private void OnCardHeightAnimated(object? sender, AvaloniaPropertyChangedEventArgs e)
+    {
+        if (e.Property != HeightProperty || !cardMorphRunning) return;
+        SyncMorphingCardShape(Card.Height);
+    }
+
+    private void OnWindowHeightAnimated(object? sender, AvaloniaPropertyChangedEventArgs e)
+    {
+        if (e.Property != HeightProperty || !windowMorphRunning) return;
+        // 亚克力: the card follows the animating window (the window is the shape), and the 1-bit
+        // region is re-cut by the Resized handler on every step.
+        Card.Height = Height;
+        SyncMorphingCardShape(Height);
+    }
+
+    /// <summary>
+    /// 亚克力's morph degradation: while the window itself is mid-resize there is no settled OS
+    /// blur behind it, so the card paints itself opaque for the flight — "the card grows, then
+    /// the glass sets" reads better than a region-edge that jitters for 320 ms.
+    /// </summary>
+    private void EnterAcrylicMorphDegradation()
+    {
+        if (acrylicMorphDegraded) return;
+        acrylicMorphDegraded = true;
+        if (Card.Background is ISolidColorBrush { Color: var color })
+            Card.Background = new SolidColorBrush(Color.FromArgb(255, color.R, color.G, color.B));
+        TransparencyLevelHint = new[] { WindowTransparencyLevel.Transparent };
+    }
+
+    /// <summary>
+    /// End the morph degradation. ApplyAppearance is idempotent and the single source of the card
+    /// fill, the transparency level and the native region — re-running it restores exactly the
+    /// pre-degradation state, whatever changed in the meantime.
+    /// </summary>
+    private void ExitAcrylicMorphDegradation()
+    {
+        if (!acrylicMorphDegraded) return;
+        acrylicMorphDegraded = false;
+        ApplyAppearance();
+    }
+
+    /// <summary>Per-row delay of the results stagger (12–18 ms, ≤120 ms total — 动效交接 §5.2-3).</summary>
+    private const int ResultStaggerStepMs = 14;
+
+    /// <summary>One row's stagger flight: an opacity fade-in plus a 4 DIP rise.</summary>
+    private static readonly TimeSpan ResultStaggerDuration = TimeSpan.FromMilliseconds(120);
+
+    /// <summary>
+    /// The results' entrance: the realized rows fade in and rise 4 DIP, staggered ~14 ms apart.
+    /// Runs only for the bar → card morph (the first results arriving) — never for a filter
+    /// rebuild, which is what keeps "输入即筛选" flicker-free.
+    /// </summary>
+    private void StaggerResultRows()
+    {
+        var rows = ResultList.GetRealizedContainers().Take(8).ToList();
+        for (var i = 0; i < rows.Count; i++)
+        {
+            var row = rows[i];
+            row.Opacity = 0;
+            var rise = new TranslateTransform(0, 4);
+            row.RenderTransform = rise;
+
+            DispatcherTimer.RunOnce(() =>
+            {
+                // The list may have been rebuilt by a faster keystroke — only an attached row animates.
+                if (row.Parent == null) return;
+                row.Transitions = new Transitions
+                {
+                    new DoubleTransition { Property = Visual.OpacityProperty, Duration = ResultStaggerDuration, Easing = CardFadeEasing },
+                };
+                rise.Transitions = new Transitions
+                {
+                    new DoubleTransition { Property = TranslateTransform.YProperty, Duration = ResultStaggerDuration, Easing = CardFadeEasing },
+                };
+                row.Opacity = 1;
+                rise.Y = 0;
+
+                // Detach once the flight lands: a lingering opacity transition would swallow any
+                // later programmatic write on the same row.
+                DispatcherTimer.RunOnce(() =>
+                {
+                    row.Transitions = null;
+                    rise.Transitions = null;
+                    if (ReferenceEquals(row.RenderTransform, rise)) row.RenderTransform = null;
+                }, ResultStaggerDuration + TimeSpan.FromMilliseconds(40));
+            }, TimeSpan.FromMilliseconds(i * ResultStaggerStepMs));
+        }
     }
 
     /// <summary>Show or collapse the preview column; the width rule lives with the layout.</summary>
@@ -1343,6 +1762,43 @@ public partial class SpotlightWindow : Window
 
     // ---- summon animation -----------------------------------------------------------
 
+    /// <summary>The summon transform pair on the surface root: a micro-scale plus the downward rise.</summary>
+    private sealed record SurfaceRootTransforms(ScaleTransform Scale, TranslateTransform Rise);
+
+    /// <summary>
+    /// Read the surface root's summon transforms. The pair is created by
+    /// <see cref="PrepareSummonAnimationInitialState"/> (scale first, then the rise — the rise
+    /// must not be scaled by the zoom, or the drop distance would shrink mid-flight).
+    /// </summary>
+    private SurfaceRootTransforms? SurfaceRootRenderTransforms()
+        => SurfaceRoot.RenderTransform is TransformGroup { Children.Count: >= 2 } group
+           && group.Children[0] is ScaleTransform scale
+           && group.Children[1] is TranslateTransform rise
+            ? new SurfaceRootTransforms(scale, rise)
+            : null;
+
+    /// <summary>Detach every transition on the root's summon transforms and snap them to rest.</summary>
+    private void ResetSurfaceRootTransform()
+    {
+        if (SurfaceRootRenderTransforms() is { } transforms)
+        {
+            transforms.Scale.Transitions = null;
+            transforms.Scale.ScaleX = 1d;
+            transforms.Scale.ScaleY = 1d;
+            transforms.Rise.Transitions = null;
+            transforms.Rise.X = 0;
+            transforms.Rise.Y = 0;
+            return;
+        }
+
+        if (SurfaceRoot.RenderTransform is ScaleTransform bare)
+        {
+            bare.Transitions = null;
+            bare.ScaleX = 1d;
+            bare.ScaleY = 1d;
+        }
+    }
+
     /// <summary>
     /// The 打开动画 = off path: reset everything the animated path would have prepared to its
     /// final state, so the card is painted at full opacity and scale on the very first frame.
@@ -1355,13 +1811,7 @@ public partial class SpotlightWindow : Window
         summonAnimationCts = null;
 
         SurfaceRoot.Transitions = null;
-        if (SurfaceRoot.RenderTransform is ScaleTransform rootScale)
-        {
-            rootScale.Transitions = null;
-            rootScale.ScaleX = 1d;
-            rootScale.ScaleY = 1d;
-        }
-
+        ResetSurfaceRootTransform();
         SurfaceRoot.Opacity = 1d;
 
         Card.Transitions = null;
@@ -1376,7 +1826,7 @@ public partial class SpotlightWindow : Window
 
     /// <summary>
     /// Prepares the card and glass surface for the summon animation before the window becomes visible.
-    /// Setting Opacity = 0 and the micro-scale initial state before Show() prevents any
+    /// Setting Opacity = 0 and the micro-scale + rise initial state before Show() prevents any
     /// full-opacity or un-animated initial frames from flashing on screen.
     /// </summary>
     private void PrepareSummonAnimationInitialState()
@@ -1392,17 +1842,16 @@ public partial class SpotlightWindow : Window
         SurfaceRoot.RenderTransformOrigin = origin;
         SurfaceRoot.Transitions = null;
 
-        if (SurfaceRoot.RenderTransform is not ScaleTransform rootScale)
+        // Micro-scale around the card's anchor plus a small rise above the resting position:
+        // together they read as the card dropping in from the search bar, not as a fade.
+        SurfaceRoot.RenderTransform = new TransformGroup
         {
-            rootScale = new ScaleTransform(SummonScaleFrom, SummonScaleFrom);
-            SurfaceRoot.RenderTransform = rootScale;
-        }
-        else
-        {
-            rootScale.Transitions = null;
-            rootScale.ScaleX = SummonScaleFrom;
-            rootScale.ScaleY = SummonScaleFrom;
-        }
+            Children =
+            {
+                new ScaleTransform(SummonScaleFrom, SummonScaleFrom),
+                new TranslateTransform(0, SummonRiseFrom),
+            },
+        };
 
         SurfaceRoot.Opacity = 0;
 
@@ -1417,8 +1866,9 @@ public partial class SpotlightWindow : Window
     }
 
     /// <summary>
-    /// Summons the overlay with a smooth micro-scale and fade-in animation.
-    /// The entire surface root (wrapping card and glass) transitions smoothly using Avalonia's compositor-driven transitions.
+    /// Summons the overlay on the spring vocabulary: the micro-scale and the rise land on the
+    /// mod's bounce spring (the same ~3.8% overshoot the secondary panels open with), the fade
+    /// stays critically damped so the alpha never overshoots past 1.
     /// </summary>
     private void PlaySummonAnimation()
     {
@@ -1426,25 +1876,32 @@ public partial class SpotlightWindow : Window
         summonAnimationCts?.Dispose();
         summonAnimationCts = null;
 
-        var duration = TimeSpan.FromMilliseconds(SummonAnimationMs);
-        var ease = new CubicEaseOut();
-
-        var rootScale = (ScaleTransform)SurfaceRoot.RenderTransform!;
+        var fadeDuration = TimeSpan.FromMilliseconds(SummonFadeMs);
+        var scaleDuration = TimeSpan.FromMilliseconds(SummonScaleMs);
 
         SurfaceRoot.Transitions = new Transitions
         {
-            new DoubleTransition { Property = Visual.OpacityProperty, Duration = duration, Easing = ease }
+            new DoubleTransition { Property = Visual.OpacityProperty, Duration = fadeDuration, Easing = CardFadeEasing }
         };
 
-        rootScale.Transitions = new Transitions
+        if (SurfaceRootRenderTransforms() is { } transforms)
         {
-            new DoubleTransition { Property = ScaleTransform.ScaleXProperty, Duration = duration, Easing = ease },
-            new DoubleTransition { Property = ScaleTransform.ScaleYProperty, Duration = duration, Easing = ease }
-        };
+            transforms.Scale.Transitions = new Transitions
+            {
+                new DoubleTransition { Property = ScaleTransform.ScaleXProperty, Duration = scaleDuration, Easing = CardMorphEasing },
+                new DoubleTransition { Property = ScaleTransform.ScaleYProperty, Duration = scaleDuration, Easing = CardMorphEasing },
+            };
+            transforms.Rise.Transitions = new Transitions
+            {
+                new DoubleTransition { Property = TranslateTransform.YProperty, Duration = scaleDuration, Easing = CardMorphEasing },
+            };
+
+            transforms.Scale.ScaleX = 1d;
+            transforms.Scale.ScaleY = 1d;
+            transforms.Rise.Y = 0;
+        }
 
         SurfaceRoot.Opacity = 1d;
-        rootScale.ScaleX = 1d;
-        rootScale.ScaleY = 1d;
 
         if (screenSampling && GlassSurface.IsVisible)
         {

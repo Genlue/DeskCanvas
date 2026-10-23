@@ -305,6 +305,7 @@ public class LiquidGlassSurface : GlassSurfaceBase
         if (window != null) window.PositionChanged -= OnPositionChanged;
         window = null;
         animationScale = 1.0;
+        animationShapeActive = false;
         ReleasePrepared();
         LiquidGlassWallpaper.RefreshSamplerState();
         base.OnDetachedFromVisualTree(e);
@@ -316,6 +317,11 @@ public class LiquidGlassSurface : GlassSurfaceBase
     private double animationScale = 1.0;
     private Point animationAnchor;
 
+    // ---- Card shape morph (聚焦搜索 bar → card) ----
+    private Rect animationShape;
+    private double animationShapeRadius;
+    private bool animationShapeActive;
+
     /// <summary>
     /// Report the panel card's current animated scale (1.0 = at rest) and the scale anchor as a
     /// relative point inside this surface's bounds. Every value change repaints the surface with
@@ -325,6 +331,7 @@ public class LiquidGlassSurface : GlassSurfaceBase
     public override void SetAnimationFrameScale(double scale, Point anchorRelativeToSurface)
     {
         if (!attached || Material?.UsesRenderedGlass != true) return;
+        animationShapeActive = false;
         var clamped = Math.Clamp(scale, 0.05, 1.0);
         if (clamped >= 0.999)
         {
@@ -338,11 +345,61 @@ public class LiquidGlassSurface : GlassSurfaceBase
         InvalidateVisual();
     }
 
+    /// <summary>
+    /// Report the card rectangle (DIP, relative to this surface) the current morph frame covers
+    /// and the radius it is drawn with — the shape twin of <see cref="SetAnimationFrameScale"/>.
+    /// A height morph keeps the surface's own bounds (the glass control still fills the window)
+    /// but only the covered sub-rect is drawn, sampling the backdrop at the desktop position that
+    /// rect really sits at, so the refracted content never swims. Passing the surface's own
+    /// bounds and its styled radius returns the material to rest.
+    /// </summary>
+    public override void SetAnimationFrameShape(Rect rect, double cornerRadius)
+    {
+        if (!attached || Material?.UsesRenderedGlass != true) return;
+
+        // At rest: the rect is (within layout rounding) the whole surface at its styled radius.
+        if (Math.Abs(rect.X) < 0.5 && Math.Abs(rect.Y) < 0.5
+            && Math.Abs(rect.Width - Bounds.Width) < 0.5
+            && Math.Abs(rect.Height - Bounds.Height) < 0.5
+            && Math.Abs(cornerRadius - CornerRadius.TopLeft) < 0.5)
+        {
+            if (!animationShapeActive && animationScale >= 0.999) return;
+            animationShapeActive = false;
+            animationScale = 1.0;
+            InvalidateVisual();
+            return;
+        }
+
+        animationShape = rect;
+        animationShapeRadius = Math.Max(0, cornerRadius);
+        animationShapeActive = true;
+        animationScale = 1.0;
+        InvalidateVisual();
+    }
+
     /// <summary>The frame geometry for the card rect the transition currently covers.</summary>
     private LiquidGlassRenderer.Frame BuildAnimationFrame(Prepared snapshot)
     {
-        var t = animationScale;
         var frame = snapshot.Frame;
+
+        // The shape morph: width, height and radius travel independently, and the sampling
+        // origin must stay in DESKTOP coordinates — the surface's own origin plus the rect's
+        // offset, both in render pixels. Everything else (screen geometry, theme, quality) is
+        // the frame's own.
+        if (animationShapeActive)
+        {
+            var shapeScale = frame.Scale;
+            return frame with
+            {
+                Width = Math.Max(1, (int)MathF.Round((float)animationShape.Width * shapeScale)),
+                Height = Math.Max(1, (int)MathF.Round((float)animationShape.Height * shapeScale)),
+                Radius = (float)animationShapeRadius,
+                DesktopX = frame.DesktopX + (float)animationShape.X * shapeScale,
+                DesktopY = frame.DesktopY + (float)animationShape.Y * shapeScale,
+            };
+        }
+
+        var t = animationScale;
         return frame with
         {
             Width = Math.Max(1, (int)MathF.Round(frame.Width * (float)t)),
@@ -650,20 +707,25 @@ public class LiquidGlassSurface : GlassSurfaceBase
         var current = prepared;
         if (current is { Source: not null })
         {
-            if (animationScale < 0.999)
+            if (animationShapeActive || animationScale < 0.999)
             {
                 // The per-scale re-parameterisation is polish, never worth a render-thread
                 // exception over: on any surprise, draw the at-rest material.
                 try
                 {
                     var animatedFrame = BuildAnimationFrame(current);
-                    context.Custom(new GlassDrawOperation(current, Material, rect, animatedFrame));
+                    // The shape morph draws only the covered sub-rect (that is the whole point:
+                    // the glass follows the card's edge, not the window); the uniform zoom keeps
+                    // drawing the full bounds, scaled by the transition.
+                    var dest = animationShapeActive ? animationShape : rect;
+                    context.Custom(new GlassDrawOperation(current, Material, dest, animatedFrame));
                     return;
                 }
                 catch (Exception ex)
                 {
                     Debug.WriteLine($"Animated glass frame failed: {ex}");
                     animationScale = 1.0;
+                    animationShapeActive = false;
                 }
             }
             context.Custom(new GlassDrawOperation(current, Material, rect));

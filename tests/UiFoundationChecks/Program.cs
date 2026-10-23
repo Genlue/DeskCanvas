@@ -112,6 +112,7 @@ internal static partial class Program
         CheckHostDecoupling();
         CheckSpecularRim();
         CheckMotion();
+        CheckGlassShapePort();
         CheckRedundancyGuard();
 
         Console.WriteLine();
