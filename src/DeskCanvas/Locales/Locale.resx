@@ -1541,9 +1541,11 @@ Migrate (copy) the current data there? Choosing "Switch without migrating" start
   <data name="Settings_Spotlight_SearchPlaceholder" xml:space="preserve"><value>Custom Search Placeholder</value></data>
   <data name="Settings_Spotlight_SearchPlaceholder_Hint" xml:space="preserve"><value>Customize the search placeholder text in All category. Leave blank to use the default.</value></data>
   <data name="Settings_Spotlight_SearchPlaceholder_Reset" xml:space="preserve"><value>Reset to Default</value></data>
-  <data name="Settings_Spotlight_SpaceRecent_Title" xml:space="preserve"><value>Space Shows Recent Launches</value></data>
-  <data name="Settings_Spotlight_SpaceRecent_Subtitle" xml:space="preserve"><value>When entering only a space in the search field, show items recently opened via search.</value></data>
-  <data name="Settings_Spotlight_SpaceRecentCount_Title" xml:space="preserve"><value>Recent Launches Count</value></data>
-  <data name="Settings_Spotlight_SpaceRecentCount_Subtitle" xml:space="preserve"><value>Number of recently opened items to show when typing space (3–20).</value></data>
+  <data name="Settings_Spotlight_SpaceRecent_Title" xml:space="preserve"><value>Double Space Shows Recent Launches</value></data>
+  <data name="Settings_Spotlight_SpaceRecent_Subtitle" xml:space="preserve"><value>When entering two spaces in the search field, show items recently opened via search.</value></data>
+  <data name="Settings_Spotlight_SpaceRecentCount_Title" xml:space="preserve"><value>Space List Count</value></data>
+  <data name="Settings_Spotlight_SpaceRecentCount_Subtitle" xml:space="preserve"><value>Rows shown in the single-space (recent searches) and double-space (recently opened) lists (3–20).</value></data>
   <data name="Spotlight_RecentLaunches_Header" xml:space="preserve"><value>Recently Opened</value></data>
+  <data name="Spotlight_SearchHistory_Header" xml:space="preserve"><value>Recent Searches</value></data>
+  <data name="Spotlight_Preview_Label_Searched" xml:space="preserve"><value>Searched</value></data>
 </root>

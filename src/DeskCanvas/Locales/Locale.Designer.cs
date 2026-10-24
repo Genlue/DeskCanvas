@@ -2676,5 +2676,9 @@ namespace DeskCanvas.Locales {
         public static string Settings_Spotlight_SpaceRecentCount_Subtitle => ResourceManager.GetString("Settings_Spotlight_SpaceRecentCount_Subtitle", resourceCulture);
 
         public static string Spotlight_RecentLaunches_Header => ResourceManager.GetString("Spotlight_RecentLaunches_Header", resourceCulture);
+
+        public static string Spotlight_SearchHistory_Header => ResourceManager.GetString("Spotlight_SearchHistory_Header", resourceCulture);
+
+        public static string Spotlight_Preview_Label_Searched => ResourceManager.GetString("Spotlight_Preview_Label_Searched", resourceCulture);
     }
 }

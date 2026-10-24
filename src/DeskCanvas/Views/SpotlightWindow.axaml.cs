@@ -82,6 +82,30 @@ public partial class SpotlightWindow : Window
     /// </summary>
     private const int DeactivationProbeMs = 90;
 
+    /// <summary>
+    /// Re-read cadence while a deactivation is still ambiguous. One read is not enough: a capture
+    /// surface (Win+Shift+S 剪裁层) is created <b>after</b> the overlay was deactivated, so for the
+    /// first frames the OS still names whatever was in front before — an ordinary app, which used
+    /// to be read as "the user left".
+    /// </summary>
+    private const int DeactivationProbeStepMs = 75;
+
+    /// <summary>
+    /// Total budget for deciding a deactivation. Long enough for the slowest capture surface to
+    /// appear and claim the keyboard, short enough that Alt-Tabbing away still closes the overlay
+    /// without a noticeable lag.
+    /// </summary>
+    private const int DeactivationWatchMs = 540;
+
+    /// <summary>Poll cadence while waiting for a capture surface to hand the keyboard back.</summary>
+    private const int CaptureReturnPollMs = 140;
+
+    /// <summary>
+    /// How long to keep waiting for a capture to finish. A capture that stays open longer than this
+    /// (the user left the 截图工具 up) is not going to hand the keyboard back on its own.
+    /// </summary>
+    private const int CaptureReturnWatchMs = 30_000;
+
     /// <summary>Preview column width (DIP) the settings' card width is extended by.</summary>
     private const double PreviewPaneWidth = 280;
 
@@ -286,6 +310,12 @@ public partial class SpotlightWindow : Window
     /// <summary>Id of the pending deactivation probe; a newer one supersedes the older.</summary>
     private long deactivationProbe;
 
+    /// <summary>
+    /// Id of the pending "wait for the capture to finish" watch; a newer one supersedes the older,
+    /// and a dismiss/summon cancels it.
+    /// </summary>
+    private long captureWatch;
+
     private enum SpotlightFocusZone
     {
         Search,
@@ -360,7 +390,14 @@ public partial class SpotlightWindow : Window
         // is measured from ClientSize, so a width change — the preview column growing the card by
         // 280 DIP is the one that matters — must re-cut it or the new column stays outside the
         // window and never appears. Resized fires after the layout pass, i.e. with the new size.
-        Resized += (_, _) => RefreshWindowRegion();
+        Resized += (_, _) =>
+        {
+            RefreshWindowRegion();
+            // Same reason for the glass: its draw rect is state the surface holds, and a resize is
+            // the one event that says that state is stale. Covers every width path that does not
+            // go through ApplyCardGeometry (a DPI change, the host re-arranging the window).
+            SyncGlassShape();
+        };
         // A container realized after the last metrics pass (a scroll, a reload) still has to be
         // painted with the current tile geometry — templates alone only resolve it at creation.
         GridList.ContainerPrepared += (_, _) => ApplyTileGeometry();
@@ -524,6 +561,7 @@ public partial class SpotlightWindow : Window
         summonedAt = Environment.TickCount64;
         reclaimsSinceSummon = 0;
         deactivationProbe++;   // a probe from the previous summon must not act on this one
+        captureWatch++;        // nor a capture watch armed by the previous summon
 
         var handle = TryGetPlatformHandle()?.Handle;
         if (handle.HasValue && handle.Value != IntPtr.Zero)
@@ -685,6 +723,7 @@ public partial class SpotlightWindow : Window
         Hide();
         activatedSinceSummon = false;
         deactivationProbe++;
+        captureWatch++;
         screenSampleTimer.Stop();
         GlassDiagnostics.Event($"[spotlight] dismissed ({reason})");
 
@@ -960,6 +999,11 @@ public partial class SpotlightWindow : Window
         Resources["SpotlightSelectionBrush"] = BuildSelectionBrush(theme, isDark);
 
         ApplyWindowRegion(theme, radius);
+
+        // The geometry usually resolves before the material does (Summon: ApplyLayout → then
+        // ApplyAppearance), and a shape feed is dropped while Material is still null — so the rect
+        // is re-fed here, once the surface knows what to paint.
+        SyncGlassShape();
     }
 
     /// <summary>
@@ -1229,6 +1273,11 @@ public partial class SpotlightWindow : Window
         }
 
         UpdatePreviewVisibility();
+
+        // The width branch above never animates, but it does move the card's right edge — the
+        // preview column appearing is exactly that. The glass has to be told, or it keeps drawing
+        // the narrow rect it was last given and the new column sits on bare desktop.
+        SyncGlassShape();
     }
 
     /// <summary>
@@ -1368,6 +1417,44 @@ public partial class SpotlightWindow : Window
 
     /// <summary>The capsule rule while the card morphs: never wider than half the current height.</summary>
     private double MorphRadius(double height) => Math.Min(morphConfigRadius, height / 2);
+
+    /// <summary>
+    /// Feed the glass surface the rect the card covers <b>right now</b>, whatever moved it.
+    /// <para>
+    /// The height morph has its own per-frame driver (<see cref="SyncMorphingCardShape"/>), but a
+    /// <b>width</b> change has none: the preview column widens the card by
+    /// <see cref="PreviewPaneWidth"/> DIP in a single step, and the surface keeps painting the
+    /// rect it was last given. That is why 液态玻璃 showed the preview column over bare desktop —
+    /// the window had grown, the glass had not. It is the same failure 毛玻璃 had with its native
+    /// region, which <see cref="RefreshWindowRegion"/> answers by re-cutting on every resize.
+    /// </para>
+    /// <para>
+    /// Called from <see cref="ApplyCardGeometry"/> (the width branch), <see cref="ApplyAppearance"/>
+    /// (the material can resolve <i>after</i> the geometry, and a feed before the material exists is
+    /// dropped) and the <c>Resized</c> handler (any other path that moves the card's edge, including
+    /// a DPI change). During a morph the card's animated height is what is real, so the height is
+    /// read off the card rather than from the morph target.
+    /// </para>
+    /// </summary>
+    private void SyncGlassShape()
+    {
+        if (!GlassSurface.IsVisible) return;
+
+        var height = Card.Height;
+        if (double.IsNaN(height) || height <= 0) height = Height;
+        if (double.IsNaN(height) || height <= 0) return;
+
+        var width = Width;
+        if (double.IsNaN(width) || width <= 0) width = Bounds.Width;
+        if (double.IsNaN(width) || width <= 0) return;
+
+        // The card's own radius, not the settings': mid-morph it is the capsule of the animated
+        // height, at rest it is the configured radius ApplyAppearance pushed onto both of them.
+        var radius = Card.CornerRadius.TopLeft;
+        if (radius <= 0) radius = morphConfigRadius;
+
+        GlassSurface.SetAnimationFrameShape(new Rect(0, 0, Math.Max(1, width), Math.Max(1, height)), radius);
+    }
 
     /// <summary>
     /// Per morph frame: keep the card's radius a capsule of its current height and feed the glass
@@ -2297,6 +2384,13 @@ public partial class SpotlightWindow : Window
         var item = (viewModel.IsFiltering ? ResultList.SelectedItem : GridList.SelectedItem) as SpotlightItem;
         if (item == null || !item.IsSelectable) return;
 
+        // 单空格搜索记录行：Enter 与点击一样只把查询文字填回输入框，不启动任何东西。
+        if (item.Kind == SpotlightItemKind.SearchHistory)
+        {
+            FillQueryFromHistory(item.Name);
+            return;
+        }
+
         // RecordLaunch is the view model's job now; true means the row actually opened.
         var opened = await viewModel.ActivateAsync(item, reveal);
         if (opened) Dismiss();
@@ -2334,9 +2428,29 @@ public partial class SpotlightWindow : Window
             return;
         }
 
+        // 单空格搜索记录行：点击是"把文字填进输入框"，不是打开。
+        if (item.Kind == SpotlightItemKind.SearchHistory)
+        {
+            GlassDiagnostics.Event($"[spotlight] history fill '{item.Name}'");
+            FillQueryFromHistory(item.Name);
+            return;
+        }
+
         var opened = await viewModel.ActivateAsync(item);
         GlassDiagnostics.Event($"[spotlight] activate '{item.Id}' -> {opened}");
         if (opened) Dismiss();
+    }
+
+    /// <summary>
+    /// 单空格搜索记录行的"执行"：把文字填进输入框并按手动输入走完整流程（TextChanged →
+    /// SetQuery → 正常搜索）。不关闭面板、不启动任何东西——记录行展示的是"你输入过什么"，
+    /// 而不是一次搜索结果。
+    /// </summary>
+    private void FillQueryFromHistory(string text)
+    {
+        QueryBox.Text = text;
+        QueryBox.CaretIndex = text.Length;
+        QueryBox.Focus();
     }
 
     private void OnRecentTileClick(object? sender, RoutedEventArgs e)
@@ -2951,52 +3065,70 @@ public partial class SpotlightWindow : Window
     }
 
     /// <summary>
-    /// Run <see cref="ResolveDeactivation"/> once the foreground change has settled. A newer
-    /// deactivation supersedes a pending probe, and a probe never fires for a closed overlay.
+    /// Watch the foreground for a short while after a deactivation and decide once the evidence is
+    /// in. A newer deactivation supersedes a pending watch, and a watch never acts on a closed
+    /// overlay.
+    /// <para>
+    /// This is a <b>watch</b>, not a single read, because the window that takes the keyboard is not
+    /// necessarily the window the user went to. A capture is created asynchronously: Win+Shift+S
+    /// deactivates the overlay first and the 剪裁层 appears a few hundred milliseconds later, so a
+    /// single read at 90 ms still saw whatever was in front before and closed the panel — the
+    /// reported 截图时面板消失. Re-reading until <see cref="DeactivationWatchMs"/> is what lets the
+    /// capture surface show up and claim the deactivation it caused.
+    /// </para>
     /// </summary>
     private void ScheduleDeactivationProbe(bool clickInProgress)
     {
         var token = ++deactivationProbe;
+        var elapsed = DeactivationProbeMs;
+
+        void Step()
+        {
+            if (token != deactivationProbe) return;
+            if (!IsReallyVisible()) return;
+
+            if (ResolveDeactivation(clickInProgress, lastChance: elapsed >= DeactivationWatchMs)) return;
+
+            elapsed += DeactivationProbeStepMs;
+            DispatcherTimer.RunOnce(
+                Step, TimeSpan.FromMilliseconds(DeactivationProbeStepMs), DispatcherPriority.Background);
+        }
 
         DispatcherTimer.RunOnce(
-            () =>
-            {
-                if (token != deactivationProbe) return;
-                if (!IsReallyVisible()) return;
-                ResolveDeactivation(clickInProgress);
-            },
-            TimeSpan.FromMilliseconds(DeactivationProbeMs),
-            DispatcherPriority.Background);
+            Step, TimeSpan.FromMilliseconds(DeactivationProbeMs), DispatcherPriority.Background);
     }
 
     /// <summary>
-    /// Dismiss only when the deactivation was the user going somewhere else. Everything that is
-    /// not evidence of that keeps the overlay open — it stays usable, and the next real click
-    /// still closes it.
+    /// Decide what one deactivation meant, from whoever holds the keyboard now.
     /// </summary>
-    private void ResolveDeactivation(bool clickInProgress)
+    /// <param name="clickInProgress">Whether a mouse button was held when the deactivation arrived.</param>
+    /// <param name="lastChance">Whether the watch is out of time and must commit to a decision.</param>
+    /// <returns><c>true</c> once the decision is made and the watch can stop.</returns>
+    private bool ResolveDeactivation(bool clickInProgress, bool lastChance)
     {
         var handle = TryGetPlatformHandle()?.Handle ?? IntPtr.Zero;
         var foreground = GetForegroundWindow();
 
-        // A screenshot tool taking the keyboard is never "the user went somewhere else" — the
+        // A capture surface taking the keyboard is never "the user went somewhere else" — the
         // overlay is very often exactly what the user is trying to capture (截图时面板不要消失).
         // Checked FIRST because a capture can also be started by clicking a toolbar button
         // (clickInProgress). Stay open and do NOT reclaim the foreground: the tool needs the
         // input for its region selection, and a tug-of-war would break the capture.
-        if (IsScreenshotTool(foreground))
+        if (IsCaptureOverlay(foreground))
         {
-            GlassDiagnostics.Event("[spotlight] kept open across a deactivation caused by a screenshot tool");
-            return;
+            GlassDiagnostics.Event("[spotlight] kept open across a deactivation caused by a capture surface");
+            ArmCaptureReturnWatch();
+            return true;
         }
 
         // A held mouse button at the moment of deactivation is a click: on another window, on
         // the taskbar, or on one of our own widget cards. Whatever the foreground says by now,
-        // the user clicked away — close, exactly like Spotlight.
+        // the user clicked away — close, exactly like Spotlight. No waiting: a click is already
+        // unambiguous, and delaying it would make every dismissal feel sluggish.
         if (clickInProgress)
         {
             Dismiss("deactivated (click)");
-            return;
+            return true;
         }
 
         if (foreground == IntPtr.Zero || foreground == handle)
@@ -3004,7 +3136,7 @@ public partial class SpotlightWindow : Window
             // No new owner (a window was destroyed, a display rebuild is in flight) or we hold it
             // again: a transient state, not navigation.
             GlassDiagnostics.Event("[spotlight] ignored a deactivation that named no other window");
-            return;
+            return true;
         }
 
         // Our own windows activating themselves (a widget shown after a display change) is
@@ -3013,7 +3145,7 @@ public partial class SpotlightWindow : Window
         {
             GlassDiagnostics.Event("[spotlight] kept open across a deactivation caused by our own window");
             ReclaimForeground();
-            return;
+            return true;
         }
 
         // The shell is what the Alt release bounces to, and landing on the bare desktop is not
@@ -3022,33 +3154,193 @@ public partial class SpotlightWindow : Window
         {
             GlassDiagnostics.Event("[spotlight] kept open across a deactivation caused by the shell");
             ReclaimForeground();
-            return;
+            return true;
         }
 
+        // An ordinary window owns the keyboard — most likely the user switching apps. Wait the
+        // rest of the watch out before committing: a capture surface is created asynchronously,
+        // so the app that was in front a moment ago is exactly what this branch sees while one is
+        // starting. The wait costs a no-click dismissal at most DeactivationWatchMs.
+        if (!lastChance) return false;
+
+        GlassDiagnostics.Event(
+            $"[spotlight] deactivation to another app 0x{foreground:X} ({DescribeWindow(foreground)})");
         Dismiss("deactivated");
+        return true;
     }
 
     /// <summary>
-    /// Whether the window that took the keyboard belongs to a screenshot tool. Windows' own
-    /// capture stack (Win+Shift+S 剪裁层, 截图和草图, Win11 截图工具) plus the common third-party
-    /// capture tools. Deliberately a closed list: a generic program (a chat client offering a
-    /// 截图 hotkey) must still close the overlay, or the launcher would linger over every app
-    /// that happens to own a capture feature.
+    /// Whether the window that took the keyboard is a <b>capture surface</b> — Windows' own capture
+    /// stack (Win+Shift+S 剪裁层, 截图和草图, Win11 截图工具) or a third-party capture tool.
+    /// <para>
+    /// Two tests, because neither is complete on its own. The <b>process name</b> is exact and
+    /// cheap, but it only covers the tools someone thought to list, and it misses the capture modes
+    /// built into other programs. The <b>window shape</b> — a borderless, composition-painted
+    /// window covering its monitor — is what every one of those overlays has in common and what no
+    /// window the user "went to" has. That is also why the name list can stay closed: a chat client
+    /// that merely <i>offers</i> a 截图 hotkey still closes the overlay when the user switches to its
+    /// main window, while its capture mode is recognised by shape.
+    /// </para>
     /// </summary>
-    private static bool IsScreenshotTool(IntPtr hwnd)
+    private static bool IsCaptureOverlay(IntPtr hwnd)
+    {
+        if (hwnd == IntPtr.Zero) return false;
+        return IsCaptureProcess(hwnd) || IsBorderlessMonitorCover(hwnd);
+    }
+
+    /// <summary>
+    /// Capture tools by process name. Matched case-insensitively: the exe name is the vendor's
+    /// spelling, not a contract — Windows' own capture ships as <c>SnippingTool</c> on Win11 and as
+    /// <c>ScreenSketch</c> / <c>ScreenClippingHost</c> on other builds.
+    /// </summary>
+    private static bool IsCaptureProcess(IntPtr hwnd)
     {
         try
         {
             GetWindowThreadProcessId(hwnd, out var processId);
+            if (processId == 0) return false;
+
             using var process = System.Diagnostics.Process.GetProcessById((int)processId);
-            return process.ProcessName is "ScreenClipping" or "ScreenSketch" or "SnippingTool"
-                or "Snipaste" or "PixPin" or "ShareX" or "Greenshot" or "FSCapture";
+            var name = process.ProcessName;
+            foreach (var candidate in CaptureProcessNames)
+            {
+                if (string.Equals(candidate, name, StringComparison.OrdinalIgnoreCase)) return true;
+            }
         }
         catch
         {
             // A process that already exited (some capture layers are transient) must not break
             // the deactivation decision.
-            return false;
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// The shape fallback: a visible, caption-less top-level window, painted through composition,
+    /// covering (nearly) the monitor it sits on. Every capture overlay looks like this; a normal
+    /// application window does not, because it keeps <c>WS_CAPTION</c> even when maximized and
+    /// paints through the normal redirection bitmap even when full-screen.
+    /// </summary>
+    private static bool IsBorderlessMonitorCover(IntPtr hwnd)
+    {
+        // Never our own furniture (a widget, the canvas) or the desktop itself — both are
+        // borderless and can cover a monitor.
+        if (BelongsToThisProcess(hwnd) || IsShellWindow(hwnd)) return false;
+        if (!IsWindowVisible(hwnd)) return false;
+
+        var style = unchecked((uint)GetWindowLong(hwnd, GwlStyle));
+        if ((style & WsCaption) != 0) return false;   // an ordinary window, maximized or not
+        if ((style & WsChild) != 0) return false;     // a control, not a top-level surface
+
+        // Composition-painted: layered (per-pixel alpha) or redirection-bitmap-less (DWM only).
+        // A full-screen video or a F11 browser is neither, which is what keeps them from being
+        // mistaken for a capture surface.
+        var exStyle = unchecked((uint)GetWindowLong(hwnd, GwlExStyle));
+        if ((exStyle & (WsExLayered | WsExNoRedirectionBitmap)) == 0) return false;
+
+        if (!GetWindowRect(hwnd, out var bounds)) return false;
+        var width = bounds.Right - bounds.Left;
+        var height = bounds.Bottom - bounds.Top;
+        if (width <= 0 || height <= 0) return false;
+
+        var monitor = MonitorFromWindow(hwnd, MonitorDefaultToNearest);
+        if (monitor == IntPtr.Zero) return false;
+
+        var info = new MonitorInfo { Size = Marshal.SizeOf<MonitorInfo>() };
+        if (!GetMonitorInfo(monitor, ref info)) return false;
+
+        var monitorWidth = info.Monitor.Right - info.Monitor.Left;
+        var monitorHeight = info.Monitor.Bottom - info.Monitor.Top;
+        if (monitorWidth <= 0 || monitorHeight <= 0) return false;
+
+        // 90%: an overlay covers the monitor exactly, and the slack absorbs a DPI-virtualized
+        // GetWindowRect on a scaled display.
+        return width >= monitorWidth * 0.9 && height >= monitorHeight * 0.9;
+    }
+
+    /// <summary>
+    /// Wait for a capture to hand the keyboard back.
+    /// <para>
+    /// The overlay stayed open on purpose, but it is unfocused now. Without this the user takes the
+    /// shot, looks at the panel that is still on screen and finds that typing does nothing — which
+    /// reads as "it closed anyway". Bounded and conditional: it reclaims only when the capture
+    /// surface is gone <b>and</b> nothing else claimed the keyboard (nothing, us, or the bare
+    /// desktop). A user who moved on to another app keeps that app; the overlay simply stays open
+    /// behind it.
+    /// </para>
+    /// </summary>
+    private void ArmCaptureReturnWatch()
+    {
+        var token = ++captureWatch;
+        var waited = 0;
+
+        void Step()
+        {
+            if (token != captureWatch) return;
+            if (!IsReallyVisible()) return;
+
+            var foreground = GetForegroundWindow();
+            if (IsCaptureOverlay(foreground))
+            {
+                waited += CaptureReturnPollMs;
+                if (waited < CaptureReturnWatchMs)
+                {
+                    DispatcherTimer.RunOnce(
+                        Step, TimeSpan.FromMilliseconds(CaptureReturnPollMs), DispatcherPriority.Background);
+                }
+
+                return;
+            }
+
+            var handle = TryGetPlatformHandle()?.Handle ?? IntPtr.Zero;
+            if (foreground == handle) return;   // the keyboard came back on its own
+
+            if (foreground == IntPtr.Zero || IsShellWindow(foreground))
+            {
+                GlassDiagnostics.Event("[spotlight] capture finished — taking the keyboard back");
+                ReclaimForeground();
+            }
+        }
+
+        DispatcherTimer.RunOnce(
+            Step, TimeSpan.FromMilliseconds(CaptureReturnPollMs), DispatcherPriority.Background);
+    }
+
+    /// <summary>Process names that are a capture surface on sight (see <see cref="IsCaptureOverlay"/>).</summary>
+    private static readonly string[] CaptureProcessNames =
+    {
+        // Windows' own capture stack.
+        "ScreenClipping", "ScreenClippingHost", "ScreenSketch", "SnippingTool", "SnipAndSketch",
+        // Third-party capture tools.
+        "Snipaste", "PixPin", "ShareX", "Greenshot", "FSCapture", "FastStoneCapture",
+        "PicPick", "Lightshot", "Screenpresso",
+    };
+
+    /// <summary>For the log only: <c>process/window-class</c>, so an unexpected dismissal is traceable.</summary>
+    private static string DescribeWindow(IntPtr hwnd)
+    {
+        try
+        {
+            var className = new StringBuilder(64);
+            GetClassName(hwnd, className, className.Capacity);
+            GetWindowThreadProcessId(hwnd, out var processId);
+            var name = "?";
+            try
+            {
+                using var process = System.Diagnostics.Process.GetProcessById((int)processId);
+                name = process.ProcessName;
+            }
+            catch
+            {
+                // Exited already — the class name is still worth logging.
+            }
+
+            return $"{name}/{className}";
+        }
+        catch
+        {
+            return "?";
         }
     }
 
@@ -3203,6 +3495,45 @@ public partial class SpotlightWindow : Window
 
     [DllImport("kernel32.dll")]
     private static extern uint GetCurrentThreadId();
+
+    [DllImport("user32.dll")]
+    private static extern int GetWindowLong(IntPtr hwnd, int index);
+
+    [DllImport("user32.dll")]
+    private static extern bool GetWindowRect(IntPtr hwnd, out NativeRect rect);
+
+    [DllImport("user32.dll")]
+    private static extern IntPtr MonitorFromWindow(IntPtr hwnd, uint flags);
+
+    [DllImport("user32.dll")]
+    private static extern bool GetMonitorInfo(IntPtr monitor, ref MonitorInfo info);
+
+    // Window-style bits the capture-surface test reads (IsBorderlessMonitorCover).
+    private const int GwlStyle = -16;
+    private const int GwlExStyle = -20;
+    private const uint WsCaption = 0x00C00000;
+    private const uint WsChild = 0x40000000;
+    private const uint WsExLayered = 0x00080000;
+    private const uint WsExNoRedirectionBitmap = 0x00200000;
+    private const uint MonitorDefaultToNearest = 2;
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct NativeRect
+    {
+        public int Left;
+        public int Top;
+        public int Right;
+        public int Bottom;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct MonitorInfo
+    {
+        public int Size;
+        public NativeRect Monitor;
+        public NativeRect Work;
+        public uint Flags;
+    }
 }
 
 /// <summary>True while a result row is NOT broken: gates the icon slot against the 断链 overlay.</summary>

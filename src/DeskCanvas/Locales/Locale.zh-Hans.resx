@@ -1640,9 +1640,11 @@
   <data name="Settings_Spotlight_SearchPlaceholder" xml:space="preserve"><value>自定义占位符</value></data>
   <data name="Settings_Spotlight_SearchPlaceholder_Hint" xml:space="preserve"><value>在全部类别下自定义搜索框中的占位提示文字，留空则使用默认提示。</value></data>
   <data name="Settings_Spotlight_SearchPlaceholder_Reset" xml:space="preserve"><value>恢复默认</value></data>
-  <data name="Settings_Spotlight_SpaceRecent_Title" xml:space="preserve"><value>空格键展示最近搜索打开</value></data>
-  <data name="Settings_Spotlight_SpaceRecent_Subtitle" xml:space="preserve"><value>在搜索框中只输入单个空格时，展示最近通过搜索打开过的应用、文件或页面。</value></data>
-  <data name="Settings_Spotlight_SpaceRecentCount_Title" xml:space="preserve"><value>最近打开展示数量</value></data>
-  <data name="Settings_Spotlight_SpaceRecentCount_Subtitle" xml:space="preserve"><value>输入空格时展示的最近搜索打开条目数量（3–20 条）。</value></data>
+  <data name="Settings_Spotlight_SpaceRecent_Title" xml:space="preserve"><value>双空格展示最近搜索打开</value></data>
+  <data name="Settings_Spotlight_SpaceRecent_Subtitle" xml:space="preserve"><value>在搜索框中输入两个空格时，展示最近通过搜索打开过的应用、文件或页面。</value></data>
+  <data name="Settings_Spotlight_SpaceRecentCount_Title" xml:space="preserve"><value>空格列表展示数量</value></data>
+  <data name="Settings_Spotlight_SpaceRecentCount_Subtitle" xml:space="preserve"><value>输入空格时最近搜索与最近打开列表各自展示的条目数量（3–20 条）。</value></data>
   <data name="Spotlight_RecentLaunches_Header" xml:space="preserve"><value>最近打开</value></data>
+  <data name="Spotlight_SearchHistory_Header" xml:space="preserve"><value>最近搜索</value></data>
+  <data name="Spotlight_Preview_Label_Searched" xml:space="preserve"><value>搜索时间</value></data>
 </root>

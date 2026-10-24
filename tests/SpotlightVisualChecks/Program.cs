@@ -258,9 +258,32 @@ internal static class Program
             $"{label}: the preview pane appears while searching");
         Check(window.FindControl<Border>("PreviewHairline") is { IsVisible: true },
             $"{label}: the preview hairline appears with the pane");
+
+        // The window grew for the preview column, and the glass is a rect the surface is TOLD to
+        // paint — a width change with no height change used to leave it at the old, narrow rect,
+        // so 液态玻璃 drew the preview column over bare desktop.
+        if (expectedGlass)
+        {
+            Check(Math.Abs(GlassPaintWidth(window) - window.Width) < 0.5,
+                $"{label}: the glass covers the preview column ({GlassPaintWidth(window):F0} of {window.Width:F0})");
+        }
+
+        // The surface is pinned to the settings width, so "the window grew" is only visible to the
+        // glass once the surface is the big one. Pin it: from here the surface's own bounds are
+        // 1080, which makes the shrink below a real test instead of a coincidence.
+        Pin(window, 1080, (int)launcher.Height);
+
         viewModel.SetQuery(string.Empty);
         Check(Math.Abs(window.Width - launcher.Width) < 0.5,
             $"{label}: clearing the query gives the column back ({window.Width:F0})");
+
+        // …and the same on the way back down: the rect has to shrink with the window, or the glass
+        // would keep painting past the card's right edge.
+        if (expectedGlass)
+        {
+            Check(Math.Abs(GlassPaintWidth(window) - window.Width) < 0.5,
+                $"{label}: the glass follows the card back in ({GlassPaintWidth(window):F0} of {window.Width:F0})");
+        }
 
         // UpdateMode selected the first tile, and that selection must have reached the preview
         // pane through the view model (the same path pointer/keyboard selection takes). NOTE:
@@ -315,7 +338,7 @@ internal static class Program
     /// </summary>
     private static SpotlightViewModel BuildViewModel(
         IAppSettingsProvider provider, LauncherCatalog catalog, ShellIconService icons,
-        string usageFile = "launcher-usage.json")
+        string usageFile = "launcher-usage.json", SpotlightSearchHistoryStore? searchHistory = null)
     {
         // The usage store is a file under the sandbox, so a check that launches apps leaves its
         // launch counts behind for every later check that reads the same file. Callers that
@@ -332,7 +355,7 @@ internal static class Program
             new SpotlightWebProvider(provider));
 
         return new SpotlightViewModel(router, catalog, icons, usage, clipboard, files, provider,
-            new SpotlightPreviewService(icons), new SpotlightWebResults(provider));
+            new SpotlightPreviewService(icons), new SpotlightWebResults(provider), searchHistory: searchHistory);
     }
 
     /// <summary>
@@ -1323,6 +1346,25 @@ internal static class Program
         {
             return false;
         }
+    }
+
+    /// <summary>
+    /// The width (DIP) the glass surface will actually paint: its own bounds at rest, the fed rect
+    /// while a shape is active. The surface does not derive this from the card — it is <b>told</b> —
+    /// so it is exactly the number that has to track the window width.
+    /// </summary>
+    private static double GlassPaintWidth(SpotlightWindow window)
+    {
+        var surface = window.GlassSurfaceForChecks;
+        const BindingFlags Flags = BindingFlags.Instance | BindingFlags.NonPublic;
+
+        if (surface.GetType().GetField("animationShapeActive", Flags)?.GetValue(surface) is true
+            && surface.GetType().GetField("animationShape", Flags)?.GetValue(surface) is Rect shape)
+        {
+            return shape.Width;
+        }
+
+        return surface.Bounds.Width > 0 ? surface.Bounds.Width : window.Width;
     }
 
     /// <summary>
@@ -2833,7 +2875,7 @@ internal static class Program
         Check(SpotlightRanking.Score("Aurora Notes", "aurora", new LauncherUsage()) > 0,
             "ranking: the same app still matches when its name matches");
 
-        // ---- 4. 单空格：最近通过搜索打开的条目 ----
+        // ---- 4. 空格视图：单空格 = 最近搜索记录；双空格 = 最近通过搜索打开 ----
         var seedDir = Path.Combine(sandbox, "recent-launch-seed");
         Directory.CreateDirectory(seedDir);
 
@@ -2849,7 +2891,10 @@ internal static class Program
                 SpaceShowsRecentLaunches: true, SpaceRecentLaunchesCount: 3),
         };
         var cappedProvider = new FakeSettingsProvider(capped);
-        var cappedVm = BuildViewModel(cappedProvider, catalog, icons, "usage-recentlaunches.json");
+        // The history store gets its own file: the single-space view must be assertable without
+        // whatever the other checks left in the shared default file.
+        var historyStore = new SpotlightSearchHistoryStore(Path.Combine(sandbox, "search-history-checks.json"));
+        var cappedVm = BuildViewModel(cappedProvider, catalog, icons, "usage-recentlaunches.json", historyStore);
         cappedVm.Reload();
 
         // RecordLaunch only books the item while the field is filtering: the store must not
@@ -2861,10 +2906,21 @@ internal static class Program
                 new FileSearchHit(Path.GetFileName(seed), seed, false, 4, 0)));
         }
 
+        // 单空格: the search-history view. A history row's Name is the query itself (the window
+        // fills the field from it); the repeated launch dedupes to one entry.
         cappedVm.SetQuery(" ");
+        var historyRows = cappedVm.Results
+            .Where(item => item.Kind == SpotlightItemKind.SearchHistory).ToList();
+        Check(cappedVm.Results.Any(item => item.Kind == SpotlightItemKind.Header),
+            "space: a single space opens with a 最近搜索 header");
+        Check(historyRows.Count == 1 && historyRows[0].Name == "seed-query",
+            $"space: the used query is the history row (got {historyRows.Count} rows)");
+
+        // 双空格: the recently-opened view the single space used to be.
+        cappedVm.SetQuery("  ");
         var rows = cappedVm.Results.Where(item => item.Kind != SpotlightItemKind.Header).ToList();
         Check(cappedVm.Results.Any(item => item.Kind == SpotlightItemKind.Header),
-            "space: a single space opens with a 最近打开 header");
+            "space: two spaces open with a 最近打开 header");
         Check(rows.Count == 3,
             $"space: the count setting caps the list (expected 3, got {rows.Count})");
         Check(rows.All(item => item.Kind == SpotlightItemKind.File),
@@ -2873,21 +2929,31 @@ internal static class Program
         Check(rows.Count > 0 && rows[0].Name == "seed-5.txt",
             $"space: the newest launch leads (got '{rows.FirstOrDefault()?.Name}')");
 
-        // A tab is whitespace too; an empty field is not a space and stays in grid mode.
+        // A tab is whitespace too: one tab is the history view, two tabs the opened view.
         cappedVm.SetQuery("\t");
-        Check(cappedVm.Results.Any(item => item.Kind != SpotlightItemKind.Header),
-            "space: any whitespace-only input counts, not just the space bar");
+        Check(cappedVm.Results.Any(item => item.Kind == SpotlightItemKind.SearchHistory),
+            "space: any single whitespace char opens the history view, not just the space bar");
+        cappedVm.SetQuery("\t\t");
+        Check(cappedVm.Results.Any(item => item.Kind == SpotlightItemKind.File),
+            "space: two whitespace chars open the recently-opened view");
 
         var off = capped with
         {
             Launcher = new LauncherSettings(Enabled: true, Columns: 7, GapPercent: 18, WebResultCount: 0,
                 SpaceShowsRecentLaunches: false, SpaceRecentLaunchesCount: 3),
         };
-        var offVm = BuildViewModel(new FakeSettingsProvider(off), catalog, icons, "usage-recentlaunches.json");
+        var offStore = new SpotlightSearchHistoryStore(Path.Combine(sandbox, "search-history-off.json"));
+        offStore.Record("off-query");
+        var offVm = BuildViewModel(new FakeSettingsProvider(off), catalog, icons, "usage-recentlaunches.json", offStore);
         offVm.Reload();
-        offVm.SetQuery(" ");
+        offVm.SetQuery("  ");
         Check(!offVm.Results.Any(item => item.Kind != SpotlightItemKind.Header),
-            "space: the setting off leaves the single space with no recent rows");
+            "space: the setting off leaves two spaces with no recent rows");
+        // The toggle gates the double-space view only: the single-space history is always on.
+        offVm.SetQuery(" ");
+        Check(offVm.Results.Any(item => item.Kind == SpotlightItemKind.SearchHistory
+                                        && offVm.Results.First(h => h.Kind == SpotlightItemKind.SearchHistory).Name == "off-query"),
+            "space: the single-space history ignores the recent-launches toggle");
 
         Check(new LauncherSettings(SpaceRecentLaunchesCount: 99).Normalize().SpaceRecentLaunchesCount
                   == LauncherSettings.MaxSpaceRecentLaunchesCount

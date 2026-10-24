@@ -39,6 +39,12 @@ public enum SpotlightItemKind
     /// group as the action row, but it opens a specific page instead of the engine's result list.
     /// </summary>
     WebResult,
+
+    /// <summary>
+    /// One remembered query from the 单空格 search-history list. "Running" it does not launch
+    /// anything: the window fills the search field with the query, exactly as if it were typed.
+    /// </summary>
+    SearchHistory,
 }
 
 /// <summary>
@@ -228,6 +234,32 @@ public sealed class SpotlightItem : INotifyPropertyChanged
     /// <summary>"example.com" — the row's subtitle when the engine sent no excerpt.</summary>
     private static string HostOf(string url)
         => Uri.TryCreate(url, UriKind.Absolute, out var parsed) ? parsed.Host : url;
+
+    /// <summary>
+    /// One remembered query (单空格 search-history list). The Name is the query itself — the
+    /// window fills the field from it; the search artwork stands in for an icon because a
+    /// query has no file behind it for the shell icon service to extract.
+    /// </summary>
+    public static SpotlightItem ForSearchHistory(string query, DateTime searchedUtc, string? subtitle = null)
+    {
+        var item = new SpotlightItem(
+            SpotlightItemKind.SearchHistory,
+            "history:" + query,
+            query,
+            subtitle,
+            capturedUtc: searchedUtc);
+
+        try
+        {
+            item.Icon = SpotlightGlyphImages.Get(SpotlightGlyphKind.Search, 72);
+        }
+        catch
+        {
+            // No rendering platform (a headless host): the letter placeholder is a fine fallback.
+        }
+
+        return item;
+    }
 
     /// <summary>Stable identity (usage store key / invocation id). Never empty.</summary>
     public string Id { get; }

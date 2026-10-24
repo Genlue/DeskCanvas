@@ -57,6 +57,8 @@ public sealed class SpotlightViewModel : INotifyPropertyChanged, IDisposable
 
 	private readonly SpotlightRecentLaunchStore recentLaunches;
 
+	private readonly SpotlightSearchHistoryStore searchHistory;
+
 	private readonly SpotlightClipboardService clipboard;
 
 	private readonly FileSearchService files;
@@ -217,7 +219,7 @@ public sealed class SpotlightViewModel : INotifyPropertyChanged, IDisposable
 
 	public event PropertyChangedEventHandler? PropertyChanged;
 
-	public SpotlightViewModel(SpotlightQueryRouter router, LauncherCatalog catalog, ShellIconService icons, SpotlightUsageStore usage, SpotlightClipboardService clipboard, FileSearchService files, IAppSettingsProvider settings, SpotlightPreviewService previews, SpotlightWebResults webResults, SpotlightRecentLaunchStore? recentLaunches = null)
+	public SpotlightViewModel(SpotlightQueryRouter router, LauncherCatalog catalog, ShellIconService icons, SpotlightUsageStore usage, SpotlightClipboardService clipboard, FileSearchService files, IAppSettingsProvider settings, SpotlightPreviewService previews, SpotlightWebResults webResults, SpotlightRecentLaunchStore? recentLaunches = null, SpotlightSearchHistoryStore? searchHistory = null)
 	{
 		this.router = router;
 		this.catalog = catalog;
@@ -229,6 +231,7 @@ public sealed class SpotlightViewModel : INotifyPropertyChanged, IDisposable
 		this.settings = settings;
 		this.webResults = webResults;
 		this.recentLaunches = recentLaunches ?? new SpotlightRecentLaunchStore();
+		this.searchHistory = searchHistory ?? new SpotlightSearchHistoryStore();
 		categories = BuildCategories(SavedCategoryOrder());
 		catalog.Changed += OnCatalogChanged;
 		settings.DataChanged += OnSettingsChanged;
@@ -565,6 +568,14 @@ public sealed class SpotlightViewModel : INotifyPropertyChanged, IDisposable
 			if (launched && !reveal && IsFiltering)
 			{
 				recentLaunches.RecordLaunch(item);
+
+				// The query led somewhere, so it belongs in the 单空格 search-history list.
+				// Whitespace-only queries (the space views themselves) are not searches.
+				var usedQuery = query.Trim();
+				if (usedQuery.Length > 0)
+				{
+					searchHistory.Record(usedQuery);
+				}
 			}
 
 			return launched;
@@ -587,6 +598,11 @@ public sealed class SpotlightViewModel : INotifyPropertyChanged, IDisposable
 		if (IsFiltering)
 		{
 			recentLaunches.RecordLaunch(item);
+			var usedQuery = query.Trim();
+			if (usedQuery.Length > 0)
+			{
+				searchHistory.Record(usedQuery);
+			}
 		}
 	}
 
@@ -660,7 +676,14 @@ public sealed class SpotlightViewModel : INotifyPropertyChanged, IDisposable
 	public void SetQuery(string? text)
 	{
 		var raw = text ?? string.Empty;
-		if (string.IsNullOrWhiteSpace(raw) && raw.Length > 0 && settings.Get().EffectiveLauncher.SpaceShowsRecentLaunches)
+
+		// 空格视图：一个空格 = 最近搜索记录；两个及以上空格 = 最近通过搜索打开（由设置开关
+		// 控制）。两者都保留原始未剪裁的查询文本，StartQuery 按长度区分走哪条路径。
+		bool whitespaceOnly = raw.Length > 0 && string.IsNullOrWhiteSpace(raw);
+		bool showSearchHistory = whitespaceOnly && raw.Length == 1;
+		bool showRecentLaunches = whitespaceOnly && raw.Length >= 2
+			&& settings.Get().EffectiveLauncher.SpaceShowsRecentLaunches;
+		if (showSearchHistory || showRecentLaunches)
 		{
 			if (prefixOverrodeCategory)
 			{
@@ -720,7 +743,31 @@ public sealed class SpotlightViewModel : INotifyPropertyChanged, IDisposable
 		searchCancellation?.Dispose();
 		searchCancellation = null;
 
-		// Single space or only whitespace query with SpaceShowsRecentLaunches enabled:
+		// 单空格：最近的搜索记录。列表里的每一行只是把文字填回输入框（由窗口拦截，不执行
+		// 任何动作），条数复用"最近打开展示数量"设置。
+		if (query.Length == 1 && char.IsWhiteSpace(query[0]))
+		{
+			IsSearching = false;
+			SearchHint = null;
+			lastGroups = Array.Empty<SpotlightGroup>();
+			int historyCount = settings.Get().EffectiveLauncher.SpaceRecentLaunchesCount;
+			var history = searchHistory.GetRecent(historyCount);
+			Results.Clear();
+			if (history.Count > 0)
+			{
+				Results.Add(SpotlightItem.CreateHeader(Locale.Spotlight_SearchHistory_Header));
+				foreach (var entry in history)
+				{
+					Results.Add(SpotlightItem.ForSearchHistory(entry.Query, entry.Timestamp, FormatRelative(entry.Timestamp)));
+				}
+			}
+			OnPropertyChanged("IsEmptyResult");
+			OnPropertyChanged("Results");
+			UpdateGlyph();
+			return;
+		}
+
+		// 双空格（或更多空白）且 SpaceShowsRecentLaunches 开启:
 		// Display recently opened items from search results.
 		if (string.IsNullOrWhiteSpace(query) && query.Length > 0 && settings.Get().EffectiveLauncher.SpaceShowsRecentLaunches)
 		{
@@ -1494,6 +1541,16 @@ public sealed class SpotlightViewModel : INotifyPropertyChanged, IDisposable
 						new SpotlightPreviewRow(Locale.Spotlight_Preview_Label_Address, link)
 					}
 					: Array.Empty<SpotlightPreviewRow>(),
+				hasOpen: true, hasReveal: false, hasRun: false, hasCopy: false, icon: item.Icon);
+			break;
+		case SpotlightItemKind.SearchHistory:
+			// The pane answers "what does this row do?" — it puts the query back in the field,
+			// exactly as if it were typed; 打开 repeats that fill.
+			ApplyPreview(item.Name, string.Empty, Locale.Spotlight_SearchHistory_Header, string.Empty,
+				new SpotlightPreviewRow[1]
+				{
+					new SpotlightPreviewRow(Locale.Spotlight_Preview_Label_Searched, FormatRelative(item.CapturedUtc))
+				},
 				hasOpen: true, hasReveal: false, hasRun: false, hasCopy: false, icon: item.Icon);
 			break;
 		default:
