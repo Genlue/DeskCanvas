@@ -76,6 +76,7 @@ public partial class Settings : Window
         ListBox.SelectedItem = viewModel.DefaultItem;
         ApplyTransparencyHint();
         ApplyTitleBarStyle();
+        UpdateWindowCorners();
     }
 
     /// <summary>
@@ -208,6 +209,24 @@ public partial class Settings : Window
         base.OnPropertyChanged(change);
         if (change.Property == TopLevel.ActualTransparencyLevelProperty)
             ApplySurfaceFallback();
+        if (change.Property == WindowStateProperty)
+            UpdateWindowCorners();
+    }
+
+    /// <summary>
+    /// Update the settings window's surface corner radius.
+    /// On Windows 10, top-level windows are rectangular (DWM does not round them), so 0 is used to avoid
+    /// unclipped corner notches.
+    /// On Windows 11, when the window is maximized, the OS stretches the window to screen edges with
+    /// square corners, so the corner radius is temporarily dropped to 0 to prevent corner holes against the desktop.
+    /// </summary>
+    private void UpdateWindowCorners()
+    {
+        if (WindowSurface == null) return;
+        var radius = WindowState == WindowState.Maximized
+            ? 0
+            : Program.EffectiveWindowCornerRadius;
+        WindowSurface.CornerRadius = new CornerRadius(radius);
     }
 
     /// <summary>

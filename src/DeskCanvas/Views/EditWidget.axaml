@@ -17,7 +17,7 @@
     <Border Background="{DynamicResource MenuSurfaceBackground}"
             BorderBrush="{DynamicResource MenuSurfaceBorder}"
             BorderThickness="{DynamicResource HostSurfaceBorderThickness}"
-            CornerRadius="{DynamicResource HostSurfaceCornerRadius}"
+            CornerRadius="{DynamicResource SettingsWindowCornerRadius}"
             Margin="0"
             ClipToBounds="True">
       <Grid RowDefinitions="Auto,*" Margin="16">

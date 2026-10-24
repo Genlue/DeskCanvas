@@ -94,10 +94,11 @@ public class App : Application
 
         // The settings window paints its own rounded glass surface on top of Avalonia's
         // WinUIComposition backdrop, so it has to be clipped to the radius that backdrop was
-        // built with. Both sides read Program.WindowCornerRadius, so they can never drift apart
-        // and reopen the transparent corner notch. This is a window radius — not the widget-card
+        // built with. Both sides read Program.EffectiveWindowCornerRadius (8 on Win11+, 0 on Win10),
+        // so they can never drift apart and reopen the transparent corner notch or leave unclipped
+        // square corner artifacts on Win10. This is a window radius — not the widget-card
         // radius in Dimensions.Radius, which is a different (and much larger) setting.
-        Resources["SettingsWindowCornerRadius"] = new CornerRadius(Program.WindowCornerRadius);
+        Resources["SettingsWindowCornerRadius"] = new CornerRadius(Program.EffectiveWindowCornerRadius);
 
 
         Control.LoadedEvent.AddClassHandler<ContextMenu>((cm, _) =>

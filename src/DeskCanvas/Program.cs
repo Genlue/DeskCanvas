@@ -96,6 +96,14 @@ public class Program
     /// </summary>
     public const double WindowCornerRadius = 8;
 
+    /// <summary>
+    /// The effective corner radius for top-level windows on the running OS.
+    /// Evaluates to <see cref="WindowCornerRadius"/> on Windows 11 (build 22000+) where DWM natively rounds
+    /// windows, and <c>0</c> on Windows 10 and other platforms where windows are rectangular.
+    /// </summary>
+    public static double EffectiveWindowCornerRadius =>
+        OperatingSystem.IsWindowsVersionAtLeast(10, 0, 22000) ? WindowCornerRadius : 0;
+
     // Avalonia configuration, don't remove; also used by visual designer.
     public static AppBuilder BuildAvaloniaApp()
     {
@@ -107,7 +115,7 @@ public class Program
             {
                 CompositionMode = new[] { Win32CompositionMode.WinUIComposition },
                 // Read once, while the platform is built, so this radius is fixed for the session.
-                WinUICompositionBackdropCornerRadius = (float)WindowCornerRadius
+                WinUICompositionBackdropCornerRadius = (float)EffectiveWindowCornerRadius
             })
             .LogToTrace();
     }

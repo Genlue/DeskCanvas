@@ -145,6 +145,7 @@ internal static class Program
             CheckOpticsSliders(page, provider, path);
             CheckTextComposition(page, provider);
             CheckWindowScopes(provider.Get().Theme);
+            CheckWindowCornerAdaptation();
             CheckRealPointerCommit(page, provider, path, host);
             host.Close();
             Console.WriteLine($"SettingsIntegrationChecks: {checks - failures}/{checks} passed");
@@ -289,6 +290,14 @@ internal static class Program
             && Equals(Application.Current.Resources["BackgroundOpacity"], global),
             "updating first window scope never leaks into second scope or application opacity");
         first.Close(); second.Close();
+    }
+
+    private static void CheckWindowCornerAdaptation()
+    {
+        var isWin11 = OperatingSystem.IsWindowsVersionAtLeast(10, 0, 22000);
+        var expectedRadius = isWin11 ? DeskCanvas.Program.WindowCornerRadius : 0.0;
+        Check(DeskCanvas.Program.EffectiveWindowCornerRadius == expectedRadius,
+            $"effective corner radius matches OS contract: expected {expectedRadius}, got {DeskCanvas.Program.EffectiveWindowCornerRadius} (isWin11={isWin11})");
     }
 
     private static void Pump() => Dispatcher.UIThread.RunJobs();
