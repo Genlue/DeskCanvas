@@ -314,8 +314,14 @@ public partial class SpotlightWindow : Window
         RecentItemsControl.ItemsSource = viewModel.RecentItems;
 
         recentItemsChanged = (_, _) => UpdateEmptyRows();
-        resultsChanged = (_, _) =>
+        resultsChanged = (_, e) =>
         {
+            // A wholesale rebuild (Clear, i.e. Reset) means the rows the highlight bar is
+            // sitting on are about to be replaced: drop the carried position so the new list
+            // gets a fresh snap instead of a glide sweeping across unrelated rows (or worse,
+            // a glide that dies mid-flight and leaves the bar stranded).
+            if (e.Action == System.Collections.Specialized.NotifyCollectionChangedAction.Reset)
+                ResetResultHighlight();
             if (viewModel.IsFiltering) UpdateMode();
         };
         viewModel.RecentItems.CollectionChanged += recentItemsChanged;
@@ -675,6 +681,7 @@ public partial class SpotlightWindow : Window
         if (GlassSurface.RenderTransform is ScaleTransform gs) gs.Transitions = null;
         Card.Opacity = 1;
         GlassSurface.Opacity = 1;
+        ResetResultHighlight();
         Hide();
         activatedSinceSummon = false;
         deactivationProbe++;
@@ -2133,15 +2140,26 @@ public partial class SpotlightWindow : Window
 
     /// <summary>
     /// Retarget the highlight bar at the currently selected row: snap on first appearance, glide
-    /// afterwards, hide when there is nothing selectable. Idempotent — the layout and selection
-    /// events that call it fire far more often than the target actually moves.
+    /// afterwards, hide only when there is really nothing selectable. Idempotent — the layout and
+    /// selection events that call it fire far more often than the target actually moves.
     /// </summary>
     private void ScheduleResultHighlightUpdate()
     {
-        if (ResultHighlightTarget() is not { } rect)
+        // Really no selection: the bar leaves with the selection it was following.
+        if (!ResultList.IsVisible || ResultList.SelectedIndex < 0)
         {
             highlightDriving = false;
             ResultHighlight.IsVisible = false;
+            return;
+        }
+
+        // The selected row's container is momentarily missing (a virtualized rebuild, a scroll
+        // recycling rows): HOLD the position and stop driving. ContainerPrepared and
+        // LayoutUpdated are guaranteed to re-run this method once the row exists again — hiding
+        // here instead is what let a mid-rebuild position survive as the "resting" one.
+        if (ResultHighlightTarget() is not { } rect)
+        {
+            highlightDriving = false;
             return;
         }
 
@@ -2152,11 +2170,16 @@ public partial class SpotlightWindow : Window
             highlightHeight.SnapTo(rect.Height);
             PositionResultHighlight(rect);
             ResultHighlight.IsVisible = true;
-            return;
+        }
+        else
+        {
+            highlightY.SetTarget(rect.Y);
+            highlightHeight.SetTarget(rect.Height);
         }
 
-        highlightY.SetTarget(rect.Y);
-        highlightHeight.SetTarget(rect.Height);
+        // Keep driving after the snap too: the position the bar landed on may itself be a
+        // mid-flight one (a scroll settling, the stagger still running), and only the loop that
+        // re-reads the target every frame can walk the bar to the row's FINAL rect.
         if (!highlightDriving)
         {
             highlightDriving = true;
@@ -2183,10 +2206,18 @@ public partial class SpotlightWindow : Window
             highlightLastFrame = frame;
             highlightHasFrame = true;
 
-            if (ResultHighlightTarget() is not { } rect)
+            if (!ResultList.IsVisible || ResultList.SelectedIndex < 0)
             {
                 highlightDriving = false;
                 ResultHighlight.IsVisible = false;
+                return;
+            }
+
+            // Container momentarily gone: park on the current position (NOT hidden — the
+            // selection still exists) and let the next ContainerPrepared/LayoutUpdated restart.
+            if (ResultHighlightTarget() is not { } rect)
+            {
+                highlightDriving = false;
                 return;
             }
 
@@ -2206,6 +2237,20 @@ public partial class SpotlightWindow : Window
                 highlightDriving = false;
             }
         });
+    }
+
+    /// <summary>
+    /// Drop the highlight bar's carried state. A new result set is arriving (or the overlay is
+    /// closing): the old position means nothing on it, and a glide from that position would sweep
+    /// across unrelated rows — or die mid-sweep and strand the bar (the reported “选中框锁在
+    /// 中间偏下”). The next schedule snaps afresh.
+    /// </summary>
+    private void ResetResultHighlight()
+    {
+        highlightDriving = false;
+        ResultHighlight.IsVisible = false;
+        highlightY.SnapTo(0);
+        highlightHeight.SnapTo(0);
     }
 
     private void PositionResultHighlight(Rect rect)

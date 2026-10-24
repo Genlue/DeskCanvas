@@ -1939,6 +1939,44 @@ internal static class Program
                 Check(false, $"{name}: the query produced a selected row for the highlight assertion");
             }
 
+            // 回归（"选中框锁在中间偏下"）：每次键入都会整体重建 Results（Clear + Add）。
+            // 重建必须丢掉高亮条携带的旧位置，新列表出现时重新吸附到它自己的选中行——
+            // 而不是停在上一次结果里的坐标上。
+            if (highlightList is { } rebuildList
+                && highlightViewModel.Items.FirstOrDefault(item => item.IsSelectable) is { } freshRow)
+            {
+                highlightViewModel.Results.Clear();
+                Check(!highlightWindow.ResultHighlightVisibleForChecks,
+                    $"{name}: a wholesale result rebuild drops the carried highlight");
+
+                highlightViewModel.Results.Add(freshRow);
+                Relayout(highlightWindow, rebuildList, (int)highlightWindow.Width, (int)highlightWindow.Height);
+
+                if (rebuildList.ContainerFromIndex(rebuildList.SelectedIndex) is Control rebuilt
+                    && (Control?)highlightWindow.FindControl<Border>("ResultHighlight")?.Parent is { } rebuildHost
+                    && (rebuilt.GetVisualDescendants()
+                            .OfType<Avalonia.Controls.Presenters.ContentPresenter>()
+                            .FirstOrDefault() ?? rebuilt) is { } rebuiltSource
+                    && rebuiltSource.TranslatePoint(new Point(0, 0), rebuildHost) is { } rebuiltTopLeft)
+                {
+                    var rebuiltExpected = new Rect(rebuiltTopLeft, rebuiltSource.Bounds.Size);
+                    var rebuiltActual = highlightWindow.ResultHighlightRectForChecks;
+                    Check(highlightWindow.ResultHighlightVisibleForChecks
+                          && Math.Abs(rebuiltActual.Y - rebuiltExpected.Y) < 0.5
+                          && Math.Abs(rebuiltActual.Height - rebuiltExpected.Height) < 0.5,
+                        $"{name}: the highlight re-snaps onto the rebuilt list's selected row " +
+                        $"({rebuiltActual.Y:F0}+{rebuiltActual.Height:F0} of {rebuiltExpected.Y:F0}+{rebuiltExpected.Height:F0})");
+                }
+                else
+                {
+                    Check(false, $"{name}: the rebuilt list produced a row to assert against");
+                }
+            }
+            else
+            {
+                Check(false, $"{name}: a selectable row existed for the rebuild regression");
+            }
+
             highlightViewModel.Dispose();
             highlightWindow.Close();
         }
