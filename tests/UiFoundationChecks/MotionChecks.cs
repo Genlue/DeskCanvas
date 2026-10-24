@@ -1,11 +1,17 @@
 using System;
+using System.IO;
 using System.Reflection;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Headless;
+using Avalonia.Input;
 using Avalonia.Threading;
+using DeskCanvas.Core.Interfaces;
 using DeskCanvas.Core.Models.Settings;
 using DeskCanvas.Services;
 using DeskCanvas.UI.Animation;
+using DeskCanvas.ViewModels;
+using DeskCanvas.Views;
 using DeskCanvas.Views.Controls;
 using LiquidGlassSurface = DeskCanvas.Views.Controls.LiquidGlassSurface;
 
@@ -123,6 +129,189 @@ internal static partial class Program
             $"RequestAnimationFrame fires headlessly (jobs {afterJobs}, after a forced render tick {fired})");
 
         window.Close();
+        Dispatcher.UIThread.RunJobs();
+    }
+
+    /// <summary>
+    /// The highlight bar's full flight, on a REALLY shown headless window with the RAF loop
+    /// driven the way production drives it. This is the reproduction harness for the reported
+    /// “选中框锁在中间偏下 / 每次只滑半个行距”: the bar must converge on the selected row's
+    /// rect after the first result set AND after every arrow step — a spring that dies
+    /// mid-flight shows up here as a bar that never reaches its own target.
+    /// </summary>
+    private static void CheckResultHighlightFlight()
+    {
+        Console.WriteLine("--- motion: result highlight flight (shown window, driven RAF) ---");
+
+        var sandbox = Path.Combine(Path.GetTempPath(), "uifoundation-highlight-" + Guid.NewGuid().ToString("N")[..8]);
+        Directory.CreateDirectory(sandbox);
+        Environment.SetEnvironmentVariable("DESKCANVAS_DATA_FOLDER", sandbox);
+        Environment.SetEnvironmentVariable("DESCANVAS_DATA_FOLDER", sandbox);
+
+        var folder = Path.Combine(sandbox, "Launcher");
+        Directory.CreateDirectory(folder);
+        foreach (var name in new[] { "Aurora Notes", "Blue Horizon", "Canvas Studio", "Delta Files", "Ember Music" })
+        {
+            File.WriteAllText(Path.Combine(folder, name + ".url"),
+                "[InternetShortcut]\r\nURL=https://example.com/" + name.Replace(" ", "-").ToLowerInvariant() + "\r\n");
+        }
+
+        var catalog = new LauncherCatalog();
+        catalog.Start(folder);
+
+        var settings = new AppSettings(
+            Theme: new Theme(null, null, 0.2, false, false, "Segoe UI", SurfaceStyle.FullColor),
+            Templates: [],
+            Layout: new Layout(GridMode.Manual, SnapSize: true, LockSize: false, SnapPosition: true, LockPosition: false),
+            Dimensions: new Dimensions(160, 12, 24),
+            Region: new Region("en-US"),
+            RunOnStartup: false, IgnoreUpdate: null,
+            Launcher: new LauncherSettings(Enabled: true, WebSearch: false, WebResultCount: 0));
+        var provider = new FlightSettingsProvider(settings);
+        var icons = new ShellIconService();
+        var usage = new SpotlightUsageStore(Path.Combine(sandbox, "usage.json"));
+        var clipboard = new SpotlightClipboardService(provider);
+        var files = new FileSearchService(provider);
+        var router = new SpotlightQueryRouter(
+            new SpotlightAppProvider(catalog, usage),
+            new SpotlightFileProvider(files),
+            new SpotlightClipboardProvider(clipboard),
+            new SpotlightExternalResults(),
+            provider,
+            new SpotlightWebProvider(provider));
+        var viewModel = new SpotlightViewModel(router, catalog, icons, usage, clipboard, files, provider,
+            new SpotlightPreviewService(icons), new SpotlightWebResults(provider));
+        viewModel.Reload();
+
+        var window = new SpotlightWindow(viewModel, provider);
+        window.ApplyAppearanceForChecks();
+        window.ApplySummonModeForChecks(SpotlightSummonMode.Search);
+        window.Show();
+        Dispatcher.UIThread.RunJobs();
+
+        // Drive layout + RAF the way a shown window's render clock would.
+        static void Tick(int frames)
+        {
+            for (var i = 0; i < frames; i++)
+            {
+                AvaloniaHeadlessPlatform.ForceRenderTimerTick();
+                Dispatcher.UIThread.RunJobs();
+            }
+        }
+
+        double BarY() => window.ResultHighlightRectForChecks.Y;
+        double BarH() => window.ResultHighlightRectForChecks.Height;
+
+        bool Converges(string what)
+        {
+            // The spring settles in well under a second of driven frames; each failing snapshot
+            // is reported so a half-flight is visible in the log, not just a boolean.
+            var target = window.ResultHighlightTargetForChecks;
+            if (target is not { } rect)
+            {
+                Check(false, $"{what}: a target exists to converge on");
+                return false;
+            }
+
+            for (var i = 0; i < 120; i++)
+            {
+                Tick(1);
+                if (Math.Abs(BarY() - rect.Y) < 0.75 && Math.Abs(BarH() - rect.Height) < 0.75) break;
+            }
+
+            var ok = Math.Abs(BarY() - rect.Y) < 0.75 && Math.Abs(BarH() - rect.Height) < 0.75;
+            Check(ok, $"{what}: the bar converges on the selected row " +
+                      $"(bar {BarY():F1}+{BarH():F1}, target {rect.Y:F1}+{rect.Height:F1})");
+            return ok;
+        }
+
+        window.SetQueryForChecks("notes");
+        PumpHighlightUntil(() => viewModel.Results.Count > 0 && !viewModel.IsSearching);
+        Tick(6);
+        Converges("first result set");
+
+        for (var step = 1; step <= 3; step++)
+        {
+            Check(window.HandleKeyForChecks(Key.Down), $"↓ #{step} is claimed");
+            Tick(6);
+            Converges($"after ↓ #{step}");
+        }
+
+        // A rebuilt result set must re-snap, not glide from the old rows (the reported lockup).
+        window.SetQueryForChecks("blue");
+        PumpHighlightUntil(() => !viewModel.IsSearching);
+        Tick(6);
+        Converges("after the query rebuild");
+
+        window.Close();
+        Dispatcher.UIThread.RunJobs();
+        catalog.Dispose();
+        viewModel.Dispose();
+        try { Directory.Delete(sandbox, true); } catch { }
+    }
+
+    /// <summary>Pump the dispatcher (search routing is async) without a render tick loop.</summary>
+    private static void PumpHighlightUntil(Func<bool> done)
+    {
+        for (var i = 0; i < 400 && !done(); i++)
+        {
+            Dispatcher.UIThread.RunJobs();
+            System.Threading.Thread.Sleep(5);
+        }
+        Dispatcher.UIThread.RunJobs();
+    }
+
+    /// <summary>Minimal settings provider for the flight harness (same shape as the visual one).</summary>
+    private sealed class FlightSettingsProvider(AppSettings settings) : IAppSettingsProvider
+    {
+        private AppSettings current = settings;
+        public AppSettings Get() => current;
+        public void Save(AppSettings data) { current = data; }
+        public void Reload() { }
+        public event DataChangedEvent<AppSettings>? DataChanging;
+        public event DataChangedEvent<AppSettings>? DataChanged;
+    }
+
+    /// <summary>
+    /// Probe: how a Panel arranges a child that has an explicit Height + Margin.Top but keeps
+    /// the default (Stretch) vertical alignment — the exact shape ResultHighlight was in when
+    /// the bar "stuck at the panel's middle and moved half a row per step". If Stretch behaves
+    /// like Center here, Margin.Top alone is NOT a position and Top alignment is mandatory.
+    /// </summary>
+    private static void CheckStretchArrangementProbe()
+    {
+        Console.WriteLine("--- motion: panel arrangement of an explicit-height child ---");
+
+        var panel = new Panel { Width = 400, Height = 430 };
+        var bar = new Border { Width = 300, Height = 48, Margin = new Thickness(14, 37, 0, 0) };
+        panel.Children.Add(bar);
+        var host = new Window { Width = 420, Height = 470, WindowDecorations = WindowDecorations.None };
+        host.Content = panel;
+        host.Show();
+        Dispatcher.UIThread.RunJobs();
+        Avalonia.Headless.AvaloniaHeadlessPlatform.ForceRenderTimerTick();
+        Dispatcher.UIThread.RunJobs();
+
+        Console.WriteLine($"  probe: margin.top=37, height=48 -> Bounds.Y={bar.Bounds.Y:F1} " +
+                          "(Top alignment would be 37; the default Stretch centres the remaining space)");
+        Check(Math.Abs(bar.Bounds.Y - 37) > 1,
+            "stretch arrangement: without Top, an explicit-height child is NOT at its margin.top " +
+            $"({bar.Bounds.Y:F1}) — ResultHighlight's Top alignment is load-bearing");
+
+        // The pinned twin: identical bar, Top-aligned — lands exactly where the margin says.
+        var pinned = new Border
+        {
+            Width = 300, Height = 48, Margin = new Thickness(14, 37, 0, 0),
+            VerticalAlignment = Avalonia.Layout.VerticalAlignment.Top,
+        };
+        panel.Children.Add(pinned);
+        panel.InvalidateMeasure();
+        panel.UpdateLayout();
+        Dispatcher.UIThread.RunJobs();
+        Check(Math.Abs(pinned.Bounds.Y - 37) < 0.5,
+            $"stretch arrangement: Top alignment lands the bar at its margin.top ({pinned.Bounds.Y:F1})");
+
+        host.Close();
         Dispatcher.UIThread.RunJobs();
     }
 

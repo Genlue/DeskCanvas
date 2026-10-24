@@ -1911,6 +1911,20 @@ internal static class Program
             Pin(highlightWindow, (int)highlightWindow.Width, (int)highlightWindow.Height);
 
             var highlightList = highlightWindow.FindControl<ListBox>("ResultList");
+            // The snap happens on LayoutUpdated — i.e. AFTER a pass — and writes Margin/size; a
+            // never-shown window runs no further pass on its own, so drive one (Pin) to get the
+            // bar's real Bounds for the assertion. The re-schedule this causes is idempotent:
+            // the target has not moved, so the bar stays exactly where it snapped.
+            Pin(highlightWindow, (int)highlightWindow.Width, (int)highlightWindow.Height);
+            // The bar turned visible only after a pass had already run (the snap happens on
+            // LayoutUpdated), and a never-shown window arranges nothing on its own afterwards —
+            // so give its host panel one explicit measure+arrange to produce real Bounds.
+            if (highlightWindow.FindControl<Border>("ResultHighlight")?.Parent is Control barHost)
+            {
+                var barSize = new Size(highlightWindow.Width, highlightWindow.Height);
+                barHost.Measure(barSize);
+                barHost.Arrange(new Rect(barHost.Bounds.Position, barSize));
+            }
             if (highlightList is { SelectedIndex: >= 0, ItemCount: > 0 }
                 && highlightList.ContainerFromIndex(highlightList.SelectedIndex) is Control selected)
             {
@@ -1951,6 +1965,13 @@ internal static class Program
 
                 highlightViewModel.Results.Add(freshRow);
                 Relayout(highlightWindow, rebuildList, (int)highlightWindow.Width, (int)highlightWindow.Height);
+                Pin(highlightWindow, (int)highlightWindow.Width, (int)highlightWindow.Height);
+                if (highlightWindow.FindControl<Border>("ResultHighlight")?.Parent is Control flushHost)
+                {
+                    var flushSize = new Size(highlightWindow.Width, highlightWindow.Height);
+                    flushHost.Measure(flushSize);
+                    flushHost.Arrange(new Rect(flushHost.Bounds.Position, flushSize));
+                }
 
                 if (rebuildList.ContainerFromIndex(rebuildList.SelectedIndex) is Control rebuilt
                     && (Control?)highlightWindow.FindControl<Border>("ResultHighlight")?.Parent is { } rebuildHost

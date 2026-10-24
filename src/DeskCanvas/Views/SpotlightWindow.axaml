@@ -582,10 +582,16 @@
                             <!-- The results' selection highlight, a floating bar over the list.
                                  Driven by the spring integrator (SpotlightWindow), so it GLIDES
                                  between rows as the keyboard moves the selection instead of
-                                 teleporting; hit-test transparent so the rows keep their input. -->
+                                 teleporting; hit-test transparent so the rows keep their input.
+                                 VerticalAlignment MUST be Top: with an explicit Height the
+                                 default Stretch arranges the bar centred in the margin-deflated
+                                 remaining space, which reads as "stuck at the panel's middle,
+                                 moving half a row per step". -->
                             <Border x:Name="ResultHighlight"
                                     IsVisible="False"
                                     IsHitTestVisible="False"
+                                    HorizontalAlignment="Left"
+                                    VerticalAlignment="Top"
                                     CornerRadius="10"
                                     Background="{DynamicResource SpotlightSelectionBrush}" />
 

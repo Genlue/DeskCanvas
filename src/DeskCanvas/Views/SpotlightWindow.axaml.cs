@@ -856,13 +856,16 @@ public partial class SpotlightWindow : Window
     /// <summary>Checks-only seam: whether the results' floating highlight bar is shown.</summary>
     public bool ResultHighlightVisibleForChecks => ResultHighlight.IsVisible;
 
+    /// <summary>Checks-only seam: the selected row's rect the highlight is currently aiming at (null when
+    /// there is no selection or no realized container) — the oracle the bar must converge on.
+    /// </summary>
+    public Rect? ResultHighlightTargetForChecks => ResultHighlightTarget();
+
     /// <summary>
     /// Checks-only seam: the highlight bar's rect in its host panel (x/y from the margin, plus
     /// the explicit size), for asserting it lands on the selected row.
     /// </summary>
-    public Rect ResultHighlightRectForChecks => new(
-        ResultHighlight.Margin.Left, ResultHighlight.Margin.Top,
-        ResultHighlight.Width, ResultHighlight.Height);
+    public Rect ResultHighlightRectForChecks => ResultHighlight.Bounds;
 
     // ---- appearance ---------------------------------------------------------------
 
@@ -2255,10 +2258,12 @@ public partial class SpotlightWindow : Window
 
     private void PositionResultHighlight(Rect rect)
     {
+        // VerticalAlignment=Top is pinned in the XAML: Margin alone positions nothing while the
+        // default Stretch centres an explicit-height child (the "stuck at the panel's middle"
+        // defect). The alignments are static; only the margins and the size travel.
         ResultHighlight.Margin = new Thickness(rect.X, rect.Y, 0, 0);
         ResultHighlight.Width = Math.Max(4, rect.Width);
         ResultHighlight.Height = Math.Max(8, rect.Height);
-        ResultHighlight.HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Left;
     }
 
     /// <summary>
@@ -2971,17 +2976,28 @@ public partial class SpotlightWindow : Window
     /// </summary>
     private void ResolveDeactivation(bool clickInProgress)
     {
-        // A held mouse button at the moment of deactivation is a click: on another window, on the
-        // taskbar, or on one of our own widget cards. Whatever the foreground says by now, the
-        // user clicked away — close, exactly like Spotlight.
+        var handle = TryGetPlatformHandle()?.Handle ?? IntPtr.Zero;
+        var foreground = GetForegroundWindow();
+
+        // A screenshot tool taking the keyboard is never "the user went somewhere else" — the
+        // overlay is very often exactly what the user is trying to capture (截图时面板不要消失).
+        // Checked FIRST because a capture can also be started by clicking a toolbar button
+        // (clickInProgress). Stay open and do NOT reclaim the foreground: the tool needs the
+        // input for its region selection, and a tug-of-war would break the capture.
+        if (IsScreenshotTool(foreground))
+        {
+            GlassDiagnostics.Event("[spotlight] kept open across a deactivation caused by a screenshot tool");
+            return;
+        }
+
+        // A held mouse button at the moment of deactivation is a click: on another window, on
+        // the taskbar, or on one of our own widget cards. Whatever the foreground says by now,
+        // the user clicked away — close, exactly like Spotlight.
         if (clickInProgress)
         {
             Dismiss("deactivated (click)");
             return;
         }
-
-        var handle = TryGetPlatformHandle()?.Handle ?? IntPtr.Zero;
-        var foreground = GetForegroundWindow();
 
         if (foreground == IntPtr.Zero || foreground == handle)
         {
@@ -3010,6 +3026,30 @@ public partial class SpotlightWindow : Window
         }
 
         Dismiss("deactivated");
+    }
+
+    /// <summary>
+    /// Whether the window that took the keyboard belongs to a screenshot tool. Windows' own
+    /// capture stack (Win+Shift+S 剪裁层, 截图和草图, Win11 截图工具) plus the common third-party
+    /// capture tools. Deliberately a closed list: a generic program (a chat client offering a
+    /// 截图 hotkey) must still close the overlay, or the launcher would linger over every app
+    /// that happens to own a capture feature.
+    /// </summary>
+    private static bool IsScreenshotTool(IntPtr hwnd)
+    {
+        try
+        {
+            GetWindowThreadProcessId(hwnd, out var processId);
+            using var process = System.Diagnostics.Process.GetProcessById((int)processId);
+            return process.ProcessName is "ScreenClipping" or "ScreenSketch" or "SnippingTool"
+                or "Snipaste" or "PixPin" or "ShareX" or "Greenshot" or "FSCapture";
+        }
+        catch
+        {
+            // A process that already exited (some capture layers are transient) must not break
+            // the deactivation decision.
+            return false;
+        }
     }
 
     /// <summary>

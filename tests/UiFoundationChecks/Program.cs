@@ -113,6 +113,8 @@ internal static partial class Program
         CheckSpecularRim();
         CheckMotion();
         CheckAnimationFrameProbe();
+        CheckStretchArrangementProbe();
+        CheckResultHighlightFlight();
         CheckGlassShapePort();
         CheckRedundancyGuard();
 
