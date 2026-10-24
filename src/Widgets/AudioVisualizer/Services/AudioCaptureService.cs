@@ -332,6 +332,12 @@ public sealed class AudioCaptureService : IDisposable
             float[] tempSpectrum = new float[64];
             int checkDeviceCounter = 0;
 
+            // 自适应噪声底（会话局部状态：换设备即重新学习，不把上一副耳机的门限带过来）。
+            // 蓝牙耳机（A2DP）连通后即使不播放任何声音，回路采集也会持续送出恒定的低电平
+            // 底噪——固定门限挡不住，表现为"没有声音也一直有均匀的波"。
+            float levelEnvelope = 0f; // 能量包络（约 0.3~0.5s 跟随），用来判断信号"时间上是否平坦"
+            float noiseLevel = 0f;    // 噪声底估计值，只有明显高于它的帧才算真正的声音
+
             while (!token.IsCancellationRequested)
             {
                 // 1. 定期检查系统默认音频输出是否发生变化（如插拔耳机、切换音响）
@@ -405,10 +411,24 @@ public sealed class AudioCaptureService : IDisposable
                         if (tempSpectrum[i] > maxEnergy) maxEnergy = tempSpectrum[i];
                     }
 
+                    // 噪声底学习：安静帧，或"低电平且时间上平坦"的帧（蓝牙静默底噪的签名是
+                    // 恒定、无动态）才参与估计；持续的中低电平真实音乐（有起伏或电平较高）
+                    // 不会被误当成噪声。0.05 上限保护响度战争型压缩音乐。
+                    levelEnvelope += (maxEnergy - levelEnvelope)
+                        * (maxEnergy > levelEnvelope ? 0.02f : 0.03f);
+                    bool temporallyFlat = MathF.Abs(maxEnergy - levelEnvelope) < levelEnvelope * 0.25f;
+                    if (maxEnergy < 0.002f || (temporallyFlat && maxEnergy < 0.05f))
+                    {
+                        noiseLevel += (maxEnergy - noiseLevel) * 0.04f;
+                        if (noiseLevel < 0f) noiseLevel = 0f;
+                    }
+
                     lock (lockObj)
                     {
                         Array.Copy(tempSpectrum, rawBands, Math.Min(tempSpectrum.Length, rawBands.Length));
-                        if (maxEnergy > 0.001f)
+
+                        // 活跃判定：高于绝对门限，且明显高于自适应噪声底（约 7dB）。
+                        if (maxEnergy > MathF.Max(0.001f, noiseLevel * 2.2f))
                         {
                             lastAudioPacketTime = Environment.TickCount64;
                         }
