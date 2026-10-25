@@ -147,4 +147,52 @@ public static class TimetableClock
     }
 
     public static string DayName(int day) => CultureInfo.CurrentUICulture.DateTimeFormat.GetDayName((DayOfWeek)(day % 7));
+
+    /// <summary>
+    /// The culture's <b>abbreviated</b> weekday name ("周一" / "Mon") — the form the relative
+    /// labels compose with. <see cref="DayShortName"/> is the shortest one ("一" / "Mo"), which is
+    /// right for a grid header but reads as a fragment inside "下{0}".
+    /// </summary>
+    public static string DayShortFullName(int day) =>
+        CultureInfo.CurrentUICulture.DateTimeFormat.GetAbbreviatedDayName((DayOfWeek)(day % 7));
+
+    /// <summary>
+    /// The week a lookahead day belongs to, given the week of the day the scan starts from.
+    /// The timetable week runs Monday→Sunday, so a target day with a <b>lower</b> index than
+    /// today lies in the next calendar week: on Saturday the coming Monday is next week's
+    /// Monday. Evaluating it with the current week instead (the old behaviour) let 单双周
+    /// courses from the wrong week through, so the header said "下周一" while the list showed
+    /// this week's Monday. An unknown week (0) has no arithmetic to do and stays 0, which keeps
+    /// <see cref="TimetableRuntime.IsActiveThisWeek"/> unfiltered.
+    /// </summary>
+    public static int WeekOfDay(int currentWeek, int currentDay, int targetDay) =>
+        currentWeek < 1 ? currentWeek : currentWeek + (targetDay < currentDay ? 1 : 0);
+
+    /// <summary>
+    /// Relative label for a lookahead day: 今天 / 明天 for the two immediate days, the
+    /// next-week form across the Sunday→Monday boundary, and — because the widget headers are
+    /// width-constrained and "本周" adds nothing mid-week — the plain weekday name for the rest
+    /// of the current week. Pass <paramref name="qualifySameWeek"/> to get the explicit 本周X
+    /// form instead (a caller that shows the label without the surrounding card needs it).
+    /// <para>
+    /// The qualified forms compose with the <b>short</b> day name and a bare prefix in the
+    /// resource ("下{0}" + "周一"), so the result is the colloquial "下周一" rather than
+    /// "下周星期一" — the full name already carries its own 周/星期 word.
+    /// </para>
+    /// </summary>
+    public static string RelativeDayLabel(int currentDay, int targetDay, bool qualifySameWeek = false)
+    {
+        if (targetDay == currentDay) return Locales.Locale.Timetable_Today;
+
+        // Tomorrow wins over the week arithmetic: Sunday → Monday is the next calendar week but
+        // still reads as "明天", which is what the widget has always shown for offset 1.
+        var offset = ((targetDay - currentDay) % 7 + 7) % 7;
+        if (offset == 1) return Locales.Locale.Timetable_Tomorrow;
+
+        if (targetDay < currentDay)
+            return Locales.Locale.Timetable_NextWeekDay.Replace("{0}", DayShortFullName(targetDay));
+        return qualifySameWeek
+            ? Locales.Locale.Timetable_ThisWeekDay.Replace("{0}", DayShortFullName(targetDay))
+            : DayName(targetDay);
+    }
 }

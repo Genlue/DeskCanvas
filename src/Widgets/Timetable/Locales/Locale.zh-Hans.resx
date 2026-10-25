@@ -207,6 +207,12 @@
   <data name="Timetable_Today" xml:space="preserve">
     <value>今天</value>
   </data>
+  <data name="Timetable_ThisWeekDay" xml:space="preserve">
+    <value>本{0}</value>
+  </data>
+  <data name="Timetable_NextWeekDay" xml:space="preserve">
+    <value>下{0}</value>
+  </data>
   <data name="Timetable_Week" xml:space="preserve">
     <value>第 {0} 周</value>
   </data>

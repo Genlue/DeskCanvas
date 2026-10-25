@@ -281,6 +281,15 @@ namespace Timetable.Locales {
         }
 
         /// <summary>
+        ///   Looks up a localized string similar to Timetable_NextWeekDay.
+        /// </summary>
+        public static string Timetable_NextWeekDay {
+            get {
+                return ResourceManager.GetString("Timetable_NextWeekDay", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   Looks up a localized string similar to Timetable_NoClassToday.
         /// </summary>
         public static string Timetable_NoClassToday {
@@ -565,6 +574,15 @@ namespace Timetable.Locales {
         public static string Timetable_Subtitle {
             get {
                 return ResourceManager.GetString("Timetable_Subtitle", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Timetable_ThisWeekDay.
+        /// </summary>
+        public static string Timetable_ThisWeekDay {
+            get {
+                return ResourceManager.GetString("Timetable_ThisWeekDay", resourceCulture);
             }
         }
 

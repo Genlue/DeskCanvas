@@ -207,6 +207,12 @@
   <data name="Timetable_Today" xml:space="preserve">
     <value>Today</value>
   </data>
+  <data name="Timetable_ThisWeekDay" xml:space="preserve">
+    <value>This {0}</value>
+  </data>
+  <data name="Timetable_NextWeekDay" xml:space="preserve">
+    <value>Next {0}</value>
+  </data>
   <data name="Timetable_Week" xml:space="preserve">
     <value>Week {0}</value>
   </data>

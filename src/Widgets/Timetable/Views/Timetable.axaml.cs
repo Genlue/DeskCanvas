@@ -341,26 +341,34 @@ public partial class Timetable : UserControl, IWidgetSelfRefreshing, IWidgetSurf
         var today = DayIndex(now.DayOfWeek);
 
         var targetDay = today;
-        var isToday = true;
+        var targetWeek = week;
+        var targetOffset = 0;
         for (var offset = 0; offset <= 6; offset++)
         {
             var day = ((today - 1 + offset) % 7) + 1;
-            if (ActiveSlotsForDay(day, week).Count == 0) continue;
+            // The week advances when the scan crosses the Sunday→Monday boundary; a fixed week
+            // here filtered next week's Monday with this week's 单双周 rule while the header
+            // already said "下周一".
+            var dayWeek = TimetableClock.WeekOfDay(week, today, day);
+            if (ActiveSlotsForDay(day, dayWeek).Count == 0) continue;
             targetDay = day;
-            isToday = offset == 0;
+            targetWeek = dayWeek;
+            targetOffset = offset;
             break;
         }
 
         todayListDay = targetDay;
-        todayListIsToday = isToday;
+        todayListIsToday = targetOffset == 0;
 
-        var prefix = isToday ? Locale.Timetable_Today : Locale.Timetable_Tomorrow;
-        TodayHeader.Text = isToday || targetDay == ((today) % 7) + 1
-            ? $"{prefix} · {TimetableClock.DayName(targetDay)}"
-            : TimetableClock.DayName(targetDay);
+        var label = TimetableClock.RelativeDayLabel(today, targetDay);
+        // 今天 / 明天 still need the weekday appended ("今天 · 星期六"); the qualified forms
+        // ("下周一") and the plain weekday name already name the day on their own.
+        TodayHeader.Text = targetOffset <= 1
+            ? $"{label} · {TimetableClock.DayName(targetDay)}"
+            : label;
         TodayHeader.FontSize = TextMetrics.Quantize(Math.Clamp(Math.Min(width, height) * 0.10, 10.5, 14));
 
-        var slots = ActiveSlotsForDay(targetDay, week);
+        var slots = ActiveSlotsForDay(targetDay, targetWeek);
         if (slots.Count == 0)
         {
             HidePoolSurplus(todayRowPool, 0);
@@ -1069,11 +1077,12 @@ public partial class Timetable : UserControl, IWidgetSelfRefreshing, IWidgetSurf
             return (Locale.Timetable_Today, first.Course.Name ?? "", TimetableClock.PeriodLabel(model, first.FirstPeriod));
         }
 
-        // Nothing left today — show what is coming next within the week.
+        // Nothing left today — show what is coming next within the week. The week advances as
+        // the scan crosses the Sunday→Monday boundary (see TimetableClock.WeekOfDay).
         for (var offset = 1; offset <= 6; offset++)
         {
             var day = ((today - 1 + offset) % 7) + 1;
-            var next = ActiveSlotsForDay(day, week);
+            var next = ActiveSlotsForDay(day, TimetableClock.WeekOfDay(week, today, day));
             if (next.Count == 0) continue;
 
             var first = next[0];
@@ -1081,7 +1090,7 @@ public partial class Timetable : UserControl, IWidgetSelfRefreshing, IWidgetSurf
             var sub = s?.ToString("HH:mm") ?? "";
             if (ComposeRoomOnly(first.Course) is { } room)
                 sub = sub.Length > 0 ? sub + " · " + room : room;
-            var tag = offset == 1 ? Locale.Timetable_Tomorrow : TimetableClock.DayName(day);
+            var tag = TimetableClock.RelativeDayLabel(today, day);
             return (tag, first.Course.Name ?? "", sub);
         }
 

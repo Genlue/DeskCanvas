@@ -90,6 +90,10 @@ internal static class Program
         WeekNavigationChecks();
 
         Console.WriteLine();
+        Console.WriteLine("8. 周末跨周推算 (WeekOfDay / RelativeDayLabel)");
+        WeekRolloverChecks();
+
+        Console.WriteLine();
         Console.WriteLine($"{passed}/{passed + failed} passed, {failed} failed");
         return failed == 0 ? 0 : 1;
     }
@@ -624,6 +628,103 @@ internal static class Program
         {
             second.Close();
         }
+    }
+
+    // ---------- 8. Weekend lookahead across the week boundary ----------
+
+    /// <summary>
+    /// The weekend lookahead: on Saturday/Sunday the widget shows the coming Monday, and that
+    /// Monday is <b>next</b> week's Monday. The week number must advance with the scan (pinning
+    /// a fixed week showed 单双周 courses of the wrong week under a "下周一" header), the labels
+    /// must stay 今天 / 明天 / 本周X / 下周X, and both view paths must call the helpers instead
+    /// of passing a constant week into the forward scan.
+    /// </summary>
+    private static void WeekRolloverChecks()
+    {
+        // --- Week rollover helper ---
+        Check(TimetableClock.WeekOfDay(8, 3, 5) == 8, "同周向前（周三→周五）周次不变");
+        Check(TimetableClock.WeekOfDay(8, 3, 3) == 8, "目标即当天，周次不变");
+        Check(TimetableClock.WeekOfDay(8, 6, 1) == 9, "周六→周一跨周（第 8 周 → 第 9 周）");
+        Check(TimetableClock.WeekOfDay(8, 7, 1) == 9, "周日→周一跨周（第 8 周 → 第 9 周）");
+        Check(TimetableClock.WeekOfDay(8, 7, 6) == 9, "周日→周六也落在下一周");
+        Check(TimetableClock.WeekOfDay(0, 6, 1) == 0, "周次未知（0）不加一，保持 0");
+        Check(TimetableClock.WeekOfDay(0, 7, 1) == 0, "周次未知（0）跨周也保持 0");
+
+        // --- Behavioural pin: Saturday 2026-10-31 (term started 2026-09-07) ---
+        var term = new TimetableModel(1, null, "2026-09-07", 20, 0);
+        var saturdayWeek = TimetableClock.ComputeWeek(term, new DateTime(2026, 10, 31));
+        Check(saturdayWeek == 8, "2026-10-31（周六）= 第 8 周");
+        Check(TimetableClock.WeekOfDay(saturdayWeek, 6, 1) == 9, "该周六看向的周一是第 9 周");
+        Check(WeekExpression.TryParse("1-20双", out var evenWeeks, out _) &&
+              evenWeeks.IsActive(8) && !evenWeeks.IsActive(9),
+            "双周课只属于第 8 周：按第 9 周求值后不再出现（旧行为会误显示）");
+
+        // --- Relative labels ---
+        var friday = TimetableClock.DayName(5);
+        Check(TimetableClock.RelativeDayLabel(3, 3) == Timetable.Locales.Locale.Timetable_Today,
+            "标签：当天 = 今天");
+        Check(TimetableClock.RelativeDayLabel(3, 4) == Timetable.Locales.Locale.Timetable_Tomorrow,
+            "标签：次日 = 明天");
+        Check(TimetableClock.RelativeDayLabel(7, 1) == Timetable.Locales.Locale.Timetable_Tomorrow,
+            "标签：周日→周一（次日）仍读作明天");
+        Check(TimetableClock.RelativeDayLabel(6, 1) ==
+              Timetable.Locales.Locale.Timetable_NextWeekDay.Replace("{0}", TimetableClock.DayShortFullName(1)),
+            "标签：周六→周一 = 下周X");
+        Check(TimetableClock.RelativeDayLabel(3, 5) == friday,
+            "标签：本周内隔天 = 纯星期名（行为不变）");
+        Check(TimetableClock.RelativeDayLabel(3, 5, qualifySameWeek: true) ==
+              Timetable.Locales.Locale.Timetable_ThisWeekDay.Replace("{0}", TimetableClock.DayShortFullName(5)),
+            "标签：qualifySameWeek 时 = 本周X");
+
+        // --- The user-visible zh-Hans text lives in the resx, so pin the literals there ---
+        var zhResx = FindRepoFile("src/Widgets/Timetable/Locales/Locale.zh-Hans.resx");
+        Check(zhResx != null, "能定位 Locale.zh-Hans.resx");
+        if (zhResx != null)
+        {
+            var resx = File.ReadAllText(zhResx);
+            Check(resx.Contains("<value>今天</value>") && resx.Contains("<value>明天</value>"),
+                "简体中文资源：今天 / 明天");
+            Check(resx.Contains("<value>本{0}</value>") && resx.Contains("<value>下{0}</value>"),
+                "简体中文资源：本{0} / 下{0}（与短星期名拼出「下周一」）");
+        }
+
+        // --- Source scan: both forward scans must derive the week per day ---
+        var view = FindRepoFile("src/Widgets/Timetable/Views/Timetable.axaml.cs");
+        Check(view != null, "能定位 Timetable.axaml.cs（源码扫描）");
+        if (view != null)
+        {
+            var source = File.ReadAllText(view);
+            Check(CountOf(source, "TimetableClock.WeekOfDay(week, today, day)") == 2,
+                "2x2 与 1x1 的前向扫描都按天推算周次（WeekOfDay 调用 2 处）");
+            Check(!source.Contains("ActiveSlotsForDay(day, week)"),
+                "前向扫描不再把固定周次传给 ActiveSlotsForDay");
+            Check(CountOf(source, "TimetableClock.RelativeDayLabel(today, ") == 2,
+                "2x2 与 1x1 的日期标签都走 RelativeDayLabel");
+        }
+    }
+
+    /// <summary>Locates a repository file by walking up from the check-suite's working directory.</summary>
+    private static string? FindRepoFile(string relativePath)
+    {
+        foreach (var start in new[] { Directory.GetCurrentDirectory(), AppContext.BaseDirectory })
+        {
+            for (DirectoryInfo? dir = new(start); dir != null; dir = dir.Parent)
+            {
+                var candidate = Path.Combine(dir.FullName, relativePath);
+                if (File.Exists(candidate)) return candidate;
+            }
+        }
+        return null;
+    }
+
+    /// <summary>Number of non-overlapping occurrences of <paramref name="needle"/>.</summary>
+    private static int CountOf(string text, string needle)
+    {
+        var count = 0;
+        for (var i = text.IndexOf(needle, StringComparison.Ordinal); i >= 0;
+             i = text.IndexOf(needle, i + needle.Length, StringComparison.Ordinal))
+            count++;
+        return count;
     }
 
     /// <summary>Raises the button's Click event — the same handler path a pointer release takes.</summary>
