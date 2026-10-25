@@ -237,6 +237,7 @@ property DeskCanvas.Core.Const ActiveProfile -> System.String
 property DeskCanvas.Core.Const ActiveProfileFolder -> System.String
 property DeskCanvas.Core.Const ActiveProfilePointerPath -> System.String
 property DeskCanvas.Core.Const AppSettingsFile -> System.String
+property DeskCanvas.Core.Const CacheFolder -> System.String
 property DeskCanvas.Core.Const CountdownFile -> System.String
 property DeskCanvas.Core.Const DiceFile -> System.String
 property DeskCanvas.Core.Const HabitsFile -> System.String
@@ -249,6 +250,7 @@ field DeskCanvas.Core.Const ActiveProfilePointerFileName -> System.String
 field DeskCanvas.Core.Const ActiveProfilePointerPropertyName -> System.String
 field DeskCanvas.Core.Const AppName -> System.String
 field DeskCanvas.Core.Const AppSettingsFileName -> System.String
+field DeskCanvas.Core.Const CacheFolderName -> System.String
 field DeskCanvas.Core.Const CurrentFolder -> System.String
 field DeskCanvas.Core.Const DataFolder -> System.String
 field DeskCanvas.Core.Const DataFolderPointerFileName -> System.String

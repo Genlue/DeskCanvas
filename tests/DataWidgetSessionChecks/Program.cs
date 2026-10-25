@@ -31,6 +31,7 @@ using Storage.Services;
 using Storage.ViewModels;
 using Storage.Views;
 using Weather.Models;
+using Weather.Services;
 using Weather.ViewModels;
 using Weather.Views;
 
@@ -145,6 +146,38 @@ air.OnSessionActivity(new ActivitySnapshot(ActivityReason.ScreenCovered));
 Check(air.TickSubscriptionCountForChecks == 0, "3.12 a covered screen unsubscribes the air-quality refresh");
 air.OnSessionActivity(new ActivitySnapshot(ActivityReason.DesktopVisible));
 Check(air.TickSubscriptionCountForChecks == 1, "3.13 the resume push re-subscribes");
+
+// =========================================================================================
+// 3b. Weather boot-offline retry: the first fetch fails before the network is up, and the
+// hourly timer alone left the card on "--°" for up to an hour.
+// =========================================================================================
+Console.WriteLine("--- Weather boot-offline retry ---");
+var retryProbe = new FetchRetry();
+Check(retryProbe.NextDelayForChecks == TimeSpan.FromSeconds(10),
+    "3.14 the first retry follows the failed fetch after 10 s");
+retryProbe.Schedule(() => { });
+Check(retryProbe.NextDelayForChecks == TimeSpan.FromSeconds(30), "3.15 the backoff advances to 30 s");
+Check(retryProbe.IsPendingForChecks, "3.16 a scheduled retry is pending");
+retryProbe.Stop();
+Check(!retryProbe.IsPendingForChecks, "3.17 Stop drops the pending timer");
+Check(retryProbe.NextDelayForChecks == TimeSpan.FromSeconds(30),
+    "3.18 ...but keeps the backoff step, so a resume continues where it left off");
+retryProbe.Reset();
+Check(retryProbe.NextDelayForChecks == TimeSpan.FromSeconds(10), "3.19 a successful fetch resets the backoff");
+for (var i = 0; i < FetchRetry.Delays.Count; i++) retryProbe.Schedule(() => { });
+Check(retryProbe.NextDelayForChecks == FetchRetry.Delays[^1],
+    "3.20 the backoff is capped (5 minutes) instead of growing without bound");
+retryProbe.Dispose();
+Check(!retryProbe.IsPendingForChecks, "3.21 Dispose drops the pending timer");
+
+// A covered card stops polling; a visible one resumes the retry while it still has no data.
+var retryForecast = new ForecastViewModel(new ForecastModel("Beijing", 39.9042, 116.4074, "celsius"), NewSession());
+retryForecast.OnSessionActivity(new ActivitySnapshot(ActivityReason.ScreenCovered));
+Check(!retryForecast.RetryPendingForChecks, "3.22 a covered card stops the retry");
+retryForecast.Dispose();
+air.OnSessionActivity(new ActivitySnapshot(ActivityReason.ScreenCovered));
+Check(!air.RetryPendingForChecks, "3.23 the air-quality card stops the retry when covered");
+air.Dispose();
 
 // =========================================================================================
 // 4. Fixed AggregateViewModel: clock (1 s) + weather/calendar (1 h) subscribe and gate together
@@ -342,6 +375,18 @@ else
         "7.7 all six data-widget view models declare the optional session constructor parameter");
     Check(vmFiles.All(vm => Read(vm).Contains("if (session == null) return;")),
         "7.8 all six view models ignore activity pushes on the session-less (legacy) path");
+
+    // Boot-offline retry wiring: a null reply must queue the next attempt, a good one must clear
+    // it — both weather view models, not just the forecast.
+    var retryWiring = new[]
+    {
+        "src/Widgets/Weather/ViewModels/ForecastViewModel.cs",
+        "src/Widgets/Weather/ViewModels/AirQualityViewModel.cs",
+    };
+    Check(retryWiring.All(vm => Read(vm).Contains("retry.Schedule(UpdateForecast)")),
+        "7.13 both weather view models retry after a failed fetch");
+    Check(retryWiring.All(vm => Read(vm).Contains("retry.Reset()")),
+        "7.14 both weather view models clear the backoff after a successful fetch");
 
     // Theme residue: no readout may decide darkness straight from the uniform Application
     // variant any more — the host window's variant wins, the Application variant only falls

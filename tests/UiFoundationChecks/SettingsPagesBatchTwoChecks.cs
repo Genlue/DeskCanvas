@@ -205,7 +205,7 @@ internal static partial class Program
     private static void CheckFoldersBatchTwo()
     {
         var folder = new Folders.Views.Settings.FolderSettings(new StubWidgetLayoutProvider());
-        CheckBatchTwoPageContract("Folder", folder, expectedHeaders: 5, expectedSettings: 24, extra: () =>
+        CheckBatchTwoPageContract("Folder", folder, expectedHeaders: 5, expectedSettings: 25, extra: () =>
         {
             // 条目列表管理（路径输入、拾取按钮、拖拽排序行）是本页专属区域。
             Check(folder.FindControl<StackPanel>("ItemsEditor") is not null
@@ -222,12 +222,16 @@ internal static partial class Program
                 Check(row is not null && !row.IsVisible,
                     $"Folder: {rowName} exists and is hidden while not watching");
             }
-            Check(folder.GetLogicalDescendants().OfType<LabeledSlider>().Count() == 1,
-                "Folder: the title-offset row is a shared LabeledSlider");
+            // 标题偏移 + 悬浮缩放：两行都是共享 LabeledSlider（悬浮缩放是 4.9 新增的外观项）。
+            Check(folder.GetLogicalDescendants().OfType<LabeledSlider>().Count() == 2,
+                "Folder: the title-offset and hover-zoom rows are shared LabeledSliders");
+            var folderZoom = folder.FindControl<LabeledSlider>("HoverZoomSlider");
+            Check(folderZoom is { Minimum: 100, Maximum: 150 } && folderZoom.Unit == "%",
+                $"Folder: the hover-zoom row spans 100–150% (got {folderZoom?.Minimum}–{folderZoom?.Maximum})");
         });
 
         var bigFolder = new Folders.Views.Settings.BigFolderSettings(new StubWidgetLayoutProvider());
-        CheckBatchTwoPageContract("BigFolder", bigFolder, expectedHeaders: 3, expectedSettings: 12, extra: () =>
+        CheckBatchTwoPageContract("BigFolder", bigFolder, expectedHeaders: 3, expectedSettings: 13, extra: () =>
         {
             Check(bigFolder.FindControl<ItemsControl>("ItemList") is not null
                   && bigFolder.FindControl<StackPanel>("ItemsEditor") is not null,
@@ -235,16 +239,20 @@ internal static partial class Program
             Check(bigFolder.FindControl<ComboBox>("DensityBox") is not null
                   && bigFolder.FindControl<StackPanel>("CustomDimensionsPanel") is not null,
                 "BigFolder: the density modes with custom columns/rows survive");
+            Check(bigFolder.FindControl<LabeledSlider>("HoverZoomSlider") is not null,
+                "BigFolder: the hover-zoom row is a shared LabeledSlider");
         });
 
         var singleFile = new Folders.Views.Settings.SingleFileSettings(new StubWidgetLayoutProvider());
-        CheckBatchTwoPageContract("SingleFile", singleFile, expectedHeaders: 2, expectedSettings: 2, extra: () =>
+        CheckBatchTwoPageContract("SingleFile", singleFile, expectedHeaders: 2, expectedSettings: 3, extra: () =>
         {
             var slider = singleFile.FindControl<LabeledSlider>("IconPercentSlider");
             Check(slider is { Minimum: 20, Maximum: 100 } && slider.Unit == "%",
                 $"SingleFile: the icon-percent row keeps 20–100% on LabeledSlider (got {slider?.Minimum}–{slider?.Maximum})");
             Check(singleFile.FindControl<TextBox>("PathBox") is not null,
                 "SingleFile: the read-only target path box survives");
+            Check(singleFile.FindControl<LabeledSlider>("HoverZoomSlider") is not null,
+                "SingleFile: the hover-zoom row is a shared LabeledSlider");
         });
     }
 

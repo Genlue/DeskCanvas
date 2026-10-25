@@ -190,6 +190,55 @@ finally
 }
 
 // =========================================================================================
+// 10. Launcher hover zoom: configurable per widget, clamped, and the layout reserves the growth
+//     so a zoomed icon is never cut by the card or the scroll viewport.
+// =========================================================================================
+Console.WriteLine("--- launcher hover zoom ---");
+Check(HoverZoomMath.ScaleOf(0) == 1.0 && HoverZoomMath.ScaleOf(double.NaN) == 1.0,
+    "10.1 a missing/NaN zoom means 100% (no zoom)");
+Check(HoverZoomMath.ScaleOf(999) == 1.5, "10.2 the zoom is clamped to 150%");
+Check(new BigFolderModel().HoverZoom == HoverZoomMath.DefaultGridPercent &&
+      new FolderModel([]).HoverZoom == HoverZoomMath.DefaultGridPercent,
+    "10.3 the icon grids default to the historical 115%");
+Check(new SingleFileModel().HoverZoom == HoverZoomMath.DefaultSinglePercent &&
+      new SingleLinkModel().HoverZoom == HoverZoomMath.DefaultSinglePercent,
+    "10.4 the single-icon cards default to the historical 108%");
+Check(Math.Abs(new BigFolderModel(HoverZoom: 130).EffectiveHoverScale - 1.3) < 0.001,
+    "10.5 the model exposes the multiplier the views animate with");
+Check(Math.Abs(new SingleLinkModel(HoverZoom: 90).EffectiveHoverScale - 1.0) < 0.001,
+    "10.6 a stored value below 100% cannot shrink the icon on hover");
+Check(Math.Abs(HoverZoomMath.Growth(80, 1.2) - 8) < 0.001, "10.7 the growth is half the size delta");
+Check(HoverZoomMath.Growth(80, 1.0) == 0, "10.8 no zoom means no reserved room");
+Check(Math.Abs(HoverZoomMath.Fit(100, 1.25) - 80) < 0.001,
+    "10.9 Fit caps the base size so the zoomed icon still fits its box");
+
+// The views must actually consume the configured value (not keep a private constant), and the
+// two clipping rules must stay in place: the grid reserves padding, the scroll content keeps a
+// margin, and the single cards cap their drawn size.
+string ReadRepo(params string[] parts)
+{
+    var dir = new DirectoryInfo(AppContext.BaseDirectory);
+    while (dir != null && !Directory.Exists(Path.Combine(dir.FullName, "scripts"))) dir = dir.Parent!;
+    return File.ReadAllText(Path.Combine(new[] { dir!.FullName }.Concat(parts).ToArray()));
+}
+
+var bigFolderView = ReadRepo("src", "Widgets", "Folders", "Views", "BigFolder.axaml.cs");
+var folderView = ReadRepo("src", "Widgets", "Folders", "Views", "Folder.axaml.cs");
+var singleFileView = ReadRepo("src", "Widgets", "Folders", "Views", "SingleFile.axaml.cs");
+var singleLinkView = ReadRepo("src", "Widgets", "Folders", "Views", "SingleLink.axaml.cs");
+
+Check(bigFolderView.Contains("model.EffectiveHoverScale") &&
+      !bigFolderView.Contains("const double HoverScale"),
+    "10.10 大文件夹 animates with the configured zoom (no hardcoded constant)");
+Check(bigFolderView.Contains("HoverZoomMath.Growth(itemSize, hoverScale)") &&
+      bigFolderView.Contains("PaddingThickness = new Thickness(pad)"),
+    "10.11 大文件夹 widens its padding to the zoom growth before measuring the icons");
+Check(folderView.Contains("model.EffectiveHoverScale") && folderView.Contains("HoverViewportInset"),
+    "10.12 文件展示框 animates with the configured zoom and keeps a viewport gutter");
+Check(singleFileView.Contains("HoverZoomMath.Fit(") && singleLinkView.Contains("HoverZoomMath.Fit("),
+    "10.13 单文件 / 单链接 cap the drawn icon so the zoom still fits the card");
+
+// =========================================================================================
 Console.WriteLine();
 if (failures.Count > 0)
 {

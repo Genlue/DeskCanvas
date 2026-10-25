@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Avalonia;
 using Avalonia.Headless;
+using Avalonia.Media;
 using DeskCanvas.Core;
 using DeskCanvas.Core.Interfaces;
 using DeskCanvas.Core.Models.Settings;
@@ -45,6 +46,7 @@ internal static class Program
         // After the view checks: this one publishes a monochrome theme into the plugin runtime,
         // and the runtime only ever takes the first publisher.
         CheckMonochromeTiles();
+        CheckProcessGlobalRuntimes();
 
         // The runner is exercised off the dispatcher thread; the process has no running
         // message loop, and nothing here depends on one.
@@ -247,6 +249,29 @@ internal static class Program
             "monochrome gives the glyph a contrasting stroke");
         Check(!ReferenceEquals(mono.NameBrush, coloredName),
             "monochrome repaints the name and subtitle");
+
+        // 黑白 is the variant the report was about: the icon block has to become white in dark
+        // mode, NOT the system accent. Resolving the generic accent resource first (the old
+        // order) painted every tile in the accent colour and looked like "monochrome does
+        // nothing" even when the monochrome branch was reached.
+        MonochromeSettingsProvider.Variant = MonochromeStyle.BlackWhite;
+        var blackWhite = new ShortcutTileViewModel(new ShortcutDefinition { Name = "bw", Glyph = "bolt", Color = "#3366CC" });
+        blackWhite.SetCardRadius(16);
+        blackWhite.ApplyTheme(true);
+        Check(blackWhite.IconBrush is ISolidColorBrush { Color: var bwColor } && bwColor == Colors.White,
+            "黑白 in dark mode paints the icon block white (not the accent)");
+        Check(blackWhite.GlyphStrokeBrush is ISolidColorBrush { Color: var strokeColor } && strokeColor == Colors.Black,
+            "黑白 keeps the glyph readable: black stroke on the white block");
+
+        // 强调色 with an explicit accent must use THAT accent, not the app-level ramp.
+        MonochromeSettingsProvider.Variant = MonochromeStyle.Accent;
+        MonochromeSettingsProvider.Accent = "#C0392B";
+        var accented = new ShortcutTileViewModel(new ShortcutDefinition { Name = "accent", Glyph = "bolt", Color = "#3366CC" });
+        accented.SetCardRadius(16);
+        accented.ApplyTheme(false);
+        Check(accented.IconBrush is ISolidColorBrush { Color: var accentColor } && accentColor == Color.Parse("#C0392B"),
+            "强调色 uses the configured accent colour");
+        MonochromeSettingsProvider.Accent = null;
     }
 
     /// <summary>Reads a file from the Shortcuts plugin folder.</summary>
@@ -257,6 +282,41 @@ internal static class Program
             dir = dir.Parent!;
 
         return File.ReadAllText(Path.Combine(new[] { dir!.FullName, "src", "Widgets", "Shortcuts" }.Concat(parts).ToArray()));
+    }
+
+    /// <summary>Reads a repo-relative file (the plugin-loading rule lives outside this widget).</summary>
+    private static string ReadRepo(params string[] parts)
+    {
+        var dir = new DirectoryInfo(AppContext.BaseDirectory);
+        while (dir != null && !Directory.Exists(Path.Combine(dir.FullName, "scripts")))
+            dir = dir.Parent!;
+
+        return File.ReadAllText(Path.Combine(new[] { dir!.FullName }.Concat(parts).ToArray()));
+    }
+
+    // ---- plugin loading ------------------------------------------------------------
+
+    /// <summary>
+    /// The WinRT runtime must be one instance per process.
+    /// <para>
+    /// Every widget lives in its own collectible <c>AssemblyLoadContext</c>, so a per-context copy
+    /// of <c>WinRT.Runtime</c> means a second <c>ComWrappers.RegisterForMarshalling</c>, which
+    /// throws <c>InvalidOperationException: Attempt to update previously set global instance.</c>
+    /// That is the red toast every notification/media action produced once another widget had
+    /// already touched WinRT (reproduced with two load contexts over the same widget folder).
+    /// Pinning the rule here keeps a future refactor of the loader from reintroducing it.
+    /// </para>
+    /// </summary>
+    private static void CheckProcessGlobalRuntimes()
+    {
+        var loader = ReadRepo("src", "DeskCanvas.Core", "Services", "AssemblyProvider.cs");
+
+        Check(loader.Contains("\"WinRT.Runtime\"") && loader.Contains("\"Microsoft.Windows.SDK.NET\""),
+            "WinRT.Runtime and the WinRT projection are registered as process-global");
+        Check(loader.Contains("SharedRuntime.Load(sharedName, sharedPath)"),
+            "plugin contexts resolve a process-global assembly through the one shared loader");
+        Check(loader.Contains("class SharedRuntimeLoadContext"),
+            "the shared loader is a dedicated, never-collected load context");
     }
 
     // ---- ecosystem -----------------------------------------------------------------
@@ -801,6 +861,16 @@ internal static class Program
     /// </summary>
     private sealed class MonochromeSettingsProvider : IAppSettingsProvider
     {
+        /// <summary>
+        /// Which monochrome variant the provider reports. Static because the plugin runtime takes
+        /// the first publisher only (<c>ShortcutsRuntime.Publish</c> is last-writer-loses by
+        /// design), so the checks switch variants on the one provider instead of republishing.
+        /// </summary>
+        public static MonochromeStyle? Variant { get; set; }
+
+        /// <summary>Explicit accent colour; null means "follow the app accent".</summary>
+        public static string? Accent { get; set; }
+
         private readonly AppSettings data = new(
             new Theme(false, null, 1.0, true, false, "Segoe UI"),
             [],
@@ -810,7 +880,10 @@ internal static class Program
             false,
             null);
 
-        public AppSettings Get() => data;
+        public AppSettings Get() => data with
+        {
+            Theme = data.Theme with { MonochromeVariant = Variant, AccentColor = Accent }
+        };
 
         public void Save(AppSettings data) { }
 

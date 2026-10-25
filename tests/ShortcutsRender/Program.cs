@@ -136,6 +136,47 @@ internal static class Program
             return;
         }
 
+        if (scenario is "mono" or "mono-bw" or "mono-accent")
+        {
+            // Monochrome probe: every icon block must paint in the theme's single colour instead
+            // of each shortcut's own colour. "mono-bw" is 黑白 (white on a dark card),
+            // "mono-accent" is 强调色 with an explicit accent.
+            var variant = scenario switch
+            {
+                "mono-bw" => DeskCanvas.Core.Models.Settings.MonochromeStyle.BlackWhite,
+                "mono-accent" => DeskCanvas.Core.Models.Settings.MonochromeStyle.Accent,
+                _ => (DeskCanvas.Core.Models.Settings.MonochromeStyle?)null,
+            };
+            var provider = new MonoProbeSettings(variant, scenario == "mono-accent" ? "#C0392B" : null);
+            // The live report is a dark-mode card; the harness default is light.
+            Application.Current!.RequestedThemeVariant = Avalonia.Styling.ThemeVariant.Dark;
+            var monoView = new ShortcutsView(null, new ShortcutsModel(), provider, null);
+            var monoWindow = new Window
+            {
+                WindowDecorations = WindowDecorations.None,
+                Width = width,
+                Height = height,
+                Background = new SolidColorBrush(Color.Parse("#1E1E1E")),
+                Content = monoView,
+            };
+            monoWindow.Show();
+            Dispatcher.UIThread.RunJobs();
+            AvaloniaHeadlessPlatform.ForceRenderTimerTick();
+            Dispatcher.UIThread.RunJobs();
+
+            var card = (Shortcuts.ViewModels.ShortcutsCardViewModel)monoView.DataContext!;
+            foreach (var tile in card.Tiles)
+            {
+                var color = tile.IconBrush is ISolidColorBrush solid ? solid.Color.ToString() : "?";
+                Console.WriteLine($"  tile '{tile.Name}' icon={color} stroke=" +
+                                  (tile.GlyphStrokeBrush is ISolidColorBrush s2 ? s2.Color.ToString() : "?"));
+            }
+
+            monoWindow.CaptureRenderedFrame()?.Save(outPath);
+            Console.WriteLine("saved mono: " + outPath);
+            return;
+        }
+
         var view = new ShortcutsView(null, new ShortcutsModel(), null, null);
         if (scenario == "running")
         {
@@ -1020,5 +1061,41 @@ internal static class Program
             Console.WriteLine(line);
             Dump(v, depth + 1);
         }
+    }
+}
+
+/// <summary>
+/// Settings provider for the monochrome render probes: one theme, one monochrome variant, and
+/// nothing else the card needs. Mirrors the live wiring (the provider is what the tiles read).
+/// </summary>
+internal sealed class MonoProbeSettings(DeskCanvas.Core.Models.Settings.MonochromeStyle? variant, string? accent)
+    : DeskCanvas.Core.Interfaces.IAppSettingsProvider
+{
+    private readonly DeskCanvas.Core.Models.Settings.AppSettings data = new(
+        new DeskCanvas.Core.Models.Settings.Theme(
+            DarkMode: true, AccentColor: null, OpacityLevel: 1.0, Monochrome: true,
+            UseNativeFrame: false, FontFamily: "Segoe UI",
+            Surface: DeskCanvas.Core.Models.Settings.SurfaceStyle.LiquidGlass,
+            MonochromeVariant: variant),
+        [],
+        new DeskCanvas.Core.Models.Settings.Layout(DeskCanvas.Core.Models.Settings.GridMode.Manual, true, false, true, false),
+        new DeskCanvas.Core.Models.Settings.Dimensions(160, 12, 24),
+        new DeskCanvas.Core.Models.Settings.Region("en-US"),
+        false,
+        null);
+
+    public DeskCanvas.Core.Models.Settings.AppSettings Get() =>
+        data with { Theme = data.Theme with { AccentColor = accent } };
+
+    public void Save(DeskCanvas.Core.Models.Settings.AppSettings value) { }
+
+    public event DeskCanvas.Core.Interfaces.DataChangedEvent<DeskCanvas.Core.Models.Settings.AppSettings>? DataChanging
+    {
+        add { } remove { }
+    }
+
+    public event DeskCanvas.Core.Interfaces.DataChangedEvent<DeskCanvas.Core.Models.Settings.AppSettings>? DataChanged
+    {
+        add { } remove { }
     }
 }
