@@ -292,6 +292,19 @@
             <Setter Property="Background" Value="{DynamicResource SpotlightSelectionBrush}" />
         </Style>
 
+        <!-- 新建分类 capsule: hidden until the pointer is over the capsule row. An always-visible
+             "+" reads as a permanent empty slot next to the user's own categories, and the bar is
+             the only thing that needs it. :pointerover on the bar itself (which carries a
+             transparent background, so the whole row counts — not just the chips) brings it back;
+             nothing in code touches its visibility, so a rebuilt bar starts hidden again.
+             Keyboard-only users still have 右键应用 › 新建分类. -->
+        <Style Selector="StackPanel#AppCategoryBar Button.add-category">
+            <Setter Property="IsVisible" Value="False" />
+        </Style>
+        <Style Selector="StackPanel#AppCategoryBar:pointerover Button.add-category">
+            <Setter Property="IsVisible" Value="True" />
+        </Style>
+
         <!-- 最近使用 tile: a flattened button that adds nothing of its own. Zero padding and a
              centred content box keep the tile's geometry byte-for-byte the grid's; the halo inset
              that the grid writes onto its ListBoxItem presenter is written onto this button
@@ -474,6 +487,25 @@
                                 Margin="24,0,20,12"
                                 IsVisible="{Binding IsFiltering}" />
 
+                    <!-- App-grid category capsules (macOS Launchpad's clusters, as a filter):
+                         全部 + the user's own categories + the "new category" capsule. Shares
+                         row 1 with the search chips — the two bars are never on screen at the
+                         same time, because one belongs to the grid and the other to a query.
+                         The chips themselves are built in code (BuildAppCategoryChips): their
+                         count and labels come from the category store, and they reuse the same
+                         "category-chip" style the search bar uses so every material — including
+                         the monochrome variants — paints them identically.
+                         Background=Transparent is what makes the whole ROW hoverable: the ＋
+                         capsule is revealed by the bar's :pointerover state (see the styles
+                         above), so the pointer must be able to hit the empty space too. -->
+                    <StackPanel x:Name="AppCategoryBar"
+                                Grid.Row="1"
+                                Orientation="Horizontal"
+                                Spacing="6"
+                                Margin="24,0,20,12"
+                                Background="Transparent"
+                                IsVisible="False" />
+
                     <!-- Search status: only present while it has something to say (a running query, an
                          invalid regex, or a degraded backend). Collapses to nothing otherwise. -->
                     <StackPanel Grid.Row="2" Margin="26,2,26,0" Spacing="2">
@@ -578,6 +610,29 @@
                                        HorizontalAlignment="Center"
                                        VerticalAlignment="Center"
                                        Foreground="{DynamicResource SpotlightSecondaryText}" />
+
+                            <!-- The active app category holds no apps yet. Distinct from both the
+                                 "no results" line (there is no query) and the import hint (the
+                                 launcher folder is not empty): the user just needs to file some
+                                 apps into the cluster they created. -->
+                            <StackPanel x:Name="EmptyCategoryState"
+                                        IsVisible="False"
+                                        Spacing="6"
+                                        MaxWidth="420"
+                                        HorizontalAlignment="Center"
+                                        VerticalAlignment="Center">
+                                <TextBlock Text="{x:Static loc:Locale.Spotlight_AppCategory_Empty}"
+                                           FontSize="14"
+                                           FontWeight="Medium"
+                                           TextAlignment="Center"
+                                           TextWrapping="Wrap"
+                                           Foreground="{DynamicResource SpotlightPrimaryText}" />
+                                <TextBlock Text="{x:Static loc:Locale.Spotlight_AppCategory_EmptyHint}"
+                                           FontSize="11.5"
+                                           TextAlignment="Center"
+                                           TextWrapping="Wrap"
+                                           Foreground="{DynamicResource SpotlightSecondaryText}" />
+                            </StackPanel>
 
                             <!-- The results' selection highlight, a floating bar over the list.
                                  Driven by the spring integrator (SpotlightWindow), so it GLIDES

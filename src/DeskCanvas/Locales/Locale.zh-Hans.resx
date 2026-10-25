@@ -1474,6 +1474,16 @@
 
   <data name="Spotlight_Category_Clipboard" xml:space="preserve"><value>剪贴板</value></data>
   <data name="Spotlight_Category_Web" xml:space="preserve"><value>网页</value></data>
+  <!-- 应用网格分类（搜索栏下方的集群胶囊栏） -->
+  <data name="Spotlight_AppCategory_New" xml:space="preserve"><value>新建分类</value></data>
+  <data name="Spotlight_AppCategory_DefaultName" xml:space="preserve"><value>分类 {0}</value></data>
+  <data name="Spotlight_AppCategory_Rename" xml:space="preserve"><value>重命名…</value></data>
+  <data name="Spotlight_AppCategory_Delete" xml:space="preserve"><value>删除分类</value></data>
+  <data name="Spotlight_AppCategory_MoveTo" xml:space="preserve"><value>移动到分类</value></data>
+  <data name="Spotlight_AppCategory_None" xml:space="preserve"><value>无分类</value></data>
+  <data name="Spotlight_AppCategory_Empty" xml:space="preserve"><value>这个分类还没有应用</value></data>
+  <data name="Spotlight_AppCategory_EmptyHint" xml:space="preserve"><value>在「全部」里右键应用即可归入这里。</value></data>
+  <data name="Spotlight_AppCategory_RenameHint" xml:space="preserve"><value>分类名称</value></data>
   <data name="Spotlight_Web_Group" xml:space="preserve"><value>网页</value></data>
   <data name="Spotlight_Web_Row_Title" xml:space="preserve"><value>用 {0} 搜索“{1}”</value></data>
   <data name="Spotlight_Web_Row_Subtitle" xml:space="preserve"><value>{0} · {1}</value></data>

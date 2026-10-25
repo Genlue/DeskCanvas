@@ -55,6 +55,15 @@ public sealed class SpotlightViewModel : INotifyPropertyChanged, IDisposable
 
 	private readonly SpotlightUsageStore usage;
 
+	private readonly SpotlightAppCategoryStore appCategoryStore;
+
+	/// <summary>
+	/// &gt; 0 while this view model is the one writing to <see cref="appCategoryStore"/>: its own
+	/// mutation already refreshes with intent (the new category selected), so the store's Changed
+	/// event must not run a second, selection-losing refresh behind it.
+	/// </summary>
+	private int categoryMutations;
+
 	private readonly SpotlightRecentLaunchStore recentLaunches;
 
 	private readonly SpotlightSearchHistoryStore searchHistory;
@@ -110,6 +119,40 @@ public sealed class SpotlightViewModel : INotifyPropertyChanged, IDisposable
 	private PreviewSnapshot previewSnapshot;
 
 	public ObservableCollection<SpotlightItem> Items { get; } = new ObservableCollection<SpotlightItem>();
+
+	/// <summary>
+	/// What the app grid actually shows: <see cref="Items"/> filtered by the active app category
+	/// (全部 = everything). The grid binds to this collection, while search/recents/lookups keep
+	/// reading the unfiltered <see cref="Items"/> — a category is a view of the catalogue, not a
+	/// second catalogue.
+	/// </summary>
+	public ObservableCollection<SpotlightItem> GridItems { get; } = new ObservableCollection<SpotlightItem>();
+
+	/// <summary>
+	/// The app-grid category bar: 全部 first, then the user's own categories in creation order.
+	/// Distinct from <see cref="Categories"/>, which is the <b>search</b> filter bar (应用/图片/文件…)
+	/// — different question, different bar, different persistence.
+	/// </summary>
+	public IReadOnlyList<LauncherAppCategory> AppCategories => appCategories;
+
+	private List<LauncherAppCategory> appCategories = [];
+
+	/// <summary>Index into <see cref="AppCategories"/>; 0 is always 全部.</summary>
+	public int ActiveAppCategory => activeAppCategory;
+
+	private int activeAppCategory;
+
+	/// <summary>The category the grid is filtered by, or null for 全部.</summary>
+	public LauncherAppCategory? ActiveAppCategoryValue =>
+		activeAppCategory > 0 && activeAppCategory < appCategories.Count
+			? appCategories[activeAppCategory]
+			: null;
+
+	/// <summary>
+	/// A category with nothing in it: the grid is empty although the launcher folder is not. The
+	/// view shows its own "这个分类还没有应用" state instead of the import hint.
+	/// </summary>
+	public bool IsEmptyAppCategory => !IsFiltering && Items.Count > 0 && GridItems.Count == 0;
 
 	public ObservableCollection<SpotlightItem> RecentItems { get; } = new ObservableCollection<SpotlightItem>();
 
@@ -219,7 +262,7 @@ public sealed class SpotlightViewModel : INotifyPropertyChanged, IDisposable
 
 	public event PropertyChangedEventHandler? PropertyChanged;
 
-	public SpotlightViewModel(SpotlightQueryRouter router, LauncherCatalog catalog, ShellIconService icons, SpotlightUsageStore usage, SpotlightClipboardService clipboard, FileSearchService files, IAppSettingsProvider settings, SpotlightPreviewService previews, SpotlightWebResults webResults, SpotlightRecentLaunchStore? recentLaunches = null, SpotlightSearchHistoryStore? searchHistory = null)
+	public SpotlightViewModel(SpotlightQueryRouter router, LauncherCatalog catalog, ShellIconService icons, SpotlightUsageStore usage, SpotlightClipboardService clipboard, FileSearchService files, IAppSettingsProvider settings, SpotlightPreviewService previews, SpotlightWebResults webResults, SpotlightRecentLaunchStore? recentLaunches = null, SpotlightSearchHistoryStore? searchHistory = null, SpotlightAppCategoryStore? appCategoryStore = null)
 	{
 		this.router = router;
 		this.catalog = catalog;
@@ -232,7 +275,9 @@ public sealed class SpotlightViewModel : INotifyPropertyChanged, IDisposable
 		this.webResults = webResults;
 		this.recentLaunches = recentLaunches ?? new SpotlightRecentLaunchStore();
 		this.searchHistory = searchHistory ?? new SpotlightSearchHistoryStore();
+		this.appCategoryStore = appCategoryStore ?? new SpotlightAppCategoryStore();
 		categories = BuildCategories(SavedCategoryOrder());
+		this.appCategoryStore.Changed += OnAppCategoriesChanged;
 		catalog.Changed += OnCatalogChanged;
 		settings.DataChanged += OnSettingsChanged;
 		usage.Changed += OnUsageChanged;
@@ -643,10 +688,168 @@ public sealed class SpotlightViewModel : INotifyPropertyChanged, IDisposable
 		{
 			Items.Add(item);
 		}
+		// The catalogue moved under the categories: a shortcut may be gone (its key is dropped)
+		// and the filtered grid has to be rebuilt from the new items.
+		PruneAppCategoryKeys();
+		RefreshAppCategories();
 		OnPropertyChanged("IsEmptyFolder");
 		RefreshRecentsAsync();
 		StartQuery();
 		StartIconLoad();
+	}
+
+	// ---- app-grid categories (macOS-Launchpad-style clusters) ------------------------------
+	//
+	// A second, independent bar from the search filter chips: the grid groups the user's own
+	// shortcuts into named clusters ("开发" / "游戏" / …), persisted in launcher-categories.json.
+	// The 全部 position is synthetic (it owns no entries) and always sits at index 0, so the
+	// stored ids never collide with it.
+
+	/// <summary>Rebuild the bar from the store, keeping the user on the same category when it still exists.</summary>
+	/// <param name="selectId">Category to select instead (a freshly created one), or null to keep the current.</param>
+	public void RefreshAppCategories(string? selectId = null)
+	{
+		var previousId = selectId
+			?? (ActiveAppCategoryValue?.Id);
+		var stored = appCategoryStore.Categories;
+
+		var next = new List<LauncherAppCategory>(stored.Count + 1)
+		{
+			new(string.Empty, Locale.Spotlight_Category_All, []),
+		};
+		next.AddRange(stored.Where(category => category.Name.Length > 0));
+
+		var index = 0;
+		if (!string.IsNullOrEmpty(previousId))
+		{
+			var found = next.FindIndex(category => category.Id == previousId);
+			if (found > 0) index = found;
+		}
+
+		appCategories = next;
+		activeAppCategory = Math.Clamp(index, 0, next.Count - 1);
+
+		OnPropertyChanged(nameof(AppCategories));
+		OnPropertyChanged(nameof(ActiveAppCategory));
+		OnPropertyChanged(nameof(ActiveAppCategoryValue));
+		RebuildGridItems();
+	}
+
+	/// <summary>Filter the grid by a position in <see cref="AppCategories"/> (0 = 全部).</summary>
+	public void SetAppCategory(int index)
+	{
+		var clamped = Math.Clamp(index, 0, Math.Max(0, appCategories.Count - 1));
+		if (clamped == activeAppCategory) return;
+
+		activeAppCategory = clamped;
+		OnPropertyChanged(nameof(ActiveAppCategory));
+		OnPropertyChanged(nameof(ActiveAppCategoryValue));
+		RebuildGridItems();
+	}
+
+	/// <summary>Step the bar by <paramref name="delta"/> positions, wrapping at both ends.</summary>
+	public void StepAppCategory(int delta)
+	{
+		var count = appCategories.Count;
+		if (count <= 1) return;
+		SetAppCategory(((activeAppCategory + delta) % count + count) % count);
+	}
+
+	/// <summary>Create a category (named <paramref name="name"/>, or a localized default) and select it.</summary>
+	public LauncherAppCategory CreateAppCategory(string? name)
+	{
+		var fallback = string.Format(Locale.Spotlight_AppCategory_DefaultName, appCategories.Count);
+		LauncherAppCategory? created = null;
+
+		categoryMutations++;
+		try
+		{
+			created = appCategoryStore.Create(string.IsNullOrWhiteSpace(name) ? fallback : name);
+		}
+		finally
+		{
+			categoryMutations--;
+		}
+
+		RefreshAppCategories(created.Id);
+		return created;
+	}
+
+	/// <summary>Rename a category. Blank names fall back to the store's normalization.</summary>
+	public void RenameAppCategory(string id, string? name) =>
+		MutateAppCategories(() => appCategoryStore.Rename(id, name));
+
+	/// <summary>Delete a category; its entries fall back to 全部.</summary>
+	public void DeleteAppCategory(string id) =>
+		MutateAppCategories(() => appCategoryStore.Delete(id));
+
+	/// <summary>File an entry into a category (<c>null</c> = unfile it, i.e. 全部 only).</summary>
+	public void MoveToAppCategory(string entryKey, string? categoryId) =>
+		MutateAppCategories(() => appCategoryStore.Assign(entryKey, categoryId));
+
+	/// <summary>The category that owns <paramref name="entryKey"/>, or null when it is unfiled.</summary>
+	public LauncherAppCategory? CategoryOfEntry(string entryKey) => appCategoryStore.CategoryOf(entryKey);
+
+	private void MutateAppCategories(Action mutate)
+	{
+		categoryMutations++;
+		try
+		{
+			mutate();
+		}
+		finally
+		{
+			categoryMutations--;
+		}
+
+		// Our own write: refresh here (with the current selection preserved by id) instead of
+		// letting the store's event do it a second time.
+		RefreshAppCategories();
+	}
+
+	/// <summary>Drop stored keys whose shortcut no longer exists in the catalogue.</summary>
+	private void PruneAppCategoryKeys()
+	{
+		var live = Items.Where(item => item.Entry != null).Select(item => item.Entry!.Key).ToList();
+		if (live.Count == 0) return;
+
+		categoryMutations++;
+		try
+		{
+			appCategoryStore.Prune(live);
+		}
+		finally
+		{
+			categoryMutations--;
+		}
+	}
+
+	private void RebuildGridItems()
+	{
+		var active = ActiveAppCategoryValue;
+
+		GridItems.Clear();
+		foreach (var item in Items)
+		{
+			if (active is not null)
+			{
+				if (item.Entry is not { } entry || !active.Contains(entry.Key)) continue;
+			}
+
+			GridItems.Add(item);
+		}
+
+		OnPropertyChanged(nameof(GridItems));
+		OnPropertyChanged(nameof(IsEmptyAppCategory));
+	}
+
+	private void OnAppCategoriesChanged()
+	{
+		if (categoryMutations > 0) return;
+		Dispatcher.UIThread.Post(() =>
+		{
+			if (!disposed) RefreshAppCategories();
+		});
 	}
 
 	/// <summary>
@@ -1780,6 +1983,7 @@ public sealed class SpotlightViewModel : INotifyPropertyChanged, IDisposable
 			settings.DataChanged -= OnSettingsChanged;
 			usage.Changed -= OnUsageChanged;
 			clipboard.Changed -= OnClipboardChanged;
+			appCategoryStore.Changed -= OnAppCategoriesChanged;
 			Interlocked.Increment(ref iconGeneration);
 			Interlocked.Increment(ref searchGeneration);
 			Interlocked.Increment(ref previewGeneration);

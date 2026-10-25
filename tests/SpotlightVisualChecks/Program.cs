@@ -104,6 +104,7 @@ internal static class Program
         RunRecentRowChecks(catalog, icons);
         RunCalculatorChecks(catalog, icons);
         RunLauncherModeChecks(catalog, icons);
+        RunAppCategoryChecks(catalog, icons, outDir);
         RunFileSearchChecks();
         RunPrefixAndRecentLaunchChecks(catalog, icons);
         RunBlacklistChecks();
@@ -338,7 +339,8 @@ internal static class Program
     /// </summary>
     private static SpotlightViewModel BuildViewModel(
         IAppSettingsProvider provider, LauncherCatalog catalog, ShellIconService icons,
-        string usageFile = "launcher-usage.json", SpotlightSearchHistoryStore? searchHistory = null)
+        string usageFile = "launcher-usage.json", SpotlightSearchHistoryStore? searchHistory = null,
+        SpotlightAppCategoryStore? appCategories = null)
     {
         // The usage store is a file under the sandbox, so a check that launches apps leaves its
         // launch counts behind for every later check that reads the same file. Callers that
@@ -355,7 +357,132 @@ internal static class Program
             new SpotlightWebProvider(provider));
 
         return new SpotlightViewModel(router, catalog, icons, usage, clipboard, files, provider,
-            new SpotlightPreviewService(icons), new SpotlightWebResults(provider), searchHistory: searchHistory);
+            new SpotlightPreviewService(icons), new SpotlightWebResults(provider),
+            searchHistory: searchHistory, appCategoryStore: appCategories);
+    }
+
+    /// <summary>
+    /// The app grid's cluster capsules (macOS Launchpad's folders, as a filter): 全部 + the user's
+    /// own categories + a ＋ capsule, all built from <c>launcher-categories.json</c>. Pins the
+    /// filtering, the one-category-per-entry rule, persistence, and the bar's actual presence in a
+    /// rendered window (the chips are built in code, so a screenshot is the only proof they exist).
+    /// </summary>
+    private static void RunAppCategoryChecks(LauncherCatalog catalog, ShellIconService icons, string outDir)
+    {
+        Console.WriteLine("\n--- app-grid categories ---");
+
+        var storePath = Path.Combine(sandbox, "launcher-categories.json");
+        if (File.Exists(storePath)) File.Delete(storePath);
+
+        var store = new SpotlightAppCategoryStore(storePath);
+        var settings = BuildSettings(SurfaceStyle.FullColor, dark: false);
+        var provider = new FakeSettingsProvider(settings);
+        var viewModel = BuildViewModel(provider, catalog, icons, "launcher-usage-categories.json", appCategories: store);
+        viewModel.Reload();
+        foreach (var item in viewModel.Items)
+        {
+            item.Icon = icons.GetIconAsync(item.Entry!.ShortcutPath, 64).GetAwaiter().GetResult();
+        }
+
+        Check(viewModel.GridItems.Count == viewModel.Items.Count && viewModel.Items.Count > 0,
+            "categories: 全部 shows every tile");
+        Check(viewModel.AppCategories.Count == 1 && viewModel.AppCategories[0].Id.Length == 0,
+            "categories: 全部 is the only capsule before anything is created");
+        Check(!viewModel.IsEmptyAppCategory, "categories: 全部 is never reported as an empty category");
+
+        var created = viewModel.CreateAppCategory("开发");
+        Check(viewModel.AppCategories.Count == 2 && viewModel.ActiveAppCategory == 1,
+            "categories: a new category is appended and selected");
+        Check(viewModel.GridItems.Count == 0 && viewModel.IsEmptyAppCategory,
+            "categories: a fresh category is empty, and says so instead of showing the import hint");
+
+        var key = viewModel.Items[0].Entry!.Key;
+        viewModel.MoveToAppCategory(key, created.Id);
+        Check(viewModel.GridItems.Count == 1 && viewModel.GridItems[0].Entry!.Key == key,
+            "categories: filing a tile filters the grid down to it");
+
+        viewModel.SetAppCategory(0);
+        Check(viewModel.GridItems.Count == viewModel.Items.Count, "categories: 全部 restores the whole grid");
+
+        viewModel.StepAppCategory(1);
+        Check(viewModel.ActiveAppCategory == 1 && viewModel.GridItems.Count == 1,
+            "categories: stepping the bar lands on the category (Ctrl+←/→ and Tab both use this)");
+        viewModel.StepAppCategory(1);
+        Check(viewModel.ActiveAppCategory == 0, "categories: the bar is a ring (stepping past the end wraps)");
+
+        var reloaded = new SpotlightAppCategoryStore(storePath);
+        Check(reloaded.Categories.Count == 1
+              && reloaded.Categories[0].Name == "开发"
+              && reloaded.Categories[0].Contains(key),
+            "categories: the category and its tile survive a reload from disk");
+
+        viewModel.RenameAppCategory(created.Id, "开发工具");
+        Check(viewModel.AppCategories[1].Name == "开发工具", "categories: a rename shows up in the bar");
+        Check(new SpotlightAppCategoryStore(storePath).Categories[0].Name == "开发工具",
+            "categories: a rename is persisted");
+
+        var second = viewModel.CreateAppCategory("游戏");
+        viewModel.MoveToAppCategory(key, second.Id);
+        Check(viewModel.CategoryOfEntry(key)?.Id == second.Id,
+            "categories: moving a tile files it into the new category");
+        Check(new SpotlightAppCategoryStore(storePath).Categories
+                .First(category => category.Id == created.Id).Items.Count == 0,
+            "categories: …and takes it out of the previous one (one category per tile)");
+
+        viewModel.DeleteAppCategory(second.Id);
+        Check(viewModel.AppCategories.Count == 2 && viewModel.CategoryOfEntry(key) == null,
+            "categories: deleting a category unfiles its tiles");
+        Check(viewModel.ActiveAppCategory == 0, "categories: deleting the active category falls back to 全部");
+
+        // The bar itself: built in code, so only a laid-out window proves the chips exist.
+        var window = new SpotlightWindow(viewModel, provider);
+        window.ApplyAppearanceForChecks();
+        window.ApplySummonModeForChecks(SpotlightSummonMode.AppList);
+
+        var bar = window.FindControl<StackPanel>("AppCategoryBar")!;
+        Check(bar.IsVisible, "categories: the capsule bar is on screen on the app grid");
+
+        Render(window, outDir, "appcategories", (int)settings.EffectiveLauncher.Width,
+            (int)settings.EffectiveLauncher.Height);
+
+        Check(bar.Children.Count == viewModel.AppCategories.Count + 1,
+            $"categories: 全部 + {viewModel.AppCategories.Count - 1} category + the ＋ capsule ({bar.Children.Count} chips)");
+
+        // Ctrl+←/→ walks the capsules on the grid too (the same gesture as the search bar's).
+        Check(!window.HandleKeyForChecks(Key.Right) && viewModel.ActiveAppCategory == 0,
+            "categories: plain → in the grid is not a category step");
+        Check(window.HandleKeyForChecks(Key.Right, KeyModifiers.Control) && viewModel.ActiveAppCategory == 1,
+            $"categories: Ctrl+→ walks the grid's capsules ({viewModel.ActiveAppCategory})");
+        viewModel.SetAppCategory(0);
+
+        var chips = bar.Children.OfType<Button>().ToList();
+        Check(chips.Count >= 2 && chips[0].Classes.Contains("selected"),
+            "categories: 全部 wears the selected pill while it is the active filter");
+        Check(chips.Count >= 3 && chips[^1].Content is TextBlock { Text: "+" },
+            "categories: the trailing capsule is the ＋ (new category)");
+        Check(!chips[^1].IsVisible,
+            "categories: the ＋ capsule stays hidden until the pointer is over the capsule row");
+
+        // One click = open. The gesture itself needs real input, but its decision is testable:
+        // a click on a tile resolves to that tile, a click on the empty grid resolves to nothing
+        // (otherwise a stray click would launch whatever happens to be selected).
+        var gridList = window.FindControl<ListBox>("GridList")!;
+        var firstTile = gridList.ContainerFromIndex(0) as ListBoxItem;
+        Check(firstTile != null && SpotlightWindow.TileUnderForChecks(firstTile) == viewModel.GridItems[0],
+            $"tiles: a click on a tile resolves to that tile (one click opens it) [{gridList.ItemCount} tiles, container={firstTile?.GetType().Name ?? "null"}]");
+        Check(SpotlightWindow.TileUnderForChecks(gridList) == null,
+            "tiles: a click on the empty area of the grid resolves to nothing");
+
+        // Switching the filter from the bar's own click handler must move the pill, not just the
+        // grid: the chip rebuild happens on the view model's change notification.
+        chips[1].RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+        Check(viewModel.ActiveAppCategory == 1, "categories: clicking a capsule selects that category");
+        Check(window.FindControl<StackPanel>("AppCategoryBar")!.Children.OfType<Button>().First()
+                .Classes.Contains("selected") == false,
+            "categories: the selected pill follows the active category");
+
+        window.Close();
     }
 
     /// <summary>
@@ -638,24 +765,29 @@ internal static class Program
         Check(wideBar is { IsVisible: true },
             "categories: IsFiltering shows the category bar through the live binding");
 
-        // ←/→ walk the chips. While the search field owns focus these two keys are the only thing
-        // arrows could mean in the window, and the bar is what F1–F7 lock — so the gesture is
-        // judged by the bar's visibility, not by the focus zone.
+        // Ctrl+←/→ walk the chips (the category gesture). Plain ←/→ are the search field's again:
+        // they must NOT be consumed by the window while the field owns focus, or the caret would
+        // stop moving inside the query — the reported defect.
         wideViewModel.SetCategory(0);
-        Check(wideWindow.HandleKeyForChecks(Key.Right) && wideViewModel.ActiveCategory == 1,
-            $"categories: → moves to the next chip ({wideViewModel.ActiveCategory})");
-        Check(wideWindow.HandleKeyForChecks(Key.Left) && wideViewModel.ActiveCategory == 0,
-            $"categories: ← moves back ({wideViewModel.ActiveCategory})");
+        Check(!wideWindow.HandleKeyForChecks(Key.Right) && wideViewModel.ActiveCategory == 0,
+            $"categories: plain → stays with the caret, not the bar ({wideViewModel.ActiveCategory})");
+        Check(!wideWindow.HandleKeyForChecks(Key.Left) && wideViewModel.ActiveCategory == 0,
+            $"categories: plain ← stays with the caret, not the bar ({wideViewModel.ActiveCategory})");
+        Check(wideWindow.HandleKeyForChecks(Key.Right, KeyModifiers.Control) && wideViewModel.ActiveCategory == 1,
+            $"categories: Ctrl+→ moves to the next chip ({wideViewModel.ActiveCategory})");
+        Check(wideWindow.HandleKeyForChecks(Key.Left, KeyModifiers.Control) && wideViewModel.ActiveCategory == 0,
+            $"categories: Ctrl+← moves back ({wideViewModel.ActiveCategory})");
         var lastChip = wideViewModel.Categories.Count - 1;
-        Check(wideWindow.HandleKeyForChecks(Key.Left) && wideViewModel.ActiveCategory == lastChip,
-            $"categories: ← at the first chip wraps to the last ({wideViewModel.ActiveCategory})");
-        Check(wideWindow.HandleKeyForChecks(Key.Right) && wideViewModel.ActiveCategory == 0,
-            $"categories: → at the last chip wraps back to the first ({wideViewModel.ActiveCategory})");
+        Check(wideWindow.HandleKeyForChecks(Key.Left, KeyModifiers.Control) && wideViewModel.ActiveCategory == lastChip,
+            $"categories: Ctrl+← at the first chip wraps to the last ({wideViewModel.ActiveCategory})");
+        Check(wideWindow.HandleKeyForChecks(Key.Right, KeyModifiers.Control) && wideViewModel.ActiveCategory == 0,
+            $"categories: Ctrl+→ at the last chip wraps back to the first ({wideViewModel.ActiveCategory})");
 
-        // Without a query the bar is gone, so there is nothing for the arrows to walk.
+        // Without a query the search bar is gone (and this grid has no app category yet), so there
+        // is nothing for the gesture to walk — and the key must fall through to the field.
         wideViewModel.SetCategory(2);
         wideViewModel.SetQuery(string.Empty);
-        wideWindow.HandleKeyForChecks(Key.Right);
+        wideWindow.HandleKeyForChecks(Key.Right, KeyModifiers.Control);
         Check(wideViewModel.ActiveCategory == 2,
             $"categories: an empty query leaves the chip alone ({wideViewModel.ActiveCategory})");
 

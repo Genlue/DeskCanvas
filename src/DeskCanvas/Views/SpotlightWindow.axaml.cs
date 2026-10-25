@@ -230,6 +230,13 @@ public partial class SpotlightWindow : Window
     private int recentIndex;
     private readonly List<Button> categoryChips = [];
 
+    /// <summary>
+    /// The app-grid bar's chips, index-aligned with <see cref="SpotlightViewModel.AppCategories"/>
+    /// (0 = 全部). Kept apart from <see cref="categoryChips"/>: that one is the search filter bar,
+    /// this one is the launchpad's clusters, and the two are never on screen together.
+    /// </summary>
+    private readonly List<Button> appCategoryChips = [];
+
     /// <summary>The view model subscriptions made in the constructor, detached on close.</summary>
     private readonly System.Collections.Specialized.NotifyCollectionChangedEventHandler recentItemsChanged;
     private readonly System.Collections.Specialized.NotifyCollectionChangedEventHandler resultsChanged;
@@ -339,7 +346,7 @@ public partial class SpotlightWindow : Window
         // The handlers are named so Closed can detach them: the view model outlives this window
         // (it is the service's, not the window's), and a closed window still reacting to a result
         // change means UpdateMode → ScreenFromWindow on a disposed platform implementation.
-        GridList.ItemsSource = viewModel.Items;
+        GridList.ItemsSource = viewModel.GridItems;
         ResultList.ItemsSource = viewModel.Results;
         RecentItemsControl.ItemsSource = viewModel.RecentItems;
 
@@ -357,6 +364,7 @@ public partial class SpotlightWindow : Window
         viewModel.RecentItems.CollectionChanged += recentItemsChanged;
         viewModel.Results.CollectionChanged += resultsChanged;
         BuildCategoryChips();
+        BuildAppCategoryChips();
 
         WindowRoles.Register(this, WindowRole.Spotlight);
 
@@ -450,8 +458,16 @@ public partial class SpotlightWindow : Window
         // are cheap to satisfy — the schedule call is idempotent and no-ops at rest.
         ResultList.LayoutUpdated += OnResultListLayoutUpdated;
         ResultList.ContainerPrepared += (_, _) => ScheduleResultHighlightUpdate();
-        GridList.DoubleTapped += (_, _) => _ = ActivateSelectedAsync();
+        // 应用网格: ONE click opens the app (Launchpad's semantics, and what a grid of icons
+        // promises). The search results keep the double-click: that list is a selection surface
+        // first — a single click there is how you preview a row — while a tile has no such job.
+        // handledEventsToo: a ListBoxItem may consume the gesture for its own selection, and the
+        // tile's own click must still reach the window.
+        GridList.AddHandler(InputElement.TappedEvent, OnGridTileTapped, RoutingStrategies.Bubble, handledEventsToo: true);
         ResultList.DoubleTapped += (_, _) => _ = ActivateSelectedAsync();
+        // Right-click a tile: file it into one of the app categories (the only editor for them —
+        // the overlay deliberately avoids modal dialogs, which would deactivate and dismiss it).
+        GridList.AddHandler(ContextRequestedEvent, OnGridContextRequested, RoutingStrategies.Tunnel);
         OpenFolderButton.Click += (_, _) => LauncherCatalog.OpenFolder(viewModel.Folder);
 
         viewModel.PropertyChanged += OnViewModelPropertyChanged;
@@ -531,6 +547,9 @@ public partial class SpotlightWindow : Window
         QueryBox.Text = string.Empty;
         viewModel.SetQuery(string.Empty);
         viewModel.SetCategory(0);
+        // A cluster filter belongs to one summon, not to the grid: coming back to a grid that
+        // silently hides most of the apps reads as "my shortcuts are gone".
+        viewModel.SetAppCategory(0);
         // Only the app grid wears the App Store artwork; 搜索栏式唤出's empty field is a search.
         viewModel.SetAppGridVisible(mode == SpotlightSummonMode.AppList);
         UpdateClearButton();
@@ -2080,6 +2099,20 @@ public partial class SpotlightWindow : Window
             // 重新筛选或网页结果后补：Results 是整体重建的，选中行必须重新落位。
             SyncResultSelection();
         }
+        else if (e.PropertyName is nameof(SpotlightViewModel.GridItems))
+        {
+            // The category filter produced a different tile set: the bar's selected capsule
+            // follows the view model, and the keyboard's current row no longer exists.
+            RefreshAppCategoryChips();
+            selectedIndex = -1;
+            GridList.SelectedIndex = -1;
+            UpdateMode();
+        }
+        else if (e.PropertyName is nameof(SpotlightViewModel.AppCategories))
+        {
+            BuildAppCategoryChips();
+            UpdateMode();
+        }
     }
 
     /// <summary>
@@ -2125,12 +2158,18 @@ public partial class SpotlightWindow : Window
         var filtering = viewModel.IsFiltering;
         var emptyFolder = viewModel.IsEmptyFolder;
         var emptyResult = viewModel.IsEmptyResult;
+        var emptyCategory = viewModel.IsEmptyAppCategory;
         var gridMode = summonMode == SpotlightSummonMode.AppList;
 
         GridList.IsVisible = gridMode && !filtering && !emptyFolder;
         ResultList.IsVisible = filtering && !emptyResult;
         EmptyState.IsVisible = gridMode && emptyFolder;
         NoResultState.IsVisible = emptyResult;
+        EmptyCategoryState.IsVisible = gridMode && emptyCategory && !emptyFolder;
+
+        // The cluster bar belongs to the grid: a search query has its own chips on the same row,
+        // and the empty-folder state is about the launcher folder itself, not about a category.
+        AppCategoryBar.IsVisible = gridMode && !filtering && !emptyFolder;
 
         // The card's size follows the mode, not the query alone: the preview column exists only
         // while searching, and the search-bar summon is one row tall until a result arrives.
@@ -2139,7 +2178,7 @@ public partial class SpotlightWindow : Window
         UpdateEmptyRows();
 
         var active = filtering ? ResultList : GridList;
-        var count = filtering ? viewModel.Results.Count : viewModel.Items.Count;
+        var count = filtering ? viewModel.Results.Count : viewModel.GridItems.Count;
 
         if (count == 0)
         {
@@ -2509,9 +2548,9 @@ public partial class SpotlightWindow : Window
     /// The whole keyboard contract. Reached twice by design: tunneling (ahead of the field's own key
     /// handling) while the search field holds focus, and bubbling for every other focus target.
     /// Typed characters and plain Backspace are never marked handled, so IME and editing stay
-    /// untouched. ←/→ are claimed on purpose: with the chips on screen they walk the category bar
-    /// (<see cref="HandleLeftRight"/>), which is why the caret is moved with Home/End, the mouse or
-    /// Backspace rather than by tapping an arrow.
+    /// untouched. Plain ←/→ stay with the field (caret movement) too; the category bar answers to
+    /// <b>Ctrl+←/→</b> — in the app grid that walks the cluster capsules, while a query is up it
+    /// walks the filter chips (see <see cref="StepCategory"/>).
     /// </summary>
     private void HandleKey(KeyEventArgs e)
     {
@@ -2575,6 +2614,16 @@ public partial class SpotlightWindow : Window
             return;
         }
 
+        // Ctrl + ←/→ walks the category bar: the app grid's clusters while the grid is up, the
+        // search filter chips while a query is. Ctrl is what makes this a category gesture —
+        // plain ←/→ belong to the text field again (caret movement), which is why the plain-arrow
+        // branch below only steps a bar when the bar itself holds the focus.
+        if (ctrl && !alt && e.Key is Key.Left or Key.Right)
+        {
+            if (StepCategory(e.Key == Key.Left ? -1 : 1)) e.Handled = true;
+            return;
+        }
+
         if (ctrl || alt) return;
 
         switch (e.Key)
@@ -2590,13 +2639,11 @@ public partial class SpotlightWindow : Window
                 return;
 
             case Key.Left:
-                HandleLeftRight(-1);
-                e.Handled = true;
+                if (HandleLeftRight(-1)) e.Handled = true;
                 return;
 
             case Key.Right:
-                HandleLeftRight(1);
-                e.Handled = true;
+                if (HandleLeftRight(1)) e.Handled = true;
                 return;
         }
     }
@@ -2659,50 +2706,55 @@ public partial class SpotlightWindow : Window
         }
     }
 
-    private void HandleLeftRight(int delta)
+    /// <summary>
+    /// Plain ←/→. They only mean "next / previous category" when a bar itself holds the focus;
+    /// everywhere else they are left alone so the search field keeps its caret movement (the
+    /// category gesture is Ctrl+←/→, see <see cref="StepCategory"/>).
+    /// </summary>
+    /// <returns>True when the key was consumed.</returns>
+    private bool HandleLeftRight(int delta)
     {
         switch (focusZone)
         {
-            case SpotlightFocusZone.Search when viewModel.IsFiltering:
-                // ←/→ are the category bar's own arrows while a query is up: with chips on screen
-                // they can only mean "the next / previous category", and the chips are exactly what
-                // F1–F7 lock. Judging by the bar's visibility (IsFiltering) rather than by the focus
-                // zone is deliberate — the field keeps focus while typing, which is precisely when
-                // the gesture is wanted. Caret movement keeps Home/End, the mouse and Backspace.
-                StepCategory(delta);
-                break;
-
             case SpotlightFocusZone.Categories:
-                StepCategory(delta);
-                break;
+                return StepCategory(delta);
 
             case SpotlightFocusZone.Recents:
                 StepRowIndex(RecentItemsControl, ref recentIndex, delta);
-                break;
-
-            case SpotlightFocusZone.List when viewModel.IsFiltering:
-                // The result list is vertical, so its left/right are free too: the same gesture
-                // works after ↓ moved the selection into the list.
-                StepCategory(delta);
-                break;
+                return true;
 
             case SpotlightFocusZone.List:
+                // The results list is vertical: ←/→ have nothing to move there.
+                if (viewModel.IsFiltering) return false;
                 MoveSelection(delta);
-                break;
+                return true;
         }
+
+        return false;
     }
 
     /// <summary>
-    /// Move the category lock one chip. The bar is a <b>ring</b>: ← on the first chip lands on the
-    /// last one and → on the last lands on the first, so neither end is a dead key.
+    /// Move the category lock one position. The two bars share this gesture but never share the
+    /// screen: while a query is up it is the search filter chips, otherwise the app grid's
+    /// clusters. Both are <b>rings</b> — ← on the first chip lands on the last one — so neither end
+    /// is a dead key.
     /// </summary>
-    private void StepCategory(int delta)
+    /// <returns>True when a bar was on screen and consumed the step.</returns>
+    private bool StepCategory(int delta)
     {
-        var count = viewModel.Categories.Count;
-        if (count == 0) return;
+        if (viewModel.IsFiltering)
+        {
+            var count = viewModel.Categories.Count;
+            if (count == 0) return false;
 
-        var next = ((viewModel.ActiveCategory + delta) % count + count) % count;
-        viewModel.SetCategory(next);
+            var next = ((viewModel.ActiveCategory + delta) % count + count) % count;
+            viewModel.SetCategory(next);
+            return true;
+        }
+
+        if (!AppCategoryBar.IsVisible || viewModel.AppCategories.Count <= 1) return false;
+        viewModel.StepAppCategory(delta);
+        return true;
     }
 
     /// <summary>Down from the search field / category bar: filtering jumps straight into the list,
@@ -2827,7 +2879,7 @@ public partial class SpotlightWindow : Window
     private void MoveFocusZone(int delta)
     {
         var order = new List<SpotlightFocusZone>();
-        if (CategoryBar.IsVisible && categoryChips.Count > 0) order.Add(SpotlightFocusZone.Categories);
+        if (CategoryBarOnScreen) order.Add(SpotlightFocusZone.Categories);
         if (ActiveListVisible) order.Add(SpotlightFocusZone.List);
         if (FirstPreviewButton() != null) order.Add(SpotlightFocusZone.Preview);
 
@@ -2858,12 +2910,27 @@ public partial class SpotlightWindow : Window
         FocusZoneTarget(focusZone);
     }
 
+    /// <summary>
+    /// True while a category bar owns row 1: the search filter chips while a query is up, or the
+    /// app grid's cluster capsules while the grid is. They never share the row.
+    /// </summary>
+    private bool CategoryBarOnScreen =>
+        (CategoryBar.IsVisible && categoryChips.Count > 0)
+        || (AppCategoryBar.IsVisible && appCategoryChips.Count > 0);
+
+    /// <summary>The chips of whichever bar is on screen (the grid's clusters win when both exist).</summary>
+    private List<Button> ChipsOnScreen =>
+        AppCategoryBar.IsVisible && appCategoryChips.Count > 0 ? appCategoryChips : categoryChips;
+
     private void FocusZoneTarget(SpotlightFocusZone zone)
     {
         switch (zone)
         {
             case SpotlightFocusZone.Categories:
-                categoryChips[Math.Clamp(viewModel.ActiveCategory, 0, categoryChips.Count - 1)].Focus();
+                var chips = ChipsOnScreen;
+                if (chips.Count == 0) break;
+                var active = AppCategoryBar.IsVisible ? viewModel.ActiveAppCategory : viewModel.ActiveCategory;
+                chips[Math.Clamp(active, 0, chips.Count - 1)].Focus();
                 break;
 
             case SpotlightFocusZone.List:
@@ -2896,7 +2963,7 @@ public partial class SpotlightWindow : Window
     /// <summary>A zone whose host row disappeared (query cleared, mode swap) folds back to Search.</summary>
     private void ValidateFocusZone()
     {
-        if (focusZone == SpotlightFocusZone.Categories && !(CategoryBar.IsVisible && categoryChips.Count > 0))
+        if (focusZone == SpotlightFocusZone.Categories && !CategoryBarOnScreen)
         {
             focusZone = SpotlightFocusZone.Search;
         }
@@ -3008,6 +3075,229 @@ public partial class SpotlightWindow : Window
             categoryChips[i].Classes.Set("selected", i == viewModel.ActiveCategory);
         }
     }
+
+    // ---- app-grid categories: the capsule bar under the search field ----------------------
+    //
+    // macOS Launchpad's clusters, expressed as a filter: 全部, then the user's own categories, then
+    // a trailing ＋ capsule. The bar owns no dialogs — opening a modal from inside the overlay
+    // deactivates it, and the deactivation probe would either dismiss the launcher or yank the
+    // keyboard back out of the dialog. Naming therefore happens inline (the chip turns into a
+    // TextBox) and every other action is a right-click menu.
+
+    private void BuildAppCategoryChips()
+    {
+        AppCategoryBar.Children.Clear();
+        appCategoryChips.Clear();
+
+        var categories = viewModel.AppCategories;
+        for (var i = 0; i < categories.Count; i++)
+        {
+            var index = i;
+            var chip = new Button
+            {
+                Classes = { "category-chip" },
+                Content = new TextBlock { Text = categories[i].Name },
+            };
+            chip.Click += (_, _) => viewModel.SetAppCategory(index);
+            // 全部 is synthetic: it cannot be renamed or deleted, and its menu would only offer
+            // actions that must fail.
+            if (index > 0) chip.ContextMenu = BuildAppCategoryMenu(categories[index]);
+            AppCategoryBar.Children.Add(chip);
+            appCategoryChips.Add(chip);
+        }
+
+        var add = new Button
+        {
+            Classes = { "category-chip", "add-category" },
+            Content = new TextBlock { Text = "+" },
+        };
+        ToolTip.SetTip(add, Locale.Spotlight_AppCategory_New);
+        add.Click += (_, _) => CreateAppCategory();
+        AppCategoryBar.Children.Add(add);
+
+        RefreshAppCategoryChips();
+    }
+
+    private void RefreshAppCategoryChips()
+    {
+        for (var i = 0; i < appCategoryChips.Count; i++)
+        {
+            appCategoryChips[i].Classes.Set("selected", i == viewModel.ActiveAppCategory);
+        }
+    }
+
+    /// <summary>Right-click menu of a category capsule: rename / delete.</summary>
+    private ContextMenu BuildAppCategoryMenu(LauncherAppCategory category)
+    {
+        var menu = new ContextMenu();
+
+        var rename = new MenuItem { Header = Locale.Spotlight_AppCategory_Rename };
+        rename.Click += (_, _) => BeginRenameAppCategory(IndexOfAppCategory(category.Id));
+        menu.Items.Add(rename);
+
+        var delete = new MenuItem { Header = Locale.Spotlight_AppCategory_Delete };
+        delete.Click += (_, _) => viewModel.DeleteAppCategory(category.Id);
+        menu.Items.Add(delete);
+
+        return menu;
+    }
+
+    private int IndexOfAppCategory(string id) =>
+        viewModel.AppCategories.ToList().FindIndex(category => category.Id == id);
+
+    /// <summary>Create a category and put its chip straight into rename mode (its name is a placeholder).</summary>
+    private void CreateAppCategory()
+    {
+        var created = viewModel.CreateAppCategory(null);
+        BeginRenameAppCategory(IndexOfAppCategory(created.Id));
+    }
+
+    /// <summary>
+    /// Edit a category's name in place: the chip is swapped for a TextBox for the duration, so the
+    /// overlay never has to open a window. Enter commits, Esc cancels, losing focus commits (the
+    /// same contract an inline rename has everywhere else).
+    /// </summary>
+    private void BeginRenameAppCategory(int index)
+    {
+        if (index <= 0 || index >= viewModel.AppCategories.Count || index >= appCategoryChips.Count) return;
+
+        var category = viewModel.AppCategories[index];
+        var chip = appCategoryChips[index];
+        var position = AppCategoryBar.Children.IndexOf(chip);
+        if (position < 0) return;
+
+        var box = new TextBox
+        {
+            Text = category.Name,
+            MinWidth = 96,
+            MaxLength = SpotlightAppCategoryStore.MaxNameLength,
+            PlaceholderText = Locale.Spotlight_AppCategory_RenameHint,
+            Classes = { "category-rename" },
+            VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center,
+        };
+
+        var done = false;
+        void Finish(bool commit)
+        {
+            // Guards the Enter → rebuild → LostFocus cascade: only the first call acts.
+            if (done) return;
+            done = true;
+
+            if (commit) viewModel.RenameAppCategory(category.Id, box.Text);
+            BuildAppCategoryChips();
+            QueryBox.Focus();
+        }
+
+        box.KeyDown += (_, e) =>
+        {
+            switch (e.Key)
+            {
+                case Key.Enter:
+                    e.Handled = true;
+                    Finish(true);
+                    break;
+                case Key.Escape:
+                    e.Handled = true;
+                    Finish(false);
+                    break;
+            }
+        };
+        box.LostFocus += (_, _) => Finish(true);
+
+        AppCategoryBar.Children[position] = box;
+        Dispatcher.UIThread.Post(() =>
+        {
+            box.Focus();
+            box.SelectAll();
+        });
+    }
+
+    /// <summary>
+    /// One click on a tile opens it. The search results keep their double-click (a click there is
+    /// how you preview a row); a grid tile has no second job, so a single click is the whole
+    /// gesture — Launchpad's semantics.
+    /// </summary>
+    private void OnGridTileTapped(object? sender, TappedEventArgs e)
+    {
+        // Empty space between tiles must not launch whatever happens to be selected.
+        if (TileUnder(e.Source as Control) is not { } item) return;
+        _ = ActivateItemAsync(item);
+    }
+
+    /// <summary>Right-click on a tile: file it into a category (or create one on the spot).</summary>
+    private void OnGridContextRequested(object? sender, ContextRequestedEventArgs e)
+    {
+        if (TileUnder(e.Source as Control) is not { Entry: { } entry } item) return;
+
+        var current = viewModel.CategoryOfEntry(entry.Key);
+        var menu = new ContextMenu();
+
+        menu.Items.Add(new MenuItem
+        {
+            Header = Locale.Spotlight_AppCategory_MoveTo,
+            IsEnabled = false,
+        });
+
+        var none = new MenuItem
+        {
+            Header = Locale.Spotlight_AppCategory_None,
+            ToggleType = MenuItemToggleType.Radio,
+            IsChecked = current == null,
+        };
+        none.Click += (_, _) => viewModel.MoveToAppCategory(entry.Key, null);
+        menu.Items.Add(none);
+
+        foreach (var category in viewModel.AppCategories.Where(category => category.Id.Length > 0))
+        {
+            var id = category.Id;
+            var option = new MenuItem
+            {
+                Header = category.Name,
+                ToggleType = MenuItemToggleType.Radio,
+                IsChecked = current?.Id == id,
+            };
+            option.Click += (_, _) => viewModel.MoveToAppCategory(entry.Key, id);
+            menu.Items.Add(option);
+        }
+
+        menu.Items.Add(new Separator());
+
+        var create = new MenuItem { Header = Locale.Spotlight_AppCategory_New };
+        create.Click += (_, _) =>
+        {
+            var created = viewModel.CreateAppCategory(null);
+            viewModel.MoveToAppCategory(entry.Key, created.Id);
+            // A fresh category is called "分类 N": let the user name it without a second trip.
+            BeginRenameAppCategory(IndexOfAppCategory(created.Id));
+        };
+        menu.Items.Add(create);
+
+        menu.Open(GridList);
+        e.Handled = true;
+    }
+
+    /// <summary>
+    /// The tile a pointer event came from: walks up from the hit control to its
+    /// <see cref="ListBoxItem"/>, and returns null once it reaches the list itself (a click on the
+    /// empty area between tiles).
+    /// </summary>
+    private static SpotlightItem? TileUnder(Control? source)
+    {
+        for (var visual = source as Visual; visual != null; visual = visual.GetVisualParent())
+        {
+            if (visual is ListBoxItem { DataContext: SpotlightItem item }) return item;
+            if (visual is ListBox) return null;
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// Checks-only seam: the tile a click at <paramref name="source"/> resolves to. The single-click
+    /// gesture must launch a tile and must NOT launch the selected app when the click landed on the
+    /// empty area of the grid.
+    /// </summary>
+    public static SpotlightItem? TileUnderForChecks(Control? source) => TileUnder(source);
 
     // ---- window messages / settings ------------------------------------------------
 

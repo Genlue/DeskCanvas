@@ -37,6 +37,7 @@ public sealed class SpotlightService : IDisposable
     private readonly FullscreenWatcherService fullscreenWatcher;
     private readonly SpotlightQueryRouter router;
     private readonly SpotlightUsageStore usage;
+    private readonly SpotlightAppCategoryStore appCategories;
     private readonly SpotlightClipboardService clipboard;
     private readonly SpotlightExternalResults external;
     private readonly SpotlightWebResults webResults;
@@ -60,7 +61,8 @@ public sealed class SpotlightService : IDisposable
         SpotlightClipboardService clipboard,
         SpotlightExternalResults external,
         SpotlightWebResults webResults,
-        SpotlightRecentLaunchStore? recentLaunches = null)
+        SpotlightRecentLaunchStore? recentLaunches = null,
+        SpotlightAppCategoryStore? appCategories = null)
     {
         this.settings = settings;
         this.catalog = catalog;
@@ -69,6 +71,7 @@ public sealed class SpotlightService : IDisposable
         this.fullscreenWatcher = fullscreenWatcher;
         this.router = router;
         this.usage = usage;
+        this.appCategories = appCategories ?? new SpotlightAppCategoryStore();
         this.clipboard = clipboard;
         this.external = external;
         this.webResults = webResults;
@@ -435,7 +438,7 @@ public sealed class SpotlightService : IDisposable
         if (window != null) return window;
 
         viewModel = new SpotlightViewModel(router, catalog, icons, usage, clipboard, files, settings,
-            new SpotlightPreviewService(icons), webResults, recentLaunches);
+            new SpotlightPreviewService(icons), webResults, recentLaunches, appCategoryStore: appCategories);
         viewModel.Start();
         viewModel.OpenSettingsRequested += () => OpenSettingsRequested?.Invoke();
 

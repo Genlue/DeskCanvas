@@ -58,6 +58,7 @@ public class App : Application
             .AddSingleton<FileSearchService>()
             // The unified result pipeline: providers feed the router, the router feeds the VM.
             .AddSingleton<SpotlightUsageStore>()
+            .AddSingleton<SpotlightAppCategoryStore>()
             .AddSingleton<SpotlightRecentLaunchStore>()
             .AddSingleton<SpotlightClipboardService>()
             .AddSingleton<SpotlightExternalResults>()

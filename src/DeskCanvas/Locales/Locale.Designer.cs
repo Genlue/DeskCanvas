@@ -2463,6 +2463,24 @@ namespace DeskCanvas.Locales {
 
         public static string Spotlight_Category_Web => ResourceManager.GetString("Spotlight_Category_Web", resourceCulture);
 
+        public static string Spotlight_AppCategory_New => ResourceManager.GetString("Spotlight_AppCategory_New", resourceCulture);
+
+        public static string Spotlight_AppCategory_DefaultName => ResourceManager.GetString("Spotlight_AppCategory_DefaultName", resourceCulture);
+
+        public static string Spotlight_AppCategory_Rename => ResourceManager.GetString("Spotlight_AppCategory_Rename", resourceCulture);
+
+        public static string Spotlight_AppCategory_Delete => ResourceManager.GetString("Spotlight_AppCategory_Delete", resourceCulture);
+
+        public static string Spotlight_AppCategory_MoveTo => ResourceManager.GetString("Spotlight_AppCategory_MoveTo", resourceCulture);
+
+        public static string Spotlight_AppCategory_None => ResourceManager.GetString("Spotlight_AppCategory_None", resourceCulture);
+
+        public static string Spotlight_AppCategory_Empty => ResourceManager.GetString("Spotlight_AppCategory_Empty", resourceCulture);
+
+        public static string Spotlight_AppCategory_EmptyHint => ResourceManager.GetString("Spotlight_AppCategory_EmptyHint", resourceCulture);
+
+        public static string Spotlight_AppCategory_RenameHint => ResourceManager.GetString("Spotlight_AppCategory_RenameHint", resourceCulture);
+
         public static string Spotlight_Web_Group => ResourceManager.GetString("Spotlight_Web_Group", resourceCulture);
 
         public static string Spotlight_Web_Row_Title => ResourceManager.GetString("Spotlight_Web_Row_Title", resourceCulture);
