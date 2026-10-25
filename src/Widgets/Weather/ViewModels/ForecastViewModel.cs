@@ -14,7 +14,9 @@ public class ForecastViewModel : ReactiveObject, IDisposable
     private readonly ForecastModel model;
     private readonly OpenMeteoWeatherProvider provider;
     private readonly IWidgetSession? session;
+    private readonly FetchRetry retry = new();
     private bool renderActive = true;
+    private bool hasForecast;
     private int tickSubscriptions;
 
     /// <summary>Set once <see cref="Dispose"/> ran; keeps disposal (and late replies) harmless.</summary>
@@ -47,6 +49,11 @@ public class ForecastViewModel : ReactiveObject, IDisposable
         if (session == null) return;
         renderActive = activity.RenderActive;
         UpdateTickSubscription();
+
+        // Back from a suspend/fullscreen cover with no data yet: ask again now instead of
+        // waiting for the next backoff step or the hourly tick.
+        if (renderActive && !hasForecast) retry.Schedule(UpdateForecast);
+        else if (!renderActive) retry.Stop();
     }
 
     /// <summary>Check seam: the live subscription count over the shared timer (0 or 1).</summary>
@@ -57,6 +64,18 @@ public class ForecastViewModel : ReactiveObject, IDisposable
 
     /// <summary>Check seam: the latest session gate value.</summary>
     public bool RenderActiveForChecks => renderActive;
+
+    /// <summary>Check seam: true once a forecast actually arrived (the retry stops there).</summary>
+    public bool HasForecastForChecks => hasForecast;
+
+    /// <summary>Check seam: retries scheduled since the last successful fetch.</summary>
+    public int RetryAttemptForChecks => retry.AttemptForChecks;
+
+    /// <summary>Check seam: true while a retry is queued.</summary>
+    public bool RetryPendingForChecks => retry.IsPendingForChecks;
+
+    /// <summary>Check seam: the delay the next retry would use.</summary>
+    public TimeSpan NextRetryDelayForChecks => retry.NextDelayForChecks;
 
     private void UpdateForecast()
     {
@@ -69,8 +88,19 @@ public class ForecastViewModel : ReactiveObject, IDisposable
         var forecast = await provider.GetForecastAsync(model.Latitude, model.Longitude, model.TemperatureUnit);
         // A reply that arrives after disposal (the view was unloaded mid-request) must not
         // touch this view model any more, and must not revive it through its bindings.
-        if (disposed || forecast is null) return;
+        if (disposed) return;
 
+        if (forecast is null)
+        {
+            // No network at boot is the common case: the machine is online a few seconds after
+            // the widget is created, but the old code only asked again on the next hourly tick,
+            // so the card sat on "--°" until then. Retry on a capped backoff instead.
+            if (renderActive) retry.Schedule(UpdateForecast);
+            return;
+        }
+
+        retry.Reset();
+        hasForecast = true;
         ApplyForecast(forecast);
     }
 
@@ -285,6 +315,7 @@ public class ForecastViewModel : ReactiveObject, IDisposable
     {
         if (disposed) return;
         disposed = true;
+        retry.Dispose();
         UpdateTickSubscription();
         provider.Dispose();
         GC.SuppressFinalize(this);

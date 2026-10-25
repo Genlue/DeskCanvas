@@ -11,7 +11,9 @@ public class AirQualityViewModel : ReactiveObject, IDisposable
     private readonly ForecastModel model;
     private readonly OpenMeteoWeatherProvider provider;
     private readonly IWidgetSession? session;
+    private readonly FetchRetry retry = new();
     private bool renderActive = true;
+    private bool hasReading;
     private int tickSubscriptions;
 
     /// <summary>Set once <see cref="Dispose"/> ran; keeps disposal (and late replies) harmless.</summary>
@@ -44,6 +46,11 @@ public class AirQualityViewModel : ReactiveObject, IDisposable
         if (session == null) return;
         renderActive = activity.RenderActive;
         UpdateTickSubscription();
+
+        // Same boot-race rule as the forecast view model: ask again as soon as the card renders
+        // if the first attempt (made before the network was up) failed.
+        if (renderActive && !hasReading) retry.Schedule(UpdateForecast);
+        else if (!renderActive) retry.Stop();
     }
 
     /// <summary>Check seam: the live subscription count over the shared timer (0 or 1).</summary>
@@ -54,6 +61,12 @@ public class AirQualityViewModel : ReactiveObject, IDisposable
 
     /// <summary>Check seam: the latest session gate value.</summary>
     public bool RenderActiveForChecks => renderActive;
+
+    /// <summary>Check seam: true once a reading actually arrived (the retry stops there).</summary>
+    public bool HasReadingForChecks => hasReading;
+
+    /// <summary>Check seam: true while a boot-offline retry is queued.</summary>
+    public bool RetryPendingForChecks => retry.IsPendingForChecks;
 
     private void UpdateForecast()
     {
@@ -67,7 +80,15 @@ public class AirQualityViewModel : ReactiveObject, IDisposable
         // A reply that arrives after disposal (the view was unloaded mid-request) must not
         // touch this view model any more.
         if (disposed) return;
-        if (forecast?.Current == null) return;
+
+        if (forecast?.Current == null)
+        {
+            if (renderActive) retry.Schedule(UpdateForecast);
+            return;
+        }
+
+        retry.Reset();
+        hasReading = true;
         Metric = new(0, 100, forecast.Current.AirQualityIndex, WeatherIcon.Wind.Value);
     }
 
@@ -86,6 +107,7 @@ public class AirQualityViewModel : ReactiveObject, IDisposable
     {
         if (disposed) return;
         disposed = true;
+        retry.Dispose();
         UpdateTickSubscription();
         provider.Dispose();
         GC.SuppressFinalize(this);
