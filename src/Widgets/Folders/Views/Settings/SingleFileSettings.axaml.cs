@@ -32,6 +32,7 @@ public partial class SingleFileSettings : UserControl
         syncing = true;
         PathBox.Text = model.Path ?? "";
         IconPercentSlider.Value = model.IconPercent;
+        HoverZoomSlider.Value = model.HoverZoom;
         syncing = false;
     }
 
@@ -67,6 +68,14 @@ public partial class SingleFileSettings : UserControl
         if (syncing) return;
         var value = Math.Round(e.Value);
         Save(model with { IconPercent = value });
+    }
+
+    private void OnHoverZoomCommitted(object? sender, LabeledSliderValueCommittedEventArgs e)
+    {
+        if (syncing) return;
+        var zoom = Math.Clamp(Math.Round(e.Value), 100, 150);
+        if (Math.Abs(zoom - model.HoverZoom) < 0.01) return;
+        Save(model with { HoverZoom = zoom });
     }
 
     private async void OnPickFile(object? sender, RoutedEventArgs e)

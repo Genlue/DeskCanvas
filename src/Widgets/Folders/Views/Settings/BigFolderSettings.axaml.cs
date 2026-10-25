@@ -69,6 +69,7 @@ public partial class BigFolderSettings : UserControl
     {
         SpacingInput.Value = model.Spacing;
         PaddingInput.Value = model.Padding;
+        HoverZoomSlider.Value = model.HoverZoom;
         CustomColumnsInput.Value = model.CustomColumns;
         CustomRowsInput.Value = model.CustomRows;
         FolderNameBox.Text = model.FolderName ?? "";
@@ -106,6 +107,7 @@ public partial class BigFolderSettings : UserControl
         CustomDimensionsPanel.IsVisible = index == 2;
         SpacingInput.Value = model.Spacing;
         PaddingInput.Value = model.Padding;
+        HoverZoomSlider.Value = model.HoverZoom;
         CustomColumnsInput.Value = model.CustomColumns;
         CustomRowsInput.Value = model.CustomRows;
         FolderNameBox.Text = model.FolderName ?? "";
@@ -163,6 +165,14 @@ public partial class BigFolderSettings : UserControl
         var pad = Math.Max(0, (int)Math.Round(val));
         if (pad != model.Padding)
             Save(model with { Padding = pad });
+    }
+
+    private void OnHoverZoomCommitted(object? sender, DeskCanvas.Views.Controls.LabeledSliderValueCommittedEventArgs e)
+    {
+        if (syncing) return;
+        var zoom = Math.Clamp(Math.Round(e.Value), 100, 150);
+        if (Math.Abs(zoom - model.HoverZoom) < 0.01) return;
+        Save(model with { HoverZoom = zoom });
     }
 
     private void OnPopupFolderNameChanged(object? sender, RoutedEventArgs e)

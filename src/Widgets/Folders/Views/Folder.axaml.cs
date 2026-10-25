@@ -50,6 +50,21 @@ public partial class Folder : UserControl, IWidgetSelfRefreshing, INotifyPropert
         Notify(nameof(IsWatchFolderMode));
         Notify(nameof(WatchFolderPath));
         Notify(nameof(GridVerticalAlignment));
+        Notify(nameof(HoverViewportInset));
+    }
+
+    /// <summary>
+    /// Vertical room the scroll viewport keeps for the hover zoom. A zoomed icon grows about its
+    /// centre by <see cref="HoverZoomMath.Growth"/>, and the viewport (unlike the card) clips at
+    /// its own edge — without this inset the first and last row were cut while zoomed.
+    /// </summary>
+    public Thickness HoverViewportInset
+    {
+        get
+        {
+            var growth = HoverZoomMath.Growth(IconSize, model.EffectiveHoverScale);
+            return growth <= 0 ? default : new Thickness(0, growth, 0, growth);
+        }
     }
 
     private static readonly JsonSerializerOptions JsonOptions = new()
@@ -376,8 +391,6 @@ public partial class Folder : UserControl, IWidgetSelfRefreshing, INotifyPropert
         Open(new FolderItem(model.WatchFolder, "", null, false));
     }
 
-    private const double HoverScale = 1.12;
-
     private void OnItemPointerEntered(object? sender, PointerEventArgs e)
     {
         // Fixed rows use an exact per-row pitch, so scaling the whole row would
@@ -388,12 +401,12 @@ public partial class Folder : UserControl, IWidgetSelfRefreshing, INotifyPropert
             var icon = panel.Children.OfType<Image>().FirstOrDefault();
             if (icon != null)
             {
-                AnimateScale(icon, HoverScale);
+                AnimateScale(icon, model.EffectiveHoverScale);
                 return;
             }
         }
 
-        AnimateScale(sender, HoverScale);
+        AnimateScale(sender, model.EffectiveHoverScale);
     }
 
     private void OnItemPointerExited(object? sender, PointerEventArgs e)

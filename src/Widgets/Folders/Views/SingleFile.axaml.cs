@@ -23,7 +23,6 @@ public partial class SingleFile : UserControl, IWidgetSelfRefreshing
 {
     private SingleFileModel model;
     private readonly IWidgetLayoutProvider widgetLayoutProvider;
-    private const double HoverScale = 1.08;
 
     public SingleFile() : this(new SingleFileModel(), null!) { }
 
@@ -137,7 +136,11 @@ public partial class SingleFile : UserControl, IWidgetSelfRefreshing
         if (minSide <= 0) return;
 
         var pct = Math.Clamp(model.IconPercent, 10.0, 100.0) / 100.0;
-        var iconSide = Math.Max(16.0, Math.Round(minSide * pct));
+        // Cap the base size so the hover zoom still fits the card: the transform grows the icon
+        // about its centre and the card edge clips, which is why a large 图标大小 used to lose
+        // its corners on hover.
+        var hoverScale = model.EffectiveHoverScale;
+        var iconSide = Math.Max(16.0, Math.Round(HoverZoomMath.Fit(minSide * pct, hoverScale)));
 
         IconImage.Width = iconSide;
         IconImage.Height = iconSide;
@@ -147,8 +150,8 @@ public partial class SingleFile : UserControl, IWidgetSelfRefreshing
 
     private void OnPointerEntered(object? sender, PointerEventArgs e)
     {
-        AnimateScale(IconImage, HoverScale);
-        AnimateScale(EmptyPlaceholder, HoverScale);
+        AnimateScale(IconImage, model.EffectiveHoverScale);
+        AnimateScale(EmptyPlaceholder, model.EffectiveHoverScale);
     }
 
     private void OnPointerExited(object? sender, PointerEventArgs e)

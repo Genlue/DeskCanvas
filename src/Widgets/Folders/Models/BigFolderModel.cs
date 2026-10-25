@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using Folders.Services;
 
 namespace Folders.Models;
 
@@ -21,6 +22,10 @@ public enum BigFolderDensity
 /// <param name="Density">Grid density mode: Sparse, Dense, or Custom.</param>
 /// <param name="CustomColumns">Number of columns (m) when in Custom mode.</param>
 /// <param name="CustomRows">Number of rows (n) when in Custom mode.</param>
+/// <param name="HoverZoom">
+/// Pointer-hover zoom of an icon, in percent (100 = none, 150 = max). The grid reserves the
+/// growth on every side so a zoomed icon is never cut by the card edge.
+/// </param>
 public record BigFolderModel(
     List<string>? Items = null,
     bool DenseMode = false,
@@ -35,10 +40,15 @@ public record BigFolderModel(
     int PopupPadding = 14,
     int PopupColumns = 4,
     bool PopupShowNames = true,
-    bool PopupShowExtensions = false)
+    bool PopupShowExtensions = false,
+    double HoverZoom = HoverZoomMath.DefaultGridPercent)
 {
     [JsonIgnore]
     public List<string> SafeItems => Items ?? [];
+
+    /// <summary>Hover zoom multiplier, clamped to the supported range.</summary>
+    [JsonIgnore]
+    public double EffectiveHoverScale => HoverZoomMath.ScaleOf(HoverZoom);
 
     [JsonIgnore]
     public bool IsEmpty => SafeItems.Count == 0;

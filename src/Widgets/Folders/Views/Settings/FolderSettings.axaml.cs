@@ -118,6 +118,7 @@ public partial class FolderSettings : UserControl
         MaxNameLinesInput.Value = model.MaxNameLines;
         MaxNameCharsInput.Value = model.MaxNameChars;
         PaddingInput.Value = model.Padding;
+        HoverZoomSlider.Value = model.HoverZoom;
         LayoutModeBox.SelectedItem = model.LayoutMode;
         UpdateColumnState();
         UpdateWatchFolderState();
@@ -140,6 +141,7 @@ public partial class FolderSettings : UserControl
         MaxNameLinesInput.Value = model.MaxNameLines;
         MaxNameCharsInput.Value = model.MaxNameChars;
         PaddingInput.Value = model.Padding;
+        HoverZoomSlider.Value = model.HoverZoom;
         syncing = false;
     }
 
@@ -416,6 +418,14 @@ public partial class FolderSettings : UserControl
         var padding = Math.Max(0, (int)Math.Round(val));
         if (padding != model.Padding)
             Save(model with { Padding = padding });
+    }
+
+    private void OnHoverZoomCommitted(object? sender, LabeledSliderValueCommittedEventArgs e)
+    {
+        if (syncing) return;
+        var zoom = Math.Clamp(Math.Round(e.Value), 100, 150);
+        if (Math.Abs(zoom - model.HoverZoom) < 0.01) return;
+        Save(model with { HoverZoom = zoom });
     }
 
     private void OnWatchSortChanged(object? sender, SelectionChangedEventArgs e)

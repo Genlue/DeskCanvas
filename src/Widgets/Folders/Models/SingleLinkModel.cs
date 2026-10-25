@@ -1,3 +1,6 @@
+using System.Text.Json.Serialization;
+using Folders.Services;
+
 namespace Folders.Models;
 
 /// <summary>
@@ -8,9 +11,19 @@ namespace Folders.Models;
 /// <param name="BrowserPath">The executable path of the browser to open with, or null for system default.</param>
 /// <param name="CustomIconPath">The local cached path to the custom icon file.</param>
 /// <param name="IconPercent">The size of the icon as a percentage of the available dimension (e.g. 70 = 70%).</param>
+/// <param name="HoverZoom">
+/// Pointer-hover zoom of the icon, in percent (100 = none, 150 = max). The drawn size is capped so
+/// the zoomed icon still fits inside the card.
+/// </param>
 public record SingleLinkModel(
     string? Url = null,
     string? Title = null,
     string? BrowserPath = null,
     string? CustomIconPath = null,
-    double IconPercent = 70.0);
+    double IconPercent = 70.0,
+    double HoverZoom = HoverZoomMath.DefaultSinglePercent)
+{
+    /// <summary>Hover zoom multiplier, clamped to the supported range.</summary>
+    [JsonIgnore]
+    public double EffectiveHoverScale => HoverZoomMath.ScaleOf(HoverZoom);
+}

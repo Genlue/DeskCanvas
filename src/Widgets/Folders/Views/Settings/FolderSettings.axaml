@@ -155,6 +155,15 @@
                            ValueChanged="OnPaddingChanged" />
         </controls:Setting>
 
+        <!-- Hover zoom: the scroll viewport keeps room for the growth, so a zoomed icon is
+             never cut by the viewport edge. -->
+        <controls:Setting Title="{x:Static locales:Locale.Folders_HoverZoom}"
+                          Subtitle="{x:Static locales:Locale.Folders_HoverZoom_Subtitle}">
+            <controls:LabeledSlider x:Name="HoverZoomSlider" Width="200" Minimum="100" Maximum="150" Step="5" Unit="%"
+                                    ValueCommitted="OnHoverZoomCommitted"
+                                    AutomationProperties.Name="{x:Static locales:Locale.Folders_HoverZoom}" />
+        </controls:Setting>
+
         <TextBlock x:Name="ItemsGroupHeader" Classes="dc-section-header" Text="{x:Static locales:Locale.Folders_Group_Items}" />
 
         <!-- Item list management: its own region (path entry, pickers, reorderable rows). -->

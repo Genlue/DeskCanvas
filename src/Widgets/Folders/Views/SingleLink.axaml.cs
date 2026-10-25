@@ -29,7 +29,6 @@ public partial class SingleLink : UserControl, IWidgetSelfRefreshing
 {
     private SingleLinkModel model;
     private readonly IWidgetLayoutProvider widgetLayoutProvider;
-    private const double HoverScale = 1.08;
     private string? lastAutoFetchedUrl;
 
     public SingleLink() : this(new SingleLinkModel(), null!) { }
@@ -185,7 +184,9 @@ public partial class SingleLink : UserControl, IWidgetSelfRefreshing
         if (minSide <= 0) return;
 
         var pct = Math.Clamp(model.IconPercent, 10.0, 100.0) / 100.0;
-        var iconSide = Math.Max(16.0, Math.Round(minSide * pct));
+        // Cap the base size so the hover zoom still fits the card (the transform grows the icon
+        // about its centre, and the card edge clips).
+        var iconSide = Math.Max(16.0, Math.Round(HoverZoomMath.Fit(minSide * pct, model.EffectiveHoverScale)));
 
         IconImage.Width = iconSide;
         IconImage.Height = iconSide;
@@ -197,9 +198,9 @@ public partial class SingleLink : UserControl, IWidgetSelfRefreshing
 
     private void OnPointerEntered(object? sender, PointerEventArgs e)
     {
-        AnimateScale(IconImage, HoverScale);
-        AnimateScale(EmptyPlaceholder, HoverScale);
-        AnimateScale(FallbackIconContainer, HoverScale);
+        AnimateScale(IconImage, model.EffectiveHoverScale);
+        AnimateScale(EmptyPlaceholder, model.EffectiveHoverScale);
+        AnimateScale(FallbackIconContainer, model.EffectiveHoverScale);
     }
 
     private void OnPointerExited(object? sender, PointerEventArgs e)

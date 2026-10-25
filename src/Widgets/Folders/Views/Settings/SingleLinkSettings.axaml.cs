@@ -43,6 +43,7 @@ public partial class SingleLinkSettings : UserControl
         UrlBox.Text = model.Url ?? "";
         TitleBox.Text = model.Title ?? "";
         IconPercentSlider.Value = model.IconPercent;
+        HoverZoomSlider.Value = model.HoverZoom;
 
         UrlBox.TextChanged += OnUrlTextChanged;
         TitleBox.TextChanged += OnTitleTextChanged;
@@ -132,6 +133,14 @@ public partial class SingleLinkSettings : UserControl
         }
 
         FetchFaviconButton.IsEnabled = !string.IsNullOrWhiteSpace(model.Url);
+    }
+
+    private void OnHoverZoomCommitted(object? sender, LabeledSliderValueCommittedEventArgs e)
+    {
+        if (syncing) return;
+        var zoom = Math.Clamp(Math.Round(e.Value), 100, 150);
+        if (Math.Abs(zoom - model.HoverZoom) < 0.01) return;
+        Save(model with { HoverZoom = zoom });
     }
 
     private void OnUrlTextChanged(object? sender, TextChangedEventArgs e)

@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using Folders.Services;
 
 namespace Folders.Models;
 
@@ -31,6 +32,10 @@ namespace Folders.Models;
 /// <param name="HideExtensions">Hide file extensions for watched-folder contents.</param>
 /// <param name="HideSubfolders">Hide subfolders in watched-folder mode (only show direct children).</param>
 /// <param name="Padding">Inner padding of the widget, in pixels.</param>
+/// <param name="HoverZoom">
+/// Pointer-hover zoom of an icon, in percent (100 = none, 150 = max). The scroll viewport reserves
+/// the growth at the top and bottom so a zoomed icon is never cut by the viewport edge.
+/// </param>
 public record FolderModel(
     List<string> Items,
     bool ShowNames = true,
@@ -57,10 +62,15 @@ public record FolderModel(
     bool SortDescending = false,
     bool HideExtensions = false,
     bool HideSubfolders = false,
-    int Padding = 8)
+    int Padding = 8,
+    double HoverZoom = HoverZoomMath.DefaultGridPercent)
 {
     [JsonIgnore]
     public bool IsEmpty => Items is not { Count: > 0 };
+
+    /// <summary>Hover zoom multiplier, clamped to the supported range.</summary>
+    [JsonIgnore]
+    public double EffectiveHoverScale => HoverZoomMath.ScaleOf(HoverZoom);
 
     /// <summary>
     /// Resolve the display name of a path (custom name or file name).

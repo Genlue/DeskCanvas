@@ -308,6 +308,26 @@ public partial class BigFolder : UserControl, IWidgetSelfRefreshing, IWidgetSurf
         // Icon/Item size jointly determined by spacing, padding, and sparse/dense/custom
         double itemSize = Math.Floor(Math.Min(availForIconsW / cols, availForIconsH / rows));
         if (itemSize < 8) itemSize = 8;
+
+        // Hover zoom grows the icon about its centre without touching layout, so an icon on the
+        // outer ring would be cut by the card edge. Reserve that growth as padding and re-measure
+        // once: the icon gets marginally smaller, the zoom never clips.
+        var hoverScale = model.EffectiveHoverScale;
+        var hoverGrowth = HoverZoomMath.Growth(itemSize, hoverScale);
+        if (hoverGrowth > pad)
+        {
+            pad = (int)Math.Ceiling(hoverGrowth);
+            PaddingThickness = new Thickness(pad);
+
+            availW = Math.Max(10, w - 2 * pad);
+            availH = Math.Max(10, h - 2 * pad);
+            availForIconsW = Math.Max(8, availW - gapsW);
+            availForIconsH = Math.Max(8, availH - gapsH);
+
+            itemSize = Math.Floor(Math.Min(availForIconsW / cols, availForIconsH / rows));
+            if (itemSize < 8) itemSize = 8;
+        }
+
         ItemSize = itemSize;
 
         GridWidth = cols * itemSize + gapsW;
@@ -471,11 +491,9 @@ public partial class BigFolder : UserControl, IWidgetSelfRefreshing, IWidgetSurf
         return (null, null);
     }
 
-    private const double HoverScale = 1.15;
-
     private void OnItemPointerEntered(object? sender, PointerEventArgs e)
     {
-        AnimateScale(sender, HoverScale);
+        AnimateScale(sender, model.EffectiveHoverScale);
     }
 
     private void OnItemPointerExited(object? sender, PointerEventArgs e)

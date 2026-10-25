@@ -347,6 +347,18 @@ namespace Folders.Locales {
             }
         }
 
+        public static string Folders_HoverZoom {
+            get {
+                return ResourceManager.GetString("Folders_HoverZoom", resourceCulture);
+            }
+        }
+
+        public static string Folders_HoverZoom_Subtitle {
+            get {
+                return ResourceManager.GetString("Folders_HoverZoom_Subtitle", resourceCulture);
+            }
+        }
+
         public static string Folders_WatchHideExt {
             get {
                 return ResourceManager.GetString("Folders_WatchHideExt", resourceCulture);

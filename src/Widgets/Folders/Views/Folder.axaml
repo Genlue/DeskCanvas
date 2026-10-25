@@ -49,7 +49,9 @@
 
         <ScrollViewer Grid.Row="1" DragDrop.AllowDrop="True"
                      VerticalScrollBarVisibility="{Binding ShowScrollbar, RelativeSource={RelativeSource AncestorType=local:Folder}, Converter={StaticResource ScrollBarConverter}}">
-            <Grid>
+            <!-- The padding is the hover-zoom gutter: it lives INSIDE the scrolled content, so a
+                 zoomed icon grows into it instead of being cut by the viewport edge. -->
+            <Grid Margin="{Binding HoverViewportInset, RelativeSource={RelativeSource AncestorType=local:Folder}}">
 
             <ItemsControl x:Name="GridItems" DragDrop.AllowDrop="True"
                           VerticalAlignment="{Binding GridVerticalAlignment, RelativeSource={RelativeSource AncestorType=local:Folder}}">

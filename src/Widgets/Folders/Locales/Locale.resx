@@ -165,6 +165,12 @@
         <data name="Folders_Padding" xml:space="preserve">
             <value>Padding</value>
         </data>
+        <data name="Folders_HoverZoom" xml:space="preserve">
+            <value>Hover zoom</value>
+        </data>
+        <data name="Folders_HoverZoom_Subtitle" xml:space="preserve">
+            <value>How much an icon grows while the pointer is over it. 100% turns it off; the layout keeps room for the zoom so nothing gets cut.</value>
+        </data>
         <data name="Folders_WatchHideExt" xml:space="preserve">
             <value>Hide file extensions</value>
         </data>
