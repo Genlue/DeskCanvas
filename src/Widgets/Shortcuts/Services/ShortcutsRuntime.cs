@@ -21,6 +21,36 @@ public static class ShortcutsRuntime
     {
         AppSettings ??= appSettings;
         WidgetFactory ??= widgetFactory;
+        ResolveAppSettings();
+    }
+
+    /// <summary>
+    /// The settings provider every tile paints from, resolved in two tiers: the injected one,
+    /// then the host's singleton service.
+    /// <para>
+    /// The second tier is not decoration. A view activated through the short constructor (the
+    /// parameterless one, the <c>Activator.CreateInstance</c> fallback in
+    /// <c>AssemblyProvider.Activate</c>, the 组件库 preview) arrives with
+    /// <c>appSettings == null</c>, and every consumer then read a null theme — which the tiles
+    /// treat as "colourful". That is why monochrome only ever applied for some users/sessions:
+    /// the widget kept painting each shortcut in its own colour under a monochrome theme.
+    /// </para>
+    /// </summary>
+    public static IAppSettingsProvider? ResolveAppSettings()
+    {
+        if (AppSettings != null) return AppSettings;
+
+        try
+        {
+            AppSettings = DeskCanvas.App.Services?.GetService(typeof(IAppSettingsProvider)) as IAppSettingsProvider;
+        }
+        catch
+        {
+            // Very early start-up / headless checks: no host container yet. Stay null rather
+            // than creating a private provider (a second instance would never see a save).
+        }
+
+        return AppSettings;
     }
 
     /// <summary>

@@ -282,49 +282,41 @@ public sealed class ShortcutTileViewModel : INotifyPropertyChanged
         }
         else
         {
-            var theme = ShortcutsRuntime.AppSettings?.Get()?.Theme;
-            var isMonochrome = theme != null && !theme.IsColorful && theme.Monochrome;
+            // Same rule the card shell paints with (per-screen 失焦自动切换 included), not a
+            // direct read of appSettings.Theme: the two diverged whenever the focus-state theme
+            // differed from the shared one, and a null provider made every tile "colourful".
+            var theme = DeskCanvas.Services.PanelAppearanceResolver.ResolveEffectiveTheme(
+                ShortcutsRuntime.ResolveAppSettings());
+            var isMonochrome = theme is { IsColorful: false, Monochrome: true };
 
             if (isMonochrome)
             {
                 var variant = darkTheme ? ThemeVariant.Dark : ThemeVariant.Light;
 
-                // Resolve IconBrush
-                if (Application.Current != null &&
-                    Application.Current.TryGetResource("SystemControlForegroundAccentBrush", variant, out var ab) &&
-                    ab is IBrush accentB)
+                // The monochrome variant decides the icon colour. Resolving the generic accent
+                // resource first — the previous order — made 黑白/背景色 fall through to the
+                // system accent, so the tile kept a colour instead of turning monochrome.
+                switch (theme.EffectiveMonochromeVariant)
                 {
-                    nextIcon = accentB;
-                }
-                else if (theme != null && theme.EffectiveMonochromeVariant == MonochromeStyle.BlackWhite)
-                {
-                    nextIcon = darkTheme ? Brushes.White : Brushes.Black;
-                }
-                else if (theme != null && theme.EffectiveMonochromeVariant == MonochromeStyle.BackgroundColor)
-                {
-                    var hex = darkTheme ? theme.EffectiveSolidBackgroundLight : theme.EffectiveSolidBackgroundDark;
-                    nextIcon = new SolidColorBrush(Color.TryParse(hex, out var bg) ? bg : (darkTheme ? Colors.White : Colors.Black));
-                }
-                else
-                {
-                    var accent = theme?.AccentColor;
-                    if (!string.IsNullOrWhiteSpace(accent) && Color.TryParse(accent, out var parsedAccent))
-                        nextIcon = new SolidColorBrush(parsedAccent);
-                    else
-                        nextIcon = darkTheme ? new SolidColorBrush(Color.Parse("#70A5FF")) : new SolidColorBrush(Color.Parse("#0078D4"));
+                    case MonochromeStyle.BlackWhite:
+                        nextIcon = darkTheme ? Brushes.White : Brushes.Black;
+                        break;
+
+                    case MonochromeStyle.BackgroundColor:
+                        var hex = darkTheme ? theme.EffectiveSolidBackgroundLight : theme.EffectiveSolidBackgroundDark;
+                        nextIcon = new SolidColorBrush(Color.TryParse(hex, out var bg)
+                            ? bg
+                            : (darkTheme ? Colors.White : Colors.Black));
+                        break;
+
+                    default:
+                        nextIcon = ResolveAccentBrush(theme, variant);
+                        break;
                 }
 
-                // Resolve GlyphStrokeBrush (high contrast against IconBrush)
-                if (Application.Current != null &&
-                    Application.Current.TryGetResource("AccentContrastForegroundBrush", variant, out var cb) &&
-                    cb is IBrush contrastB)
-                {
-                    nextGlyphStroke = contrastB;
-                }
-                else
-                {
-                    nextGlyphStroke = darkTheme ? Brushes.Black : Brushes.White;
-                }
+                // The glyph sits on the icon block, so it must contrast with THAT, not with the
+                // card: a fixed white stroke vanished on 黑白's white block in dark mode.
+                nextGlyphStroke = ContrastBrush(nextIcon, darkTheme);
 
                 // Resolve TintBrush (subtle card pill background)
                 if (nextIcon is ISolidColorBrush scb)
@@ -401,6 +393,47 @@ public sealed class ShortcutTileViewModel : INotifyPropertyChanged
             OnPropertyChanged(nameof(SubBrush));
             OnPropertyChanged(nameof(StateBrush));
         }
+    }
+
+    /// <summary>
+    /// 强调色 monochrome source: the user's accent when set, then the live accent ramp, then the
+    /// historic blue. The ramp is mounted per window, so the application-level lookup alone misses
+    /// a custom accent — it is kept as the "follow the system accent" answer, which is exactly
+    /// what a null <c>AccentColor</c> means.
+    /// </summary>
+    private static IBrush ResolveAccentBrush(Theme theme, ThemeVariant variant)
+    {
+        if (!string.IsNullOrWhiteSpace(theme.AccentColor) && Color.TryParse(theme.AccentColor, out var parsed))
+            return new SolidColorBrush(parsed);
+
+        try
+        {
+            if (Application.Current?.TryGetResource("SystemControlForegroundAccentBrush", variant, out var resource) == true
+                && resource is IBrush brush)
+            {
+                return brush;
+            }
+        }
+        catch
+        {
+            // Resource lookup must never break a repaint.
+        }
+
+        return new SolidColorBrush(Color.Parse(variant == ThemeVariant.Dark ? "#70A5FF" : "#0078D4"));
+    }
+
+    /// <summary>Black or white, whichever reads on <paramref name="background"/>.</summary>
+    private static IBrush ContrastBrush(IBrush background, bool darkTheme)
+    {
+        if (background is ISolidColorBrush { Color: var color })
+        {
+            // Rec. 601 luma: the accent and background colours are arbitrary, so the glyph has to
+            // follow the block's own brightness rather than the card's.
+            var luma = (0.299 * color.R + 0.587 * color.G + 0.114 * color.B) / 255.0;
+            return luma > 0.55 ? Brushes.Black : Brushes.White;
+        }
+
+        return darkTheme ? Brushes.Black : Brushes.White;
     }
 
     public TileState State

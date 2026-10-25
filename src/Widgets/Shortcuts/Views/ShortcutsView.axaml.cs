@@ -85,7 +85,7 @@ public partial class ShortcutsView : UserControl, IWidgetSelfRefreshing
         eventsAttached = true;
         ShortcutsStore.ModelChanged += OnStoreChanged;
         ShortcutRunner.RunEvent += OnRunEvent;
-        subscribedSettings = ShortcutsRuntime.AppSettings;
+        subscribedSettings = ShortcutsRuntime.ResolveAppSettings();
         if (subscribedSettings != null)
             subscribedSettings.DataChanged += OnAppSettingsChanged;
         viewModel.Rebuild();
