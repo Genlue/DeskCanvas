@@ -66,8 +66,10 @@ public class MapTileService : IDisposable
 
     public MapTileService()
     {
-        var localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-        cacheBaseDir = Path.Combine(localAppData, Const.AppName, "Cache", "Map");
+        // Follows the data folder (and therefore the cache-folder entry in 设置-高级). The old
+        // %LocalAppData% path ignored a data-folder change and kept the tiles in the previous
+        // location forever.
+        cacheBaseDir = Path.Combine(Const.CacheFolder, "Map");
         try
         {
             if (!Directory.Exists(cacheBaseDir))

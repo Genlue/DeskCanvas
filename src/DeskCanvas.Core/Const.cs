@@ -57,6 +57,18 @@ public static class Const
     /// </summary>
     public static readonly string ProfilesFolder = Path.Combine(DataFolder, ProfilesFolderName);
 
+    /// <summary>Name of the regenerable-data folder inside the data folder.</summary>
+    public const string CacheFolderName = "Cache";
+
+    /// <summary>
+    /// The folder for data the app can rebuild at any time — shell icon bitmaps, map tiles,
+    /// preview thumbnails. It lives <b>inside</b> <see cref="DataFolder"/> on purpose: pointing the
+    /// app at another data folder moves the cache with it (the map tiles used to be pinned to
+    /// <c>%LocalAppData%</c> and kept growing in the old location). Nothing here is worth
+    /// migrating, so <c>DataFolderService</c> treats it as derived data.
+    /// </summary>
+    public static string CacheFolder => Path.Combine(DataFolder, CacheFolderName);
+
     /// <summary>Name of the active configuration profile pointer file.</summary>
     public const string ActiveProfilePointerFileName = "activeProfile.json";
     /// <summary>JSON property holding the active profile name inside <see cref="ActiveProfilePointerFileName"/>.</summary>

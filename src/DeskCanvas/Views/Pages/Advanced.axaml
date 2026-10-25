@@ -89,6 +89,16 @@
         </controls:Setting>
         <controls:Setting Title="{x:Static locales:Locale.Settings_Advanced_DataFolder_Source_Title}"
                           Subtitle="{Binding DataFolderSourceText}" />
+        <!-- 缓存文件夹: derived from the data folder, so it moves with it. Nothing here is
+             irreplaceable — the entry exists so the user can see and clear it. -->
+        <controls:Setting Icon="{DynamicResource Layers}"
+                          Title="{x:Static locales:Locale.Settings_Advanced_CacheFolder}"
+                          Subtitle="{Binding CacheFolderPath}">
+            <Button Content="{x:Static locales:Locale.Settings_Advanced_DataFolder_Open}"
+                    Click="OnOpenCacheFolderClicked" />
+        </controls:Setting>
+        <TextBlock Text="{Binding CacheFolderSubtitle}" FontSize="12" TextWrapping="Wrap"
+                   Margin="0,-2,0,0" Foreground="{DynamicResource SecondaryTextBrush}" />
         <TextBlock FontSize="14" FontWeight="SemiBold" Margin="0 20 0 10"
                    Text="{x:Static locales:Locale.Settings_Advanced_Tray}"/>
         <controls:Setting Icon="{DynamicResource Windows}"

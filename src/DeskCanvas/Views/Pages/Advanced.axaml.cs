@@ -157,6 +157,24 @@ public partial class Advanced : UserControl
     }
 
     /// <summary>
+    /// Open the cache folder. It is created on demand: a fresh install has no icon or map cache
+    /// yet, and <see cref="DataFolderService.OpenInShell"/> silently no-ops on a missing folder.
+    /// </summary>
+    private void OnOpenCacheFolderClicked(object? sender, RoutedEventArgs e)
+    {
+        try
+        {
+            System.IO.Directory.CreateDirectory(Const.CacheFolder);
+        }
+        catch
+        {
+            // A read-only data folder must not throw from a settings click.
+        }
+
+        DataFolderService.OpenInShell(Const.CacheFolder);
+    }
+
+    /// <summary>
     /// Pick a new data folder. The choice is written as a pointer file and needs a restart,
     /// because <see cref="Const.DataFolder"/> is resolved once per process.
     /// <para>

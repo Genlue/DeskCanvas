@@ -1182,6 +1182,12 @@
     <data name="Settings_Advanced_DataFolder_Current_Subtitle" xml:space="preserve">
         <value>Settings, widget layout, widget data and configuration profiles are all stored here</value>
     </data>
+    <data name="Settings_Advanced_CacheFolder" xml:space="preserve">
+        <value>Cache folder</value>
+    </data>
+    <data name="Settings_Advanced_CacheFolder_Subtitle" xml:space="preserve">
+        <value>Icon bitmaps, map tiles and other regenerable data. It always lives inside the data folder, so changing the data folder moves it too; deleting its contents is safe.</value>
+    </data>
     <data name="Settings_Advanced_DataFolder_Source_Title" xml:space="preserve">
         <value>Source</value>
     </data>

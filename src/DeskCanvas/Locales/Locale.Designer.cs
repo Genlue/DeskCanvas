@@ -2254,6 +2254,8 @@ namespace DeskCanvas.Locales {
         public static string Settings_Advanced_DataFolder_Source_TestHarness => ResourceManager.GetString("Settings_Advanced_DataFolder_Source_TestHarness", resourceCulture);
         public static string Settings_Advanced_DataFolder_Change => ResourceManager.GetString("Settings_Advanced_DataFolder_Change", resourceCulture);
         public static string Settings_Advanced_DataFolder_Open => ResourceManager.GetString("Settings_Advanced_DataFolder_Open", resourceCulture);
+        public static string Settings_Advanced_CacheFolder => ResourceManager.GetString("Settings_Advanced_CacheFolder", resourceCulture);
+        public static string Settings_Advanced_CacheFolder_Subtitle => ResourceManager.GetString("Settings_Advanced_CacheFolder_Subtitle", resourceCulture);
         public static string Settings_Advanced_DataFolder_Reset => ResourceManager.GetString("Settings_Advanced_DataFolder_Reset", resourceCulture);
         public static string Settings_Advanced_DataFolder_PickTitle => ResourceManager.GetString("Settings_Advanced_DataFolder_PickTitle", resourceCulture);
         public static string Settings_Advanced_DataFolder_ChangePrompt => ResourceManager.GetString("Settings_Advanced_DataFolder_ChangePrompt", resourceCulture);

@@ -1281,6 +1281,12 @@
     <data name="Settings_Advanced_DataFolder_Current_Subtitle" xml:space="preserve">
         <value>设置、组件布局、组件数据与配置方案都保存在这里</value>
     </data>
+    <data name="Settings_Advanced_CacheFolder" xml:space="preserve">
+        <value>缓存文件夹</value>
+    </data>
+    <data name="Settings_Advanced_CacheFolder_Subtitle" xml:space="preserve">
+        <value>图标位图、地图瓦片等可重新生成的数据。它始终位于数据文件夹内，改变数据文件夹时会一起迁移；清空内容不影响使用。</value>
+    </data>
     <data name="Settings_Advanced_DataFolder_Source_Title" xml:space="preserve">
         <value>来源</value>
     </data>

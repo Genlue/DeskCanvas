@@ -78,7 +78,7 @@ public sealed class ShellIconService
 
     public ShellIconService()
     {
-        diskCacheFolder = Path.Combine(Const.DataFolder, "cache", "icons");
+        diskCacheFolder = Path.Combine(Const.CacheFolder, "icons");
     }
 
     /// <summary>The number of bitmaps currently held in memory (diagnostics / checks).</summary>

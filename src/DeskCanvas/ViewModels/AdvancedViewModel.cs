@@ -171,6 +171,7 @@ public class AdvancedViewModel : ReactiveObject, IDisposable
         this.RaisePropertyChanged(nameof(UpdateUrl));
         this.RaisePropertyChanged(nameof(ShowTrayIcon));
         this.RaisePropertyChanged(nameof(SelectedFullscreenBehavior));
+        this.RaisePropertyChanged(nameof(CacheFolderPath));
     }
 
     private void RaiseGridProperties()
@@ -506,6 +507,16 @@ public class AdvancedViewModel : ReactiveObject, IDisposable
 
     /// <summary>True when a saved user choice is in effect — the only case "restore default" undoes.</summary>
     public bool CanResetDataFolder => DataFolderService.IsUserPinned;
+
+    /// <summary>
+    /// The regenerable-data folder (<c>&lt;DataFolder&gt;\Cache</c>): shell icon bitmaps, map tiles
+    /// and preview thumbnails. Derived from the data folder, so changing the data folder moves it
+    /// on the next start — it is never an independent setting.
+    /// </summary>
+    public string CacheFolderPath => Const.CacheFolder;
+
+    /// <summary>What lives in <see cref="CacheFolderPath"/> and whether it is safe to delete.</summary>
+    public string CacheFolderSubtitle => Locale.Settings_Advanced_CacheFolder_Subtitle;
 
     /// <summary>
     /// Notification-area icon visibility. The tray menu and the widget context menu can switch it
