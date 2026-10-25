@@ -245,12 +245,114 @@ public class AssemblyProvider : IAssemblyProvider
         throw new FileNotFoundException($"Assembly {name} not found");
     }
 
+    /// <summary>
+    /// Assemblies that must exist exactly once per process, even though every widget lives in its
+    /// own collectible <see cref="PluginLoadContext"/>.
+    /// <para>
+    /// <c>WinRT.Runtime</c> registers the process-wide COM marshaller
+    /// (<c>ComWrappers.RegisterForMarshalling</c>) the first time a WinRT projection is touched,
+    /// and that call throws <c>InvalidOperationException: Attempt to update previously set global
+    /// instance.</c> when a <b>second</b> instance of the runtime tries to do the same. Loading a
+    /// per-widget copy therefore breaks every widget that touches WinRT after the first one —
+    /// the Shortcuts notifications/media actions surfaced it as a red "Attempt to update
+    /// previously set global instance." toast, and the silent consumers (Music SMTC,
+    /// ControlCenter radios) simply stopped working. One shared copy keeps the marshaller single
+    /// and makes the projection types identical across widgets.
+    /// </para>
+    /// </summary>
+    private static readonly HashSet<string> ProcessGlobalAssemblies = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "WinRT.Runtime",
+        "Microsoft.Windows.SDK.NET",
+    };
+
+    /// <summary>
+    /// Loader for <see cref="ProcessGlobalAssemblies"/>: a non-collectible context that resolves
+    /// them from the widget folder, so every plugin context gets the same assembly instances.
+    /// Never unloaded — the process-wide COM marshaller keeps pointing at these types.
+    /// </summary>
+    private static class SharedRuntime
+    {
+        private static readonly object Gate = new();
+        private static readonly Dictionary<string, Assembly> Loaded = new(StringComparer.OrdinalIgnoreCase);
+
+        /// <summary>Folders the shared assemblies were found in, in discovery order.</summary>
+        private static readonly List<string> ProbeFolders = [];
+
+        private static readonly AssemblyLoadContext Context = new SharedRuntimeLoadContext();
+
+        public static Assembly Load(string name, string candidatePath)
+        {
+            lock (Gate)
+            {
+                if (Loaded.TryGetValue(name, out var cached)) return cached;
+
+                Remember(Path.GetDirectoryName(candidatePath));
+
+                var assembly = Context.Assemblies.FirstOrDefault(a =>
+                                    string.Equals(a.GetName().Name, name, StringComparison.OrdinalIgnoreCase))
+                                ?? Context.LoadFromAssemblyPath(candidatePath);
+
+                Loaded[name] = assembly;
+                return assembly;
+            }
+        }
+
+        private static void Remember(string? folder)
+        {
+            if (string.IsNullOrEmpty(folder)) return;
+            if (ProbeFolders.Contains(folder, StringComparer.OrdinalIgnoreCase)) return;
+            ProbeFolders.Add(folder);
+        }
+
+        /// <summary>
+        /// Companion resolution for the shared context (the projection needs
+        /// <c>WinRT.Runtime</c>): the folders these assemblies came from, then the widget folder.
+        /// </summary>
+        private static string? Probe(string name)
+        {
+            foreach (var folder in ProbeFolders)
+            {
+                var candidate = Path.Combine(folder, $"{name}.dll");
+                if (File.Exists(candidate)) return candidate;
+            }
+
+            var widgets = Path.Combine(Const.WidgetsFolder, $"{name}.dll");
+            return File.Exists(widgets) ? widgets : null;
+        }
+
+        private sealed class SharedRuntimeLoadContext() : AssemblyLoadContext("DeskCanvas.SharedRuntime")
+        {
+            protected override Assembly? Load(AssemblyName assemblyName)
+            {
+                if (assemblyName.Name is not { } name || !ProcessGlobalAssemblies.Contains(name))
+                    return null;
+
+                // Re-entrant on the owning thread (Load already holds Gate while it loads).
+                lock (Gate)
+                {
+                    var path = Probe(name);
+                    return path != null ? LoadFromAssemblyPath(path) : null;
+                }
+            }
+        }
+    }
+
     private class PluginLoadContext(string pluginPath) : AssemblyLoadContext(true)
     {
         private readonly AssemblyDependencyResolver resolver = new(pluginPath);
 
         protected override Assembly? Load(AssemblyName assemblyName)
         {
+            // Process-global runtimes first: they must never be duplicated per widget context.
+            if (assemblyName.Name is { } sharedName && ProcessGlobalAssemblies.Contains(sharedName))
+            {
+                var sharedPath = resolver.ResolveAssemblyToPath(assemblyName)
+                                 ?? ProbeAdjacent(assemblyName);
+                if (sharedPath != null)
+                    return SharedRuntime.Load(sharedName, sharedPath);
+            }
+
             var assembly = Default.Assemblies.FirstOrDefault(a => a.GetName().Name == assemblyName.Name);
             if (assembly != null)
             {
@@ -264,17 +366,23 @@ public class AssemblyProvider : IAssemblyProvider
             }
 
             // Probe adjacent directory for widget-local dependencies (e.g. Microsoft.Windows.SDK.NET.dll)
-            var pluginDir = Path.GetDirectoryName(pluginPath);
-            if (pluginDir != null)
+            var candidate = ProbeAdjacent(assemblyName);
+            if (candidate != null)
             {
-                var candidate = Path.Combine(pluginDir, $"{assemblyName.Name}.dll");
-                if (File.Exists(candidate))
-                {
-                    return LoadFromAssemblyPath(candidate);
-                }
+                return LoadFromAssemblyPath(candidate);
             }
 
             return null;
+        }
+
+        /// <summary>Widget-local copy of <paramref name="assemblyName"/>, or null when absent.</summary>
+        private string? ProbeAdjacent(AssemblyName assemblyName)
+        {
+            var pluginDir = Path.GetDirectoryName(pluginPath);
+            if (pluginDir == null) return null;
+
+            var candidate = Path.Combine(pluginDir, $"{assemblyName.Name}.dll");
+            return File.Exists(candidate) ? candidate : null;
         }
 
         protected override IntPtr LoadUnmanagedDll(string unmanagedDllName)
