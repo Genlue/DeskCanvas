@@ -4,19 +4,27 @@
              xmlns:local="clr-namespace:Folders.Views"
              x:Class="Folders.Views.BigFolder"
              x:DataType="local:BigFolder"
-             Margin="0">
+             Margin="0"
+             ClipToBounds="False">
     <Border x:Name="RootBorder"
             Background="Transparent"
             DragDrop.AllowDrop="True"
             Padding="{Binding PaddingThickness, RelativeSource={RelativeSource AncestorType=local:BigFolder}}">
         <Grid Background="Transparent" DragDrop.AllowDrop="True">
-            <!-- Perfectly centered grid container -->
+            <!-- Perfectly centered grid container.
+                 ClipToBounds=False is load-bearing: an ItemsControl clips to its own bounds by
+                 default, and its bounds are the grid box — inset from the card by the padding — so
+                 the hover zoom was cut at the grid's inner edge, one step BEFORE the card edge.
+                 With the clip off, an outer tile grows over the padding, past the card's rounded
+                 edge and into the widget's transparent margin (the host stops clipping this view
+                 for exactly that reason, see IWidgetSurfaceHints.AllowsCardOverflow). -->
             <ItemsControl x:Name="IconGrid"
                           Width="{Binding GridWidth, RelativeSource={RelativeSource AncestorType=local:BigFolder}}"
                           Height="{Binding GridHeight, RelativeSource={RelativeSource AncestorType=local:BigFolder}}"
                           HorizontalAlignment="Center"
                           VerticalAlignment="Center"
                           Background="Transparent"
+                          ClipToBounds="False"
                           DragDrop.AllowDrop="True">
                 <ItemsControl.ItemsPanel>
                     <ItemsPanelTemplate>

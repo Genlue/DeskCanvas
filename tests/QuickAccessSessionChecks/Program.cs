@@ -191,12 +191,15 @@ finally
 
 // =========================================================================================
 // 10. Launcher hover zoom: configurable per widget, clamped, and the layout reserves the growth
-//     so a zoomed icon is never cut by the card or the scroll viewport.
+//     so a zoomed icon is never cut by the card or the scroll viewport. The zoom's boundary is
+//     the GRID CELL (the widget window), not the card — a single icon may use the whole cell.
 // =========================================================================================
 Console.WriteLine("--- launcher hover zoom ---");
 Check(HoverZoomMath.ScaleOf(0) == 1.0 && HoverZoomMath.ScaleOf(double.NaN) == 1.0,
     "10.1 a missing/NaN zoom means 100% (no zoom)");
-Check(HoverZoomMath.ScaleOf(999) == 1.5, "10.2 the zoom is clamped to 150%");
+Check(HoverZoomMath.ScaleOf(999) == 1.5, "10.2 the grid zoom is clamped to 150%");
+Check(HoverZoomMath.ScaleOf(999, HoverZoomMath.MaxSinglePercent) == 2.0,
+    "10.2b the single-icon zoom is clamped to 200% — enough to reach the cell edge");
 Check(new BigFolderModel().HoverZoom == HoverZoomMath.DefaultGridPercent &&
       new FolderModel([]).HoverZoom == HoverZoomMath.DefaultGridPercent,
     "10.3 the icon grids default to the historical 115%");
@@ -209,12 +212,17 @@ Check(Math.Abs(new SingleLinkModel(HoverZoom: 90).EffectiveHoverScale - 1.0) < 0
     "10.6 a stored value below 100% cannot shrink the icon on hover");
 Check(Math.Abs(HoverZoomMath.Growth(80, 1.2) - 8) < 0.001, "10.7 the growth is half the size delta");
 Check(HoverZoomMath.Growth(80, 1.0) == 0, "10.8 no zoom means no reserved room");
-Check(Math.Abs(HoverZoomMath.Fit(100, 1.25) - 80) < 0.001,
-    "10.9 Fit caps the base size so the zoomed icon still fits its box");
+// The zoom may spill past the card, but the widget WINDOW is still a hard edge: ScaleWithin caps
+// the multiplier at the room the window actually has (growth = size*(scale-1)/2 <= room).
+Check(Math.Abs(HoverZoomMath.ScaleWithin(80, 1.5, 10) - 1.25) < 0.001,
+    "10.9 ScaleWithin caps the zoom at the room before the window edge (80px icon, 10px room → 125%)");
+Check(Math.Abs(HoverZoomMath.ScaleWithin(80, 1.1, 10) - 1.1) < 0.001,
+    "10.9b a zoom that already fits the room is drawn as asked (no needless shrink)");
+Check(HoverZoomMath.ScaleWithin(80, 1.5, double.PositiveInfinity) == 1.5,
+    "10.9c outside a widget host (组件库预览) the requested zoom is drawn as-is");
 
-// The views must actually consume the configured value (not keep a private constant), and the
-// two clipping rules must stay in place: the grid reserves padding, the scroll content keeps a
-// margin, and the single cards cap their drawn size.
+// The views must actually consume the configured value (not keep a private constant), must not
+// shrink the resting icon for the zoom, and must tell the host to stop clipping them.
 string ReadRepo(params string[] parts)
 {
     var dir = new DirectoryInfo(AppContext.BaseDirectory);
@@ -230,13 +238,103 @@ var singleLinkView = ReadRepo("src", "Widgets", "Folders", "Views", "SingleLink.
 Check(bigFolderView.Contains("model.EffectiveHoverScale") &&
       !bigFolderView.Contains("const double HoverScale"),
     "10.10 大文件夹 animates with the configured zoom (no hardcoded constant)");
-Check(bigFolderView.Contains("HoverZoomMath.Growth(itemSize, hoverScale)") &&
-      bigFolderView.Contains("PaddingThickness = new Thickness(pad)"),
-    "10.11 大文件夹 widens its padding to the zoom growth before measuring the icons");
+Check(!bigFolderView.Contains("HoverZoomMath.Growth(itemSize, hoverScale)") &&
+      bigFolderView.Contains("HoverZoomMath.ScaleWithin("),
+    "10.11 大文件夹 no longer reserves padding for the zoom (icons keep their size) and caps the zoom at hover");
 Check(folderView.Contains("model.EffectiveHoverScale") && folderView.Contains("HoverViewportInset"),
     "10.12 文件展示框 animates with the configured zoom and keeps a viewport gutter");
-Check(singleFileView.Contains("HoverZoomMath.Fit(") && singleLinkView.Contains("HoverZoomMath.Fit("),
-    "10.13 单文件 / 单链接 cap the drawn icon so the zoom still fits the card");
+Check(singleFileView.Contains("HoverZoomMath.ScaleWithin(") && singleLinkView.Contains("HoverZoomMath.ScaleWithin(") &&
+      !singleFileView.Contains("HoverZoomMath.Fit(") && !singleLinkView.Contains("HoverZoomMath.Fit("),
+    "10.13 单文件 / 单链接 keep their resting size and cap only the hover zoom");
+// The cap has to be measured to the WINDOW (one grid cell), not to the card: the old
+// `CardOverflowRoom.Of(view)` returned only WidgetMargin, which is smaller than the distance from
+// the icon to the card edge — the zoom could therefore never leave the widget rectangle.
+Check(singleFileView.Contains("CardOverflowRoom.Around(") && singleLinkView.Contains("CardOverflowRoom.Around(") &&
+      !singleFileView.Contains("CardOverflowRoom.Of(") && !singleLinkView.Contains("CardOverflowRoom.Of("),
+    "10.13b 单文件 / 单链接 cap the zoom at the grid cell edge, not at the card edge");
+Check(bigFolderView.Contains("CardOverflowRoom.Around(") && !bigFolderView.Contains("PaddingThickness.Left + CardOverflowRoom"),
+    "10.13c 大文件夹 measures the room from its icon grid to the cell edge (uniform for every tile)");
+var overflowRoom = ReadRepo("src", "Widgets", "Folders", "Services", "CardOverflowRoom.cs");
+Check(overflowRoom.Contains("client.Width") && overflowRoom.Contains("client.Height") &&
+      overflowRoom.Contains("icon.Bounds"),
+    "10.13d CardOverflowRoom measures the icon's resting rect against the window client area");
+foreach (var (name, file) in new[]
+         {
+             ("单文件", "SingleFileSettings.axaml"),
+             ("单链接", "SingleLinkSettings.axaml"),
+         })
+{
+    var slider = ReadRepo("src", "Widgets", "Folders", "Views", "Settings", file);
+    Check(slider.Contains("Maximum=\"200\""),
+        $"10.13e {name}'s 悬浮缩放 slider reaches the 200% ceiling (the cell edge is reachable)");
+}
+Check(bigFolderView.Contains("AllowsCardOverflow => true") &&
+      singleFileView.Contains("AllowsCardOverflow => true") &&
+      singleLinkView.Contains("AllowsCardOverflow => true"),
+    "10.14 the three overflowing views opt out of the host's card clip");
+var hostView = ReadRepo("src", "DeskCanvas", "Views", "Widget.axaml.cs");
+Check(hostView.Contains("ContentPaintsOutsideCard") && hostView.Contains("AllowsCardOverflow"),
+    "10.15 the widget host honours AllowsCardOverflow when it applies the card clip");
+// The view's OWN ClipToBounds is the other half of the story: a UserControl clips to its bounds by
+// default, and its bounds are exactly the card's content box — measured on a real render, that was
+// the cut the padding/gutter work never fixed.
+foreach (var (name, file) in new[]
+         {
+             ("单文件", "SingleFile.axaml"),
+             ("单链接", "SingleLink.axaml"),
+             ("大文件夹", "BigFolder.axaml"),
+         })
+{
+    var axaml = ReadRepo("src", "Widgets", "Folders", "Views", file);
+    Check(axaml.Contains("ClipToBounds=\"False\""),
+        $"10.16 {name} turns its own ClipToBounds off (otherwise the view cuts the zoom at the card box)");
+}
+
+// …and so is the ITEM HOST: an ItemsControl clips to its own bounds too, which for the icon grids
+// are the grid box (inset by the padding) — the cut the user still saw inside 大文件夹 after the
+// view-level fix. Measured: with the ItemsControl clipping, 0 px of the zoomed tile painted
+// outside the card; with it off, 555 px did.
+var bigFolderAxaml = ReadRepo("src", "Widgets", "Folders", "Views", "BigFolder.axaml");
+Check(bigFolderAxaml.Split("ClipToBounds=\"False\"").Length - 1 >= 2,
+    "10.17 大文件夹's IconGrid does not clip its own bounds either (the zoom reaches the card edge)");
+var folderAxaml = ReadRepo("src", "Widgets", "Folders", "Views", "Folder.axaml");
+Check(folderAxaml.Split("ClipToBounds=\"False\"").Length - 1 >= 2,
+    "10.18 文件展示框's two item hosts do not clip (the viewport gutter is what keeps the zoom whole)");
+
+// …and the boundary the cap is measured against, on a REAL layout: a 1×1 card on a 92 DIP cell
+// (widget margin 10). 单文件 / 单链接 declare Margin="0", so the view fills the card and the
+// resting icon IS the card (72 DIP at 图标大小 100 %) — the only room left is the 10 DIP band
+// between card and cell. The old rule (room = the same 10 DIP) was not the bug here: the bug was
+// that a zoom smaller than that band was still cut, because the host's content template wrapped
+// the view in a clipping ContentControl (see UiFoundationChecks/HoverOverflowChecks).
+{
+    var hoverView = new SingleFile(new SingleFileModel(null, 100, 200), null!) { Margin = new Thickness(0) };
+    var hoverCard = new Border
+    {
+        Width = 72,
+        Height = 72,
+        Margin = new Thickness(10),
+        Child = new Avalonia.Controls.Presenters.ContentPresenter { Width = 72, Height = 72, Content = hoverView },
+    };
+    var hoverWindow = new Window
+    {
+        Width = 92,
+        Height = 92,
+        Content = new Grid { Children = { hoverCard } },
+    };
+    hoverWindow.Show();
+    Flush();
+
+    var frame = hoverView.FindControl<Border>("EmptyPlaceholder")!;
+    var frameOrigin = frame.TranslatePoint(new Point(0, 0), hoverWindow)!.Value;
+    var room = CardOverflowRoom.RoomIn(new Rect(0, 0, 92, 92), new Rect(frameOrigin, frame.Bounds.Size));
+    Check(Math.Abs(room - 10) < 0.5,
+        $"10.19 the room is measured to the CELL edge ({room:F1} DIP = the card→cell band, icon {frame.Bounds.Width:0} of 92)");
+    var reached = frame.Bounds.Width * HoverZoomMath.ScaleWithin(frame.Bounds.Width, 2.0, room);
+    Check(reached > 72 && Math.Abs(reached - 92) < 1.0,
+        $"10.19b the zoom may fill the whole cell ({reached:F0} DIP of 92 — past the 72 DIP card, capped by the cell)");
+    hoverWindow.Close();
+}
 
 // =========================================================================================
 Console.WriteLine();

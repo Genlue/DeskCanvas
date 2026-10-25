@@ -24,6 +24,15 @@ public partial class BigFolder : UserControl, IWidgetSelfRefreshing, IWidgetSurf
 {
     public string? ColorfulBackgroundResourceKey => "FoldersCardBackground";
 
+    /// <summary>
+    /// The grid's hover zoom draws past the card's rounded edge on purpose: an icon on the outer
+    /// ring grows about its own centre, and the whole point of the setting is that it may spill
+    /// over the card instead of forcing every icon to be smaller. The host stops clipping this
+    /// view (see <see cref="IWidgetSurfaceHints"/>); only the widget window itself remains a hard
+    /// boundary, which the hover handler accounts for.
+    /// </summary>
+    public bool AllowsCardOverflow => true;
+
     private BigFolderModel model;
     private readonly IWidgetLayoutProvider widgetLayoutProvider;
 
@@ -309,24 +318,12 @@ public partial class BigFolder : UserControl, IWidgetSelfRefreshing, IWidgetSurf
         double itemSize = Math.Floor(Math.Min(availForIconsW / cols, availForIconsH / rows));
         if (itemSize < 8) itemSize = 8;
 
-        // Hover zoom grows the icon about its centre without touching layout, so an icon on the
-        // outer ring would be cut by the card edge. Reserve that growth as padding and re-measure
-        // once: the icon gets marginally smaller, the zoom never clips.
-        var hoverScale = model.EffectiveHoverScale;
-        var hoverGrowth = HoverZoomMath.Growth(itemSize, hoverScale);
-        if (hoverGrowth > pad)
-        {
-            pad = (int)Math.Ceiling(hoverGrowth);
-            PaddingThickness = new Thickness(pad);
-
-            availW = Math.Max(10, w - 2 * pad);
-            availH = Math.Max(10, h - 2 * pad);
-            availForIconsW = Math.Max(8, availW - gapsW);
-            availForIconsH = Math.Max(8, availH - gapsH);
-
-            itemSize = Math.Floor(Math.Min(availForIconsW / cols, availForIconsH / rows));
-            if (itemSize < 8) itemSize = 8;
-        }
+        // The hover zoom is NOT reserved here on purpose. Widening the padding to the zoom growth
+        // (the previous behaviour) kept the enlarged icon inside the card by making every icon
+        // smaller at rest — the opposite of what the setting is for. The host stops clipping this
+        // view instead (IWidgetSurfaceHints.AllowsCardOverflow), so an outer icon may grow past
+        // the card edge into the widget's transparent margin; the zoom itself is capped to that
+        // room at hover time (see OnItemPointerEntered), never the layout.
 
         ItemSize = itemSize;
 
@@ -493,12 +490,26 @@ public partial class BigFolder : UserControl, IWidgetSelfRefreshing, IWidgetSurf
 
     private void OnItemPointerEntered(object? sender, PointerEventArgs e)
     {
-        AnimateScale(sender, model.EffectiveHoverScale);
+        AnimateScale(sender, HoverScale());
     }
 
     private void OnItemPointerExited(object? sender, PointerEventArgs e)
     {
         AnimateScale(sender, 1.0);
+    }
+
+    /// <summary>
+    /// The zoom to draw: the configured multiplier, capped only by the room an outer tile has
+    /// before the widget window's edge. The window is one grid cell, so that room is everything
+    /// between the tile grid and the cell edge — the card padding, the host's transparent margin
+    /// and the host's content margin — and it is measured from the grid's own rectangle so every
+    /// tile in the grid is capped identically. Past the window the OS would slice the tile, so the
+    /// cap is what keeps the overflow clean; the resting tile size is never touched for it.
+    /// </summary>
+    private double HoverScale()
+    {
+        var room = CardOverflowRoom.Around(IconGrid);
+        return HoverZoomMath.ScaleWithin(ItemSize, model.EffectiveHoverScale, room);
     }
 
     private static void AnimateScale(object? sender, double scale)

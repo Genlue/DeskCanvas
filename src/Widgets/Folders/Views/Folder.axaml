@@ -53,7 +53,13 @@
                  zoomed icon grows into it instead of being cut by the viewport edge. -->
             <Grid Margin="{Binding HoverViewportInset, RelativeSource={RelativeSource AncestorType=local:Folder}}">
 
+            <!-- Both item hosts turn their own clip off: an ItemsControl clips to its bounds by
+                 default, and here those bounds are the scrolled content — one step inside the
+                 viewport, which is where the hover-zoom gutter lives. With the clip off, a zoomed
+                 icon grows into that gutter and the viewport (the real edge for a scrolling list)
+                 is the only thing left to respect. -->
             <ItemsControl x:Name="GridItems" DragDrop.AllowDrop="True"
+                          ClipToBounds="False"
                           VerticalAlignment="{Binding GridVerticalAlignment, RelativeSource={RelativeSource AncestorType=local:Folder}}">
                 <ItemsControl.ItemsPanel>
                     <ItemsPanelTemplate>
@@ -98,7 +104,7 @@
                 </ItemsControl.ItemTemplate>
             </ItemsControl>
 
-            <ItemsControl x:Name="ListItems" DragDrop.AllowDrop="True">
+            <ItemsControl x:Name="ListItems" DragDrop.AllowDrop="True" ClipToBounds="False">
                 <ItemsControl.ItemsPanel>
                     <ItemsPanelTemplate>
                         <StackPanel />

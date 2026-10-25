@@ -209,7 +209,7 @@
         <value>悬浮缩放</value>
     </data>
     <data name="Folders_HoverZoom_Subtitle" xml:space="preserve">
-        <value>鼠标悬停在图标上时的放大比例。100% 表示不放大；布局会为放大预留空间，图标不会被裁掉。</value>
+        <value>鼠标悬停在图标上时的放大比例。100% 表示不放大；放大后的图标可以越过卡片边缘，一直用到整个网格单元——单元边缘是唯一的硬边界，放大到那里为止。</value>
     </data>
     <data name="Folders_WatchHideExt" xml:space="preserve">
         <value>不显示后缀名</value>

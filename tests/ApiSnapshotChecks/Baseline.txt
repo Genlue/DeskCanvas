@@ -328,6 +328,7 @@ property DeskCanvas.Core.Interfaces.IWidgetLayoutProvider ScreenId -> System.Str
 type DeskCanvas.Core.Interfaces.IWidgetSelfRefreshing
 method DeskCanvas.Core.Interfaces.IWidgetSelfRefreshing Refresh(DeskCanvas.Core.Models.WidgetLayout) -> System.Void
 type DeskCanvas.Core.Interfaces.IWidgetSurfaceHints
+property DeskCanvas.Core.Interfaces.IWidgetSurfaceHints AllowsCardOverflow -> System.Boolean
 property DeskCanvas.Core.Interfaces.IWidgetSurfaceHints ColorfulBackgroundResourceKey -> System.String
 type DeskCanvas.Core.Interfaces.IWidgetSuspendable
 method DeskCanvas.Core.Interfaces.IWidgetSuspendable Resume() -> System.Void

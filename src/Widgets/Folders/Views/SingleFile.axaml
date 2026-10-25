@@ -8,7 +8,8 @@
              Margin="0"
              HorizontalAlignment="Stretch"
              VerticalAlignment="Stretch"
-             Focusable="False">
+             Focusable="False"
+             ClipToBounds="False">
 
     <Border Name="RootBorder" Background="Transparent"
             HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
@@ -25,7 +26,11 @@
                     IsVisible="False"
                     Cursor="Hand">
                 <Panel HorizontalAlignment="Center" VerticalAlignment="Center">
-                    <PathIcon Data="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"
+                    <!-- Named: its side is snapped to whole device pixels together with the
+                         frame's border/padding, so the "+" is centred without a rounding
+                         remainder (see IconPixelSnap). -->
+                    <PathIcon Name="PlaceholderGlyph"
+                              Data="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"
                               Width="22" Height="22"
                               Opacity="0.6"
                               Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}"/>

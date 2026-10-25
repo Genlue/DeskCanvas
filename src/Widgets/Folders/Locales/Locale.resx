@@ -169,7 +169,7 @@
             <value>Hover zoom</value>
         </data>
         <data name="Folders_HoverZoom_Subtitle" xml:space="preserve">
-            <value>How much an icon grows while the pointer is over it. 100% turns it off; the layout keeps room for the zoom so nothing gets cut.</value>
+            <value>How much an icon grows while the pointer is over it. 100% turns it off; the enlarged icon may spill past the card edge and use the whole grid cell — the cell's edge is the only hard limit, and the zoom stops there.</value>
         </data>
         <data name="Folders_WatchHideExt" xml:space="preserve">
             <value>Hide file extensions</value>

@@ -40,10 +40,11 @@
                                     AutomationProperties.Name="{x:Static locales:Locale.Folders_SingleFile_IconPercent}" />
         </controls:Setting>
 
-        <!-- Hover zoom: the drawn icon size is capped so the zoomed icon still fits the card. -->
+        <!-- Hover zoom: one icon owns its whole grid cell, so the slider reaches the cell edge
+             (200 %); the view trims whatever the cell cannot show. -->
         <controls:Setting Title="{x:Static locales:Locale.Folders_HoverZoom}"
                           Subtitle="{x:Static locales:Locale.Folders_HoverZoom_Subtitle}">
-            <controls:LabeledSlider x:Name="HoverZoomSlider" Width="200" Minimum="100" Maximum="150" Step="5" Unit="%"
+            <controls:LabeledSlider x:Name="HoverZoomSlider" Width="200" Minimum="100" Maximum="200" Step="5" Unit="%"
                                     ValueCommitted="OnHoverZoomCommitted"
                                     AutomationProperties.Name="{x:Static locales:Locale.Folders_HoverZoom}" />
         </controls:Setting>

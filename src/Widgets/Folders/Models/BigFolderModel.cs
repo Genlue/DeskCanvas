@@ -23,8 +23,9 @@ public enum BigFolderDensity
 /// <param name="CustomColumns">Number of columns (m) when in Custom mode.</param>
 /// <param name="CustomRows">Number of rows (n) when in Custom mode.</param>
 /// <param name="HoverZoom">
-/// Pointer-hover zoom of an icon, in percent (100 = none, 150 = max). The grid reserves the
-/// growth on every side so a zoomed icon is never cut by the card edge.
+/// Pointer-hover zoom of an icon, in percent (100 = none, 150 = max). A zoomed icon may grow
+/// past the card's rounded edge (the host stops clipping this view); the only cap is the widget
+/// window it is drawn in, so the resting icon keeps its size.
 /// </param>
 public record BigFolderModel(
     List<string>? Items = null,

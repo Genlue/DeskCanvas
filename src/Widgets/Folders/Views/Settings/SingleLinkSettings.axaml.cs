@@ -138,7 +138,7 @@ public partial class SingleLinkSettings : UserControl
     private void OnHoverZoomCommitted(object? sender, LabeledSliderValueCommittedEventArgs e)
     {
         if (syncing) return;
-        var zoom = Math.Clamp(Math.Round(e.Value), 100, 150);
+        var zoom = Math.Clamp(Math.Round(e.Value), 100, HoverZoomMath.MaxSinglePercent);
         if (Math.Abs(zoom - model.HoverZoom) < 0.01) return;
         Save(model with { HoverZoom = zoom });
     }

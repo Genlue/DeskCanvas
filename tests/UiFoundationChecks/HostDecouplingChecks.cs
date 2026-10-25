@@ -76,6 +76,7 @@ internal static partial class Program
 
         CheckHostAppearanceSourceContract();
         CheckSurfaceHintsDeclarations();
+        CheckHoverZoomOverflow();
         CheckHostColorfulHintResolution();
         CheckStackIndicatorStripMigration();
         CheckOverlayLayoutHintsContract();
@@ -906,9 +907,9 @@ internal static partial class Program
         [], new Layout(GridMode.Manual, true, false, true, false),
         new Dimensions(80, 12, 16), new Region("zh-Hans"), false, null));
 
-    private static Widget BuildDecoupledWidget(Func<UserControl> content, IAppSettingsProvider settings, bool wrapPositionProxy = true)
+    private static Widget BuildDecoupledWidget(Func<UserControl> content, IAppSettingsProvider settings, bool wrapPositionProxy = true, double size = 384)
     {
-        var entry = new WidgetLayout("Test", "StubContent", 500, 333, 384, 384, null);
+        var entry = new WidgetLayout("Test", "StubContent", 500, 333, (int)size, (int)size, null);
         var screenConfig = new ScreenLayout("screen-a", "A|1920x1080", null, null, new Grid(8, 6, 0, 0, 10), null, [entry]);
         var layout = new LayoutStore(new ScreensLayout([screenConfig]));
         var monitor = new DisplayMonitorService(layout);

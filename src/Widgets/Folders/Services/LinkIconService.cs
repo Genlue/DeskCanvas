@@ -60,14 +60,27 @@ public static class LinkIconService
 
         try
         {
-            // Try FolderIconService first (handles shell thumbnails, .ico, etc. as high-res WriteableBitmap)
+            // A plain image file must be decoded directly: FolderIconService routes it through the
+            // shell image factory with SIIGBF_ICONONLY, which answers with the file type's generic
+            // icon (the Photos app icon) instead of the picture, so the stream fallback below would
+            // never run for exactly the files that need it. That is what made a PNG/JPG chosen in
+            // the icon picker look like "only .ico works".
+            var ext = Path.GetExtension(path).ToLowerInvariant();
+            if (ext is ".png" or ".jpg" or ".jpeg" or ".webp" or ".bmp" or ".gif")
+            {
+                using var imageStream = File.OpenRead(path);
+                return FolderIconService.TrimTransparent(new Bitmap(imageStream));
+            }
+
+            // Everything else (.ico, .lnk, .url, folders): shell resolution first, stream decode as
+            // the fallback. .svg stays on this path on purpose — Bitmap cannot decode SVG, so
+            // sending it to the direct branch would only turn the generic icon into no icon.
             var bmp = FolderIconService.GetIcon(path);
             if (bmp != null)
             {
                 return FolderIconService.TrimTransparent(bmp);
             }
 
-            // Fallback: direct stream decode
             using var stream = File.OpenRead(path);
             var direct = new Bitmap(stream);
             return FolderIconService.TrimTransparent(direct);

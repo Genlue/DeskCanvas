@@ -133,7 +133,15 @@
                               VerticalAlignment="Center">
                 <ContentPresenter.ContentTemplate>
                     <DataTemplate>
+                        <!-- ClipToBounds must stay OFF: this wrapper's bounds ARE the card
+                             rectangle, and Avalonia's ContentControl clips by default. It was
+                             the third and last cut a zoomed icon met — the host already clears
+                             ContentPresenter.Clip for views that declare
+                             IWidgetSurfaceHints.AllowsCardOverflow, and this wrapper then
+                             re-applied the same cut one level down. The rounded clip that keeps
+                             ordinary widgets inside the card lives on the presenter above. -->
                         <ContentControl Content="{Binding}"
+                                        ClipToBounds="False"
                                         HorizontalAlignment="Stretch"
                                         VerticalAlignment="Stretch"
                                         HorizontalContentAlignment="Stretch"

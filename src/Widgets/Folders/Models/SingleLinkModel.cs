@@ -12,8 +12,9 @@ namespace Folders.Models;
 /// <param name="CustomIconPath">The local cached path to the custom icon file.</param>
 /// <param name="IconPercent">The size of the icon as a percentage of the available dimension (e.g. 70 = 70%).</param>
 /// <param name="HoverZoom">
-/// Pointer-hover zoom of the icon, in percent (100 = none, 150 = max). The drawn size is capped so
-/// the zoomed icon still fits inside the card.
+/// Pointer-hover zoom of the icon, in percent (100 = none, 200 = max). The zoom is allowed to
+/// grow past the card's rounded edge — the hard boundary is the grid cell this widget occupies —
+/// so the resting icon is never shrunk for it (see HoverZoomMath.ScaleWithin).
 /// </param>
 public record SingleLinkModel(
     string? Url = null,
@@ -25,5 +26,5 @@ public record SingleLinkModel(
 {
     /// <summary>Hover zoom multiplier, clamped to the supported range.</summary>
     [JsonIgnore]
-    public double EffectiveHoverScale => HoverZoomMath.ScaleOf(HoverZoom);
+    public double EffectiveHoverScale => HoverZoomMath.ScaleOf(HoverZoom, HoverZoomMath.MaxSinglePercent);
 }

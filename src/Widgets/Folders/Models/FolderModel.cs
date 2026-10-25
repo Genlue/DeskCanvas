@@ -34,7 +34,8 @@ namespace Folders.Models;
 /// <param name="Padding">Inner padding of the widget, in pixels.</param>
 /// <param name="HoverZoom">
 /// Pointer-hover zoom of an icon, in percent (100 = none, 150 = max). The scroll viewport reserves
-/// the growth at the top and bottom so a zoomed icon is never cut by the viewport edge.
+/// the growth at the top and bottom: a scrolling list is the one place where the viewport, not the
+/// card, is the hard edge, so the gutter is what keeps a zoomed icon whole.
 /// </param>
 public record FolderModel(
     List<string> Items,

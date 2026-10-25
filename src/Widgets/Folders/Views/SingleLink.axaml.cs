@@ -25,11 +25,18 @@ using Folders.Views.Settings;
 
 namespace Folders.Views;
 
-public partial class SingleLink : UserControl, IWidgetSelfRefreshing
+public partial class SingleLink : UserControl, IWidgetSelfRefreshing, IWidgetSurfaceHints
 {
     private SingleLinkModel model;
     private readonly IWidgetLayoutProvider widgetLayoutProvider;
     private string? lastAutoFetchedUrl;
+
+    /// <summary>
+    /// Same contract as 单文件: the hover zoom may cross the card's rounded edge (the host stops
+    /// clipping this view), so the icon keeps its configured resting size instead of being shrunk
+    /// to fit the card once enlarged, and it may grow all the way to the grid cell's edge.
+    /// </summary>
+    public bool AllowsCardOverflow => true;
 
     public SingleLink() : this(new SingleLinkModel(), null!) { }
 
@@ -75,11 +82,22 @@ public partial class SingleLink : UserControl, IWidgetSelfRefreshing
 
     private IntPtr dropHandle = IntPtr.Zero;
 
+    /// <summary>The window whose scale factor the resting geometry was last snapped for.</summary>
+    private TopLevel? scalingHost;
+
+    private void OnScalingChanged(object? sender, EventArgs e) => UpdateIconSize();
+
     private void OnLoaded(object? sender, RoutedEventArgs e)
     {
         ApplyModel();
         if (TopLevel.GetTopLevel(this) is TopLevel topLevel)
         {
+            // The resting geometry is snapped to whole device pixels, so it has to be recomputed
+            // when the window lands on a monitor with a different scale factor — the card's DIP
+            // size does not change then, so no SizeChanged follows.
+            scalingHost = topLevel;
+            topLevel.ScalingChanged += OnScalingChanged;
+
             DragDrop.SetAllowDrop(topLevel, true);
             if (topLevel.TryGetPlatformHandle()?.Handle is { } handle && handle != IntPtr.Zero)
             {
@@ -92,6 +110,12 @@ public partial class SingleLink : UserControl, IWidgetSelfRefreshing
 
     private void OnUnloaded(object? sender, RoutedEventArgs e)
     {
+        if (scalingHost != null)
+        {
+            scalingHost.ScalingChanged -= OnScalingChanged;
+            scalingHost = null;
+        }
+
         if (dropHandle != IntPtr.Zero)
         {
             WidgetOleDropTarget.Unregister(dropHandle);
@@ -184,23 +208,46 @@ public partial class SingleLink : UserControl, IWidgetSelfRefreshing
         if (minSide <= 0) return;
 
         var pct = Math.Clamp(model.IconPercent, 10.0, 100.0) / 100.0;
-        // Cap the base size so the hover zoom still fits the card (the transform grows the icon
-        // about its centre, and the card edge clips).
-        var iconSide = Math.Max(16.0, Math.Round(HoverZoomMath.Fit(minSide * pct, model.EffectiveHoverScale)));
+        // Exact resting size from 图标大小 — the zoom is allowed past the card edge, so nothing is
+        // reserved for it here (reserving is what shrank the icon at rest).
+        var iconSide = Math.Max(16.0, Math.Round(minSide * pct));
 
-        IconImage.Width = iconSide;
-        IconImage.Height = iconSide;
-        EmptyPlaceholder.Width = iconSide;
-        EmptyPlaceholder.Height = iconSide;
-        FallbackIconContainer.Width = iconSide;
-        FallbackIconContainer.Height = iconSide;
+        // Everything centred here is a fraction of a device pixel at a scaled DPI, and Avalonia's
+        // layout rounding would leave the remainder on the bottom-right of every nesting level
+        // (the glyph ended up closer to its frame's top-left than to its bottom-right). Snapping
+        // the sizes and the frame's border/padding to whole device pixels with matched parity
+        // makes the centring exact instead — see IconPixelSnap.
+        var scaling = TopLevel.GetTopLevel(this)?.RenderScaling ?? 1.0;
+        var frame = IconPixelSnap.EmptyFrame(minSide, iconSide, scaling);
+
+        IconImage.Width = frame.Side;
+        IconImage.Height = frame.Side;
+        EmptyPlaceholder.Width = frame.Side;
+        EmptyPlaceholder.Height = frame.Side;
+        EmptyPlaceholder.BorderThickness = new Thickness(frame.Border);
+        EmptyPlaceholder.Padding = new Thickness(frame.Padding);
+        PlaceholderGlyph.Width = frame.GlyphSide;
+        PlaceholderGlyph.Height = frame.GlyphSide;
+        FallbackIconContainer.Width = frame.Side;
+        FallbackIconContainer.Height = frame.Side;
+    }
+
+    /// <summary>
+    /// The zoom to draw: the configured multiplier, capped only by the room this icon has before
+    /// the widget window's edge — the window is one grid cell, so the cap is the cell boundary and
+    /// not the card's (cell minus 组件间距).
+    /// </summary>
+    private double HoverScaleFor(Control icon)
+    {
+        var side = icon.Width > 0 ? icon.Width : Math.Min(ContainerPanel.Bounds.Width, ContainerPanel.Bounds.Height);
+        return HoverZoomMath.ScaleWithin(side, model.EffectiveHoverScale, CardOverflowRoom.Around(icon));
     }
 
     private void OnPointerEntered(object? sender, PointerEventArgs e)
     {
-        AnimateScale(IconImage, model.EffectiveHoverScale);
-        AnimateScale(EmptyPlaceholder, model.EffectiveHoverScale);
-        AnimateScale(FallbackIconContainer, model.EffectiveHoverScale);
+        AnimateScale(IconImage, HoverScaleFor(IconImage));
+        AnimateScale(EmptyPlaceholder, HoverScaleFor(EmptyPlaceholder));
+        AnimateScale(FallbackIconContainer, HoverScaleFor(FallbackIconContainer));
     }
 
     private void OnPointerExited(object? sender, PointerEventArgs e)

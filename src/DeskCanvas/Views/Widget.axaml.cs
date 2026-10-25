@@ -1259,8 +1259,23 @@ public partial class Widget : Window, INotifyPropertyChanged, IFocusThemedWindow
 
         UpdateAdaptiveRadiusResources();
         var r = Radius.TopLeft;
-        ContentPresenter.Clip = new RectangleGeometry(new Rect(0, 0, cardW, cardH), r, r);
+        // The rounded clip keeps every ordinary view's artwork inside the card. A view that
+        // paints past the edge on purpose (the launchers' hover zoom — see
+        // IWidgetSurfaceHints.AllowsCardOverflow) opts out: this clip, not the card Border, is
+        // what cut a zoomed icon at the card edge. Under OS blur the native 1-bit region is the
+        // real clip and cannot express a bleed, so those materials keep the rounded clip.
+        ContentPresenter.Clip = ContentPaintsOutsideCard && !GlassMaterial.UsesNativeBlur
+            ? null
+            : new RectangleGeometry(new Rect(0, 0, cardW, cardH), r, r);
     }
+
+    /// <summary>
+    /// True when the hosted view declared that it draws outside the card's rounded edge
+    /// (<see cref="IWidgetSurfaceHints.AllowsCardOverflow"/>). Read from the presenter's content
+    /// rather than cached, so a view swapped at runtime is honoured on the next size pass.
+    /// </summary>
+    private bool ContentPaintsOutsideCard =>
+        ContentPresenter?.Content is IWidgetSurfaceHints { AllowsCardOverflow: true };
 
     /// <summary>
     /// Smallest window that fits the content's measured minimum: the content
