@@ -156,10 +156,16 @@ internal static class Program
         // event pair it never raises.
         var profileService = (ProfileService)RuntimeHelpers.GetUninitializedObject(typeof(ProfileService));
         var updateService = new UpdateService(settingsStore);
+        // The launcher service is only touched when the Spotlight page is selected, and this check
+        // never navigates there — an uninitialised instance is enough, same idiom as the profile
+        // service above (its real constructor needs the catalog, icons, router and the rest).
+        var spotlightService = (SpotlightService)RuntimeHelpers.GetUninitializedObject(typeof(SpotlightService));
+        var fileSearchService = new FileSearchService(settingsStore);
 
         Settings? window = null;
         var widgetFactory = new WidgetFactory(assemblies, layoutStore, monitor, () => window!, settingsStore);
-        window = new Settings(settingsStore, assemblies, layoutStore, monitor, widgetFactory, profileService, updateService);
+        window = new Settings(settingsStore, assemblies, layoutStore, monitor, widgetFactory, profileService,
+            updateService, spotlightService, fileSearchService);
         var viewModel = (SettingsViewModel)window.DataContext!;
         var listBox = window.FindControl<ListBox>("ListBox")!;
 
