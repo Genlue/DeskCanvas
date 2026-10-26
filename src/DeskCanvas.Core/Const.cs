@@ -196,10 +196,6 @@ public static class Const
     /// </summary>
     public static string CountdownFile => Path.Combine(ActiveProfileFolder, CountdownFileName);
     /// <summary>
-    /// The path to the dice roll history and settings data file for the currently active profile.
-    /// </summary>
-    public static string DiceFile => Path.Combine(ActiveProfileFolder, DiceFileName);
-    /// <summary>
     /// The path to the unified calendar schedule/events data file for the currently active profile.
     /// </summary>
     public static string ScheduleFile => Path.Combine(ActiveProfileFolder, ScheduleFileName);
@@ -220,7 +216,6 @@ public static class Const
     /// <summary>Name of the unified shortcuts/workflow data file inside the data folder.</summary>
     public const string ShortcutsFileName = "shortcuts.json";
     private const string CountdownFileName = "countdown.json";
-    private const string DiceFileName = "dice.json";
     private const string ScheduleFileName = "schedule.json";
     private const string ProfilesFolderName = "Profiles";
 

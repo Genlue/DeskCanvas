@@ -165,7 +165,6 @@ public static class ThemeResourceHelper
         "WeatherTempBarBrush",
         "TimetableCardBackground",
         "HabitsCardBackground",
-        "DiceCardBackground",
         "AccentContrastColor",
         "AccentContrastForegroundBrush",
         "SystemControlForegroundAccentBrush",

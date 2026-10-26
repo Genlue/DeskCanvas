@@ -369,8 +369,6 @@
 
                     <!-- Habits: habit tracker pure card -->
                     <SolidColorBrush x:Key="HabitsCardBackground" Color="#FFFFFF" />
-                    <!-- Dice: dice roller pure card -->
-                    <SolidColorBrush x:Key="DiceCardBackground" Color="#FFFFFF" />
 
                     <!-- Hitokoto: Apple Literary pure card with refined purple watermark & pill -->
                     <SolidColorBrush x:Key="HitokotoCardBackground" Color="#FFFFFF" />
@@ -637,8 +635,6 @@
 
                     <!-- Habits: habit tracker dark card -->
                     <SolidColorBrush x:Key="HabitsCardBackground" Color="#1C1C1E" />
-                    <!-- Dice: dice roller dark card -->
-                    <SolidColorBrush x:Key="DiceCardBackground" Color="#1C1C1E" />
 
                     <!-- Hitokoto: Apple Literary dark card with luminous purple watermark & pill -->
                     <SolidColorBrush x:Key="HitokotoCardBackground" Color="#1C1C1E" />

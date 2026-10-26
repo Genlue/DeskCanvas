@@ -1,5 +1,4 @@
-// Media/interaction widget session checks (P8 batch E — Picture / Music / Map / Pomodoro /
-// Dice).
+// Media widget session checks (P8 batch E — Picture / Music / Map / Pomodoro).
 //
 // Run: dotnet run --project tests/MediaWidgetSessionChecks
 //
@@ -7,9 +6,8 @@
 // and the Music 250 ms progress tick follow the injected session's RenderActive (the SMTC
 // shared engine deliberately untouched); the Pomodoro countdown gates its 1 s tick without
 // losing countdown state (the gated stretch is replayed from the recorded wall-clock
-// boundary); Map's auto theme resolves per window; Dice is interaction-driven
-// and stays session-free (N/A decision pinned). Direct construction only — the host pipeline
-// is covered by tests/SessionHookChecks.
+// boundary); Map's auto theme resolves per window. Direct construction only — the host
+// pipeline is covered by tests/SessionHookChecks.
 using System.Reflection;
 using Avalonia;
 using Avalonia.Controls;
@@ -20,7 +18,6 @@ using Avalonia.Themes.Fluent;
 using Avalonia.Threading;
 using DeskCanvas.Contracts;
 using DeskCanvas.Runtime;
-using Dice.ViewModels;
 using Music.Models;
 using Music.Services;
 using Music.ViewModels;
@@ -295,28 +292,7 @@ Check(fViewVm.IsRunning && !fViewVm.IsTimerEnabledForChecks, "3.21 the view's ga
 fViewVm.Dispose();
 
 // =========================================================================================
-// 4. Dice: interaction-driven — the N/A decision (session-free, legacy always usable)
-// =========================================================================================
-Console.WriteLine("--- Dice: N/A decisions ---");
-
-var diceSource = Source("src/Widgets/Dice/ViewModels/DiceViewModel.cs");
-Check(!diceSource.Contains("DispatcherTimer"), "4.1 (source) DiceViewModel owns no timer — the roll is interaction-driven");
-Check(!Source("src/Widgets/Dice/Views/DiceView.axaml.cs").Contains("IWidgetActivityConsumer"),
-    "4.3 (source) DiceView stays session-free (N/A decision)");
-Check(!Source("src/Widgets/Map/Views/MapView.axaml.cs").Contains("IWidgetActivityConsumer"),
-    "4.5 (source) MapView stays session-free — its only timer is the interaction-driven geocode debounce");
-
-var dice = new DiceViewModel();
-Check(dice.CurrentDice.Count > 0 && dice.Sum == dice.CurrentDice.Sum(),
-    "4.6 the legacy DiceViewModel works with no session (interaction path always usable)");
-Check(diceSource.Contains("if (IsRolling) return;"), "4.8 (source) the roll is re-entrancy guarded, not session gated");
-
-Check(Source("src/Widgets/Dice/Views/DicePopupWindow.axaml.cs").Contains("PanelService.Open") &&
-      Source("src/Widgets/Dice/Views/DicePopupWindow.axaml.cs").Contains("PanelScope.ProcessSingleton"),
-    "4.9 (source) the Dice popup keeps its P6 PanelService wiring (untouched)");
-
-// =========================================================================================
-// 5. Map: per-screen auto theme (window variant wins over the uniform Application variant)
+// 4. Map: per-screen auto theme (window variant wins over the uniform Application variant)
 // =========================================================================================
 Console.WriteLine("--- Map: per-screen auto theme ---");
 
@@ -331,6 +307,8 @@ Check(!MapViewWidget.ResolveAutoIsDark(ThemeVariant.Default, ThemeVariant.Light)
 var mapSource = Source("src/Widgets/Map/Views/MapView.axaml.cs");
 Check(mapSource.Contains("ResolveAutoIsDark(ActualThemeVariant, Application.Current?.ActualThemeVariant)"),
     "5.5 (source) the AutoTheme branch resolves the variant per window first");
+Check(!mapSource.Contains("IWidgetActivityConsumer"),
+    "5.6 (source) MapView stays session-free — its only timer is the interaction-driven geocode debounce");
 
 // =========================================================================================
 // 6. Wiring source scan (guards the batch E wiring against accidental removal)

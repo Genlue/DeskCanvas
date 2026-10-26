@@ -1,4 +1,4 @@
-# tests/ 本地检查项目登记
+﻿# tests/ 本地检查项目登记
 
 本目录共 64 个检查项目（不含 `_shortcuts_tools` Python 辅助脚本目录，2026-10-21 按非 bin/obj 的 csproj 统计）。分类口径：
 
@@ -34,7 +34,7 @@
 | ListWidgetSessionChecks | 正式门禁（已验证套件） | P8-B2 清单类（Countdown/Habits/Reminders/Timetable）：倒计时/到期检测门控（节奏微变已论证）、4 弹窗 PanelService 迁移、Habits/Reminders N/A 决策 |
 | QuickAccessSessionChecks | 正式门禁（已验证套件） | P8-B3 快捷类（Folders/Fortune/Shortcuts/Notes）：4 弹窗 PanelService 迁移、Fortune 跨天守望（新增，仅会话路径）、Notes 保存语义不变 |
 | ClockFamilySessionChecks | 正式门禁（已验证套件） | P8-D Clock 家族（Analog/Flip/Frameless/TickDial）：SharedTimeZone 第二消费者落地（四视图时区样板收敛）、私有定时器收敛+门控、主题逐屏、非法 id 回退 Utc 契约 |
-| MediaWidgetSessionChecks | 正式门禁（已验证套件） | P8-E 媒体类（Picture/Music/Map/Pomodoro/Dice/Wheel）：轮播/进度/计时门控（状态不丢）、Pomodoro 墙钟补放、SMTC 共享引擎不变、交互驱动组件 N/A 决策 |
+| MediaWidgetSessionChecks | 正式门禁（已验证套件） | P8-E 媒体类（Picture/Music/Map/Pomodoro/Wheel）：轮播/进度/计时门控（状态不丢）、Pomodoro 墙钟补放、SMTC 共享引擎不变、交互驱动组件 N/A 决策 |
 | ToolsWidgetSessionChecks | 正式门禁（已验证套件） | P8-F 工具杂项（Tools/Stack/Search/ControlCenter）：3 弹窗 PanelService 迁移（13 个待迁弹窗清单清零）、剪贴板监听/防抖语义不变、ControlCenter N/A 决策 |
 | ProfileStorageChecks | 正式门禁（已验证套件） | P12 数据 Profile 化：默认 Default 解析、activeProfile.json 指针读写、组件数据跨 Profile 完全隔离、ProfileService 增删重命名克隆热切换；P15 新建方案播种契约：出厂默认外观（不继承当前样式）、零组件/零组件数据、仅应用级偏好沿用；热切换必须真正从磁盘 reload（接口 `IDataProvider.Reload` 曾因签名不匹配退化成空实现，导致内存仍用旧方案、旧桌面被回写进新方案目录）；残缺方案目录切换前自动补齐文件 |
 | UninstallerChecks | 正式门禁（已验证套件） | P13 独立卸载与 Setup 安装程序：动态数据路径决议与自动跟随、默认保留数据（未勾选）、彻底清理（勾选）、只读文件鲁棒删除、自启动归属判定、Inno Setup 编译与内置卸载契约（35 项） |
@@ -63,7 +63,6 @@
 | ShortcutsSmoke | 正式门禁 | Shortcuts 无头冒烟：字形解析、存储往返、顺序执行、控制流（沙箱运行） |
 | SpotlightVisualChecks | 正式门禁 | 聚焦搜索三种材质（毛玻璃/液态玻璃/全彩）解析与网格布局断言，并输出浅/深色截图 |
 | ShortcutsGraphChecks | 正式门禁（已验证套件） | Shortcuts v2 执行图：v1 动作树迁移（起始/容器体连线、id 保留）、真实分支/循环/break/continue、数据连线、模板变量、死循环与步数守卫、JSON 导入校验（未知类型/端口/缺失节点）、AI 规范覆盖全部动作类型、文件往返（49 项） |
-| DiceRender | 探针/复现程序 | 骰子卡片无头渲染：`sweep` 扫描 11 档尺寸 × 1–6 骰 × D6点阵/D20/D100 数字，断言骰面与点阵不越出骰盘/骰面（2x2 点数溢出回归） |
 | TickClockRender | 探针/复现程序 | 刻度时钟无头渲染：按任意卡片尺寸输出截图；`sweep` 扫描 1x1/2x2/4x4/横向长条/竖向长条共 14 档，断言时间盒与星期/日期不越出卡片且时间永不塌缩 |
 | TimetableChecks | 正式门禁 | 课程表数据契约：周表达式、导入器、学期计算与配色 |
 | UpdateAtomChecks | 正式门禁 | releases.atom 回退解析器对冻结 fixture 的契约（自述按改动范围作提交门槛） |

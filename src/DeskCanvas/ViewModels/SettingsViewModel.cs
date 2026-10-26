@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using Avalonia;
@@ -82,8 +82,8 @@ public class SettingsViewModel : ReactiveObject
         //    The drawer is DRIVEN BY THE PACKS THEMSELVES: every widget assembly declares a
         //    WidgetInfoAttribute.Category and the sidebar lists exactly the packs whose widgets
         //    carry that key. No hardcoded assembly-name roster to drift out of sync — the old
-        //    roster had ControlCenter double-booked under two pages and Habits, Countdown and
-        //    Dice missing from every category page.
+        //    roster had ControlCenter double-booked under two pages and Habits and Countdown
+        //    missing from every category page.
 
         // 2. Build structured category navigation (macOS Widget Drawer style)
         // Approved 8-category scheme: display order + fallback titles + sidebar glyph.
