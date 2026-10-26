@@ -43,6 +43,14 @@ internal static class ScreenBackdropSource
         /// region move. The caller then skips the publish (and the copy) entirely.
         /// </summary>
         public bool IsCurrent { get; init; }
+
+        /// <summary>
+        /// <see cref="Bitmap"/> came out of <see cref="PatchBitmapPool"/> and must be given back to
+        /// it instead of being disposed — the whole reason a live sample allocates nothing per
+        /// frame. False for the GDI fallback, whose bitmap is allocated (and disposed) by the
+        /// caller's lease as before.
+        /// </summary>
+        public bool Pooled { get; init; }
     }
 
     /// <summary>Frame cadence handed to the capture session (milliseconds).</summary>
@@ -99,11 +107,20 @@ internal static class ScreenBackdropSource
             {
                 if (isCurrent) return new Frame(null, originX, originY, Live: true) { IsCurrent = true };
 
-                // CopyLatest, not Latest: the snapshot owns (and disposes) the pixels it is handed,
-                // while the session recycles its own buffer on the next pull.
-                var bitmap = everPulled ? capture!.CopyLatest() : null;
-                if (bitmap != null && capture!.LatestWidth > 0 && capture.LatestHeight > 0)
-                    return new Frame(bitmap, originX, originY, Live: true);
+                // TakeLatest, not CopyLatest: the session hands its crop over and rents a fresh
+                // buffer for the next pull, so a published frame costs exactly one patch — not two
+                // (the old copy existed only because the session kept reusing its own buffer).
+                var width = 0;
+                var height = 0;
+                var bitmap = everPulled ? capture!.TakeLatest(out width, out height) : null;
+                if (bitmap != null)
+                {
+                    if (width > 0 && height > 0)
+                        return new Frame(bitmap, originX, originY, Live: true) { Pooled = true };
+
+                    // No usable geometry: hand the buffer straight back rather than dropping it.
+                    PatchBitmapPool.Return(bitmap);
+                }
             }
 
             // Fallback: the same region, grabbed with GDI. Region-limited either way.
@@ -152,12 +169,15 @@ internal static class ScreenBackdropSource
         }
 
         // One pull per round; on a still desktop it is a single TryGetNextFrame call and no copy.
-        var gotFrame = capture.PullLatest();
+        // `fresh` — not `gotFrame` — answers "did the desktop change": a re-crop of the held frame
+        // for a second caller in the same tick now also returns pixels, and treating that as news
+        // would repaint a still desktop on every tick.
+        var gotFrame = capture.PullLatest(out var fresh);
         var regionMoved = regionChanged;
         regionChanged = false;
         if (gotFrame) everPulled = true;
 
-        if (freshOnly && everPulled && !gotFrame && !regionMoved)
+        if (freshOnly && everPulled && !fresh && !regionMoved)
         {
             isCurrent = true;
             return true;
@@ -177,6 +197,10 @@ internal static class ScreenBackdropSource
             currentMonitor = IntPtr.Zero;
             sessionCooldownUntil = 0;
         }
+
+        // The overlay is gone: nobody needs the recycled patches either. Buffers still referenced by
+        // a snapshot are not in the pool, so this only drops the idle ones.
+        PatchBitmapPool.Clear();
     }
 
     /// <summary>Dispose the session entirely (process shutdown / device loss).</summary>

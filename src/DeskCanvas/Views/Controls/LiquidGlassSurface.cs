@@ -326,6 +326,7 @@ public class LiquidGlassSurface : GlassSurfaceBase
         window = null;
         animationScale = 1.0;
         animationShapeActive = false;
+        ClearShaderMemo();
         ReleasePrepared();
         GlassInterest.Remove(this);
         LiquidGlassWallpaper.RefreshSamplerState();
@@ -498,6 +499,108 @@ public class LiquidGlassSurface : GlassSurfaceBase
     /// operation holding one has also let go (see <see cref="Prepared"/>).
     /// </summary>
     private static void RetirePrepared(Prepared? old) => old?.Dispose();
+
+    // ---- material shader memo -------------------------------------------------------------------
+    // Rebuilding the material shader is not per-pixel work, it is per-frame work, and a live sample
+    // draws tens of frames per second: a fresh SKRuntimeEffect shader over a fresh child bitmap
+    // shader, which the GPU backend answers by uploading the whole backdrop again. On a still
+    // desktop — the launcher's normal state — the backdrop, the optics, the card box and the shape
+    // are identical from frame to frame, so the shader is identical too, and the rebuild buys
+    // nothing. This memo hands the same shader back as long as every input that ends up in a
+    // uniform is unchanged; the pixels are bit-identical by construction because the SkSL and its
+    // uniform values are the same ones the rebuild would have produced.
+
+    /// <summary>
+    /// Identity of a built material shader: everything that goes into the SkSL uniforms, plus the
+    /// backdrop it samples.
+    /// <para>
+    /// Every field is a value except <see cref="Source"/>, which is compared by reference on
+    /// purpose — a different backdrop is a different capture, and the shader holds the old one's
+    /// pixels alive. Polygon vertices are folded into <see cref="ShapeHash"/> rather than held.
+    /// </para>
+    /// </summary>
+    private readonly record struct MaterialShaderKey(
+        GlassSource Source,
+        LiquidGlassEffect.Params Params,
+        float ShapeWidth, float ShapeHeight, float ShapeRadius, float ShapeGradient,
+        int ShapeEdges, int ShapeHash);
+
+    private readonly object shaderGate = new();
+    private MaterialShaderKey shaderKey;
+    private SKShader? shaderMemo;
+
+    private static MaterialShaderKey ShaderKeyFor(GlassSource source, in LiquidGlassEffect.Params p,
+        LiquidGlassShape? shape)
+    {
+        // A null shape means "the card's own rounded rectangle", which CreateShader derives from the
+        // parameters — those are already part of the key.
+        if (shape == null) return new MaterialShaderKey(source, p, 0f, 0f, 0f, 0f, 0, 0);
+
+        var hash = 17;
+        foreach (var vertex in shape.Vertices)
+        {
+            hash = unchecked(hash * 31 + BitConverter.SingleToInt32Bits(vertex.X));
+            hash = unchecked(hash * 31 + BitConverter.SingleToInt32Bits(vertex.Y));
+        }
+
+        return new MaterialShaderKey(source, p, shape.Size.Width, shape.Size.Height,
+            shape.CornerRadius, shape.GradientRadius, shape.EdgeCount, hash);
+    }
+
+    /// <summary>
+    /// The material shader for one draw, reused when the previous frame's inputs are identical, or
+    /// null when the runtime shader cannot be built (the caller falls back to the plain backdrop).
+    /// <para>
+    /// <b>Lifetime:</b> the memo owns exactly one shader. Evicting it is safe even while a paint
+    /// still refers to it (Skia refcounts the native object, so the paint keeps it alive), and a
+    /// surface's draw operations are rendered one pass at a time on a single thread, so a swap can
+    /// never pull a shader out from under a draw that is in flight.
+    /// </para>
+    /// </summary>
+    private SKShader? AcquireShader(in MaterialShaderKey key, Func<SKShader?> build)
+    {
+        lock (shaderGate)
+        {
+            if (shaderMemo != null && shaderKey.Equals(key)) return shaderMemo;
+        }
+
+        var shader = build();
+        if (shader == null) return null;
+
+        SKShader? retired;
+        lock (shaderGate)
+        {
+            if (shaderMemo != null && shaderKey.Equals(key))
+            {
+                // Another thread finished the same shader first: keep its one, drop ours.
+                retired = shader;
+                shader = shaderMemo;
+            }
+            else
+            {
+                retired = shaderMemo;
+                shaderMemo = shader;
+                shaderKey = key;
+            }
+        }
+
+        try { retired?.Dispose(); } catch { }
+        return shader;
+    }
+
+    /// <summary>Drop the memoized shader (the surface is going away, or the GPU context was lost).</summary>
+    private void ClearShaderMemo()
+    {
+        SKShader? dropped;
+        lock (shaderGate)
+        {
+            dropped = shaderMemo;
+            shaderMemo = null;
+            shaderKey = default;
+        }
+
+        try { dropped?.Dispose(); } catch { }
+    }
 
     private async void RenderMaterial()
     {
@@ -781,7 +884,7 @@ public class LiquidGlassSurface : GlassSurfaceBase
                     // the glass follows the card's edge, not the window); the uniform zoom keeps
                     // drawing the full bounds, scaled by the transition.
                     var dest = animationShapeActive ? animationShape : rect;
-                    context.Custom(new GlassDrawOperation(current, Material, dest, animatedFrame, Shape));
+                    context.Custom(new GlassDrawOperation(this, current, Material, dest, animatedFrame, Shape));
                     return;
                 }
                 catch (Exception ex)
@@ -791,7 +894,7 @@ public class LiquidGlassSurface : GlassSurfaceBase
                     animationShapeActive = false;
                 }
             }
-            context.Custom(new GlassDrawOperation(current, Material, rect, null, Shape));
+            context.Custom(new GlassDrawOperation(this, current, Material, rect, null, Shape));
             return;
         }
         if (current is { Cpu: not null })
@@ -814,6 +917,7 @@ public class LiquidGlassSurface : GlassSurfaceBase
     /// </summary>
     private sealed class GlassDrawOperation : ICustomDrawOperation
     {
+        private readonly LiquidGlassSurface owner;
         private readonly Prepared prepared;
         private readonly GlassSource source;
         private readonly LiquidGlassRenderer.Frame frame;
@@ -823,9 +927,10 @@ public class LiquidGlassSurface : GlassSurfaceBase
 
         public Rect Bounds { get; }
 
-        public GlassDrawOperation(Prepared prepared, Theme material, Rect bounds,
+        public GlassDrawOperation(LiquidGlassSurface owner, Prepared prepared, Theme material, Rect bounds,
             LiquidGlassRenderer.Frame? frameOverride = null, LiquidGlassShape? shape = null)
         {
+            this.owner = owner;
             this.prepared = prepared;
             source = prepared.Source!;
             frame = frameOverride ?? prepared.Frame;
@@ -866,6 +971,7 @@ public class LiquidGlassSurface : GlassSurfaceBase
                 // Software backend: a runtime shader would terminate the process here.
                 if (Interlocked.Exchange(ref gpuState, 2) != 2)
                     GlassDiagnostics.Event("draw: no GrContext — software backend, switching to the CPU material permanently");
+                owner.ClearShaderMemo();
                 LiquidGlassSourceCache.Clear();
                 DrawBackdropPatch(lease.SkCanvas, source, frame, destination);
                 Dispatcher.UIThread.Post(() =>
@@ -882,7 +988,10 @@ public class LiquidGlassSurface : GlassSurfaceBase
                 DestOriginY = (float)Bounds.Y
             };
 
-            using var shader = LiquidGlassEffect.Create(source.Backdrop, parameters, shape);
+            // Memoized: an unchanged frame (same capture, same optics, same box, same shape) reuses
+            // the shader built last time instead of rebuilding one and re-uploading the backdrop.
+            var shader = owner.AcquireShader(ShaderKeyFor(source, parameters, shape),
+                () => LiquidGlassEffect.Create(source.Backdrop, parameters, shape));
             if (shader == null)
             {
                 GlassDiagnostics.Event("draw: runtime shader could not be built — drawing the plain backdrop");
@@ -897,6 +1006,7 @@ public class LiquidGlassSurface : GlassSurfaceBase
             if (Interlocked.Exchange(ref selfTested, 1) == 0 && !RendersOpaque(lease, shader, destination))
             {
                 Interlocked.Exchange(ref gpuState, 2);
+                owner.ClearShaderMemo();
                 LiquidGlassSourceCache.Clear();
                 GlassDiagnostics.Event("selftest: the GPU material renders empty — switching to the CPU material");
                 DrawBackdropPatch(lease.SkCanvas, source, frame, destination);

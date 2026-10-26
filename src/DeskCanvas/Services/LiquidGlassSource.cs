@@ -339,8 +339,17 @@ internal static class LiquidGlassSourceCache
                 // 1) Sample the wallpaper at 背景清晰度. Plain bilinear (no FilterQuality.High, no
                 //    blur filter): the capture must be resampled exactly once, and this step is the
                 //    one that decides how much of it survives.
-                sampled = new SKBitmap(info);
-                if (sampled.GetPixels() == IntPtr.Zero) return null;
+                //    Rented, not allocated: this buffer is scratch — it never leaves this method and
+                //    is never handed to a shader — so recycling it costs nothing visually and saves a
+                //    capture-sized native allocation on every published frame.
+                sampled = GlassCapture.PatchBitmapPool.Rent(width, height);
+                if (sampled.GetPixels() == IntPtr.Zero)
+                {
+                    sampled.Dispose();
+                    sampled = null;
+                    return null;
+                }
+
                 using (var canvas = new SKCanvas(sampled))
                 {
                     canvas.Clear(wallpaper.Background);
@@ -385,7 +394,9 @@ internal static class LiquidGlassSourceCache
         }
         finally
         {
-            sampled?.Dispose();
+            // `sampled` is rented scratch, `backdrop` is owned by the GlassSource once it is built —
+            // so only the retired local copy is released here.
+            GlassCapture.PatchBitmapPool.Return(sampled);
             backdrop?.Dispose();
             if (ownsImage) image?.Dispose();
         }

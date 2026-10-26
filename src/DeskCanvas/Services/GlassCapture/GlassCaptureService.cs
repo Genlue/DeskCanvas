@@ -103,15 +103,54 @@ internal sealed class GlassCaptureService : IDisposable
     public bool HasSession { get { lock (gate) return pool != IntPtr.Zero; } }
 
     /// <summary>
+    /// The newest region-sized pixels, <b>handed over</b> to the caller, or null when nothing has
+    /// been pulled yet. The session forgets them, so the next pull rents a fresh buffer from
+    /// <see cref="PatchBitmapPool"/> and no pixels are copied twice.
+    /// <para>
+    /// Ownership is still exactly one owner per allocation: the bitmap leaves this object for good,
+    /// and whoever receives it (a <c>WallpaperSnapshot</c> lease) owns it and gives it back. What the
+    /// old <c>CopyLatest</c> added on top was a whole extra copy of the patch per published frame —
+    /// 4.7 MB of native memory at 1152×1024, tens of times a second, on a path whose whole point is
+    /// that a still desktop costs nothing. That copy existed because the session reused its own
+    /// buffer; renting from the pool gives the caller a buffer nobody else touches instead.
+    /// </para>
+    /// </summary>
+    /// <param name="width">Pixels across in the returned bitmap (0 when nothing was taken).</param>
+    /// <param name="height">Pixels down in the returned bitmap (0 when nothing was taken).</param>
+    public SKBitmap? TakeLatest(out int width, out int height)
+    {
+        lock (gate)
+        {
+            var taken = latest;
+            if (taken == null)
+            {
+                width = 0;
+                height = 0;
+                return null;
+            }
+
+            latest = null;
+            width = latestWidth;
+            height = latestHeight;
+            return taken;
+        }
+    }
+
+    /// <summary>Pixels across in the most recent crop (diagnostics; 0 before the first pull).</summary>
+    public int LatestWidth { get { lock (gate) return latestWidth; } }
+
+    /// <summary>Pixels down in the most recent crop (diagnostics; 0 before the first pull).</summary>
+    public int LatestHeight { get { lock (gate) return latestHeight; } }
+
+    /// <summary>
     /// A region-sized <b>copy</b> of the newest frame, owned by the caller, or null when nothing has
     /// been pulled yet.
     /// <para>
-    /// The copy is not an optimisation left on the table — it is the ownership contract. The buffer
-    /// behind it is reused (and disposed) by the next pull, while the caller hands its bitmap to a
-    /// <c>WallpaperSnapshot</c> whose lease disposes it. Returning the internal buffer meant two
-    /// owners for one allocation: the second publish freed the pixels the render thread was still
-    /// drawing from, which is exactly the crash that appeared once live sampling started publishing
-    /// several frames per second.
+    /// This is the wallpaper chain's contract, kept deliberately: that snapshot is published to every
+    /// widget at once and its buffer is shared far longer than a launcher frame's, so the copy — not
+    /// a hand-off — is what keeps one owner per allocation there. The launcher's screen chain does
+    /// not pay it: see <see cref="TakeLatest"/>, which hands the crop over and costs one patch per
+    /// published frame instead of two.
     /// </para>
     /// </summary>
     public SKBitmap? CopyLatest()
@@ -123,10 +162,6 @@ internal sealed class GlassCaptureService : IDisposable
             catch { return null; }
         }
     }
-
-    public int LatestWidth { get { lock (gate) return latestWidth; } }
-
-    public int LatestHeight { get { lock (gate) return latestHeight; } }
 
     /// <summary>Age of the pixels currently held, in milliseconds.</summary>
     public double HeldFrameAgeMs
@@ -356,12 +391,26 @@ internal sealed class GlassCaptureService : IDisposable
     // ------------------------------------------------------------------ pull
 
     /// <summary>
-    /// Drain the frame pool and re-crop the newest frame into <see cref="Latest"/>.
+    /// Drain the frame pool and re-crop the newest frame into the crop buffer.
     /// </summary>
-    /// <returns>True when <see cref="Latest"/> holds pixels (fresh, or re-cropped from the held
-    /// frame). On a still desktop with an unchanged region this is one COM call and nothing else.</returns>
-    public bool PullLatest()
+    /// <returns>True when a crop now holds pixels (fresh, or re-cropped from the held frame). On a
+    /// still desktop with an unchanged region this is one COM call and nothing else.</returns>
+    public bool PullLatest() => PullLatest(out _);
+
+    /// <summary>
+    /// As <see cref="PullLatest()"/>, and reports whether the compositor actually produced a
+    /// <b>new</b> frame.
+    /// <para>
+    /// The two answers differ exactly where a caller needs them to: a crop can come back
+    /// non-fresh either because the region moved or because the previous crop was handed out
+    /// through <see cref="TakeLatest"/> and the same held frame has to be re-cropped for this
+    /// caller. "Is the desktop unchanged?" is the second question, and the live path must keep
+    /// answering it — publishing a re-crop as if it were new would repaint a still desktop forever.
+    /// </para>
+    /// </summary>
+    public bool PullLatest(out bool fresh)
     {
+        fresh = false;
         EnsureDevice();
         if (sharedDevice == null) return false;
         WinRtInterop.EnsureApartment();
@@ -383,9 +432,11 @@ internal sealed class GlassCaptureService : IDisposable
 
                 if (newest == IntPtr.Zero)
                 {
-                    // No new pixels. A region that just moved is still served from the held frame,
-                    // otherwise the glass would keep refracting the previous neighbourhood.
-                    return regionDirty && CopyFromHeldLocked();
+                    // No new pixels. A region that just moved — or a crop that a caller already took
+                    // — is still served from the held frame: otherwise the glass would refract the
+                    // previous neighbourhood, or fall through to the slower screen grab below, for a
+                    // frame that has not actually changed.
+                    return (regionDirty || latest == null) && CopyFromHeldLocked();
                 }
 
                 var surface = WinRtInterop.GetFrameSurface(newest);
@@ -404,6 +455,7 @@ internal sealed class GlassCaptureService : IDisposable
                 heldTexture?.Dispose();
                 heldTexture = texture;
                 heldAt = Environment.TickCount64;
+                fresh = true;
 
                 return CopyFromHeldLocked();
             }
@@ -444,7 +496,9 @@ internal sealed class GlassCaptureService : IDisposable
 
         if (!EnsureStagingLocked(boxWidth, boxHeight)) return false;
 
-        var bitmap = new SKBitmap(new SKImageInfo(boxWidth, boxHeight, SKColorType.Bgra8888, SKAlphaType.Opaque));
+        // Rent, do not allocate: at the launcher's sampling cadence this runs tens of times a second
+        // and a fresh patch is 4.7 MB of native pixels the GC cannot see (see PatchBitmapPool).
+        var bitmap = PatchBitmapPool.Rent(boxWidth, boxHeight);
         if (bitmap.GetPixels() == IntPtr.Zero)
         {
             bitmap.Dispose();
@@ -482,12 +536,21 @@ internal sealed class GlassCaptureService : IDisposable
             }
         }
 
-        bitmap.SetImmutable();
+        // A recycled buffer carries the previous frame's pixels, and the generation id Skia keys its
+        // caches on has to move with them. (Deliberately NOT SetImmutable: an immutable bitmap can
+        // never be written again, and every buffer here is written on rent. The patch is only ever
+        // drawn into the backdrop canvas — it is never a shader source — so nothing depends on the
+        // immutable-content fast path.)
+        try { bitmap.NotifyPixelsChanged(); } catch { }
+
         var previous = latest;
         latest = bitmap;
         latestWidth = boxWidth;
         latestHeight = boxHeight;
-        previous?.Dispose();
+
+        // The previous crop was rented too: hand it back so the next pull reuses those pixels
+        // instead of allocating another patch-sized block.
+        if (previous != null) PatchBitmapPool.Return(previous);
 
         regionDirty = false;
         return true;
@@ -565,7 +628,7 @@ internal sealed class GlassCaptureService : IDisposable
         var previous = latest;
         latest = null;
         latestWidth = latestHeight = 0;
-        previous?.Dispose();
+        if (previous != null) PatchBitmapPool.Return(previous);
         regionDirty = haveRegion;
     }
 
@@ -578,7 +641,7 @@ internal sealed class GlassCaptureService : IDisposable
         {
             staging?.Dispose();
             staging = null;
-            latest?.Dispose();
+            if (latest != null) PatchBitmapPool.Return(latest);
             latest = null;
         }
     }

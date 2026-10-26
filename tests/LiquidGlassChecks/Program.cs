@@ -418,7 +418,8 @@ var clarityFailures = BackdropClarityBlurCheck.Run();
 var samplingFailures = BackdropSamplingCheck.Run();
 var geometryFailures = GlassSamplingCheck.Run();
 var coreFailures = GlassCoreCheck.Run();
-if (gpuFailures + v2Failures + clarityFailures + samplingFailures + geometryFailures + coreFailures > 0)
+var poolFailures = PatchPoolCheck.Run();
+if (gpuFailures + v2Failures + clarityFailures + samplingFailures + geometryFailures + coreFailures + poolFailures > 0)
     Environment.Exit(1);
 
 SKBitmap Decode(Theme material) => SKBitmap.Decode(LiquidGlassRenderer.Render(frame with { Theme = material }, wallpaper));

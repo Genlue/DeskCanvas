@@ -513,10 +513,22 @@ public sealed class WallpaperLease : IDisposable
 
     private int references = 1;
     private readonly SKBitmap? bitmap;
+    private readonly bool pooled;
 
-    public WallpaperLease(SKBitmap? bitmap)
+    public WallpaperLease(SKBitmap? bitmap) : this(bitmap, false)
+    {
+    }
+
+    /// <param name="pooled">
+    /// The bitmap was rented from <see cref="GlassCapture.PatchBitmapPool"/>: releasing the last
+    /// reference hands it back for the next capture instead of freeing it. This is what keeps a live
+    /// screen sample from allocating a patch per published frame — the pixels are native, so the GC
+    /// never sees them, and a per-frame allocation shows up as the process ballooning by a gigabyte.
+    /// </param>
+    internal WallpaperLease(SKBitmap? bitmap, bool pooled)
     {
         this.bitmap = bitmap;
+        this.pooled = pooled;
         Interlocked.Increment(ref liveLeases);
         if (bitmap is { } leased) Interlocked.Add(ref liveLeaseBytes, (long)leased.RowBytes * leased.Height);
         ReportLeases();
@@ -530,8 +542,16 @@ public sealed class WallpaperLease : IDisposable
     {
         if (Interlocked.Decrement(ref references) > 0) return;
         Interlocked.Decrement(ref liveLeases);
-        if (bitmap is { } released) Interlocked.Add(ref liveLeaseBytes, -((long)released.RowBytes * released.Height));
-        try { bitmap?.Dispose(); } catch { }
+        if (bitmap is { } released)
+        {
+            Interlocked.Add(ref liveLeaseBytes, -((long)released.RowBytes * released.Height));
+            if (pooled) GlassCapture.PatchBitmapPool.Return(released);
+            else
+            {
+                try { released.Dispose(); } catch { }
+            }
+        }
+
         ReportLeases();
     }
 
@@ -573,10 +593,11 @@ public record WallpaperSnapshot(
     public int RegionY { get; init; }
 
     public static WallpaperSnapshot FromBitmap(byte[]? bytes, SKColor background, SKBitmap? bitmap,
-        string style = "10", bool tile = false, bool live = false, int regionX = 0, int regionY = 0) =>
+        string style = "10", bool tile = false, bool live = false, int regionX = 0, int regionY = 0,
+        bool pooled = false) =>
         new(bytes, background, style, tile, live)
         {
-            Lease = bitmap == null ? null : new WallpaperLease(bitmap),
+            Lease = bitmap == null ? null : new WallpaperLease(bitmap, pooled),
             RegionX = regionX,
             RegionY = regionY
         };

@@ -192,8 +192,11 @@ public static class ScreenSnapshotProvider
 
             if (frame.Bitmap != null)
             {
+                // pooled: the bitmap came out of the patch pool, so the lease hands it back when the
+                // last render is done with it instead of freeing it — a live sample then allocates
+                // nothing per published frame (see PatchBitmapPool).
                 fresh = WallpaperSnapshot.FromBitmap(null, new SKColor(32, 38, 48), frame.Bitmap,
-                    live: true, regionX: frame.OriginX, regionY: frame.OriginY);
+                    live: true, regionX: frame.OriginX, regionY: frame.OriginY, pooled: frame.Pooled);
             }
         }
         catch (Exception ex)
