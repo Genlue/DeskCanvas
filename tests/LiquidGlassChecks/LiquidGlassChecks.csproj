@@ -13,5 +13,16 @@
     <Compile Include="../../src/DeskCanvas/Services/LiquidGlassRenderer.cs" Link="LiquidGlassRenderer.cs" />
     <Compile Include="../../src/DeskCanvas/Services/LiquidGlassSource.cs" Link="LiquidGlassSource.cs" />
     <Compile Include="../../src/DeskCanvas/Services/LiquidGlassEffect.cs" Link="LiquidGlassEffect.cs" />
+    <!-- 采样几何：纯逻辑（区域代数、壁纸宿主带推断、兴趣矩形并集），不依赖渲染或设备。 -->
+    <Compile Include="../../src/DeskCanvas/Services/GlassCapture/CaptureRect.cs" Link="GlassCapture/CaptureRect.cs" />
+    <Compile Include="../../src/DeskCanvas/Services/GlassCapture/NativeMethods.cs" Link="GlassCapture/NativeMethods.cs" />
+    <Compile Include="../../src/DeskCanvas/Services/GlassCapture/CaptureSpace.cs" Link="GlassCapture/CaptureSpace.cs" />
+    <Compile Include="../../src/DeskCanvas/Services/GlassCapture/WallpaperHostDiscovery.cs" Link="GlassCapture/WallpaperHostDiscovery.cs" />
+    <Compile Include="../../src/DeskCanvas/Services/GlassCapture/GlassInterest.cs" Link="GlassCapture/GlassInterest.cs" />
+    <!-- 液态玻璃核心：背板 + 形状 + 参数 → 材质。CPU 孪生同时是形状几何的参考实现。 -->
+    <Compile Include="../../src/DeskCanvas/Services/LiquidGlass/LiquidGlassBackdrop.cs" Link="LiquidGlass/LiquidGlassBackdrop.cs" />
+    <Compile Include="../../src/DeskCanvas/Services/LiquidGlass/LiquidGlassShape.cs" Link="LiquidGlass/LiquidGlassShape.cs" />
+    <Compile Include="../../src/DeskCanvas/Services/LiquidGlass/LiquidGlassParams.cs" Link="LiquidGlass/LiquidGlassParams.cs" />
+    <Compile Include="../../src/DeskCanvas/Services/LiquidGlass/LiquidGlassPass.cs" Link="LiquidGlass/LiquidGlassPass.cs" />
   </ItemGroup>
 </Project>

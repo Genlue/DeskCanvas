@@ -2050,6 +2050,34 @@ internal static class Program
                     $"{name}: the settle restores the translucent card ({restored?.Color.A})");
             }
 
+            // ---- the preview column unfolds inside a window that is already final ----
+            // This is the difference between "the pane appears" and "the card makes room": the
+            // window never resizes during the flight (no SetWindowPos storm, no region re-cut), the
+            // card travels inside it, and the pane column is driven by the card's own width so the
+            // results list never re-wraps mid-animation.
+            var unfoldedWidth = settings.EffectiveLauncher.Width + 280;
+            window.AnimateCardMorphForChecks(unfoldedWidth, target);
+            Check(window.CardMorphRunningForChecks, $"{name}: the preview unfold is in flight");
+
+            if (surface != SurfaceStyle.Acrylic)
+            {
+                Check(Math.Abs(window.Width - unfoldedWidth) < 0.5,
+                    $"{name}: the window is already final on the unfold's first frame ({window.Width:F0})");
+                Check(window.CardWidthForChecks < unfoldedWidth - 0.5,
+                    $"{name}: the card travels inside it ({window.CardWidthForChecks:F0} of {unfoldedWidth:F0})");
+            }
+
+            window.SettleCardMorphForChecks();
+            Check(Math.Abs(window.CardWidthForChecks - unfoldedWidth) < 0.5,
+                $"{name}: the settle lands the card on the window width ({window.CardWidthForChecks:F0})");
+            // The column must agree with the pane's own visibility rule after the flight — the
+            // animation may not leave it half-open. (Whether it IS open is a settings/query decision:
+            // 预览栏只在筛选时出现, so a morph check without a query legitimately lands at 0.)
+            var expectedColumn = window.PreviewPaneShownForChecks ? 280 : 0;
+            Check(Math.Abs(window.PreviewColumnWidthForChecks - expectedColumn) < 0.5,
+                $"{name}: the pane column agrees with the pane's visibility rule after the settle " +
+                $"({window.PreviewColumnWidthForChecks:F0} of {expectedColumn:F0})");
+
             // ---- the floating selection highlight snaps onto the selected row ----
             // (The GLIDE between rows is the spring integrator's job — pinned by MotionChecks'
             // retarget assertions and the RAF probe; this asserts the geometry it lands on.)
@@ -2462,9 +2490,11 @@ internal static class Program
 
         // The default grid (7 columns, 820 wide), with more apps launched than it has columns: the
         // strip has to stop at the column count instead of wrapping into a second row.
+        // The card is shorter than the default so the strip + the tiles really overflow it: the
+        // "the strip scrolls with the grid" check below is vacuous on a card that fits everything.
         var settings = BuildSettings(SurfaceStyle.Acrylic, dark: false) with
         {
-            Launcher = new LauncherSettings(Enabled: true, Columns: 7, GapPercent: 18),
+            Launcher = new LauncherSettings(Enabled: true, Columns: 7, GapPercent: 18, Height: 430),
         };
         var provider = new FakeSettingsProvider(settings);
         var viewModel = BuildViewModel(provider, catalog, icons, "launcher-usage-recents.json");
@@ -2603,8 +2633,47 @@ internal static class Program
         Check(gap > rowGutter + 12,
             $"recents: the strip is separated from the grid by air + the rule ({gap:F1} px, row gutter {rowGutter:F1})");
 
+        // The strip is part of the grid's SCROLL CONTENT, not a header pinned above it: both live
+        // inside one scroller, so scrolling the tiles takes the strip with them. This is the whole
+        // point of the layout — a pinned strip would still pass every check above.
+        var scroller = window.FindControl<ScrollViewer>("GridScroller");
+        Check(scroller != null
+              && scroller.GetVisualDescendants().Contains(row)
+              && scroller.GetVisualDescendants().Contains(grid),
+            "recents: the strip and the grid share one scroller");
+
+        var scrollable = scroller == null ? 0 : scroller.Extent.Height - scroller.Viewport.Height;
+        Check(scrollable > 8, $"recents: the strip + tiles overflow the card ({scrollable:F0} px of scroll)");
+
+        // Keyboard: ↓ walks out of the strip and into the grid, and the rows below the fold have to
+        // pull the shared scroller with them. ListBox.ScrollIntoView cannot do that any more — the
+        // list itself never scrolls — so this is the check that pins ScrollTileIntoView.
+        window.HandleKeyForChecks(Key.Down);   // search field → 最近使用
+        window.HandleKeyForChecks(Key.Down);   // 最近使用 → first grid row
+        for (var step = 0; step < 3; step++) window.HandleKeyForChecks(Key.Down);
+        Check(scroller!.Offset.Y > 8,
+            $"recents: ↓ into the rows below the fold scrolls the shared scroller ({scroller.Offset.Y:F0} px)");
+
+        // Back to the top for the screenshot: the selection halo belongs on the first row.
+        grid.SelectedIndex = -1;
+        scroller.Offset = new Vector(0, 0);
+        Pin(window, (int)settings.EffectiveLauncher.Width, (int)settings.EffectiveLauncher.Height);
+
         Render(window, Path.Combine(Path.GetTempPath(), "spotlight-recents-shots"), "recents-light",
             (int)settings.EffectiveLauncher.Width, (int)settings.EffectiveLauncher.Height);
+
+        // A cluster is a hand-made slice of the grid, so "recently used across every app" would put
+        // apps the user never filed into that cluster on top of it: the strip belongs to 全部 only.
+        // Deliberately AFTER the render: a never-shown window lays out once, so a tile set swapped
+        // in afterwards keeps zero rects and would leave the screenshot above empty.
+        var category = viewModel.CreateAppCategory("检查");
+        Dispatcher.UIThread.RunJobs();
+        Check(!row.IsVisible, "recents: the strip leaves the grid while a cluster is selected");
+        viewModel.SetAppCategory(0);
+        Dispatcher.UIThread.RunJobs();
+        Check(row.IsVisible, "recents: …and comes back on 全部");
+        viewModel.DeleteAppCategory(category.Id);
+        Dispatcher.UIThread.RunJobs();
 
         viewModel.Dispose();
 

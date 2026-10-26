@@ -17,6 +17,8 @@ using Avalonia.VisualTree;
 using SkiaSharp;
 using DeskCanvas.Core.Models.Settings;
 using DeskCanvas.Services;
+using DeskCanvas.Services.GlassCapture;
+using DeskCanvas.Services.LiquidGlass;
 using DeskCanvas.UI.Controls;
 
 namespace DeskCanvas.Views.Controls;
@@ -182,6 +184,23 @@ public class LiquidGlassSurface : GlassSurfaceBase
         AvaloniaProperty.Register<LiquidGlassSurface, bool>(nameof(ScreenSampling));
 
     /// <summary>
+    /// An explicit outline for this surface, or null for the card's rounded rectangle.
+    /// <para>
+    /// This is the shape half of the material's contract (see <see cref="LiquidGlassShape"/>): any
+    /// closed polygon renders with the same refraction, dispersion, coating and highlight, so a host
+    /// can morph a card into a blob, a wedge or a hand-built outline without a second code path.
+    /// <para>
+    /// The shape is <b>shape-local</b>: its <see cref="LiquidGlassShape.Size"/> must equal the
+    /// surface bounds (the vertices are in bounds pixels, origin at the centre). Rebuild the shape
+    /// from <see cref="LiquidGlassShape.Transformed"/> when the bounds change, or leave this null
+    /// and let the surface use its rounded rectangle.
+    /// </para>
+    /// </para>
+    /// </summary>
+    public static readonly StyledProperty<LiquidGlassShape?> ShapeProperty =
+        AvaloniaProperty.Register<LiquidGlassSurface, LiquidGlassShape?>(nameof(Shape));
+
+    /// <summary>
     /// Compute the wallpaper sampling origin from <b>layout offsets only</b>, ignoring every
     /// ancestor render transform on the way to the window. DEFAULT <c>true</c> for every
     /// wallpaper-sampling surface.
@@ -208,6 +227,7 @@ public class LiquidGlassSurface : GlassSurfaceBase
     public bool SettingsSurface { get => GetValue(SettingsSurfaceProperty); set => SetValue(SettingsSurfaceProperty, value); }
     public bool ScreenSampling { get => GetValue(ScreenSamplingProperty); set => SetValue(ScreenSamplingProperty, value); }
     public bool IgnoresAncestorTransform { get => GetValue(IgnoresAncestorTransformProperty); set => SetValue(IgnoresAncestorTransformProperty, value); }
+    public LiquidGlassShape? Shape { get => GetValue(ShapeProperty); set => SetValue(ShapeProperty, value); }
 
     private readonly DispatcherTimer debounce;
     private Window? window;
@@ -307,6 +327,7 @@ public class LiquidGlassSurface : GlassSurfaceBase
         animationScale = 1.0;
         animationShapeActive = false;
         ReleasePrepared();
+        GlassInterest.Remove(this);
         LiquidGlassWallpaper.RefreshSamplerState();
         base.OnDetachedFromVisualTree(e);
     }
@@ -415,7 +436,8 @@ public class LiquidGlassSurface : GlassSurfaceBase
         base.OnPropertyChanged(change);
         if (change.Property == MaterialProperty || change.Property == CornerRadiusProperty
             || change.Property == BoundsProperty || change.Property == IsVisibleProperty
-            || change.Property == PreviewProperty || change.Property == SettingsSurfaceProperty)
+            || change.Property == PreviewProperty || change.Property == SettingsSurfaceProperty
+            || change.Property == ShapeProperty)
             RequestRender();
     }
 
@@ -501,6 +523,9 @@ public class LiquidGlassSurface : GlassSurfaceBase
             // Read the styled property here: the prepare below runs on a worker thread, and a
             // StyledProperty must not be touched from there.
             var screenSampling = ScreenSampling;
+            // Tell the capture layer where this card is, so the next capture samples its
+            // neighbourhood instead of the whole desktop. UI thread, and before the capture below.
+            ReportSamplingInterest(frame, screenSampling);
             // Compiling the runtime shader is a one-off cost, so it is resolved off the UI
             // thread together with the first backdrop.
             var wantGpu = Volatile.Read(ref gpuState) != 2;
@@ -633,6 +658,44 @@ public class LiquidGlassSurface : GlassSurfaceBase
         }
     }
 
+    /// <summary>
+    /// Publish this surface's sampling footprint to <see cref="GlassInterest"/>.
+    /// <para>
+    /// The capture layer samples the union of these rectangles, so the cost of the desktop grab
+    /// tracks how much glass is on screen rather than the desktop's size. The margin is the blur's
+    /// own reach (<c>3σ</c>, σ = 模糊 / 8 in desktop pixels): the shader's refraction reads up to
+    /// that far outside the card, and a patch that stopped at the card edge would clamp to it.
+    /// </para>
+    /// </summary>
+    private void ReportSamplingInterest(LiquidGlassRenderer.Frame frame, bool screenSampling)
+    {
+        if (!attached) return;
+
+        var sigma = (float)frame.Theme.EffectiveGlass.Blur * frame.EffectiveBackdropScale / 8f;
+        var margin = (int)MathF.Ceiling(Math.Max(sigma * 3f, 48f));
+        var rect = CaptureRect.FromSize(
+            (int)MathF.Round(frame.DesktopX),
+            (int)MathF.Round(frame.DesktopY),
+            frame.Width,
+            frame.Height);
+
+        // The preview cards draw a synthetic 120×90 desktop rather than the real one, so their
+        // backdrop has to be the whole screen — a patch around the control would be nonsense.
+        GlassInterest.Report(this, rect, margin, screenSampling, fullDesktop: Preview);
+
+        // Trace only when the answer changes. "Which rectangle is being sampled" is otherwise
+        // invisible, and it is the first thing to check when the glass shows the wrong piece of
+        // desktop or the capture looks more expensive than it should.
+        var region = screenSampling ? GlassInterest.ScreenSamplingRegion() : GlassInterest.SamplingRegion();
+        if (region == lastReportedRegion) return;
+        lastReportedRegion = region;
+        GlassDiagnostics.Event(
+            $"[capture] sampling region {region} ({GlassInterest.Count} surface(s), " +
+            $"card {rect} margin {margin}{(Preview ? ", preview → full screen" : string.Empty)})");
+    }
+
+    private static CaptureRect lastReportedRegion;
+
     private LiquidGlassRenderer.Frame BuildFrame()
     {
         var scaling = window?.RenderScaling ?? 1;
@@ -718,7 +781,7 @@ public class LiquidGlassSurface : GlassSurfaceBase
                     // the glass follows the card's edge, not the window); the uniform zoom keeps
                     // drawing the full bounds, scaled by the transition.
                     var dest = animationShapeActive ? animationShape : rect;
-                    context.Custom(new GlassDrawOperation(current, Material, dest, animatedFrame));
+                    context.Custom(new GlassDrawOperation(current, Material, dest, animatedFrame, Shape));
                     return;
                 }
                 catch (Exception ex)
@@ -728,7 +791,7 @@ public class LiquidGlassSurface : GlassSurfaceBase
                     animationShapeActive = false;
                 }
             }
-            context.Custom(new GlassDrawOperation(current, Material, rect));
+            context.Custom(new GlassDrawOperation(current, Material, rect, null, Shape));
             return;
         }
         if (current is { Cpu: not null })
@@ -755,17 +818,19 @@ public class LiquidGlassSurface : GlassSurfaceBase
         private readonly GlassSource source;
         private readonly LiquidGlassRenderer.Frame frame;
         private readonly Theme material;
+        private readonly LiquidGlassShape? shape;
         private int disposed;
 
         public Rect Bounds { get; }
 
         public GlassDrawOperation(Prepared prepared, Theme material, Rect bounds,
-            LiquidGlassRenderer.Frame? frameOverride = null)
+            LiquidGlassRenderer.Frame? frameOverride = null, LiquidGlassShape? shape = null)
         {
             this.prepared = prepared;
             source = prepared.Source!;
             frame = frameOverride ?? prepared.Frame;
             this.material = material;
+            this.shape = shape;
             Bounds = bounds;
             prepared.AddRef();
         }
@@ -802,7 +867,7 @@ public class LiquidGlassSurface : GlassSurfaceBase
                 if (Interlocked.Exchange(ref gpuState, 2) != 2)
                     GlassDiagnostics.Event("draw: no GrContext — software backend, switching to the CPU material permanently");
                 LiquidGlassSourceCache.Clear();
-                lease.SkCanvas.DrawBitmap(source.Backdrop, destination);
+                DrawBackdropPatch(lease.SkCanvas, source, frame, destination);
                 Dispatcher.UIThread.Post(() =>
                 {
                     foreach (var surface in Active) surface.RequestRender(immediate: false);
@@ -811,17 +876,17 @@ public class LiquidGlassSurface : GlassSurfaceBase
             }
 
             var parameters = LiquidGlassEffect.BuildParams(frame, source.Scale,
-                (float)Bounds.Width, (float)Bounds.Height) with
+                (float)Bounds.Width, (float)Bounds.Height, source.RegionX, source.RegionY) with
             {
                 DestOriginX = (float)Bounds.X,
                 DestOriginY = (float)Bounds.Y
             };
 
-            using var shader = LiquidGlassEffect.Create(source.Backdrop, parameters);
+            using var shader = LiquidGlassEffect.Create(source.Backdrop, parameters, shape);
             if (shader == null)
             {
                 GlassDiagnostics.Event("draw: runtime shader could not be built — drawing the plain backdrop");
-                lease.SkCanvas.DrawBitmap(source.Backdrop, destination);
+                DrawBackdropPatch(lease.SkCanvas, source, frame, destination);
                 return;
             }
 
@@ -834,7 +899,7 @@ public class LiquidGlassSurface : GlassSurfaceBase
                 Interlocked.Exchange(ref gpuState, 2);
                 LiquidGlassSourceCache.Clear();
                 GlassDiagnostics.Event("selftest: the GPU material renders empty — switching to the CPU material");
-                lease.SkCanvas.DrawBitmap(source.Backdrop, destination);
+                DrawBackdropPatch(lease.SkCanvas, source, frame, destination);
                 Dispatcher.UIThread.Post(() =>
                 {
                     foreach (var surface in Active) surface.RequestRender(immediate: false);
@@ -844,6 +909,39 @@ public class LiquidGlassSurface : GlassSurfaceBase
 
             using var paint = new SKPaint { Shader = shader, IsAntialias = true };
             lease.SkCanvas.DrawRect(destination, paint);
+        }
+
+        /// <summary>
+        /// Degraded draw: the part of the backdrop this card covers, without the optics.
+        /// <para>
+        /// A region-limited backdrop is a patch, so drawing the whole bitmap into the card rect
+        /// would show a piece of desktop that is not behind the card. The patch is addressed the
+        /// same way the shader addresses it — desktop position minus the patch origin, times the
+        /// patch scale — which keeps this fallback geometrically honest.
+        /// </para>
+        /// </summary>
+        private static void DrawBackdropPatch(SKCanvas canvas, GlassSource source,
+            LiquidGlassRenderer.Frame frame, SKRect destination)
+        {
+            var bitmap = source.Backdrop;
+            var scale = source.Scale;
+            var left = (frame.DesktopX - source.RegionX) * scale;
+            var top = (frame.DesktopY - source.RegionY) * scale;
+            var right = left + frame.Width * scale;
+            var bottom = top + frame.Height * scale;
+
+            var sourceRect = new SKRect(
+                Math.Clamp(left, 0, bitmap.Width),
+                Math.Clamp(top, 0, bitmap.Height),
+                Math.Clamp(right, 0, bitmap.Width),
+                Math.Clamp(bottom, 0, bitmap.Height));
+            if (sourceRect.Width <= 0 || sourceRect.Height <= 0)
+            {
+                canvas.DrawBitmap(bitmap, destination);
+                return;
+            }
+
+            canvas.DrawBitmap(bitmap, sourceRect, destination);
         }
 
         /// <summary>

@@ -82,6 +82,19 @@ public static class LiquidGlassRenderer
             RimLightScale: 1.25f);
     }
 
+    /// <summary>
+    /// The frame with its desktop origin moved to the snapshot's own patch origin. A full-desktop
+    /// snapshot has <c>RegionX/Y = 0</c>, so this is the identity there.
+    /// </summary>
+    public static Frame RegionFrame(Frame frame, WallpaperSnapshot wallpaper) =>
+        wallpaper.RegionX == 0 && wallpaper.RegionY == 0
+            ? frame
+            : frame with
+            {
+                DesktopX = frame.DesktopX - wallpaper.RegionX,
+                DesktopY = frame.DesktopY - wallpaper.RegionY
+            };
+
     /// <summary>Builds a card-local backdrop bitmap for the GPU shader path.</summary>
     public static SKBitmap? CreateBackdrop(Frame frame, WallpaperSnapshot wallpaper)
     {
@@ -99,7 +112,9 @@ public static class LiquidGlassRenderer
             using var paint = new SKPaint { IsAntialias = true, FilterQuality = SKFilterQuality.High, ImageFilter = filter };
             surface.Canvas.Save();
             surface.Canvas.Translate(pad, pad);
-            DrawWallpaper(surface.Canvas, source, paint, frame, wallpaper);
+            // A region-limited capture addresses the desktop from its own origin: shifting the
+            // frame by -region puts the patch back where it belongs, and the optics are untouched.
+            DrawWallpaper(surface.Canvas, source, paint, RegionFrame(frame, wallpaper), wallpaper);
             surface.Canvas.Restore();
             using var image = surface.Snapshot();
             var result = new SKBitmap(new SKImageInfo(frame.Width, frame.Height, SKColorType.Bgra8888, SKAlphaType.Premul));
@@ -184,7 +199,7 @@ public static class LiquidGlassRenderer
                 using var paint = new SKPaint { IsAntialias = true, FilterQuality = SKFilterQuality.High, ImageFilter = filter };
                 canvas.Save();
                 canvas.Translate(pad, pad);
-                DrawWallpaper(canvas, image, paint, frame, wallpaper);
+                DrawWallpaper(canvas, image, paint, RegionFrame(frame, wallpaper), wallpaper);
                 canvas.Restore();
             }
         }
@@ -543,11 +558,27 @@ public record WallpaperSnapshot(
 
     public SKBitmap? CachedBitmap => Lease?.Bitmap;
 
+    /// <summary>
+    /// Where <see cref="CachedBitmap"/>'s pixel (0,0) sits in virtual-desktop physical pixels.
+    /// <para>
+    /// A live capture is <b>region-limited</b>: it holds the neighbourhood the glass needs, not the
+    /// whole desktop (see <c>GlassInterest</c>). One bitmap pixel is still one desktop pixel, so the
+    /// renderer only has to know where the patch starts — <c>(0,0)</c> means "the desktop origin",
+    /// which is what the static wallpaper path and every pre-region snapshot carry.
+    /// </para>
+    /// </summary>
+    public int RegionX { get; init; }
+
+    /// <summary>See <see cref="RegionX"/>.</summary>
+    public int RegionY { get; init; }
+
     public static WallpaperSnapshot FromBitmap(byte[]? bytes, SKColor background, SKBitmap? bitmap,
-        string style = "10", bool tile = false, bool live = false) =>
+        string style = "10", bool tile = false, bool live = false, int regionX = 0, int regionY = 0) =>
         new(bytes, background, style, tile, live)
         {
-            Lease = bitmap == null ? null : new WallpaperLease(bitmap)
+            Lease = bitmap == null ? null : new WallpaperLease(bitmap),
+            RegionX = regionX,
+            RegionY = regionY
         };
 
     public byte[]? ImageBytes

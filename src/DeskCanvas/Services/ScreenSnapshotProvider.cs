@@ -1,6 +1,8 @@
 using System;
 using System.Threading;
+using SkiaSharp;
 using DeskCanvas.Core.Models.Settings;
+using DeskCanvas.Services.GlassCapture;
 
 namespace DeskCanvas.Services;
 
@@ -13,9 +15,12 @@ namespace DeskCanvas.Services;
 /// desktop, so the glass refracts what the user is actually looking at.
 /// </para>
 /// <para>
-/// <b>Feedback safety:</b> the capture excludes this process's own windows
-/// (<c>WDA_EXCLUDEFROMCAPTURE</c>, applied by the wallpaper pipeline), so a visible overlay is not
-/// part of the frame it samples.
+/// <b>Feedback safety:</b> the overlay must not be part of the frame it samples, or the material
+/// feeds on its own output — every frame a little darker, thicker and more saturated than the
+/// desktop it is supposed to show. The affinity (<c>WDA_EXCLUDEFROMCAPTURE</c>) is applied by
+/// <see cref="ScreenBackdropSource"/> itself, on the capture path, before the frame is produced:
+/// the pass used to live only in the GDI fallback, so a WGC session never applied it and the
+/// launcher refracted a copy of itself.
 /// </para>
 /// <para>
 /// <b>Cost:</b> one BitBlt of the virtual desktop per capture (single-digit milliseconds at
@@ -99,6 +104,9 @@ public static class ScreenSnapshotProvider
             LauncherSettings.MinGlassSampleInterval, LauncherSettings.MaxGlassSampleInterval);
         Volatile.Write(ref intervalMs, clamped);
         Interlocked.Exchange(ref ScreenSnapshotProvider.excludeWindow, excludeWindow);
+        // Hand the cadence to the capture session: the system then produces frames at this rate
+        // instead of at the compositor's, which is the whole point of the interval.
+        ScreenBackdropSource.SetCadence(clamped);
 
         if (!enabled)
         {
@@ -170,7 +178,23 @@ public static class ScreenSnapshotProvider
         var exclude = Volatile.Read(ref excludeWindow);
         try
         {
-            fresh = DesktopCapturer.CaptureScreenSnapshot(exclude);
+            // Region-limited: the capture samples the union of the screen-sampling glass rects (the
+            // launcher's own neighbourhood), not the whole desktop.
+            var interest = GlassInterest.ScreenSamplingRegion();
+            var frame = ScreenBackdropSource.Acquire(interest, exclude, freshOnly: skipUnchanged);
+            if (frame.IsCurrent)
+            {
+                // Nothing on screen changed: skip the publish (and the copy behind it) instead of
+                // re-capturing and then discovering the same thing from the pixel signature.
+                lock (Gate) capturedAt = Environment.TickCount64;
+                return false;
+            }
+
+            if (frame.Bitmap != null)
+            {
+                fresh = WallpaperSnapshot.FromBitmap(null, new SKColor(32, 38, 48), frame.Bitmap,
+                    live: true, regionX: frame.OriginX, regionY: frame.OriginY);
+            }
         }
         catch (Exception ex)
         {
@@ -300,6 +324,8 @@ public static class ScreenSnapshotProvider
     /// <summary>Drop the cached frame (display change, overlay closed for good).</summary>
     public static void Release()
     {
+        ScreenBackdropSource.Release();
+
         WallpaperSnapshot? previous;
         lock (Gate)
         {

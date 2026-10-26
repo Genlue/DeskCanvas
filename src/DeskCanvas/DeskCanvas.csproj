@@ -4,6 +4,8 @@
         <TargetFramework>net10.0</TargetFramework>
         <RuntimeIdentifiers>win-x86;win-x64;win-arm64</RuntimeIdentifiers>
         <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
+        <!-- 捕获读回按行 memcpy（staging texture → SKBitmap），需要指针。 -->
+        <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
         <ApplicationManifest>app.manifest</ApplicationManifest>
         <PublishSingleFile>true</PublishSingleFile>
         <PublishReadyToRun>true</PublishReadyToRun>
@@ -34,6 +36,9 @@
         <!-- PDF first-page rendering for the Spotlight preview pane. Bundles pdfium per RID;
              no managed dependency beyond the runtime, so nothing else in the graph moves. -->
         <PackageReference Include="Docnet.Core" />
+        <!-- 捕获层：WGC 的 D3D11 设备与纹理互操作。 -->
+        <PackageReference Include="Vortice.Direct3D11" />
+        <PackageReference Include="Vortice.DXGI" />
     </ItemGroup>
 
     <ItemGroup>

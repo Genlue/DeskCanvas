@@ -109,8 +109,20 @@ public abstract class SecondaryPanelWindow : Window, IFocusThemedWindow
     private static readonly SpringEasing OpenEasing = SpringMotion.CreateEasing(SpringMotion.Bounce);
     private static readonly SpringEasing SmoothEasing = SpringMotion.CreateEasing(SpringMotion.Smooth);
 
-    private static readonly TimeSpan OpenDuration = TimeSpan.FromMilliseconds(320);
-    private static readonly TimeSpan CloseDuration = TimeSpan.FromMilliseconds(180);
+    /// <summary>
+    /// Shape travel. Shared with every other surface through <see cref="MotionTokens"/>: a panel
+    /// opening and the launcher growing must take the same time, or the two read as different apps.
+    /// </summary>
+    private static readonly TimeSpan OpenDuration = TimeSpan.FromMilliseconds(MotionTokens.ExpandMs);
+
+    /// <summary>
+    /// The fade is shorter than the shape travel on purpose: content is readable while the card is
+    /// still settling, which is what makes the open feel responsive instead of slow. The launcher's
+    /// summon uses the same split (200 ms fade / 320 ms scale).
+    /// </summary>
+    private static readonly TimeSpan OpenFadeDuration = TimeSpan.FromMilliseconds(MotionTokens.FadeMs);
+
+    private static readonly TimeSpan CloseDuration = TimeSpan.FromMilliseconds(MotionTokens.CollapseMs);
     // Transitions start on the first rendered frame after the value change; pad the close
     // timer so base.Close() never fires while the exit transition is still running.
     private static readonly TimeSpan CloseTimerDuration = CloseDuration + TimeSpan.FromMilliseconds(40);
@@ -679,7 +691,7 @@ public abstract class SecondaryPanelWindow : Window, IFocusThemedWindow
 
         card.Transitions = new Transitions
         {
-            new DoubleTransition { Property = Visual.OpacityProperty, Duration = OpenDuration, Easing = SmoothEasing }
+            new DoubleTransition { Property = Visual.OpacityProperty, Duration = OpenFadeDuration, Easing = SmoothEasing }
         };
 
         if (TransformAnimationEnabled && cardScale != null)

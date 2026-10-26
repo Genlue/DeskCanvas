@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
@@ -24,7 +24,6 @@
     <ProjectReference Include="..\..\src\Widgets\Clock\Clock.csproj" />
     <ProjectReference Include="..\..\src\Widgets\ControlCenter\ControlCenter.csproj" />
     <ProjectReference Include="..\..\src\Widgets\Countdown\Countdown.csproj" />
-    <ProjectReference Include="..\..\src\Widgets\Dice\Dice.csproj" />
     <ProjectReference Include="..\..\src\Widgets\Fixed\Fixed.csproj" />
     <ProjectReference Include="..\..\src\Widgets\Folders\Folders.csproj" />
     <ProjectReference Include="..\..\src\Widgets\Habits\Habits.csproj" />

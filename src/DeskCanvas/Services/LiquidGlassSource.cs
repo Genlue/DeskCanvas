@@ -21,27 +21,35 @@ internal readonly struct GlassSourceKey : IEquatable<GlassSourceKey>
     private readonly float scale;
     private readonly int width;
     private readonly int height;
+    private readonly int regionX;
+    private readonly int regionY;
 
-    public GlassSourceKey(WallpaperSnapshot wallpaper, float sigma, float scale, int width, int height)
+    public GlassSourceKey(WallpaperSnapshot wallpaper, float sigma, float scale, int width, int height,
+        int regionX, int regionY)
     {
         this.wallpaper = wallpaper;
         this.sigma = sigma;
         this.scale = scale;
         this.width = width;
         this.height = height;
+        this.regionX = regionX;
+        this.regionY = regionY;
     }
 
     public bool Equals(GlassSourceKey other) =>
         ReferenceEquals(wallpaper, other.wallpaper) &&
         width == other.width &&
         height == other.height &&
+        regionX == other.regionX &&
+        regionY == other.regionY &&
         Math.Abs(sigma - other.sigma) < 0.01f &&
         Math.Abs(scale - other.scale) < 0.001f;
 
     public override bool Equals(object? obj) => obj is GlassSourceKey other && Equals(other);
 
     public override int GetHashCode() =>
-        HashCode.Combine(System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(wallpaper), width, height);
+        HashCode.Combine(System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(wallpaper), width, height,
+            regionX, regionY);
 }
 
 /// <summary>
@@ -59,10 +67,12 @@ internal sealed class GlassSource : IDisposable
     private int references = 1;
     private readonly SKBitmap backdrop;
 
-    public GlassSource(SKBitmap backdrop, float scale)
+    public GlassSource(SKBitmap backdrop, float scale, int regionX, int regionY)
     {
         this.backdrop = backdrop;
         Scale = scale;
+        RegionX = regionX;
+        RegionY = regionY;
     }
 
     /// <summary>Blurred backdrop in desktop space; see <see cref="Scale"/> for the mapping.</summary>
@@ -70,6 +80,16 @@ internal sealed class GlassSource : IDisposable
 
     /// <summary>Backdrop pixels per render pixel.</summary>
     public float Scale { get; }
+
+    /// <summary>
+    /// Desktop-space origin of this backdrop (physical pixels). The shader converts a card pixel to
+    /// a texel with <c>(srcOrigin + p) * scale</c>, so the material only needs the origin subtracted
+    /// from its own desktop position — see <see cref="LiquidGlassEffect.BuildParams"/>.
+    /// </summary>
+    public int RegionX { get; }
+
+    /// <summary>See <see cref="RegionX"/>.</summary>
+    public int RegionY { get; }
 
     public void AddRef() => Interlocked.Increment(ref references);
 
@@ -153,15 +173,24 @@ internal static class LiquidGlassSourceCache
         // their own clarity/blur values on the shared cache.
         var glass = frame.Theme.EffectiveGlass;
         var scale = Math.Clamp((float)(glass.BackdropClarity / 100.0), MinBackdropScale, 1f);
-        var width = Math.Max(1, (int)MathF.Ceiling(desktopWidth * scale));
-        var height = Math.Max(1, (int)MathF.Ceiling(desktopHeight * scale));
+
+        // A live capture is region-limited: its bitmap already *is* the patch the glass needs, so the
+        // backdrop is the patch at 背景清晰度 rather than the whole desktop. A static-wallpaper
+        // snapshot is the wallpaper image (which need not match the desktop's size at all), so its
+        // backdrop keeps the desktop extent and lets DrawWallpaper place it.
+        var patch = wallpaper.LiveCapture ? wallpaper.CachedBitmap : null;
+        var sourceWidth = patch?.Width ?? (int)desktopWidth;
+        var sourceHeight = patch?.Height ?? (int)desktopHeight;
+        var width = Math.Max(1, (int)MathF.Ceiling(sourceWidth * scale));
+        var height = Math.Max(1, (int)MathF.Ceiling(sourceHeight * scale));
         // The blur is stated in **desktop pixels**, not backdrop-texture pixels; Build converts it
         // with the clarity factor exactly once (see there). Use EffectiveBackdropScale
         // (desktop-wide reference DPI) so monitors with different DPIs share a single
         // virtual-desktop backdrop instead of splitting and ping-pong evicting.
         var backdropScale = frame.EffectiveBackdropScale;
         var sigma = (float)glass.Blur * backdropScale / 8f;
-        var key = new GlassSourceKey(wallpaper, sigma, scale, width, height);
+        var key = new GlassSourceKey(wallpaper, sigma, scale, width, height,
+            wallpaper.RegionX, wallpaper.RegionY);
 
         GlassSource? built;
         List<GlassSource>? evicted = null;
@@ -346,7 +375,7 @@ internal static class LiquidGlassSourceCache
             }
 
             backdrop.SetImmutable();
-            var result = new GlassSource(backdrop, scale);
+            var result = new GlassSource(backdrop, scale, wallpaper.RegionX, wallpaper.RegionY);
             backdrop = null;
             return result;
         }

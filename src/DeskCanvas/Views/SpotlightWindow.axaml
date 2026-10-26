@@ -399,11 +399,14 @@
         <!-- 液态玻璃 layer. Hidden for 毛玻璃 / 全彩 (the Card paints those). -->
         <controls:LiquidGlassSurface x:Name="GlassSurface" IsVisible="False" />
 
-        <!-- VerticalAlignment=Top: during the bar→card height morph the card is shorter than the
-             (already final) window — it must grow downward out of the search bar, not float in
-             the middle of the window (SpotlightWindow.AnimateCardGeometry). -->
+        <!-- VerticalAlignment=Top + HorizontalAlignment=Center: during a morph the card is smaller
+             than the (already final) window on whichever axis is travelling — it grows downward out
+             of the search bar and outward from its centre as the preview column opens, rather than
+             floating in the middle of the window or sliding to the right
+             (SpotlightWindow.AnimateCardMorph). Width is always set explicitly, so the card's own
+             size is what the glass is fed, not the window's. -->
         <Border x:Name="Card" BorderThickness="1" ClipToBounds="True" RenderTransformOrigin="0.5,0.5"
-                VerticalAlignment="Top">
+                VerticalAlignment="Top" HorizontalAlignment="Center">
             <Grid x:Name="CardColumns" ColumnDefinitions="*,Auto,280">
                 <!-- ===================== left: search + results ===================== -->
                 <Grid Grid.Column="0" RowDefinitions="Auto,Auto,Auto,*,Auto">
@@ -522,48 +525,66 @@
                                    Foreground="{DynamicResource SpotlightSecondaryText}" />
                     </StackPanel>
 
-                    <Grid Grid.Row="3" RowDefinitions="Auto,*">
-                        <!-- 空查询 · 最近使用行: one row of the grid's own tiles.
-                             The strip is inset by the grid's 18 px margin, not the text rows' 26,
-                             because its tiles have to land on the grid's columns; the caption
-                             keeps the extra 8 so it still lines up with the search field. The row
-                             ends in a hairline plus air: the tiles above it are literally the same
-                             tiles as the grid below, so only a drawn rule can say "this row is
-                             recents, everything under it is the folder".
-                             The item panel is built in code (ApplyLayout) — its ItemWidth is the
-                             derived cell width, which an ItemsPanelTemplate cannot read. -->
-                        <StackPanel x:Name="RecentRow"
-                                    Grid.Row="0"
-                                    Margin="18,14,18,0"
-                                    IsVisible="False">
-                            <TextBlock x:Name="RecentHeader"
-                                       Text="{x:Static loc:Locale.Spotlight_Recent_Header}"
-                                       FontSize="11.5"
-                                       FontWeight="SemiBold"
-                                       Margin="8,0,0,6"
-                                       Foreground="{DynamicResource SpotlightSecondaryText}" />
-                            <ItemsControl x:Name="RecentItemsControl">
-                                <ItemsControl.ItemTemplate>
-                                    <StaticResource ResourceKey="SpotlightRecentTileTemplate" />
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-                            <!-- The rule sits in the middle of the gap, measured between cells (the
-                                 grid adds its own 10 px top margin below it): 14 above, 8 + 10
-                                 below. Measured to the ink instead, the label box's reserved
-                                 second line already puts more air above it. -->
-                            <Border x:Name="RecentDivider"
-                                    Height="1"
-                                    Margin="8,14,8,8"
-                                    Background="{DynamicResource SeparatorBrush}" />
-                        </StackPanel>
+                    <Grid Grid.Row="3">
+                        <Panel>
+                            <!-- 空查询 · 最近使用行 + 应用网格: ONE scroller carries both.
+                                 The strip used to be a pinned header above the list, which let the grid
+                                 scroll a whole screen while "最近使用" stayed glued to the top — as if
+                                 the row were not part of the same launchpad. It travels with the tiles
+                                 now: scrolling the grid down takes the strip with it.
+                                 That is why the list's own ScrollViewer never scrolls: the items panel
+                                 is a WrapPanel (ApplyLayout), so the ListBox is measured at its full
+                                 height and this scroller owns the offset. The window drives it for the
+                                 keyboard (ScrollTileIntoView); the wheel and the bar work by themselves.
+                                 The horizontal margins are the ones the list used to carry, so the
+                                 scrollbar still sits 18 px inside the card. -->
+                            <ScrollViewer x:Name="GridScroller"
+                                          IsVisible="False"
+                                          Margin="18,0,18,0"
+                                          HorizontalScrollBarVisibility="Disabled"
+                                          VerticalScrollBarVisibility="Auto">
+                                <StackPanel>
+                                    <!-- 空查询 · 最近使用行: one row of the grid's own tiles.
+                                         The strip is inset by the grid's 18 px margin (on the scroller),
+                                         not the text rows' 26, because its tiles have to land on the
+                                         grid's columns; the caption keeps the extra 8 so it still lines
+                                         up with the search field. The row ends in a hairline plus air:
+                                         the tiles above it are literally the same tiles as the grid
+                                         below, so only a drawn rule can say "this row is recents,
+                                         everything under it is the folder".
+                                         The item panel is built in code (ApplyLayout) — its ItemWidth is
+                                         the derived cell width, which an ItemsPanelTemplate cannot read. -->
+                                    <StackPanel x:Name="RecentRow"
+                                                Margin="0,14,0,0"
+                                                IsVisible="False">
+                                        <TextBlock x:Name="RecentHeader"
+                                                   Text="{x:Static loc:Locale.Spotlight_Recent_Header}"
+                                                   FontSize="11.5"
+                                                   FontWeight="SemiBold"
+                                                   Margin="8,0,0,6"
+                                                   Foreground="{DynamicResource SpotlightSecondaryText}" />
+                                        <ItemsControl x:Name="RecentItemsControl">
+                                            <ItemsControl.ItemTemplate>
+                                                <StaticResource ResourceKey="SpotlightRecentTileTemplate" />
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                        <!-- The rule sits in the middle of the gap, measured between
+                                             cells (the grid adds its own 10 px top margin below it): 14
+                                             above, 8 + 10 below. Measured to the ink instead, the label
+                                             box's reserved second line already puts more air above it. -->
+                                        <Border x:Name="RecentDivider"
+                                                Height="1"
+                                                Margin="8,14,8,8"
+                                                Background="{DynamicResource SeparatorBrush}" />
+                                    </StackPanel>
 
-                        <Panel Grid.Row="1">
-                            <!-- Grid state (empty query): the Launchpad-style app grid. -->
-                            <ListBox x:Name="GridList"
-                                     ItemTemplate="{StaticResource SpotlightTileTemplate}"
-                                     Margin="18,10,18,4"
-                                     ScrollViewer.HorizontalScrollBarVisibility="Disabled">
-                            </ListBox>
+                                    <!-- Grid state (empty query): the Launchpad-style app grid. -->
+                                    <ListBox x:Name="GridList"
+                                             ItemTemplate="{StaticResource SpotlightTileTemplate}"
+                                             Margin="0,10,0,4"
+                                             ScrollViewer.HorizontalScrollBarVisibility="Disabled" />
+                                </StackPanel>
+                            </ScrollViewer>
 
                             <!-- Filter state: a precise, keyboard-friendly list. -->
                             <ListBox x:Name="ResultList"
@@ -649,7 +670,6 @@
                                     VerticalAlignment="Top"
                                     CornerRadius="10"
                                     Background="{DynamicResource SpotlightSelectionBrush}" />
-
                         </Panel>
                     </Grid>
 
@@ -667,7 +687,11 @@
                         Background="{DynamicResource SeparatorBrush}"
                         IsVisible="False" />
 
-                <Grid x:Name="PreviewPane" Grid.Column="2" IsVisible="False">
+                <!-- Fixed 280 DIP wide and anchored left, while its COLUMN is what animates
+                     0 → 280 during the unfold. The pane therefore never re-wraps mid-flight: the
+                     card grows, the column clips, and the content is revealed instead of squeezed.
+                     The overflow past a narrow column is clipped by the card itself. -->
+                <Grid x:Name="PreviewPane" Grid.Column="2" Width="280" HorizontalAlignment="Left" IsVisible="False">
                     <!-- The scroller is ALWAYS present and always sized: a child that becomes
                          visible later (the pane content) is laid out by the scroller itself, not
                          by the card grid, so the pane can never keep a zero rect. -->

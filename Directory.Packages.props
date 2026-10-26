@@ -40,6 +40,12 @@
     <!-- PDF 首页渲染（聚焦搜索预览栏）。Docnet.Core 自带各平台 pdfium 原生库，
          不依赖 SkiaSharp，因此与 Avalonia 12 的 SkiaSharp 3.x 不会冲突。 -->
     <PackageVersion Include="Docnet.Core" Version="2.6.0" />
+
+    <!-- 液态玻璃采样：Windows.Graphics.Capture 需要一个 D3D11 设备，以及把捕获表面
+         QI 成 ID3D11Texture2D 的互操作。只取 DXGI + Direct3D11 两个包（Vortice 3.x
+         的目标框架为 net8.0，与 net10.0 兼容），其余（SharpGen.Runtime 等）为传递依赖。 -->
+    <PackageVersion Include="Vortice.Direct3D11" Version="3.6.2" />
+    <PackageVersion Include="Vortice.DXGI" Version="3.6.2" />
   </ItemGroup>
 
 </Project>

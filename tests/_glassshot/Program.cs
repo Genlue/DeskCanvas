@@ -1,4 +1,4 @@
-// GlassShot: renders every widget view (all [WidgetInfo] registrations) inside the REAL host
+﻿// GlassShot: renders every widget view (all [WidgetInfo] registrations) inside the REAL host
 // Widget window pipeline with the LiquidGlass surface style, and saves one PNG per view to
 // dist/glass-shots/.
 //
@@ -72,7 +72,7 @@ if (args.Length > 0 && args[0] == "seed")
 
 string[] AllWidgetNames() =>
 [
-    "Batteries", "Calendar", "Clock", "ControlCenter", "Countdown", "Dice", "FixedWidgets",
+    "Batteries", "Calendar", "Clock", "ControlCenter", "Countdown", "FixedWidgets",
     "Folders", "Habits", "Hitokoto", "Map", "Monitor", "Music", "Notes", "Picture",
     "Pomodoro", "Progress", "Reminders", "Search", "Shortcuts", "StackWidgets", "Storage",
     "Timetable", "Tools", "Weather"
@@ -281,7 +281,7 @@ AssemblyProviderStub.Services = services;
 
 var names = new[]
 {
-    "Batteries", "Calendar", "Clock", "ControlCenter", "Countdown", "Dice", "FixedWidgets",
+    "Batteries", "Calendar", "Clock", "ControlCenter", "Countdown", "FixedWidgets",
     "Folders", "Habits", "Hitokoto", "Map", "Monitor", "Music", "Notes", "Picture",
     "Pomodoro", "Progress", "Reminders", "Search", "Shortcuts", "StackWidgets", "Storage",
     "Timetable", "Tools", "Weather"

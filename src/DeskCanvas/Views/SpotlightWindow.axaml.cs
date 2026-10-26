@@ -139,31 +139,31 @@ public partial class SpotlightWindow : Window
     private const double SearchBarHeight = 68;
 
     /// <summary>Summon fade duration — critically damped: an overshooting alpha would clip at 1.</summary>
-    private const int SummonFadeMs = 200;
+    private const int SummonFadeMs = MotionTokens.FadeMs;
 
     /// <summary>
     /// Summon micro-scale + rise duration, on the mod's bounce spring (岛展开 0.42 s / kBounceDamping
     /// — the same budget the secondary panels open with).
     /// </summary>
-    private const int SummonScaleMs = 320;
+    private const int SummonScaleMs = MotionTokens.ExpandMs;
 
     /// <summary>Starting scale for the summon micro-scale transition.</summary>
-    private const double SummonScaleFrom = 0.94;
+    private const double SummonScaleFrom = MotionTokens.SummonScaleFrom;
 
     /// <summary>Where the summon rise starts, in DIP above the resting position (自上而下落定).</summary>
-    private const double SummonRiseFrom = -7;
+    private const double SummonRiseFrom = MotionTokens.SummonRiseFrom;
 
     /// <summary>
     /// The bar → card height morph (搜索条 ↔ 结果卡), on the bounce spring. Only the height and
     /// the radius travel; the width branch of <see cref="ApplyCardGeometry"/> never animates.
     /// </summary>
-    private const int CardMorphMs = 320;
+    private const int CardMorphMs = MotionTokens.ExpandMs;
 
     /// <summary>Padding over the morph duration, so the settle pass never races the last frame.</summary>
-    private const int CardMorphSettlePadMs = 60;
+    private const int CardMorphSettlePadMs = MotionTokens.SettlePadMs;
 
     /// <summary>Dismiss fade + reverse morph; Hide() follows once this flight lands.</summary>
-    private const int DismissAnimationMs = 180;
+    private const int DismissAnimationMs = MotionTokens.CollapseMs;
 
     private readonly SpotlightViewModel viewModel;
     private readonly IAppSettingsProvider settings;
@@ -286,8 +286,27 @@ public partial class SpotlightWindow : Window
     /// <summary>True while the window-height morph is in flight (亚克力 — the window IS the shape).</summary>
     private bool windowMorphRunning;
 
-    /// <summary>The height the running morph is heading for; the settle pass lands on it.</summary>
+    /// <summary>The size the running morph is heading for; the settle pass lands on it.</summary>
     private double morphTargetHeight;
+
+    /// <summary>Width counterpart of <see cref="morphTargetHeight"/> (the preview column unfolds into it).</summary>
+    private double morphTargetWidth;
+
+    /// <summary>
+    /// The card's width without the preview column, i.e. the width the results list owns. The pane's
+    /// revealed width is <c>cardWidth - morphBaseWidth</c>, so the results column never reflows as
+    /// the pane opens — it is the card that grows, not the list that shrinks.
+    /// </summary>
+    private double morphBaseWidth;
+
+    /// <summary>Screen-space centre the window is re-centred on during a 亚克力 width morph.</summary>
+    private double morphCentreX = double.MinValue / 2;
+
+    /// <summary>True once the revealed preview content has started its fade/rise.</summary>
+    private bool previewRevealStarted;
+
+    /// <summary>The rise transform the revealed preview content travels on (null before first use).</summary>
+    private TranslateTransform? previewRevealRise;
 
     /// <summary>The configured card radius cached at morph start (never re-read per frame).</summary>
     private double morphConfigRadius;
@@ -392,8 +411,8 @@ public partial class SpotlightWindow : Window
         // The height morph drives three things per frame — the capsule radius, the glass's covered
         // rect and (亚克力) the card that follows the animating window — off the two properties
         // that actually animate, so everything stays in phase with the visible transition.
-        Card.PropertyChanged += OnCardHeightAnimated;
-        PropertyChanged += OnWindowHeightAnimated;
+        Card.PropertyChanged += OnCardSizeAnimated;
+        PropertyChanged += OnWindowSizeAnimated;
         // 毛玻璃 clips the HWND to the card's rounded rectangle (ApplyWindowRegion). That region
         // is measured from ClientSize, so a width change — the preview column growing the card by
         // 280 DIP is the one that matters — must re-cut it or the new column stays outside the
@@ -424,8 +443,8 @@ public partial class SpotlightWindow : Window
         Closed += (_, _) =>
         {
             boundsSubscription?.Dispose();
-            Card.PropertyChanged -= OnCardHeightAnimated;
-            PropertyChanged -= OnWindowHeightAnimated;
+            Card.PropertyChanged -= OnCardSizeAnimated;
+            PropertyChanged -= OnWindowSizeAnimated;
             morphSettleTimer?.Stop();
             morphSettleTimer = null;
             cardMorphRunning = false;
@@ -895,6 +914,20 @@ public partial class SpotlightWindow : Window
     /// <summary>Checks-only seam: the card's explicit height, for morph-geometry assertions.</summary>
     public double CardHeightForChecks => Card.Height;
 
+    /// <summary>The card's own width (the window's is final during a preview unfold).</summary>
+    public double CardWidthForChecks => Card.Width;
+
+    /// <summary>Whether the pane's own visibility rule wants it right now (预览栏只在筛选时出现).</summary>
+    public bool PreviewPaneShownForChecks => previewShown;
+
+    /// <summary>Width of the preview column as it currently stands (0…280).</summary>
+    public double PreviewColumnWidthForChecks => CardColumns.ColumnDefinitions.Count >= 3
+        ? CardColumns.ColumnDefinitions[2].Width.Value
+        : 0;
+
+    /// <summary>Start a geometry flight with both dimensions, for the unfold checks.</summary>
+    public void AnimateCardMorphForChecks(double width, double height) => AnimateCardMorph(width, height);
+
     /// <summary>Checks-only seam: the card's current radius, for morph-geometry assertions.</summary>
     public double CardRadiusForChecks => Card.CornerRadius.TopLeft;
 
@@ -1245,8 +1278,14 @@ public partial class SpotlightWindow : Window
     /// The same rule drives the search-mode summon: an empty query there is a search <b>bar</b>
     /// (one row), not a 560 DIP card with a hole in it, and it grows to full height the moment the
     /// first result arrives — that growth is the <b>height morph</b>: instant while the overlay is
-    /// not on screen (and in every headless check), on the bounce spring when it is. The width
-    /// branch never animates (动效交接 §5.7: a width change also repositions the window).
+    /// not on screen (and in every headless check), on the bounce spring when it is.
+    /// </para>
+    /// <para>
+    /// A width change is the same flight, not a separate one: the preview column is what makes the
+    /// card wider, and it unfolds out of the card's own growth (<see cref="ApplyPaneReveal"/>). The
+    /// only difference between the materials is <b>what carries the width</b> — 液态玻璃/全彩 jump
+    /// the window to its final size and animate the card inside it, 亚克力 animates the window and
+    /// the card follows, re-centring on every step because the overlay is centred on the screen.
     /// </para>
     /// </summary>
     private void ApplyCardGeometry(LauncherSettings launcher, bool force = false)
@@ -1267,35 +1306,57 @@ public partial class SpotlightWindow : Window
             : targetHeight;
 
         var widthChanged = Math.Abs(Width - width) > 0.5;
-        if (widthChanged && !force && IsVisible)
+        var heightChanged = Math.Abs(Height - height) > 0.5;
+
+        // The card keeps its own width so the preview column can unfold *inside* a window that is
+        // already at its final size. Both dimensions travel on one flight: "results arrived" is a
+        // single gesture (grow down, make room to the right), not a drop followed by a slide.
+        morphBaseWidth = Math.Min(launcher.Width, MaxTotalWidth);
+
+        // Whether this change is a flight decides how the window's width gets set below — both the
+        // centring shift and the assignment itself are the instant path's job, never both.
+        var morphing = (widthChanged || heightChanged || force) && CanAnimateCardMorph(width, height);
+
+        // 亚克力 animates the window's own width, so the shift happens per frame in
+        // RecentreDuringWidthMorph. Doing it here as well would jump the window left by half the
+        // growth *before* the growth starts, and then grow it back out from there.
+        var windowWidthMorphs = morphing && UsesNativeBlurTheme();
+        if (widthChanged && !force && IsVisible && !windowWidthMorphs)
         {
             // Grow/shrink around the card's centre: the window is centred by PlaceOnActiveScreen,
             // and letting it grow only to the right would visibly slide the card off centre.
+            // 液态玻璃/全彩 need it here because their window lands at its final width at once.
             scaling = screen?.Scaling ?? (DesktopScaling > 0 ? DesktopScaling : 1.0);
             if (scaling <= 0) scaling = 1.0;
             var delta = (int)Math.Round((width - Width) * scaling / 2);
             Position = new PixelPoint(Position.X - delta, Position.Y);
         }
 
-        if (widthChanged || force) Width = width;
-
-        if (Math.Abs(Height - height) > 0.5 || force)
+        // The width is never written here: AnimateCardMorph owns it for the flight (for 亚克力 the
+        // assignment is what starts the transition — writing it first left the property already at
+        // its target, so the width never animated and the card stayed narrow until the settle), and
+        // ApplyCardGeometryInstant writes it on every non-animated path.
+        if (widthChanged || heightChanged || force)
         {
-            if (CanAnimateCardMorph(height))
+            if (morphing)
             {
-                AnimateCardGeometry(height);
+                AnimateCardMorph(width, height);
             }
             else
             {
-                ApplyCardGeometryInstant(height);
+                ApplyCardGeometryInstant(width, height);
             }
         }
 
-        UpdatePreviewVisibility();
+        // While a flight owns the geometry, the pane column is driven per frame by
+        // SyncMorphingCardShape — writing the resting value here would snap it to the end state on
+        // the first frame of the animation.
+        if (!CardMorphInFlight) UpdatePreviewVisibility();
 
-        // The width branch above never animates, but it does move the card's right edge — the
-        // preview column appearing is exactly that. The glass has to be told, or it keeps drawing
-        // the narrow rect it was last given and the new column sits on bare desktop.
+        // A width change moves the card's right edge — the preview column appearing is exactly
+        // that. On the instant path the glass has to be told right here, or it keeps drawing the
+        // narrow rect it was last given and the new column sits on bare desktop; mid-flight the
+        // per-frame driver feeds it instead, and this call only pins the departure frame.
         SyncGlassShape();
     }
 
@@ -1304,17 +1365,20 @@ public partial class SpotlightWindow : Window
     /// enabled. Everything else (first layout, headless checks, settings re-layouts while hidden)
     /// takes the instant path, so no check ever sees a half-way height.
     /// </summary>
-    private bool CanAnimateCardMorph(double height)
+    private bool CanAnimateCardMorph(double width, double height)
         => IsVisible
            && settings.Get().EffectiveLauncher.AnimateSummon
            && !applyingLayout
-           && Math.Abs(Card.Height - height) > 0.5;
+           && (Math.Abs(Card.Height - height) > 0.5 || Math.Abs(Card.Width - width) > 0.5);
+
+    /// <summary>True while a geometry flight (card or window) owns the card's size.</summary>
+    private bool CardMorphInFlight => cardMorphRunning || windowMorphRunning;
 
     /// <summary>
     /// Resize the window and the card to a height with no transition at all: the resting geometry
     /// every non-animated path (and every headless check) lands on.
     /// </summary>
-    private void ApplyCardGeometryInstant(double height)
+    private void ApplyCardGeometryInstant(double width, double height)
     {
         morphSettleTimer?.Stop();
         morphSettleTimer = null;
@@ -1324,34 +1388,43 @@ public partial class SpotlightWindow : Window
         if (Transitions != null) Transitions = null;
         ExitAcrylicMorphDegradation();
 
+        morphTargetWidth = width;
         morphTargetHeight = height;
         morphConfigRadius = ConfiguredCardRadius();
 
+        Width = width;
         Height = height;
+        Card.Width = width;
         Card.Height = height;
         Card.CornerRadius = new CornerRadius(morphConfigRadius);
+        UpdatePreviewVisibility();
+        EndPreviewReveal();
         if (GlassSurface.IsVisible)
-            GlassSurface.SetAnimationFrameShape(new Rect(0, 0, Width, height), morphConfigRadius);
+            GlassSurface.SetAnimationFrameShape(new Rect(0, 0, width, height), morphConfigRadius);
     }
 
     /// <summary>
-    /// The bar ↔ card height morph, split by material exactly as the material physics demand
-    /// (动效交接 §5.3):
+    /// One geometry flight, split by material exactly as the material physics demand (动效交接 §5.3):
     /// <list type="bullet">
     /// <item><description><b>液态玻璃 / 全彩</b> — the window lands at its final size at once (no
-    /// <c>SetWindowPos</c> storm, no region re-cut) and the <b>card</b> morphs inside it; the glass
-    /// follows the covered rect every frame through <see cref="GlassSurfaceBase.SetAnimationFrameShape"/>.</description></item>
-    /// <item><description><b>亚克力</b> — the window IS the shape, so the window height itself
-    /// animates (every step is a resize + a region re-cut in <see cref="RefreshWindowRegion"/>),
-    /// and the card temporarily paints itself opaque because there is no OS blur behind a
-    /// mid-resize window.</description></item>
+    /// <c>SetWindowPos</c> storm, no region re-cut) and the <b>card</b> travels inside it; the glass
+    /// follows the covered rect every frame through <see cref="GlassSurfaceBase.SetAnimationFrameShape"/>.
+    /// A width change here is what makes the preview column unfold instead of appearing.</description></item>
+    /// <item><description><b>亚克力</b> — the window IS the shape, so the window's own width and
+    /// height animate (every step is a resize + a region re-cut in <see cref="RefreshWindowRegion"/>),
+    /// the window is re-centred on every width step because the overlay is centred on the screen, and
+    /// the card temporarily paints itself opaque because there is no OS blur behind a mid-resize
+    /// window.</description></item>
     /// </list>
     /// </summary>
-    private void AnimateCardGeometry(double height)
+    private void AnimateCardMorph(double width, double height)
     {
+        morphTargetWidth = width;
         morphTargetHeight = height;
         morphConfigRadius = ConfiguredCardRadius();
-        var fromHeight = Height;
+
+        var fromWidth = double.IsNaN(Card.Width) || Card.Width <= 0 ? width : Card.Width;
+        var fromHeight = double.IsNaN(Card.Height) || Card.Height <= 0 ? Height : Card.Height;
         morphSettleTimer?.Stop();
 
         var duration = TimeSpan.FromMilliseconds(CardMorphMs);
@@ -1359,33 +1432,42 @@ public partial class SpotlightWindow : Window
         {
             EnterAcrylicMorphDegradation();
             Card.Transitions = null;
+            Card.Width = fromWidth;
             Card.Height = fromHeight;
             windowMorphRunning = true;
             cardMorphRunning = false;
+
+            // Growing a centred window only to the right would slide the card off centre, so the
+            // centre is captured once and the left edge follows every width step.
+            morphCentreX = Position.X + Width * WindowScaling() / 2;
+
             Transitions = new Transitions
             {
+                new DoubleTransition { Property = WidthProperty, Duration = duration, Easing = CardMorphEasing },
                 new DoubleTransition { Property = HeightProperty, Duration = duration, Easing = CardMorphEasing },
             };
+            Width = width;
             Height = height;
-            // The capsule radius starts from the departure height like the other materials; the
-            // per-step sync then rides the window's own height events.
-            SyncMorphingCardShape(fromHeight);
+            SyncMorphingCardShape(fromWidth, fromHeight);
         }
         else
         {
             ExitAcrylicMorphDegradation();
             // The window is final from the first frame; only the card (and the glass) travel.
+            Width = width;
             Height = height;
             windowMorphRunning = false;
             cardMorphRunning = true;
             Card.Transitions = new Transitions
             {
+                new DoubleTransition { Property = WidthProperty, Duration = duration, Easing = CardMorphEasing },
                 new DoubleTransition { Property = HeightProperty, Duration = duration, Easing = CardMorphEasing },
             };
+            Card.Width = width;
             Card.Height = height;
             // The first frame the transition covers is still the pre-morph rect (the property's
-            // animated value starts at the departure height), so that is what the glass is fed.
-            SyncMorphingCardShape(fromHeight);
+            // animated value starts at the departure size), so that is what the glass is fed.
+            SyncMorphingCardShape(fromWidth, fromHeight);
         }
 
         morphSettleTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(CardMorphMs + CardMorphSettlePadMs) };
@@ -1406,6 +1488,9 @@ public partial class SpotlightWindow : Window
         }
     }
 
+    /// <summary>Compatibility entry point for the checks and the height-only call sites.</summary>
+    private void AnimateCardGeometry(double height) => AnimateCardMorph(Width, height);
+
     /// <summary>The morph is over (or the window hid mid-flight): land on the resting geometry.</summary>
     private void SettleCardMorph()
     {
@@ -1416,14 +1501,24 @@ public partial class SpotlightWindow : Window
         Transitions = null;
 
         // Always land, hidden or not: a dismiss that outran the morph leaves the card on its
-        // animated height, and the next summon must start from the resting geometry whatever
-        // path it takes. (The glass's shape feed and the region are both no-ops while hidden.)
+        // animated size, and the next summon must start from the resting geometry whatever path it
+        // takes. (The glass's shape feed and the region are both no-ops while hidden.)
+        Card.Width = morphTargetWidth;
         Card.Height = morphTargetHeight;
+        Width = morphTargetWidth;
         Height = morphTargetHeight;
         Card.CornerRadius = new CornerRadius(morphConfigRadius);
+        UpdatePreviewVisibility();
         if (GlassSurface.IsVisible)
-            GlassSurface.SetAnimationFrameShape(new Rect(0, 0, Width, morphTargetHeight), morphConfigRadius);
+            GlassSurface.SetAnimationFrameShape(new Rect(0, 0, morphTargetWidth, morphTargetHeight), morphConfigRadius);
         ExitAcrylicMorphDegradation();
+    }
+
+    /// <summary>Screen scaling of the window's display, for the per-step recentring.</summary>
+    private double WindowScaling()
+    {
+        var scaling = Screens.ScreenFromWindow(this)?.Scaling ?? (DesktopScaling > 0 ? DesktopScaling : 1.0);
+        return scaling > 0 ? scaling : 1.0;
     }
 
     /// <summary>The card radius the settings resolve right now (the morph caches it once per flight).</summary>
@@ -1440,9 +1535,10 @@ public partial class SpotlightWindow : Window
     /// <summary>
     /// Feed the glass surface the rect the card covers <b>right now</b>, whatever moved it.
     /// <para>
-    /// The height morph has its own per-frame driver (<see cref="SyncMorphingCardShape"/>), but a
-    /// <b>width</b> change has none: the preview column widens the card by
-    /// <see cref="PreviewPaneWidth"/> DIP in a single step, and the surface keeps painting the
+    /// The height morph has its own per-frame driver (<see cref="SyncMorphingCardShape"/>, which
+    /// also drives the width once the card's width is the thing that moves). What this answers is
+    /// every path <i>outside</i> a flight: the preview column widening the card by
+    /// <see cref="PreviewPaneWidth"/> DIP in a single step, with the surface still painting the
     /// rect it was last given. That is why 液态玻璃 showed the preview column over bare desktop —
     /// the window had grown, the glass had not. It is the same failure 毛玻璃 had with its native
     /// region, which <see cref="RefreshWindowRegion"/> answers by re-cutting on every resize.
@@ -1463,7 +1559,11 @@ public partial class SpotlightWindow : Window
         if (double.IsNaN(height) || height <= 0) height = Height;
         if (double.IsNaN(height) || height <= 0) return;
 
-        var width = Width;
+        // The card's width, not the window's: while the preview column unfolds the window is
+        // already final and only the card is narrower. Reading the window here was what left the
+        // glass painting the pre-unfold rect for the whole flight.
+        var width = Card.Width;
+        if (double.IsNaN(width) || width <= 0) width = Width;
         if (double.IsNaN(width) || width <= 0) width = Bounds.Width;
         if (double.IsNaN(width) || width <= 0) return;
 
@@ -1480,28 +1580,138 @@ public partial class SpotlightWindow : Window
     /// the rect that is actually covered, so the refraction follows the card's edge instead of
     /// the window's.
     /// </summary>
-    private void SyncMorphingCardShape(double height)
+    private void SyncMorphingCardShape(double width, double height)
     {
         var radius = MorphRadius(height);
         if (Math.Abs(Card.CornerRadius.TopLeft - radius) > 0.01)
             Card.CornerRadius = new CornerRadius(radius);
+
+        // The pane's reveal rides the card's width, so the column is always exactly as wide as the
+        // room the card just made. That is what keeps the results column from re-wrapping mid-flight.
+        ApplyPaneReveal(width);
+
         if (GlassSurface.IsVisible)
-            GlassSurface.SetAnimationFrameShape(new Rect(0, 0, Math.Max(1, Width), height), radius);
+            GlassSurface.SetAnimationFrameShape(new Rect(0, 0, Math.Max(1, width), Math.Max(1, height)), radius);
     }
 
-    private void OnCardHeightAnimated(object? sender, AvaloniaPropertyChangedEventArgs e)
+    /// <summary>
+    /// Drive the preview column from the card's current width: 0 when the card is only as wide as
+    /// the results list, <see cref="PreviewPaneWidth"/> once it has made the full room.
+    /// </summary>
+    private void ApplyPaneReveal(double cardWidth)
     {
-        if (e.Property != HeightProperty || !cardMorphRunning) return;
-        SyncMorphingCardShape(Card.Height);
+        if (morphBaseWidth <= 0) return;
+
+        var pane = Math.Clamp(cardWidth - morphBaseWidth, 0, PreviewPaneWidth);
+        var shown = pane > 0.5;
+        if (shown) BeginPreviewReveal(); else EndPreviewReveal();
+
+        PreviewPane.IsVisible = shown;
+        PreviewHairline.IsVisible = shown;
+
+        var columns = CardColumns.ColumnDefinitions;
+        if (columns.Count >= 3)
+        {
+            columns[1].Width = new GridLength(shown ? 1 : 0);
+            columns[2].Width = new GridLength(pane);
+        }
     }
 
-    private void OnWindowHeightAnimated(object? sender, AvaloniaPropertyChangedEventArgs e)
+    /// <summary>
+    /// The pane's content arrives <b>after</b> the card has made room, not at the same instant: a
+    /// fade plus an 8 DIP rise, delayed by <see cref="MotionTokens.PaneRevealDelayMs"/>. Without the
+    /// delay the content is already there when the column starts to widen, which reads as the text
+    /// being squeezed out rather than the pane unfolding.
+    /// </summary>
+    private void BeginPreviewReveal()
     {
-        if (e.Property != HeightProperty || !windowMorphRunning) return;
-        // 亚克力: the card follows the animating window (the window is the shape), and the 1-bit
-        // region is re-cut by the Resized handler on every step.
-        Card.Height = Height;
-        SyncMorphingCardShape(Height);
+        if (previewRevealStarted) return;
+        previewRevealStarted = true;
+
+        PreviewContent.Opacity = 0;
+        previewRevealRise = new TranslateTransform(0, MotionTokens.PaneRevealRiseFrom);
+        PreviewContent.RenderTransform = previewRevealRise;
+
+        var rise = previewRevealRise;
+        DispatcherTimer.RunOnce(() =>
+        {
+            // The pane may have collapsed (or been re-revealed with a new transform) inside the
+            // delay: only the flight that is still installed gets to run.
+            if (!previewRevealStarted || !ReferenceEquals(PreviewContent.RenderTransform, rise))
+                return;
+
+            PreviewContent.Transitions = new Transitions
+            {
+                new DoubleTransition { Property = Visual.OpacityProperty, Duration = ResultStaggerDuration, Easing = CardFadeEasing },
+            };
+            rise.Transitions = new Transitions
+            {
+                new DoubleTransition { Property = TranslateTransform.YProperty, Duration = ResultStaggerDuration, Easing = CardFadeEasing },
+            };
+            PreviewContent.Opacity = 1;
+            rise.Y = 0;
+
+            DispatcherTimer.RunOnce(() =>
+            {
+                PreviewContent.Transitions = null;
+                rise.Transitions = null;
+                if (ReferenceEquals(PreviewContent.RenderTransform, rise)) PreviewContent.RenderTransform = null;
+            }, ResultStaggerDuration + TimeSpan.FromMilliseconds(40));
+        }, TimeSpan.FromMilliseconds(MotionTokens.PaneRevealDelayMs));
+    }
+
+    /// <summary>The pane collapsed (or the flight was abandoned): drop the reveal state.</summary>
+    private void EndPreviewReveal()
+    {
+        if (!previewRevealStarted) return;
+        previewRevealStarted = false;
+        PreviewContent.Transitions = null;
+        PreviewContent.Opacity = 1;
+        if (previewRevealRise != null)
+        {
+            previewRevealRise.Transitions = null;
+            if (ReferenceEquals(PreviewContent.RenderTransform, previewRevealRise))
+                PreviewContent.RenderTransform = null;
+            previewRevealRise = null;
+        }
+    }
+
+    private void OnCardSizeAnimated(object? sender, AvaloniaPropertyChangedEventArgs e)
+    {
+        if (!cardMorphRunning) return;
+        if (e.Property != WidthProperty && e.Property != HeightProperty) return;
+        SyncMorphingCardShape(Card.Width, Card.Height);
+    }
+
+    private void OnWindowSizeAnimated(object? sender, AvaloniaPropertyChangedEventArgs e)
+    {
+        if (!windowMorphRunning) return;
+
+        if (e.Property == WidthProperty)
+        {
+            // 亚克力: the card follows the animating window (the window is the shape), the 1-bit
+            // region is re-cut by the Resized handler on every step, and the window is re-centred
+            // because it grows around the screen centre rather than to the right.
+            Card.Width = Width;
+            RecentreDuringWidthMorph();
+        }
+        else if (e.Property == HeightProperty)
+        {
+            Card.Height = Height;
+        }
+        else
+        {
+            return;
+        }
+
+        SyncMorphingCardShape(Card.Width, Card.Height);
+    }
+
+    private void RecentreDuringWidthMorph()
+    {
+        if (morphCentreX <= double.MinValue / 2) return;
+        var x = (int)Math.Round(morphCentreX - Width * WindowScaling() / 2);
+        if (Position.X != x) Position = new PixelPoint(x, Position.Y);
     }
 
     /// <summary>
@@ -1531,10 +1741,10 @@ public partial class SpotlightWindow : Window
     }
 
     /// <summary>Per-row delay of the results stagger (12–18 ms, ≤120 ms total — 动效交接 §5.2-3).</summary>
-    private const int ResultStaggerStepMs = 14;
+    private const int ResultStaggerStepMs = MotionTokens.RowStaggerStepMs;
 
     /// <summary>One row's stagger flight: an opacity fade-in plus a 4 DIP rise.</summary>
-    private static readonly TimeSpan ResultStaggerDuration = TimeSpan.FromMilliseconds(120);
+    private static readonly TimeSpan ResultStaggerDuration = TimeSpan.FromMilliseconds(MotionTokens.RowStaggerMs);
 
     /// <summary>
     /// The results' entrance: the realized rows fade in and rise 4 DIP, staggered ~14 ms apart.
@@ -1548,7 +1758,7 @@ public partial class SpotlightWindow : Window
         {
             var row = rows[i];
             row.Opacity = 0;
-            var rise = new TranslateTransform(0, 4);
+            var rise = new TranslateTransform(0, MotionTokens.RowRiseFrom);
             row.RenderTransform = rise;
 
             DispatcherTimer.RunOnce(() =>
@@ -2106,6 +2316,10 @@ public partial class SpotlightWindow : Window
             RefreshAppCategoryChips();
             selectedIndex = -1;
             GridList.SelectedIndex = -1;
+            // A different tile set starts at its first row. Without this the offset survives the
+            // switch and a 6-app cluster opens scrolled halfway down (with the strip on 全部, past
+            // it) — the grid would look empty until the user scrolled back up.
+            GridScroller.Offset = new Vector(0, 0);
             UpdateMode();
         }
         else if (e.PropertyName is nameof(SpotlightViewModel.AppCategories))
@@ -2162,6 +2376,10 @@ public partial class SpotlightWindow : Window
         var gridMode = summonMode == SpotlightSummonMode.AppList;
 
         GridList.IsVisible = gridMode && !filtering && !emptyFolder;
+        // The 最近使用 strip lives INSIDE this scroller (it scrolls away with the tiles), so the
+        // scroller — not the list — is what has to leave the screen with it. GridList keeps its own
+        // flag: IsGridMode / ActiveListVisible / SyncSelectionFrom all read it.
+        GridScroller.IsVisible = GridList.IsVisible;
         ResultList.IsVisible = filtering && !emptyResult;
         EmptyState.IsVisible = gridMode && emptyFolder;
         NoResultState.IsVisible = emptyResult;
@@ -2202,7 +2420,7 @@ public partial class SpotlightWindow : Window
 
         selectedIndex = target;
         active.SelectedIndex = target;
-        active.ScrollIntoView(target);
+        ScrollActiveIntoView(active, target);
         ValidateFocusZone();
 
         // The mode swap may have realized (or dropped) the selected row's container — the
@@ -2216,7 +2434,66 @@ public partial class SpotlightWindow : Window
         // The grid's satellite rows belong to 应用列表式 only: a search bar that opens with a
         // "最近使用" strip is not a search bar.
         var gridMode = summonMode == SpotlightSummonMode.AppList;
-        RecentRow.IsVisible = gridMode && settings.Get().EffectiveLauncher.RecentApps && viewModel.RecentItems.Count > 0 && !viewModel.IsFiltering;
+
+        // …and to 全部 only. A cluster is a hand-made slice of the grid, so a strip of "whatever you
+        // launched last across every app" would put apps the user did not file into that cluster
+        // right on top of it — the one place where the row would actively contradict the view.
+        var onAllApps = viewModel.ActiveAppCategory == 0;
+
+        RecentRow.IsVisible = gridMode
+                              && onAllApps
+                              && settings.Get().EffectiveLauncher.RecentApps
+                              && viewModel.RecentItems.Count > 0
+                              && !viewModel.IsFiltering;
+    }
+
+    /// <summary>
+    /// Scroll one list row into view: the result list owns its own scroller, the app grid does not
+    /// (its scroller is shared with the 最近使用 strip, see <see cref="ScrollTileIntoView"/>).
+    /// </summary>
+    private void ScrollActiveIntoView(ListBox list, int index)
+    {
+        if (ReferenceEquals(list, GridList))
+        {
+            if (GridList.ContainerFromIndex(index) is Control tile) ScrollTileIntoView(tile);
+            return;
+        }
+
+        list.ScrollIntoView(index);
+    }
+
+    /// <summary>
+    /// Bring a tile — a grid cell or a 最近使用 tile, both live inside
+    /// <see cref="GridScroller"/> — into the visible band.
+    /// <para>
+    /// <c>ListBox.ScrollIntoView</c> has nothing to move here: the list is measured at full height
+    /// inside the shared scroller, so its own ScrollViewer has no extent to scroll. The offset is
+    /// derived from the tile's position inside the scroller's CONTENT, which the scroll offset does
+    /// not touch — so the comparison against <see cref="ScrollViewer.Offset"/> stays in one
+    /// coordinate space even while the view is mid-scroll.
+    /// </para>
+    /// </summary>
+    private void ScrollTileIntoView(Control tile)
+    {
+        if (GridScroller.Content is not Control content) return;
+        if (tile.TranslatePoint(new Point(0, 0), content) is not { } origin) return;
+
+        var viewport = GridScroller.Viewport.Height;
+        if (viewport <= 0) return;
+
+        var current = GridScroller.Offset.Y;
+        var target = current;
+        if (origin.Y < current)
+        {
+            target = origin.Y;
+        }
+        else if (origin.Y + tile.Bounds.Height > current + viewport)
+        {
+            target = origin.Y + tile.Bounds.Height - viewport;
+        }
+
+        target = Math.Max(0, target);
+        if (Math.Abs(target - current) > 0.5) GridScroller.Offset = new Vector(GridScroller.Offset.X, target);
     }
 
     /// <summary>
@@ -2834,10 +3111,14 @@ public partial class SpotlightWindow : Window
         FocusRowIndex(control, index);
     }
 
-    private static void FocusRowIndex(ItemsControl control, int index)
+    private void FocusRowIndex(ItemsControl control, int index)
     {
         if (control.ContainerFromIndex(index) is not Control container) return;
         (container.GetVisualDescendants().OfType<Button>().FirstOrDefault() ?? container).Focus();
+
+        // The strip scrolls with the grid now, so a row the user scrolled past is off-screen and
+        // focusing it does not bring it back on its own.
+        ScrollTileIntoView(container);
     }
 
     private int FirstListIndex() => viewModel.IsFiltering ? NearestSelectableIndex(viewModel.Results, 0, +1) : 0;
@@ -2868,7 +3149,7 @@ public partial class SpotlightWindow : Window
         }
 
         list.SelectedIndex = next;
-        list.ScrollIntoView(next);
+        ScrollActiveIntoView(list, next);
         selectedIndex = next;
         focusZone = SpotlightFocusZone.List;
     }
@@ -2941,7 +3222,14 @@ public partial class SpotlightWindow : Window
                     UpdateMode();
                 }
 
-                if (list.ContainerFromIndex(list.SelectedIndex) is ListBoxItem container) container.Focus();
+                if (list.ContainerFromIndex(list.SelectedIndex) is ListBoxItem container)
+                {
+                    container.Focus();
+                    // Tab can land on a row the wheel already scrolled past: the grid's scroller is
+                    // shared with the 最近使用 strip, so the list cannot bring its own row back.
+                    if (ReferenceEquals(list, GridList)) ScrollTileIntoView(container);
+                }
+
                 break;
 
             case SpotlightFocusZone.Preview:
