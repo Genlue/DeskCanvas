@@ -130,20 +130,130 @@ public static class GridMetrics
     }
 
     /// <summary>
+    /// The placement frame of a screen: its grid lattice (<see cref="Resolve"/>) plus the working
+    /// area a card has to stay inside. The grid origin is converted to working-area-relative
+    /// coordinates, which is the space <see cref="BuildOccupancy"/> and <see cref="IsBlocked"/>
+    /// work in and the space per-screen <see cref="WidgetLayout"/> positions are stored in.
+    /// </summary>
+    /// <param name="grid">Grid settings of the target screen (<c>null</c> → <see cref="Grid.Default"/>).</param>
+    /// <param name="originX">Working-area origin X (physical pixels).</param>
+    /// <param name="originY">Working-area origin Y (physical pixels).</param>
+    /// <param name="width">Working-area width (physical pixels).</param>
+    /// <param name="height">Working-area height (physical pixels).</param>
+    /// <param name="scaling">Scaling of the target screen (stored sizes are DIPs).</param>
+    public static PlacementFrame FrameFor(Grid? grid, int originX, int originY, int width, int height, double scaling)
+    {
+        var (cell, gridX, gridY) = Resolve(grid, originX, originY, width, height);
+        return new PlacementFrame(cell, scaling, gridX - originX, gridY - originY,
+            (grid ?? Grid.Default).Columns, (grid ?? Grid.Default).Rows, width, height);
+    }
+
+    /// <summary>
+    /// The occupancy matrix of a screen: one boolean per <b>placeable</b> cell
+    /// (<see cref="PlacementFrame.PlaceableColumns"/> × <see cref="PlacementFrame.PlaceableRows"/>),
+    /// <c>true</c> where a stored widget is.
+    /// <para>
+    /// This is the ONE occupancy rule in the app: the gallery's first-fit scan and the drag's
+    /// "may I drop here" question both come through here, so a cell a new card refuses to take
+    /// and a cell a dragged card refuses to land on are the same cell. Two copies of this math
+    /// drift the moment one of them learns about a case the other does not, and the user sees a
+    /// white outline over a cell the release then rejects (or the reverse).
+    /// </para>
+    /// <para>
+    /// A widget is marked at the rectangle it is <b>actually displayed at</b>: its stored
+    /// position is clamped onto the working area (exactly like <c>Widget.ClampRestoredPosition</c>)
+    /// before the cells it covers are marked. A widget stored outside the area — a bigger desktop
+    /// before a resolution change, a grid hanging off the bottom edge — is displayed somewhere
+    /// else, and marking its stored rectangle instead would let a card land right on top of it.
+    /// The whole pixel rectangle is marked (floor on the leading edge, ceil on the trailing
+    /// edge), so a widget parked off the cell lattice blocks the boundary cells its edges reach
+    /// into and a candidate can never slip into the sliver between its rect and the lattice.
+    /// </para>
+    /// </summary>
+    /// <param name="layout">Stored widgets of the target screen, positions RELATIVE to the
+    /// screen's working area, sizes in DIPs.</param>
+    /// <param name="frame">Grid lattice + working area of the target screen.</param>
+    /// <param name="exclude">The entry to leave out — the widget being dragged, whose own stored
+    /// cell must never read as taken. Matched through <see cref="WidgetLayout.IndexOfIdentity"/>
+    /// (reference first, then the stable instance id), so a re-parsed entry is still recognised
+    /// and a look-alike neighbour is not silently dropped from the matrix.</param>
+    /// <returns>Row-major matrix, <c>[row, column]</c>, sized by the frame's placeable extent.</returns>
+    public static bool[,] BuildOccupancy(
+        IReadOnlyList<WidgetLayout> layout, PlacementFrame frame, WidgetLayout? exclude = null)
+    {
+        var columns = frame.PlaceableColumns;
+        var rows = frame.PlaceableRows;
+        var occupied = new bool[rows, columns];
+        var self = exclude == null ? -1 : WidgetLayout.IndexOfIdentity(layout, exclude);
+
+        for (var i = 0; i < layout.Count; i++)
+        {
+            if (i == self) continue;
+            var widget = layout[i];
+            var width = frame.ToPhysicalWidth(widget.Width);
+            var height = frame.ToPhysicalHeight(widget.Height);
+
+            // The rectangle the window really shows: restored position clamped onto the
+            // working area, relative to the grid origin.
+            var left = Math.Clamp(widget.X, 0, Math.Max(0, frame.AreaWidth - width)) - frame.GridX;
+            var top = Math.Clamp(widget.Y, 0, Math.Max(0, frame.AreaHeight - height)) - frame.GridY;
+            var col0 = (int) Math.Floor(left / (double) frame.Cell);
+            var row0 = (int) Math.Floor(top / (double) frame.Cell);
+            var col1 = (int) Math.Ceiling((left + width) / (double) frame.Cell) - 1;
+            var row1 = (int) Math.Ceiling((top + height) / (double) frame.Cell) - 1;
+
+            for (var r = Math.Max(row0, 0); r <= Math.Min(row1, rows - 1); r++)
+                for (var c = Math.Max(col0, 0); c <= Math.Min(col1, columns - 1); c++)
+                    occupied[r, c] = true;
+        }
+
+        return occupied;
+    }
+
+    /// <summary>
+    /// Whether a rectangle covers any cell marked in <paramref name="occupied"/>. The rect is
+    /// clamped and mapped exactly like <see cref="BuildOccupancy"/> maps a stored widget — same
+    /// clamp, same floor/ceil cell span — so asking about a rect is asking the same question the
+    /// matrix answered, not a second approximation of it.
+    /// </summary>
+    /// <param name="occupied">Matrix from <see cref="BuildOccupancy"/> for the SAME
+    /// <paramref name="frame"/>.</param>
+    /// <param name="frame">Grid lattice + working area of the target screen.</param>
+    /// <param name="x">Rectangle origin X, relative to the working-area origin (physical pixels).</param>
+    /// <param name="y">Rectangle origin Y, relative to the working-area origin (physical pixels).</param>
+    /// <param name="width">Rectangle width (physical pixels).</param>
+    /// <param name="height">Rectangle height (physical pixels).</param>
+    /// <returns><c>true</c> when at least one covered cell is taken; <c>false</c> when the rect
+    /// covers no cell at all (fully outside the placeable grid) — there is nothing there to hit.</returns>
+    public static bool IsBlocked(bool[,] occupied, PlacementFrame frame, int x, int y, int width, int height)
+    {
+        if (frame.Cell <= 0) return false;
+        var rows = occupied.GetLength(0);
+        var columns = occupied.GetLength(1);
+        if (rows == 0 || columns == 0) return false;
+
+        var left = Math.Clamp(x, 0, Math.Max(0, frame.AreaWidth - width)) - frame.GridX;
+        var top = Math.Clamp(y, 0, Math.Max(0, frame.AreaHeight - height)) - frame.GridY;
+        var col0 = (int) Math.Floor(left / (double) frame.Cell);
+        var row0 = (int) Math.Floor(top / (double) frame.Cell);
+        var col1 = (int) Math.Ceiling((left + width) / (double) frame.Cell) - 1;
+        var row1 = (int) Math.Ceiling((top + height) / (double) frame.Cell) - 1;
+
+        for (var r = Math.Max(row0, 0); r <= Math.Min(row1, rows - 1); r++)
+            for (var c = Math.Max(col0, 0); c <= Math.Min(col1, columns - 1); c++)
+                if (occupied[r, c]) return true;
+
+        return false;
+    }
+
+    /// <summary>
     /// Row-major FIRST-FIT placement: scan the placeable cells from (0,0) left → right,
     /// top → bottom and return the first (column, row) whose whole
     /// <paramref name="spanCols"/>×<paramref name="spanRows"/> block is free.
     /// <para>
-    /// Occupancy is tracked as a boolean cell matrix built from the rectangle each stored
-    /// widget is <b>actually displayed at</b>: its stored position is clamped onto the
-    /// working area (exactly like <c>Widget.ClampRestoredPosition</c>) before the cells it
-    /// covers are marked. A widget stored outside the area — a bigger desktop before a
-    /// resolution change, a grid hanging off the bottom edge — is displayed somewhere else,
-    /// and marking its stored rectangle instead would let a new card land right on top of
-    /// it. The whole pixel rectangle is marked (floor on the leading edge, ceil on the
-    /// trailing edge), so a widget parked off the cell lattice blocks the boundary cells
-    /// its edges reach into and a candidate can never slip into the sliver between its
-    /// rect and the lattice.
+    /// Occupancy comes from <see cref="BuildOccupancy"/> and every candidate block is tested with
+    /// <see cref="IsBlocked"/> — the same two calls the drag makes, so the two consumers cannot
+    /// disagree about which cells are taken.
     /// </para>
     /// <para>
     /// Only blocks whose whole span stays inside the working area are considered, and a
@@ -166,39 +276,15 @@ public static class GridMetrics
     {
         var columns = frame.PlaceableColumns;
         var rows = frame.PlaceableRows;
-        var occupied = new bool[rows, columns];
-
-        foreach (var widget in layout)
-        {
-            var width = frame.ToPhysicalWidth(widget.Width);
-            var height = frame.ToPhysicalHeight(widget.Height);
-
-            // The rectangle the window really shows: restored position clamped onto the
-            // working area, relative to the grid origin.
-            var left = Math.Clamp(widget.X, 0, Math.Max(0, frame.AreaWidth - width)) - frame.GridX;
-            var top = Math.Clamp(widget.Y, 0, Math.Max(0, frame.AreaHeight - height)) - frame.GridY;
-            var col0 = (int) Math.Floor(left / (double) frame.Cell);
-            var row0 = (int) Math.Floor(top / (double) frame.Cell);
-            var col1 = (int) Math.Ceiling((left + width) / (double) frame.Cell) - 1;
-            var row1 = (int) Math.Ceiling((top + height) / (double) frame.Cell) - 1;
-
-            for (var r = Math.Max(row0, 0); r <= Math.Min(row1, rows - 1); r++)
-                for (var c = Math.Max(col0, 0); c <= Math.Min(col1, columns - 1); c++)
-                    occupied[r, c] = true;
-        }
+        var occupied = BuildOccupancy(layout, frame);
 
         for (var row = 0; row + spanRows <= rows; row++)
-        {
             for (var col = 0; col + spanCols <= columns; col++)
-            {
-                var free = true;
-                for (var r = row; free && r < row + spanRows; r++)
-                    for (var c = col; free && c < col + spanCols; c++)
-                        free = !occupied[r, c];
-
-                if (free) return (col, row);
-            }
-        }
+                // The candidate block, in the frame's own pixel space: a cell-aligned rect maps
+                // back onto exactly the spanCols×spanRows cells the scan is asking about.
+                if (!IsBlocked(occupied, frame, frame.GridX + col * frame.Cell,
+                        frame.GridY + row * frame.Cell, spanCols * frame.Cell, spanRows * frame.Cell))
+                    return (col, row);
 
         return (-1, -1);
     }

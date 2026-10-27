@@ -330,9 +330,11 @@ public partial class Gallery : UserControl, INotifyPropertyChanged
                 var relative = legacy.Key == null
                     ? legacy.Layout.Select(item => item with { X = item.X - area.X, Y = item.Y - area.Y }).ToList()
                     : legacy.Layout;
-                var (col, row) = GridMetrics.FindFirstFitCell(relative, frame, columns, rows);
+                var (col, row) = FitCell(relative, frame, columns, rows);
                 // No slot (grid full, card larger than the grid, or no room left in the
-                // working area): stop instead of covering whatever sits at the origin.
+                // working area) and 禁止组件重叠 is on: stop instead of covering whatever
+                // sits at the origin. With the setting off the helper already returned the
+                // origin, so the card stacks there (从左上角开始叠).
                 if (col < 0)
                 {
                     NotifyNoRoom();
@@ -345,8 +347,8 @@ public partial class Gallery : UserControl, INotifyPropertyChanged
                 var (storedX, storedY) = legacy.Key == null
                     ? (relativeX + area.X, relativeY + area.Y)
                     : (relativeX, relativeY);
-                widgetFactory.Add(legacy, new WidgetLayout(preview.Type, preview.Subtype, storedX, storedY,
-                    width, height, null)).Show();
+                ShowPlaced(widgetFactory.Add(legacy, new WidgetLayout(preview.Type, preview.Subtype, storedX, storedY,
+                    width, height, null)));
                 return;
             }
             var pointer = anchor != null ? anchor.PointToScreen(new Point(0, 0)) : new PixelPoint(0, 0);
@@ -358,7 +360,7 @@ public partial class Gallery : UserControl, INotifyPropertyChanged
             }
             var legacyLayout = new WidgetLayout(preview.Type, preview.Subtype, pointer.X, pointer.Y,
                 defaultW, defaultH, null);
-            widgetFactory.Add(legacy, legacyLayout).Show();
+            ShowPlaced(widgetFactory.Add(legacy, legacyLayout));
             return;
         }
 
@@ -391,13 +393,31 @@ public partial class Gallery : UserControl, INotifyPropertyChanged
             y += attached.Screen.WorkingArea.Y;
         }
         var widgetLayout = new WidgetLayout(preview.Type, preview.Subtype, x, y, w, h, null);
-        widgetFactory.Add(screenConfig, widgetLayout).Show();
+        ShowPlaced(widgetFactory.Add(screenConfig, widgetLayout));
     }
 
     /// <summary>
-    /// No placeable slot for the card. Refuse the placement and say why: the old fallback
-    /// dropped the card on the grid origin with occupancy ignored, so it landed exactly on
-    /// the first placed widget (visually "swallowed" — the record itself was never lost).
+    /// Show a card that was just added from the library and let it arrive: the widget plays the
+    /// shared 组件库 entrance (scale from <see cref="MotionTokens.SummonScaleFrom"/> and rise from
+    /// <see cref="MotionTokens.SummonRiseFrom"/> onto its cell, <see cref="MotionTokens.ExpandMs"/>
+    /// on the bounce spring).
+    /// <para>
+    /// Only this path animates. A card restored from the saved layout is part of the desktop the
+    /// user already had, so it must be there on the first frame — that is why the entrance is a
+    /// call the caller makes, not something <see cref="Widget"/> does on open.
+    /// </para>
+    /// </summary>
+    private static void ShowPlaced(Window window)
+    {
+        window.Show();
+        (window as Widget)?.PlayPlacementEntrance();
+    }
+
+    /// <summary>
+    /// No placeable slot for the card, and 禁止组件重叠 is on. Refuse the placement and say why:
+    /// with the setting off this branch is unreachable — the card stacks onto the grid origin
+    /// instead and lands exactly on the first placed widget (visually "swallowed", the record
+    /// itself is never lost). That stacking is the pre-existing behaviour the setting opts out of.
     /// </summary>
     private void NotifyNoRoom()
     {
@@ -411,11 +431,7 @@ public partial class Gallery : UserControl, INotifyPropertyChanged
     /// <see cref="GridMetrics.PlacementFrame"/>).
     /// </summary>
     private static GridMetrics.PlacementFrame FrameFor(GridSettings grid, PixelRect area, double scaling)
-    {
-        var (cell, gridX, gridY) = GridMetrics.Resolve(grid, area.X, area.Y, area.Width, area.Height);
-        return new GridMetrics.PlacementFrame(cell, scaling, gridX - area.X, gridY - area.Y,
-            grid.Columns, grid.Rows, area.Width, area.Height);
-    }
+        => GridMetrics.FrameFor(grid, area.X, area.Y, area.Width, area.Height, scaling);
 
     /// <summary>The DIP size of a <paramref name="columns"/>×<paramref name="rows"/> card placed in <paramref name="frame"/>.</summary>
     private static (int Width, int Height) SizeOf(GridMetrics.PlacementFrame frame, int columns, int rows) =>
@@ -425,7 +441,7 @@ public partial class Gallery : UserControl, INotifyPropertyChanged
     /// <summary>
     /// Compute the initial placement (position relative to the owning screen's
     /// working area + size) for a new widget on the target screen, or <c>null</c> when the
-    /// card does not fit.
+    /// card is refused because 禁止组件重叠 is on and the grid has no room.
     /// <para>
     /// Widgets live on the bottom desktop band (below every application window), so
     /// dropping a new card at the clicked position would bury it under the settings
@@ -439,9 +455,10 @@ public partial class Gallery : UserControl, INotifyPropertyChanged
     /// <para>
     /// "Free" is judged in the same rectangle the window will be shown at: the scan is
     /// limited to the cells that stay inside the working area, and the card keeps its real
-    /// span (a 4×2 card on a 2-column grid is refused instead of being placed with a
-    /// clamped span while keeping its full width). The old grid-origin fallback is gone —
-    /// it is exactly how a card ended up covering the one placed before it.
+    /// span (a 4×2 card on a 2-column grid finds no cell at all). What happens then is the
+    /// setting's call: 禁止组件重叠 off keeps the long-standing fallback — the card goes to
+    /// the grid origin and stacks onto the first cell (从左上角开始叠) — while on refuses the
+    /// placement, which is the only mode where <c>null</c> is returned.
     /// </para>
     /// </summary>
     private (int X, int Y, int Width, int Height)? ComputePlacement(
@@ -452,11 +469,26 @@ public partial class Gallery : UserControl, INotifyPropertyChanged
         var grid = screenConfig.Grid ?? settings.Grid ?? GridSettings.Default;
         var frame = FrameFor(grid, screen.WorkingArea, screen.Scaling);
 
-        var (col, row) = GridMetrics.FindFirstFitCell(screenConfig.Layout, frame, defaultCols, defaultRows);
+        var (col, row) = FitCell(screenConfig.Layout, frame, defaultCols, defaultRows);
         if (col < 0) return null;
 
         var (width, height) = SizeOf(frame, defaultCols, defaultRows);
         return (frame.GridX + col * frame.Cell, frame.GridY + row * frame.Cell, width, height);
+    }
+
+    /// <summary>
+    /// The cell a new card goes into: the first free block, or the grid origin when the scan
+    /// finds none and 禁止组件重叠 is off. Returns <c>(-1,-1)</c> only when the setting is on and
+    /// there is no room — the callers turn that into the 屏幕空间已满 refusal.
+    /// </summary>
+    private (int Column, int Row) FitCell(
+        IReadOnlyList<WidgetLayout> layout, GridMetrics.PlacementFrame frame, int columns, int rows)
+    {
+        var (col, row) = GridMetrics.FindFirstFitCell(layout, frame, columns, rows);
+        if (col >= 0 || appSettingsProvider.Get().Layout.ProhibitOverlap) return (col, row);
+
+        // Default mode: stack on the origin rather than drop the click on the floor.
+        return (0, 0);
     }
 
     private (int Width, int Height) DefaultSize(Window? settingsWindow, int defaultCols = 2, int defaultRows = 2)

@@ -31,4 +31,37 @@ public interface IGridService<in T>
     /// </summary>
     /// <param name="window">Window to reposition</param>
     public void SnapPosition(T window);
+
+    /// <summary>
+    /// The rectangle <see cref="SnapPosition"/> would move <paramref name="window"/> to, without
+    /// moving it: the widget's own screen lattice, clamped inside the grid.
+    /// </summary>
+    /// <param name="window">Window to resolve for.</param>
+    /// <param name="proposedX">Proposed window origin X (physical pixels).</param>
+    /// <param name="proposedY">Proposed window origin Y (physical pixels).</param>
+    public GridTarget ResolveTarget(T window, int proposedX, int proposedY);
+
+    /// <summary>
+    /// As <see cref="ResolveTarget"/>, but resolved against the screen the PROPOSED rectangle is
+    /// on rather than the one the window belongs to — the preview a cross-screen drag needs.
+    /// </summary>
+    /// <param name="window">Window to resolve for.</param>
+    /// <param name="proposedX">Proposed window origin X (physical pixels).</param>
+    /// <param name="proposedY">Proposed window origin Y (physical pixels).</param>
+    public GridTarget ResolveDropTarget(T window, int proposedX, int proposedY);
+
+    /// <summary>
+    /// <see cref="ResolveDropTarget"/> plus the occupancy verdict for the same rectangle: the
+    /// target, and whether another widget already occupies the cells it lands on.
+    /// <para>
+    /// The layout lookup stays inside the implementation — the interface only speaks about the
+    /// window and the proposal — so a non-desktop host (or a test harness) never has to know how
+    /// widget entries are stored. <c>Blocked</c> is <c>false</c> whenever 禁止组件重叠 is off,
+    /// which keeps a drag in that mode identical to <see cref="ResolveDropTarget"/>.
+    /// </para>
+    /// </summary>
+    /// <param name="window">Window being dragged.</param>
+    /// <param name="proposedX">Proposed window origin X (physical pixels).</param>
+    /// <param name="proposedY">Proposed window origin Y (physical pixels).</param>
+    public GridDropTarget ResolveDrop(T window, int proposedX, int proposedY);
 }

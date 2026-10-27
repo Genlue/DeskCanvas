@@ -8,9 +8,13 @@ namespace DeskCanvas.Core.Models.Settings;
 /// <param name="LockSize">Disable resizing a widget</param>
 /// <param name="SnapPosition">Should widget's position be snapped to the grid (always on in Manual mode)</param>
 /// <param name="LockPosition">Disable moving a widget</param>
+/// <param name="ProhibitOverlap">Refuse to place a new widget when every grid cell is taken
+/// (default <c>false</c>: the card stacks onto the grid origin instead). Last parameter with a
+/// default so existing construction sites keep compiling and older JSON reads as <c>false</c>.</param>
 public record Layout(
     GridMode GridMode,
     bool SnapSize,
     bool LockSize,
     bool SnapPosition,
-    bool LockPosition);
+    bool LockPosition,
+    bool ProhibitOverlap = false);

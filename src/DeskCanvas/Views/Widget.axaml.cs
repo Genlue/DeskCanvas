@@ -1,11 +1,13 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Globalization;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Animation;
+using Avalonia.Animation.Easings;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
@@ -83,10 +85,56 @@ public partial class Widget : Window, INotifyPropertyChanged, IFocusThemedWindow
     /// <summary>True between WM_ENTERSIZEMOVE and WM_EXITSIZEMOVE (a native move loop is running).</summary>
     private bool moveLoopActive;
 
+    /// <summary>
+    /// The window origin Windows proposed for the current move-loop frame (WM_MOVING's RECT, in
+    /// physical pixels). It is AHEAD of <see cref="Window.Position"/>, which still holds the
+    /// previous frame, so the drop outline follows the proposal rather than the window.
+    /// </summary>
+    private PixelPoint? dragProposal;
+
+    /// <summary>
+    /// The window origin this drag started from, captured in <see cref="BeginDragVisuals"/> — i.e.
+    /// on WM_ENTERSIZEMOVE, before the loop has moved anything.
+    /// <para>
+    /// A refused drop (禁止组件重叠 on, cell already taken) writes nothing at all, so the stored
+    /// entry keeps pointing at this cell. The card has to end up there too: leaving it where the
+    /// user dropped it would show two cards on one cell until something else snapped it, which is
+    /// the very overlap the setting exists to prevent. The way back reuses the landing flight, so
+    /// the persisted entry is never an intermediate frame of it.
+    /// </para>
+    /// </summary>
+    private PixelPoint? dragOrigin;
+
+    /// <summary>The running landing flight (null when the card is at rest).</summary>
+    private DispatcherTimer? placementFlight;
+
+    /// <summary>Flight endpoints and start time, in physical pixels / <see cref="Environment.TickCount64"/>.</summary>
+    private PixelPoint flightFrom;
+    private PixelPoint flightTo;
+    private long flightStartedAt;
+
+    /// <summary>Easing of the current flight, pre-computed once (see <see cref="StartPlacementFlight"/>).</summary>
+    private Easing? flightEasing;
+
+    /// <summary>
+    /// Guards the delayed half of the card settle: a flight that ends (or is cancelled) before the
+    /// settle starts must not leave a pending callback animating the card afterwards.
+    /// </summary>
+    private int cardSettleToken;
+
     /// <summary>Persistent ownership, independent of Windows temporarily moving this window.</summary>
     public string ScreenId => widgetLayoutProvider.ScreenId;
     public ScreenLayout? ScreenConfig => layoutProvider.Get().FindById(ScreenId);
     public Avalonia.Platform.Screen? OwningScreen => displayMonitor.FindByConfigId(ScreenId)?.Screen;
+
+    /// <summary>
+    /// This widget's own stored entry. The grid service needs it to leave this card out of the
+    /// occupancy matrix while it is being dragged: its entry stays at the pre-drag cell for the
+    /// whole drag, so counting it would paint the card's own cell as taken and refuse a drop that
+    /// changes nothing.
+    /// </summary>
+    internal WidgetLayout StoredLayout => widgetLayoutProvider.Get();
+
     private double ScreenScaling => OwningScreen?.Scaling ?? (DesktopScaling > 0 ? DesktopScaling : 1.0);
 
     /// <summary>True while the host suspended the widgets (fullscreen application active).</summary>
@@ -115,6 +163,11 @@ public partial class Widget : Window, INotifyPropertyChanged, IFocusThemedWindow
     public void PrepareForTeardown()
     {
         tornDown = true;
+        // The drag bracket may never deliver its exit message to a window that is being destroyed:
+        // clear the shared drag state and drop the outline here, or the glass pipeline keeps
+        // rendering every position change at full rate and the white frame stays on the desktop.
+        EndDragVisuals();
+        StopPlacementFlight();
         displayMonitor.ScreensChanged -= RestoreWhenScreenReady;
         widgetLayoutProvider.DataChanged -= OnWidgetLayoutUpdated;
         appSettingsProvider.DataChanged -= OnAppSettingsUpdated;
@@ -361,6 +414,12 @@ public partial class Widget : Window, INotifyPropertyChanged, IFocusThemedWindow
 
         // The window's "loaded" signal: the widget is visible on the desktop (A0 wiring).
         ReportSessionActivity(ActivityReason.DesktopVisible);
+
+        // Build the shared 落点白框 now, while no move loop is running. Creating a top-level
+        // window inside WM_ENTERSIZEMOVE would be the one moment Windows is least willing to
+        // show a new window (and the one moment an activation would end the drag), so the first
+        // drag after startup must not be the one that constructs it.
+        DropTargetOverlay.Prepare();
     }
 
     /// <summary>
@@ -469,6 +528,10 @@ public partial class Widget : Window, INotifyPropertyChanged, IFocusThemedWindow
         // manualSpan reset below turns the steppers into a no-op afterwards. Skip
         // and let the next poller tick / activation re-run this once it settled.
         if (pendingSpan != null) return;
+        // A display change (or an activation during a flight) ends the landing animation: the
+        // stored geometry is authoritative from here, and a timer writing Position would fight
+        // the restore below.
+        StopPlacementFlight();
         restoringDisplayMetrics = true;
         try
         {
@@ -1042,18 +1105,7 @@ public partial class Widget : Window, INotifyPropertyChanged, IFocusThemedWindow
             if (value is not { } target) return;
             var next = Math.Clamp((int) Math.Round(target), 1, 999);
             if (next == columns) return;
-            if (FixedSizeWidget is { } fixedWidget)
-            {
-                var isSquareLattice = fixedWidget.AllowedBaseSpans.Contains((1, 1))
-                                      || fixedWidget.AllowedBaseSpans.Contains((2, 2));
-                var snapped = isSquareLattice
-                    ? fixedWidget.SnapSpan(next, next)
-                    : fixedWidget.SnapSpan(next, rows);
-                if (snapped.Columns == columns && snapped.Rows == rows) return;
-                _ = Resize(snapped.Columns, snapped.Rows);
-                return;
-            }
-            _ = Resize(next, rows);
+            ApplySpan(next, rows);
         }
     }
 
@@ -1067,19 +1119,90 @@ public partial class Widget : Window, INotifyPropertyChanged, IFocusThemedWindow
             if (value is not { } target) return;
             var next = Math.Clamp((int) Math.Round(target), 1, 999);
             if (next == rows) return;
-            if (FixedSizeWidget is { } fixedWidget)
-            {
-                var isSquareLattice = fixedWidget.AllowedBaseSpans.Contains((1, 1))
-                                      || fixedWidget.AllowedBaseSpans.Contains((2, 2));
-                var snapped = isSquareLattice
-                    ? fixedWidget.SnapSpan(next, next)
-                    : fixedWidget.SnapSpan(columns, next);
-                if (snapped.Columns == columns && snapped.Rows == rows) return;
-                _ = Resize(snapped.Columns, snapped.Rows);
-                return;
-            }
-            _ = Resize(columns, next);
+            ApplySpan(columns, next);
         }
+    }
+
+    /// <summary>Current column span, as shown in the context menu's size row.</summary>
+    public string SizeColumnsLabel => CurrentSpan.Columns.ToString(CultureInfo.InvariantCulture);
+
+    /// <summary>Current row span, as shown in the context menu's size row.</summary>
+    public string SizeRowsLabel => CurrentSpan.Rows.ToString(CultureInfo.InvariantCulture);
+
+    // ---------- Context-menu size steppers ----------
+    //
+    // The size row is − / value / + instead of a NumericUpDown on purpose: a NumericUpDown
+    // embeds a focusable TextBox, the only text control inside the menu popup, and clicking
+    // its spinner pulled focus/pointer capture off the popup — on Windows the menu then
+    // dismissed itself, so changing rows from 4 down took one menu reopen per click. Plain
+    // buttons keep every click an ordinary menu-item click, which StaysOpenOnClick holds open
+    // (and the popup never changes size, so nothing is re-placed under the pointer).
+
+    private void OnSizeColumnsDecrease(object? sender, RoutedEventArgs e) => StepSpan(rows: false, delta: -1);
+
+    private void OnSizeColumnsIncrease(object? sender, RoutedEventArgs e) => StepSpan(rows: false, delta: 1);
+
+    private void OnSizeRowsDecrease(object? sender, RoutedEventArgs e) => StepSpan(rows: true, delta: -1);
+
+    private void OnSizeRowsIncrease(object? sender, RoutedEventArgs e) => StepSpan(rows: true, delta: 1);
+
+    /// <summary>One −/+ step on the given axis.</summary>
+    private void StepSpan(bool rows, int delta)
+    {
+        var (columns, currentRows) = CurrentSpan;
+        ApplySpan(
+            rows ? columns : columns + delta,
+            rows ? currentRows + delta : currentRows,
+            afterInputEvent: true);
+    }
+
+    private async void OnSizeColumnsEdit(object? sender, RoutedEventArgs e) => await PromptForSpan(rows: false);
+
+    private async void OnSizeRowsEdit(object? sender, RoutedEventArgs e) => await PromptForSpan(rows: true);
+
+    /// <summary>Exact entry behind the size row's value: a typed span instead of many clicks.</summary>
+    private async Task PromptForSpan(bool rows)
+    {
+        var (columns, currentRows) = CurrentSpan;
+        var current = rows ? currentRows : columns;
+
+        var text = await InputDialog.PromptAsync(
+            this,
+            rows ? Locale.Widget_Size_Rows : Locale.Widget_Size_Columns,
+            "1 – 999",
+            current.ToString(CultureInfo.InvariantCulture));
+
+        if (text is null) return;
+        if (!int.TryParse(text, NumberStyles.Integer, CultureInfo.InvariantCulture, out var target)) return;
+
+        ApplySpan(rows ? columns : target, rows ? target : currentRows, afterInputEvent: true);
+    }
+
+    /// <summary>
+    /// Resize to a whole-cell span, honouring a fixed-size widget's snap lattice (the same
+    /// rule the preset items and the grid use, so the steppers cannot produce a span the
+    /// widget would immediately snap back from).
+    /// </summary>
+    private void ApplySpan(int columns, int rows, bool afterInputEvent = false)
+    {
+        var (currentColumns, currentRows) = CurrentSpan;
+        columns = Math.Clamp(columns, 1, 999);
+        rows = Math.Clamp(rows, 1, 999);
+
+        if (FixedSizeWidget is { } fixedWidget)
+        {
+            var isSquareLattice = fixedWidget.AllowedBaseSpans.Contains((1, 1))
+                                  || fixedWidget.AllowedBaseSpans.Contains((2, 2));
+            var snapped = isSquareLattice
+                ? fixedWidget.SnapSpan(columns, columns)
+                : fixedWidget.SnapSpan(columns, rows);
+            if (snapped.Columns == currentColumns && snapped.Rows == currentRows) return;
+            _ = Resize(snapped.Columns, snapped.Rows, afterInputEvent);
+            return;
+        }
+
+        if (columns == currentColumns && rows == currentRows) return;
+        _ = Resize(columns, rows, afterInputEvent);
     }
 
     public void OpenSettings() => settingsWindow.Invoke().ShowAndActivate();
@@ -1595,6 +1718,10 @@ public partial class Widget : Window, INotifyPropertyChanged, IFocusThemedWindow
 
     private void OnUnloaded(object? sender, RoutedEventArgs e)
     {
+        // A window that leaves the visual tree without the teardown pass (tray hide, a display
+        // replacement) must not leave the shared drag state or a flight timer behind either.
+        EndDragVisuals();
+        StopPlacementFlight();
         PointerPressed -= OnPointerPressed;
         RemoveHandler(PointerPressedEvent, OnPreviewPointerPressed);
         RemoveHandler(PointerReleasedEvent, OnPointerReleased);
@@ -1740,6 +1867,13 @@ public partial class Widget : Window, INotifyPropertyChanged, IFocusThemedWindow
     [StructLayout(LayoutKind.Sequential)]
     private struct POINT { public int X; public int Y; }
 
+    /// <summary>
+    /// The Win32 <c>RECT</c> carried by WM_MOVING/WM_SIZING (physical screen pixels, right and
+    /// bottom exclusive).
+    /// </summary>
+    [StructLayout(LayoutKind.Sequential)]
+    private struct NativeRect { public int Left; public int Top; public int Right; public int Bottom; }
+
     private void OnPreviewPointerPressed(object? sender, PointerPressedEventArgs e)
     {
         var point = e.GetCurrentPoint(this);
@@ -1869,6 +2003,9 @@ public partial class Widget : Window, INotifyPropertyChanged, IFocusThemedWindow
     /// </summary>
     private void BeginMoveDragWithCommit(PointerPressedEventArgs e)
     {
+        // A landing flight that is still running owns Position: let it stop before the native
+        // move loop takes the window over, or the next frames would be written under the drag.
+        StopPlacementFlight();
         moveCommitPending = true;
         BeginMoveDrag(e);
         Dispatcher.UIThread.Post(CommitPendingMoveAfterLoop, DispatcherPriority.Background);
@@ -1877,25 +2014,121 @@ public partial class Widget : Window, INotifyPropertyChanged, IFocusThemedWindow
     private const uint WmEnterSizeMove = 0x0231;
     private const uint WmExitSizeMove = 0x0232;
 
+    /// <summary>Sent for every frame of a move loop; <c>lParam</c> is a <c>RECT*</c> with the proposed window rect.</summary>
+    private const uint WmMoving = 0x0216;
+
     /// <summary>
     /// Native window hook: WM_ENTERSIZEMOVE / WM_EXITSIZEMOVE bracket the native move
     /// loop, and the exit message is the one deterministic end-of-drag signal — sent by
     /// the loop itself, with the window already at the final drop position, before the
     /// synthesized mouse-up. Never marks the message handled: Avalonia's own processing
     /// of the bracket must stay unaffected.
+    /// <para>
+    /// The bracket also drives the two things a drag owes the rest of the app: the 落点白框
+    /// (shown on entry, moved on every WM_MOVING frame, dismissed on exit) and the glass
+    /// pipeline's drag state (<see cref="LiquidGlassSurface.SetDragActive"/>), which turns off the
+    /// position debounce so the material follows the card instead of refreshing in bursts.
+    /// </para>
     /// </summary>
     private IntPtr OnWidgetWndProc(IntPtr hwnd, uint msg, IntPtr wParam, IntPtr lParam, ref bool handled)
     {
         if (msg == WmEnterSizeMove)
         {
             moveLoopActive = true;
+            BeginDragVisuals();
+        }
+        else if (msg == WmMoving)
+        {
+            // The proposal, not Position: the window manager sends WM_MOVING before it moves the
+            // window, so Position is still the previous frame's.
+            if (moveLoopActive && lParam != IntPtr.Zero)
+            {
+                var proposed = Marshal.PtrToStructure<NativeRect>(lParam);
+                dragProposal = new PixelPoint(proposed.Left, proposed.Top);
+                UpdateDropTarget();
+            }
         }
         else if (msg == WmExitSizeMove)
         {
             moveLoopActive = false;
+            EndDragVisuals();
             if (moveCommitPending) AfterMove();
         }
         return IntPtr.Zero;
+    }
+
+    /// <summary>
+    /// Open the drag: publish the glass drag state and draw the outline for the cell the card is
+    /// sitting on right now, so the target is visible from the first frame of the drag instead of
+    /// from the first mouse move.
+    /// </summary>
+    private void BeginDragVisuals()
+    {
+        // Position locking means this drag cannot change anything: no outline, no render storm.
+        if (appSettingsProvider.Get().Layout.LockPosition) return;
+        LiquidGlassSurface.SetDragActive(true);
+        // The cell to come home to if the drop is refused (see dragOrigin). Read BEFORE the loop
+        // reports its first proposal, so it is the pre-drag position by construction.
+        dragOrigin = Position;
+        dragProposal = Position;
+        UpdateDropTarget();
+    }
+
+    /// <summary>
+    /// Close the drag: clear the shared drag state and dismiss the outline. Called from the exit
+    /// message, from teardown and from unload — a native move loop whose window is destroyed
+    /// never sends WM_EXITSIZEMOVE.
+    /// </summary>
+    private void EndDragVisuals()
+    {
+        dragProposal = null;
+        LiquidGlassSurface.SetDragActive(false);
+        DropTargetOverlay.Hide();
+    }
+
+    /// <summary>
+    /// Draw the region the card will occupy if it is released right now: the snapped window rect
+    /// inset by <see cref="WidgetMargin"/> with the card's own corner radius — the outline is the
+    /// CARD, not the cell. The snapped rect comes from <see cref="IGridService{T}.ResolveDrop"/>,
+    /// the same code path the commit uses, so the preview cannot disagree with where the card ends
+    /// up — including whether it may land there at all: a refused cell is drawn in the red
+    /// treatment instead of the white one, which is the only warning the user gets before the
+    /// release.
+    /// </summary>
+    private void UpdateDropTarget()
+    {
+        if (tornDown || !moveLoopActive || dragProposal is not { } proposed
+            || appSettingsProvider.Get().Layout.LockPosition)
+        {
+            DropTargetOverlay.Hide();
+            return;
+        }
+
+        try
+        {
+            var drop = gridService.ResolveDrop(this, proposed.X, proposed.Y);
+            var target = drop.Target;
+            // The card is the window minus the margin (zero when frameless), which is exactly the
+            // inset the card Border carries — at rest the outline covers the card's own edge.
+            var margin = (int)Math.Round(WidgetMargin.Left * target.Scaling);
+            var card = new PixelRect(
+                target.X + margin,
+                target.Y + margin,
+                Math.Max(1, target.Width - 2 * margin),
+                Math.Max(1, target.Height - 2 * margin));
+            // Radius is expressed in DIP against THIS screen's scaling (see Widget.Radius), so the
+            // product is the configured device-pixel radius — and the card keeps that device
+            // radius on the target screen, where its DIP radius re-derives from that screen.
+            var radius = (int)Math.Round(Radius.TopLeft * ScreenScaling);
+            DropTargetOverlay.Show(card, radius, target.Scaling, drop.Blocked);
+        }
+        catch (Exception ex)
+        {
+            // This runs inside a native message handler: a preview failure must never take the
+            // move loop down with it.
+            DropTargetOverlay.Hide();
+            System.Diagnostics.Debug.WriteLine($"[Widget] drop outline failed: {ex.Message}");
+        }
     }
 
     /// <summary>
@@ -1914,6 +2147,10 @@ public partial class Widget : Window, INotifyPropertyChanged, IFocusThemedWindow
     private void AfterMove()
     {
         displayMonitor.Refresh();
+        // Taken and cleared here, not in EndDragVisuals: the exit message clears the visuals just
+        // before this runs, and only the commit knows whether the drag ended in a refusal.
+        var dragStart = dragOrigin;
+        dragOrigin = null;
         if (tornDown || restoringDisplayMetrics || displayMonitor.IsTopologyChanging || OwningScreen == null)
         {
             moveCommitPending = false;
@@ -1951,7 +2188,23 @@ public partial class Widget : Window, INotifyPropertyChanged, IFocusThemedWindow
         var movedToAnotherScreen = userMove && current != null && owning != null && owning.Screen.Bounds != current.Screen.Bounds;
         // owning is not null whenever movedToAnotherScreen is true (see the condition above).
         var span = movedToAnotherScreen ? (manualSpan ?? ResolveSpanFor(owning!)) : (Columns: 1, Rows: 1);
-        
+
+        // 禁止组件重叠: the drop is refused if another widget already holds the cell it would land
+        // on, and the refusal has to be decided BEFORE the ownership transfer. TransferOwnership
+        // writes — it files this entry under the target screen's layout — and a refused drop must
+        // leave the stored layout exactly as it was; undoing that write would also have to un-mix
+        // the entry's coordinates, which are still expressed against the screen it came from.
+        // The verdict is read from the screen UNDER the drop (not from this widget's ScreenConfig),
+        // so on a cross-screen drag it is already the target screen's layout, pre-transfer.
+        if (userMove && gridService.ResolveDrop(this, Position.X, Position.Y).Blocked)
+        {
+            // Nothing is stored and nothing is saved, so the entry still points at the cell the
+            // drag started on: put the card back there rather than leave it parked on a cell it
+            // may not have (the next snap would otherwise be the first the user hears of it).
+            if (dragStart is { } origin) StartPlacementFlight(origin);
+            return;
+        }
+
         if (movedToAnotherScreen) TransferOwnership();
         
         if (movedToAnotherScreen)
@@ -1962,13 +2215,208 @@ public partial class Widget : Window, INotifyPropertyChanged, IFocusThemedWindow
             SetMinMaxSize(true);
         }
 
-        gridService.SnapPosition(this);
+        // One resolve for the whole commit: the rect the outline previewed, the rect the landing
+        // flight aims at and the rect that gets persisted are the same value by construction —
+        // the stored entry can never be an intermediate frame of the animation. A user move
+        // resolves against the screen the drop is on (a drag may have crossed an edge); every
+        // other caller re-snaps against the widget's own screen, which is what a grid change means.
+        // The occupancy verdict was already taken above, before the transfer: this is the plain
+        // snap it has always been, so the rect a permitted drop lands on is unchanged.
+        var target = userMove
+            ? gridService.ResolveDropTarget(this, Position.X, Position.Y)
+            : gridService.ResolveTarget(this, Position.X, Position.Y);
+        var snapped = new PixelPoint(target.X, target.Y);
+        if (userMove) StartPlacementFlight(snapped);
+        else Position = snapped;
         if (movedToAnotherScreen) RefreshScreenStyle();
-        
-        var positioned = StorePosition(widgetLayoutProvider.Get());
+
+        var positioned = StorePosition(widgetLayoutProvider.Get(), snapped);
         if (movedToAnotherScreen)
             positioned = positioned with { Width = (int) Math.Round(Width), Height = (int) Math.Round(Height) };
         SaveLayout(positioned);
+    }
+
+    /// <summary>
+    /// Glide the window from where it was dropped onto the snapped cell instead of teleporting.
+    /// <para>
+    /// The travel is only the last few dozen DIP — the card is already where the user put it — so
+    /// the flight is short (<see cref="MotionTokens.PlacementFlightMs"/>) and rides the critically
+    /// damped spring: an arrival, not an entrance. It is driven by a 16 ms
+    /// <see cref="DispatcherTimer"/> stepping <see cref="Window.Position"/> rather than the native
+    /// move loop, which is over by now and cannot be re-entered without a mouse button.
+    /// </para>
+    /// <para>
+    /// The position is written per frame, but nothing reads it back for persistence: the caller
+    /// stores the snapped rect explicitly, so a flight interrupted halfway (a new drag, a display
+    /// change, teardown) can never leave an intermediate position in the layout.
+    /// </para>
+    /// </summary>
+    private void StartPlacementFlight(PixelPoint target)
+    {
+        StopPlacementFlight();
+        var from = Position;
+        if (from == target) return;
+
+        flightFrom = from;
+        flightTo = target;
+        flightStartedAt = Environment.TickCount64;
+        flightEasing = SpringMotion.CreateEasing(SpringMotion.Smooth);
+        StartCardSettle();
+
+        placementFlight = new DispatcherTimer(
+            TimeSpan.FromMilliseconds(16),
+            DispatcherPriority.Render,
+            OnPlacementFlightTick);
+        placementFlight.Start();
+    }
+
+    private void OnPlacementFlightTick(object? sender, EventArgs e)
+    {
+        if (placementFlight == null) return;
+        var progress = Math.Clamp(
+            (Environment.TickCount64 - flightStartedAt) / (double)MotionTokens.PlacementFlightMs, 0, 1);
+        var eased = flightEasing?.Ease(progress) ?? progress;
+        Position = new PixelPoint(
+            (int)Math.Round(flightFrom.X + (flightTo.X - flightFrom.X) * eased),
+            (int)Math.Round(flightFrom.Y + (flightTo.Y - flightFrom.Y) * eased));
+
+        if (progress < 1) return;
+        // Land on the exact pixel rather than on the easing's last rounded frame.
+        Position = flightTo;
+        StopPlacementFlight();
+    }
+
+    /// <summary>
+    /// Cancel the landing flight (a new drag, teardown, unload, a display change). The window
+    /// keeps whatever position it reached — the persisted entry is already the snapped one, and
+    /// the next activation re-snaps from it.
+    /// </summary>
+    private void StopPlacementFlight()
+    {
+        // Invalidate a settle that was scheduled but has not started yet.
+        cardSettleToken++;
+        if (placementFlight == null) return;
+        placementFlight.Stop();
+        placementFlight = null;
+        flightEasing = null;
+        // The card scale belonged to this flight: leave it at rest.
+        SetCardTransforms(1.0, 0, animate: false);
+    }
+
+    /// <summary>
+    /// The card's weight at the landing: it starts the flight at
+    /// <see cref="MotionTokens.PlacementSettleFrom"/> and grows back to 1.0 over the tail. Starting
+    /// it at the beginning would read as the card breathing while it travels; starting it when
+    /// the glide is nearly over is what makes the arrival feel like it has mass.
+    /// </summary>
+    private void StartCardSettle()
+    {
+        SetCardTransforms(MotionTokens.PlacementSettleFrom, 0, animate: false);
+
+        var token = cardSettleToken;
+        var duration = (int)(MotionTokens.PlacementFlightMs * 0.40);
+        DispatcherTimer.RunOnce(() =>
+        {
+            if (token != cardSettleToken || placementFlight == null) return;
+            SetCardTransforms(1.0, 0, animate: true, TimeSpan.FromMilliseconds(duration));
+        }, TimeSpan.FromMilliseconds(MotionTokens.PlacementFlightMs * 0.55));
+    }
+
+    /// <summary>
+    /// Set the card's scale/rise. The transform lives on the ROOT grid, not on the card Border:
+    /// the 液态玻璃 material is a sibling of that Border, so scaling the Border alone would leave
+    /// the glass at full size and the settle invisible on the material this app is known for.
+    /// </summary>
+    /// <param name="scale">Uniform card scale (1.0 = at rest).</param>
+    /// <param name="rise">Vertical offset in DIP (0 = at rest).</param>
+    /// <param name="animate">Run the change on the shared spring instead of applying it now.</param>
+    /// <param name="duration">Flight time when <paramref name="animate"/> is set.</param>
+    private void SetCardTransforms(double scale, double rise, bool animate, TimeSpan? duration = null)
+    {
+        var (scaleTransform, riseTransform) = CardTransforms();
+        var easing = animate ? SpringMotion.CreateEasing(SpringMotion.Smooth) : null;
+        var span = duration ?? TimeSpan.FromMilliseconds(MotionTokens.ExpandMs);
+
+        scaleTransform.Transitions = animate
+            ? new Transitions
+            {
+                new DoubleTransition { Property = ScaleTransform.ScaleXProperty, Duration = span, Easing = easing! },
+                new DoubleTransition { Property = ScaleTransform.ScaleYProperty, Duration = span, Easing = easing! },
+            }
+            : null;
+        riseTransform.Transitions = animate
+            ? new Transitions
+            {
+                new DoubleTransition { Property = TranslateTransform.YProperty, Duration = span, Easing = easing! },
+            }
+            : null;
+
+        scaleTransform.ScaleX = scale;
+        scaleTransform.ScaleY = scale;
+        riseTransform.Y = rise;
+    }
+
+    /// <summary>
+    /// The card's scale/rise pair, created on first use. One instance is kept so the landing
+    /// settle and the gallery entrance animate the same objects instead of replacing each other's
+    /// transform (a replaced transform snaps to its new value with no transition at all).
+    /// </summary>
+    private (ScaleTransform Scale, TranslateTransform Rise) CardTransforms()
+    {
+        if (CardRoot.RenderTransform is TransformGroup group
+            && group.Children.Count == 2
+            && group.Children[0] is ScaleTransform existingScale
+            && group.Children[1] is TranslateTransform existingRise)
+        {
+            return (existingScale, existingRise);
+        }
+
+        var scale = new ScaleTransform(1, 1);
+        var rise = new TranslateTransform(0, 0);
+        CardRoot.RenderTransformOrigin = new RelativePoint(0.5, 0.5, RelativeUnit.Relative);
+        CardRoot.RenderTransform = new TransformGroup { Children = { scale, rise } };
+        return (scale, rise);
+    }
+
+    /// <summary>
+    /// The 组件库 entrance: the card arrives from <see cref="MotionTokens.SummonScaleFrom"/> and
+    /// <see cref="MotionTokens.SummonRiseFrom"/> onto its resting box over
+    /// <see cref="MotionTokens.ExpandMs"/> on the shared bounce spring.
+    /// <para>
+    /// Exposed rather than wired: the gallery owns the moment a widget is added, and this host
+    /// must not play an entrance for a card that is merely being restored from a layout (that is
+    /// what <see cref="RefreshDisplayMetrics"/> is for, and it does not animate).
+    /// </para>
+    /// </summary>
+    public void PlayPlacementEntrance()
+    {
+        StopPlacementFlight();
+        var (scale, rise) = CardTransforms();
+
+        // The start state is applied with no transitions, so the very first frame is the small
+        // one and the transition below animates the step to rest (a transform that is replaced
+        // mid-flight snaps instead of animating — hence one transform pair, reused).
+        scale.Transitions = null;
+        rise.Transitions = null;
+        scale.ScaleX = MotionTokens.SummonScaleFrom;
+        scale.ScaleY = MotionTokens.SummonScaleFrom;
+        rise.Y = MotionTokens.SummonRiseFrom;
+
+        var span = TimeSpan.FromMilliseconds(MotionTokens.ExpandMs);
+        var easing = SpringMotion.CreateEasing(SpringMotion.Bounce);
+        scale.Transitions = new Transitions
+        {
+            new DoubleTransition { Property = ScaleTransform.ScaleXProperty, Duration = span, Easing = easing },
+            new DoubleTransition { Property = ScaleTransform.ScaleYProperty, Duration = span, Easing = easing },
+        };
+        rise.Transitions = new Transitions
+        {
+            new DoubleTransition { Property = TranslateTransform.YProperty, Duration = span, Easing = easing },
+        };
+
+        scale.ScaleX = 1;
+        scale.ScaleY = 1;
+        rise.Y = 0;
     }
 
     /// <summary>
@@ -2031,21 +2479,36 @@ public partial class Widget : Window, INotifyPropertyChanged, IFocusThemedWindow
     /// layout format), relative to the owning screen's working-area origin for
     /// per-screen entries — so display re-arrangement or replugging a screen in
     /// the same spot restores each widget on its own screen.
+    /// <para>
+    /// The position is passed in rather than read from <see cref="Window.Position"/> so the
+    /// landing flight can animate the window while the entry is already committed at the snapped
+    /// rect: what is saved is never an intermediate frame.
+    /// </para>
     /// </summary>
-    private WidgetLayout StorePosition(WidgetLayout settings)
+    private WidgetLayout StorePosition(WidgetLayout settings, PixelPoint position)
     {
         if (ScreenConfig?.Key == null)
-            return settings with { X = Position.X, Y = Position.Y };
+            return settings with { X = position.X, Y = position.Y };
 
         var workingArea = displayMonitor.FindByConfigId(widgetLayoutProvider.ScreenId)?.Screen.WorkingArea;
         return settings with
         {
-            X = Position.X - (workingArea?.X ?? 0),
-            Y = Position.Y - (workingArea?.Y ?? 0)
+            X = position.X - (workingArea?.X ?? 0),
+            Y = position.Y - (workingArea?.Y ?? 0)
         };
     }
 
-    private async Task Resize(int columns, int rows)
+    /// <summary>
+    /// Resize the widget to a whole-cell span.
+    /// </summary>
+    /// <param name="afterInputEvent">
+    /// Apply the window size after the current input event has been fully handled. The
+    /// context menu's size steppers pass <c>true</c>: laying the card out again while the
+    /// menu popup still owns the pointer click dismisses the popup on Windows, which is
+    /// exactly the "one click and the menu is gone" report. The span bookkeeping stays
+    /// synchronous, so a burst of clicks accumulates on the right target.
+    /// </param>
+    private async Task Resize(int columns, int rows, bool afterInputEvent = false)
     {
         // Remember the target span while the transition runs: the animated Width/
         // Height carry intermediate values, and both the snap/lock below and the
@@ -2055,6 +2518,17 @@ public partial class Widget : Window, INotifyPropertyChanged, IFocusThemedWindow
         pendingSpan = (columns, rows);
         manualSpan = (columns, rows);
         SetMinMaxSize(false);
+        // Reflect the target in the context menu immediately (the steppers and the
+        // "Grid size · 4×3" title read CurrentSpan, which already reports pendingSpan).
+        Notify(nameof(SizeMenuTitle));
+        Notify(nameof(SizeColumnsLabel));
+        Notify(nameof(SizeRowsLabel));
+        Notify(nameof(SizeColumnsValue));
+        Notify(nameof(SizeRowsValue));
+
+        if (afterInputEvent)
+            await Dispatcher.UIThread.InvokeAsync(static () => { }, DispatcherPriority.Background);
+
         // The span change rides the mod's bounce spring (动效交接 §6): a restrained ~3.8%
         // overshoot before the window settles on the target span. 亚克力 re-cuts the region on
         // every step of this window-level resize; the overshoot adds no new steps beyond what
@@ -2124,6 +2598,8 @@ public partial class Widget : Window, INotifyPropertyChanged, IFocusThemedWindow
         // binding does not refresh itself while the menu is open).
         Notify(nameof(SizeColumnsValue));
         Notify(nameof(SizeRowsValue));
+        Notify(nameof(SizeColumnsLabel));
+        Notify(nameof(SizeRowsLabel));
     }
 
     public void Remove()
@@ -2243,7 +2719,7 @@ public partial class Widget : Window, INotifyPropertyChanged, IFocusThemedWindow
             // widgets only re-snapped on activation, so closing the editor with
             // "完成" appeared to do nothing).
             gridService.SnapPosition(this);
-            SaveLayout(StorePosition(widgetLayoutProvider.Get()));
+            SaveLayout(StorePosition(widgetLayoutProvider.Get(), Position));
         }
 
         RefreshScreenStyle();

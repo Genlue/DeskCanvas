@@ -1,0 +1,32 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="DeskCanvas.Views.DropTargetOverlayWindow"
+        WindowDecorations="None"
+        Background="Transparent"
+        TransparencyLevelHint="Transparent"
+        ShowInTaskbar="False"
+        ShowActivated="False"
+        Topmost="True"
+        CanResize="False"
+        Focusable="False"
+        IsHitTestVisible="False"
+        WindowStartupLocation="Manual">
+
+    <!-- Two white strokes and no fill. The inner one lands exactly on the card's edge (the region
+         the release will occupy); the outer one, one glow-pad further out, is the halo. A
+         DropShadow cannot do this job on a fully transparent layered window — it would have to be
+         drawn by a box that also tints the area it covers — while a second, fainter stroke costs
+         one more rounded rectangle and reads as light spilling off the outline.
+         The window is the card rectangle INFLATED by the glow pad, so the outline's margin is
+         what puts it back on the card edge. -->
+    <Grid>
+        <Border x:Name="Glow"
+                BorderBrush="#26FFFFFF"
+                BorderThickness="3"
+                IsHitTestVisible="False" />
+        <Border x:Name="Outline"
+                BorderBrush="#F2FFFFFF"
+                BorderThickness="3"
+                IsHitTestVisible="False" />
+    </Grid>
+</Window>

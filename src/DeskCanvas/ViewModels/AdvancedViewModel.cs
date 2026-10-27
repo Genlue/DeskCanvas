@@ -166,6 +166,7 @@ public class AdvancedViewModel : ReactiveObject, IDisposable
         this.RaisePropertyChanged(nameof(SelectedScreenTarget));
         RaiseGridProperties();
         this.RaisePropertyChanged(nameof(LockPosition));
+        this.RaisePropertyChanged(nameof(ProhibitOverlap));
         this.RaisePropertyChanged(nameof(ProxyMode));
         this.RaisePropertyChanged(nameof(ProxyCustomUrl));
         this.RaisePropertyChanged(nameof(UpdateUrl));
@@ -336,6 +337,20 @@ public class AdvancedViewModel : ReactiveObject, IDisposable
         {
             var settings = appSettingsProvider.Get();
             appSettingsProvider.Save(settings with { Layout = settings.Layout with { LockPosition = value } });
+        }
+    }
+
+    /// <summary>
+    /// Refuse to place a widget on the desktop when no grid cell is free. Off (the default)
+    /// keeps the long-standing behaviour: the card stacks onto the grid origin instead.
+    /// </summary>
+    public bool ProhibitOverlap
+    {
+        get => appSettingsProvider.Get().Layout.ProhibitOverlap;
+        set
+        {
+            var settings = appSettingsProvider.Get();
+            appSettingsProvider.Save(settings with { Layout = settings.Layout with { ProhibitOverlap = value } });
         }
     }
 
