@@ -41,23 +41,35 @@
                 <MenuItem Header="{Binding PresetMap4x4Title}" Command="{Binding SetFixedSpanPreset}" CommandParameter="4x4" IsVisible="{Binding IsMapWidget}" />
                 <Separator IsVisible="{Binding IsMapWidget}" />
                 <Separator IsVisible="{Binding IsFixedWidget}" />
+                <!-- 尺寸步进器：− 数值 +
+                     这里刻意不用 NumericUpDown。它内嵌的 TextBox 是菜单弹出层里唯一的可聚焦
+                     文本控件，点一下 +/- 就会把焦点/指针捕获从弹出层夺走，Windows 上菜单随即
+                     自行关闭——「点一下菜单就消失了，得反复重开」。改成纯按钮：没有文本框、
+                     没有焦点转移，每次点击都是普通菜单项点击（StaysOpenOnClick=True 保证
+                     不关闭），可以连着点。数值本身可点，改用输入框精确填写。 -->
                 <MenuItem StaysOpenOnClick="True">
                     <MenuItem.Header>
-                        <Grid ColumnDefinitions="*,Auto" Width="200">
+                        <Grid ColumnDefinitions="*,Auto,Auto,Auto" Width="200">
                             <TextBlock Text="{x:Static locales:Locale.Widget_Size_Columns}" VerticalAlignment="Center" />
-                            <NumericUpDown Grid.Column="1" Width="110" Minimum="1" Maximum="999" Increment="1"
-                                           FormatString="F0" ParsingNumberStyle="Integer"
-                                           Value="{Binding SizeColumnsValue}" />
+                            <Button Grid.Column="1" Classes="size-step" Content="−" Focusable="False"
+                                    Click="OnSizeColumnsDecrease" />
+                            <Button Grid.Column="2" Classes="size-step-value" Content="{Binding SizeColumnsLabel}"
+                                    Focusable="False" Click="OnSizeColumnsEdit" />
+                            <Button Grid.Column="3" Classes="size-step" Content="+" Focusable="False"
+                                    Click="OnSizeColumnsIncrease" />
                         </Grid>
                     </MenuItem.Header>
                 </MenuItem>
                 <MenuItem StaysOpenOnClick="True">
                     <MenuItem.Header>
-                        <Grid ColumnDefinitions="*,Auto" Width="200">
+                        <Grid ColumnDefinitions="*,Auto,Auto,Auto" Width="200">
                             <TextBlock Text="{x:Static locales:Locale.Widget_Size_Rows}" VerticalAlignment="Center" />
-                            <NumericUpDown Grid.Column="1" Width="110" Minimum="1" Maximum="999" Increment="1"
-                                           FormatString="F0" ParsingNumberStyle="Integer"
-                                           Value="{Binding SizeRowsValue}" />
+                            <Button Grid.Column="1" Classes="size-step" Content="−" Focusable="False"
+                                    Click="OnSizeRowsDecrease" />
+                            <Button Grid.Column="2" Classes="size-step-value" Content="{Binding SizeRowsLabel}"
+                                    Focusable="False" Click="OnSizeRowsEdit" />
+                            <Button Grid.Column="3" Classes="size-step" Content="+" Focusable="False"
+                                    Click="OnSizeRowsIncrease" />
                         </Grid>
                     </MenuItem.Header>
                 </MenuItem>
@@ -88,6 +100,44 @@
             <Setter Property="CornerRadius" Value="{DynamicResource HostSurfaceCornerRadius}" />
             <Setter Property="Margin" Value="{DynamicResource WidgetContextMenuItemMargin}" />
         </Style>
+        <!-- 尺寸行里的 − / 数值 / + ：固定尺寸（菜单不会因内容变宽而重排），无键盘焦点，
+             半透明中性底色在明暗主题的菜单上都成立。 -->
+        <Style Selector="Button.size-step">
+            <Setter Property="Width" Value="24" />
+            <Setter Property="Height" Value="22" />
+            <Setter Property="MinWidth" Value="0" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="Margin" Value="0,0,3,0" />
+            <Setter Property="CornerRadius" Value="5" />
+            <Setter Property="Background" Value="#1F808080" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="Cursor" Value="Hand" />
+        </Style>
+        <Style Selector="Button.size-step:pointerover">
+            <Setter Property="Background" Value="#3D808080" />
+        </Style>
+        <Style Selector="Button.size-step-value">
+            <Setter Property="Width" Value="34" />
+            <Setter Property="Height" Value="22" />
+            <Setter Property="MinWidth" Value="0" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="Margin" Value="0,0,3,0" />
+            <Setter Property="CornerRadius" Value="5" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="Cursor" Value="Hand" />
+        </Style>
+        <Style Selector="Button.size-step-value:pointerover">
+            <Setter Property="Background" Value="#1F808080" />
+        </Style>
         <Style Selector="Border:not(:pointerover) ScrollViewer">
             <Setter Property="VerticalScrollBarVisibility" Value="Hidden" />
             <Setter Property="HorizontalScrollBarVisibility" Value="Hidden" />
@@ -106,7 +156,11 @@
              自己硬编码 12px，30 个组件里 14 个（自带 Margin="0" 的那些）被多缩进了一圈。 -->
     </Window.Styles>
     
-    <Grid>
+    <!-- CardRoot carries the card's own render transform (landing settle, gallery entrance):
+         it must wrap the glass surface AND the card Border, because 液态玻璃 draws the material on
+         the surface rather than on the Border — scaling the Border alone would leave the glass at
+         full size. -->
+    <Grid Name="CardRoot">
         <!-- Rendered glass surface (液态玻璃 / 柔光玻璃: refraction, glow, vibrancy, wallpaper sampling) -->
         <controls:LiquidGlassSurface Material="{Binding GlassMaterial, RelativeSource={RelativeSource AncestorType=views:Widget}}"
                                      CornerRadius="{Binding Radius, RelativeSource={RelativeSource AncestorType=views:Widget}}"
