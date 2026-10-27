@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Runtime.InteropServices;
@@ -40,6 +40,34 @@ public class InteropService
             GC.Collect(2, GCCollectionMode.Aggressive, blocking: true, compacting: true);
             GC.WaitForPendingFinalizers();
             GC.Collect(2, GCCollectionMode.Forced, blocking: true, compacting: true);
+            SetProcessWorkingSetSize(System.Diagnostics.Process.GetCurrentProcess().Handle, new IntPtr(-1), new IntPtr(-1));
+        }
+        catch { }
+    }
+
+    /// <summary>
+    /// Working-set trim only — the cheap half of <see cref="TrimProcessMemory"/>.
+    /// <para>
+    /// <b>What it is for.</b> The periodic release path (see
+    /// <c>MemoryTrimmerService</c>) wants to hand resident pages back on a short cadence, and a
+    /// compacting gen-2 collection is far too expensive to run at that cadence: it walks the whole
+    /// live heap and moves objects, which is tens of milliseconds of stalls on a desktop-widget
+    /// host. This variant costs a single kernel call.
+    /// </para>
+    /// <para>
+    /// <b>What it cannot do.</b> It cannot reduce <c>PrivateMemorySize64</c> — the trim only
+    /// evicts resident pages to the page file, so committed memory is unchanged and the pages are
+    /// faulted back in as soon as the widgets render again. Measured on this app: a trim took the
+    /// working set from 1260 MiB to 27 MiB while private bytes stayed at exactly 611 MiB. That is
+    /// why it is a presentation knob, not a fix, and why the caller decides whether to pay for the
+    /// full collection based on whether the heap actually grew.
+    /// </para>
+    /// </summary>
+    public static void TrimWorkingSet()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+        try
+        {
             SetProcessWorkingSetSize(System.Diagnostics.Process.GetCurrentProcess().Handle, new IntPtr(-1), new IntPtr(-1));
         }
         catch { }
@@ -123,6 +151,57 @@ public class InteropService
             ? CreateRoundRectRgn(x, y, x + width + 1, y + height + 1, radius * 2, radius * 2)
             : CreateRectRgn(x, y, x + width, y + height);
         if (region == IntPtr.Zero) return false;
+
+        if (SetWindowRgn(handle, region, true) == 0)
+        {
+            DeleteObject(region);
+            return false;
+        }
+
+        return true;
+    }
+
+    /// <summary>
+    /// Clip a native window to a rounded rectangle <b>unioned with a set of circles</b> — the
+    /// 分类圆钮 that stand beside the 聚焦搜索 bar while Alt is held.
+    /// <para>
+    /// 毛玻璃 paints its OS backdrop strictly inside the window region, so a region that only
+    /// described the card would delete the circles from the screen, and one that described the whole
+    /// window would leave a blurred slab behind them. The union is the only shape that matches what
+    /// the layout actually draws.
+    /// </para>
+    /// </summary>
+    /// <returns>True when the region was applied; false for an invalid handle or a rejected region.</returns>
+    public static bool SetWindowRegionUnion(
+        IntPtr handle,
+        int x,
+        int y,
+        int width,
+        int height,
+        int radius,
+        IReadOnlyList<(int X, int Y, int Size)> circles)
+    {
+        if (handle == IntPtr.Zero) return false;
+
+        width = Math.Max(1, width);
+        height = Math.Max(1, height);
+        radius = Math.Clamp(radius, 0, Math.Min(width, height) / 2);
+
+        // Same +1 compensation as SetWindowRegion: CreateRoundRectRgn drops the last row/column.
+        var region = radius > 0
+            ? CreateRoundRectRgn(x, y, x + width + 1, y + height + 1, radius * 2, radius * 2)
+            : CreateRectRgn(x, y, x + width, y + height);
+        if (region == IntPtr.Zero) return false;
+
+        foreach (var circle in circles)
+        {
+            var size = Math.Max(1, circle.Size);
+            var disc = CreateEllipticRgn(circle.X, circle.Y, circle.X + size + 1, circle.Y + size + 1);
+            if (disc == IntPtr.Zero) continue;
+
+            CombineRgn(region, region, disc, RGN_OR);
+            DeleteObject(disc);
+        }
 
         if (SetWindowRgn(handle, region, true) == 0)
         {
@@ -220,6 +299,15 @@ public class InteropService
 
     [DllImport("gdi32.dll")]
     private static extern IntPtr CreateRectRgn(int x1, int y1, int x2, int y2);
+
+    [DllImport("gdi32.dll")]
+    private static extern IntPtr CreateEllipticRgn(int x1, int y1, int x2, int y2);
+
+    /// <summary>CombineRgn's OR mode: dest := dest ∪ src.</summary>
+    private const int RGN_OR = 2;
+
+    [DllImport("gdi32.dll")]
+    private static extern int CombineRgn(IntPtr hrgnDst, IntPtr hrgnSrc1, IntPtr hrgnSrc2, int iMode);
 
     [DllImport("user32.dll", SetLastError = true)]
     private static extern int SetWindowRgn(IntPtr hWnd, IntPtr hRgn, bool bRedraw);

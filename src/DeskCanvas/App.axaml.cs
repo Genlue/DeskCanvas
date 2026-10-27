@@ -318,8 +318,14 @@ public class App : Application
         // One startup maintenance point, not a routine: the first seconds of a session build every
         // widget's surfaces, captures and caches at once, and the leftover segments from that burst
         // are worth handing back once it has settled. The trimmer's single-flight / cooldown /
-        // hysteresis guards keep this a one-off — there is no periodic sweep any more.
+        // hysteresis guards keep this a one-off.
         System.Threading.Tasks.Task.Delay(6000).ContinueWith(_ => MemoryTrimmerService.RequestTrim());
+
+        // From here on a timer carries the case no event can see — a heap that settled fragmented
+        // after some burst, with nothing left to trigger a release. The tick only pays for a
+        // compacting collection when the collector reports fragmentation worth compacting, so an
+        // idle, healthy process just gets a working-set trim (see MemoryTrimmerService).
+        MemoryTrimmerService.StartPeriodicRelease();
 
         base.OnFrameworkInitializationCompleted();
     }

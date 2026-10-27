@@ -19,6 +19,19 @@ public enum TrimPriority
     Coalesced,
 
     /// <summary>
+    /// The periodic release path: the maintenance timer asks for a trim without waiting out the
+    /// cooldown.
+    /// <para>
+    /// Kept distinct from <see cref="Immediate"/> so a timer tick can be told apart from a release
+    /// the user is directly watching. A tick runs the <b>cheap</b> working-set trim, and escalates
+    /// to the compacting collection only when the heap is actually fragmented — see
+    /// <c>CompactionFloorBytes</c> and <c>RunTrim</c>. That is what lets the path run on a timer
+    /// at all without stalling the render loop.
+    /// </para>
+    /// </summary>
+    Periodic,
+
+    /// <summary>
     /// A release the user is directly watching (the settings window being closed hands its page
     /// previews back): the request skips the cooldown so the freed memory actually leaves the
     /// process while the user looks for it. Single-flight and the floor still apply — a request
@@ -34,7 +47,8 @@ public enum TrimPriority
 }
 
 /// <summary>
-/// The process-wide, <b>on-demand</b> memory maintenance entry.
+/// The process-wide memory maintenance entry: <b>event-driven releases plus one timer-driven
+/// pass</b>.
 ///
 /// What used to live here was a routine sweep: every 5 minutes, whenever the process held more
 /// than 150 MiB, a blocking double gen-2 collection plus <c>SetProcessWorkingSetSize(-1, -1)</c>.
@@ -42,13 +56,17 @@ public enum TrimPriority
 /// every tick — and a working-set trim does not free memory, it only evicts resident pages that
 /// are touched again moments later. The result was the periodic sawtooth in the task manager
 /// (and the stutter of a compacting gen-2 collection every five minutes) without any real
-/// reduction in committed memory.
+/// reduction in committed memory. That sweep was removed, and an earlier version of this comment
+/// claimed the entry was therefore never called on a timer.
 ///
-/// The entry is kept for the moments where something large and native was <i>actually</i>
-/// released — a widget (or the last widget) being removed, fullscreen suspension, a profile
-/// switch, the settings window being torn down — so the freed pages are handed back promptly
-/// instead of waiting for the next widget to happen to need them. It is deliberately not called
-/// on a timer, and every request passes through three guards:
+/// <para>
+/// That claim is no longer true, and the distinction it was missing is worth stating: the old
+/// sweep was wrong because it always ran the <i>expensive</i> half, on a fixed cadence, whether or
+/// not there was anything to collect. The timer here
+/// (<see cref="StartPeriodicRelease"/>) is gated on the collector's own fragmentation report —
+/// when the heap is not fragmented a tick costs one kernel call, and when it is, the pass returns
+/// memory that waiting would never have returned. Both paths share the same guards:
+/// </para>
 /// <list type="bullet">
 /// <item><b>Single-flight</b> — a request while a trim is running is coalesced into one
 /// follow-up (see below), never a second concurrent compaction.</item>
@@ -56,13 +74,16 @@ public enum TrimPriority
 /// burst of background releases (removing widgets one by one, switching profiles, fullscreen
 /// toggles) does not queue a trim per event: the burst schedules <b>one</b> deferred trim for
 /// when the cooldown lapses, so the process still comes back down after the burst instead of
-/// never. A request flagged <see cref="TrimPriority.Immediate"/> — the settings window being
-/// closed, the one release the user is directly watching — skips this gate.</item>
+/// never. Requests flagged <see cref="TrimPriority.Immediate"/> — the settings window being
+/// closed, the one release the user is directly watching — and timer ticks
+/// (<see cref="TrimPriority.Periodic"/>) skip this gate.</item>
 /// <item><b>Floor</b> — below <see cref="ActionableFloorBytes"/> the process is comfortable and
-/// a trim would only cost a compacting collection for nothing.</item>
+/// a trim would only cost a compacting collection for nothing. <see cref="TrimPriority.Force"/>
+/// is the one caller allowed to bypass it, because it runs when the desktop is covered and
+/// nothing is on screen to be hurt by the collection.</item>
 /// </list>
-/// The actual work stays in <see cref="InteropService.TrimProcessMemory"/> and always runs off
-/// the UI thread.
+/// The actual work stays in <see cref="InteropService.TrimProcessMemory"/> /
+/// <see cref="InteropService.TrimWorkingSet"/> and always runs off the UI thread.
 /// </summary>
 public static class MemoryTrimmerService
 {
@@ -85,8 +106,117 @@ public static class MemoryTrimmerService
     /// <summary>Completed trims since process start — read by the check suites, not by the app itself.</summary>
     private static int completedTrims;
 
+    // ---- periodic release -------------------------------------------------------
+
+    /// <summary>
+    /// Cadence of the timer-driven pass. Deliberately not seconds-scale: a working-set trim only
+    /// evicts resident pages (measured: 1260 MiB → 27 MiB of working set with
+    /// <c>PrivateMemorySize64</c> unchanged at 611 MiB), so trimming more often buys nothing but
+    /// page faults — the widgets fault the same pages straight back in on the next frame. Thirty
+    /// seconds is long enough that a pass lands after a burst has settled rather than during it.
+    /// </summary>
+    private static readonly TimeSpan PeriodicInterval = TimeSpan.FromSeconds(30);
+
+    /// <summary>
+    /// Fragmentation at which a periodic pass is worth a compacting collection.
+    /// <para>
+    /// This is the whole reason the periodic path is not a fixed "collect every N seconds" loop.
+    /// A compaction only returns memory when the heap is actually fragmented, and it costs a full
+    /// walk plus object movement — on this app a measured 43.8 MiB of gen-2 fragmentation and
+    /// 18.7 MiB of LOH fragmentation were sitting there unclaimed, i.e. ~62 MiB that no amount of
+    /// waiting would hand back. Below this floor the pass does the cheap working-set trim only,
+    /// so an idle, unfragmented process pays a single kernel call and stays smooth.
+    /// </para>
+    /// </summary>
+    private const long CompactionFloorBytes = 32L * 1024 * 1024;
+
+    private static Timer? periodic;
+
+    /// <summary>0/1 latch so a second start is a no-op and stop/start cycles stay balanced.</summary>
+    private static int periodicStarted;
+
+    /// <summary>Number of timer-driven passes that have run (diagnostics/checks only).</summary>
+    private static int periodicPasses;
+
+    /// <summary>Number of timer-driven passes that escalated to a compacting collection.</summary>
+    private static int periodicCompactions;
+
     /// <summary>Number of trims that have completed since process start (diagnostics/checks only).</summary>
     public static int CompletedTrims => Volatile.Read(ref completedTrims);
+
+    /// <summary>Timer-driven passes that have run (diagnostics/checks only).</summary>
+    public static int PeriodicPasses => Volatile.Read(ref periodicPasses);
+
+    /// <summary>Timer-driven passes that escalated to a compacting collection (diagnostics/checks).</summary>
+    public static int PeriodicCompactions => Volatile.Read(ref periodicCompactions);
+
+    /// <summary>
+    /// Begin the timer-driven release path. Idempotent, and safe to call before or after the first
+    /// widget exists.
+    /// <para>
+    /// This runs <b>alongside</b> the event-driven requests, not instead of them: the events still
+    /// carry the cases that must be prompt (a widget closing, the desktop being covered), and the
+    /// timer carries the case no event can see — a process that settled on a fragmented heap after
+    /// some burst and would otherwise hold it until the next unrelated event happens to fire.
+    /// </para>
+    /// <para>
+    /// The timer is created with <c>dueTime</c> equal to the interval on purpose: the first seconds
+    /// of a session are a burst of widget surfaces, captures and caches, and trimming in the middle
+    /// of that burst would only re-fault the pages it just evicted. The existing startup point
+    /// (App's one delayed request) already covers the settle window.
+    /// </para>
+    /// </summary>
+    public static void StartPeriodicRelease()
+    {
+        if (Interlocked.Exchange(ref periodicStarted, 1) == 1) return;
+
+        periodic = new Timer(
+            static _ => OnPeriodicTick(),
+            null,
+            PeriodicInterval,
+            PeriodicInterval);
+    }
+
+    /// <summary>Stop the timer-driven release path (application shutdown). Idempotent.</summary>
+    public static void StopPeriodicRelease()
+    {
+        if (Interlocked.Exchange(ref periodicStarted, 0) == 0) return;
+
+        var timer = Interlocked.Exchange(ref periodic, null);
+        if (timer == null) return;
+        try { timer.Dispose(); } catch { }
+    }
+
+    /// <summary>
+    /// One timer tick. Runs on a thread-pool thread, never on the UI thread, and goes through the
+    /// same <see cref="RequestTrim"/> guards as every other caller — a tick that lands while a trim
+    /// is already running is coalesced into the existing single follow-up rather than starting a
+    /// second concurrent compaction.
+    /// </summary>
+    private static void OnPeriodicTick()
+    {
+        Interlocked.Increment(ref periodicPasses);
+        RequestTrim(TrimPriority.Periodic);
+    }
+
+    /// <summary>
+    /// Whether this periodic pass should pay for a compacting collection. True only when the
+    /// collector itself reports enough fragmentation for compaction to return something real;
+    /// an unfragmented heap has nothing to compact, and collecting it anyway would be pure stall.
+    /// </summary>
+    private static bool FragmentationWarrantsCompaction()
+    {
+        try
+        {
+            var info = GC.GetGCMemoryInfo();
+            return info.FragmentedBytes >= CompactionFloorBytes;
+        }
+        catch
+        {
+            // A host that cannot answer degrades to the cheap path.
+            return false;
+        }
+    }
 
     /// <summary>
     /// Ask for one maintenance trim. Cheap and non-blocking: the caller never waits for the
@@ -157,7 +287,7 @@ public static class MemoryTrimmerService
             }
         }
 
-        if (run) RunTrim();
+        if (run) RunTrim(priority);
         else if (deferMs >= 0) ScheduleDeferred(deferMs, priority);
     }
 
@@ -215,7 +345,7 @@ public static class MemoryTrimmerService
         });
     }
 
-    private static void RunTrim()
+    private static void RunTrim(TrimPriority priority)
     {
         _ = Task.Run(() =>
         {
@@ -231,7 +361,19 @@ public static class MemoryTrimmerService
                     // Diagnostics only.
                 }
 
-                InteropService.TrimProcessMemory();
+                // A timer tick only pays for the compacting collection when the collector reports
+                // fragmentation worth compacting; every other caller asked for a trim because it
+                // just released something real, so it gets the full pass.
+                var compact = priority != TrimPriority.Periodic || FragmentationWarrantsCompaction();
+                if (compact)
+                {
+                    if (priority == TrimPriority.Periodic) Interlocked.Increment(ref periodicCompactions);
+                    InteropService.TrimProcessMemory();
+                }
+                else
+                {
+                    InteropService.TrimWorkingSet();
+                }
 
                 long after = 0;
                 try
@@ -250,7 +392,33 @@ public static class MemoryTrimmerService
                 }
 
                 Debug.WriteLine(
-                    $"[MemoryTrimmer] maintenance trim: private {before / 1048576.0:F0} → {after / 1048576.0:F0} MiB");
+                    $"[MemoryTrimmer] {(compact ? "compacting" : "working-set")} trim ({priority}): " +
+                    $"private {before / 1048576.0:F0} → {after / 1048576.0:F0} MiB");
+
+                // The periodic pass is the only place in the app that observes the whole memory
+                // picture, so it is also the place that records it. Without this line there is no
+                // way to tell "the trimmer never ran" from "it ran and there was nothing to
+                // release" short of a full heap dump — which is exactly the question that used to
+                // cost one. One line per 30 s against a 2400-line capped trace.
+                if (priority == TrimPriority.Periodic)
+                {
+                    try
+                    {
+                        var info = GC.GetGCMemoryInfo();
+                        GlassDiagnostics.Event(
+                            $"[memory] private {before / 1048576.0:F0} → {after / 1048576.0:F0} MiB · " +
+                            $"managed {info.HeapSizeBytes / 1048576.0:F0} MiB · " +
+                            $"committed {info.TotalCommittedBytes / 1048576.0:F0} MiB · " +
+                            $"fragmented {info.FragmentedBytes / 1048576.0:F0} MiB · " +
+                            $"{(compact ? "compacted" : "working-set only")} · " +
+                            $"passes {PeriodicPasses} · compactions {PeriodicCompactions} · " +
+                            $"trims {CompletedTrims}");
+                    }
+                    catch
+                    {
+                        // Diagnostics must never break the release path.
+                    }
+                }
             }
             catch (Exception ex)
             {

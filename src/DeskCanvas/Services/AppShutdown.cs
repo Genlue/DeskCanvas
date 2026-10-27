@@ -22,6 +22,11 @@ public static class AppShutdown
     {
         IsShuttingDown = true;
 
+        // The maintenance timer must not fire while the windows are being torn down: it would
+        // schedule a compacting collection onto the thread pool in the middle of teardown, for a
+        // process that is about to exit.
+        MemoryTrimmerService.StopPeriodicRelease();
+
         if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
             desktop.Shutdown();
     }
