@@ -86,8 +86,17 @@ public record LiquidGlassSettings(
     /// <summary>Default live sampling state (false = static wallpaper mode).</summary>
     public const bool DefaultLiveSampling = false;
 
-    /// <summary>Lowest 背景清晰度 (%).</summary>
-    public const double MinBackdropClarity = 25.0;
+    /// <summary>
+    /// Lowest 背景清晰度 (%).
+    /// <para>
+    /// The floor is the user's to pick, not ours: 5% still samples a twentieth of the desktop, which
+    /// is a legible (if very soft) colour field behind the lens, and it is the only setting that makes
+    /// the sampling round genuinely cheap on a 4K/multi-screen desktop. Everything downstream reads
+    /// this constant, so the slider floor, the persisted clamp and the sampler's own floor cannot
+    /// drift apart.
+    /// </para>
+    /// </summary>
+    public const double MinBackdropClarity = 5.0;
 
     /// <summary>Default 背景清晰度 (%).</summary>
     public const double DefaultBackdropClarity = 40.0;

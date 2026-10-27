@@ -203,6 +203,25 @@ public static class LiquidGlassWallpaper
     /// </summary>
     internal static void RefreshSamplerState() => UpdateTimerState();
 
+    /// <summary>
+    /// A widget drag just started: forget the idle backoff and probe immediately.
+    /// <para>
+    /// The backoff is what makes a still desktop cheap (the interval stretches towards
+    /// <see cref="MaxIdleIntervalMs"/> while nothing changes), but the moment a card is picked up
+    /// its sampling region starts moving, and a probe that is still waiting out a 500 ms idle
+    /// stretch leaves the material sampling a rectangle the card has already left. Resetting the
+    /// round clock makes the first drag frame capture at the user's own cadence; the published
+    /// frame resets the backoff for the rest of the drag on its own.
+    /// </para>
+    /// </summary>
+    internal static void WakeForDrag()
+    {
+        Volatile.Write(ref idleRounds, 0);
+        // Zeroed, not nudged: the next tick must not be told "a round just ran".
+        Interlocked.Exchange(ref lastRoundAt, 0);
+        UpdateTimerState();
+    }
+
     private static void UpdateTimerState()
     {
         // Live sampling samples the Windows desktop; elsewhere there is nothing to capture.
@@ -379,7 +398,13 @@ public static class LiquidGlassWallpaper
         // other tick arrive "too early" and halved the rate — 30 publishes/s instead of 60 at a
         // 100 ms interval. While the desktop sits still the period is the backoff-stretched one.
         if (now - Interlocked.Read(ref lastRoundAt) < EffectiveIntervalMs) return;
-        if (LiquidGlassSurface.AnySurfaceRendering && now - Interlocked.Read(ref lastCaptureAt) < StallGuardMs)
+        // The stall guard lets the surfaces digest a publish before the next capture. During a
+        // drag the surfaces are digesting almost continuously by design, so applying it here would
+        // hold the CAPTURE REGION behind the moving card for up to StallGuardMs — and the region
+        // moving is the one thing the drag path needs from the sampler. The round is still
+        // single-flighted and coalesced, so this cannot stack captures.
+        if (!LiquidGlassSurface.DragActive
+            && LiquidGlassSurface.AnySurfaceRendering && now - Interlocked.Read(ref lastCaptureAt) < StallGuardMs)
             return;
 
         Interlocked.Exchange(ref lastRoundAt, now);
@@ -458,6 +483,11 @@ public static class LiquidGlassWallpaper
             // live, slow enough that a whole transition costs a few captures; the live sampler's
             // cadence and its idle backoff are untouched.
             if (SettleActive && !liveSamplingEnabled) return SettleIntervalMs;
+            // A drag moves the sampling REGION while the wallpaper itself stays still, so the
+            // idle probe would read "unchanged" and stretch the interval — leaving the capture
+            // rectangle up to half a second behind the card. The drag path runs at the user's
+            // cadence instead; the idle stretch resumes the moment the card is put down.
+            if (LiquidGlassSurface.DragActive) return liveIntervalMs;
             var idle = Math.Min(Volatile.Read(ref idleRounds), 6);
             var stretched = liveIntervalMs << idle;
             return Math.Min(Math.Max(stretched, liveIntervalMs), Math.Max(liveIntervalMs, MaxIdleIntervalMs));

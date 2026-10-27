@@ -118,8 +118,12 @@ internal sealed class GlassSource : IDisposable
 internal static class LiquidGlassSourceCache
 {
     /// <summary>
-    /// Lowest backdrop scale accepted, whatever 背景清晰度 asks for. A quarter of the desktop still
-    /// reads as a blurred wallpaper behind the lens; below that it is flat colour.
+    /// Lowest backdrop scale accepted, whatever 背景清晰度 asks for. This is the bottom of the
+    /// slider's own range (<see cref="LiquidGlassSettings.MinBackdropClarity"/>) rather than a
+    /// quality opinion of ours: a twentieth of the desktop is still a colour field behind the lens,
+    /// and it is the setting that makes the sampling round affordable on a 4K/multi-screen desktop.
+    /// Clamping below the slider would mean the user could pick a number the pipeline silently
+    /// ignores — the two have to be the same value.
     /// </summary>
     private const float MinBackdropScale = (float)(LiquidGlassSettings.MinBackdropClarity / 100.0);
 

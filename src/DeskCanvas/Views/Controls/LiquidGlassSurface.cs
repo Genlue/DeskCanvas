@@ -163,6 +163,43 @@ public class LiquidGlassSurface : GlassSurfaceBase
 
     private bool DemandsFrames => attached && IsEffectivelyVisible && Material?.UsesRenderedGlass == true;
 
+    /// <summary>
+    /// True while a widget drag is in flight — set from <c>Widget</c>'s WM_ENTERSIZEMOVE /
+    /// WM_EXITSIZEMOVE bracket.
+    /// <para>
+    /// A drag is the one moment the 90 ms coalescing debounce must not apply. Every
+    /// <see cref="OnPositionChanged"/> restarts it, so under a stream of WM_MOVING it never
+    /// elapses at all: the material only refreshed when the live sampler happened to publish a
+    /// new frame, which is exactly the reported "拖动时玻璃只有断续的几帧". While this flag is
+    /// set, a position change renders immediately, coalesced by the existing busy/pending
+    /// mechanism — a frame that arrives while a prepare is running is still dropped rather than
+    /// queued, it just arms one follow-up so the last position of the drag cannot be lost.
+    /// </para>
+    /// <para>
+    /// Idle cost is untouched: the flag only exists between the two messages of a native move
+    /// loop, and a still desktop never enters one. It is static because the move loop is — only
+    /// one drag can be in flight process-wide.
+    /// </para>
+    /// </summary>
+    private static volatile bool dragActive;
+
+    /// <summary>True while a widget drag is in flight (see the field's remarks).</summary>
+    public static bool DragActive => dragActive;
+
+    /// <summary>
+    /// Open or close the drag window. Idempotent, and must be called on every exit path of a drag
+    /// (exit message, teardown, a move loop that died with its window) — a stuck flag would make
+    /// every position change render at full rate on a still desktop.
+    /// </summary>
+    public static void SetDragActive(bool active)
+    {
+        if (dragActive == active) return;
+        dragActive = active;
+        // Picking a card up is a demand for fresh desktop pixels: the card's sampling region is
+        // about to start moving, and an idle-stretched probe interval would leave it behind.
+        if (active) LiquidGlassWallpaper.WakeForDrag();
+    }
+
     public static readonly StyledProperty<Theme?> MaterialProperty =
         AvaloniaProperty.Register<LiquidGlassSurface, Theme?>(nameof(Material));
     public static readonly StyledProperty<CornerRadius> CornerRadiusProperty =
@@ -487,8 +524,16 @@ public class LiquidGlassSurface : GlassSurfaceBase
             InvalidateVisual();
             return;
         }
-        if (immediate) RenderMaterial();
-        else debounce.Start();
+        if (immediate || dragActive)
+        {
+            // Under load the frame is dropped, not queued (the existing contract) — but a drag
+            // moves the card again in a few milliseconds, so arming one follow-up keeps the last
+            // position of the drag from being the one frame that was lost while a prepare ran.
+            if (busy) Interlocked.Exchange(ref pendingSampledFrame, 1);
+            else RenderMaterial();
+            return;
+        }
+        debounce.Start();
     }
 
     /// <summary>Drop every prepared resource. Safe to call repeatedly.</summary>
