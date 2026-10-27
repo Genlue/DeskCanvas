@@ -513,6 +513,112 @@ internal class Program
         }
         hostWindow.Content = null;
 
+        Console.WriteLine("\n--- 强调色偏移 / 跟随强调色 ---");
+        // Pure resolver first: these assertions pin the maths, not a window.
+        var baseAccent = Color.Parse("#336699");
+
+        Assert(AccentPalette.Shift(baseAccent, towardWhite: true, 0) == baseAccent
+               && AccentPalette.Shift(baseAccent, towardWhite: false, 0) == baseAccent,
+            "shift 0 is the identity in both directions (byte-identical colour)");
+
+        Assert(AccentPalette.Shift(baseAccent, towardWhite: true, 100) == Colors.White,
+            "100% toward white reaches pure white");
+        Assert(AccentPalette.Shift(baseAccent, towardWhite: false, 100) == Colors.Black,
+            "100% toward black reaches pure black");
+
+        var darkHalf = AccentPalette.Shift(baseAccent, towardWhite: true, 50);
+        var lightHalf = AccentPalette.Shift(baseAccent, towardWhite: false, 50);
+        Assert(darkHalf.R > baseAccent.R && darkHalf.G > baseAccent.G && darkHalf.B > baseAccent.B
+               && darkHalf != Colors.White,
+            "dark-mode shift moves every channel toward white without snapping to it");
+        Assert(lightHalf.R < baseAccent.R && lightHalf.G < baseAccent.G && lightHalf.B < baseAccent.B
+               && lightHalf != Colors.Black,
+            "light-mode shift moves every channel toward black without snapping to it");
+
+        var (derivedDark, derivedLight) = AccentPalette.ResolveBackgroundPair(baseAccent, 50);
+        var derivedDarkColor = Color.Parse(derivedDark);
+        var derivedLightColor = Color.Parse(derivedLight);
+        Assert(derivedDarkColor.R < baseAccent.R && derivedDarkColor.G < baseAccent.G && derivedDarkColor.B < baseAccent.B,
+            $"derived dark background shifts toward black ({derivedDark})");
+        Assert(derivedLightColor.R > baseAccent.R && derivedLightColor.G > baseAccent.G && derivedLightColor.B > baseAccent.B,
+            $"derived light background shifts toward white ({derivedLight})");
+
+        Assert(AccentPalette.NormalizeShift(500) == 100
+               && AccentPalette.NormalizeShift(-5) == 0
+               && AccentPalette.NormalizeShift(double.NaN) == 0,
+            "stored shift clamps to 0-100 (and NaN to 0)");
+
+        // 跟随强调色 bakes a new record; the settings-owned pair must stay untouched so the
+        // 背景颜色 inputs and 应用到浅色/深色 keep editing what the user stored.
+        var storedTheme = new Theme(
+            DarkMode: true,
+            AccentColor: "#336699",
+            OpacityLevel: 1.0,
+            Monochrome: false,
+            UseNativeFrame: false,
+            FontFamily: "Inter",
+            Surface: SurfaceStyle.Acrylic,
+            SolidBackgroundDark: "#112233",
+            SolidBackgroundLight: "#FEDCBA",
+            AccentShift: 60,
+            FollowAccentBackground: true);
+        var baked = AccentPalette.ApplyDerivedBackgrounds(storedTheme, systemAccent: null);
+        var expectedPair = AccentPalette.ResolveBackgroundPair(baseAccent, 60);
+        Assert(baked.SolidBackgroundDark == expectedPair.Dark && baked.SolidBackgroundLight == expectedPair.Light,
+            "bake writes the derived pair into the rendered theme");
+        Assert(storedTheme.SolidBackgroundDark == "#112233" && storedTheme.SolidBackgroundLight == "#FEDCBA",
+            "the stored pair is untouched by the bake");
+        Assert(AccentPalette.ApplyDerivedBackgrounds(baked, systemAccent: null) == baked,
+            "baking an already-baked theme is idempotent (no double shift)");
+        var followOff = storedTheme with { FollowAccentBackground = false };
+        Assert(AccentPalette.ApplyDerivedBackgrounds(followOff, systemAccent: null) == followOff,
+            "with 跟随强调色 off the pair is left exactly as stored");
+
+        Console.WriteLine("\n--- 强调色偏移 through the real accent ramp ---");
+        themeService.Apply(new Theme(
+            DarkMode: true, AccentColor: "#336699", OpacityLevel: 1.0, Monochrome: false,
+            UseNativeFrame: false, FontFamily: "Inter", Surface: SurfaceStyle.Acrylic,
+            AccentShift: 100));
+        Assert(Resource("SystemAccentColor") == Colors.White,
+            "dark + 100% paints the accent pure white");
+
+        themeService.Apply(new Theme(
+            DarkMode: false, AccentColor: "#336699", OpacityLevel: 1.0, Monochrome: false,
+            UseNativeFrame: false, FontFamily: "Inter", Surface: SurfaceStyle.Acrylic,
+            AccentShift: 100));
+        Assert(Resource("SystemAccentColor") == Colors.Black,
+            "light + 100% paints the accent pure black");
+
+        themeService.Apply(new Theme(
+            DarkMode: true, AccentColor: "#336699", OpacityLevel: 1.0, Monochrome: false,
+            UseNativeFrame: false, FontFamily: "Inter", Surface: SurfaceStyle.Acrylic));
+        Assert(Resource("SystemAccentColor") == baseAccent,
+            "0% keeps the stored accent byte-identical (the feature is a no-op at its default)");
+
+        Console.WriteLine("\n--- 跟随强调色: 背景色 inherits the derived pair ---");
+        themeService.Apply(new Theme(
+            DarkMode: true, AccentColor: "#336699", OpacityLevel: 1.0, Monochrome: true,
+            UseNativeFrame: false, FontFamily: "Inter", Surface: SurfaceStyle.Acrylic,
+            SolidBackgroundDark: darkBg, SolidBackgroundLight: lightBg,
+            MonochromeVariant: MonochromeStyle.BackgroundColor,
+            AccentShift: 100, FollowAccentBackground: true));
+        Assert(Resource("SolidBackgroundDark") == Colors.Black,
+            "derived dark slot == pure black at 100%");
+        Assert(Resource("SolidBackgroundLight") == Colors.White,
+            "derived light slot == pure white at 100%");
+        Assert(Resource("SystemAccentColor") == Colors.White,
+            "背景色 dark variant consumes the derived light slot (accent == white)");
+
+        Console.WriteLine("\n--- 多彩 ignores both (its palette is fixed) ---");
+        themeService.Apply(new Theme(
+            DarkMode: true, AccentColor: "#336699", OpacityLevel: 1.0, Monochrome: false,
+            UseNativeFrame: false, FontFamily: "Inter", Surface: SurfaceStyle.FullColor,
+            AccentShift: 100, FollowAccentBackground: true));
+        Assert(!Application.Current!.Resources.ContainsKey("SystemAccentColor"),
+            "多彩 writes no accent override even with a 100% shift");
+        Assert(Resource("SolidBackgroundDark") == Color.Parse("#1C1C1E"),
+            "多彩 pins its own card colour (跟随强调色 does not leak in)");
+
         if (failed == 0)
         {
             Console.WriteLine("\nALL CHECKS PASSED!");

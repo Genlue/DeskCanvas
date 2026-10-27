@@ -269,6 +269,29 @@ type DeskCanvas.Core.Interfaces.DataChangedEvent`1
 method DeskCanvas.Core.Interfaces.DataChangedEvent`1 BeginInvoke(System.Object,T,T,System.AsyncCallback,System.Object) -> System.IAsyncResult
 method DeskCanvas.Core.Interfaces.DataChangedEvent`1 EndInvoke(System.IAsyncResult) -> System.Void
 method DeskCanvas.Core.Interfaces.DataChangedEvent`1 Invoke(System.Object,T,T) -> System.Void
+type DeskCanvas.Core.Interfaces.GridDropTarget
+method DeskCanvas.Core.Interfaces.GridDropTarget Deconstruct(DeskCanvas.Core.Interfaces.GridTarget,System.Boolean) -> System.Void
+method DeskCanvas.Core.Interfaces.GridDropTarget Equals(System.Object) -> System.Boolean
+method DeskCanvas.Core.Interfaces.GridDropTarget Equals(DeskCanvas.Core.Interfaces.GridDropTarget) -> System.Boolean
+method DeskCanvas.Core.Interfaces.GridDropTarget GetHashCode() -> System.Int32
+method DeskCanvas.Core.Interfaces.GridDropTarget ToString() -> System.String
+method DeskCanvas.Core.Interfaces.GridDropTarget op_Equality(DeskCanvas.Core.Interfaces.GridDropTarget,DeskCanvas.Core.Interfaces.GridDropTarget) -> System.Boolean
+method DeskCanvas.Core.Interfaces.GridDropTarget op_Inequality(DeskCanvas.Core.Interfaces.GridDropTarget,DeskCanvas.Core.Interfaces.GridDropTarget) -> System.Boolean
+property DeskCanvas.Core.Interfaces.GridDropTarget Blocked -> System.Boolean
+property DeskCanvas.Core.Interfaces.GridDropTarget Target -> DeskCanvas.Core.Interfaces.GridTarget
+type DeskCanvas.Core.Interfaces.GridTarget
+method DeskCanvas.Core.Interfaces.GridTarget Deconstruct(System.Int32,System.Int32,System.Int32,System.Int32,System.Double) -> System.Void
+method DeskCanvas.Core.Interfaces.GridTarget Equals(System.Object) -> System.Boolean
+method DeskCanvas.Core.Interfaces.GridTarget Equals(DeskCanvas.Core.Interfaces.GridTarget) -> System.Boolean
+method DeskCanvas.Core.Interfaces.GridTarget GetHashCode() -> System.Int32
+method DeskCanvas.Core.Interfaces.GridTarget ToString() -> System.String
+method DeskCanvas.Core.Interfaces.GridTarget op_Equality(DeskCanvas.Core.Interfaces.GridTarget,DeskCanvas.Core.Interfaces.GridTarget) -> System.Boolean
+method DeskCanvas.Core.Interfaces.GridTarget op_Inequality(DeskCanvas.Core.Interfaces.GridTarget,DeskCanvas.Core.Interfaces.GridTarget) -> System.Boolean
+property DeskCanvas.Core.Interfaces.GridTarget Height -> System.Int32
+property DeskCanvas.Core.Interfaces.GridTarget Scaling -> System.Double
+property DeskCanvas.Core.Interfaces.GridTarget Width -> System.Int32
+property DeskCanvas.Core.Interfaces.GridTarget X -> System.Int32
+property DeskCanvas.Core.Interfaces.GridTarget Y -> System.Int32
 type DeskCanvas.Core.Interfaces.IAppSettingsProvider
 type DeskCanvas.Core.Interfaces.IAssemblyProvider
 method DeskCanvas.Core.Interfaces.IAssemblyProvider Activate(System.Type,System.Object[]) -> System.Object
@@ -290,6 +313,9 @@ property DeskCanvas.Core.Interfaces.IFixedSizeWidget PresetSpans -> System.Colle
 type DeskCanvas.Core.Interfaces.IFramelessWidget
 property DeskCanvas.Core.Interfaces.IFramelessWidget IsFrameless -> System.Boolean
 type DeskCanvas.Core.Interfaces.IGridService`1
+method DeskCanvas.Core.Interfaces.IGridService`1 ResolveDrop(T,System.Int32,System.Int32) -> DeskCanvas.Core.Interfaces.GridDropTarget
+method DeskCanvas.Core.Interfaces.IGridService`1 ResolveDropTarget(T,System.Int32,System.Int32) -> DeskCanvas.Core.Interfaces.GridTarget
+method DeskCanvas.Core.Interfaces.IGridService`1 ResolveTarget(T,System.Int32,System.Int32) -> DeskCanvas.Core.Interfaces.GridTarget
 method DeskCanvas.Core.Interfaces.IGridService`1 SetSize(T,System.Int32,System.Int32) -> System.Void
 method DeskCanvas.Core.Interfaces.IGridService`1 SnapPosition(T) -> System.Void
 method DeskCanvas.Core.Interfaces.IGridService`1 SnapSize(T) -> System.Void
@@ -717,7 +743,7 @@ field DeskCanvas.Core.Models.Settings.LauncherGridMetrics LabelLineHeight -> Sys
 field DeskCanvas.Core.Models.Settings.LauncherGridMetrics LabelSpacing -> System.Double
 field DeskCanvas.Core.Models.Settings.LauncherGridMetrics TwoLineLabelHeight -> System.Double
 type DeskCanvas.Core.Models.Settings.LauncherSettings
-method DeskCanvas.Core.Models.Settings.LauncherSettings Deconstruct(System.Boolean,System.String,System.String,System.Int32,System.Int32,System.Int32,System.Double,System.Double,System.Collections.Generic.List<System.String>,System.Double,System.Boolean,System.Boolean,System.Nullable<DeskCanvas.Core.Models.Settings.SurfaceStyle>,DeskCanvas.Core.Models.Settings.LauncherThemeMode,System.Nullable<System.Double>,DeskCanvas.Core.Models.Settings.LiquidGlassSettings,System.Boolean,System.Int32,System.Boolean,System.Int32,System.Boolean,System.Boolean,System.Boolean,DeskCanvas.Core.Models.Settings.LauncherSortMode,System.Boolean,System.Boolean,System.Boolean,System.Int32,System.Collections.Generic.List<System.String>,System.String,System.Boolean,System.String,System.String,System.Boolean,System.Collections.Generic.Dictionary<System.String,System.String>,System.Boolean,System.String,System.String,System.String,System.Int32,System.Collections.Generic.List<System.String>,System.String,System.Boolean,System.Int32,System.Boolean) -> System.Void
+method DeskCanvas.Core.Models.Settings.LauncherSettings Deconstruct(System.Boolean,System.String,System.String,System.Int32,System.Int32,System.Int32,System.Double,System.Double,System.Collections.Generic.List<System.String>,System.Double,System.Boolean,System.Boolean,System.Nullable<DeskCanvas.Core.Models.Settings.SurfaceStyle>,DeskCanvas.Core.Models.Settings.LauncherThemeMode,System.Nullable<System.Double>,DeskCanvas.Core.Models.Settings.LiquidGlassSettings,System.Boolean,System.Int32,System.Boolean,System.Int32,System.Boolean,System.Boolean,System.Boolean,DeskCanvas.Core.Models.Settings.LauncherSortMode,System.Boolean,System.Boolean,System.Boolean,System.Int32,System.Collections.Generic.List<System.String>,System.String,System.Boolean,System.String,System.String,System.Boolean,System.Collections.Generic.Dictionary<System.String,System.String>,System.Boolean,System.String,System.String,System.String,System.Int32,System.Collections.Generic.List<System.String>,System.String,System.Boolean,System.Int32,System.Boolean,System.Collections.Generic.List<System.String>) -> System.Void
 method DeskCanvas.Core.Models.Settings.LauncherSettings EffectiveCornerRadius(System.Double) -> System.Double
 method DeskCanvas.Core.Models.Settings.LauncherSettings Equals(System.Object) -> System.Boolean
 method DeskCanvas.Core.Models.Settings.LauncherSettings Equals(DeskCanvas.Core.Models.Settings.LauncherSettings) -> System.Boolean
@@ -733,10 +759,13 @@ method DeskCanvas.Core.Models.Settings.LauncherSettings ResolveTheme(DeskCanvas.
 method DeskCanvas.Core.Models.Settings.LauncherSettings ToString() -> System.String
 method DeskCanvas.Core.Models.Settings.LauncherSettings WithCategoryHotkey(System.String,System.String) -> DeskCanvas.Core.Models.Settings.LauncherSettings
 method DeskCanvas.Core.Models.Settings.LauncherSettings WithCategoryOrder(System.Collections.Generic.IEnumerable<System.String>) -> DeskCanvas.Core.Models.Settings.LauncherSettings
+method DeskCanvas.Core.Models.Settings.LauncherSettings WithOrbCategories(System.Collections.Generic.IEnumerable<System.String>) -> DeskCanvas.Core.Models.Settings.LauncherSettings
+method DeskCanvas.Core.Models.Settings.LauncherSettings WithOrbCategory(System.Int32,System.String) -> DeskCanvas.Core.Models.Settings.LauncherSettings
 method DeskCanvas.Core.Models.Settings.LauncherSettings WithProcessAdded(System.String) -> DeskCanvas.Core.Models.Settings.LauncherSettings
 method DeskCanvas.Core.Models.Settings.LauncherSettings WithProcessRemoved(System.String) -> DeskCanvas.Core.Models.Settings.LauncherSettings
 method DeskCanvas.Core.Models.Settings.LauncherSettings WithoutCategoryHotkeys() -> DeskCanvas.Core.Models.Settings.LauncherSettings
 method DeskCanvas.Core.Models.Settings.LauncherSettings WithoutCategoryOrder() -> DeskCanvas.Core.Models.Settings.LauncherSettings
+method DeskCanvas.Core.Models.Settings.LauncherSettings WithoutOrbCategories() -> DeskCanvas.Core.Models.Settings.LauncherSettings
 method DeskCanvas.Core.Models.Settings.LauncherSettings op_Equality(DeskCanvas.Core.Models.Settings.LauncherSettings,DeskCanvas.Core.Models.Settings.LauncherSettings) -> System.Boolean
 method DeskCanvas.Core.Models.Settings.LauncherSettings op_Inequality(DeskCanvas.Core.Models.Settings.LauncherSettings,DeskCanvas.Core.Models.Settings.LauncherSettings) -> System.Boolean
 property DeskCanvas.Core.Models.Settings.LauncherSettings AnimateSummon -> System.Boolean
@@ -753,6 +782,7 @@ property DeskCanvas.Core.Models.Settings.LauncherSettings ClipboardRetentionDays
 property DeskCanvas.Core.Models.Settings.LauncherSettings Columns -> System.Int32
 property DeskCanvas.Core.Models.Settings.LauncherSettings CornerRadius -> System.Double
 property DeskCanvas.Core.Models.Settings.LauncherSettings DefaultFolder -> System.String
+property DeskCanvas.Core.Models.Settings.LauncherSettings DefaultOrbCategories -> System.Collections.Generic.IReadOnlyList<System.String>
 property DeskCanvas.Core.Models.Settings.LauncherSettings EffectiveBackgroundColorDark -> System.String
 property DeskCanvas.Core.Models.Settings.LauncherSettings EffectiveBackgroundColorLight -> System.String
 property DeskCanvas.Core.Models.Settings.LauncherSettings EffectiveBlacklist -> System.Collections.Generic.IReadOnlyList<System.String>
@@ -762,6 +792,7 @@ property DeskCanvas.Core.Models.Settings.LauncherSettings EffectiveClipboardExcl
 property DeskCanvas.Core.Models.Settings.LauncherSettings EffectiveFolder -> System.String
 property DeskCanvas.Core.Models.Settings.LauncherSettings EffectiveHotkey -> System.String
 property DeskCanvas.Core.Models.Settings.LauncherSettings EffectiveLiquidGlass -> DeskCanvas.Core.Models.Settings.LiquidGlassSettings
+property DeskCanvas.Core.Models.Settings.LauncherSettings EffectiveOrbCategories -> System.Collections.Generic.IReadOnlyList<System.String>
 property DeskCanvas.Core.Models.Settings.LauncherSettings EffectiveSearchBrowser -> System.String
 property DeskCanvas.Core.Models.Settings.LauncherSettings EffectiveSearchEngine -> System.String
 property DeskCanvas.Core.Models.Settings.LauncherSettings EffectiveSearchEngineUrl -> System.String
@@ -779,6 +810,7 @@ property DeskCanvas.Core.Models.Settings.LauncherSettings Hotkey -> System.Strin
 property DeskCanvas.Core.Models.Settings.LauncherSettings LiquidGlass -> DeskCanvas.Core.Models.Settings.LiquidGlassSettings
 property DeskCanvas.Core.Models.Settings.LauncherSettings NameLines -> System.Int32
 property DeskCanvas.Core.Models.Settings.LauncherSettings OpacityLevel -> System.Nullable<System.Double>
+property DeskCanvas.Core.Models.Settings.LauncherSettings OrbCategories -> System.Collections.Generic.List<System.String>
 property DeskCanvas.Core.Models.Settings.LauncherSettings PreviewBar -> System.Boolean
 property DeskCanvas.Core.Models.Settings.LauncherSettings RecentApps -> System.Boolean
 property DeskCanvas.Core.Models.Settings.LauncherSettings RowGapPercent -> System.Int32
@@ -839,6 +871,7 @@ field DeskCanvas.Core.Models.Settings.LauncherSettings MinRowGapPercent -> Syste
 field DeskCanvas.Core.Models.Settings.LauncherSettings MinSpaceRecentLaunchesCount -> System.Int32
 field DeskCanvas.Core.Models.Settings.LauncherSettings MinWebResultCount -> System.Int32
 field DeskCanvas.Core.Models.Settings.LauncherSettings MinWidth -> System.Double
+field DeskCanvas.Core.Models.Settings.LauncherSettings OrbCount -> System.Int32
 field DeskCanvas.Core.Models.Settings.LauncherSettings SearchQueryPlaceholder -> System.String
 type DeskCanvas.Core.Models.Settings.LauncherSortMode
 enumvalue DeskCanvas.Core.Models.Settings.LauncherSortMode LastUsed
@@ -850,7 +883,7 @@ enumvalue DeskCanvas.Core.Models.Settings.LauncherThemeMode FollowGlobal
 enumvalue DeskCanvas.Core.Models.Settings.LauncherThemeMode FollowSystem
 enumvalue DeskCanvas.Core.Models.Settings.LauncherThemeMode Light
 type DeskCanvas.Core.Models.Settings.Layout
-method DeskCanvas.Core.Models.Settings.Layout Deconstruct(DeskCanvas.Core.Models.Settings.GridMode,System.Boolean,System.Boolean,System.Boolean,System.Boolean) -> System.Void
+method DeskCanvas.Core.Models.Settings.Layout Deconstruct(DeskCanvas.Core.Models.Settings.GridMode,System.Boolean,System.Boolean,System.Boolean,System.Boolean,System.Boolean) -> System.Void
 method DeskCanvas.Core.Models.Settings.Layout Equals(System.Object) -> System.Boolean
 method DeskCanvas.Core.Models.Settings.Layout Equals(DeskCanvas.Core.Models.Settings.Layout) -> System.Boolean
 method DeskCanvas.Core.Models.Settings.Layout GetHashCode() -> System.Int32
@@ -860,6 +893,7 @@ method DeskCanvas.Core.Models.Settings.Layout op_Inequality(DeskCanvas.Core.Mode
 property DeskCanvas.Core.Models.Settings.Layout GridMode -> DeskCanvas.Core.Models.Settings.GridMode
 property DeskCanvas.Core.Models.Settings.Layout LockPosition -> System.Boolean
 property DeskCanvas.Core.Models.Settings.Layout LockSize -> System.Boolean
+property DeskCanvas.Core.Models.Settings.Layout ProhibitOverlap -> System.Boolean
 property DeskCanvas.Core.Models.Settings.Layout SnapPosition -> System.Boolean
 property DeskCanvas.Core.Models.Settings.Layout SnapSize -> System.Boolean
 type DeskCanvas.Core.Models.Settings.LiquidGlassRefractionLens
@@ -947,7 +981,7 @@ enumvalue DeskCanvas.Core.Models.Settings.SurfaceStyle FullColor
 enumvalue DeskCanvas.Core.Models.Settings.SurfaceStyle LiquidGlass
 enumvalue DeskCanvas.Core.Models.Settings.SurfaceStyle LiquidGlassV2
 type DeskCanvas.Core.Models.Settings.Theme
-method DeskCanvas.Core.Models.Settings.Theme Deconstruct(System.Nullable<System.Boolean>,System.String,System.Double,System.Boolean,System.Boolean,System.String,System.Nullable<DeskCanvas.Core.Models.Settings.SurfaceStyle>,System.String,System.String,System.Nullable<DeskCanvas.Core.Models.Settings.MonochromeStyle>,System.Boolean,DeskCanvas.Core.Models.Settings.LiquidGlassSettings,DeskCanvas.Core.Models.Settings.LiquidGlassV2Settings,System.Boolean,System.Double) -> System.Void
+method DeskCanvas.Core.Models.Settings.Theme Deconstruct(System.Nullable<System.Boolean>,System.String,System.Double,System.Boolean,System.Boolean,System.String,System.Nullable<DeskCanvas.Core.Models.Settings.SurfaceStyle>,System.String,System.String,System.Nullable<DeskCanvas.Core.Models.Settings.MonochromeStyle>,System.Boolean,DeskCanvas.Core.Models.Settings.LiquidGlassSettings,DeskCanvas.Core.Models.Settings.LiquidGlassV2Settings,System.Boolean,System.Double,System.Double,System.Boolean) -> System.Void
 method DeskCanvas.Core.Models.Settings.Theme Equals(System.Object) -> System.Boolean
 method DeskCanvas.Core.Models.Settings.Theme Equals(DeskCanvas.Core.Models.Settings.Theme) -> System.Boolean
 method DeskCanvas.Core.Models.Settings.Theme GetHashCode() -> System.Int32
@@ -957,8 +991,10 @@ method DeskCanvas.Core.Models.Settings.Theme ToString() -> System.String
 method DeskCanvas.Core.Models.Settings.Theme op_Equality(DeskCanvas.Core.Models.Settings.Theme,DeskCanvas.Core.Models.Settings.Theme) -> System.Boolean
 method DeskCanvas.Core.Models.Settings.Theme op_Inequality(DeskCanvas.Core.Models.Settings.Theme,DeskCanvas.Core.Models.Settings.Theme) -> System.Boolean
 property DeskCanvas.Core.Models.Settings.Theme AccentColor -> System.String
+property DeskCanvas.Core.Models.Settings.Theme AccentShift -> System.Double
 property DeskCanvas.Core.Models.Settings.Theme AutoTheme -> System.Boolean
 property DeskCanvas.Core.Models.Settings.Theme DarkMode -> System.Nullable<System.Boolean>
+property DeskCanvas.Core.Models.Settings.Theme EffectiveAccentShift -> System.Double
 property DeskCanvas.Core.Models.Settings.Theme EffectiveGlass -> DeskCanvas.Core.Models.Settings.IRenderedGlassSettings
 property DeskCanvas.Core.Models.Settings.Theme EffectiveLiquidGlass -> DeskCanvas.Core.Models.Settings.LiquidGlassSettings
 property DeskCanvas.Core.Models.Settings.Theme EffectiveLiquidGlassV2 -> DeskCanvas.Core.Models.Settings.LiquidGlassV2Settings
@@ -967,6 +1003,7 @@ property DeskCanvas.Core.Models.Settings.Theme EffectiveSolidBackgroundDark -> S
 property DeskCanvas.Core.Models.Settings.Theme EffectiveSolidBackgroundLight -> System.String
 property DeskCanvas.Core.Models.Settings.Theme EffectiveSurface -> DeskCanvas.Core.Models.Settings.SurfaceStyle
 property DeskCanvas.Core.Models.Settings.Theme EffectiveTextShadowStrength -> System.Double
+property DeskCanvas.Core.Models.Settings.Theme FollowAccentBackground -> System.Boolean
 property DeskCanvas.Core.Models.Settings.Theme FontFamily -> System.String
 property DeskCanvas.Core.Models.Settings.Theme IsColorful -> System.Boolean
 property DeskCanvas.Core.Models.Settings.Theme IsFullColor -> System.Boolean

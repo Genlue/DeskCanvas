@@ -101,10 +101,16 @@ internal static class Program
         catalog.Dispose();
 
         RunGridLayoutChecks(catalog, icons);
+        RunRecentsReflowChecks(catalog, icons);
+        RunClearQueryReflowChecks(catalog, icons);
         RunRecentRowChecks(catalog, icons);
         RunCalculatorChecks(catalog, icons);
         RunLauncherModeChecks(catalog, icons);
         RunAppCategoryChecks(catalog, icons, outDir);
+        RunCategoryOrbChecks(catalog, icons, outDir);
+        RunResultRowChecks(catalog, icons);
+        RunClipboardFormatChecks(catalog, icons, outDir);
+        RunSelectionAccentChecks();
         RunFileSearchChecks();
         RunPrefixAndRecentLaunchChecks(catalog, icons);
         RunBlacklistChecks();
@@ -115,7 +121,7 @@ internal static class Program
         RunPreviewHeroChecks(folder, icons, outDir);
         RunHotkeyChecks();
         RunSettingsPageSmoke();
-        RunCardMorphChecks(catalog, icons);
+        RunCardMorphChecks(catalog, icons, outDir);
         RunWebVisualChecks(catalog, icons, outDir);
 
         Console.WriteLine();
@@ -188,6 +194,19 @@ internal static class Program
         Check(window.TryFindResource("SpotlightSelectionBrush", out var selection) && selection is IBrush,
             $"{label}: selection brush resolved");
 
+        // The category capsules are three-state (初始 → 鼠标选中 → 当前) and the steps must be
+        // ordered by depth, or "hover" and "rest" read as the same capsule. Resting is the new
+        // resource; hover and selection are the shared semantic brushes it sits below.
+        var chipRest = window.TryFindResource("SpotlightChipRestBrush", out var restValue)
+            ? restValue as ISolidColorBrush : null;
+        var chipHover = window.TryFindResource("SpotlightTileHoverBrush", out var hoverValue)
+            ? hoverValue as ISolidColorBrush : null;
+        var chipSelected = selection as ISolidColorBrush;
+        Check(chipRest is { Color.A: > 0 } && chipHover is { } && chipSelected is { }
+              && chipRest.Color.A < chipHover.Color.A && chipHover.Color.A < chipSelected.Color.A,
+            $"{label}: chip rest < hover < selected " +
+            $"({chipRest?.Color.A} < {chipHover?.Color.A} < {chipSelected?.Color.A})");
+
         var launcher = settings.EffectiveLauncher;
 
         // Layout first: the grid metrics are derived from the width the tiles actually get, so they
@@ -259,6 +278,13 @@ internal static class Program
             $"{label}: the preview pane appears while searching");
         Check(window.FindControl<Border>("PreviewHairline") is { IsVisible: true },
             $"{label}: the preview hairline appears with the pane");
+
+        // …and the column is the room the card actually made: min(280, 1080 − 820) = 260. The
+        // reveal clamps to that, so writing 280 at settle moved the divider 20 DIP left exactly when
+        // the unfold ended (the reported jump).
+        var paneRoom = Math.Max(0, Math.Min(280, window.Width - launcher.Width));
+        Check(Math.Abs(window.PreviewColumnWidthForChecks - paneRoom) < 0.5,
+            $"{label}: the pane column is the room the card made ({window.PreviewColumnWidthForChecks:F0} of {paneRoom:F0})");
 
         // The window grew for the preview column, and the glass is a rect the surface is TOLD to
         // paint — a width change with no height change used to leave it at the old, narrow rect,
@@ -463,6 +489,30 @@ internal static class Program
         Check(!chips[^1].IsVisible,
             "categories: the ＋ capsule stays hidden until the pointer is over the capsule row");
 
+        // The three-state capsule, asserted on the realized template: the fill lives on the
+        // button's ContentPresenter, and a transparent one is exactly the "chips only paint when
+        // selected" state the report is about. One style serves both bars, so this pins the style.
+        var restBrush = window.TryFindResource("SpotlightChipRestBrush", out var restValue)
+            ? restValue as ISolidColorBrush : null;
+        var selectionBrush = window.TryFindResource("SpotlightSelectionBrush", out var selectionValue)
+            ? selectionValue as ISolidColorBrush : null;
+        var visibleChips = chips.Where(chip => chip.IsVisible).ToList();
+        var presenters = visibleChips
+            .Select(chip => chip.GetVisualDescendants()
+                .OfType<Avalonia.Controls.Presenters.ContentPresenter>()
+                .FirstOrDefault(candidate => candidate.Name == "PART_ContentPresenter"))
+            .ToList();
+        Check(restBrush is { Color.A: > 0 }
+              && presenters.Count > 1
+              && presenters.All(presenter => presenter?.Background is ISolidColorBrush { Color.A: > 0 }),
+            "categories: every capsule carries a background at rest");
+        Check(presenters.Count > 0 && presenters[0]?.Background is ISolidColorBrush active
+              && selectionBrush != null && active.Color == selectionBrush.Color,
+            "categories: the active capsule paints the selection pill");
+        Check(presenters.Count > 0
+              && presenters.All(presenter => presenter != null && Math.Abs(presenter.CornerRadius.TopLeft - 999) < 0.01),
+            "categories: every capsule is a 999 radius pill");
+
         // One click = open. The gesture itself needs real input, but its decision is testable:
         // a click on a tile resolves to that tile, a click on the empty grid resolves to nothing
         // (otherwise a stray click would launch whatever happens to be selected).
@@ -483,6 +533,727 @@ internal static class Program
             "categories: the selected pill follows the active category");
 
         window.Close();
+    }
+
+    /// <summary>
+    /// 分类圆钮 (the Alt reveal): the four circles are a <b>second width addend</b>, not a slice of
+    /// the results column — so revealing them must widen the card by exactly the cluster and leave
+    /// the search field's own width untouched, and retracting must give that room back. Alt+2 must
+    /// land in a 文件 browse (locked chip, locked placeholder, list instead of grid) and Esc must
+    /// return to the app grid before it dismisses anything.
+    /// <para>
+    /// The headless harness has no render clock and the window is never shown, so the flights take
+    /// the instant path — which is exactly the geometry every flight lands on. The stagger and the
+    /// springs are the shared vocabulary (<see cref="MotionTokens"/>), pinned elsewhere.
+    /// </para>
+    /// </summary>
+    /// <summary>
+    /// 剪贴板的三种格式（文本 / 图片 / 文件）。The pipeline only carries the payload; the row title,
+    /// the subtitle and the preview pane are what the user sees, so those are what this asserts —
+    /// a 图片 row must say its size, a 文件 row must count its files, and a text row must still show
+    /// its own multi-line body (the whole point of keeping the text as the row's name).
+    /// </summary>
+    private static void RunClipboardFormatChecks(LauncherCatalog catalog, ShellIconService icons, string outDir)
+    {
+        Console.WriteLine("\n--- 剪贴板格式 ---");
+
+        var settings = BuildSettings(SurfaceStyle.FullColor, dark: false);
+        var provider = new FakeSettingsProvider(settings);
+        var viewModel = BuildViewModel(provider, catalog, icons, "launcher-usage-clipformats.json");
+        viewModel.Reload();
+
+        // A real PNG on disk: the image row and the preview both read the file the service would
+        // have written, so a dummy path would only test the failure branch.
+        Directory.CreateDirectory(outDir);
+        var pngPath = Path.Combine(outDir, "clipboard-check.png");
+        using (var bitmap = new SKBitmap(64, 48))
+        {
+            using (var canvas = new SKCanvas(bitmap))
+            {
+                canvas.Clear(new SKColor(36, 96, 200));
+            }
+            using var image = SKImage.FromBitmap(bitmap);
+            using var data = image.Encode(SKEncodedImageFormat.Png, 100);
+            using var stream = File.Create(pngPath);
+            data.SaveTo(stream);
+        }
+
+        var captured = DateTime.UtcNow;
+        var imageEntry = new ClipboardEntry(
+            "clip-image", ClipboardContentKind.Image, string.Empty, IsLink: false, captured, "chrome",
+            ImagePath: pngPath, ImageWidth: 1920, ImageHeight: 1080, ImageHash: "hash-image");
+        var filesEntry = new ClipboardEntry(
+            "clip-files", ClipboardContentKind.Files, string.Empty, IsLink: false, captured, "explorer",
+            FilePaths: [@"C:\work\report.txt", @"C:\work\data.csv"]);
+        var textEntry = new ClipboardEntry(
+            "clip-text", ClipboardContentKind.Text, "第一行\n第二行", IsLink: false, captured, "notepad");
+
+        // ---- titles / subtitles (the provider is the only place they are composed) ----
+        Check(SpotlightClipboardProvider.TitleOf(imageEntry)
+              == string.Format(Locale.Spotlight_Clipboard_Image_Title, 1920, 1080),
+            $"clip formats: an image row is named by its size ({SpotlightClipboardProvider.TitleOf(imageEntry)})");
+        Check(SpotlightClipboardProvider.TitleOf(filesEntry) == "report.txt",
+            $"clip formats: a file row is named after the first file ({SpotlightClipboardProvider.TitleOf(filesEntry)})");
+        Check(SpotlightClipboardProvider.SubtitleOf(filesEntry)
+                .Contains(string.Format(Locale.Spotlight_Clipboard_Files_Count, 2), StringComparison.Ordinal),
+            $"clip formats: …and its subtitle counts the rest ({SpotlightClipboardProvider.SubtitleOf(filesEntry)})");
+        Check(SpotlightClipboardProvider.SubtitleOf(textEntry)
+                .StartsWith(string.Format(Locale.Spotlight_Clipboard_Source, "notepad"), StringComparison.Ordinal),
+            $"clip formats: a text row still leads with its source ({SpotlightClipboardProvider.SubtitleOf(textEntry)})");
+
+        // ---- rows ----
+        var imageItem = SpotlightItem.ForClipboard(
+            "clip-image", string.Empty, isLink: false, captured, "chrome",
+            () => Task.FromResult(true), ClipboardContentKind.Image,
+            SpotlightClipboardProvider.TitleOf(imageEntry), pngPath, null, 1920, 1080);
+        Check(imageItem.ClipboardKind == ClipboardContentKind.Image
+              && imageItem.ClipboardImagePath == pngPath
+              && imageItem.Name == SpotlightClipboardProvider.TitleOf(imageEntry),
+            "clip formats: the image row carries its format, its PNG and its composed name");
+
+        var textItem = SpotlightItem.ForClipboard(
+            "clip-text", textEntry.Text, isLink: false, captured, "notepad", () => Task.FromResult(true));
+        Check(textItem.Name.Contains('\n', StringComparison.Ordinal),
+            "clip formats: a text row keeps showing the whole body (multi-line, as before)");
+
+        // ---- preview pane ----
+        viewModel.SetSelected(imageItem);
+        Check(viewModel.Preview.KindLabel == Locale.Spotlight_Preview_Kind_Image,
+            $"clip formats: the pane calls an image an image ({viewModel.Preview.KindLabel})");
+        Check(viewModel.Preview.HasMediaSlot,
+            "clip formats: …reserves the hero slot before the pixels are decoded");
+        Check(viewModel.Preview.Rows.Any(row => row.Label == Locale.Spotlight_Preview_Label_Dimensions
+                                                && row.Value == "1920×1080"),
+            "clip formats: …and states the image's size");
+
+        var filesItem = SpotlightItem.ForClipboard(
+            "clip-files", string.Empty, isLink: false, captured, "explorer",
+            () => Task.FromResult(true), ClipboardContentKind.Files,
+            SpotlightClipboardProvider.TitleOf(filesEntry), null, filesEntry.FilePaths);
+        viewModel.SetSelected(filesItem);
+        Check(viewModel.Preview.KindLabel == Locale.Spotlight_Preview_Kind_File
+              && viewModel.Preview.ContentText.Contains("data.csv", StringComparison.Ordinal),
+            "clip formats: a file row lists its paths in the pane");
+        Check(viewModel.Preview.Rows.Any(row => row.Label == Locale.Spotlight_Preview_Label_Items && row.Value == "2"),
+            "clip formats: …and counts them");
+
+        viewModel.SetSelected(textItem);
+        Check(viewModel.Preview.KindLabel == Locale.Spotlight_Preview_Kind_Clipboard
+              && viewModel.Preview.ContentText == textEntry.Text,
+            "clip formats: a text row previews its body, unchanged");
+
+        viewModel.SetSelected(null);
+        viewModel.Dispose();
+
+        RenderClipboardFormatShot(catalog, icons, outDir);
+    }
+
+    /// <summary>
+    /// The three formats in the list, for the record. It seeds the history file the service reads on
+    /// <c>Start()</c> (that is the shipped load path), browses 剪贴板 and renders the window — the
+    /// only way to see rows whose payload is a PNG and a path list rather than text.
+    /// </summary>
+    private static void RenderClipboardFormatShot(LauncherCatalog catalog, ShellIconService icons, string outDir)
+    {
+        try
+        {
+            var settings = BuildSettings(SurfaceStyle.FullColor, dark: false) with
+            {
+                Launcher = BuildSettings(SurfaceStyle.FullColor, dark: false).EffectiveLauncher
+                    with { ClipboardHistory = true },
+            };
+            var provider = new FakeSettingsProvider(settings);
+
+            // A 320×180 gradient, so the thumbnail in the row is visibly a picture.
+            var images = Path.Combine(sandbox, "ClipboardImages");
+            Directory.CreateDirectory(images);
+            var png = Path.Combine(images, "shot-image.png");
+            using (var bitmap = new SKBitmap(320, 180))
+            {
+                using (var canvas = new SKCanvas(bitmap))
+                using (var paint = new SKPaint())
+                {
+                    paint.Shader = SKShader.CreateLinearGradient(
+                        new SKPoint(0, 0), new SKPoint(320, 180),
+                        [new SKColor(0x24, 0x60, 0xC8), new SKColor(0xC8, 0x54, 0x30)],
+                        SKShaderTileMode.Clamp);
+                    canvas.DrawRect(0, 0, 320, 180, paint);
+                }
+                using var image = SKImage.FromBitmap(bitmap);
+                using var data = image.Encode(SKEncodedImageFormat.Png, 100);
+                using var stream = File.Create(png);
+                data.SaveTo(stream);
+            }
+
+            var captured = DateTime.UtcNow;
+            var history = new
+            {
+                version = 2,
+                entries = new object[]
+                {
+                    new
+                    {
+                        id = "shot-text", kind = 0, text = "下午三点在 3F 会议室对一下本周的版本计划。",
+                        isLink = false, capturedUtc = captured, source = "chrome",
+                    },
+                    new
+                    {
+                        id = "shot-files", kind = 2, text = string.Empty, isLink = false,
+                        capturedUtc = captured.AddSeconds(-30), source = "explorer",
+                        filePaths = new[] { @"C:\work\季度报告.docx", @"C:\work\预算.xlsx", @"C:\work\数据.csv" },
+                    },
+                    new
+                    {
+                        id = "shot-image", kind = 1, text = string.Empty, isLink = false,
+                        capturedUtc = captured.AddSeconds(-90), source = "chrome",
+                        imagePath = png, imageWidth = 320, imageHeight = 180, imageHash = "seed",
+                    },
+                },
+            };
+            File.WriteAllText(
+                Path.Combine(sandbox, "launcher-clipboard.json"),
+                System.Text.Json.JsonSerializer.Serialize(history));
+
+            var clipboard = new SpotlightClipboardService(provider);
+            clipboard.Start();
+            PumpUntil(() => clipboard.IsRunning, 3000);
+
+            var usage = new SpotlightUsageStore(Path.Combine(sandbox, "clip-shot-usage.json"));
+            var files = new FileSearchService(provider);
+            var router = new SpotlightQueryRouter(
+                new SpotlightAppProvider(catalog, usage),
+                new SpotlightFileProvider(files),
+                new SpotlightClipboardProvider(clipboard),
+                new SpotlightExternalResults(),
+                provider,
+                new SpotlightWebProvider(provider));
+            var shotViewModel = new SpotlightViewModel(router, catalog, icons, usage, clipboard, files, provider,
+                new SpotlightPreviewService(icons), new SpotlightWebResults(provider));
+            shotViewModel.Reload();
+            shotViewModel.BeginBrowse(SpotlightCategoryKind.Clipboard);
+            PumpUntil(() => !shotViewModel.IsSearching, 5000);
+
+            // The rows' pictures are decoded off the UI thread (thumbnail for the image, the shell
+            // icon for the file). The shot is taken after that lands, or the picture rows would be
+            // photographed mid-load — the very state the render is meant to prove is gone.
+            Thread.Sleep(500);
+            Dispatcher.UIThread.RunJobs();
+
+            var window = new SpotlightWindow(shotViewModel, provider);
+            if (window.FindControl<ListBox>("ResultList") is { } list)
+                list.ItemsPanel = new FuncTemplate<Panel?>(() => new StackPanel());
+            window.ApplyAppearanceForChecks();
+            Render(window, outDir, "clipboard-formats", (int)window.Width, (int)window.Height);
+
+            Check(shotViewModel.Results.Count(row => row.Kind == SpotlightItemKind.Clipboard) == 3,
+                $"clip formats: the 剪贴板 browse lists all three formats " +
+                $"({shotViewModel.Results.Count(row => row.Kind == SpotlightItemKind.Clipboard)})");
+
+            shotViewModel.Dispose();
+            window.Close();
+            clipboard.Dispose();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"  note: clipboard format shot skipped ({ex.GetType().Name}: {ex.Message})");
+        }
+    }
+
+    /// <summary>
+    /// 结果行的图标对齐: the icon slot is TOP-aligned at a fixed 10 DIP, so a row that grew to
+    /// several lines (a clipboard entry with hard breaks) keeps its mark on the same line as every
+    /// short row. Centring it — the behaviour before — pushed the long row's mark halfway down the
+    /// list, which is exactly what makes a list hard to scan.
+    /// </summary>
+    private static void RunResultRowChecks(LauncherCatalog catalog, ShellIconService icons)
+    {
+        Console.WriteLine("\n--- 结果行 · 图标对齐 ---");
+
+        var settings = BuildSettings(SurfaceStyle.FullColor, dark: false);
+        var provider = new FakeSettingsProvider(settings);
+        var viewModel = BuildViewModel(provider, catalog, icons, "launcher-usage-rows.json");
+        viewModel.Reload();
+        var window = new SpotlightWindow(viewModel, provider);
+
+        var single = SpotlightItem.ForClipboard(
+            "row-single", "单行剪贴板内容", isLink: false, DateTime.UtcNow, "Checks",
+            () => Task.FromResult(true));
+        var multi = SpotlightItem.ForClipboard(
+            "row-multi", "第一行复制的内容\n第二行复制的内容\n第三行复制的内容", isLink: false,
+            DateTime.UtcNow, "Checks", () => Task.FromResult(true));
+
+        var one = MeasureRow(window, single);
+        var many = MeasureRow(window, multi);
+
+        Check(one is { IconTop: >= 0 } && Math.Abs(one.IconTop - 10) < 0.5,
+            $"rows: a single-line row keeps its icon 10 DIP below the row's top ({one.IconTop:F1})");
+        Check(many.RowHeight > one.RowHeight + 20,
+            $"rows: the multi-line row really is taller ({one.RowHeight:F0} → {many.RowHeight:F0} DIP)");
+        Check(Math.Abs(many.IconTop - one.IconTop) < 0.5,
+            $"rows: …and its icon sits exactly where a single-line row's does " +
+            $"({many.IconTop:F1} of {one.IconTop:F1})");
+
+        viewModel.Dispose();
+        window.Close();
+    }
+
+    /// <summary>
+    /// Lay one result row out from the window's own template and report where its 28 DIP icon slot
+    /// landed, plus how tall the row became. The template is instantiated outside the list on
+    /// purpose: a real list only ever holds single-line rows (file hits), and the case under test
+    /// is a clipboard entry that carries hard line breaks.
+    /// </summary>
+    private static (double IconTop, double RowHeight) MeasureRow(SpotlightWindow window, SpotlightItem item)
+    {
+        var template = window.Resources["SpotlightRowTemplate"] as IDataTemplate;
+        var host = new ContentControl { Content = item, ContentTemplate = template, Width = 460 };
+        var root = new Window { Width = 460, Height = 400, Content = host };
+
+        root.Measure(new Size(460, 400));
+        root.Arrange(new Rect(0, 0, 460, 400));
+        host.UpdateLayout();
+
+        var rowRoot = host.GetVisualDescendants().OfType<Avalonia.Controls.Grid>()
+            .FirstOrDefault(grid => grid.Name == "RowRoot");
+        var icon = host.GetVisualDescendants().OfType<Avalonia.Controls.Grid>()
+            .FirstOrDefault(grid => Math.Abs(grid.Width - 28) < 0.01 && Math.Abs(grid.Height - 28) < 0.01);
+
+        if (rowRoot == null || icon == null) return (-1, -1);
+        return (icon.Bounds.Y, rowRoot.Bounds.Height);
+    }
+
+    private static void RunCategoryOrbChecks(LauncherCatalog catalog, ShellIconService icons, string outDir)
+    {        Console.WriteLine("\n--- 分类圆钮 ---");
+
+        // lead gap + four diameters + three gutters — the room the circles take OUT OF THE BAR.
+        const double orbDiameter = 64;
+        const double orbGap = 8;
+        const double orbTrail = 3;   // the air the hover lift grows into
+        const double clusterWidth = orbGap + 4 * orbDiameter + 3 * orbGap + orbTrail;
+        var settings = BuildSettings(SurfaceStyle.FullColor, dark: false);
+        var provider = new FakeSettingsProvider(settings);
+        var viewModel = BuildViewModel(provider, catalog, icons, "launcher-usage-orbs.json");
+        viewModel.Reload();
+
+        var window = new SpotlightWindow(viewModel, provider);
+        window.ApplyAppearanceForChecks();
+
+        // The gesture belongs to the bare search bar (搜索栏式, empty query). The app grid has its own
+        // capsule bar and must not grow circles at all — asserted further down.
+        window.ApplySummonModeForChecks(SpotlightSummonMode.Search);
+        Pin(window, (int)window.Width, (int)window.Height);
+
+        var baseWidth = settings.EffectiveLauncher.Width;
+        var queryBox = window.FindControl<TextBox>("QueryBox")!;
+        var fieldWidth = queryBox.Bounds.Width;
+
+        Check(!window.CategoryOrbClusterVisibleForChecks
+              && Math.Abs(window.CardWidthForChecks - baseWidth) < 0.5
+              && Math.Abs(window.Width - baseWidth) < 0.5,
+            $"orbs: the cluster is away, card and window are the settings width " +
+            $"({window.CardWidthForChecks:F0} / {window.Width:F0})");
+        Check(window.CategoryOrbsForChecks.Count == 4,
+            $"orbs: four circles exist before anything is pressed ({window.CategoryOrbsForChecks.Count})");
+        Check(window.CategoryOrbsForChecks.All(orb => Math.Abs(orb.Width - orbDiameter) < 0.01),
+            $"orbs: every circle is {orbDiameter} DIP across — the bar's own mass (68 minus 2 of air)");
+
+        // The mark is the whole face: no number under it, and nothing else in the content.
+        Check(window.CategoryOrbsForChecks.All(orb =>
+                orb.Content is Panel { Children.Count: 2 } face
+                && face.Children.All(child => child is Avalonia.Controls.Shapes.Path)),
+            "orbs: a circle carries its mark and nothing else (no 1/2/3/4 under the glyph)");
+
+        // 文件 wears the DOCUMENT mark, not the folder one: the two categories are different
+        // destinations, and a 文件 circle drawn as a folder was the reported wrong icon.
+        Check(OrbMark(window.CategoryOrbsForChecks[1]) == SpotlightGlyphs.Fill(SpotlightGlyphKind.Files).Bounds,
+            $"orbs: the 文件 circle wears the document artwork ({OrbMark(window.CategoryOrbsForChecks[1])})");
+        Check(OrbMark(window.CategoryOrbsForChecks[1]) != SpotlightGlyphs.Fill(SpotlightGlyphKind.Folder).Bounds,
+            "orbs: …so it is not indistinguishable from a 文件夹 destination");
+
+        // ---- 设置 › 分类圆钮: the four circles are the user's choice ----
+        var customSettings = settings with
+        {
+            Launcher = settings.Launcher.WithOrbCategories(
+            [
+                LauncherCategoryKeys.Web, LauncherCategoryKeys.Images,
+                LauncherCategoryKeys.Folders, LauncherCategoryKeys.Clipboard,
+            ]),
+        };
+        var customProvider = new FakeSettingsProvider(customSettings);
+        var customViewModel = BuildViewModel(customProvider, catalog, icons, "launcher-usage-orbs-custom.json");
+        customViewModel.Reload();
+        var customWindow = new SpotlightWindow(customViewModel, customProvider);
+        customWindow.ApplyAppearanceForChecks();
+        customWindow.ApplySummonModeForChecks(SpotlightSummonMode.Search);
+
+        var expectedMarks = new[]
+        {
+            SpotlightGlyphKind.Web, SpotlightGlyphKind.Image,
+            SpotlightGlyphKind.Folder, SpotlightGlyphKind.Clipboard,
+        };
+        Check(customWindow.CategoryOrbsForChecks.Count == 4
+              && expectedMarks.Select((kind, index) => OrbMark(customWindow.CategoryOrbsForChecks[index])
+                                                       == SpotlightGlyphs.Fill(kind).Bounds).All(match => match),
+            "orbs: 设置 › 分类圆钮 re-points every circle at the chosen category");
+        Check(ToolTip.GetTip(customWindow.CategoryOrbsForChecks[0]) is string tip
+              && tip.StartsWith(Locale.Spotlight_Category_Web, StringComparison.Ordinal)
+              && tip.EndsWith("Alt+1", StringComparison.Ordinal),
+            $"orbs: …and the tooltip follows the category, not a fixed label ({ToolTip.GetTip(customWindow.CategoryOrbsForChecks[0])})");
+
+        customWindow.RevealCategoryOrbsForChecks();
+        var customOrb = customWindow.CategoryOrbsForChecks[0];
+        Check(Math.Abs(customOrb.Width - orbDiameter) < 0.01
+              && customOrb.Content is Panel { Width: > 0, Height: > 0 },
+            "orbs: a re-pointed circle keeps the mark on the circle's own pitch");
+
+        // A circle may now point at a category that has no query-free list (网页 / 图片 / 文件夹).
+        // Opening it must lock the filter rather than do nothing at all.
+        Check(customWindow.HandleKeyForChecks(Key.D1, KeyModifiers.Alt),
+            "orbs: Alt+1 still fires on a re-pointed circle");
+        PumpUntil(() => !customViewModel.IsSearching);
+        Check(customViewModel.ActiveKind == SpotlightCategoryKind.Web && !customViewModel.IsBrowsing,
+            $"orbs: …and 网页 locks its filter instead of entering a list it cannot fill " +
+            $"({customViewModel.ActiveKind}, browsing {customViewModel.IsBrowsing})");
+
+        customViewModel.Dispose();
+        customWindow.Close();
+
+        // ---- the reveal: the BAR pays, the window does not move ----
+        window.RevealCategoryOrbsForChecks();
+        Pin(window, (int)window.Width, (int)window.Height);
+        // The card's own Width changed without the window's, so its subtree — and the cluster beside
+        // it — needs one arrange pass before any rect means anything (the harness caches the old one).
+        LayOutSurface(window);
+
+        Check(window.CategoryOrbClusterVisibleForChecks
+              && Math.Abs(window.CategoryOrbRoomForChecks - clusterWidth) < 0.5,
+            $"orbs: the cluster takes exactly its own room ({window.CategoryOrbRoomForChecks:F0} of {clusterWidth:F0})");
+        Check(Math.Abs(window.CardWidthForChecks - (baseWidth - clusterWidth)) < 0.5,
+            $"orbs: the bar shrinks by that room ({window.CardWidthForChecks:F0} of {baseWidth - clusterWidth:F0})");
+        Check(Math.Abs(window.Width - baseWidth) < 0.5,
+            $"orbs: …and the overlay is NOT a pixel wider than the bar was " +
+            $"(window {window.Width:F0} of {baseWidth:F0})");
+        // The field gives up exactly the room the circles took (layout rounds to whole pixels, so
+        // the comparison is on the DELTA, not on the absolute width).
+        Check(Math.Abs((fieldWidth - queryBox.Bounds.Width) - clusterWidth) < 1.0,
+            $"orbs: the field is what gives the room up " +
+            $"({fieldWidth - queryBox.Bounds.Width:F1} of {clusterWidth:F0} DIP)");
+        Check(window.CardDockedLeftForChecks,
+            "orbs: the card pins itself to the window's left edge, so the bar never slides");
+
+        // ---- the circles stand BESIDE the bar, not inside it ----
+        var surface = (Visual)window.Content!;
+        var card = window.CardForChecks;
+        var orbs = window.CategoryOrbsForChecks;
+        var firstOrigin = orbs[0].TranslatePoint(new Point(0, 0), surface)!.Value;
+        var lastOrigin = orbs[3].TranslatePoint(new Point(0, 0), surface)!.Value;
+
+        Check(Math.Abs(firstOrigin.X - (card.Bounds.Width + orbGap)) < 1.0,
+            $"orbs: the first circle starts {orbGap} DIP past the bar's right edge, outside the card " +
+            $"({firstOrigin.X:F1} of {card.Bounds.Width + orbGap:F1})");
+        Check(Math.Abs(lastOrigin.X + orbDiameter - (window.Width - orbTrail)) < 1.0,
+            $"orbs: the last circle ends one trailing gap short of the bar's old edge — the room " +
+            $"its hover lift needs ({lastOrigin.X + orbDiameter:F1} of {window.Width - orbTrail:F1})");
+        Check(Math.Abs(orbs[1].TranslatePoint(new Point(0, 0), surface)!.Value.X - (firstOrigin.X + orbDiameter + orbGap)) < 1.0,
+            $"orbs: the circles are one row, {orbGap} DIP apart");
+        Check(orbs.All(orb => Math.Abs(orb.TranslatePoint(new Point(0, 0), surface)!.Value.Y + orbDiameter / 2 - (card.Bounds.Y + card.Bounds.Height / 2)) < 1.0),
+            "orbs: every circle is centred on the bar's height (not on the taller window)");
+
+        // A circle that lived inside the bar would be cut by the card's clip; these are siblings of
+        // it in the window, so nothing may overlap them.
+        var cluster = window.CategoryOrbClusterBoundsForChecks;
+        Check(cluster.X >= card.Bounds.Width - 0.5,
+            $"orbs: the cluster sits entirely outside the card ({cluster.X:F1} ≥ {card.Bounds.Width:F1})");
+
+        // ---- the screenshots: the split, and one frame of the bar still opening ----
+        // Both need their OWN window: a never-shown window lays its tree out exactly once, so the
+        // cluster has to be out before that single measure pass (Pin's contract).
+        var shotViewModel = BuildViewModel(provider, catalog, icons, "launcher-usage-orbs-shot.json");
+        shotViewModel.Reload();
+        var shotWindow = new SpotlightWindow(shotViewModel, provider);
+        shotWindow.ApplyAppearanceForChecks();
+        shotWindow.ApplySummonModeForChecks(SpotlightSummonMode.Search);
+        shotWindow.RevealCategoryOrbsForChecks();
+        Render(shotWindow, outDir, "category-orbs", (int)shotWindow.Width, (int)shotWindow.Height);
+
+        // The hovered state, on the RIGHTMOST circle — the one with the least room: the wash has to
+        // be a round overlay on the fill (the Fluent theme's square pointerover box is gone), and the
+        // 4% lift has to fit inside the window instead of being cut flat by its edge.
+        if (shotWindow.CategoryOrbsForChecks.Count == 4)
+        {
+            var hoverOrb = shotWindow.CategoryOrbsForChecks[3];
+            ((IPseudoClasses)hoverOrb.Classes).Set(":pointerover", true);
+            if (hoverOrb.RenderTransform is ScaleTransform hoverScale)
+            {
+                hoverScale.ScaleX = 1.04;
+                hoverScale.ScaleY = 1.04;
+            }
+
+            Render(shotWindow, outDir, "category-orbs-hover", (int)shotWindow.Width, (int)shotWindow.Height);
+        }
+
+        // 回归（"搜索栏收起动画的上方被截断"）：召唤/收起的第一帧把整个表面抬起 7 DIP 并缩到 94%，
+        // 窗口必须比卡片高一点点（SurfaceTopInset），否则搜索栏自己的顶边会被客户区裁掉。
+        shotWindow.PrepareSummonInitialStateForChecks();
+        var (summonScale, summonRise) = shotWindow.SummonTransformForChecks;
+        var inset = SpotlightWindow.SurfaceTopInsetForChecks;
+        // The first frame draws the card at inset + (1 − scale)·h/2 + rise; it has to stay >= 0,
+        // i.e. inside the client area. With no headroom this was ~-5 DIP (the reported cut).
+        var summonTopEdge = inset + 68 * (1 - summonScale) / 2 + summonRise;
+        Check(summonTopEdge >= 0,
+            $"orbs: the summon flight starts with the bar inside the window — no clipped top edge " +
+            $"(top edge {summonTopEdge:F1} DIP, window headroom {inset:F0})");
+
+        shotViewModel.Dispose();
+        shotWindow.Close();
+
+        // The dark card is where the circles have the least contrast to work with: the chip fill and
+        // the hairline both have to stay visible over a translucent surface.
+        var darkSettings = BuildSettings(SurfaceStyle.FullColor, dark: true);
+        var darkProvider = new FakeSettingsProvider(darkSettings);
+        var darkViewModel = BuildViewModel(darkProvider, catalog, icons, "launcher-usage-orbs-dark.json");
+        darkViewModel.Reload();
+        var darkWindow = new SpotlightWindow(darkViewModel, darkProvider);
+        darkWindow.ApplyAppearanceForChecks();
+        darkWindow.ApplySummonModeForChecks(SpotlightSummonMode.Search);
+        darkWindow.RevealCategoryOrbsForChecks();
+        Render(darkWindow, outDir, "category-orbs-dark", (int)darkWindow.Width, (int)darkWindow.Height);
+        darkViewModel.Dispose();
+        darkWindow.Close();
+
+        // The first ~100 ms of the split: the bar has only given up 18 of the 288 DIP, so it still
+        // covers most of the row — the frame that has to read as "the bar is tearing open", not as
+        // four buttons that appeared next to it.
+        var emergeViewModel = BuildViewModel(provider, catalog, icons, "launcher-usage-orbs-emerge.json");
+        emergeViewModel.Reload();
+        var emergeWindow = new SpotlightWindow(emergeViewModel, provider);
+        emergeWindow.ApplyAppearanceForChecks();
+        emergeWindow.ApplySummonModeForChecks(SpotlightSummonMode.Search);
+        emergeWindow.RevealCategoryOrbsForChecks();
+        emergeWindow.StepCardWidthForChecks(baseWidth - 18);
+        Render(emergeWindow, outDir, "category-orbs-emerging", (int)emergeWindow.Width, (int)emergeWindow.Height);
+        emergeViewModel.Dispose();
+        emergeWindow.Close();
+
+        // ---- the retract: the bar takes the room back ----
+        window.RetractCategoryOrbsForChecks();
+        Pin(window, (int)window.Width, (int)window.Height);
+        LayOutSurface(window);
+
+        Check(!window.CategoryOrbClusterVisibleForChecks
+              && Math.Abs(window.CategoryOrbRoomForChecks) < 0.5
+              && Math.Abs(window.CardWidthForChecks - baseWidth) < 0.5
+              && Math.Abs(window.Width - baseWidth) < 0.5,
+            $"orbs: releasing Alt restores the bar and the window ({window.CardWidthForChecks:F0} / {window.Width:F0})");
+        Check(Math.Abs(queryBox.Bounds.Width - fieldWidth) < 0.5,
+            "orbs: …and the field has its width back");
+        Check(!window.CardDockedLeftForChecks,
+            "orbs: …and the card is centred again (the preview column still unfolds around it)");
+
+        // ---- a narrow launcher: the circles shrink so the bar keeps its floor ----
+        // 设置 allows 480 DIP. The bar pays at most everything above MinBarCardWidth (320), so the
+        // four circles have to fit in the 160 that are left — smaller, but never clipped by the
+        // window and never a 130 DIP search field.
+        var narrowSettings = settings with { Launcher = settings.Launcher with { Width = 480 } };
+        var narrowProvider = new FakeSettingsProvider(narrowSettings);
+        var narrowViewModel = BuildViewModel(narrowProvider, catalog, icons, "launcher-usage-orbs-narrow.json");
+        narrowViewModel.Reload();
+        var narrowWindow = new SpotlightWindow(narrowViewModel, narrowProvider);
+        narrowWindow.ApplyAppearanceForChecks();
+        narrowWindow.ApplySummonModeForChecks(SpotlightSummonMode.Search);
+        narrowWindow.RevealCategoryOrbsForChecks();
+        Pin(narrowWindow, (int)narrowWindow.Width, (int)narrowWindow.Height);
+        LayOutSurface(narrowWindow);
+
+        var narrowRoom = narrowWindow.CategoryOrbRoomForChecks;
+        var narrowDiameter = narrowWindow.CategoryOrbDiameterForChecks;
+        Check(Math.Abs(narrowWindow.Width - 480) < 0.5
+              && Math.Abs(narrowWindow.CardWidthForChecks + narrowRoom - 480) < 0.5,
+            $"orbs: a 480 DIP bar still adds up to 480 with the circles out " +
+            $"({narrowWindow.CardWidthForChecks:F0} + {narrowRoom:F0} of {narrowWindow.Width:F0})");
+        Check(narrowDiameter is >= 28 and < 64
+              && Math.Abs(narrowRoom - (orbGap + 4 * narrowDiameter + 3 * orbGap + orbTrail)) < 0.5,
+            $"orbs: …and the circles shrink to fit instead of eating the field " +
+            $"({narrowDiameter:F0} DIP across, {narrowRoom:F0} DIP of room)");
+        Render(narrowWindow, outDir, "category-orbs-narrow", (int)narrowWindow.Width, (int)narrowWindow.Height);
+        narrowViewModel.Dispose();
+        narrowWindow.Close();
+
+        // ---- 液态玻璃: the card is painted by a live surface, so the circles must NOT fall back to
+        // the 6% chip wash — that is the "偏纯透明" the user reported. They wear the frosted tone of
+        // the material at the same 不透明度 instead, which is what makes them read as the same glass.
+        // 不透明度 0.6 — the user's own setting, where the wash was most obviously "see-through".
+        var glassSettings = BuildSettings(SurfaceStyle.LiquidGlass, dark: true) with
+        {
+            Theme = BuildSettings(SurfaceStyle.LiquidGlass, dark: true).Theme with { OpacityLevel = 0.6 },
+        };
+        var glassProvider = new FakeSettingsProvider(glassSettings);
+        var glassViewModel = BuildViewModel(glassProvider, catalog, icons, "launcher-usage-orbs-glass.json");
+        glassViewModel.Reload();
+        var glassWindow = new SpotlightWindow(glassViewModel, glassProvider);
+        glassWindow.ApplyAppearanceForChecks();
+        glassWindow.ApplySummonModeForChecks(SpotlightSummonMode.Search);
+        glassWindow.RevealCategoryOrbsForChecks();
+        Pin(glassWindow, (int)glassWindow.Width, (int)glassWindow.Height);
+
+        var glassOrb = glassWindow.CategoryOrbsForChecks[0].Background as ISolidColorBrush;
+        Check(glassOrb is { Color.A: >= 120 },
+            $"orbs: 液态玻璃's circles are a frosted surface, not a see-through wash " +
+            $"(alpha {glassOrb?.Color.A} at 不透明度 0.6)");
+        Check(glassOrb is { Color.R: < 60, Color.G: < 60, Color.B: < 60 },
+            $"orbs: …the dark material's own tint ({glassOrb?.Color})");
+
+        var glassLayer = glassWindow.CategoryOrbsForChecks[0]
+            .GetVisualDescendants()
+            .OfType<DeskCanvas.Views.Controls.LiquidGlassSurface>()
+            .FirstOrDefault();
+        Check(glassLayer is { IsVisible: true, Material: not null },
+            "orbs: each circle carries the bar's own glass surface (refraction, not a flat tint)");
+        Check(Math.Abs((glassLayer?.CornerRadius.TopLeft ?? 0) - 32) < 0.5,
+            $"orbs: …shaped as a circle ({glassLayer?.CornerRadius.TopLeft:F0} of 32)");
+        glassViewModel.Dispose();
+        glassWindow.Close();
+
+        // ---- the app grid must not grow circles ----
+        window.ApplySummonModeForChecks(SpotlightSummonMode.AppList);
+        Pin(window, (int)window.Width, (int)window.Height);
+        var gridWidth = window.CardWidthForChecks;
+        window.RevealCategoryOrbsForChecks();
+        Pin(window, (int)window.Width, (int)window.Height);
+        Check(!window.CategoryOrbClusterVisibleForChecks
+              && Math.Abs(window.CategoryOrbRoomForChecks) < 0.5
+              && Math.Abs(window.CardWidthForChecks - gridWidth) < 0.5,
+            $"orbs: the app grid ignores the gesture — no circles, no width change " +
+            $"(card {window.CardWidthForChecks:F0} of {gridWidth:F0})");
+
+        // ---- Alt+2 → 文件 browse (the shortcut keeps working where the circles do not) ----
+        Check(window.HandleKeyForChecks(Key.D2, KeyModifiers.Alt), "orbs: Alt+2 is consumed by the contract");
+        Check(viewModel.IsBrowsing && viewModel.BrowseKind == SpotlightCategoryKind.Files,
+            $"orbs: Alt+2 enters a 文件 browse ({viewModel.BrowseKind})");
+        Check(viewModel.ActiveKind == SpotlightCategoryKind.Files,
+            "orbs: …and the chip bar is locked to 文件");
+        Check(viewModel.PlaceholderText == string.Format(Locale.Spotlight_Placeholder_Category, Locale.Spotlight_Category_Files),
+            $"orbs: the field's placeholder is the locked-category one ('{viewModel.PlaceholderText}')");
+        // What replaced the cluster's room is the preview column a browse opens by the normal rule
+        // (base + 280, capped at the 1080 total width).
+        var browseWidth = Math.Min(baseWidth + 280, 1080);
+        Check(!window.CategoryOrbClusterVisibleForChecks
+              && Math.Abs(window.CardWidthForChecks - browseWidth) < 0.5,
+            $"orbs: activating a circle hands the room to the pane " +
+            $"({window.CardWidthForChecks:F0} of {browseWidth:F0})");
+
+        PumpUntil(() => !viewModel.IsSearching);
+        Check(viewModel.Results.Count == 0 && viewModel.IsEmptyResult,
+            $"orbs: the 文件 browse lists what the file backend can enumerate (empty, {viewModel.Results.Count} rows)");
+        Check(viewModel.NoResultsText == Locale.Spotlight_SearchMode_Hint,
+            "orbs: …and its empty state asks for a keyword instead of claiming 'no results'");
+
+        // ---- Alt+1 → 应用 browse: the whole catalogue, no query filter ----
+        Check(window.HandleKeyForChecks(Key.D1, KeyModifiers.Alt), "orbs: Alt+1 is consumed by the contract");
+        PumpUntil(() => !viewModel.IsSearching);
+        Check(viewModel.IsBrowsing && viewModel.BrowseKind == SpotlightCategoryKind.Apps,
+            $"orbs: Alt+1 enters an 应用 browse ({viewModel.BrowseKind})");
+        Check(viewModel.Results.Count(row => row.IsSelectable) == viewModel.Items.Count,
+            $"orbs: the 应用 browse lists the whole catalogue " +
+            $"({viewModel.Results.Count(row => row.IsSelectable)} of {viewModel.Items.Count})");
+        Pin(window, (int)window.Width, (int)window.Height);
+        Check(window.FindControl<ListBox>("ResultList")!.IsVisible,
+            "orbs: a browse shows the results list, not the app grid");
+
+        // ---- Esc leaves the browse, the second Esc is the dismiss ----
+        Check(window.HandleKeyForChecks(Key.Escape), "orbs: Esc is consumed by the browse");
+        Check(!viewModel.IsBrowsing && viewModel.ActiveKind == SpotlightCategoryKind.All,
+            "orbs: Esc leaves the browse and returns to 全部");
+        Pin(window, (int)window.Width, (int)window.Height);
+        Check(window.FindControl<ListBox>("GridList")!.IsVisible
+              && Math.Abs(window.CardWidthForChecks - baseWidth) < 0.5,
+            $"orbs: …on the app grid, at the base width ({window.CardWidthForChecks:F0})");
+
+        // ---- the browse surface itself: list + preview column + locked placeholder ----
+        var browseViewModel = BuildViewModel(provider, catalog, icons, "launcher-usage-orbs-browse.json");
+        browseViewModel.Reload();
+        browseViewModel.BeginBrowse(SpotlightCategoryKind.Apps);
+        PumpUntil(() => !browseViewModel.IsSearching);
+
+        var browseWindow = new SpotlightWindow(browseViewModel, provider);
+        browseWindow.ApplyAppearanceForChecks();
+        // A never-shown window realizes no container for a virtualizing panel (the same harness
+        // artifact RunCardMorphChecks works around); a plain StackPanel puts the rows in the shot.
+        if (browseWindow.FindControl<ListBox>("ResultList") is { } browseList)
+        {
+            browseList.ItemsPanel = new FuncTemplate<Panel?>(() => new StackPanel());
+        }
+
+        Render(browseWindow, outDir, "category-browse", (int)browseWindow.Width, (int)browseWindow.Height);
+
+        Check(browseWindow.FindControl<ListBox>("ResultList")!.IsVisible,
+            "orbs: a browse window opens on the result list");
+        Check(browseWindow.FindControl<Avalonia.Controls.Grid>("PreviewPane")!.IsVisible,
+            "orbs: …with the preview column open by the normal rule");
+
+        // ---- a query owns the row: Alt splits nothing out, but Alt+N still opens the category ----
+        // The card is already at the 1080 total width here (the browse's pane is open). Splitting the
+        // circles out on top would take room from a card that has none to give — so the reveal is a
+        // no-op and the width maths never sees the cluster. Alt+2 still enters 文件: one rule, both
+        // halves.
+        var paneBefore = browseWindow.PreviewColumnWidthForChecks;
+        var widthBefore = browseWindow.CardWidthForChecks;
+        browseWindow.RevealCategoryOrbsForChecks();
+        Check(!browseWindow.CategoryOrbClusterVisibleForChecks
+              && Math.Abs(browseWindow.CardWidthForChecks - widthBefore) < 0.5
+              && Math.Abs(browseWindow.PreviewColumnWidthForChecks - paneBefore) < 0.5,
+            $"orbs: with a query up the cluster stays away and the card does not move " +
+            $"(card {browseWindow.CardWidthForChecks:F0} of {widthBefore:F0}, " +
+            $"pane {browseWindow.PreviewColumnWidthForChecks:F0})");
+        Check(browseWindow.HandleKeyForChecks(Key.D2, KeyModifiers.Alt)
+              && browseViewModel.BrowseKind == SpotlightCategoryKind.Files,
+            "orbs: …while Alt+2 still opens the 文件 category");
+
+        browseViewModel.Dispose();
+        browseWindow.Close();
+
+        viewModel.Dispose();
+        window.Close();
+    }
+
+    /// <summary>
+    /// 强调色偏移 must reach the launcher's selection tint. The pill, the chips and the 分类圆钮 all
+    /// read one resource (<c>SpotlightSelectionBrush</c>), so this is the only place the rule can be
+    /// wrong — and a raw accent here would leave the overlay's selection in a colour no other
+    /// surface uses. 0% has to be byte-identical to the pre-shift behaviour, 100% has to land on the
+    /// endpoint, and the direction has to be the accent ramp's (toward white on a dark card, toward
+    /// black on a light one).
+    /// </summary>
+    private static void RunSelectionAccentChecks()
+    {
+        Console.WriteLine("\n--- selection accent follows 强调色偏移 ---");
+
+        var baseAccent = Color.Parse("#0A84FF");
+        static Theme ThemeFor(double shift) =>
+            new(null, "#0A84FF", 1.0, false, false, "Segoe UI", AccentShift: shift);
+
+        static Color? Tint(double shift, bool dark) =>
+            (SpotlightWindow.SelectionBrushForChecks(ThemeFor(shift), dark) as ISolidColorBrush)?.Color;
+
+        var light0 = Tint(0, dark: false);
+        var dark0 = Tint(0, dark: true);
+        Check(light0 is { } l0 && l0.R == baseAccent.R && l0.G == baseAccent.G && l0.B == baseAccent.B && l0.A == 56
+              && dark0 is { } d0 && d0.R == baseAccent.R && d0.G == baseAccent.G && d0.B == baseAccent.B && d0.A == 72,
+            $"accent: 0% is the unshifted tint, alpha included " +
+            $"(light {light0?.ToString() ?? "null"}, dark {dark0?.ToString() ?? "null"})");
+
+        var light100 = Tint(100, dark: false);
+        var dark100 = Tint(100, dark: true);
+        Check(light100 is { R: 0, G: 0, B: 0 } && dark100 is { R: 255, G: 255, B: 255 },
+            $"accent: 100% lands on black over a light card and white over a dark one " +
+            $"({light100?.ToString() ?? "null"} / {dark100?.ToString() ?? "null"})");
+
+        var light50 = Tint(50, dark: false);
+        var dark50 = Tint(50, dark: true);
+        Check(light50 is { } l50 && l50.R < baseAccent.R && l50.G < baseAccent.G && l50.B <= baseAccent.B
+              && dark50 is { } d50 && d50.R > baseAccent.R && d50.G > baseAccent.G && d50.B >= baseAccent.B,
+            $"accent: the tint travels the accent ramp's direction " +
+            $"(light {light50?.ToString() ?? "null"}, dark {dark50?.ToString() ?? "null"})");
     }
 
     /// <summary>
@@ -1535,6 +2306,17 @@ internal static class Program
         surface.UpdateLayout();
     }
 
+    /// <summary>
+    /// The ink a 分类圆钮 currently paints, as the bounds of its filled Path. Comparing those
+    /// bounds against <see cref="SpotlightGlyphs.Fill"/> is how a check can say which artwork a
+    /// circle wears without a screenshot — the path text itself is an opaque builder dump.
+    /// </summary>
+    private static Rect? OrbMark(Button orb)
+        => orb.Content is Panel face
+            ? face.Children.OfType<Avalonia.Controls.Shapes.Path>()
+                .FirstOrDefault(path => path.IsVisible && path.Data != null)?.Data?.Bounds
+            : null;
+
     private static void Render(SpotlightWindow window, string outDir, string label, int width, int height)
     {
         Directory.CreateDirectory(outDir);
@@ -1971,9 +2753,29 @@ internal static class Program
     /// MotionChecks.
     /// </para>
     /// </summary>
-    private static void RunCardMorphChecks(LauncherCatalog catalog, ShellIconService icons)
+    private static void RunCardMorphChecks(LauncherCatalog catalog, ShellIconService icons, string outDir)
     {
         Console.WriteLine("\n--- card morph (bar ↔ card) ---");
+
+        // ---- the radius rule on its own: capsule → panel, as one continuous curve ----
+        // The bar is 34 (68 / 2) for every configured radius; by the time the card has grown one
+        // bar-height the ends have relaxed onto the configured radius; in between it is a blend, so
+        // no frame of the expansion snaps.
+        Check(Math.Abs(SpotlightWindow.CardRadiusAtForChecks(68, 40) - 34) < 0.01
+              && Math.Abs(SpotlightWindow.CardRadiusAtForChecks(68, 8) - 34) < 0.01
+              && Math.Abs(SpotlightWindow.CardRadiusAtForChecks(68, 0) - 34) < 0.01,
+            "radius: the bar is a 34 DIP capsule for every configured radius");
+        Check(Math.Abs(SpotlightWindow.CardRadiusAtForChecks(68.5, 8) - 34) < 0.2,
+            $"radius: …and the first frame of the expansion does not snap " +
+            $"({SpotlightWindow.CardRadiusAtForChecks(68.5, 8):F1} right after the capsule)");
+        Check(SpotlightWindow.CardRadiusAtForChecks(100, 8) is > 8.5 and < 33.5,
+            $"radius: …it BLENDS in between instead of switching ({SpotlightWindow.CardRadiusAtForChecks(100, 8):F1})");
+        Check(Math.Abs(SpotlightWindow.CardRadiusAtForChecks(136, 8) - 8) < 0.2
+              && Math.Abs(SpotlightWindow.CardRadiusAtForChecks(560, 40) - 40) < 0.2,
+            $"radius: …and lands on the configured radius for the open panel " +
+            $"({SpotlightWindow.CardRadiusAtForChecks(136, 8):F1}, {SpotlightWindow.CardRadiusAtForChecks(560, 40):F1})");
+        Check(SpotlightWindow.CardRadiusAtForChecks(120, 200) < 61,
+            "radius: a configured radius bigger than the card is still clamped to half its height");
 
         foreach (var (surface, name) in new[]
                  {
@@ -1992,6 +2794,7 @@ internal static class Program
             };
             var configuredRadius = settings.EffectiveLauncher.EffectiveCornerRadius(40);
             var capsuleRadius = Math.Min(configuredRadius, 68 / 2.0);
+            var headroom = SpotlightWindow.SurfaceTopInsetForChecks;
             var provider = new FakeSettingsProvider(settings);
             var viewModel = BuildViewModel(provider, catalog, icons);
             viewModel.Reload();
@@ -2001,11 +2804,15 @@ internal static class Program
             Pin(window, (int)settings.EffectiveLauncher.Width, 68);
 
             // ---- the instant path: bar height and radius agree on card and window ----
-            Check(Math.Abs(window.CardHeightForChecks - 68) < 0.5 && Math.Abs(window.Height - 68) < 0.5,
-                $"{name}: the resting bar is one row on card and window alike " +
-                $"({window.CardHeightForChecks:F0}/{window.Height:F0})");
-            Check(Math.Abs(window.CardRadiusForChecks - configuredRadius) < 0.5,
-                $"{name}: the resting radius is the configured one ({window.CardRadiusForChecks:F0})");
+            Check(Math.Abs(window.CardHeightForChecks - 68) < 0.5
+                  && Math.Abs(window.Height - (68 + headroom)) < 0.5,
+                $"{name}: the resting bar is one row tall, inside a window with the rise's headroom " +
+                $"({window.CardHeightForChecks:F0} card / {window.Height:F0} window)");
+            // The bare bar is a CAPSULE: half-circles at both ends whatever 圆角 the settings ask
+            // for, so it wears the same shape as the four 分类圆钮 standing beside it.
+            Check(Math.Abs(window.CardRadiusForChecks - 34) < 0.5,
+                $"{name}: the resting bar is a capsule, not the configured {configuredRadius:F0} " +
+                $"({window.CardRadiusForChecks:F0} of 34)");
 
             // ---- the morph, mid-flight ----
             var target = settings.EffectiveLauncher.Height;
@@ -2020,7 +2827,7 @@ internal static class Program
                 // 液态玻璃 / 全彩: the window is final on the first frame; only the card travels.
                 // (The glass's shape feed itself is pinned headlessly in UiFoundationChecks —
                 // this harness never shows a window, so the surface never attaches.)
-                Check(Math.Abs(window.Height - target) < 0.5,
+                Check(Math.Abs(window.Height - (target + headroom)) < 0.5,
                     $"{name}: the window lands at its final size on the first frame ({window.Height:F0})");
             }
             else
@@ -2032,11 +2839,27 @@ internal static class Program
                     $"{name}: the degraded card paints itself opaque ({degraded?.Color.A})");
             }
 
+            // ---- one frame in the middle of the growth: the ends are BETWEEN the two shapes ----
+            // The capsule relaxes into the configured radius as the card grows; this is the frame
+            // that proves it is a transition and not a switch at the first frame.
+            window.StepCardHeightForChecks(120);
+            var midRadius = window.CardRadiusForChecks;
+            var lowRadius = Math.Min(34, configuredRadius);
+            var highRadius = Math.Max(34, configuredRadius);
+            Check(midRadius > lowRadius + 0.5 && midRadius < highRadius - 0.5,
+                $"{name}: the radius is mid-transition while the panel opens " +
+                $"({midRadius:F1} strictly between {lowRadius:F0} and {highRadius:F0})");
+            if (surface == SurfaceStyle.FullColor)
+            {
+                Render(window, outDir, "card-morph-radius", (int)window.Width, (int)target);
+            }
+
             // ---- the settle: card, window and glass agree again ----
             window.SettleCardMorphForChecks();
             Check(!window.CardMorphRunningForChecks, $"{name}: the settle pass ends the flight");
-            Check(Math.Abs(window.CardHeightForChecks - target) < 0.5 && Math.Abs(window.Height - target) < 0.5,
-                $"{name}: after the settle the card and the window describe the same height " +
+            Check(Math.Abs(window.CardHeightForChecks - target) < 0.5
+                  && Math.Abs(window.Height - (target + headroom)) < 0.5,
+                $"{name}: after the settle the card is the target and the window is card + headroom " +
                 $"({window.CardHeightForChecks:F0}/{window.Height:F0})");
             Check(Math.Abs(window.CardRadiusForChecks - configuredRadius) < 0.5,
                 $"{name}: after the settle the radius is the configured one again ({window.CardRadiusForChecks:F0})");
@@ -2073,7 +2896,12 @@ internal static class Program
             // The column must agree with the pane's own visibility rule after the flight — the
             // animation may not leave it half-open. (Whether it IS open is a settings/query decision:
             // 预览栏只在筛选时出现, so a morph check without a query legitimately lands at 0.)
-            var expectedColumn = window.PreviewPaneShownForChecks ? 280 : 0;
+            // The width is the room the card made, not the constant 280: the reveal clamps to
+            // cardWidth − baseWidth, and writing 280 here is what moved the divider 20 DIP left at
+            // the end of the default card's unfold.
+            var expectedColumn = window.PreviewPaneShownForChecks
+                ? Math.Max(0, Math.Min(280, window.CardWidthForChecks - settings.EffectiveLauncher.Width))
+                : 0;
             Check(Math.Abs(window.PreviewColumnWidthForChecks - expectedColumn) < 0.5,
                 $"{name}: the pane column agrees with the pane's visibility rule after the settle " +
                 $"({window.PreviewColumnWidthForChecks:F0} of {expectedColumn:F0})");
@@ -2121,12 +2949,10 @@ internal static class Program
             // The bar turned visible only after a pass had already run (the snap happens on
             // LayoutUpdated), and a never-shown window arranges nothing on its own afterwards —
             // so give its host panel one explicit measure+arrange to produce real Bounds.
-            if (highlightWindow.FindControl<Border>("ResultHighlight")?.Parent is Control barHost)
-            {
-                var barSize = new Size(highlightWindow.Width, highlightWindow.Height);
-                barHost.Measure(barSize);
-                barHost.Arrange(new Rect(barHost.Bounds.Position, barSize));
-            }
+            // The bar's host is the list-sized clipping container the panel arranged; re-run ITS
+            // pass at the rect the panel gave it (arranging it at the window size would stretch the
+            // clip and move the bar, which is exactly what this host exists to prevent).
+            ArrangeHighlightHost(highlightWindow);
             if (highlightList is { SelectedIndex: >= 0, ItemCount: > 0 }
                 && highlightList.ContainerFromIndex(highlightList.SelectedIndex) is Control selected)
             {
@@ -2155,6 +2981,39 @@ internal static class Program
                 Check(false, $"{name}: the query produced a selected row for the highlight assertion");
             }
 
+            // 回归（"条目滑出后选中框还在往上滑"）：高亮条是按选中行的坐标定位的，所以行滚出视口时
+            // 它也会跟着出去 —— 条目看不见了，条还在往上滑。它必须被夹在列表自己的矩形里
+            // （ResultHighlightTarget 的裁剪），整行出界时干脆不画。
+            if (highlightList is { } clipList
+                && (Control?)highlightWindow.FindControl<Border>("ResultHighlight")?.Parent is { } clipHost)
+            {
+                var listOrigin = clipList.TranslatePoint(new Point(0, 0), clipHost);
+                var lastIndex = clipList.ItemCount - 1;
+                if (listOrigin is { } origin && lastIndex > 0)
+                {
+                    // 选中列表最后一行的容器：它在视口之外，条必须被夹在列表底边（或干脆不画），
+                    // 而不是跟着行滑到列表下面去。
+                    clipList.SelectedIndex = lastIndex;
+                    Pin(highlightWindow, (int)highlightWindow.Width, (int)highlightWindow.Height);
+
+                    var offscreenTarget = highlightWindow.ResultHighlightTargetForChecks;
+                    var listBottom = origin.Y + clipList.Bounds.Height;
+                    Check(offscreenTarget is not { } off || off.Height < 0.5
+                          || (off.Top >= origin.Y - 0.5 && off.Bottom <= listBottom + 0.5),
+                        $"{name}: the bar never leaves the list, even when its row scrolls away " +
+                        $"(bar {(offscreenTarget is { } t2 ? $"{t2.Top:F0}…{t2.Bottom:F0}" : "hidden")}, " +
+                        $"list {origin.Y:F0}…{listBottom:F0})");
+
+                    clipList.SelectedIndex = 0;
+                    Pin(highlightWindow, (int)highlightWindow.Width, (int)highlightWindow.Height);
+                    ArrangeHighlightHost(highlightWindow);
+                }
+            }
+            else
+            {
+                Check(false, $"{name}: the highlight's host could be located");
+            }
+
             // 回归（"选中框锁在中间偏下"）：每次键入都会整体重建 Results（Clear + Add）。
             // 重建必须丢掉高亮条携带的旧位置，新列表出现时重新吸附到它自己的选中行——
             // 而不是停在上一次结果里的坐标上。
@@ -2168,12 +3027,7 @@ internal static class Program
                 highlightViewModel.Results.Add(freshRow);
                 Relayout(highlightWindow, rebuildList, (int)highlightWindow.Width, (int)highlightWindow.Height);
                 Pin(highlightWindow, (int)highlightWindow.Width, (int)highlightWindow.Height);
-                if (highlightWindow.FindControl<Border>("ResultHighlight")?.Parent is Control flushHost)
-                {
-                    var flushSize = new Size(highlightWindow.Width, highlightWindow.Height);
-                    flushHost.Measure(flushSize);
-                    flushHost.Arrange(new Rect(flushHost.Bounds.Position, flushSize));
-                }
+                ArrangeHighlightHost(highlightWindow);
 
                 if (rebuildList.ContainerFromIndex(rebuildList.SelectedIndex) is Control rebuilt
                     && (Control?)highlightWindow.FindControl<Border>("ResultHighlight")?.Parent is { } rebuildHost
@@ -2469,6 +3323,259 @@ internal static class Program
 
             viewModel.Dispose();
         }
+    }
+
+    /// <summary>
+    /// 最近使用 must be <b>one row</b> in the very first frame it is visible after a mode change.
+    /// <para>
+    /// The strip's cell is the grid's cell, and the grid's cell is derived from the card width. A
+    /// cell that belongs to a <i>different</i> card width lays the strip out for a host it does not
+    /// have: seven cells that no longer fit wrap into a second row, and the refinement that corrects
+    /// them lands a frame later — the reported "最近使用下方空一行再跳位". The window here is pinned
+    /// wide (the card a search leaves behind sits at the 1080 cap), then the query is cleared, which
+    /// returns the grid to the configured 820 DIP card: the card itself is 820 wide and centred, so
+    /// the strip's host is exactly the 820 card's, and its metrics must be too.
+    /// </para>
+    /// </summary>
+    private static void RunRecentsReflowChecks(LauncherCatalog catalog, ShellIconService icons)
+    {
+        Console.WriteLine("\n--- 最近使用 reflow on clear ---");
+
+        var settings = BuildSettings(SurfaceStyle.FullColor, dark: false) with
+        {
+            Launcher = new LauncherSettings(Enabled: true, Columns: 7, GapPercent: 18, Height: 430),
+        };
+        var provider = new FakeSettingsProvider(settings);
+        var viewModel = BuildViewModel(provider, catalog, icons, "launcher-usage-reflow.json");
+        viewModel.Reload();
+        foreach (var item in viewModel.Items)
+            item.Icon = icons.GetIconAsync(item.Entry!.ShortcutPath, 64).GetAwaiter().GetResult();
+
+        // Typed BEFORE the window exists: the first layout is then the search state, which is what
+        // leaves the grid metrics derived from the wide card while the grid itself is hidden.
+        viewModel.SetQuery("a");
+        PumpUntil(() => !viewModel.IsSearching);
+
+        var window = new SpotlightWindow(viewModel, provider);
+        window.ApplyAppearanceForChecks();
+        foreach (var item in viewModel.Items.Where(item => !item.IsBroken)) viewModel.RecordLaunch(item);
+        Dispatcher.UIThread.RunJobs();
+
+        var width = (int)settings.EffectiveLauncher.Width;
+        var height = (int)settings.EffectiveLauncher.Height;
+        Pin(window, 1080, height);
+
+        var recent = window.FindControl<ItemsControl>("RecentItemsControl")!;
+        var row = window.FindControl<StackPanel>("RecentRow")!;
+        var expected = LauncherGridMetrics.Compute(width - 37, settings.EffectiveLauncher.Columns, 18, showNames: true);
+
+        // The search state's seed already subtracts the pane, so it describes the same content
+        // column the returned grid will have: that is the invariant the strip depends on, and it is
+        // what makes the target seed below a no-op rather than a second reflow.
+        var searchCell = window.TryFindResource("SpotlightTileWidth", out var wide) && wide is double w ? w : -1;
+        Check(Math.Abs(searchCell - expected.CellWidth) < 1.0,
+            $"reflow: the search's seed describes the same content column as the grid " +
+            $"({searchCell:F1} of {expected.CellWidth:F1})");
+
+        // Clearing the query: UpdateMode lands the card on the configured width and the strip comes
+        // back. The cell is read without a layout pass on purpose — the refinement that follows must
+        // not be what makes the first frame correct.
+        window.SetQueryForChecks(string.Empty);
+        var cell = window.TryFindResource("SpotlightTileWidth", out var value) && value is double c ? c : -1;
+        Check(Math.Abs(cell - expected.CellWidth) < 0.51,
+            $"reflow: clearing the query seeds the strip for the {width} DIP card before it is shown " +
+            $"({cell:F1} of {expected.CellWidth:F1})");
+
+        // The first arranged frame the user sees (the pin's re-measure is what realises the strip,
+        // exactly as the shown window's resize does), then the refinement that follows it.
+        Pin(window, 1080, height);
+        var panel = recent.GetVisualDescendants().OfType<WrapPanel>().FirstOrDefault();
+        var rows = recent.GetRealizedContainers()
+            .Select(container => container.TranslatePoint(new Point(0, 0), panel!)?.Y ?? -1)
+            .Distinct()
+            .Count();
+        Check(row.IsVisible, "reflow: the strip is visible on the returned grid");
+        Check(rows == 1 && panel != null && Math.Abs(panel.DesiredSize.Height - panel.ItemHeight) < 1.5,
+            $"reflow: the strip is one row tall in its first arranged frame ({rows} row(s), " +
+            $"{panel?.DesiredSize.Height:F1} of {panel?.ItemHeight:F1} px)");
+        Check(panel != null && Math.Abs(panel.ItemWidth - expected.CellWidth) < 0.51,
+            $"reflow: …and it is laid out on the {width} DIP card's cell ({panel?.ItemWidth:F1} of {expected.CellWidth:F1})");
+
+        // The refinement that runs off the real viewport must not move the cell: a cell that shifts
+        // here is the row the grid would jump by.
+        var settledCell = window.TryFindResource("SpotlightTileWidth", out var settled) && settled is double s ? s : -1;
+        Check(Math.Abs(settledCell - expected.CellWidth) < 1.0,
+            $"reflow: the per-frame refinement leaves the cell alone ({settledCell:F1} of {expected.CellWidth:F1})");
+
+        viewModel.Dispose();
+        window.Close();
+    }
+
+    /// <summary>
+    /// Clearing the query is a <b>width flight</b>: the card travels from the search width back to
+    /// the grid width over ~320 ms. The 最近使用 strip must be one row, at its settled height, on
+    /// every frame of that flight — its cell belongs to the card the flight is heading for, not to
+    /// the card the viewport still describes.
+    /// <para>
+    /// This is the regression for the reported "最近使用下方空一行、网格跳上去". Seeding the metrics
+    /// for the target width is not enough: the layout pass that runs mid-flight re-derives the cell
+    /// from a viewport that still belongs to the wider card, the strip is then arranged with a cell
+    /// that no longer fits its host, wraps into a second row, and the settle measurement pulls the
+    /// whole grid back up. The harness has no render clock, so the flight is declared through the
+    /// same flag <c>AnimateCardMorph</c> sets and stepped frame by frame with a single layout pass
+    /// each — exactly the sequence the user sees.
+    /// </para>
+    /// </summary>
+    private static void RunClearQueryReflowChecks(LauncherCatalog catalog, ShellIconService icons)
+    {
+        Console.WriteLine("\n--- clear query: strip holds one row through the width flight ---");
+
+        var settings = BuildSettings(SurfaceStyle.FullColor, dark: false) with
+        {
+            Launcher = new LauncherSettings(Enabled: true, Columns: 7, GapPercent: 18, Height: 430),
+        };
+        var provider = new FakeSettingsProvider(settings);
+        var viewModel = BuildViewModel(provider, catalog, icons, "launcher-usage-clear.json");
+        viewModel.Reload();
+        foreach (var item in viewModel.Items)
+            item.Icon = icons.GetIconAsync(item.Entry!.ShortcutPath, 64).GetAwaiter().GetResult();
+
+        var window = new SpotlightWindow(viewModel, provider);
+        window.ApplyAppearanceForChecks();
+        foreach (var item in viewModel.Items.Where(item => !item.IsBroken)) viewModel.RecordLaunch(item);
+        Dispatcher.UIThread.RunJobs();
+
+        var width = (int)settings.EffectiveLauncher.Width;
+        var height = (int)settings.EffectiveLauncher.Height;
+        Pin(window, width, height);
+
+        // The resting grid: one row, on the cell the 820 DIP card resolves to. This is the frame
+        // every later frame has to agree with.
+        var settled = window.RecentStripForChecks;
+        var settledOffset = window.FirstGridTileOffsetForChecks;
+        Check(settled.Rows == 1 && settled.PanelHeight > 0,
+            $"clear: the resting strip is one row ({settled.Rows} row(s), {settled.PanelHeight:F1} px)");
+        Check(settledOffset > 0, $"clear: the grid's first tile is realized ({settledOffset:F1})");
+
+        // A cell that belongs to the mid-flight viewport is a different number — otherwise this
+        // check could not tell the guarded frame from the unguarded one.
+        var midFlight = LauncherGridMetrics.Compute(1040 - 37, 7, 18, showNames: true);
+        Check(Math.Abs(settled.ItemWidth - midFlight.CellWidth) > 1.0,
+            $"clear: the mid-flight cell differs from the settled one " +
+            $"({settled.ItemWidth:F1} vs {midFlight.CellWidth:F1}) — the check has teeth");
+
+        // Search first: the pane opens and the card sits at the 1080 cap.
+        window.SetQueryForChecks("a");
+        PumpUntil(() => !viewModel.IsSearching);
+        Pin(window, 1080, height);
+        Check(!window.FindControl<StackPanel>("RecentRow")!.IsVisible,
+            "clear: the strip is away while the query is up");
+
+        // Clear: the strip comes back, seeded for the 820 card, while the card is still 1080 wide.
+        window.SetQueryForChecks(string.Empty);
+        Pin(window, 1080, height);
+
+        // The flight the clear starts: the card steps back down to its target width. Each step is
+        // one layout pass, i.e. one frame the user would see.
+        window.BeginWidthFlightForChecks(width);
+        foreach (var step in new[] { 1040.0, 1000.0, 960.0, 920.0, 880.0, 840.0, 820.0 })
+        {
+            window.StepCardWidthForChecks(step);
+            LayOutOnce(window, 1080, height);
+
+            var cell = window.TryFindResource("SpotlightTileWidth", out var value) && value is double c ? c : -1;
+            var frame = window.RecentStripForChecks;
+            var offset = window.FirstGridTileOffsetForChecks;
+
+            Check(Math.Abs(cell - settled.ItemWidth) < 0.51,
+                $"clear: the card at {step:F0} still uses the {width} DIP cell ({cell:F1} of {settled.ItemWidth:F1})");
+            Check(frame.Rows == 1 && Math.Abs(frame.PanelHeight - settled.PanelHeight) < 1.5,
+                $"clear: the strip stays one row at card width {step:F0} " +
+                $"({frame.Rows} row(s), {frame.PanelHeight:F1} of {settled.PanelHeight:F1} px)");
+            Check(Math.Abs(offset - settledOffset) < 0.51,
+                $"clear: the grid does not move at card width {step:F0} ({offset:F1} of {settledOffset:F1})");
+        }
+
+        // The settle pass: one real measurement, which must agree with the seed it replaces.
+        window.EndWidthFlightForChecks();
+        LayOutOnce(window, 1080, height);
+        var landed = window.RecentStripForChecks;
+        var landedCell = window.TryFindResource("SpotlightTileWidth", out var final) && final is double f ? f : -1;
+        Check(landed.Rows == 1 && Math.Abs(landed.PanelHeight - settled.PanelHeight) < 1.5,
+            $"clear: the settled strip is still one row ({landed.Rows} row(s), {landed.PanelHeight:F1} px)");
+        Check(Math.Abs(landedCell - settled.ItemWidth) < 1.0,
+            $"clear: the settle measurement leaves the cell alone ({landedCell:F1} of {settled.ItemWidth:F1})");
+
+        viewModel.Dispose();
+        window.Close();
+    }
+
+    /// <summary>
+    /// One layout pass at a pinned size — the harness's "frame". Unlike <see cref="Pin"/> it does
+    /// not re-measure twice, so a geometry error that a second pass would repair is still visible.
+    /// The card is arranged explicitly: a never-shown window does not re-arrange a child whose
+    /// explicit Width changed after the first pass, and without that pass the grid's viewport — the
+    /// input this check exists to hold still — would never see the new width at all.
+    /// </summary>
+    private static void LayOutOnce(SpotlightWindow window, int width, int height)
+    {
+        if (window.Content is not Control surface) return;
+        surface.Width = width;
+        surface.Height = height;
+
+        window.Measure(new Size(width, height));
+        window.Arrange(new Rect(0, 0, width, height));
+        surface.UpdateLayout();
+        LayOutCard(window);
+    }
+
+    /// <summary>
+    /// One arrange pass over the highlight bar's host (the clipping container that sits exactly on
+    /// the result list). A never-shown window arranges nothing on its own after the schedule writes
+    /// the bar's margin, so the bar's Bounds would stay stale; the host is re-arranged at the rect
+    /// the panel already gave it — never at the window's size, which would move the bar.
+    /// </summary>
+    private static void ArrangeHighlightHost(SpotlightWindow window)
+    {
+        if (window.FindControl<Border>("ResultHighlight")?.Parent is not Control barHost) return;
+
+        var barSize = new Size(window.Width, window.Height);
+        barHost.Measure(barSize);
+        barHost.Arrange(new Rect(barHost.Bounds.Position, barSize));
+    }
+
+    /// <summary>
+    /// Arrange the window's whole surface (card + the 分类圆钮 beside it). The card's explicit width
+    /// can change without the window's, and a never-shown window caches its arrange pass, so a
+    /// sibling whose visibility flipped keeps a stale zero rect until the surface is arranged again.
+    /// </summary>
+    private static void LayOutSurface(SpotlightWindow window)
+    {
+        if (window.Content is not Control surface) return;
+
+        var width = surface.Width > 0 ? surface.Width : surface.Bounds.Width;
+        var height = surface.Height > 0 ? surface.Height : surface.Bounds.Height;
+        var size = new Size(width, height);
+
+        surface.Measure(size);
+        surface.Arrange(new Rect(size));
+        surface.UpdateLayout();
+        Dispatcher.UIThread.RunJobs();
+        surface.UpdateLayout();
+    }
+
+    /// <summary>
+    /// Arrange the card's own subtree at its explicit size. A never-shown window caches its arrange
+    /// pass, so a child whose Width changed <i>after</i> the first pass keeps its old rect until the
+    /// card itself is arranged; a real window does this on every frame. Geometry checks (where the
+    /// slot's edge is) need the arranged tree, not the property values.
+    /// </summary>
+    private static void LayOutCard(SpotlightWindow window)
+    {
+        var card = window.CardForChecks;
+        card.Measure(new Size(card.Width, card.Height));
+        card.Arrange(new Rect(0, 0, card.Width, card.Height));
+        card.UpdateLayout();
     }
 
     /// <summary>
@@ -2807,7 +3914,8 @@ internal static class Program
         viewModel.SetQuery("aurora");
         Check(viewModel.QueryGlyph == SpotlightGlyphKind.Search,
             $"mark: 全部 while filtering is a search, not the App Store artwork ({viewModel.QueryGlyph})");
-        Check(!viewModel.GlyphIsFilled, "mark: the magnifier is a stroked drawn mark");
+        Check(viewModel.GlyphIsFilled,
+            "mark: the magnifier is filled SVG too (search.svg), so the field's mark has the same weight as the category ones");
         viewModel.SetCategory((int)SpotlightCategoryKind.Apps);
         Check(viewModel.QueryGlyph == SpotlightGlyphKind.Apps,
             $"mark: the 应用 chip brings the App Store artwork back ({viewModel.QueryGlyph})");
@@ -2827,14 +3935,17 @@ internal static class Program
             $"mark: the empty search bar wears the magnifier, not the App Store artwork ({viewModel.QueryGlyph})");
         Check(window.FindControl<ListBox>("GridList") is { IsVisible: false },
             "mode: the search bar opens without the app grid");
-        Check(Math.Abs(window.Height - 68) < 0.5,
-            $"mode: the empty search bar is exactly one row tall ({window.Height:F0})");
+        // The window is the card plus the headroom the summon rise travels through; the CARD is
+        // what has to be exactly one row tall.
+        var headroom = SpotlightWindow.SurfaceTopInsetForChecks;
+        Check(Math.Abs(window.Height - (68 + headroom)) < 0.5,
+            $"mode: the empty search bar is exactly one row tall ({window.Height - headroom:F0} + {headroom:F0})");
         Check(window.Height < settings.EffectiveLauncher.Height,
             $"mode: the empty search bar is compact ({window.Height:F0} of {settings.EffectiveLauncher.Height:F0})");
 
         viewModel.SetQuery("aurora");
-        Check(Math.Abs(window.Height - settings.EffectiveLauncher.Height) < 0.5,
-            $"mode: typing grows the search bar to the full card ({window.Height:F0})");
+        Check(Math.Abs(window.Height - (settings.EffectiveLauncher.Height + headroom)) < 0.5,
+            $"mode: typing grows the search bar to the full card ({window.Height - headroom:F0} + {headroom:F0})");
         viewModel.SetQuery(string.Empty);
         window.ApplySummonModeForChecks(SpotlightSummonMode.AppList);
         Check(window.FindControl<ListBox>("GridList") is { IsVisible: true },
@@ -3551,13 +4662,17 @@ internal static class Program
             Check(settingsVm != null && !settingsVm.ApplyCapturedGesture("Ctrl+Alt+9"),
                 "settings page: a capture without an active recorder is ignored");
 
-            // 类别快捷键 is a fold now (same affordance as 应用主题 › 液态玻璃): it starts closed, and
-            // opening it is what the page's own property sees — the control is the only writer.
+            // 类别快捷键 / 分类圆钮 / 液态玻璃 are folds (same affordance as 应用主题 › 液态玻璃): each
+            // starts closed, and opening one is what the page's own property sees.
             var folds = page.GetVisualDescendants().OfType<CollapsibleSection>().ToList();
-            Check(folds.Count == 2,
-                $"settings page: two folded sections (类别快捷键 + 液态玻璃), found {folds.Count}");
+            Check(folds.Count == 3,
+                $"settings page: three folded sections (类别快捷键 + 分类圆钮 + 液态玻璃), found {folds.Count}");
             Check(folds.All(fold => !fold.IsExpanded),
-                "settings page: both folds start closed");
+                "settings page: every fold starts closed");
+
+            var orbFold = folds.FirstOrDefault(fold =>
+                fold.Header == Locale.Settings_Spotlight_Section_Orbs);
+            Check(orbFold != null, "settings page: the 分类圆钮 block is one of the folds");
 
             var categoryFold = folds.FirstOrDefault(fold =>
                 fold.Header == Locale.Settings_Spotlight_Section_CategoryKeys);
@@ -3576,6 +4691,55 @@ internal static class Program
                     $"({closedHeight:F0} → {openHeight:F0} DIP, eight recorders inside)");
                 categoryFold.IsExpanded = false;
                 Relayout(page, categoryFold, (int)pageWidth, (int)pageHeight);
+            }
+
+            // 分类圆钮: four rows in Alt+1..4 order, and the four circles are the settings' choice.
+            if (settingsVm != null)
+            {
+                Check(settingsVm.OrbSlots.Count == 4,
+                    $"settings page: the 分类圆钮 editor has one row per circle ({settingsVm.OrbSlots.Count})");
+                Check(settingsVm.OrbSlots.Select(row => row.SelectedOption.Key)
+                        .SequenceEqual(LauncherSettings.DefaultOrbCategories),
+                    "settings page: …starting on the shipped row (应用 / 文件 / 组件 / 剪贴板)");
+                Check(settingsVm.OrbSlots.Select(row => row.Options.Count).All(count => count == 7)
+                      && settingsVm.OrbSlots[0].Options.All(option => option.Key != LauncherCategoryKeys.All),
+                    "settings page: every circle may be pointed at any filter — 全部 is not a destination");
+
+                // Choosing a category another circle already opens trades places with it: four
+                // buttons, four different destinations, never the same one twice.
+                var first = settingsVm.OrbSlots[0];
+                first.SelectedOption = first.Options.First(option => option.Key == LauncherCategoryKeys.Clipboard);
+                var swapped = provider.Get().EffectiveLauncher.EffectiveOrbCategories;
+                Check(swapped[0] == LauncherCategoryKeys.Clipboard && swapped[3] == LauncherCategoryKeys.Apps,
+                    $"settings page: picking a used category swaps the two circles ({string.Join(" / ", swapped)})");
+                Check(settingsVm.OrbSlots[3].SelectedOption.Key == LauncherCategoryKeys.Apps,
+                    "settings page: …and the row that lost it follows");
+
+                settingsVm.ResetOrbSlots();
+                Check(provider.Get().EffectiveLauncher.OrbCategories == null
+                      && settingsVm.OrbSlots[0].SelectedOption.Key == LauncherCategoryKeys.Apps,
+                    "settings page: 恢复默认 writes no override and puts 应用 back on the first circle");
+
+                if (orbFold != null)
+                {
+                    Relayout(page, orbFold, (int)pageWidth, (int)pageHeight);
+                    var orbClosed = orbFold.Bounds.Height;
+                    orbFold.IsExpanded = true;
+                    Relayout(page, orbFold, (int)pageWidth, (int)pageHeight);
+                    Check(settingsVm.OrbSlotsExpanded && orbFold.Bounds.Height > orbClosed + 80,
+                        $"settings page: the 分类圆钮 fold holds its four pickers " +
+                        $"({orbClosed:F0} → {orbFold.Bounds.Height:F0} DIP)");
+
+                    var pickers = orbFold.GetVisualDescendants().OfType<ComboBox>().ToList();
+                    Check(pickers.Count == 4
+                          && pickers.All(picker => picker.SelectedItem is OrbCategoryOption option
+                                                   && !string.IsNullOrEmpty(option.Label)),
+                        $"settings page: …each row is a category picker showing what it opens " +
+                        $"({pickers.Count} picker(s))");
+
+                    orbFold.IsExpanded = false;
+                    Relayout(page, orbFold, (int)pageWidth, (int)pageHeight);
+                }
             }
 
             RenderPage(page, pageWidth, "spotlight-settings-page.png");
@@ -3598,12 +4762,14 @@ internal static class Program
                 "settings page: liquid-glass variant lays out");
             RenderPage(glassPage, pageWidth, "spotlight-settings-page-glass.png");
 
-            // Both folds open: the pointed-at state (类别快捷键 rows, 液态玻璃 knobs) on the record.
+            // Every fold open: the pointed-at state (类别快捷键 rows, 分类圆钮 pickers, 液态玻璃 knobs)
+            // on the record.
             if (glassPage.DataContext is SpotlightSettingsViewModel glassVm)
             {
                 glassVm.CategoryKeysExpanded = true;
+                glassVm.OrbSlotsExpanded = true;
                 glassVm.GlassSectionExpanded = true;
-                Relayout(glassPage, glassPage, (int)pageWidth, (int)pageHeight + 600);
+                Relayout(glassPage, glassPage, (int)pageWidth, (int)pageHeight + 900);
                 RenderPage(glassPage, pageWidth, "spotlight-settings-page-expanded.png");
             }
         }

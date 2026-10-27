@@ -5,6 +5,7 @@ using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Interactivity;
 using Avalonia.Media;
+using Avalonia.Threading;
 using DeskCanvas.Core.Interfaces;
 using DeskCanvas.Core.Models;
 using DeskCanvas.Core.Models.Attributes;
@@ -92,6 +93,10 @@ internal static class Program
         Console.WriteLine();
         Console.WriteLine("8. 周末跨周推算 (WeekOfDay / RelativeDayLabel)");
         WeekRolloverChecks();
+
+        Console.WriteLine();
+        Console.WriteLine("9. 尺寸收缩稳定性 (4x4 → 更矮)");
+        ResizeShrinkChecks();
 
         Console.WriteLine();
         Console.WriteLine($"{passed}/{passed + failed} passed, {failed} failed");
@@ -701,6 +706,169 @@ internal static class Program
             Check(CountOf(source, "TimetableClock.RelativeDayLabel(today, ") == 2,
                 "2x2 与 1x1 的日期标签都走 RelativeDayLabel");
         }
+    }
+
+    // ---------- 9. Shrinking the card (4x4 → shorter) ----------
+
+    /// <summary>
+    /// The reported crash: shrinking the card's row span (4 rows → fewer) killed the app with
+    /// <c>ArgumentOutOfRangeException</c> in <c>Avalonia.Controls.Grid.GetMeasureSizeForRange</c>.
+    /// <para>
+    /// The week grid pools its headers, period labels, lane cells and course blocks and only
+    /// HIDES the surplus. Avalonia's Grid measures hidden children too and indexes its
+    /// definition collections with their attached cell, so a surplus slot still pointing at a
+    /// row of the previous, taller grid threw on the first layout pass after the row count
+    /// collapsed (4×4 shows every period, 4×2/4×4-compact only the periods in use).
+    /// This check drives the real view through that exact transition inside a live window and
+    /// verifies both that nothing throws and that every attached cell stays inside the grid.
+    /// </para>
+    /// </summary>
+    private static void ResizeShrinkChecks()
+    {
+        var periods = new List<TimetablePeriod>();
+        for (var i = 1; i <= 12; i++) periods.Add(new TimetablePeriod($"第{i}节", null, null));
+
+        var model = new TimetableModel(
+            1, "尺寸收缩", "2026-09-07", 20, 1, // pinned to week 1 so the check is date-independent
+            periods,
+            [
+                new TimetableCourse("数据结构", "王五", "C305", null,
+                    [new TimetableEntry(1, [1, 2], null)]),
+                // Raises MaxPeriod to 12 (the 4x4 grid lists every period) while being inactive
+                // in week 1, so the compact tier collapses to periods 1-2 only.
+                new TimetableCourse("第二周起的选修", "赵六", "D201", null,
+                    [new TimetableEntry(3, [11, 12], "2-20")]),
+            ]).Normalize();
+
+        TimetableStore.ResetForTesting(model);
+        var view = new Timetable.Views.Timetable();
+
+        var host = new Border { Width = 360, Height = 360, Child = view };
+        var window = new Window
+        {
+            Width = 420,
+            Height = 420,
+            WindowDecorations = WindowDecorations.None,
+            ShowInTaskbar = false,
+            ShowActivated = false,
+            WindowStartupLocation = WindowStartupLocation.Manual,
+            Position = new PixelPoint(-32000, -32000),
+            Content = host,
+        };
+
+        window.Show();
+        try
+        {
+            PumpLayout(window);
+            var grid = view.FindControl<Grid>("WeekGridHost");
+            Check(grid is { RowDefinitions.Count: 13 },
+                "4×4：11-12 节的课表按 12 节铺满网格（表头 + 12 行 = 13）");
+            Check(grid != null && CellsAreInside(grid), "4×4：所有池化控件的单元格都在网格范围内");
+
+            // Shrink through the band edges: Large (360/240) → Medium (180/120/90).
+            // Medium renders only the periods in use → 13 row definitions become 3.
+            var failure = (Exception?)null;
+            var outOfRangeAt = (double?)null;
+            foreach (var height in new double[] { 240, 180, 120, 90 })
+            {
+                host.Height = height;
+                try
+                {
+                    PumpLayout(window);
+                }
+                catch (Exception ex)
+                {
+                    failure = ex;
+                    break;
+                }
+
+                if (grid != null && !CellsAreInside(grid))
+                {
+                    outOfRangeAt = height;
+                    break;
+                }
+            }
+
+            Check(failure == null && outOfRangeAt == null,
+                "行数从 4 往小调不崩溃（池化控件先归位再收缩网格定义）" +
+                (failure == null ? "" : $" — {failure.GetType().Name}: {failure.Message}") +
+                (outOfRangeAt == null ? "" : $" — 高度 {outOfRangeAt} 时有单元格越界"));
+            Check(grid is { RowDefinitions.Count: 3 },
+                $"缩到 4×2/4×1 后只保留本周用到的 2 节（表头 + 2 行 = 3，实际 {grid?.RowDefinitions.Count}）");
+
+            // Growing back must work too: the same pool is reused, definitions grow again.
+            var regrow = (Exception?)null;
+            foreach (var height in new double[] { 180, 240, 360 })
+            {
+                host.Height = height;
+                try
+                {
+                    PumpLayout(window);
+                }
+                catch (Exception ex)
+                {
+                    regrow = ex;
+                    break;
+                }
+            }
+            Check(regrow == null, "再放大回 4×4 也不崩溃" +
+                (regrow == null ? "" : $" — {regrow.GetType().Name}: {regrow.Message}"));
+
+            // And the small tiers, which swap the whole layout out.
+            var tiers = (Exception?)null;
+            foreach (var (w, h) in new[] { (360.0, 120.0), (200.0, 200.0), (120.0, 120.0), (360.0, 360.0) })
+            {
+                host.Width = w;
+                host.Height = h;
+                try
+                {
+                    PumpLayout(window);
+                }
+                catch (Exception ex)
+                {
+                    tiers = ex;
+                    break;
+                }
+            }
+            Check(tiers == null, "大/中/小各档来回切换不崩溃" +
+                (tiers == null ? "" : $" — {tiers.GetType().Name}: {tiers.Message}"));
+        }
+        finally
+        {
+            window.Close();
+            TimetableStore.ResetForTesting(new TimetableModel());
+        }
+    }
+
+    /// <summary>Runs the real layout pipeline to completion (measure → arrange → render jobs).</summary>
+    private static void PumpLayout(Window window)
+    {
+        for (var i = 0; i < 3; i++)
+        {
+            Dispatcher.UIThread.RunJobs();
+            window.UpdateLayout();
+        }
+        Dispatcher.UIThread.RunJobs();
+    }
+
+    /// <summary>
+    /// True when every attached child of <paramref name="grid"/> — and of the parallel-lane
+    /// grids nested in it — addresses a cell that exists. A false here is exactly the state
+    /// Avalonia's Grid throws on during its next measure pass.
+    /// </summary>
+    private static bool CellsAreInside(Grid grid)
+    {
+        var rowCount = grid.RowDefinitions.Count;
+        var columnCount = grid.ColumnDefinitions.Count;
+        if (rowCount == 0 && columnCount == 0) return true;
+
+        foreach (var child in grid.Children)
+        {
+            if (rowCount > 0 && Grid.GetRow(child) + Grid.GetRowSpan(child) > rowCount) return false;
+            if (columnCount > 0 && Grid.GetColumn(child) + Grid.GetColumnSpan(child) > columnCount) return false;
+            if (child is Grid nested && !CellsAreInside(nested)) return false;
+        }
+        return true;
     }
 
     /// <summary>Locates a repository file by walking up from the check-suite's working directory.</summary>

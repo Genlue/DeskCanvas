@@ -1110,7 +1110,11 @@ internal static partial class Program
                 new Dimensions(80, 12, 16), new Region("zh-Hans"), false, null)));
         var sliders = appearance.GetLogicalDescendants().OfType<LabeledSlider>().Count();
         var colors = appearance.GetLogicalDescendants().OfType<ColorInput>().Count();
-        Check(sliders == 9, $"Appearance: 8 optics rows plus opacity are LabeledSliders ({sliders})");
+        // 8 optics rows + opacity + 强调色偏移. The accent shift joined the slider family on
+        // purpose: it is a percentage of a colour distance, i.e. the same kind of control as the
+        // optics rows, and it commits on release like them rather than writing the settings file
+        // once per pixel of the drag.
+        Check(sliders == 10, $"Appearance: 8 optics rows, opacity and 强调色偏移 are LabeledSliders ({sliders})");
         // 描边颜色 was removed with the 描边 feature; the remaining colour rows are
         // 强调色 and the two 背景颜色 pickers (dark + light).
         Check(colors == 3, $"Appearance: the three remaining colour rows are ColorInputs ({colors})");

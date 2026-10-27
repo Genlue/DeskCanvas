@@ -73,6 +73,12 @@ class Program
         TestStoredWidgetOutsideAreaBlocksShownCells();
         TestSpanLargerThanGridIsRefused();
         TestFirstFitNoOverlapAcrossManyPlacements();
+        TestNoOverlapSettingModes();
+        TestDropRefusedOnOccupiedCell();
+        TestDropOnOwnCellIsAllowed();
+        TestDropSpanBlockedByDiagonalNeighbour();
+        TestCrossScreenDropReadsTargetLayout();
+        TestDropNeverBlocksWithSettingOff();
 
         Console.WriteLine();
         if (failures == 0)
@@ -349,12 +355,18 @@ class Program
     /// Mirror of <c>Gallery.ComputePlacement</c>: resolve the grid, build the placement frame
     /// (grid lattice + working area), ask <see cref="GridMetrics.FindFirstFitCell"/> for the
     /// first free block and convert it into a working-area-relative rectangle (physical X/Y,
-    /// DIP size). <c>null</c> means the gallery refuses the placement — the old grid-origin
-    /// fallback no longer exists. The check then treats each result as a stored widget exactly
-    /// like the real flow does (the next placement scans the layout with the entry in it).
+    /// DIP size). When nothing fits, the <paramref name="prohibitOverlap"/> mode decides:
+    /// <c>true</c> returns <c>null</c> (the gallery refuses and shows 屏幕空间已满), <c>false</c>
+    /// falls back to the grid origin — the pre-existing 从左上角开始叠 behaviour. The check then
+    /// treats each result as a stored widget exactly like the real flow does (the next
+    /// placement scans the layout with the entry in it).
+    /// <para>
+    /// The default is <c>true</c> on purpose: the placement checks below pin the refusal
+    /// contract, so they all run in that mode; the mode test passes <c>false</c> explicitly.
+    /// </para>
     /// </summary>
     private static WidgetLayout? PlaceLikeGallery(ScreenLayout screen, PixelRect area, double scaling,
-        GridSettings? gridOverride, int cols, int rows)
+        GridSettings? gridOverride, int cols, int rows, bool prohibitOverlap = true)
     {
         var grid = gridOverride ?? screen.Grid ?? GridSettings.Default;
         var (cell, gridX, gridY) = GridMetrics.Resolve(grid, area.X, area.Y, area.Width, area.Height);
@@ -363,7 +375,13 @@ class Program
         var (col, row) = GridMetrics.FindFirstFitCell(screen.Layout, frame, cols, rows);
 
         // Nothing fits: grid full, card larger than the grid, or no room left in the area.
-        if (col < 0) return null;
+        if (col < 0)
+        {
+            if (prohibitOverlap) return null;
+            // 禁止组件重叠 off: stack onto the grid origin, exactly like the gallery does.
+            col = 0;
+            row = 0;
+        }
 
         var layout = new WidgetLayout("Test", "Widget", frame.GridX + col * cell, frame.GridY + row * cell,
             (int) Math.Round(cols * cell / scaling), (int) Math.Round(rows * cell / scaling), null);
@@ -464,12 +482,13 @@ class Program
         Assert(wrapped.X == 0 && wrapped.Y == 2 * 96, "the eleventh card wraps to row 1, column 0");
     }
 
-    /// <summary>A genuinely full grid reports "no fit" and the gallery REFUSES the card.
-    /// The old fallback (grid origin, occupancy ignored) stacked it onto the first one —
-    /// the 吞组件 overlap the report describes.</summary>
+    /// <summary>A genuinely full grid reports "no fit" and, with 禁止组件重叠 on, the gallery
+    /// REFUSES the card. With the setting off the card would be stacked onto the grid origin
+    /// instead — the 吞组件 overlap the report describes (see
+    /// <see cref="TestNoOverlapSettingModes"/>).</summary>
     private static void TestFirstFitFullGridRefused()
     {
-        Console.WriteLine("--- 11. Row-major first-fit: a full grid refuses the card ---");
+        Console.WriteLine("--- 11. Row-major first-fit: a full grid refuses the card (禁止组件重叠 on) ---");
         // 2×2 grid of 480 px cells: 960×960 fits the 1920×1040 working area.
         var (screen, area, scaling) = TestTopology(new GridSettings(2, 2, 0, 0, 25));
         var first = PlaceLikeGallery(screen, area, scaling, null, 2, 2);
@@ -567,11 +586,12 @@ class Program
     /// <summary>
     /// Report bug 3: a span larger than the grid used to be scanned with a CLAMPED span while
     /// keeping its full width, so a 4×2 card was "placeable" on a 2×2 grid and overflowed it.
-    /// It is now refused.
+    /// With 禁止组件重叠 on it is refused outright; with the setting off it falls back to the
+    /// origin at its real size (covered by <see cref="TestNoOverlapSettingModes"/>).
     /// </summary>
     private static void TestSpanLargerThanGridIsRefused()
     {
-        Console.WriteLine("--- 15. Row-major first-fit: a card larger than the grid is refused ---");
+        Console.WriteLine("--- 15. Row-major first-fit: a card larger than the grid is refused (禁止组件重叠 on) ---");
         var (screen, area, scaling) = TestTopology(new GridSettings(2, 2, 0, 0, 5));
         var refused = PlaceLikeGallery(screen, area, scaling, null, 4, 2);
         Assert(refused == null, "a 4×2 card is refused on a 2-column grid");
@@ -580,6 +600,42 @@ class Program
         var fits = PlaceLikeGallery(screen, area, scaling, null, 2, 2);
         Assert(fits is { X: 0, Y: 0, Width: 2 * 96, Height: 2 * 96 },
             "a card that matches the grid is still placed at its natural size");
+    }
+
+    /// <summary>
+    /// 禁止组件重叠 (<c>Layout.ProhibitOverlap</c>) decides what happens when the scan finds no
+    /// cell. Off — the default and the pre-existing user-visible behaviour — stacks the card on
+    /// the grid origin (从左上角开始叠); on refuses it. Both modes are asserted on the same
+    /// full 2×2 topology, and on the oversized-span case that also reports "no fit".
+    /// </summary>
+    private static void TestNoOverlapSettingModes()
+    {
+        Console.WriteLine("--- 17. 禁止组件重叠: origin fallback (off) vs refusal (on) ---");
+
+        // Off: a full grid stacks the next card onto the origin, on top of the first one.
+        var (screenOff, areaOff, scalingOff) = TestTopology(new GridSettings(2, 2, 0, 0, 25));
+        var firstOff = PlaceLikeGallery(screenOff, areaOff, scalingOff, null, 2, 2, prohibitOverlap: false);
+        Assert(firstOff is { X: 0, Y: 0 }, "off: the first card takes the whole-grid slot");
+        var secondOff = PlaceLikeGallery(screenOff, areaOff, scalingOff, null, 2, 2, prohibitOverlap: false);
+        Assert(secondOff is { X: 0, Y: 0 }, "off: a full grid stacks the next card on the origin (0,0)");
+        Assert(screenOff.Layout.Count == 2, "off: the stacked card is still written to the layout");
+
+        // A span larger than the grid finds no cell either — same origin fallback, real size.
+        var (screenBigOff, areaBigOff, scalingBigOff) = TestTopology(new GridSettings(2, 2, 0, 0, 5));
+        var oversized = PlaceLikeGallery(screenBigOff, areaBigOff, scalingBigOff, null, 4, 2, prohibitOverlap: false);
+        Assert(oversized is { X: 0, Y: 0, Width: 4 * 96 }, "off: a card larger than the grid falls back to the origin at its real size");
+
+        // On: both situations are refused and nothing is stored.
+        var (screenOn, areaOn, scalingOn) = TestTopology(new GridSettings(2, 2, 0, 0, 25));
+        var firstOn = PlaceLikeGallery(screenOn, areaOn, scalingOn, null, 2, 2, prohibitOverlap: true);
+        Assert(firstOn is { X: 0, Y: 0 }, "on: the first card still takes the whole-grid slot");
+        var secondOn = PlaceLikeGallery(screenOn, areaOn, scalingOn, null, 2, 2, prohibitOverlap: true);
+        Assert(secondOn == null, "on: a full grid refuses the next card instead of stacking it");
+        Assert(screenOn.Layout.Count == 1, "on: a refused card is not written to the layout");
+
+        var (screenBigOn, areaBigOn, scalingBigOn) = TestTopology(new GridSettings(2, 2, 0, 0, 5));
+        Assert(PlaceLikeGallery(screenBigOn, areaBigOn, scalingBigOn, null, 4, 2, prohibitOverlap: true) == null,
+            "on: a card larger than the grid is refused");
     }
 
     /// <summary>The full gallery stress: many mixed-span placements over the shipped
@@ -601,6 +657,140 @@ class Program
                 if (Overlaps(placed[i], placed[j], area, scaling)) violations++;
 
         Assert(violations == 0, $"none of the {placed.Count} mixed-size placements overlap ({violations} violations)");
+    }
+
+    // ---------- Dragging an EXISTING widget: may it land here? ----------
+
+    /// <summary>
+    /// Mirror of the occupancy half of <c>GridService.ResolveDrop</c>: build the target screen's
+    /// placement frame, mark its stored widgets (minus the dragged one) and ask whether the
+    /// snapped rectangle covers a taken cell. <paramref name="x"/>/<paramref name="y"/> are the
+    /// ABSOLUTE physical origin the release would snap to, exactly what the service passes after
+    /// subtracting the working-area origin.
+    /// <para>
+    /// <paramref name="prohibitOverlap"/> is the 禁止组件重叠 switch and is modelled where the
+    /// service puts it — before any layout is read — so "off" is not "the check returns false by
+    /// accident" but "the check never runs". <paramref name="self"/> is the dragged widget's own
+    /// stored entry, which the service excludes by identity.
+    /// </para>
+    /// </summary>
+    private static bool DropBlocked(ScreenLayout screen, PixelRect area, double scaling,
+        int x, int y, int width, int height, WidgetLayout? self = null, bool prohibitOverlap = true)
+    {
+        if (!prohibitOverlap) return false;
+        var grid = screen.Grid ?? GridSettings.Default;
+        var frame = GridMetrics.FrameFor(grid, area.X, area.Y, area.Width, area.Height, scaling);
+        var occupied = GridMetrics.BuildOccupancy(screen.Layout, frame, self);
+        return GridMetrics.IsBlocked(occupied, frame, x - area.X, y - area.Y, width, height);
+    }
+
+    /// <summary>
+    /// The reported bug: 禁止组件重叠 only guarded the gallery's first-fit, so a stored card could
+    /// be dragged onto a cell another card already held. The drag now asks the same matrix the
+    /// gallery scans — and the two answers must line up: the cell the drag refuses is exactly the
+    /// cell first-fit skips.
+    /// </summary>
+    private static void TestDropRefusedOnOccupiedCell()
+    {
+        Console.WriteLine("--- 18. Drag: a drop onto an occupied cell is refused ---");
+        var (screen, area, scaling) = TestTopology();
+        // Cells 0-1 and 2-3 taken by two cards, then the one the drag aims at on 4-5.
+        screen.Layout.Add(new WidgetLayout("Test", "Card", 0, 0, 192, 192, null));
+        screen.Layout.Add(new WidgetLayout("Test", "Card", 2 * 96, 0, 192, 192, null));
+        screen.Layout.Add(new WidgetLayout("Test", "Card", 4 * 96, 0, 192, 192, null));
+
+        Assert(DropBlocked(screen, area, scaling, 4 * 96, 0, 192, 192),
+            "dropping onto the stored card's cell is refused");
+        Assert(!DropBlocked(screen, area, scaling, 6 * 96, 0, 192, 192),
+            "the free cell right next to it is allowed");
+
+        var frame = GridMetrics.FrameFor(screen.Grid, area.X, area.Y, area.Width, area.Height, scaling);
+        Assert(GridMetrics.FindFirstFitCell(screen.Layout, frame, 2, 2) == (6, 0),
+            "the gallery's first-fit skips the very cell the drag refuses (one occupancy rule)");
+    }
+
+    /// <summary>
+    /// A card always sits on a stored entry, and that entry stays at the PRE-drag cell for the
+    /// whole drag. Counting it would paint the card's own cell red and refuse a drop that changes
+    /// nothing — so the matrix is built without it.
+    /// </summary>
+    private static void TestDropOnOwnCellIsAllowed()
+    {
+        Console.WriteLine("--- 19. Drag: the widget's own cell never reads as refused ---");
+        var (screen, area, scaling) = TestTopology();
+        var self = new WidgetLayout("Test", "Card", 2 * 96, 0, 192, 192, null);
+        screen.Layout.Add(self);
+
+        Assert(!DropBlocked(screen, area, scaling, 2 * 96, 0, 192, 192, self),
+            "hovering the cell the card already occupies is allowed");
+        Assert(DropBlocked(screen, area, scaling, 2 * 96, 0, 192, 192),
+            "without the exclusion the same cell reads taken — the exclusion is what allows it");
+    }
+
+    /// <summary>
+    /// A neighbour parked half a cell off the lattice covers cells (0,0)-(1,1): it only touches
+    /// the 2×2 block at (1,1) through its bottom-right corner, diagonally. The pixel footprint —
+    /// not a tidy cell index — is what has to be tested, or the card lands on the corner of
+    /// another one.
+    /// </summary>
+    private static void TestDropSpanBlockedByDiagonalNeighbour()
+    {
+        Console.WriteLine("--- 20. Drag: a 2×2 span is refused by a diagonal neighbour ---");
+        var (screen, area, scaling) = TestTopology();
+        screen.Layout.Add(new WidgetLayout("Test", "Legacy", 48, 48, 96, 96, null));
+
+        Assert(DropBlocked(screen, area, scaling, 96, 96, 192, 192),
+            "the 2×2 block whose corner cell the neighbour reaches into is refused");
+        Assert(!DropBlocked(screen, area, scaling, 192, 192, 192, 192),
+            "the next 2×2 block, clear of that corner, is allowed");
+        Assert(DropBlocked(screen, area, scaling, 0, 0, 96, 96),
+            "the neighbour's own cell is refused as well");
+    }
+
+    /// <summary>
+    /// Cross-screen drags resolve against the screen the drop is ON, never the one the widget
+    /// still belongs to. The same absolute rectangle is free on the left screen and taken on the
+    /// right one — so the check has to be handed the target screen's frame and layout, which is
+    /// what <c>GridService.ResolveDrop</c> reads from the screen under the proposal (and, on a
+    /// real drag, what <c>TransferOwnership</c> has already made the widget's own ScreenConfig).
+    /// </summary>
+    private static void TestCrossScreenDropReadsTargetLayout()
+    {
+        Console.WriteLine("--- 21. Drag: a cross-screen target reads the TARGET screen's layout ---");
+        var areaA = new PixelRect(0, 0, 1920, 1040);
+        var areaB = new PixelRect(1920, 0, 1920, 1040);
+        var screenA = new ScreenLayout("screen-a", "DELL U2723QE|1920x1040", null, null, null, null, []);
+        var screenB = new ScreenLayout("screen-b", "LG 27UP850|1920x1040", null, null, null, null,
+            [new WidgetLayout("Test", "Card", 0, 0, 192, 192, null)]);
+
+        Assert(DropBlocked(screenB, areaB, 1.0, 1920, 0, 192, 192),
+            "the cell is taken on the screen being dropped onto");
+        Assert(!DropBlocked(screenA, areaA, 1.0, 1920, 0, 192, 192),
+            "the same absolute rect is not judged against the screen the widget came from");
+        Assert(!DropBlocked(screenB, areaB, 1.0, 1920 + 192, 0, 192, 192),
+            "the target screen's free cell next door is allowed");
+        Assert(!DropBlocked(screenA, areaA, 1.0, 0, 0, 192, 192),
+            "the source screen's own cell stays free for the card it still owns");
+    }
+
+    /// <summary>
+    /// With 禁止组件重叠 off — the default and the long-standing behaviour — nothing is refused:
+    /// the card may be dropped on top of another one, exactly as before the setting existed. The
+    /// service short-circuits before reading any layout, so this is not a softer check but no
+    /// check at all.
+    /// </summary>
+    private static void TestDropNeverBlocksWithSettingOff()
+    {
+        Console.WriteLine("--- 22. Drag: with 禁止组件重叠 off nothing is blocked ---");
+        var (screen, area, scaling) = TestTopology(new GridSettings(2, 2, 0, 0, 25));
+        screen.Layout.Add(new WidgetLayout("Test", "Card", 0, 0, 960, 960, null));
+
+        Assert(!DropBlocked(screen, area, scaling, 0, 0, 960, 960, prohibitOverlap: false),
+            "off: a drop onto a card that fills the whole grid is allowed");
+        Assert(!DropBlocked(screen, area, scaling, 480, 480, 480, 480, prohibitOverlap: false),
+            "off: a partially overlapping drop is allowed");
+        Assert(DropBlocked(screen, area, scaling, 0, 0, 960, 960),
+            "on: the same drop is refused — the switch is what decides, not the geometry");
     }
 
     private static void Assert(bool condition, string message)

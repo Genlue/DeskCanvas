@@ -50,5 +50,27 @@ session.Stage("new-draft");
 Check("wrong local expected revision conflicts without saving", !session.Commit(0).Succeeded && saves == 2);
 Check("successful commit after reload advances revision", session.Commit(1).Succeeded
     && session.Revision == 2 && persisted == "new-draft" && published == 2);
+
+// ---- 强调色偏移 / 跟随强调色: the stored record's own contract ---------------------------
+// The two new parameters are appended with defaults so a settings file written before the
+// feature still deserializes; NormalizeForSurface is the one place a hand-edited value is
+// made honest before any resolver reads it.
+var baseline = new DeskCanvas.Core.Models.Settings.Theme(
+    DarkMode: null, AccentColor: null, OpacityLevel: 0.4, Monochrome: false,
+    UseNativeFrame: false, FontFamily: "Inter");
+Check("accent shift defaults to 0 and follow-accent to off",
+    baseline.AccentShift == 0 && !baseline.FollowAccentBackground);
+Check("out-of-range accent shift clamps to 100",
+    (baseline with { AccentShift = 500 }).NormalizeForSurface().AccentShift == 100);
+Check("negative accent shift clamps to 0",
+    (baseline with { AccentShift = -20 }).NormalizeForSurface().AccentShift == 0);
+Check("non-finite accent shift resolves to 0",
+    (baseline with { AccentShift = double.NaN }).NormalizeForSurface().AccentShift == 0);
+Check("follow-accent survives normalization",
+    (baseline with { FollowAccentBackground = true }).NormalizeForSurface().FollowAccentBackground);
+Check("normalization keeps the stored background pair",
+    (baseline with { SolidBackgroundDark = "#112233", SolidBackgroundLight = "#FEDCBA" })
+        .NormalizeForSurface() is { SolidBackgroundDark: "#112233", SolidBackgroundLight: "#FEDCBA" });
+
 Console.WriteLine(failures.Count == 0 ? "ThemeSettingsChecks ALL PASS" : $"ThemeSettingsChecks FAILED: {string.Join(", ", failures)}");
 return failures.Count == 0 ? 0 : 1;
