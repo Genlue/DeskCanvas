@@ -82,6 +82,18 @@ public partial class RemindersPopupWindow : SecondaryPanelWindow
     private readonly Action<RemindersListModel>? onModelChanged;
     private readonly ObservableCollection<ReminderItemViewModel> items = [];
 
+    /// <summary>
+    /// Un-added text of the bottom "new item" box, keyed by the OWNING WIDGET INSTANCE.
+    /// <see cref="PanelService"/> builds the panel fresh on every open and destroys it on close,
+    /// so whatever the user had typed would be gone on reopen; keying by instance also keeps two
+    /// reminders widgets from sharing one draft. This is UI draft state only — it is deliberately
+    /// not written into <see cref="RemindersStore"/> or any user data file.
+    /// </summary>
+    private static readonly Dictionary<Guid, string> drafts = [];
+
+    /// <summary>Identity of the owner widget this panel instance keeps its draft under.</summary>
+    private readonly Guid draftKey;
+
     protected override Point? SpawnScreenCenter => spawnScreenCenter;
 
     public RemindersPopupWindow() : this(new RemindersListModel(null, []), null, null) { }
@@ -90,11 +102,13 @@ public partial class RemindersPopupWindow : SecondaryPanelWindow
         RemindersListModel model,
         Point? screenCenter = null,
         Action<RemindersListModel>? onModelChanged = null,
-        double? cornerRadius = null)
+        double? cornerRadius = null,
+        Guid ownerKey = default)
     {
         currentModel = model;
         spawnScreenCenter = screenCenter;
         this.onModelChanged = onModelChanged;
+        draftKey = ownerKey;
 
         InitializeComponent();
         InitializePanel(cornerRadius);
@@ -102,6 +116,11 @@ public partial class RemindersPopupWindow : SecondaryPanelWindow
         ItemsList.ItemsSource = items;
 
         TitleBox.Text = GetDisplayListName(currentModel);
+
+        // Restore the draft before the panel is shown; OnPanelLoaded puts the caret after it.
+        if (drafts.TryGetValue(draftKey, out var draft))
+            NewItemTextBox.Text = draft;
+        NewItemTextBox.TextChanged += OnNewItemTextChanged;
 
         PopulateItems();
 
@@ -128,13 +147,15 @@ public partial class RemindersPopupWindow : SecondaryPanelWindow
     {
         // PerOwner identity (the weather panel precedent): every reminders widget owns its own
         // panel. The service handles the cooldown, the toggle-close and the pinned show — the
-        // decision is deliberately ignored, mirroring the old bare early returns.
+        // decision is deliberately ignored, mirroring the old bare early returns. The same
+        // instance id keys the new-item draft, so reopening restores what the user had typed.
         PanelService.Open(new PanelRequest(
             owner is Widget widget ? widget.InstanceId : default,
             owner,
             "reminders.popup",
             PanelScope.PerOwner,
-            () => new RemindersPopupWindow(model, screenCenter, onModelChanged, cornerRadius)));
+            () => new RemindersPopupWindow(model, screenCenter, onModelChanged, cornerRadius,
+                owner is Widget ownerWidget ? ownerWidget.InstanceId.Value : default)));
     }
 
     protected override void OnPanelLoaded()
@@ -142,6 +163,21 @@ public partial class RemindersPopupWindow : SecondaryPanelWindow
         // Initialization focus stays with the business window (the shell's drag area, the
         // glass render request and the open animation are handled by the base class).
         NewItemTextBox.Focus();
+        // A restored draft must continue where the user left off, not at the caret index 0
+        // the fresh TextBox starts with.
+        NewItemTextBox.CaretIndex = NewItemTextBox.Text?.Length ?? 0;
+    }
+
+    private void OnNewItemTextChanged(object? sender, TextChangedEventArgs e) => SaveDraft();
+
+    /// <summary>Mirror the box's text into the per-owner draft; an empty box has no draft.</summary>
+    private void SaveDraft()
+    {
+        var text = NewItemTextBox.Text;
+        if (string.IsNullOrEmpty(text))
+            drafts.Remove(draftKey);
+        else
+            drafts[draftKey] = text;
     }
 
     private void PopulateItems()
@@ -267,6 +303,8 @@ public partial class RemindersPopupWindow : SecondaryPanelWindow
         var newItem = new ReminderItemViewModel(new ReminderModel(false, text));
         items.Add(newItem);
         NewItemTextBox.Clear();
+        // A successful add consumes the draft: the cleared box must not resurrect on reopen.
+        drafts.Remove(draftKey);
         CommitChanges();
 
         Dispatcher.UIThread.Post(() => NewItemTextBox.Focus());
@@ -301,6 +339,8 @@ public partial class RemindersPopupWindow : SecondaryPanelWindow
     private void OnWindowClosed(object? sender, EventArgs e)
     {
         RemindersStore.ModelChanged -= OnStoreModelChanged;
+        // Last-chance save: a close can race the final keystroke's TextChanged.
+        SaveDraft();
     }
 
     private void OnStoreModelChanged(RemindersListModel newModel, object? sender)

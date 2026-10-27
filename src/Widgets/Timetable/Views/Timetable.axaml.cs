@@ -724,6 +724,9 @@ public partial class Timetable : UserControl, IWidgetSelfRefreshing, IWidgetSurf
 
                     if (container.ColumnDefinitions.Count != first.LaneCount)
                     {
+                        // Same contract as the host grid: a block still parked on a column
+                        // that is about to disappear would crash the next measure pass.
+                        foreach (var existing in lane.Blocks) ParkInCell(existing);
                         container.ColumnDefinitions.Clear();
                         for (var i = 0; i < first.LaneCount; i++)
                             container.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
@@ -748,7 +751,10 @@ public partial class Timetable : UserControl, IWidgetSelfRefreshing, IWidgetSurf
                         AddBlockHandle(block, item.Slot, dayIdx);
                     }
                     for (; laneBlock < lane.Blocks.Count; laneBlock++)
+                    {
                         lane.Blocks[laneBlock].IsVisible = false;
+                        ParkInCell(lane.Blocks[laneBlock]);
+                    }
 
                     Grid.SetRow(container, row);
                     Grid.SetRowSpan(container, span);
@@ -759,7 +765,10 @@ public partial class Timetable : UserControl, IWidgetSelfRefreshing, IWidgetSurf
         }
         HidePoolSurplus(blockPool, blockIndex);
         for (var i = containerIndex; i < laneContainerPool.Count; i++)
+        {
             laneContainerPool[i].Grid.IsVisible = false;
+            ParkInCell(laneContainerPool[i].Grid);
+        }
 
         WeekTitle.FontSize = TextMetrics.Quantize(Math.Clamp(Math.Min(width, height) * 0.075, 11.0, 14.5));
         WeekSubtitle.FontSize = TextMetrics.Quantize(Math.Clamp(Math.Min(width, height) * 0.062, 9.5, 12.0));
@@ -788,10 +797,59 @@ public partial class Timetable : UserControl, IWidgetSelfRefreshing, IWidgetSurf
         return pool[index];
     }
 
-    /// <summary>Hide pool slots beyond the currently bound count; they stay attached.</summary>
+    /// <summary>
+    /// Hide pool slots beyond the currently bound count; they stay attached, parked in the
+    /// grid's first cell (see <see cref="ParkInCell"/>).
+    /// </summary>
     private static void HidePoolSurplus<T>(List<T> pool, int needed) where T : Control
     {
-        for (var i = needed; i < pool.Count; i++) pool[i].IsVisible = false;
+        for (var i = needed; i < pool.Count; i++)
+        {
+            pool[i].IsVisible = false;
+            ParkInCell(pool[i]);
+        }
+    }
+
+    /// <summary>
+    /// Move a pooled control into cell (0,0) with 1×1 spans — the one cell every rebuild of
+    /// the week grid has.
+    /// <para>
+    /// Why this is mandatory, not cosmetic: Avalonia's Grid measures children even when they
+    /// are hidden (<c>IsVisible=false</c> only skips drawing), and <c>MeasureCell</c> indexes
+    /// the row/column definition collections with the child's attached cell <b>without</b>
+    /// clamping. A parked surplus slot that still pointed at row 9 of a previous 10-row grid
+    /// therefore threw <c>ArgumentOutOfRangeException</c> from
+    /// <c>Grid.GetMeasureSizeForRange</c> on the very first layout pass after the grid shrank —
+    /// which is exactly the reported crash on resizing the card from 4×4 down to 4×2
+    /// (the large tier lists every period, the medium tier only the periods in use, so the
+    /// row count collapses while the pool keeps its old entries):
+    /// <code>
+    /// ArgumentOutOfRangeException: Index was out of range...
+    ///    at Avalonia.Controls.Grid.GetMeasureSizeForRange(...)
+    ///    at Avalonia.Controls.Grid.MeasureCell(...)
+    ///    at Avalonia.Controls.Grid.MeasureOverride(...)
+    /// </code>
+    /// Hidden slots are re-positioned by the next rebuild, so parking costs nothing.
+    /// </para>
+    /// </summary>
+    private static void ParkInCell(Control control)
+    {
+        if (Grid.GetRow(control) != 0) Grid.SetRow(control, 0);
+        if (Grid.GetColumn(control) != 0) Grid.SetColumn(control, 0);
+        if (Grid.GetRowSpan(control) != 1) Grid.SetRowSpan(control, 1);
+        if (Grid.GetColumnSpan(control) != 1) Grid.SetColumnSpan(control, 1);
+    }
+
+    /// <summary>
+    /// Park every child of the week grid before its definitions are replaced. Even with the
+    /// surplus slots parked above, a shrinking shape changes the definition counts while the
+    /// still-live slots carry the old indices, and a layout pass can run in between (the size
+    /// handler runs inside one). Parking first keeps the grid self-consistent at every point
+    /// of the rebuild rather than only at its end.
+    /// </summary>
+    private void ParkWeekGridChildren()
+    {
+        foreach (var child in WeekGridHost.Children) ParkInCell(child);
     }
 
     /// <summary>
@@ -804,6 +862,8 @@ public partial class Timetable : UserControl, IWidgetSelfRefreshing, IWidgetSurf
         var cols = WeekGridHost.ColumnDefinitions;
         if (cols.Count != dayCount + 1)
         {
+            // Park first: the children's cells are about to become invalid (see ParkInCell).
+            ParkWeekGridChildren();
             cols.Clear();
             cols.Add(new ColumnDefinition { Width = new GridLength(labelW, GridUnitType.Pixel) });
             for (var i = 0; i < dayCount; i++)
@@ -817,6 +877,7 @@ public partial class Timetable : UserControl, IWidgetSelfRefreshing, IWidgetSurf
         var rows = WeekGridHost.RowDefinitions;
         if (rows.Count != periodRows + 1)
         {
+            ParkWeekGridChildren();
             rows.Clear();
             rows.Add(new RowDefinition { Height = new GridLength(headerH, GridUnitType.Pixel) });
             for (var i = 0; i < periodRows; i++)
