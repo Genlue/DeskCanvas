@@ -103,6 +103,18 @@ public static class SpotlightResultIds
 /// 两者同组不同行，用这一个字段区分，而不是再加一个 Kind（分组、类别过滤都会因此多一个分支）。
 /// </param>
 /// <param name="WebSnippet">命中的摘要正文（已去标签、截断），null 表示没有摘要。</param>
+/// <param name="ClipboardKind">
+/// Kind==Clipboard 时的剪贴板格式（文本 / 图片 / 文件）。行标题、图标、预览与"复制回去"都按它分支，
+/// 因此这一条是剪贴板行的<b>唯一</b>格式来源，VM 不再自己猜。
+/// </param>
+/// <param name="ClipboardImagePath">
+/// Kind==Clipboard 且格式为图片时，捕获时落盘的 PNG 路径（行缩略图与预览大图都从它解码）。
+/// </param>
+/// <param name="ClipboardFilePaths">
+/// Kind==Clipboard 且格式为文件时，被复制的完整路径列表（行图标取第一个文件的系统图标）。
+/// </param>
+/// <param name="ClipboardImageWidth">图片格式的像素宽度（预览栏的"尺寸"行直接用，不必再解码）。</param>
+/// <param name="ClipboardImageHeight">图片格式的像素高度。</param>
 public sealed record SpotlightResult(
     SpotlightResultKind Kind,
     string Id,
@@ -124,7 +136,12 @@ public sealed record SpotlightResult(
     string? GroupTitle = null,
     SpotlightWebQuery? WebQuery = null,
     string? WebUrl = null,
-    string? WebSnippet = null);
+    string? WebSnippet = null,
+    ClipboardContentKind ClipboardKind = ClipboardContentKind.Text,
+    string? ClipboardImagePath = null,
+    IReadOnlyList<string>? ClipboardFilePaths = null,
+    int ClipboardImageWidth = 0,
+    int ClipboardImageHeight = 0);
 
 /// <summary>
 /// 插件（如 Shortcuts 组件）向宿主注册的结果提供者。

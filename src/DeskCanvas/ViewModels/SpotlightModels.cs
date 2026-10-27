@@ -156,13 +156,46 @@ public sealed class SpotlightItem : INotifyPropertyChanged
         string id, string title, string? subtitle, string? badge, Func<Task<bool>> run)
         => new(SpotlightItemKind.Workflow, "wf:" + id, title, subtitle, badge: badge, run: run);
 
-    /// <summary>A clipboard history entry. <paramref name="copyBack"/> puts the text back on the clipboard.</summary>
+    /// <summary>
+    /// A clipboard history entry. <paramref name="text"/> is the body of a text entry (and the
+    /// preview's content for it); images and files carry no text, so <paramref name="title"/> is
+    /// what the row shows (the provider composes it: 图片 1920×1080 / the first file's name).
+    /// </summary>
     public static SpotlightItem ForClipboard(
         string id, string text, bool isLink, DateTime capturedUtc, string? sourceProcess,
-        Func<Task<bool>> copyBack)
-        => new(SpotlightItemKind.Clipboard, "clip:" + id, text, null,
+        Func<Task<bool>> copyBack, ClipboardContentKind kind = ClipboardContentKind.Text,
+        string? title = null, string? imagePath = null, IReadOnlyList<string>? filePaths = null,
+        int imageWidth = 0, int imageHeight = 0)
+    {
+        var item = new SpotlightItem(SpotlightItemKind.Clipboard, "clip:" + id,
+            title is { Length: > 0 } ? title : text, null,
             clipboardText: text, isLink: isLink, sourceProcess: sourceProcess,
             capturedUtc: capturedUtc, run: copyBack);
+
+        item.ClipboardKind = kind;
+        item.ClipboardImagePath = imagePath;
+        item.ClipboardFilePaths = filePaths;
+        item.ClipboardImageWidth = imageWidth;
+        item.ClipboardImageHeight = imageHeight;
+
+        // Text entries wear the clip mark instead of the "first character" placeholder: the glyph
+        // is what the 剪贴板 category looks like everywhere else, and a letter says nothing about
+        // a copied paragraph. Images and files get a real picture (a thumbnail / the file's shell
+        // icon), both loaded after the row exists.
+        if (kind == ClipboardContentKind.Text)
+        {
+            try
+            {
+                item.Icon = SpotlightGlyphImages.Get(SpotlightGlyphKind.Clipboard, 72);
+            }
+            catch
+            {
+                // No rendering platform (a headless host): the letter placeholder is fine.
+            }
+        }
+
+        return item;
+    }
 
     /// <summary>
     /// A widget-owned data row (a checklist item, a course, …). <paramref name="groupTitle"/> is
@@ -311,8 +344,23 @@ public sealed class SpotlightItem : INotifyPropertyChanged
     /// </summary>
     public string? Badge { get; }
 
-    /// <summary>The clipboard text (Kind == Clipboard).</summary>
-    public string? ClipboardText { get; }
+    /// <summary>The clipboard text (Kind == Clipboard, and a text entry).</summary>
+    public string? ClipboardText { get; private set; }
+
+    /// <summary>Which clipboard format this row is (text / image / files).</summary>
+    public ClipboardContentKind ClipboardKind { get; private set; } = ClipboardContentKind.Text;
+
+    /// <summary>The captured PNG of an image entry (Kind == Clipboard, image).</summary>
+    public string? ClipboardImagePath { get; private set; }
+
+    /// <summary>The copied paths of a file entry (Kind == Clipboard, files).</summary>
+    public IReadOnlyList<string>? ClipboardFilePaths { get; private set; }
+
+    /// <summary>Pixel width of a clipboard image (0 for the other formats).</summary>
+    public int ClipboardImageWidth { get; private set; }
+
+    /// <summary>Pixel height of a clipboard image (0 for the other formats).</summary>
+    public int ClipboardImageHeight { get; private set; }
 
     /// <summary>True when the clipboard entry looks like a link (http/https/www).</summary>
     public bool IsLink { get; }
@@ -620,8 +668,11 @@ public sealed class SpotlightPreviewViewModel : INotifyPropertyChanged
     {
         Item = newItem;
         // A file always gets the hero slot, even before its thumbnail exists: the slot's size is
-        // fixed, so the image can appear inside it without moving a single other element.
-        HasMediaSlot = newItem?.Kind == SpotlightItemKind.File;
+        // fixed, so the image can appear inside it without moving a single other element. A
+        // clipboard image is the same case — its pixels are decoded from the stored PNG a beat
+        // after the pane opens.
+        HasMediaSlot = newItem?.Kind == SpotlightItemKind.File
+            || newItem is { Kind: SpotlightItemKind.Clipboard, ClipboardKind: ClipboardContentKind.Image };
     }
 
     // The view model writes these through the same property setters; internal setters would split

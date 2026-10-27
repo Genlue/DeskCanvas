@@ -109,11 +109,68 @@ public partial class SpotlightWindow : Window
     /// <summary>Preview column width (DIP) the settings' card width is extended by.</summary>
     private const double PreviewPaneWidth = 280;
 
-    /// <summary>Total window width cap when the preview pane is shown.</summary>
+    /// <summary>
+    /// Total window width cap when the preview pane is shown. At this cap the card cannot grow by
+    /// the full <see cref="PreviewPaneWidth"/>, so the pane only gets the room that is left over
+    /// (<see cref="PaneWidthFor"/>) — the reveal and the settled column have to agree on that
+    /// number, or the divider jumps when the flight lands.
+    /// </summary>
     private const double MaxTotalWidth = 1080;
 
     /// <summary>Below this total width the preview pane degrades away (窄窗退化).</summary>
     private const double MinPreviewTotalWidth = 980;
+
+    /// <summary>
+    /// Diameter of one 分类圆钮 (DIP). The bar is <see cref="SearchBarHeight"/> (68) tall, so 64 is
+    /// the size that makes a circle read as a sibling of the bar — the same mass, 2 DIP of air
+    /// above and below — exactly as the macOS 26 reference draws the four buttons beside the field.
+    /// </summary>
+    private const double CategoryOrbDiameter = 64;
+
+    /// <summary>Gutter between two circles.</summary>
+    private const double CategoryOrbGap = 8;
+
+    /// <summary>
+    /// Air on the far side of the cluster — the room the hover lift needs.
+    /// <para>
+    /// A circle grows 4% when the pointer is over it (2 DIP of a 64 DIP disc, 1 on each side), and
+    /// the rightmost one had nowhere to grow: the window ends at its edge, so the lift was clipped
+    /// flat on the right. This strip is paid for out of the same budget as the lead gap, so the
+    /// row still ends exactly where the bar used to.
+    /// </para>
+    /// </summary>
+    private const double CategoryOrbTrailGap = 3;
+
+    /// <summary>
+    /// Air between the bar's right edge and the first circle. It is the only thing separating the
+    /// two shapes, so it has to be visible: without it the row of circles reads as a fringe glued
+    /// to the card instead of as four buttons standing next to it.
+    /// </summary>
+    private const double CategoryOrbLeadGap = 8;
+
+    /// <summary>
+    /// The room the four circles take <b>out of the bar</b> at full size: lead gap + four diameters
+    /// + three gutters + the trailing air = 291 DIP.
+    /// <para>
+    /// The bar gives that room up (<see cref="TargetCardWidth"/>) so that <c>bar + circles</c> is
+    /// exactly the width the bar had on its own. The window therefore keeps its width for the whole
+    /// gesture and the card is the thing that travels — the previous implementation did the
+    /// opposite (the card grew by the cluster, the window grew with it) and that extra strip of
+    /// window is exactly what the user reported as "多出一截".
+    /// </para>
+    /// </summary>
+    private const double CategoryOrbClusterWidth =
+        CategoryOrbLeadGap + 4 * CategoryOrbDiameter + 3 * CategoryOrbGap + CategoryOrbTrailGap;
+
+    /// <summary>
+    /// The bar never gives up so much room that it stops being a search field: on a narrow launcher
+    /// (设置 allows 480) the circles shrink instead of eating the field — see
+    /// <see cref="OrbClusterFor"/>. The 480 minimum always leaves room for four readable circles.
+    /// </summary>
+    private const double MinBarCardWidth = 320;
+
+    /// <summary>Below this a circle can no longer hold its 18 DIP mark; the gesture is a no-op.</summary>
+    private const double MinOrbDiameter = 28;
 
     /// <summary>
     /// Floor for the preview hero image (DIP). It is the height the slot keeps while a file has no
@@ -137,6 +194,15 @@ public partial class SpotlightWindow : Window
     /// strip into a small card. It grows to the configured height as results arrive.
     /// </summary>
     private const double SearchBarHeight = 68;
+
+    /// <summary>
+    /// Headroom above the card, in DIP. The summon / dismiss flight lifts the whole surface by
+    /// <see cref="SummonRiseFrom"/> (7 DIP) and shrinks it around its centre, so with the window
+    /// exactly as tall as the card the top of the bar was cut off by its own client area — the
+    /// reported "搜索栏收起动画的上方被截断". The window is that much taller than the card and the
+    /// card sits that far down inside it, so the rise has somewhere to travel.
+    /// </summary>
+    private const double SurfaceTopInset = 8;
 
     /// <summary>Summon fade duration — critically damped: an overshooting alpha would clip at 1.</summary>
     private const int SummonFadeMs = MotionTokens.FadeMs;
@@ -202,6 +268,30 @@ public partial class SpotlightWindow : Window
     private double lastLabelHeight = -1;
 
     /// <summary>
+    /// The content width the current metrics were <b>measured</b> from (<see cref="UpdateGridMetrics"/>),
+    /// or -1 before the first measurement. <see cref="SeedGridGeometry"/> re-derives from it when its
+    /// own estimate describes the same content column: the estimate cannot see the list's vertical
+    /// scrollbar, so it is up to a scrollbar too wide, and re-seeding with it would widen every cell
+    /// of a strip that already fits — enough to wrap it into a second row.
+    /// </summary>
+    private double lastMeasuredWidth = -1;
+
+    /// <summary>
+    /// True while a width flight owns the card (the preview column unfolding, the 分类圆钮 splitting
+    /// out or retracting).
+    /// <para>
+    /// It gates <see cref="UpdateGridMetrics"/> for one reason: mid-flight the viewport describes the
+    /// card as it was a frame ago, not the card the strip and the grid are being arranged in. Deriving
+    /// a cell from it hands the 最近使用 strip a cell that belongs to the wider card, its seven tiles
+    /// stop fitting one row, they wrap into a second — and the measurement that lands at the end of
+    /// the flight shrinks the cell again, so the whole grid below drops a row and then teleports back
+    /// up. Seeding for the target width cannot survive that: the per-frame pass overwrites the seed.
+    /// While this is set the seed IS the answer; the real measurement runs once after the settle.
+    /// </para>
+    /// </summary>
+    private bool widthFlightRunning;
+
+    /// <summary>
     /// How many lines a tile name may use (the 应用名称行数 setting). Kept here because
     /// <c>TextBlock.MaxLines</c> is an integer and cannot come from a DynamicResource, so every
     /// realized tile gets it written by <see cref="ApplyTileGeometry"/>.
@@ -251,6 +341,64 @@ public partial class SpotlightWindow : Window
     private bool previewShown;
 
     /// <summary>
+    /// Whether the four 分类圆钮 are out, i.e. Alt is down on the bare search bar. It is a
+    /// <b>width input</b> as much as a visual state: <see cref="TargetCardWidth"/> subtracts the
+    /// cluster's room while it is true, which is what pays for the circles without widening the
+    /// overlay.
+    /// </summary>
+    private bool categoryOrbsShown;
+
+    /// <summary>The four circles, index-aligned with <see cref="CategoryOrbDefs"/> (Alt+1..4).</summary>
+    private readonly List<Button> categoryOrbs = [];
+
+    /// <summary>
+    /// True between an Alt release and the moment the card lands. The cluster no longer asks for
+    /// room (<see cref="categoryOrbsShown"/> is false, so the width target gives it back), but the
+    /// window keeps the room the card is still growing back into — that is what stops the bar from
+    /// being clipped by a window that narrowed before the card widened.
+    /// </summary>
+    private bool categoryOrbsRetracting;
+
+    /// <summary>
+    /// The diameter the circles wear for the current gesture. It follows the bar's width
+    /// (<see cref="OrbClusterFor"/>): at 64 DIP they are the bar's own mass, and on a narrow
+    /// launcher they shrink so the bar never has to give up more than it can spare.
+    /// </summary>
+    private double orbDiameter = CategoryOrbDiameter;
+
+    /// <summary>
+    /// The room the window currently holds to the right of the card for the circles, in DIP —
+    /// <b>not</b> part of the card. Zero while they are away, so <c>window == card</c> at rest;
+    /// during the gesture the window is <c>card + orbRoom</c>, which is the width the bar had
+    /// before Alt was pressed.
+    /// </summary>
+    private double orbRoom;
+
+    /// <summary>The material the circles' glass layers wear, cached for the late template.</summary>
+    private Theme? orbGlassMaterial;
+
+    /// <summary>Whether those layers sample the live screen (the card's own mode).</summary>
+    private bool orbGlassSampleScreen;
+
+    /// <summary>Whether the circles are on the glass material at all.</summary>
+    private bool orbGlassVisible;
+
+    /// <summary>
+    /// Bumped on every reveal / retract. The circles settle on a 30 ms stagger, and a queued step
+    /// from a flight that is already over must not restart a circle's stretch (Alt tapped twice
+    /// quickly).
+    /// </summary>
+    private int orbFlight;
+
+    /// <summary>
+    /// Width the results column owns: the settings' card width, capped by
+    /// <see cref="MaxTotalWidth"/>. The card is <c>resultsColumn + pane</c> (the 分类圆钮 are not
+    /// part of it — they live in the window beside it), so this is also
+    /// <see cref="morphBaseWidth"/>, the number the pane's reveal measures against.
+    /// </summary>
+    private double resultsColumnWidth;
+
+    /// <summary>
     /// How this summon started. 应用列表式 opens on the grid; 搜索栏式 opens as a bare search field
     /// (no grid, no recents) that grows into the results the moment something is typed. The two are
     /// separate hotkeys (see <c>LauncherSettings.SearchHotkey</c>), and the mode survives until the
@@ -258,7 +406,23 @@ public partial class SpotlightWindow : Window
     /// </summary>
     private SpotlightSummonMode summonMode = SpotlightSummonMode.AppList;
 
+    /// <summary>
+    /// The surface <see cref="UpdateMode"/> last resolved. Every later question about "what is on
+    /// screen" reads this instead of re-deriving it from a visibility flag (which is one layout
+    /// pass behind) — that second derivation is what let the keyboard and the view disagree.
+    /// </summary>
+    private SpotlightSurface currentSurface = SpotlightSurface.Bar;
+
     private bool transitionsDisabled;
+
+    /// <summary>
+    /// Set by <c>Closed</c>. A TextBox raises <c>TextChanged</c> through a posted dispatcher
+    /// operation, so a field written in the same tick the window is torn down can still call
+    /// <see cref="OnQueryChanged"/> after the platform implementation is gone — and that path ends
+    /// in <c>Screens.ScreenFromWindow</c>, which throws on a disposed window. The same rule the
+    /// constructor applies to the view model's collections, applied to the field.
+    /// </summary>
+    private bool closed;
 
     /// <summary>
     /// Set while <see cref="ApplyThemeVariant"/> writes the window's variant, so the resulting
@@ -351,6 +515,21 @@ public partial class SpotlightWindow : Window
         Preview,
     }
 
+    /// <summary>
+    /// One circle's job: the category it opens, the mark it wears and the label its tooltip shows.
+    /// Built from the settings (<see cref="LauncherSettings.EffectiveOrbCategories"/>), never a
+    /// constant table: which four categories sit beside the field is the user's choice
+    /// (设置 › 分类圆钮), and only the <b>order</b> is fixed — it is the Alt+1..4 contract.
+    /// </summary>
+    private readonly record struct OrbDefinition(
+        string Key, SpotlightCategoryKind Kind, SpotlightGlyphKind Glyph, string Label);
+
+    /// <summary>
+    /// The four circles in Alt+1..4 order. Rebuilt from the settings, so a category the user points
+    /// a circle at takes effect on the next reveal without recreating the overlay.
+    /// </summary>
+    private OrbDefinition[] orbDefs = [];
+
     public SpotlightWindow(SpotlightViewModel viewModel, IAppSettingsProvider settings)
     {
         InitializeComponent();
@@ -384,6 +563,7 @@ public partial class SpotlightWindow : Window
         viewModel.Results.CollectionChanged += resultsChanged;
         BuildCategoryChips();
         BuildAppCategoryChips();
+        BuildCategoryOrbs();
 
         WindowRoles.Register(this, WindowRole.Spotlight);
 
@@ -399,6 +579,10 @@ public partial class SpotlightWindow : Window
         // up on the tunneling route before it can mark them handled. Everything the field needs
         // (typing, caret Left/Right, Backspace) is left untouched.
         QueryBox.AddHandler(KeyDownEvent, OnQueryBoxTunnelKeyDown, RoutingStrategies.Tunnel);
+        // The Alt <b>release</b> is the retract gesture, and a TextBox may consume a KeyUp of its
+        // own; the same tunneling seam that carries the key-down contract carries the release too,
+        // so the circles can never outlive the modifier that called them.
+        QueryBox.AddHandler(KeyUpEvent, OnQueryBoxTunnelKeyUp, RoutingStrategies.Tunnel);
         QueryBox.GotFocus += (_, _) => focusZone = SpotlightFocusZone.Search;
 
         QueryBox.TextChanged += OnQueryChanged;
@@ -442,6 +626,7 @@ public partial class SpotlightWindow : Window
         PreviewScroll.LayoutUpdated += OnPreviewLayoutUpdated;
         Closed += (_, _) =>
         {
+            closed = true;
             boundsSubscription?.Dispose();
             Card.PropertyChanged -= OnCardSizeAnimated;
             PropertyChanged -= OnWindowSizeAnimated;
@@ -555,26 +740,59 @@ public partial class SpotlightWindow : Window
         Summon(mode);
     }
 
-    /// <summary>Open the overlay on the monitor that owns the cursor and focus the search field.</summary>
-    public void Summon(SpotlightSummonMode mode = SpotlightSummonMode.AppList)
+    /// <summary>
+    /// The one place a summon's initial state is decided.
+    /// <para>
+    /// Every entry point — the two global hotkeys, the <c>--spotlight</c> development flag, the
+    /// settings page's 预览 button, and a surface switch while the overlay is already open — ends up
+    /// in <see cref="Summon"/>, and every one of them needs exactly this reset: no query, no browse,
+    /// no cluster, no stale category, and a selection/focus zone that matches the surface the
+    /// gesture asked for. It lives here rather than in each caller because a half-initialised
+    /// overlay (a browse left over from the last summon, a category the user never picked) is
+    /// invisible in code review and obvious to the user.
+    /// </para>
+    /// </summary>
+    private void PrepareSummon(SpotlightSummonMode mode)
     {
-        summonMode = mode;
+        // Only the app grid wears the App Store artwork; 搜索栏式唤出's empty field is a search.
+        SetSummonMode(mode);
 
-        // Reset query and ViewModel state FIRST before laying out and positioning the window.
-        // This ensures the window is never shown with stale dimensions (e.g. preview pane from a
-        // previous search, or full height in search-bar mode), preventing visual resize/move jumps.
+        // A browse and the circle cluster belong to one summon, like the query and the cluster
+        // filter: a fresh summon must never open onto a category the user did not ask for. The
+        // browse is dropped BEFORE the query reset below, or that reset would re-route a browse.
+        viewModel.ResetBrowse();
+        ResetCategoryOrbs();
+
+        // Reset query and view-model state FIRST, before laying out and positioning the window:
+        // the window must never be shown with stale dimensions (the preview pane from a previous
+        // search, full height in search-bar mode), which is what made it resize/jump on show.
         QueryBox.Text = string.Empty;
         viewModel.SetQuery(string.Empty);
         viewModel.SetCategory(0);
         // A cluster filter belongs to one summon, not to the grid: coming back to a grid that
         // silently hides most of the apps reads as "my shortcuts are gone".
         viewModel.SetAppCategory(0);
-        // Only the app grid wears the App Store artwork; 搜索栏式唤出's empty field is a search.
-        viewModel.SetAppGridVisible(mode == SpotlightSummonMode.AppList);
         UpdateClearButton();
-        selectedIndex = summonMode == SpotlightSummonMode.AppList ? -1 : 0;
+        selectedIndex = mode == SpotlightSummonMode.AppList ? -1 : 0;
         recentIndex = 0;
         focusZone = SpotlightFocusZone.Search;
+    }
+
+    /// <summary>
+    /// Point the overlay at one summon mode: the mode itself plus the only view-model flag that
+    /// follows it (the grid's artwork). The single place both <see cref="PrepareSummon"/> and the
+    /// checks seam go through, so a new mode cannot teach one caller and not the other.
+    /// </summary>
+    private void SetSummonMode(SpotlightSummonMode mode)
+    {
+        summonMode = mode;
+        viewModel.SetAppGridVisible(mode == SpotlightSummonMode.AppList);
+    }
+
+    /// <summary>Open the overlay on the monitor that owns the cursor and focus the search field.</summary>
+    public void Summon(SpotlightSummonMode mode = SpotlightSummonMode.AppList)
+    {
+        PrepareSummon(mode);
 
         viewModel.Reload();
         UpdateMode();
@@ -748,6 +966,8 @@ public partial class SpotlightWindow : Window
         morphSettleTimer = null;
         cardMorphRunning = false;
         windowMorphRunning = false;
+        widthFlightRunning = false;
+        categoryOrbsRetracting = false;
         Card.Transitions = null;
         Transitions = null;
 
@@ -758,6 +978,10 @@ public partial class SpotlightWindow : Window
         Card.Opacity = 1;
         GlassSurface.Opacity = 1;
         ResetResultHighlight();
+        // The circles never survive a dismiss: the next summon opens with no locked category, and a
+        // stale "shown" flag would keep the bar short by their room for a card nobody is holding
+        // Alt for.
+        ResetCategoryOrbs();
         Hide();
         activatedSinceSummon = false;
         deactivationProbe++;
@@ -847,8 +1071,7 @@ public partial class SpotlightWindow : Window
     /// </summary>
     public void ApplySummonModeForChecks(SpotlightSummonMode mode)
     {
-        summonMode = mode;
-        viewModel.SetAppGridVisible(mode == SpotlightSummonMode.AppList);
+        SetSummonMode(mode);
         UpdateMode();
     }
 
@@ -911,6 +1134,42 @@ public partial class SpotlightWindow : Window
     /// <summary>Checks-only seam: the liquid-glass layer, for visibility assertions.</summary>
     public Control GlassSurfaceForChecks => GlassSurface;
 
+    /// <summary>Checks-only seam: run the Alt reveal (width flight + staggered circles) without a keyboard.</summary>
+    public void RevealCategoryOrbsForChecks() => RevealCategoryOrbs();
+
+    /// <summary>Checks-only seam: run the Alt release.</summary>
+    public void RetractCategoryOrbsForChecks() => RetractCategoryOrbs();
+
+    /// <summary>
+    /// Checks-only seam: the room the circles own to the right of the card right now (0 while they
+    /// are away). It is the window's width minus the card's — never a slice of the card.
+    /// </summary>
+    public double CategoryOrbRoomForChecks => orbRoom;
+
+    /// <summary>Checks-only seam: whether the cluster is on screen at all.</summary>
+    public bool CategoryOrbClusterVisibleForChecks => CategoryOrbCluster.IsVisible;
+
+    /// <summary>Checks-only seam: the four circles in Alt+1..4 order.</summary>
+    public IReadOnlyList<Button> CategoryOrbsForChecks => categoryOrbs;
+
+    /// <summary>Checks-only seam: the strip of window the circles are laid out in.</summary>
+    public Rect CategoryOrbClusterBoundsForChecks => CategoryOrbCluster.Bounds;
+
+    /// <summary>Checks-only seam: the search field's rect inside the card, for edge comparisons.</summary>
+    public Rect QueryBoxBoundsForChecks => QueryBox.Bounds;
+
+    /// <summary>Checks-only seam: the diameter the circles are wearing for this gesture.</summary>
+    public double CategoryOrbDiameterForChecks => orbDiameter;
+
+    /// <summary>Checks-only seam: whether the card is pinned to the window's left edge.</summary>
+    public bool CardDockedLeftForChecks => Card.HorizontalAlignment == Avalonia.Layout.HorizontalAlignment.Left;
+
+    /// <summary>
+    /// Checks-only seam: the headroom the window keeps above the card (the summon rise travels
+    /// through it). The window is <c>card + inset</c> tall, never the card's height alone.
+    /// </summary>
+    public static double SurfaceTopInsetForChecks => SurfaceTopInset;
+
     /// <summary>Checks-only seam: the card's explicit height, for morph-geometry assertions.</summary>
     public double CardHeightForChecks => Card.Height;
 
@@ -931,6 +1190,14 @@ public partial class SpotlightWindow : Window
     /// <summary>Checks-only seam: the card's current radius, for morph-geometry assertions.</summary>
     public double CardRadiusForChecks => Card.CornerRadius.TopLeft;
 
+    /// <summary>
+    /// Checks-only seam: the radius rule itself, at an arbitrary height. The bar→panel transition is
+    /// a pure function of the height (see <see cref="CardRadiusFor"/>), so the harness can walk it
+    /// frame by frame without a render clock.
+    /// </summary>
+    public static double CardRadiusAtForChecks(double height, double configured)
+        => CardRadiusFor(height, configured);
+
     /// <summary>Checks-only seam: whether a height morph is in flight.</summary>
     public bool CardMorphRunningForChecks => cardMorphRunning || windowMorphRunning;
 
@@ -943,6 +1210,91 @@ public partial class SpotlightWindow : Window
 
     /// <summary>Checks-only seam: land the morph's resting geometry synchronously.</summary>
     public void SettleCardMorphForChecks() => SettleCardMorph();
+
+    /// <summary>
+    /// Checks-only seam: put the surface in the state the summon / dismiss flight starts from (the
+    /// micro-scale plus the rise). What it exists to prove is the window's headroom: with the window
+    /// exactly as tall as the card, this state drew the bar's top edge outside the client area.
+    /// </summary>
+    public void PrepareSummonInitialStateForChecks() => PrepareSummonAnimationInitialState();
+
+    /// <summary>Checks-only seam: the summon flight's transform, as (scale, rise in DIP).</summary>
+    public (double Scale, double Rise) SummonTransformForChecks
+        => SurfaceRootRenderTransforms() is { } t ? (t.Scale.ScaleY, t.Rise.Y) : (1, 0);
+
+    /// <summary>
+    /// Checks-only seam: one frame of the bar ↔ panel height flight — the card at an intermediate
+    /// height, driven through the same per-frame shape sync the render clock would call. The radius
+    /// it lands on is the transition under test (see <see cref="CardRadiusFor"/>).
+    /// </summary>
+    public void StepCardHeightForChecks(double height)
+    {
+        Card.Height = height;
+        SyncMorphingCardShape(Card.Width, height);
+    }
+
+    /// <summary>
+    /// Checks-only seam: enter the state a width flight leaves behind, without a render clock.
+    /// Production sets <see cref="widthFlightRunning"/> inside <see cref="AnimateCardMorph"/>; the
+    /// headless harness has no clock to run a transition, so it has to declare the flight and then
+    /// step the card's width itself — which is exactly the sequence the guard exists for.
+    /// </summary>
+    public void BeginWidthFlightForChecks(double targetWidth)
+    {
+        widthFlightRunning = true;
+        morphTargetWidth = targetWidth;
+    }
+
+    /// <summary>Checks-only seam: one frame of a width flight — the card at an intermediate width.</summary>
+    public void StepCardWidthForChecks(double cardWidth)
+    {
+        Card.Width = cardWidth;
+
+        // The window is already at the width the flight is heading for: without the 分类圆钮 that is
+        // the card itself, and with them it is the target card plus their room — the window never
+        // moves during that gesture, which is the whole point of the frame under test.
+        Width = orbRoom > 0 ? morphTargetWidth + orbRoom : cardWidth;
+    }
+
+    /// <summary>Checks-only seam: land the flight on the width it was heading for.</summary>
+    public void EndWidthFlightForChecks() => SettleCardMorph();
+
+    /// <summary>
+    /// Checks-only seam: the 最近使用 strip as it is arranged right now — how many rows its tiles
+    /// occupy, the panel's height and the cell it was told. A width flight must never change any of
+    /// them (see <see cref="widthFlightRunning"/>).
+    /// </summary>
+    public (int Rows, double PanelHeight, double ItemWidth, double ItemHeight) RecentStripForChecks
+    {
+        get
+        {
+            var panel = RecentItemsControl.GetVisualDescendants().OfType<WrapPanel>().FirstOrDefault();
+            if (panel == null) return (0, 0, 0, 0);
+
+            var rows = RecentItemsControl.GetRealizedContainers()
+                .Select(container => container.TranslatePoint(new Point(0, 0), panel)?.Y ?? double.NaN)
+                .Where(y => !double.IsNaN(y))
+                .Distinct()
+                .Count();
+            return (rows, panel.Bounds.Height, panel.ItemWidth, panel.ItemHeight);
+        }
+    }
+
+    /// <summary>
+    /// Checks-only seam: where the grid's first tile sits inside the scroller it shares with the
+    /// strip — the number that teleports when the strip takes a second row.
+    /// </summary>
+    public double FirstGridTileOffsetForChecks
+    {
+        get
+        {
+            if (GridList.ContainerFromIndex(0) is not Control tile) return -1;
+            return GridScroller.Content is Control content
+                   && tile.TranslatePoint(new Point(0, 0), content) is { } origin
+                ? origin.Y
+                : -1;
+        }
+    }
 
     /// <summary>Checks-only seam: whether the results' floating highlight bar is shown.</summary>
     public bool ResultHighlightVisibleForChecks => ResultHighlight.IsVisible;
@@ -983,7 +1335,12 @@ public partial class SpotlightWindow : Window
         // paints the launcher's.
         ApplyThemeVariant(isDark);
 
-        Card.CornerRadius = new CornerRadius(radius);
+        // The radius follows the shape that is on screen right now: a theme flip while the bare bar
+        // is up must not square its ends off, and one while the panel is open must not turn the
+        // panel into a capsule (see CardRadiusFor).
+        var cardRadius = CardRadiusFor(Card.Height > 0 ? Card.Height : Height, radius);
+
+        Card.CornerRadius = new CornerRadius(cardRadius);
         Card.Background = ResolveCardBackground(appearance, launcher.ResolveBackgroundColor(global, isDark));
         Card.BorderBrush = appearance.CardBorderBrush;
         // Always keep the hairline: for 液态玻璃 it is the card's own outline, and it is also the
@@ -991,9 +1348,43 @@ public partial class SpotlightWindow : Window
         // instead of floating text).
         Card.BorderThickness = new Thickness(1);
 
+        // 分类圆钮 are the same piece of surface as the bar, so they wear the card's own FILL and
+        // hairline — not the chip wash they used to: on 全彩 the circles were a faint white veil
+        // over the wallpaper while the bar was a solid card, which is the reported "背景色不一样".
+        // 液态玻璃's card brush is transparent (the live glass surface paints it), so for that
+        // material the circles wear the frosted fill the material resolves to as a flat surface —
+        // a 6% chip wash over bare desktop is exactly the "偏纯透明" the user kept seeing.
+        //
+        // The opacity is the LAUNCHER's (<c>theme.OpacityLevel</c>), not the global theme's: the
+        // frosted under-layer is the fallback for the circle's own glass, and a fallback that mixed
+        // the widgets' 不透明度 into 聚焦搜索's surface read as "圆钮用的是组件的参数".
+        var orbFill = Card.Background is ISolidColorBrush { Color.A: > 0 } cardFill
+            ? cardFill
+            : FrostedOrbFill(isDark, theme.OpacityLevel);
+
+        foreach (var orb in categoryOrbs)
+        {
+            orb.Background = orbFill;
+            orb.BorderBrush = appearance.CardBorderBrush;
+        }
+
         GlassSurface.Material = appearance.GlassMaterial;
-        GlassSurface.CornerRadius = new CornerRadius(radius);
+        GlassSurface.CornerRadius = new CornerRadius(cardRadius);
         GlassSurface.IsVisible = appearance.UseRenderedGlass;
+
+        // 分类圆钮 wear 聚焦搜索's OWN 液态玻璃 optics, not the widgets' (组件) record: each circle
+        // carries a glass surface of its own and is handed the launcher's material, with the
+        // optics pinned to <see cref="LauncherSettings.EffectiveLiquidGlass"/>. The pin is the
+        // contract, not a copy — 设置 › 液态玻璃 tunes the bar and the four circles together, and
+        // 设置 › 组件 › 液态玻璃 can no longer reach them through the theme they are built from.
+        // The flat fill underneath stays as the fallback for devices where the surface cannot
+        // render (and is invisible where it can).
+        orbGlassMaterial = appearance.GlassMaterial is { } glassTheme
+            ? glassTheme with { LiquidGlass = launcher.EffectiveLiquidGlass }
+            : null;
+        orbGlassSampleScreen = appearance.UseRenderedGlass && launcher.GlassSampleScreen;
+        orbGlassVisible = appearance.UseRenderedGlass;
+        foreach (var orb in categoryOrbs) ApplyOrbGlassLayer(orb);
 
         // 液态玻璃 has its own pipeline here: sample the live screen behind the overlay instead of
         // the wallpaper, because the launcher floats over real window content. The interval is the
@@ -1049,8 +1440,9 @@ public partial class SpotlightWindow : Window
         Resources["SpotlightTileHoverBrush"] = new SolidColorBrush(
             isDark ? Color.FromArgb(24, 255, 255, 255) : Color.FromArgb(15, 0, 0, 0));
         Resources["SpotlightSelectionBrush"] = BuildSelectionBrush(theme, isDark);
+        Resources["SpotlightChipRestBrush"] = BuildChipRestBrush(appearance, isDark);
 
-        ApplyWindowRegion(theme, radius);
+        ApplyWindowRegion(theme, cardRadius);
 
         // The geometry usually resolves before the material does (Summon: ApplyLayout → then
         // ApplyAppearance), and a shape feed is dropped while Material is still null — so the rect
@@ -1130,10 +1522,15 @@ public partial class SpotlightWindow : Window
     /// <summary>
     /// Accent-tinted selection, like macOS Spotlight's highlighted row. Falls back to a neutral
     /// wash when no accent is resolvable (headless checks, very early start-up).
+    /// <para>
+    /// The tint is the <b>shifted</b> accent, not the raw one: 强调色偏移 belongs to
+    /// <see cref="AccentPalette"/>, and a launcher that kept the unshifted accent would show a
+    /// selection pill in a colour no other surface uses.
+    /// </para>
     /// </summary>
     private static IBrush BuildSelectionBrush(Theme theme, bool isDark)
     {
-        var accent = TryResolveAccent(theme);
+        var accent = TryResolveAccent(theme, isDark);
         if (accent is { } color)
         {
             var alpha = (byte)(isDark ? 72 : 56);
@@ -1143,13 +1540,91 @@ public partial class SpotlightWindow : Window
         return new SolidColorBrush(isDark ? Color.FromArgb(40, 255, 255, 255) : Color.FromArgb(26, 0, 0, 0));
     }
 
-    private static Color? TryResolveAccent(Theme theme)
+    /// <summary>
+    /// The capsule bar's <b>resting</b> fill, the first of the three steps a chip can be in:
+    /// 初始 (this) → 鼠标选中 (<c>SpotlightTileHoverBrush</c>) → 当前
+    /// (<c>SpotlightSelectionBrush</c>). The order is the contract: each step has to read as deeper
+    /// than the one before it, on every material.
+    /// <para>
+    /// It follows the same inputs as the other two semantic brushes — the resolved material and the
+    /// launcher's light/dark mode — because a wash is only "one step above the card" relative to
+    /// what is behind it. 毛玻璃/液态玻璃 sample the desktop, so the resting step stays faint; 全彩
+    /// paints an opaque card the user may have given a saturated 背景色, where a faint wash would
+    /// vanish, so it gets a slightly deeper one (still below the hover step, which is 15/24 alpha).
+    /// </para>
+    /// </summary>
+    /// <summary>
+    /// The fill the 分类圆钮 wear when the card has no brush to share — 液态玻璃 paints its card
+    /// with a live surface, and a 64 DIP circle cannot host one.
+    /// <para>
+    /// It is the same frosted tone and the same 不透明度 the app's own flat glass card resolves to
+    /// (the acrylic fill: a neutral tint at <c>OpacityLevel × 220</c>), which is the closest static
+    /// equivalent of that material. The alternative that was there before — the 6% chip wash, tuned
+    /// to sit ON a card — reads as an empty hole once it is over bare desktop.
+    /// </para>
+    /// </summary>
+    private static IBrush FrostedOrbFill(bool isDark, double opacity)
     {
-        if (!string.IsNullOrWhiteSpace(theme.AccentColor)
-            && Color.TryParse(theme.AccentColor, out var parsed))
+        // Deliberately heavy: this is the UNDER-layer of a glass surface, and its only job is to be
+        // there when that surface cannot render. A faint veil (the old 6% chip wash, or the glass
+        // control's own 40% fallback) is what read as "还是半透明" over the desktop.
+        var alpha = (byte)Math.Clamp(Math.Round(120 + opacity * 190), 200, 245);
+        return new SolidColorBrush(isDark
+            ? Color.FromArgb(alpha, 28, 28, 32)
+            : Color.FromArgb(alpha, 245, 245, 248));
+    }
+
+    private static IBrush BuildChipRestBrush(PanelAppearance appearance, bool isDark)
+    {
+        var alpha = appearance.Surface switch
         {
-            return parsed;
-        }
+            SurfaceStyle.Colorful => isDark ? (byte)18 : (byte)11,
+            _ => isDark ? (byte)14 : (byte)9,
+        };
+
+        return new SolidColorBrush(
+            isDark ? Color.FromArgb(alpha, 255, 255, 255) : Color.FromArgb(alpha, 0, 0, 0));
+    }
+
+    /// <summary>
+    /// The selection accent: the base accent resolved by <see cref="AccentPalette.ResolveBaseAccent"/>
+    /// (the user's own colour first, the system accent second), then moved by the stored
+    /// <see cref="Theme.EffectiveAccentShift"/>.
+    /// <para>
+    /// The base comes from <see cref="AccentPalette.TryGetSystemAccent"/> rather than the
+    /// <c>SystemAccentColor</c> resource when one is available: the accent ramp has already baked
+    /// the shift into that resource, so shifting it here would apply the user's 偏移 twice. The
+    /// resource is the fallback for a host with no platform settings (headless checks), where it is
+    /// the only accent there is.
+    /// </para>
+    /// <para>
+    /// The direction is the ramp's own (<c>ThemeResourceHelper.ApplyAccentRamp</c>): toward white on
+    /// a dark card, toward black on a light one. The accent is being lifted <i>off</i> its card, so
+    /// the pill has to travel the same way the accent it is tinted with travelled — the opposite
+    /// direction would put the selection in a shade that exists nowhere else in the app.
+    /// </para>
+    /// <para>
+    /// 0% is a no-op by construction — <see cref="AccentPalette.Shift"/> returns the input colour
+    /// itself — so every settings file written before 强调色偏移 existed resolves to exactly the
+    /// tint it had before.
+    /// </para>
+    /// </summary>
+    private static Color? TryResolveAccent(Theme theme, bool isDark)
+    {
+        var manual = string.IsNullOrWhiteSpace(theme.AccentColor) ? null : theme.AccentColor;
+        if (AccentPalette.ResolveBaseAccent(manual, SystemAccentBase()) is not { } baseAccent)
+            return null;
+
+        return AccentPalette.Shift(baseAccent, towardWhite: isDark, theme.EffectiveAccentShift);
+    }
+
+    /// <summary>
+    /// The unshifted system accent: the live OS colour when there is a platform, otherwise the
+    /// <c>SystemAccentColor</c> resource a host (or a check) provided.
+    /// </summary>
+    private static Color? SystemAccentBase()
+    {
+        if (AccentPalette.TryGetSystemAccent() is { } live) return live;
 
         try
         {
@@ -1166,6 +1641,13 @@ public partial class SpotlightWindow : Window
 
         return null;
     }
+
+    /// <summary>
+    /// Checks-only seam: the selection brush a theme resolves to, so a check can prove the pill
+    /// follows 强调色偏移 (and that 0% is the same colour it always was) without a rendered window.
+    /// </summary>
+    public static IBrush SelectionBrushForChecks(Theme theme, bool isDark)
+        => BuildSelectionBrush(theme, isDark);
 
     /// <summary>
     /// Clip the native window to the card's rounded rectangle for the materials that rely on the
@@ -1190,7 +1672,52 @@ public partial class SpotlightWindow : Window
         var height = Math.Max(1, (int)Math.Round(ClientSize.Height * scaling));
         var radius = Math.Clamp((int)Math.Round(radiusDip * scaling), 0, Math.Min(width, height) / 2);
 
-        InteropService.SetWindowRegion(handle.Value, 0, 0, width, height, radius);
+        // 分类圆钮: while they are out the window is wider than the card, and this material paints
+        // its backdrop strictly inside the region — a card-only region would delete the circles from
+        // the screen, a window-only one would leave a blurred slab behind them. The region is the
+        // union of the card's rounded rect and the four discs, cut from the same numbers the layout
+        // uses (the cluster is right-aligned in the window, the card sits at the left edge).
+        var circles = OrbRegionDiscs(scaling, ClientSize);
+        var cardWidth = Math.Max(1, (int)Math.Round(Math.Min(Card.Width > 0 ? Card.Width : ClientSize.Width, ClientSize.Width) * scaling));
+        var cardHeight = Math.Max(1, (int)Math.Round(Math.Min(Card.Height > 0 ? Card.Height : ClientSize.Height, ClientSize.Height) * scaling));
+        var cardTop = (int)Math.Round(SurfaceTopInset * scaling);
+
+        if (circles.Count > 0)
+        {
+            InteropService.SetWindowRegionUnion(handle.Value, 0, cardTop, cardWidth, cardHeight, radius, circles);
+            return;
+        }
+
+        // The card, not the window: the strip above it is the summon rise's headroom and must stay
+        // outside the region or 毛玻璃 would paint a blurred band over the desktop there.
+        InteropService.SetWindowRegion(handle.Value, 0, cardTop, cardWidth, cardHeight, radius);
+    }
+
+    /// <summary>
+    /// The four discs the 分类圆钮 cover, in device pixels, for the native region — empty while they
+    /// are away. Read from the layout's own numbers (a right-aligned cluster of four diameters and
+    /// three gutters, vertically centred) rather than from the controls' bounds, because this also
+    /// runs on frames where the card is mid-flight and the circles have not been re-arranged yet.
+    /// </summary>
+    private List<(int X, int Y, int Size)> OrbRegionDiscs(double scaling, Size client)
+    {
+        var discs = new List<(int X, int Y, int Size)>();
+        if (orbRoom <= 0.5 || orbDiameter <= 0 || client.Width <= 0 || client.Height <= 0) return discs;
+
+        var size = Math.Max(1, (int)Math.Round(orbDiameter * scaling));
+        // Same numbers as ApplyOrbClusterGeometry: centred on the BAR (which starts SurfaceTopInset
+        // down), right-aligned with the trailing air left out.
+        var top = (int)Math.Round(
+            (SurfaceTopInset + Math.Max(0, (SearchBarHeight - orbDiameter) / 2)) * scaling);
+        var left = client.Width - CategoryOrbTrailGap - (4 * orbDiameter + 3 * CategoryOrbGap);
+
+        for (var i = 0; i < 4; i++)
+        {
+            var x = (int)Math.Round((left + i * (orbDiameter + CategoryOrbGap)) * scaling);
+            discs.Add((x, top, size));
+        }
+
+        return discs;
     }
 
     /// <summary>
@@ -1205,7 +1732,14 @@ public partial class SpotlightWindow : Window
 
         var launcher = settings.Get().EffectiveLauncher;
         var (_, theme, _) = ResolveLauncherTheme(launcher);
-        ApplyWindowRegion(theme, launcher.EffectiveCornerRadius(settings.Get().Dimensions.Radius));
+
+        // The card's own radius, not the configured one: on the bare bar that is the capsule, and
+        // mid-morph it is whatever the last frame drew. The region and the shape must agree, or the
+        // OS backdrop pokes out of the bar's rounded ends.
+        var radius = Card.CornerRadius.TopLeft > 0
+            ? Card.CornerRadius.TopLeft
+            : launcher.EffectiveCornerRadius(settings.Get().Dimensions.Radius);
+        ApplyWindowRegion(theme, radius);
     }
 
     // ---- layout -------------------------------------------------------------------
@@ -1257,7 +1791,7 @@ public partial class SpotlightWindow : Window
             // UpdateGridMetrics would decide "nothing changed" and leave the new panel unsized.
             lastCellWidth = -1;
             ApplyCardGeometry(launcher, force: true);
-            SeedGridGeometry(launcher);
+            SeedGridGeometry(launcher, TargetCardWidth(launcher));
         }
         finally
         {
@@ -1288,12 +1822,38 @@ public partial class SpotlightWindow : Window
     /// the card follows, re-centring on every step because the overlay is centred on the screen.
     /// </para>
     /// </summary>
-    private void ApplyCardGeometry(LauncherSettings launcher, bool force = false)
+    /// <param name="force">Apply the geometry even when it already matches (a settings re-layout).</param>
+    /// <param name="collapse">
+    /// Run the width flight on the collapse spring (<see cref="MotionTokens.CollapseMs"/>) instead
+    /// of the expand one. The 分类圆钮 retract is the only caller: a surface that is giving room
+    /// back is leaving, and an exit that overshoots reads as hesitation.
+    /// </param>
+    private void ApplyCardGeometry(LauncherSettings launcher, bool force = false, bool collapse = false)
     {
+        // A collapse flight is the Alt release: the card is growing back into the room the circles
+        // are standing in, and it has to keep its left edge (and its "docked" alignment) until the
+        // flight lands — LandOrbFlight releases both. Every other decision drops the flag, so a
+        // reveal or a mode switch mid-retract cannot leave the card pinned left for nobody.
+        categoryOrbsRetracting = collapse && !categoryOrbsShown;
+
         var filtering = viewModel.IsFiltering;
         // PreviewBar on AND something to preview: the pane follows the result list, not the window.
         previewEnabled = launcher.PreviewBar && filtering;
-        var width = previewEnabled ? Math.Min(launcher.Width + PreviewPaneWidth, MaxTotalWidth) : launcher.Width;
+
+        resultsColumnWidth = Math.Min(launcher.Width, MaxTotalWidth);
+        morphBaseWidth = resultsColumnWidth;
+
+        // 分类圆钮: the bar PAYS for the circles out of its own width — the card gives up the
+        // room, the window keeps the width it already had, and <c>bar + circles</c> is therefore
+        // exactly as long as the bar was before Alt. (The old rule added the cluster to both the
+        // card and the window, which is the extra strip the user kept seeing.)
+        var cluster = OrbClusterFor(resultsColumnWidth);
+        orbDiameter = cluster.Diameter;
+        orbRoom = categoryOrbsShown ? cluster.Room : 0;
+
+        var cardWidth = TargetCardWidth(launcher);
+        var width = cardWidth + orbRoom;
+
         var screen = Screens.ScreenFromWindow(this) ?? Screens.Primary;
         var scaling = screen?.Scaling ?? 1.0;
         if (scaling <= 0) scaling = 1.0;
@@ -1306,21 +1866,26 @@ public partial class SpotlightWindow : Window
             : targetHeight;
 
         var widthChanged = Math.Abs(Width - width) > 0.5;
-        var heightChanged = Math.Abs(Height - height) > 0.5;
+        var cardWidthChanged = Math.Abs(Card.Width - cardWidth) > 0.5;
+        // The window carries the card plus the headroom the summon rise travels through.
+        var heightChanged = Math.Abs(Height - (height + SurfaceTopInset)) > 0.5;
 
         // The card keeps its own width so the preview column can unfold *inside* a window that is
         // already at its final size. Both dimensions travel on one flight: "results arrived" is a
         // single gesture (grow down, make room to the right), not a drop followed by a slide.
-        morphBaseWidth = Math.Min(launcher.Width, MaxTotalWidth);
+        // The Alt gesture is the same flight with the window standing still: the card is the only
+        // thing that travels, so a card-width change alone has to start one.
 
         // Whether this change is a flight decides how the window's width gets set below — both the
         // centring shift and the assignment itself are the instant path's job, never both.
-        var morphing = (widthChanged || heightChanged || force) && CanAnimateCardMorph(width, height);
+        var morphing = (widthChanged || heightChanged || cardWidthChanged || force)
+                       && CanAnimateCardMorph(cardWidth, height);
 
         // 亚克力 animates the window's own width, so the shift happens per frame in
         // RecentreDuringWidthMorph. Doing it here as well would jump the window left by half the
         // growth *before* the growth starts, and then grow it back out from there.
-        var windowWidthMorphs = morphing && UsesNativeBlurTheme();
+        var windowWidthMorphs = morphing && UsesNativeBlurTheme()
+                                && (widthChanged || heightChanged);
         if (widthChanged && !force && IsVisible && !windowWidthMorphs)
         {
             // Grow/shrink around the card's centre: the window is centred by PlaceOnActiveScreen,
@@ -1332,19 +1897,25 @@ public partial class SpotlightWindow : Window
             Position = new PixelPoint(Position.X - delta, Position.Y);
         }
 
+        // While the circles are out the window is <c>card + circles</c> wide, so a centred card
+        // would leave half the cluster's room on each side of it. The card pins itself to the
+        // window's left edge for exactly as long as that room exists; at rest the two widths are
+        // equal and Center is what keeps the preview column unfolding around the card's own centre.
+        ApplyCardDock();
+
         // The width is never written here: AnimateCardMorph owns it for the flight (for 亚克力 the
         // assignment is what starts the transition — writing it first left the property already at
         // its target, so the width never animated and the card stayed narrow until the settle), and
         // ApplyCardGeometryInstant writes it on every non-animated path.
-        if (widthChanged || heightChanged || force)
+        if (widthChanged || heightChanged || cardWidthChanged || force)
         {
             if (morphing)
             {
-                AnimateCardMorph(width, height);
+                AnimateCardMorph(cardWidth, height, collapse);
             }
             else
             {
-                ApplyCardGeometryInstant(width, height);
+                ApplyCardGeometryInstant(cardWidth, height);
             }
         }
 
@@ -1361,15 +1932,135 @@ public partial class SpotlightWindow : Window
     }
 
     /// <summary>
+    /// Pin the card to the window's left edge for exactly as long as the circles own the strip on
+    /// the right of it. At rest the two widths are equal, so Center is what keeps the preview column
+    /// unfolding around the card's own centre; while the circles are out a centred card would leave
+    /// half their room on each side of it.
+    /// </summary>
+    private void ApplyCardDock()
+    {
+        var docked = categoryOrbsShown || categoryOrbsRetracting;
+        var alignment = docked
+            ? Avalonia.Layout.HorizontalAlignment.Left
+            : Avalonia.Layout.HorizontalAlignment.Center;
+
+        if (Card.HorizontalAlignment != alignment) Card.HorizontalAlignment = alignment;
+    }
+
+    /// <summary>
+    /// The card width the current mode resolves to — the single expression
+    /// <see cref="ApplyCardGeometry"/> lands on and every estimate that has to describe the card
+    /// <b>before</b> it gets there (<see cref="SeedGridGeometry"/>) is derived from.
+    /// <para>
+    /// It reads <see cref="previewEnabled"/>, so callers must let <see cref="ApplyCardGeometry"/>
+    /// resolve that first. Reading the window's current <c>Width</c> instead is what makes an
+    /// estimate describe the previous mode's card while the new one is already on its way.
+    /// </para>
+    /// </summary>
+    private double TargetCardWidth(LauncherSettings launcher)
+    {
+        var baseWidth = BaseCardWidth(launcher);
+
+        // The circles are out of the card's budget entirely: they take their room out of the bar
+        // (<see cref="OrbClusterFor"/>), which is what keeps bar + circles at the bar's old width.
+        // They are only ever out on the bare search bar, i.e. never beside the preview column, but
+        // the subtraction is written unconditionally so the two rules cannot drift apart.
+        var room = categoryOrbsShown ? OrbClusterFor(baseWidth).Room : 0;
+
+        // No pane: the card is the results column, minus the circles' room.
+        if (!previewEnabled) return baseWidth - room;
+
+        // The pane's own addend obeys the cap exactly as it did before the circles existed.
+        return Math.Min(baseWidth + PreviewPaneWidth, MaxTotalWidth) - room;
+    }
+
+    /// <summary>
+    /// The card's width without the preview column. This is the number the pane's reveal is
+    /// measured against (see <see cref="morphBaseWidth"/>), and the number the 分类圆钮's room is
+    /// carved out of.
+    /// </summary>
+    private static double BaseCardWidth(LauncherSettings launcher)
+        => Math.Min(launcher.Width, MaxTotalWidth);
+
+    /// <summary>
+    /// The room the four circles take, and the diameter they wear, for a bar of
+    /// <paramref name="barWidth"/> DIP.
+    /// <para>
+    /// At full size the answer is <see cref="CategoryOrbClusterWidth"/> and 64 DIP. A narrow
+    /// launcher cannot pay that much and still be a search field, so the bar's contribution is
+    /// capped at <see cref="MinBarCardWidth"/> and the circles shrink to fit what is left — the
+    /// invariant "bar + circles == the bar's own width" holds at every width, and four circles are
+    /// always legible instead of four slivers clipped by the window.
+    /// </para>
+    /// </summary>
+    private static (double Room, double Diameter) OrbClusterFor(double barWidth)
+    {
+        var room = Math.Clamp(barWidth - MinBarCardWidth, 0, CategoryOrbClusterWidth);
+        var diameter = Math.Clamp(
+            (room - CategoryOrbLeadGap - 3 * CategoryOrbGap) / 4,
+            0,
+            CategoryOrbDiameter);
+
+        if (diameter < MinOrbDiameter) return (0, CategoryOrbDiameter);
+
+        return (CategoryOrbLeadGap + 4 * diameter + 3 * CategoryOrbGap + CategoryOrbTrailGap, diameter);
+    }
+
+    /// <summary>
+    /// The preview column's room for a card of <paramref name="cardWidth"/>.
+    /// <para>
+    /// The 分类圆钮 used to be a second addend of the same number (they were carved out of the card
+    /// back then); now they live outside the card entirely, so the only thing this has to answer is
+    /// how much of the card is the pane. The pane's resting room is read from the width the flight
+    /// is heading for rather than from the current one, which is what keeps the split monotone
+    /// while the card travels.
+    /// </para>
+    /// </summary>
+    private double PaneRoomFor(double cardWidth)
+    {
+        var target = morphTargetWidth > 0 ? morphTargetWidth : cardWidth;
+        var paneRest = PaneShownFor(target) ? PaneWidthFor(target, morphBaseWidth) : 0;
+        return Math.Min(paneRest, Math.Max(0, cardWidth - resultsColumnWidth));
+    }
+
+    /// <summary>
+    /// The preview column's width for a card of <paramref name="cardWidth"/>: the room the card has
+    /// beyond <paramref name="baseWidth"/> (the width the results list owns), capped at
+    /// <see cref="PreviewPaneWidth"/> and floored at 0.
+    /// <para>
+    /// The reveal (<see cref="ApplyPaneReveal"/>) and the settled column
+    /// (<see cref="UpdatePreviewVisibility"/>) both read this. They used to disagree: the reveal
+    /// clamps to the room the card actually made, while the settled column wrote
+    /// <see cref="PreviewPaneWidth"/> unconditionally — with the default 820 DIP card the target is
+    /// capped at <see cref="MaxTotalWidth"/>, so the animated pane could only ever be 260 DIP and
+    /// the settle pass widened it to 280, moving the divider 20 DIP left at the end of the unfold.
+    /// One expression means the flight's last frame and the resting state are the same number by
+    /// construction.
+    /// </para>
+    /// </summary>
+    private static double PaneWidthFor(double cardWidth, double baseWidth)
+        => baseWidth <= 0
+            ? PreviewPaneWidth
+            : Math.Max(0, Math.Min(PreviewPaneWidth, cardWidth - baseWidth));
+
+    /// <summary>
+    /// Whether the pane's visibility rule (预览栏只在筛选时出现 + 窄窗退化) holds for a card of
+    /// <paramref name="cardWidth"/>, i.e. whether <see cref="UpdatePreviewVisibility"/> would show
+    /// the column for it.
+    /// </summary>
+    private bool PaneShownFor(double cardWidth)
+        => previewEnabled && cardWidth >= MinPreviewTotalWidth;
+
+    /// <summary>
     /// Whether the bar ↔ card height change may morph: only a visible overlay with the animation
     /// enabled. Everything else (first layout, headless checks, settings re-layouts while hidden)
     /// takes the instant path, so no check ever sees a half-way height.
     /// </summary>
-    private bool CanAnimateCardMorph(double width, double height)
+    private bool CanAnimateCardMorph(double cardWidth, double height)
         => IsVisible
            && settings.Get().EffectiveLauncher.AnimateSummon
            && !applyingLayout
-           && (Math.Abs(Card.Height - height) > 0.5 || Math.Abs(Card.Width - width) > 0.5);
+           && (Math.Abs(Card.Height - height) > 0.5 || Math.Abs(Card.Width - cardWidth) > 0.5);
 
     /// <summary>True while a geometry flight (card or window) owns the card's size.</summary>
     private bool CardMorphInFlight => cardMorphRunning || windowMorphRunning;
@@ -1378,29 +2069,39 @@ public partial class SpotlightWindow : Window
     /// Resize the window and the card to a height with no transition at all: the resting geometry
     /// every non-animated path (and every headless check) lands on.
     /// </summary>
-    private void ApplyCardGeometryInstant(double width, double height)
+    private void ApplyCardGeometryInstant(double cardWidth, double height)
     {
         morphSettleTimer?.Stop();
         morphSettleTimer = null;
         cardMorphRunning = false;
         windowMorphRunning = false;
+        // An instant geometry is at rest by definition: whatever flight was in the air has been
+        // replaced, so the viewport describes this card again from the next layout pass on.
+        widthFlightRunning = false;
         Card.Transitions = null;
         if (Transitions != null) Transitions = null;
         ExitAcrylicMorphDegradation();
 
-        morphTargetWidth = width;
+        morphTargetWidth = cardWidth;
         morphTargetHeight = height;
         morphConfigRadius = ConfiguredCardRadius();
 
-        Width = width;
-        Height = height;
-        Card.Width = width;
+        // The geometry is already at rest, so the circles have either landed (still shown: their
+        // room stays) or given the room back (a retract): nothing is left to hold.
+        LandOrbFlight();
+        orbRoom = categoryOrbsShown ? orbRoom : 0;
+        ApplyCardDock();
+
+        Width = cardWidth + orbRoom;
+        Height = height + SurfaceTopInset;
+        Card.Width = cardWidth;
         Card.Height = height;
-        Card.CornerRadius = new CornerRadius(morphConfigRadius);
+        var instantRadius = CardRadiusFor(height, morphConfigRadius);
+        Card.CornerRadius = new CornerRadius(instantRadius);
         UpdatePreviewVisibility();
         EndPreviewReveal();
         if (GlassSurface.IsVisible)
-            GlassSurface.SetAnimationFrameShape(new Rect(0, 0, width, height), morphConfigRadius);
+            GlassSurface.SetAnimationFrameShape(new Rect(0, 0, cardWidth, height), instantRadius);
     }
 
     /// <summary>
@@ -1417,18 +2118,41 @@ public partial class SpotlightWindow : Window
     /// window.</description></item>
     /// </list>
     /// </summary>
-    private void AnimateCardMorph(double width, double height)
+    /// <param name="collapse">
+    /// Fly on the collapse spring instead of the expand one (the 分类圆钮 retract). Only the timing
+    /// changes — the geometry, the per-frame drivers and the settle pass are the same flight.
+    /// </param>
+    private void AnimateCardMorph(double cardWidth, double height, bool collapse = false)
     {
-        morphTargetWidth = width;
+        morphTargetWidth = cardWidth;
         morphTargetHeight = height;
         morphConfigRadius = ConfiguredCardRadius();
 
-        var fromWidth = double.IsNaN(Card.Width) || Card.Width <= 0 ? width : Card.Width;
+        // The window is <c>card + circles</c>. The Alt gesture never changes that number (the card
+        // gives up exactly what the circles take), so the window stands still and the card is the
+        // only thing that travels — the same flight, driven by the card alone.
+        var windowWidth = cardWidth + orbRoom;
+
+        var fromWidth = double.IsNaN(Card.Width) || Card.Width <= 0 ? cardWidth : Card.Width;
         var fromHeight = double.IsNaN(Card.Height) || Card.Height <= 0 ? Height : Card.Height;
         morphSettleTimer?.Stop();
 
-        var duration = TimeSpan.FromMilliseconds(CardMorphMs);
-        if (UsesNativeBlurTheme())
+        // Only a width that actually travels makes the viewport lie; a height-only morph keeps the
+        // measurement live, which is what lets the scrollbar correction land while the card grows
+        // downward. Assigned rather than OR-ed: a new flight's own width is the only one that counts.
+        widthFlightRunning = Math.Abs(cardWidth - fromWidth) > 0.5;
+
+        // An exit is shorter and never overshoots (MotionTokens: Collapse 180 ms, critically damped).
+        var duration = TimeSpan.FromMilliseconds(collapse ? MotionTokens.CollapseMs : CardMorphMs);
+        var easing = collapse ? CardFadeEasing : CardMorphEasing;
+
+        // 亚克力's branch exists because the window IS the shape there: its resize is what carries
+        // the geometry. When the window is not moving at all (the Alt gesture: the bar narrows
+        // inside a window that keeps its width) there is nothing for the window to carry, so the
+        // card takes the same transition the other two materials use.
+        var windowHeight = height + SurfaceTopInset;
+        var windowTravels = Math.Abs(Width - windowWidth) > 0.5 || Math.Abs(Height - windowHeight) > 0.5;
+        if (UsesNativeBlurTheme() && windowTravels)
         {
             EnterAcrylicMorphDegradation();
             Card.Transitions = null;
@@ -1443,34 +2167,34 @@ public partial class SpotlightWindow : Window
 
             Transitions = new Transitions
             {
-                new DoubleTransition { Property = WidthProperty, Duration = duration, Easing = CardMorphEasing },
-                new DoubleTransition { Property = HeightProperty, Duration = duration, Easing = CardMorphEasing },
+                new DoubleTransition { Property = WidthProperty, Duration = duration, Easing = easing },
+                new DoubleTransition { Property = HeightProperty, Duration = duration, Easing = easing },
             };
-            Width = width;
-            Height = height;
+            Width = windowWidth;
+            Height = windowHeight;
             SyncMorphingCardShape(fromWidth, fromHeight);
         }
         else
         {
             ExitAcrylicMorphDegradation();
             // The window is final from the first frame; only the card (and the glass) travel.
-            Width = width;
-            Height = height;
+            Width = windowWidth;
+            Height = windowHeight;
             windowMorphRunning = false;
             cardMorphRunning = true;
             Card.Transitions = new Transitions
             {
-                new DoubleTransition { Property = WidthProperty, Duration = duration, Easing = CardMorphEasing },
-                new DoubleTransition { Property = HeightProperty, Duration = duration, Easing = CardMorphEasing },
+                new DoubleTransition { Property = WidthProperty, Duration = duration, Easing = easing },
+                new DoubleTransition { Property = HeightProperty, Duration = duration, Easing = easing },
             };
-            Card.Width = width;
+            Card.Width = cardWidth;
             Card.Height = height;
             // The first frame the transition covers is still the pre-morph rect (the property's
             // animated value starts at the departure size), so that is what the glass is fed.
             SyncMorphingCardShape(fromWidth, fromHeight);
         }
 
-        morphSettleTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(CardMorphMs + CardMorphSettlePadMs) };
+        morphSettleTimer = new DispatcherTimer { Interval = duration + TimeSpan.FromMilliseconds(CardMorphSettlePadMs) };
         morphSettleTimer.Tick += (_, _) =>
         {
             morphSettleTimer?.Stop();
@@ -1489,7 +2213,8 @@ public partial class SpotlightWindow : Window
     }
 
     /// <summary>Compatibility entry point for the checks and the height-only call sites.</summary>
-    private void AnimateCardGeometry(double height) => AnimateCardMorph(Width, height);
+    private void AnimateCardGeometry(double height)
+        => AnimateCardMorph(Card.Width > 0 ? Card.Width : Width - orbRoom, height);
 
     /// <summary>The morph is over (or the window hid mid-flight): land on the resting geometry.</summary>
     private void SettleCardMorph()
@@ -1500,18 +2225,34 @@ public partial class SpotlightWindow : Window
         Card.Transitions = null;
         Transitions = null;
 
+        // The flight is over, so the viewport finally describes the card the seed was written for.
+        // One real measurement lands here — it corrects the estimate's scrollbar error and, against
+        // a correct seed, moves nothing. Posted after the settle's layout pass, because the viewport
+        // is only current once that pass has arranged the card at its final width.
+        var remeasure = widthFlightRunning;
+        widthFlightRunning = false;
+
         // Always land, hidden or not: a dismiss that outran the morph leaves the card on its
         // animated size, and the next summon must start from the resting geometry whatever path it
         // takes. (The glass's shape feed and the region are both no-ops while hidden.)
+        // The flight has landed on the target width, so the circles' held room is the target's (0
+        // after a retract) — the flag's job is done, and the window lands on <c>card + room</c>.
+        LandOrbFlight();
+        orbRoom = categoryOrbsShown ? orbRoom : 0;
+        ApplyCardDock();
+
         Card.Width = morphTargetWidth;
         Card.Height = morphTargetHeight;
-        Width = morphTargetWidth;
-        Height = morphTargetHeight;
-        Card.CornerRadius = new CornerRadius(morphConfigRadius);
+        Width = morphTargetWidth + orbRoom;
+        Height = morphTargetHeight + SurfaceTopInset;
+        var restingRadius = CardRadiusFor(morphTargetHeight, morphConfigRadius);
+        Card.CornerRadius = new CornerRadius(restingRadius);
         UpdatePreviewVisibility();
         if (GlassSurface.IsVisible)
-            GlassSurface.SetAnimationFrameShape(new Rect(0, 0, morphTargetWidth, morphTargetHeight), morphConfigRadius);
+            GlassSurface.SetAnimationFrameShape(new Rect(0, 0, morphTargetWidth, morphTargetHeight), restingRadius);
         ExitAcrylicMorphDegradation();
+
+        if (remeasure) Dispatcher.UIThread.Post(UpdateGridMetrics, DispatcherPriority.Loaded);
     }
 
     /// <summary>Screen scaling of the window's display, for the per-step recentring.</summary>
@@ -1529,8 +2270,42 @@ public partial class SpotlightWindow : Window
     private bool UsesNativeBlurTheme()
         => ResolveLauncherTheme(settings.Get().EffectiveLauncher).Theme.UsesNativeBlur;
 
-    /// <summary>The capsule rule while the card morphs: never wider than half the current height.</summary>
-    private double MorphRadius(double height) => Math.Min(morphConfigRadius, height / 2);
+    /// <summary>
+    /// The card's corner radius for a card of <paramref name="height"/> — one rule for the resting
+    /// shapes and every frame of the morph between them.
+    /// <para>
+    /// <b>The bare search bar is a CAPSULE.</b> At <see cref="SearchBarHeight"/> its two ends are
+    /// half-circles whatever 圆角 the settings ask for, because that is the shape the four 分类圆钮
+    /// standing beside it wear: a bar with the configured 8 DIP corners next to four perfect circles
+    /// reads as two different families of object. The configured radius belongs to the <i>panel</i>
+    /// that opens below the bar.
+    /// </para>
+    /// <para>
+    /// <b>The change between them is a transition, not a switch.</b> The radius is a pure function
+    /// of the height, so the morph driver evaluates it on every frame and the ends relax as the
+    /// card grows: the capsule holds at 68 DIP and travels to the configured radius over the first
+    /// bar-height of growth (68 → 136 DIP), which is the stretch the eye is already watching.
+    /// Without the blend a small configured radius (say 8) would snap 34 → 8 on the first frame of
+    /// the expansion; with it the ends tighten continuously, and the curve is monotone in the
+    /// direction of the travel. Past that stretch the rule is the old clamp
+    /// (<c>min(configured, height / 2)</c>), so a short card never draws an arc taller than itself.
+    /// </para>
+    /// </summary>
+    private static double CardRadiusFor(double height, double configured)
+    {
+        if (height <= 0) return Math.Max(0, configured);
+
+        // The bar's own ends: a half-circle on a 68 DIP bar.
+        var capsule = SearchBarHeight / 2;
+        if (height <= SearchBarHeight + 0.01) return capsule;
+
+        var target = Math.Min(configured, height / 2);
+        var t = Math.Clamp((height - SearchBarHeight) / SearchBarHeight, 0, 1);
+        return capsule + (target - capsule) * t;
+    }
+
+    /// <summary>The radius the card wears at its current height (the per-frame morph rule).</summary>
+    private double MorphRadius(double height) => CardRadiusFor(height, morphConfigRadius);
 
     /// <summary>
     /// Feed the glass surface the rect the card covers <b>right now</b>, whatever moved it.
@@ -1596,13 +2371,15 @@ public partial class SpotlightWindow : Window
 
     /// <summary>
     /// Drive the preview column from the card's current width: 0 when the card is only as wide as
-    /// the results list, <see cref="PreviewPaneWidth"/> once it has made the full room.
+    /// the results list, the room it has made (up to <see cref="PreviewPaneWidth"/>) once it is
+    /// wider. Reads the same <see cref="PaneWidthFor"/> the settled column does, so the last frame
+    /// of the unfold and the resting state cannot disagree.
     /// </summary>
     private void ApplyPaneReveal(double cardWidth)
     {
         if (morphBaseWidth <= 0) return;
 
-        var pane = Math.Clamp(cardWidth - morphBaseWidth, 0, PreviewPaneWidth);
+        var pane = PaneRoomFor(cardWidth);
         var shown = pane > 0.5;
         if (shown) BeginPreviewReveal(); else EndPreviewReveal();
 
@@ -1681,6 +2458,11 @@ public partial class SpotlightWindow : Window
         if (!cardMorphRunning) return;
         if (e.Property != WidthProperty && e.Property != HeightProperty) return;
         SyncMorphingCardShape(Card.Width, Card.Height);
+
+        // 毛玻璃: the native region is the card (plus the circles while they are out), and during this
+        // flight the card is the only thing that moves — the window's Resized never fires, so the cut
+        // has to follow the card from here or the bar would grow outside its own region.
+        if (UsesNativeBlurTheme()) RefreshWindowRegion();
     }
 
     private void OnWindowSizeAnimated(object? sender, AvaloniaPropertyChangedEventArgs e)
@@ -1692,12 +2474,12 @@ public partial class SpotlightWindow : Window
             // 亚克力: the card follows the animating window (the window is the shape), the 1-bit
             // region is re-cut by the Resized handler on every step, and the window is re-centred
             // because it grows around the screen centre rather than to the right.
-            Card.Width = Width;
+            Card.Width = Math.Max(0, Width - orbRoom);
             RecentreDuringWidthMorph();
         }
         else if (e.Property == HeightProperty)
         {
-            Card.Height = Height;
+            Card.Height = Math.Max(0, Height - SurfaceTopInset);
         }
         else
         {
@@ -1788,10 +2570,24 @@ public partial class SpotlightWindow : Window
         }
     }
 
-    /// <summary>Show or collapse the preview column; the width rule lives with the layout.</summary>
+    /// <summary>
+    /// Show or collapse the preview column; the width rule lives with the layout.
+    /// <para>
+    /// The column is <see cref="PaneWidthFor"/>, the same expression the reveal drives it with, so
+    /// the settled state is exactly the state the unfold ends on. A card that has no room left for
+    /// the pane (the <see cref="MaxTotalWidth"/> cap reached by the card's own width) collapses the
+    /// column instead of squeezing the results list by a width the flight never gave it.
+    /// </para>
+    /// </summary>
     private void UpdatePreviewVisibility()
     {
-        previewShown = previewEnabled && Width >= MinPreviewTotalWidth;
+        // The pane is measured against the CARD, never the window: while the circles are out the
+        // window is <c>card + room</c> wide, and reading that number here would give the preview a
+        // strip of room the card does not have.
+        var cardWidth = Card.Width > 0 ? Card.Width : Width - orbRoom;
+        var pane = PaneRoomFor(cardWidth);
+
+        previewShown = pane > 0.5;
         PreviewPane.IsVisible = previewShown;
         PreviewHairline.IsVisible = previewShown;
 
@@ -1799,7 +2595,7 @@ public partial class SpotlightWindow : Window
         if (columns.Count >= 3)
         {
             columns[1].Width = new GridLength(previewShown ? 1 : 0);
-            columns[2].Width = new GridLength(previewShown ? PreviewPaneWidth : 0);
+            columns[2].Width = new GridLength(previewShown ? pane : 0);
         }
 
         // Resized covers a width change, but the pane can also appear without the window's size
@@ -1874,18 +2670,44 @@ public partial class SpotlightWindow : Window
     /// The tiles are created by that pass, and a template reads its geometry resources once, when it
     /// is built — so without a seed the first frame is painted with the placeholder sizes and only
     /// the frame after it shows the real grid. <see cref="UpdateGridMetrics"/> refines the numbers
-    /// from the list's real viewport a moment later (the scrollbar and the hairline make this
-    /// estimate a pixel or two wide); nothing here is ever the final word, it just means the panel is
-    /// never left unsized.
+    /// from the list's real viewport later (the estimate is derived from the card width minus fixed
+    /// margins, so it cannot see the list's vertical scrollbar and is up to a scrollbar wide);
+    /// nothing here is ever the final word, it just means the panel is never left unsized.
+    /// </para>
+    /// <para>
+    /// The 最近使用 strip makes this load-bearing rather than cosmetic: its <c>WrapPanel</c> is told
+    /// the same cell as the grid, so a cell that belongs to a <b>different</b> card width lays the
+    /// strip out for a host it does not have — seven cells that no longer fit wrap into a second
+    /// row, and the grid below is pushed down by a row (the reported "最近使用下方空一行再跳位").
+    /// Seeding for the target width is necessary but not sufficient: the refinement must also be
+    /// held off for the duration of the flight (<see cref="widthFlightRunning"/>), or it overwrites
+    /// this seed with a cell measured from a card that is still travelling.
     /// </para>
     /// </summary>
-    private void SeedGridGeometry(LauncherSettings launcher)
+    /// <param name="cardWidth">
+    /// The width the card is heading for — <see cref="TargetCardWidth"/>, never the window's current
+    /// <c>Width</c>: during a width flight the window is already at (or still at) another size, and
+    /// the strip is shown inside that very frame.
+    /// </param>
+    private void SeedGridGeometry(LauncherSettings launcher, double cardWidth)
     {
-        // Card width minus the preview column when present, minus the list's 18 px margins on both
-        // sides and the 1 px hairline. The second argument is 0: an estimate is not a measurement
-        // and must not be traced as one.
-        var contentWidth = Width - (previewShown ? PreviewPaneWidth + 1 : 0);
-        var available = Math.Max(1, contentWidth - 37);
+        // Card width minus the preview column when it will be there, minus the list's 18 px margins
+        // on both sides and the 1 px hairline. (The 分类圆钮 are not part of the card at all: their
+        // room is already out of <paramref name="cardWidth"/>, so there is nothing to subtract for
+        // them here.) Both numbers come from the same rules the settled layout uses, on the base
+        // width ApplyCardGeometry just recorded, so the seed describes the card this mode is
+        // heading for. The second argument is 0: an estimate is not a measurement.
+        var baseWidth = BaseCardWidth(launcher);
+        var pane = PaneShownFor(cardWidth) ? PaneWidthFor(cardWidth, baseWidth) : 0;
+        var contentWidth = cardWidth - (pane > 0.5 ? pane + 1 : 0);
+        // The estimate has to give way to a measurement of the same content column: it is derived
+        // from the card width minus fixed margins, so it cannot see the list's vertical scrollbar
+        // and lands a scrollbar too wide. Re-deriving from the measured width keeps a strip that
+        // already fits exactly fitting — the difference between one row and two.
+        var estimated = Math.Max(1, contentWidth - 37);
+        var available = lastMeasuredWidth > 0 && Math.Abs(estimated - lastMeasuredWidth) <= 2
+            ? lastMeasuredWidth
+            : estimated;
         ApplyMetrics(launcher.GridFor(available), available: 0);
     }
 
@@ -1909,6 +2731,13 @@ public partial class SpotlightWindow : Window
     {
         if (applyingLayout || gridPanel == null) return;
 
+        // The viewport is only the truth while the card is at rest. Mid-flight it still describes
+        // the width the flight is leaving, and a cell derived from it is wider than the card the
+        // strip is being arranged in — the strip wraps, the grid below is pushed down by a row, and
+        // the settle measurement pulls both back (see widthFlightRunning). The seed already
+        // describes the target card; the one real measurement runs when the flight lands.
+        if (widthFlightRunning) return;
+
         gridScroll ??= GridList.GetVisualDescendants().OfType<ScrollViewer>().FirstOrDefault();
 
         var available = gridScroll?.Viewport.Width ?? 0;
@@ -1928,6 +2757,10 @@ public partial class SpotlightWindow : Window
     /// </param>
     private void ApplyMetrics(LauncherGridMetrics metrics, double available)
     {
+        // A measurement is the width every later estimate for the same content column defers to
+        // (see lastMeasuredWidth). The seed passes 0 — an estimate must not claim to be one.
+        if (available >= 1) lastMeasuredWidth = available;
+
         var changed = StoreMetrics(metrics);
 
         // Unconditional: the panel is rebuilt on every ApplyLayout and the seed runs before the
@@ -2101,9 +2934,12 @@ public partial class SpotlightWindow : Window
             top = Math.Max(screen.WorkingArea.Y + 10, workBottom - Height * scaling - 10);
         }
 
+        // The window is SurfaceTopInset taller than the card and the card sits that far down inside
+        // it, so the window starts that much higher — the card lands exactly where it always did,
+        // and the extra strip is the headroom above it.
         Position = new PixelPoint(
             (int)Math.Round(centerX - Width * scaling / 2.0),
-            (int)Math.Round(top));
+            (int)Math.Round(top - SurfaceTopInset * scaling));
     }
 
     // ---- summon animation -----------------------------------------------------------
@@ -2181,9 +3017,12 @@ public partial class SpotlightWindow : Window
         summonAnimationCts?.Dispose();
         summonAnimationCts = null;
 
+        // The grid mode scales out of the SEARCH BAR's centre, which sits SurfaceTopInset down
+        // inside the window (the rise's headroom), not at the window's own middle.
+        var barCentre = (SurfaceTopInset + SearchBarHeight / 2) / Math.Max(1.0, Height);
         var origin = summonMode == SpotlightSummonMode.Search
             ? new RelativePoint(0.5, 0.5, RelativeUnit.Relative)
-            : new RelativePoint(0.5, Math.Clamp(34.0 / Math.Max(1.0, Height), 0.01, 0.5), RelativeUnit.Relative);
+            : new RelativePoint(0.5, Math.Clamp(barCentre, 0.01, 0.99), RelativeUnit.Relative);
 
         SurfaceRoot.RenderTransformOrigin = origin;
         SurfaceRoot.Transitions = null;
@@ -2259,7 +3098,7 @@ public partial class SpotlightWindow : Window
 
     private void OnQueryChanged(object? sender, TextChangedEventArgs e)
     {
-        if (applyingLayout) return;
+        if (closed || applyingLayout) return;
         UpdateClearButton();
         viewModel.SetQuery(QueryBox.Text);
         selectedIndex = 0;
@@ -2268,9 +3107,14 @@ public partial class SpotlightWindow : Window
 
     private void OnClearQuery(object? sender, RoutedEventArgs e) => ClearQuery();
 
-    /// <summary>The ⊗ button and Esc / Alt+Backspace share one clear path.</summary>
+    /// <summary>The ⊗ button, Esc and Alt+Backspace share one clear path.</summary>
     private void ClearQuery()
     {
+        // Leaving a browse is part of clearing: the locked category is a state the field is in, and
+        // an empty field on 全部 is the app grid. EndBrowse resets the chip itself, so the
+        // SetCategory below is a no-op in that case.
+        if (viewModel.IsBrowsing) viewModel.EndBrowse();
+
         QueryBox.Text = string.Empty;
         viewModel.SetQuery(string.Empty);
         viewModel.SetCategory(0);
@@ -2293,6 +3137,8 @@ public partial class SpotlightWindow : Window
         else if (e.PropertyName is nameof(SpotlightViewModel.ActiveCategory))
         {
             RefreshCategoryChips();
+            // The circles and the chips are the same lock, so the 当前 state has to move on both.
+            UpdateCategoryOrbSelection();
 
             // A category switch is a new result set: its first row is the new selection, so the
             // very next ↓ moves to the second row instead of re-selecting the first one.
@@ -2366,41 +3212,109 @@ public partial class SpotlightWindow : Window
         ScheduleResultHighlightUpdate();
     }
 
-    /// <summary>Switch between grid / list / empty states and keep the selection valid.</summary>
+    /// <summary>
+    /// What the results area is showing. One value, resolved by one method, from which every
+    /// visibility flag and every geometry input derives.
+    /// <para>
+    /// The five states used to be five independent booleans computed in three methods (here, in
+    /// <see cref="UpdateEmptyRows"/> and in the XAML's own bindings), which is how "grid + no-result
+    /// line" and "empty category + import hint" could be on screen together, and why the keyboard
+    /// had to guess the surface from whichever flag happened to be visible.
+    /// </para>
+    /// </summary>
+    private enum SpotlightSurface
+    {
+        /// <summary>搜索栏式唤出 with an empty query: a bare field, no grid, no recents, no list.</summary>
+        Bar,
+
+        /// <summary>应用列表式 with an empty query: the Launchpad grid (plus 最近使用).</summary>
+        Grid,
+
+        /// <summary>The launcher folder itself is empty: the import hint.</summary>
+        EmptyFolder,
+
+        /// <summary>The grid's active app category holds no apps.</summary>
+        EmptyCategory,
+
+        /// <summary>A query or a browse with rows to show.</summary>
+        Results,
+
+        /// <summary>A query or a browse that matched nothing.</summary>
+        NoResults,
+    }
+
+    /// <summary>
+    /// The surface the current inputs resolve to. Order matters: a query always wins over the
+    /// summon mode (a search-bar summon with results is a list), the search-bar summon wins over
+    /// the folder state (a bare field says nothing about the folder), and the folder wins over a
+    /// category (there is nothing to file yet).
+    /// </summary>
+    private SpotlightSurface ResolveSurface()
+    {
+        if (viewModel.IsFiltering)
+            return viewModel.IsEmptyResult ? SpotlightSurface.NoResults : SpotlightSurface.Results;
+
+        if (summonMode == SpotlightSummonMode.Search) return SpotlightSurface.Bar;
+        if (viewModel.IsEmptyFolder) return SpotlightSurface.EmptyFolder;
+        if (viewModel.IsEmptyAppCategory) return SpotlightSurface.EmptyCategory;
+        return SpotlightSurface.Grid;
+    }
+
+    /// <summary>Switch between the surfaces and keep the selection valid.</summary>
     private void UpdateMode()
     {
-        var filtering = viewModel.IsFiltering;
-        var emptyFolder = viewModel.IsEmptyFolder;
-        var emptyResult = viewModel.IsEmptyResult;
-        var emptyCategory = viewModel.IsEmptyAppCategory;
-        var gridMode = summonMode == SpotlightSummonMode.AppList;
+        // A query owns the row. The circles are the bare bar's form of the category gesture; on a
+        // filtering surface the chips already answer it, so they must not survive the transition —
+        // the card would otherwise keep their room and show a second set of category controls
+        // beside the chips. Leaving the Bar surface by any other route (the grid, a folder state)
+        // takes them away for the same reason: the gesture belongs to one surface.
+        if (categoryOrbsShown && (viewModel.IsFiltering || summonMode != SpotlightSummonMode.Search))
+            RetractCategoryOrbs();
 
-        GridList.IsVisible = gridMode && !filtering && !emptyFolder;
+        var surface = ResolveSurface();
+        currentSurface = surface;
+
         // The 最近使用 strip lives INSIDE this scroller (it scrolls away with the tiles), so the
-        // scroller — not the list — is what has to leave the screen with it. GridList keeps its own
-        // flag: IsGridMode / ActiveListVisible / SyncSelectionFrom all read it.
+        // scroller — not the list — is what has to leave the screen with it.
+        GridList.IsVisible = surface == SpotlightSurface.Grid;
         GridScroller.IsVisible = GridList.IsVisible;
-        ResultList.IsVisible = filtering && !emptyResult;
-        EmptyState.IsVisible = gridMode && emptyFolder;
-        NoResultState.IsVisible = emptyResult;
-        EmptyCategoryState.IsVisible = gridMode && emptyCategory && !emptyFolder;
+        ResultList.IsVisible = surface == SpotlightSurface.Results;
+        EmptyState.IsVisible = surface == SpotlightSurface.EmptyFolder;
+        EmptyCategoryState.IsVisible = surface == SpotlightSurface.EmptyCategory;
+        NoResultState.IsVisible = surface == SpotlightSurface.NoResults;
 
-        // The cluster bar belongs to the grid: a search query has its own chips on the same row,
-        // and the empty-folder state is about the launcher folder itself, not about a category.
-        AppCategoryBar.IsVisible = gridMode && !filtering && !emptyFolder;
+        // Two category bars, one row, never together: the grid's clusters belong to the grid, the
+        // filter chips belong to a query. Both are written here so visibility has a single owner.
+        AppCategoryBar.IsVisible = surface == SpotlightSurface.Grid;
+        CategoryBar.IsVisible = viewModel.IsFiltering;
 
-        // The card's size follows the mode, not the query alone: the preview column exists only
-        // while searching, and the search-bar summon is one row tall until a result arrives.
-        ApplyCardGeometry(settings.Get().EffectiveLauncher);
+        // The card's size follows the surface, not the query alone: the preview column exists only
+        // while filtering, and the search-bar summon is one row tall until a result arrives.
+        var launcher = settings.Get().EffectiveLauncher;
+        ApplyCardGeometry(launcher);
+
+        // Seed the grid for the width this surface is heading for, BEFORE the 最近使用 strip can be
+        // shown (UpdateEmptyRows below). The strip's cell is the grid's cell, and a cell that
+        // belongs to another card width wraps it into a second row for the first arranged frames;
+        // the refinement that fixes it then lands only at the end of the flight, which is the
+        // reported "空一行再跳位". The per-frame refinement is held off for the whole flight
+        // (widthFlightRunning), so this seed is what every frame of it uses.
+        if (surface == SpotlightSurface.Grid) SeedGridGeometry(launcher, TargetCardWidth(launcher));
 
         UpdateEmptyRows();
 
+        var filtering = surface == SpotlightSurface.Results;
         var active = filtering ? ResultList : GridList;
         var count = filtering ? viewModel.Results.Count : viewModel.GridItems.Count;
 
-        if (count == 0)
+        // Only a surface that shows a list can carry a selection. The empty states and the bare bar
+        // have nothing to select — seating one there left a hidden list with a selected row that
+        // the next ↓ would move, and ValidateFocusZone would then repair a zone that was never
+        // really entered.
+        if (surface is not (SpotlightSurface.Grid or SpotlightSurface.Results) || count == 0)
         {
-            active.SelectedIndex = -1;
+            GridList.SelectedIndex = -1;
+            ResultList.SelectedIndex = -1;
             ValidateFocusZone();
             return;
         }
@@ -2431,20 +3345,15 @@ public partial class SpotlightWindow : Window
     /// <summary>The empty-query rows are driven by counts alone (the VM fills them per settings).</summary>
     private void UpdateEmptyRows()
     {
-        // The grid's satellite rows belong to 应用列表式 only: a search bar that opens with a
-        // "最近使用" strip is not a search bar.
-        var gridMode = summonMode == SpotlightSummonMode.AppList;
-
-        // …and to 全部 only. A cluster is a hand-made slice of the grid, so a strip of "whatever you
-        // launched last across every app" would put apps the user did not file into that cluster
-        // right on top of it — the one place where the row would actively contradict the view.
-        var onAllApps = viewModel.ActiveAppCategory == 0;
-
-        RecentRow.IsVisible = gridMode
-                              && onAllApps
+        // The grid's satellite row belongs to the grid surface only: a search bar that opens with
+        // a "最近使用" strip is not a search bar, and a cluster is a hand-made slice of the grid —
+        // a strip of "whatever you launched last across every app" would put apps the user did not
+        // file into that cluster right on top of it, the one place where the row would actively
+        // contradict the view. Both conditions are the surface's, not a second set of booleans.
+        RecentRow.IsVisible = currentSurface == SpotlightSurface.Grid
+                              && viewModel.ActiveAppCategory == 0
                               && settings.Get().EffectiveLauncher.RecentApps
-                              && viewModel.RecentItems.Count > 0
-                              && !viewModel.IsFiltering;
+                              && viewModel.RecentItems.Count > 0;
     }
 
     /// <summary>
@@ -2569,6 +3478,15 @@ public partial class SpotlightWindow : Window
             return;
         }
 
+        // The row has scrolled entirely out of the list (ResultHighlightTarget clips to it): the
+        // bar goes with it instead of parking at the edge.
+        if (rect.Height < 0.5)
+        {
+            highlightDriving = false;
+            ResultHighlight.IsVisible = false;
+            return;
+        }
+
         if (!ResultHighlight.IsVisible)
         {
             // First appearance: arrive exactly on the row, no glide from nowhere.
@@ -2624,6 +3542,14 @@ public partial class SpotlightWindow : Window
             if (ResultHighlightTarget() is not { } rect)
             {
                 highlightDriving = false;
+                return;
+            }
+
+            // Scrolled entirely out of the list: the bar leaves with the row.
+            if (rect.Height < 0.5)
+            {
+                highlightDriving = false;
+                ResultHighlight.IsVisible = false;
                 return;
             }
 
@@ -2690,8 +3616,33 @@ public partial class SpotlightWindow : Window
         // again once the row has its real rect, which is when the bar may follow it.
         if (source.Bounds.Height < 1 || source.Bounds.Width < 1) return null;
 
-        return source.TranslatePoint(new Point(0, 0), host) is { } topLeft
-            ? new Rect(topLeft, source.Bounds.Size)
+        if (source.TranslatePoint(new Point(0, 0), host) is not { } topLeft) return null;
+        var rect = new Rect(topLeft, source.Bounds.Size);
+
+        // The bar belongs to the LIST, not to the row: it is clipped to the window the rows scroll
+        // through. Without this a selected row that scrolls out of view kept dragging its bar out
+        // of the list — an invisible row with the highlight still climbing over the search field.
+        // Clipping (rather than hiding) is also what makes a half-scrolled row keep exactly the
+        // visible half of its bar, like the row itself.
+        if (ResultListViewport() is not { } viewport) return rect;
+
+        var top = Math.Max(rect.Y, viewport.Y);
+        var bottom = Math.Min(rect.Bottom, viewport.Bottom);
+        return new Rect(rect.X, top, rect.Width, Math.Max(0, bottom - top));
+    }
+
+    /// <summary>
+    /// The rect the result rows scroll through, in the highlight bar's own coordinate space (the
+    /// panel the bar floats in). Read from the list's live rect rather than from a constant: the
+    /// list's margins are what inset it from the card, and the bar has to be cut exactly there.
+    /// </summary>
+    private Rect? ResultListViewport()
+    {
+        if (ResultHighlight.Parent is not Control host) return null;
+        if (ResultList.Bounds.Width < 1 || ResultList.Bounds.Height < 1) return null;
+
+        return ResultList.TranslatePoint(new Point(0, 0), host) is { } origin
+            ? new Rect(origin, ResultList.Bounds.Size)
             : null;
     }
 
@@ -2815,10 +3766,41 @@ public partial class SpotlightWindow : Window
 
     private void OnQueryBoxTunnelKeyDown(object? sender, KeyEventArgs e) => HandleKey(e);
 
+    private void OnQueryBoxTunnelKeyUp(object? sender, KeyEventArgs e) => HandleKeyUp(e);
+
     protected override void OnKeyDown(KeyEventArgs e)
     {
         HandleKey(e);
         if (!e.Handled) base.OnKeyDown(e);
+    }
+
+    protected override void OnKeyUp(KeyEventArgs e)
+    {
+        HandleKeyUp(e);
+        if (!e.Handled) base.OnKeyUp(e);
+    }
+
+    /// <summary>
+    /// The release half of the Alt gesture: the circles live exactly as long as the modifier does.
+    /// <para>
+    /// Marked handled for the same reason the press is: a bare Alt tap that reaches the shell is a
+    /// menu gesture (and a beep on Windows), and this launcher has no menu to open. The tunnel
+    /// handler on the field and this override cover both routes — a TextBox may consume a KeyUp of
+    /// its own, which would otherwise leave the circles on screen forever.
+    /// </para>
+    /// </summary>
+    private void HandleKeyUp(KeyEventArgs e)
+    {
+        if (e.Key is Key.LeftAlt or Key.RightAlt)
+        {
+            if (IsVisible) RetractCategoryOrbs();
+            e.Handled = true;
+            return;
+        }
+
+        // Alt was already reported up before this key was (a focus round-trip can swallow the Alt
+        // KeyUp): any key released with no Alt modifier means the cluster lost its reason to be.
+        if (categoryOrbsShown && !e.KeyModifiers.HasFlag(KeyModifiers.Alt)) RetractCategoryOrbs();
     }
 
     /// <summary>
@@ -2842,12 +3824,48 @@ public partial class SpotlightWindow : Window
         var alt = e.KeyModifiers.HasFlag(KeyModifiers.Alt);
         var shift = e.KeyModifiers.HasFlag(KeyModifiers.Shift);
 
+        // 分类圆钮: holding Alt splits the four circles out of the field's right edge. Any event that
+        // merely CARRIES Alt counts too (Alt+2 is a key event with the modifier, not an Alt key
+        // event), so the cluster is out before the number is read. The bare Alt press is marked
+        // handled, which is what keeps Windows from beeping at it or opening a system menu.
+        if (alt || e.Key is Key.LeftAlt or Key.RightAlt)
+        {
+            RevealCategoryOrbs();
+            if (e.Key is Key.LeftAlt or Key.RightAlt)
+            {
+                e.Handled = true;
+                return;
+            }
+        }
+
+        // Alt+1..4 opens a category directly — no query needed. Checked before the rebindable
+        // category gestures: the circles are the discoverable form of the same idea, and the
+        // F1–F7 defaults keep their slots untouched.
+        if (alt && !ctrl)
+        {
+            var orbIndex = OrbIndexForKey(e.Key);
+            if (orbIndex >= 0)
+            {
+                ActivateCategoryOrb(orbIndex);
+                e.Handled = true;
+                return;
+            }
+        }
+
         switch (e.Key)
         {
             case Key.Escape:
-                // First Esc empties the query (and resets the category); only the second closes.
-                if (!string.IsNullOrEmpty(QueryBox.Text)) ClearQuery();
-                else Dismiss();
+                // First Esc leaves whatever the field is in — a browse, then a query — and only the
+                // next one closes the overlay (the existing "Esc clears, Esc dismisses" contract,
+                // with the browse state counted as a step of its own).
+                if (viewModel.IsBrowsing || !string.IsNullOrEmpty(QueryBox.Text))
+                {
+                    ClearQuery();
+                    e.Handled = true;
+                    return;
+                }
+
+                Dismiss();
                 e.Handled = true;
                 return;
 
@@ -3029,10 +4047,9 @@ public partial class SpotlightWindow : Window
             return true;
         }
 
-        if (!AppCategoryBar.IsVisible || viewModel.AppCategories.Count <= 1) return false;
+        if (currentSurface != SpotlightSurface.Grid || viewModel.AppCategories.Count <= 1) return false;
         viewModel.StepAppCategory(delta);
-        return true;
-    }
+        return true;    }
 
     /// <summary>Down from the search field / category bar: filtering jumps straight into the list,
     /// the empty query chains 最近 → 网格.</summary>
@@ -3125,10 +4142,13 @@ public partial class SpotlightWindow : Window
 
     private ListBox ActiveList => viewModel.IsFiltering ? ResultList : GridList;
 
-    private bool ActiveListVisible
-        => ActiveList.IsVisible && ActiveList.ItemCount > 0;
-
-    private bool IsGridMode => GridList.IsVisible;
+    /// <summary>Whether the active list is the surface on screen and has a row to move onto.</summary>
+    private bool ActiveListVisible => currentSurface switch
+    {
+        SpotlightSurface.Results => ResultList.ItemCount > 0,
+        SpotlightSurface.Grid => GridList.ItemCount > 0,
+        _ => false,
+    };
 
     private int GridColumns => Math.Max(1, settings.Get().EffectiveLauncher.Columns);
 
@@ -3193,15 +4213,16 @@ public partial class SpotlightWindow : Window
 
     /// <summary>
     /// True while a category bar owns row 1: the search filter chips while a query is up, or the
-    /// app grid's cluster capsules while the grid is. They never share the row.
+    /// app grid's cluster capsules while the grid is. They never share the row, and which one it is
+    /// follows the surface, not a visibility flag.
     /// </summary>
-    private bool CategoryBarOnScreen =>
-        (CategoryBar.IsVisible && categoryChips.Count > 0)
-        || (AppCategoryBar.IsVisible && appCategoryChips.Count > 0);
+    private bool CategoryBarOnScreen => currentSurface == SpotlightSurface.Grid
+        ? appCategoryChips.Count > 0
+        : viewModel.IsFiltering && categoryChips.Count > 0;
 
-    /// <summary>The chips of whichever bar is on screen (the grid's clusters win when both exist).</summary>
+    /// <summary>The chips of whichever bar the surface owns.</summary>
     private List<Button> ChipsOnScreen =>
-        AppCategoryBar.IsVisible && appCategoryChips.Count > 0 ? appCategoryChips : categoryChips;
+        currentSurface == SpotlightSurface.Grid ? appCategoryChips : categoryChips;
 
     private void FocusZoneTarget(SpotlightFocusZone zone)
     {
@@ -3210,7 +4231,9 @@ public partial class SpotlightWindow : Window
             case SpotlightFocusZone.Categories:
                 var chips = ChipsOnScreen;
                 if (chips.Count == 0) break;
-                var active = AppCategoryBar.IsVisible ? viewModel.ActiveAppCategory : viewModel.ActiveCategory;
+                var active = currentSurface == SpotlightSurface.Grid
+                    ? viewModel.ActiveAppCategory
+                    : viewModel.ActiveCategory;
                 chips[Math.Clamp(active, 0, chips.Count - 1)].Focus();
                 break;
 
@@ -3363,6 +4386,528 @@ public partial class SpotlightWindow : Window
             categoryChips[i].Classes.Set("selected", i == viewModel.ActiveCategory);
         }
     }
+
+    // ---- 分类圆钮: four circles beside the search bar --------------------------------------
+    //
+    // macOS 26 Spotlight's category buttons, as a hold-Alt gesture: four <b>independent circles</b>
+    // in the strip of window to the RIGHT of the bar — never four holes punched in the bar itself.
+    //   · the bar pays for them. TargetCardWidth gives up the cluster's room, so <c>bar + circles</c>
+    //     is exactly the width the bar had before Alt and the overlay never grows a strip on the
+    //     right (the reported "多出一截");
+    //   · the window stands still for the whole gesture — the card is the thing that travels, which
+    //     is also why the bar's left edge never moves while the circles split out of its right one;
+    //   · the cluster is right-aligned in the room the card released and drawn BEHIND the card, so
+    //     while the bar is still wide it covers them: the split reads as the bar tearing open
+    //     rather than as four buttons popping in;
+    //   · each circle lands on its own 30 ms beat from slightly small, so the row is read left to
+    //     right instead of arriving as one blob.
+    // Alt+1..4 (or a click) opens that category with no query at all; the release pulls them back
+    // on the collapse spring. The gesture belongs to the BARE SEARCH BAR only: the app grid has its
+    // own capsule bar and a query has the filter chips, so on those surfaces Alt reveals nothing
+    // (RevealCategoryOrbs) — while Alt+1..4 keeps working everywhere.
+
+    /// <summary>Hover lift of one circle. 1.04, because 64 DIP is already a target, not a tile.</summary>
+    private const double OrbHoverScale = 1.04;
+
+    /// <summary>
+    /// Where a circle starts its landing: 92% of its size, fading in. It settles to 1/1 at its own
+    /// place — the circle is the resting shape, not the starting one.
+    /// </summary>
+    private const double OrbEnterScale = 0.92;
+
+    /// <summary>
+    /// The four circles in the order the settings ask for. A category this build does not know
+    /// (a key from a newer release, a hand-edited file) is simply absent — the list is exactly as
+    /// long as what resolved, and <see cref="ActivateCategoryOrb"/> ignores the rest.
+    /// </summary>
+    private OrbDefinition[] ResolveOrbDefs()
+    {
+        IReadOnlyList<string> keys;
+        try
+        {
+            keys = settings.Get().EffectiveLauncher.EffectiveOrbCategories;
+        }
+        catch
+        {
+            keys = LauncherSettings.DefaultOrbCategories;
+        }
+
+        var result = new List<OrbDefinition>(LauncherSettings.OrbCount);
+        foreach (var key in keys)
+        {
+            if (SpotlightCategoryVisuals.KindForKey(key) is not { } kind) continue;
+            result.Add(new OrbDefinition(
+                LauncherCategoryKeys.Match(key) ?? key,
+                kind,
+                SpotlightCategoryVisuals.GlyphFor(kind),
+                SpotlightCategoryVisuals.LabelFor(kind)));
+        }
+
+        return [.. result];
+    }
+
+    /// <summary>
+    /// Build the four circles once. They are Buttons (the pointer half of the gesture) but
+    /// <b>not focusable</b>: the keyboard belongs to the search field, and a Tab stop that only
+    /// exists while Alt is held would be a trap.
+    /// </summary>
+    private void BuildCategoryOrbs()
+    {
+        CategoryOrbCluster.Children.Clear();
+        categoryOrbs.Clear();
+        CategoryOrbCluster.Spacing = CategoryOrbGap;
+
+        orbDefs = ResolveOrbDefs();
+
+        for (var i = 0; i < orbDefs.Length; i++)
+        {
+            var def = orbDefs[i];
+            var index = i;
+
+            // The mark is the whole face, centred: the circle is one shape, and anything under the
+            // glyph would turn it back into a labelled button.
+            var orb = new Button
+            {
+                Classes = { "category-orb" },
+                Content = CreateOrbGlyph(def.Glyph),
+                Focusable = false,
+                Width = orbDiameter,
+                Height = orbDiameter,
+                RenderTransformOrigin = RelativePoint.Center,
+                RenderTransform = new ScaleTransform(1, 1),
+            };
+
+            // The number used to be printed under the mark; with it gone the shortcut has to live
+            // somewhere, and the tooltip is the only place left. The label still leads, because
+            // that is what the circle is.
+            ToolTip.SetTip(orb, $"{def.Label} · Alt+{index + 1}");
+            orb.Click += (_, _) => ActivateCategoryOrb(index);
+            orb.PointerEntered += (_, _) => AnimateOrbScale(orb, OrbHoverScale);
+            orb.PointerExited += (_, _) => AnimateOrbScale(orb, 1);
+
+            // The template arrives with the style system (on attach), which is after the first
+            // ApplyAppearance — replay the cached material once the pass that built it is over
+            // (posting, not calling inline: the handler runs inside the style application).
+            orb.TemplateApplied += (_, _) => Dispatcher.UIThread.Post(
+                () => ApplyOrbGlassLayer(orb), DispatcherPriority.Background);
+
+            CategoryOrbCluster.Children.Add(orb);
+            categoryOrbs.Add(orb);
+        }
+
+        UpdateCategoryOrbSelection();
+    }
+
+    /// <summary>
+    /// Repaint the circles in place when 设置 › 分类圆钮 points one at another category. Only the
+    /// face and the tooltip change (the count is the Alt+1..4 contract, so it never does), which is
+    /// why this updates the existing buttons instead of rebuilding the cluster: a rebuild would
+    /// drop the reveal flight if the overlay happens to be open while the settings page is used.
+    /// </summary>
+    private void RefreshCategoryOrbs()
+    {
+        var next = ResolveOrbDefs();
+        if (next.Length != orbDefs.Length)
+        {
+            // Only reachable when a hand-edited settings file names fewer categories than the
+            // count allows. New buttons carry no fill yet — the appearance pass that paints them
+            // already ran in this settings change, so it is replayed (and it cannot re-enter here:
+            // the definitions now match).
+            BuildCategoryOrbs();
+            ApplyAppearance();
+            return;
+        }
+
+        var changed = false;
+        for (var i = 0; i < next.Length; i++)
+        {
+            if (next[i] == orbDefs[i]) continue;
+            changed = true;
+            break;
+        }
+
+        if (!changed) return;
+
+        orbDefs = next;
+
+        for (var i = 0; i < orbDefs.Length && i < categoryOrbs.Count; i++)
+        {
+            var def = orbDefs[i];
+            categoryOrbs[i].Content = CreateOrbGlyph(def.Glyph);
+            ToolTip.SetTip(categoryOrbs[i], $"{def.Label} · Alt+{i + 1}");
+        }
+
+        // The mark's size is the circle's, not the artwork's, so the new face lands on the pitch
+        // the current gesture already paid for.
+        ApplyOrbClusterGeometry();
+        UpdateCategoryOrbSelection();
+    }
+
+    /// <summary>
+    /// The glass surface inside one circle (the template's material layer), or null until the
+    /// template has been applied. A pure lookup on purpose: forcing <c>ApplyTemplate()</c> from the
+    /// appearance pass built the template mid-flight and re-entered layout.
+    /// </summary>
+    private static DeskCanvas.Views.Controls.LiquidGlassSurface? OrbGlassLayer(Button orb)
+        => orb.GetVisualDescendants().OfType<DeskCanvas.Views.Controls.LiquidGlassSurface>().FirstOrDefault();
+
+    /// <summary>
+    /// Push the current material onto one circle's glass layer.
+    /// <para>
+    /// The three values are cached by <see cref="ApplyAppearance"/> and replayed from here, because
+    /// the layer does not exist yet on the first pass: the orb's template is applied by the style
+    /// system when the window is attached, which is <i>after</i> the appearance resolves. Missing
+    /// that window left the layer with a null Material — it painted nothing and the flat fill under
+    /// it showed through as "还是半透明". <see cref="Button.TemplateApplied"/> is what closes it.
+    /// </para>
+    /// </summary>
+    private void ApplyOrbGlassLayer(Button orb)
+    {
+        if (OrbGlassLayer(orb) is not { } glass) return;
+
+        // Order matters: the material is what kicks a prepare, and the prepare reads the sampling
+        // mode — so the shape and the sampling source are in place before it.
+        //
+        // No RequestRender here. Asking four surfaces for an immediate frame at summon time made
+        // each of them capture the desktop at once, and the overlay froze on its own first frame.
+        // The sampler paces them like every other glass surface (frames are dropped under load, not
+        // queued), so the circles fill in on the first tick instead of all at the same instant.
+        glass.CornerRadius = new CornerRadius(orbDiameter / 2);
+        glass.ScreenSampling = orbGlassSampleScreen;
+        glass.Material = orbGlassMaterial;
+        glass.IsVisible = orbGlassVisible;
+    }
+
+    /// <summary>
+    /// Give the circles the diameter the current bar pays for. Called before every reveal (and on a
+    /// settings/theme pass, so the hairline brush follows): a narrow launcher gives up less room and
+    /// gets smaller circles instead of a squeezed search field.
+    /// </summary>
+    private void ApplyOrbClusterGeometry()
+    {
+        CategoryOrbCluster.Spacing = CategoryOrbGap;
+
+        // The circles are centred on the BAR, not on the window: the window is SurfaceTopInset
+        // taller than the card (the summon rise's headroom), so the offset is the inset plus half
+        // the bar's leftover air. The trailing margin is the room the hover lift grows into — the
+        // rightmost circle used to be cut flat by the window's edge.
+        CategoryOrbCluster.Margin = new Thickness(
+            0,
+            SurfaceTopInset + Math.Max(0, (SearchBarHeight - orbDiameter) / 2),
+            CategoryOrbTrailGap,
+            0);
+
+        // The mark follows the circle: 18 DIP inside 64 is the resting proportion, and a narrow
+        // launcher's 32 DIP circle gets a 10 DIP mark instead of one that fills it edge to edge.
+        var glyph = Math.Clamp(orbDiameter * 0.28, 10, 18);
+
+        foreach (var orb in categoryOrbs)
+        {
+            if (Math.Abs(orb.Width - orbDiameter) > 0.01) orb.Width = orbDiameter;
+            if (Math.Abs(orb.Height - orbDiameter) > 0.01) orb.Height = orbDiameter;
+
+            if (orb.Content is Panel face)
+            {
+                if (Math.Abs(face.Width - glyph) > 0.01) face.Width = glyph;
+                if (Math.Abs(face.Height - glyph) > 0.01) face.Height = glyph;
+            }
+
+            // A capsule of half the diameter is a circle; the glass layer draws its own outline.
+            if (OrbGlassLayer(orb) is { } glass)
+            {
+                var radius = new CornerRadius(orbDiameter / 2);
+                if (Math.Abs(glass.CornerRadius.TopLeft - radius.TopLeft) > 0.01) glass.CornerRadius = radius;
+            }
+        }
+    }
+
+    /// <summary>
+    /// One circle's mark, from the same <see cref="SpotlightGlyphs"/> geometry the search field
+    /// paints: a filled Path for the SVG artwork, a stroked Path (1.7, round caps/joins) for the
+    /// marks that are drawn. Never a bitmap — the ink is the theme's brush, so the circles follow
+    /// light/dark and all three materials exactly like the field's own glyph.
+    /// </summary>
+    private static Panel CreateOrbGlyph(SpotlightGlyphKind kind)
+    {
+        var filled = SpotlightGlyphs.IsFilled(kind);
+        var panel = new Panel
+        {
+            Width = 18,
+            Height = 18,
+            HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center,
+            VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center,
+        };
+
+        panel.Children.Add(new Avalonia.Controls.Shapes.Path
+        {
+            Data = SpotlightGlyphs.Fill(kind),
+            Stretch = Stretch.Uniform,
+            Classes = { "orb-filled" },
+            IsVisible = filled,
+        });
+        panel.Children.Add(new Avalonia.Controls.Shapes.Path
+        {
+            Data = SpotlightGlyphs.Stroke(kind),
+            Stretch = Stretch.Uniform,
+            Classes = { "orb-stroked" },
+            IsVisible = !filled,
+        });
+
+        return panel;
+    }
+
+    /// <summary>
+    /// Alt down: the bar gives up the room, then the four circles land in it, one beat apart.
+    /// <para>
+    /// The width goes through <see cref="ApplyCardGeometry"/> — the very call a query makes when the
+    /// preview column opens — so the bar narrowing is one flight on one easing. The circles are not
+    /// faded in where they stand: they are drawn <b>behind</b> the card, so the narrowing bar
+    /// uncovers them from left to right, and their own entrance (0.92 → 1 with a fade, 30 ms apart)
+    /// only supplies the beat.
+    /// </para>
+    /// <para>
+    /// <b>The bare bar owns the gesture.</b> On the app grid the capsule bar already answers "pick a
+    /// category", and a query has the filter chips; on both, Alt must do nothing at all — no
+    /// circles, no width change (the reported "应用网格页面不应该弹圆圈"). Alt+1..4 still opens the
+    /// category directly (see the keyboard contract), because that shortcut is the discoverable half
+    /// of the same idea and costs no room.
+    /// </para>
+    /// </summary>
+    private void RevealCategoryOrbs()
+    {
+        if (categoryOrbsShown) return;
+
+        // 搜索栏式 with an empty query is the only surface with room for the gesture.
+        if (ResolveSurface() != SpotlightSurface.Bar) return;
+
+        // A launcher too narrow to pay for four readable circles keeps them away rather than
+        // eating the field.
+        if (OrbClusterFor(BaseCardWidth(settings.Get().EffectiveLauncher)).Room <= 0) return;
+
+        categoryOrbsShown = true;
+        orbFlight++;
+        UpdateCategoryOrbSelection();
+        CategoryOrbCluster.IsVisible = true;
+
+        // Replay the cached material in case a layer's template landed after the last appearance
+        // pass. Property writes only — the first frame comes from the sampler's next tick.
+        var configured = 0;
+        foreach (var orb in categoryOrbs)
+        {
+            ApplyOrbGlassLayer(orb);
+            if (OrbGlassLayer(orb)?.Material is not null) configured++;
+        }
+
+        // "the circles are not glass" is otherwise unanswerable from the outside: this records what
+        // the four layers were actually given, in the same trace the card writes to.
+        GlassDiagnostics.Event(
+            $"[spotlight] orbs: glass={orbGlassVisible} surface={orbGlassMaterial?.EffectiveSurface} " +
+            $"sample={orbGlassSampleScreen} d={orbDiameter:F0} layers={configured}/{categoryOrbs.Count}");
+
+        // The geometry resolves both numbers this gesture needs — the room the bar gives up and the
+        // diameter the circles wear for it — so the cluster is sized from its answer, never from the
+        // previous bar's.
+        ApplyCardGeometry(settings.Get().EffectiveLauncher);
+        ApplyOrbClusterGeometry();
+
+        var flight = orbFlight;
+        var animate = IsVisible && settings.Get().EffectiveLauncher.AnimateSummon;
+        var duration = TimeSpan.FromMilliseconds(MotionTokens.CollapseMs);
+
+        for (var i = 0; i < categoryOrbs.Count; i++)
+        {
+            var orb = categoryOrbs[i];
+            if (orb.RenderTransform is not ScaleTransform scale) continue;
+
+            scale.Transitions = null;
+            orb.Transitions = null;
+
+            if (!animate)
+            {
+                // 打开动画 off: land on the resting circle, no entrance to unwind.
+                orb.Opacity = 1;
+                scale.ScaleX = 1;
+                scale.ScaleY = 1;
+                continue;
+            }
+
+            orb.Opacity = 0;
+            scale.ScaleX = OrbEnterScale;
+            scale.ScaleY = OrbEnterScale;
+
+            DispatcherTimer.RunOnce(() =>
+            {
+                // A retract (or a newer reveal) owns the circles by now: its state must win.
+                if (flight != orbFlight || !categoryOrbsShown) return;
+
+                orb.Transitions = new Transitions
+                {
+                    new DoubleTransition { Property = Visual.OpacityProperty, Duration = duration, Easing = CardFadeEasing },
+                };
+                scale.Transitions = new Transitions
+                {
+                    new DoubleTransition { Property = ScaleTransform.ScaleXProperty, Duration = duration, Easing = CardMorphEasing },
+                    new DoubleTransition { Property = ScaleTransform.ScaleYProperty, Duration = duration, Easing = CardMorphEasing },
+                };
+                orb.Opacity = 1;
+                scale.ScaleX = 1;
+                scale.ScaleY = 1;
+
+                // The flight is over: drop the transitions, or the next hover would be swallowed by
+                // them (the same cleanup the summon and the row stagger do).
+                DispatcherTimer.RunOnce(() =>
+                {
+                    if (flight != orbFlight || !categoryOrbsShown) return;
+                    orb.Transitions = null;
+                    scale.Transitions = null;
+                }, duration + TimeSpan.FromMilliseconds(MotionTokens.SettlePadMs));
+            }, TimeSpan.FromMilliseconds(i * MotionTokens.OrbStaggerStepMs));
+        }
+    }
+
+    /// <summary>
+    /// Alt up: the bar takes the room back on the collapse spring and the circles leave under it.
+    /// <para>
+    /// There is no separate exit geometry. The card grows back over them (they are drawn behind it)
+    /// while they fade on the same collapse spring, so by the time the bar is whole again the last
+    /// circle is already gone — the reverse of the reveal, on the same numbers.
+    /// </para>
+    /// </summary>
+    private void RetractCategoryOrbs()
+    {
+        if (!categoryOrbsShown) return;
+
+        categoryOrbsShown = false;
+        orbFlight++;
+
+        var animate = IsVisible && settings.Get().EffectiveLauncher.AnimateSummon;
+        var duration = TimeSpan.FromMilliseconds(MotionTokens.CollapseMs);
+
+        foreach (var orb in categoryOrbs)
+        {
+            if (orb.RenderTransform is not ScaleTransform scale) continue;
+            scale.Transitions = null;
+            orb.Transitions = null;
+            scale.ScaleX = 1;
+            scale.ScaleY = 1;
+
+            if (!animate)
+            {
+                orb.Opacity = 0;
+                continue;
+            }
+
+            orb.Transitions = new Transitions
+            {
+                new DoubleTransition { Property = Visual.OpacityProperty, Duration = duration, Easing = CardFadeEasing },
+            };
+            orb.Opacity = 0;
+        }
+
+        // The room goes back through the same morph, on the collapse spring, so the bar widening and
+        // the circles leaving are one gesture. The cluster stays in the tree for the flight (the
+        // growing card hides it) and is switched off when the geometry lands — LandOrbFlight.
+        ApplyCardGeometry(settings.Get().EffectiveLauncher, collapse: true);
+    }
+
+    /// <summary>
+    /// The geometry has landed: if the circles were leaving, they are gone now. Their room is no
+    /// longer part of the window either, so nothing of the gesture survives into the next summon.
+    /// </summary>
+    private void LandOrbFlight()
+    {
+        categoryOrbsRetracting = false;
+        if (categoryOrbsShown) return;
+
+        CategoryOrbCluster.IsVisible = false;
+        foreach (var orb in categoryOrbs)
+        {
+            // Drop the fade first: an opacity transition left attached would animate this reset back
+            // to 1 and be inherited by whatever the next reveal writes.
+            orb.Transitions = null;
+            orb.Opacity = 1;
+        }
+    }
+
+    /// <summary>Hover lift: a short critically damped scale on the same transform the reveal uses.</summary>
+    private static void AnimateOrbScale(Button orb, double scale)
+    {
+        if (orb.RenderTransform is not ScaleTransform transform) return;
+        var duration = TimeSpan.FromMilliseconds(MotionTokens.FadeMs);
+        transform.Transitions = new Transitions
+        {
+            new DoubleTransition { Property = ScaleTransform.ScaleXProperty, Duration = duration, Easing = CardFadeEasing },
+            new DoubleTransition { Property = ScaleTransform.ScaleYProperty, Duration = duration, Easing = CardFadeEasing },
+        };
+        transform.ScaleX = scale;
+        transform.ScaleY = scale;
+    }
+
+    /// <summary>Paint the locked category's circle as the selected one (the chips' 当前 state).</summary>
+    private void UpdateCategoryOrbSelection()
+    {
+        var active = viewModel.ActiveKind;
+        for (var i = 0; i < categoryOrbs.Count && i < orbDefs.Length; i++)
+        {
+            categoryOrbs[i].Classes.Set("selected", orbDefs[i].Kind == active);
+        }
+    }
+
+    /// <summary>Drop the cluster's state with no flight (a dismiss, a fresh summon).</summary>
+    private void ResetCategoryOrbs()
+    {
+        categoryOrbsShown = false;
+        categoryOrbsRetracting = false;
+        orbFlight++;
+        orbRoom = 0;
+        CategoryOrbCluster.IsVisible = false;
+        Card.HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center;
+
+        foreach (var orb in categoryOrbs)
+        {
+            if (orb.RenderTransform is not ScaleTransform scale) continue;
+            scale.Transitions = null;
+            orb.Transitions = null;
+            scale.ScaleX = 1;
+            scale.ScaleY = 1;
+            orb.Opacity = 1;
+        }
+
+        UpdateCategoryOrbSelection();
+    }
+
+    /// <summary>
+    /// Alt+1..4 or a click on a circle: enter that category's browse. The circles retract (the user
+    /// is inside the category now), the query is cleared, and the list shows everything the
+    /// category can list — see <see cref="SpotlightViewModel.BeginBrowse"/>.
+    /// </summary>
+    private void ActivateCategoryOrb(int index)
+    {
+        if (index < 0 || index >= orbDefs.Length || index >= categoryOrbs.Count) return;
+
+        // Retract first: the browse's own geometry (list + preview column) then becomes the single
+        // destination, instead of the bar giving its room back and taking it away again.
+        RetractCategoryOrbs();
+
+        QueryBox.Text = string.Empty;
+        UpdateClearButton();
+        // OpenCategory, not BeginBrowse: 图片 / 文件夹 / 网页 have no query-free list to browse, so a
+        // circle pointed at one of them locks the filter instead of doing nothing at all.
+        viewModel.OpenCategory(orbDefs[index].Kind);
+        selectedIndex = 0;
+        UpdateMode();
+        QueryBox.Focus();
+    }
+
+    /// <summary>Alt+1..4 → the circle's index; -1 for every other key (numpad included, for laptops).</summary>
+    private static int OrbIndexForKey(Key key) => key switch
+    {
+        Key.D1 or Key.NumPad1 => 0,
+        Key.D2 or Key.NumPad2 => 1,
+        Key.D3 or Key.NumPad3 => 2,
+        Key.D4 or Key.NumPad4 => 3,
+        _ => -1,
+    };
 
     // ---- app-grid categories: the capsule bar under the search field ----------------------
     //
@@ -4022,6 +5567,9 @@ public partial class SpotlightWindow : Window
         // The category bindings are local keystrokes, so a settings save is the only moment they
         // can change — rebuild before the next key press, not lazily inside the handler.
         RebuildCategoryGestures();
+        // 设置 › 分类圆钮: which four categories the circles open. Same reasoning as the gestures
+        // above — the Alt+1..4 contract must be right before the next reveal, not after it.
+        RefreshCategoryOrbs();
 
         if (IsVisible)
         {

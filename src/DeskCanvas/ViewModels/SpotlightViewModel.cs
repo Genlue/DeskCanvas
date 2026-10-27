@@ -39,6 +39,13 @@ public sealed class SpotlightViewModel : INotifyPropertyChanged, IDisposable
 
 	private const int RouteLimit = 40;
 
+	/// <summary>
+	/// Per-source cap for a browse. A browse promises "everything this category can list", so it
+	/// cannot use the 40-row query budget; 200 is the same ceiling the file source uses and more
+	/// rows than the list can usefully scroll.
+	/// </summary>
+	private const int BrowseLimit = 200;
+
 	private readonly SpotlightQueryRouter router;
 
 	private readonly LauncherCatalog catalog;
@@ -75,6 +82,13 @@ public sealed class SpotlightViewModel : INotifyPropertyChanged, IDisposable
 	private readonly IAppSettingsProvider settings;
 
 	private string query = string.Empty;
+
+	/// <summary>
+	/// The category a browse is locked to (分类圆钮 Alt+1..4), or null for an ordinary query. It is
+	/// <b>state of the field</b>, not of the query: an empty query plus a browse kind is "list this
+	/// category", an empty query without one is the app grid. See <see cref="BeginBrowse"/>.
+	/// </summary>
+	private SpotlightCategoryKind? browseKind;
 
 	private int activeCategory;
 
@@ -208,7 +222,20 @@ public sealed class SpotlightViewModel : INotifyPropertyChanged, IDisposable
 
 	public bool GlyphIsFilled => SpotlightGlyphs.IsFilled(queryGlyph);
 
-	public bool IsFiltering => query.Length > 0;
+	/// <summary>
+	/// Whether the launcher is showing a list rather than the app grid. Two things put it there: a
+	/// query the user typed, and a browse (a locked category with an empty query). They share this
+	/// one flag on purpose — the grid / list swap, the preview column's "only while filtering"
+	/// rule, the card's full height and the 最近使用 row all hang off it, and a browse wants every
+	/// one of them.
+	/// </summary>
+	public bool IsFiltering => query.Length > 0 || browseKind is not null;
+
+	/// <summary>The category a browse is locked to, or null. The window paints the orb / chip from it.</summary>
+	public SpotlightCategoryKind? BrowseKind => browseKind;
+
+	/// <summary>Whether the list is the whole content of a locked category (no query involved).</summary>
+	public bool IsBrowsing => browseKind is not null;
 
 	public bool IsEmptyFolder => !IsFiltering && Items.Count == 0;
 
@@ -316,30 +343,9 @@ public sealed class SpotlightViewModel : INotifyPropertyChanged, IDisposable
 		return result;
 	}
 
-	private static SpotlightCategoryKind? KindForKey(string key) => LauncherCategoryKeys.Match(key) switch
-	{
-		LauncherCategoryKeys.All => SpotlightCategoryKind.All,
-		LauncherCategoryKeys.Apps => SpotlightCategoryKind.Apps,
-		LauncherCategoryKeys.Images => SpotlightCategoryKind.Images,
-		LauncherCategoryKeys.Files => SpotlightCategoryKind.Files,
-		LauncherCategoryKeys.Folders => SpotlightCategoryKind.Folders,
-		LauncherCategoryKeys.Widgets => SpotlightCategoryKind.Widgets,
-		LauncherCategoryKeys.Clipboard => SpotlightCategoryKind.Clipboard,
-		LauncherCategoryKeys.Web => SpotlightCategoryKind.Web,
-		_ => null,
-	};
+	private static SpotlightCategoryKind? KindForKey(string key) => SpotlightCategoryVisuals.KindForKey(key);
 
-	private static string LabelFor(SpotlightCategoryKind kind) => kind switch
-	{
-		SpotlightCategoryKind.Apps => Locale.Spotlight_Category_Apps,
-		SpotlightCategoryKind.Images => Locale.Spotlight_Category_Images,
-		SpotlightCategoryKind.Files => Locale.Spotlight_Category_Files,
-		SpotlightCategoryKind.Folders => Locale.Spotlight_Category_Folders,
-		SpotlightCategoryKind.Widgets => Locale.Spotlight_Category_Widgets,
-		SpotlightCategoryKind.Clipboard => Locale.Spotlight_Category_Clipboard,
-		SpotlightCategoryKind.Web => Locale.Spotlight_Category_Web,
-		_ => Locale.Spotlight_Category_All,
-	};
+	private static string LabelFor(SpotlightCategoryKind kind) => SpotlightCategoryVisuals.LabelFor(kind);
 
 	/// <summary>
 	/// Re-read the saved chip order (设置 › 类别快捷键 rearranges it). The <b>filter</b> the user
@@ -376,6 +382,14 @@ public sealed class SpotlightViewModel : INotifyPropertyChanged, IDisposable
 				categoryBeforePrefix = num;
 			}
 			activeCategory = num;
+			// A browse belongs to exactly ONE category: picking another chip (including 全部)
+			// leaves it. With the query empty that is precisely "back to the app grid", which is
+			// the documented second way out besides Esc.
+			if (browseKind.HasValue && categories[num].Kind != browseKind.Value)
+			{
+				browseKind = null;
+				NotifyBrowseChanged();
+			}
 			OnPropertyChanged("ActiveCategory");
 			OnPropertyChanged("PlaceholderText");
 			ApplyResults();
@@ -466,6 +480,121 @@ public sealed class SpotlightViewModel : INotifyPropertyChanged, IDisposable
 		: string.Format(Locale.Spotlight_Placeholder_Category, Categories[activeCategory].Label);
 
 	/// <summary>
+	/// The line the list shows when it has nothing. A browse with no rows is <b>not</b> a failed
+	/// search — "没有匹配的结果" would describe a query the user never typed — so the one category
+	/// that cannot enumerate without a query (文件) borrows the launcher's own "输入关键词" hint
+	/// instead of inventing a new string. Every other empty state keeps the existing wording.
+	/// </summary>
+	public string NoResultsText => browseKind == SpotlightCategoryKind.Files
+		? Locale.Spotlight_SearchMode_Hint
+		: Locale.Spotlight_NoResults;
+
+	/// <summary>
+	/// Enter a browse: lock the category, drop any query and list the category's whole content.
+	/// <para>
+	/// Only the four categories the launcher can enumerate are accepted (应用 / 文件 / 组件 /
+	/// 剪贴板) — the orb row's contract. The chip position is moved to the matching chip so the
+	/// filter bar and the placeholder agree with the locked category, and the routing is the
+	/// ordinary cancellable query path with a browse request (see <see cref="StartQuery"/>).
+	/// </para>
+	/// </summary>
+	public void BeginBrowse(SpotlightCategoryKind kind)
+	{
+		if (disposed || BrowseKindOf(kind) is null) return;
+
+		browseKind = kind;
+		Query = string.Empty;
+
+		var index = categories.FindIndex(category => category.Kind == kind);
+		if (index >= 0 && index != activeCategory)
+		{
+			activeCategory = index;
+			OnPropertyChanged("ActiveCategory");
+		}
+
+		NotifyBrowseChanged();
+		OnPropertyChanged("PlaceholderText");
+		StartQuery();
+	}
+
+	/// <summary>
+	/// Open <paramref name="kind"/> the way a 分类圆钮 asks for it: a real <b>browse</b> when the
+	/// category has one (应用 / 文件 / 组件 / 剪贴板 can list themselves with no query), otherwise a
+	/// plain <b>filter lock</b> — 图片 / 文件夹 / 网页 have nothing to enumerate without a keyword,
+	/// and a circle that silently did nothing would read as a broken button.
+	/// </summary>
+	public void OpenCategory(SpotlightCategoryKind kind)
+	{
+		if (BrowseKindOf(kind) != null)
+		{
+			BeginBrowse(kind);
+			return;
+		}
+
+		SelectCategory(kind);
+	}
+
+	/// <summary>
+	/// Lock the filter on <paramref name="kind"/> — the chip click, addressed by category instead of
+	/// by position (the 分类圆钮 know which category they open, not where its chip currently sits).
+	/// </summary>
+	public void SelectCategory(SpotlightCategoryKind kind)
+	{
+		var index = categories.FindIndex(category => category.Kind == kind);
+		if (index >= 0) SetCategory(index);
+	}
+
+	/// <summary>
+	/// Leave a browse: back to the app grid (全部, empty query, no rows). The query is already empty
+	/// by definition — a browse that got typed into is a normal filter and exits through
+	/// <see cref="SetCategory"/> / the window's clear path instead.
+	/// </summary>
+	public void EndBrowse()
+	{
+		if (browseKind is null) return;
+
+		browseKind = null;
+		activeCategory = 0;
+		lastGroups = Array.Empty<SpotlightGroup>();
+		NotifyBrowseChanged();
+		OnPropertyChanged("ActiveCategory");
+		OnPropertyChanged("PlaceholderText");
+		ApplyResults();
+		RefreshRecentsAsync();
+	}
+
+	/// <summary>
+	/// Drop the browse state without routing. The caller (a fresh summon) is about to re-run the
+	/// query itself, and a browse re-route in between would only race that one.
+	/// </summary>
+	public void ResetBrowse()
+	{
+		if (browseKind is null) return;
+		browseKind = null;
+		NotifyBrowseChanged();
+	}
+
+	private void NotifyBrowseChanged()
+	{
+		OnPropertyChanged("BrowseKind");
+		OnPropertyChanged("IsBrowsing");
+		OnPropertyChanged("IsFiltering");
+		OnPropertyChanged("IsEmptyFolder");
+		OnPropertyChanged("IsEmptyResult");
+		OnPropertyChanged("NoResultsText");
+	}
+
+	/// <summary>Which provider can enumerate a category. Null = the category is a filter only.</summary>
+	private static SpotlightBrowseKind? BrowseKindOf(SpotlightCategoryKind kind) => kind switch
+	{
+		SpotlightCategoryKind.Apps => SpotlightBrowseKind.Apps,
+		SpotlightCategoryKind.Files => SpotlightBrowseKind.Files,
+		SpotlightCategoryKind.Widgets => SpotlightBrowseKind.Widgets,
+		SpotlightCategoryKind.Clipboard => SpotlightBrowseKind.Clipboard,
+		_ => null,
+	};
+
+	/// <summary>
 	/// Told by the window which surface the empty query is: the app grid (应用列表式唤出) or a
 	/// bare search field (搜索栏式唤出). Only the grid may wear the App Store artwork.
 	/// </summary>
@@ -509,17 +638,8 @@ public sealed class SpotlightViewModel : INotifyPropertyChanged, IDisposable
 
 	/// <summary>The mark a locked category wears: every chip has its own artwork, so the field
 	/// says which surface it is searching before the first keystroke.</summary>
-	private static SpotlightGlyphKind CategoryGlyph(SpotlightCategoryKind kind) => kind switch
-	{
-		SpotlightCategoryKind.Apps => SpotlightGlyphKind.Apps,
-		SpotlightCategoryKind.Images => SpotlightGlyphKind.Image,
-		SpotlightCategoryKind.Files => SpotlightGlyphKind.Files,
-		SpotlightCategoryKind.Folders => SpotlightGlyphKind.Folder,
-		SpotlightCategoryKind.Widgets => SpotlightGlyphKind.Widget,
-		SpotlightCategoryKind.Clipboard => SpotlightGlyphKind.Clipboard,
-		SpotlightCategoryKind.Web => SpotlightGlyphKind.Web,
-		_ => SpotlightGlyphKind.Search,
-	};
+	private static SpotlightGlyphKind CategoryGlyph(SpotlightCategoryKind kind)
+		=> SpotlightCategoryVisuals.GlyphFor(kind);
 
 	private void UpdateCalculation()
 	{
@@ -1009,6 +1129,19 @@ public sealed class SpotlightViewModel : INotifyPropertyChanged, IDisposable
 			return;
 		}
 
+		// 浏览：锁定类别 + 空查询不是"没得搜"，而是"这个类别里有什么"。它取代下面的网格分支，
+		// 但走同一条 generation / 取消令牌——浏览必须和普通查询一样便宜、一样可取消。
+		if (query.Length == 0 && browseKind is { } browse)
+		{
+			lastGroups = Array.Empty<SpotlightGroup>();
+			IsSearching = true;
+			SearchHint = null;
+			var browseCancellation = new CancellationTokenSource();
+			searchCancellation = browseCancellation;
+			_ = RouteBrowseAsync(browse, generation, browseCancellation.Token);
+			return;
+		}
+
 		if (!targetKind.HasValue && TryMatchPrefix(query, out var matchedKind, out var stripped))
 		{
 			targetKind = matchedKind;
@@ -1040,10 +1173,7 @@ public sealed class SpotlightViewModel : INotifyPropertyChanged, IDisposable
 					Results.Add(SpotlightItem.CreateHeader(Locale.Spotlight_Category_Clipboard));
 					foreach (var entry in entries)
 					{
-						var captured = entry;
-						Results.Add(SpotlightItem.ForClipboard(
-							entry.Id, entry.Text, entry.IsLink, entry.CapturedUtc, entry.SourceProcess,
-							() => Task.FromResult(clipboard.CopyBack(captured.Id) is not null)));
+						Results.Add(CreateClipboardItem(entry));
 					}
 				}
 			}
@@ -1059,6 +1189,81 @@ public sealed class SpotlightViewModel : INotifyPropertyChanged, IDisposable
 		IsSearching = true;
 		_ = RouteFastAppsAsync(searchText, generation, cancellationTokenSource.Token);
 		RouteAsync(searchText, generation, cancellationTokenSource.Token);
+	}
+
+	/// <summary>
+	/// 一条剪贴板历史 → 一行。三种格式的差异集中在这里：标题来自 Provider（图片尺寸 / 第一个文件名），
+	/// 副标题是"数量 · 来源 · 相对时间"，图标按格式取（图片解码缩略图、文件取系统图标、文本用剪贴板字形）。
+	/// </summary>
+	private SpotlightItem CreateClipboardItem(ClipboardEntry entry)
+	{
+		var captured = entry;
+		var item = SpotlightItem.ForClipboard(
+			entry.Id,
+			entry.Text,
+			entry.IsLink,
+			entry.CapturedUtc,
+			entry.SourceProcess,
+			() => Task.FromResult(clipboard.CopyBack(captured.Id) is not null),
+			entry.Kind,
+			// A text row keeps showing the whole body (multi-line, first line readable); only the
+			// two binary kinds need a composed name.
+			title: entry.Kind == ClipboardContentKind.Text ? null : SpotlightClipboardProvider.TitleOf(entry),
+			entry.ImagePath,
+			entry.FilePaths,
+			entry.ImageWidth,
+			entry.ImageHeight);
+
+		item.Subtitle = SpotlightClipboardProvider.SubtitleOf(entry);
+		LoadClipboardIcon(item, Volatile.Read(in iconGeneration));
+		return item;
+	}
+
+	/// <summary>
+	/// The row's picture, per format: an image gets its own pixels (a 72 px thumbnail decoded from
+	/// the stored PNG — its shell icon would be a generic picture), files get the first file's shell
+	/// icon, and text already wears the clip glyph. Both are asynchronous: a 4K PNG decode must not
+	/// block the keystroke that built the list.
+	/// </summary>
+	private void LoadClipboardIcon(SpotlightItem item, int generation)
+	{
+		switch (item.ClipboardKind)
+		{
+			case ClipboardContentKind.Image when item.ClipboardImagePath is { Length: > 0 } imagePath:
+				_ = LoadClipboardThumbnailAsync(item, imagePath, generation);
+				break;
+			case ClipboardContentKind.Files when item.ClipboardFilePaths is { Count: > 0 } files:
+				LoadResultIconAsync(item, files[0], generation);
+				break;
+		}
+	}
+
+	/// <summary>Decode one clipboard image down to row size. Same generation guard as the shell
+	/// icon path: the list may have been rebuilt before the decode finished.</summary>
+	private async Task LoadClipboardThumbnailAsync(SpotlightItem item, string imagePath, int generation)
+	{
+		try
+		{
+			Bitmap? bitmap = await Task.Run(() =>
+			{
+				using var stream = File.OpenRead(imagePath);
+				return Bitmap.DecodeToWidth(stream, 72, BitmapInterpolationMode.MediumQuality);
+			}).ConfigureAwait(continueOnCapturedContext: false);
+
+			if (bitmap == null || disposed) return;
+
+			await Dispatcher.UIThread.InvokeAsync(() =>
+			{
+				if (!disposed && generation == Volatile.Read(in iconGeneration))
+				{
+					item.Icon = bitmap;
+				}
+			});
+		}
+		catch
+		{
+			// A thumbnail is cosmetic: the row keeps the letter placeholder / clip glyph.
+		}
 	}
 
 	private SpotlightItem? MapRecentLaunch(SpotlightRecentLaunch recent, int generation)
@@ -1102,6 +1307,15 @@ public sealed class SpotlightViewModel : INotifyPropertyChanged, IDisposable
 			var capturedId = recent.Id.StartsWith("clip:", StringComparison.Ordinal)
 				? recent.Id["clip:".Length..]
 				: recent.Id;
+
+			// The live entry knows which format this was (text / image / files) and carries the
+			// payload the row needs; the recents record only kept the display strings. Falling back
+			// to the record covers an entry that has since aged out of the history.
+			if (clipboard.Entries.FirstOrDefault(e => string.Equals(e.Id, capturedId, StringComparison.Ordinal)) is { } entry)
+			{
+				return CreateClipboardItem(entry);
+			}
+
 			return SpotlightItem.ForClipboard(
 				capturedId, recent.Display, isLink: false, recent.Timestamp, recent.Sub,
 				() => Task.FromResult(clipboard.CopyBack(capturedId) is not null));
@@ -1161,6 +1375,45 @@ public sealed class SpotlightViewModel : INotifyPropertyChanged, IDisposable
 		catch
 		{
 		}
+	}
+
+	/// <summary>
+	/// Run one browse request and land its groups in <see cref="lastGroups"/>.
+	/// <para>
+	/// Deliberately no <see cref="SearchDelayMs"/> debounce: a browse is a direct gesture (Alt+1 or a
+	/// click), not a keystroke, so waiting would only make the launcher feel heavy. The generation
+	/// gate and the token are the same ones the query path uses, so a browse superseded by a
+	/// keystroke is dropped exactly like a stale query.
+	/// </para>
+	/// </summary>
+	private async Task RouteBrowseAsync(SpotlightCategoryKind kind, int generation, CancellationToken cancellationToken)
+	{
+		IReadOnlyList<SpotlightGroup> groups = Array.Empty<SpotlightGroup>();
+		try
+		{
+			var request = new SpotlightQueryRequest(string.Empty, BrowseLimit, Browse: BrowseKindOf(kind));
+			var outcome = await router.RouteAsync(request, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+			cancellationToken.ThrowIfCancellationRequested();
+			groups = outcome.Groups;
+		}
+		catch (OperationCanceledException)
+		{
+			return;
+		}
+		catch
+		{
+		}
+
+		await Dispatcher.UIThread.InvokeAsync(() =>
+		{
+			if (!disposed && generation == Volatile.Read(in searchGeneration))
+			{
+				lastGroups = groups;
+				IsSearching = false;
+				SearchHint = null;
+				ApplyResults();
+			}
+		});
 	}
 
 	private async Task RouteAsync(string text, int generation, CancellationToken cancellationToken)
@@ -1447,7 +1700,24 @@ public sealed class SpotlightViewModel : INotifyPropertyChanged, IDisposable
 				return null;
 			}
 			string id2 = (result.Id.StartsWith("clip:", StringComparison.Ordinal) ? result.Id.Substring("clip:".Length) : result.Id);
-			return SpotlightItem.ForClipboard(id2, result.ClipboardText ?? result.Title, result.IsLink, result.CapturedUtc ?? DateTime.MinValue, result.SourceProcess, result.RunAsync);
+			SpotlightItem clipboardItem = SpotlightItem.ForClipboard(
+				id2,
+				result.ClipboardText ?? string.Empty,
+				result.IsLink,
+				result.CapturedUtc ?? DateTime.MinValue,
+				result.SourceProcess,
+				result.RunAsync,
+				result.ClipboardKind,
+				// Text rows show the body itself (multi-line is the point); the provider's title is
+				// the composed name for the two formats that have no text to show.
+				title: result.ClipboardKind == ClipboardContentKind.Text ? null : result.Title,
+				imagePath: result.ClipboardImagePath,
+				filePaths: result.ClipboardFilePaths,
+				imageWidth: result.ClipboardImageWidth,
+				imageHeight: result.ClipboardImageHeight);
+			clipboardItem.Subtitle = result.Subtitle ?? string.Empty;
+			LoadClipboardIcon(clipboardItem, generation);
+			return clipboardItem;
 		}
 		case SpotlightResultKind.Workflow:
 		{
@@ -1695,12 +1965,65 @@ public sealed class SpotlightViewModel : INotifyPropertyChanged, IDisposable
 			break;
 		}
 		case SpotlightItemKind.Clipboard:
-			ApplyPreview(item.Name, string.Empty, Locale.Spotlight_Preview_Kind_Clipboard, item.ClipboardText ?? string.Empty, new SpotlightPreviewRow[2]
+		{
+			// The pane shows what was copied, in the shape of the format that was copied: the body
+			// for text, the picture for an image, the path list for files. "复制" is always there —
+			// Enter repeats it — while 打开 / 在文件夹中显示 belong to files alone (a text entry has
+			// no location, and an image lives in the history, not on the user's disk).
+			var clipboardRows = new List<SpotlightPreviewRow>(3);
+			string clipboardKindLabel;
+			string clipboardContent;
+
+			switch (item.ClipboardKind)
 			{
-				new SpotlightPreviewRow(Locale.Spotlight_Preview_Label_Captured, FormatRelative(item.CapturedUtc)),
-				new SpotlightPreviewRow(Locale.Spotlight_Preview_Label_Source, string.IsNullOrEmpty(item.SourceProcess) ? "—" : item.SourceProcess)
-			}, item.IsLink, hasReveal: false, hasRun: false, hasCopy: true);
+				case ClipboardContentKind.Image:
+					clipboardKindLabel = Locale.Spotlight_Preview_Kind_Image;
+					clipboardContent = string.Empty;
+					if (item.ClipboardImageWidth > 0 && item.ClipboardImageHeight > 0)
+					{
+						clipboardRows.Add(new SpotlightPreviewRow(
+							Locale.Spotlight_Preview_Label_Dimensions,
+							$"{item.ClipboardImageWidth}×{item.ClipboardImageHeight}"));
+					}
+					break;
+
+				case ClipboardContentKind.Files:
+					clipboardKindLabel = Locale.Spotlight_Preview_Kind_File;
+					clipboardContent = item.ClipboardFilePaths is { Count: > 0 } filePaths
+						? string.Join(Environment.NewLine, filePaths)
+						: string.Empty;
+					if (item.ClipboardFilePaths is { Count: > 0 } counted)
+					{
+						clipboardRows.Add(new SpotlightPreviewRow(
+							Locale.Spotlight_Preview_Label_Items, counted.Count.ToString()));
+					}
+					break;
+
+				default:
+					clipboardKindLabel = Locale.Spotlight_Preview_Kind_Clipboard;
+					clipboardContent = item.ClipboardText ?? string.Empty;
+					break;
+			}
+
+			clipboardRows.Add(new SpotlightPreviewRow(
+				Locale.Spotlight_Preview_Label_Captured, FormatRelative(item.CapturedUtc)));
+			clipboardRows.Add(new SpotlightPreviewRow(
+				Locale.Spotlight_Preview_Label_Source,
+				string.IsNullOrEmpty(item.SourceProcess) ? "—" : item.SourceProcess));
+
+			// hasOpen follows the link flag exactly as it did for text-only entries; an image or a
+			// file list has nowhere to "open" (the history is the only place it lives).
+			ApplyPreview(item.Name, string.Empty, clipboardKindLabel, clipboardContent, clipboardRows,
+				item.IsLink, hasReveal: false, hasRun: false, hasCopy: true);
+
+			if (item.ClipboardKind == ClipboardContentKind.Image
+			    && item.ClipboardImagePath is { Length: > 0 } clipboardImage)
+			{
+				_ = LoadClipboardImagePreviewAsync(clipboardImage, generation);
+			}
+
 			break;
+		}
 		case SpotlightItemKind.Workflow:
 			// The badge is the workflow's own hotkey, not a launcher-assigned quick key; it is
 			// read-only information, so the pane only shows it when the workflow has one.
@@ -1819,9 +2142,43 @@ public sealed class SpotlightViewModel : INotifyPropertyChanged, IDisposable
 		}
 	}
 
-	private async Task LoadPreviewIconAsync(string path, int generation)
+	/// <summary>
+	/// The hero image of a clipboard image entry. It is decoded off the UI thread and only then
+	/// pushed into the pane — a full-screen PNG decoded inline would stall the arrow key that
+	/// selected the row. The guard is the preview generation, the same one the file thumbnails use.
+	/// </summary>
+	private async Task LoadClipboardImagePreviewAsync(string imagePath, int generation)
 	{
 		try
+		{
+			Bitmap? bitmap = await Task.Run(() =>
+			{
+				using var stream = File.OpenRead(imagePath);
+				return Bitmap.DecodeToWidth(stream, 720, BitmapInterpolationMode.HighQuality);
+			}).ConfigureAwait(continueOnCapturedContext: false);
+
+			if (bitmap == null || disposed) return;
+
+			await Dispatcher.UIThread.InvokeAsync(() =>
+			{
+				if (disposed || generation != Volatile.Read(in previewGeneration)) return;
+
+				PreviewSnapshot snapshot = previewSnapshot;
+				previewSnapshot = snapshot with { Media = bitmap };
+				Preview.Set(snapshot.Title, snapshot.Subtitle, snapshot.KindLabel, snapshot.ContentText,
+					snapshot.Excerpt, bitmap, Preview.Icon, snapshot.Rows,
+					snapshot.HasOpen, snapshot.HasReveal, snapshot.HasRun, snapshot.HasCopy);
+			});
+		}
+		catch
+		{
+			// A missing / corrupt PNG leaves the pane's rows standing; the row itself still copies
+			// nothing, which the copy-back already reports.
+		}
+	}
+
+	private async Task LoadPreviewIconAsync(string path, int generation)
+	{		try
 		{
 			Bitmap bitmap = await icons.GetIconAsync(path, 256).ConfigureAwait(continueOnCapturedContext: false);
 			if (bitmap == null || disposed)

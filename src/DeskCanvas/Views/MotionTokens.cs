@@ -62,4 +62,31 @@ internal static class MotionTokens
 
     /// <summary>How far a result row travels up as it appears, in DIP.</summary>
     public const double RowRiseFrom = 4;
+
+    /// <summary>
+    /// The landing flight of a released widget: from where the user dropped it onto the snapped
+    /// cell.
+    /// <para>
+    /// Shorter than <see cref="ExpandMs"/> on purpose. An entrance has to cover the whole travel
+    /// from nothing; here the card is already exactly where the user put it and only the last few
+    /// dozen DIP to the cell boundary are ours, so the full 320 ms would read as the widget
+    /// arguing with the drop. Long enough for the spring's settle to be legible, short enough to
+    /// be over before the user starts the next gesture.
+    /// </para>
+    /// </summary>
+    public const int PlacementFlightMs = 220;
+
+    /// <summary>
+    /// The scale the card starts its landing flight at — a 1.5% settle, deliberately far below
+    /// <see cref="SummonScaleFrom"/>'s 6%: the card is arriving at a place the user chose, not
+    /// appearing from nothing, and anything larger reads as a second, competing entrance.
+    /// </summary>
+    public const double PlacementSettleFrom = 0.985;
+
+    /// <summary>
+    /// Delay between two consecutive orbs appearing. The cluster is read left to right, so the
+    /// stagger is what makes it a row of four rather than one blob: 4 × 30 ms = 90 ms, well inside
+    /// <see cref="ExpandMs"/>, so the last orb lands before the card's width flight settles.
+    /// </summary>
+    public const int OrbStaggerStepMs = 30;
 }

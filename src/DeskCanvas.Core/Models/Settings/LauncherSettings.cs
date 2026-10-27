@@ -301,6 +301,12 @@ public enum LauncherSortMode
 /// combination from the system UI, so this must be an explicit choice. Requires the app to run
 /// elevated to cover elevated foreground windows; the UI says so separately.
 /// </param>
+/// <param name="OrbCategories">
+/// Which category each of the four 分类圆钮 opens (Alt+1..4), by
+/// <see cref="LauncherCategoryKeys"/> storage key. <c>null</c> means
+/// <see cref="DefaultOrbCategories"/>; unknown keys and 全部 are dropped, duplicates collapse and
+/// a short list is padded, so <see cref="EffectiveOrbCategories"/> is always four real destinations.
+/// </param>
 public record LauncherSettings(
     bool Enabled = false,
     string? Hotkey = null,
@@ -346,7 +352,8 @@ public record LauncherSettings(
     string? SearchPlaceholder = null,
     bool SpaceShowsRecentLaunches = true,
     int SpaceRecentLaunchesCount = LauncherSettings.DefaultSpaceRecentLaunchesCount,
-    bool TakeOverSystemHotkeys = false)
+    bool TakeOverSystemHotkeys = false,
+    List<string>? OrbCategories = null)
 {
     /// <summary>Alt+Space — the closest usable analogue to macOS Cmd+Space (Win+Space is the
     /// Windows input-language switch and cannot be taken).</summary>
@@ -482,6 +489,20 @@ public record LauncherSettings(
     public const int MaxSpaceRecentLaunchesCount = 20;
 
     /// <summary>
+    /// How many 分类圆钮 the Alt gesture shows: the row macOS Spotlight draws beside the field, and
+    /// the count Alt+1..4 addresses. Fixed — the circles are a keyboard contract, not a free list.
+    /// </summary>
+    public const int OrbCount = 4;
+
+    /// <summary>
+    /// The shipped row, in Alt+1..4 order: 应用 / 文件 / 组件 / 剪贴板 — the four places a launcher is
+    /// actually summoned for. The user may point any of the four at another category (设置 › 分类圆钮).
+    /// </summary>
+    public static IReadOnlyList<string> DefaultOrbCategories { get; } =
+        [LauncherCategoryKeys.Apps, LauncherCategoryKeys.Files,
+         LauncherCategoryKeys.Widgets, LauncherCategoryKeys.Clipboard];
+
+    /// <summary>
     /// The default shortcut folder: <c>&lt;data folder&gt;\Launcher</c>.
     /// <para>
     /// Deliberately under <see cref="Const.DataFolder"/> and <b>not</b> under the active profile:
@@ -528,6 +549,90 @@ public record LauncherSettings(
     /// <summary>The browser executable the web row should use, or <c>null</c> for the default one.</summary>
     public string? EffectiveSearchBrowser =>
         string.IsNullOrWhiteSpace(SearchBrowser) ? null : SearchBrowser!.Trim();
+
+    /// <summary>
+    /// The four categories the 分类圆钮 open, in Alt+1..4 order.
+    /// <para>
+    /// Always exactly <see cref="OrbCount"/> entries: <see cref="LauncherCategoryKeys.All"/> is not a
+    /// destination (it is "no filter", not somewhere to go), duplicates are dropped, and a short or
+    /// unreadable list is filled from <see cref="DefaultOrbCategories"/>. The circles therefore can
+    /// never be fewer than four or point at nothing, whatever a hand-edited file says.
+    /// </para>
+    /// </summary>
+    public IReadOnlyList<string> EffectiveOrbCategories
+    {
+        get
+        {
+            var result = new List<string>(OrbCount);
+
+            if (OrbCategories != null)
+            {
+                foreach (var raw in OrbCategories)
+                {
+                    var key = LauncherCategoryKeys.Match(raw);
+                    if (key == null || key == LauncherCategoryKeys.All) continue;
+                    if (result.Contains(key, StringComparer.OrdinalIgnoreCase)) continue;
+                    if (result.Count == OrbCount) break;
+                    result.Add(key);
+                }
+            }
+
+            // Fill what the file left out: the defaults first (so "empty" stays the shipped row),
+            // then any other category, so four circles always name four real destinations.
+            foreach (var key in DefaultOrbCategories)
+            {
+                if (result.Count == OrbCount) break;
+                if (result.Contains(key, StringComparer.OrdinalIgnoreCase)) continue;
+                result.Add(key);
+            }
+
+            foreach (var key in LauncherCategoryKeys.Order)
+            {
+                if (result.Count == OrbCount) break;
+                if (key == LauncherCategoryKeys.All) continue;
+                if (result.Contains(key, StringComparer.OrdinalIgnoreCase)) continue;
+                result.Add(key);
+            }
+
+            return result;
+        }
+    }
+
+    /// <summary>
+    /// Point one circle at <paramref name="key"/>. A category that another circle already owns is
+    /// <b>swapped</b> rather than duplicated: the four buttons are four different destinations, so
+    /// choosing a used one trades places with it instead of leaving the same target twice.
+    /// </summary>
+    public LauncherSettings WithOrbCategory(int slot, string? key)
+    {
+        var canonical = LauncherCategoryKeys.Match(key);
+        if (canonical == null || canonical == LauncherCategoryKeys.All) return this;
+        if (slot < 0 || slot >= OrbCount) return this;
+
+        var keys = new List<string>(EffectiveOrbCategories);
+        if (string.Equals(keys[slot], canonical, StringComparison.Ordinal)) return this;
+
+        var owner = keys.FindIndex(candidate => string.Equals(candidate, canonical, StringComparison.Ordinal));
+        var previous = keys[slot];
+        keys[slot] = canonical;
+        if (owner >= 0 && owner != slot) keys[owner] = previous;
+
+        return WithOrbCategories(keys);
+    }
+
+    /// <summary>
+    /// Persist <paramref name="keys"/> as the four circles. Unknown keys and 全部 are dropped,
+    /// duplicates collapse, and a list that matches the default is written as <c>null</c> — so the
+    /// settings file stays clean and a future default change still reaches users who never customised.
+    /// </summary>
+    public LauncherSettings WithOrbCategories(IEnumerable<string> keys)
+    {
+        var normalized = NormalizeOrbCategories([.. keys]);
+        return this with { OrbCategories = normalized };
+    }
+
+    /// <summary>Return the circles to the shipped row (应用 / 文件 / 组件 / 剪贴板).</summary>
+    public LauncherSettings WithoutOrbCategories() => this with { OrbCategories = null };
 
     /// <summary>True when both gestures are the same combination (the second one is then not registered).</summary>
     public bool SearchHotkeyCollidesWithList =>
@@ -691,6 +796,7 @@ public record LauncherSettings(
         SortMode = Enum.IsDefined(SortMode) ? SortMode : LauncherSortMode.Name,
         CategoryHotkeys = NormalizeCategoryHotkeys(CategoryHotkeys),
         CategoryOrder = NormalizeCategoryOrder(CategoryOrder),
+        OrbCategories = NormalizeOrbCategories(OrbCategories),
         SearchPlaceholder = string.IsNullOrWhiteSpace(SearchPlaceholder) ? null : SearchPlaceholder.Trim(),
         SpaceShowsRecentLaunches = SpaceShowsRecentLaunches,
         SpaceRecentLaunchesCount = Math.Clamp(SpaceRecentLaunchesCount, MinSpaceRecentLaunchesCount, MaxSpaceRecentLaunchesCount),
@@ -949,6 +1055,35 @@ public record LauncherSettings(
         var isDefault = ordered.Count == LauncherCategoryKeys.Order.Count - 1;
         for (var i = 0; isDefault && i < ordered.Count; i++)
             isDefault = string.Equals(ordered[i], LauncherCategoryKeys.Order[i + 1], StringComparison.Ordinal);
+
+        return isDefault ? null : ordered;
+    }
+
+    /// <summary>
+    /// Keep only known category keys (全部 is not a destination), drop duplicates, cut to
+    /// <see cref="OrbCount"/> and collapse an entry that already names the default row back to
+    /// <c>null</c>. A value shorter than four is kept as written — the padding happens on read
+    /// (<see cref="EffectiveOrbCategories"/>), so a later default change still reaches the gaps.
+    /// </summary>
+    private static List<string>? NormalizeOrbCategories(List<string>? keys)
+    {
+        if (keys == null) return null;
+
+        var ordered = new List<string>(OrbCount);
+        foreach (var raw in keys)
+        {
+            var key = LauncherCategoryKeys.Match(raw);
+            if (key == null || key == LauncherCategoryKeys.All) continue;
+            if (ordered.Contains(key, StringComparer.OrdinalIgnoreCase)) continue;
+            if (ordered.Count == OrbCount) break;
+            ordered.Add(key);
+        }
+
+        if (ordered.Count == 0) return null;
+
+        var isDefault = ordered.Count == DefaultOrbCategories.Count;
+        for (var i = 0; isDefault && i < ordered.Count; i++)
+            isDefault = string.Equals(ordered[i], DefaultOrbCategories[i], StringComparison.Ordinal);
 
         return isDefault ? null : ordered;
     }

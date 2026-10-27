@@ -41,6 +41,10 @@
         <SolidColorBrush x:Key="SpotlightPlaceholderBrush" Color="#14000000" />
         <SolidColorBrush x:Key="SpotlightSelectionBrush" Color="#330A84FF" />
         <SolidColorBrush x:Key="SpotlightTileHoverBrush" Color="#0F000000" />
+        <!-- The capsule bar's resting fill: the first of the three chip steps (初始 → 鼠标选中 →
+             当前). ApplyAppearance rewrites it per material and per light/dark mode; it must stay
+             visibly lighter than SpotlightTileHoverBrush and the accent-tinted selection. -->
+        <SolidColorBrush x:Key="SpotlightChipRestBrush" Color="#09000000" />
         <!-- Icon size and row pitch are derived at runtime from the grid's real width and the
              column count (LauncherGridMetrics.Compute): neither is a setting. -->
         <x:Double x:Key="SpotlightIconSize">64</x:Double>
@@ -129,7 +133,13 @@
                       VerticalAlignment="Center"
                       IsVisible="{Binding IsSelectable}"
                       Opacity="{Binding IsBroken, Converter={StaticResource SpotlightBrokenOpacity}}">
-                    <Grid Width="28" Height="28">
+                    <!-- 上对齐, not centred: a clipboard entry can carry hard line breaks, and a row
+                         that grew to four lines used to centre its icon — so the mark of the LONG
+                         row sat halfway down the list while every short row's mark sat at the top,
+                         which is exactly what makes a list hard to scan. Top + the 10 DIP offset
+                         (half of 48 minus half of 28) puts the icon where it already was on a
+                         single-line row, and every taller row keeps it there. -->
+                    <Grid Width="28" Height="28" VerticalAlignment="Top" Margin="0,10,0,0">
                         <Panel IsVisible="{Binding IsBroken, Converter={StaticResource SpotlightNotBroken}}">
                             <Border CornerRadius="7" IsVisible="{Binding !HasIcon}"
                                     Background="{DynamicResource SpotlightPlaceholderBrush}">
@@ -268,10 +278,17 @@
             <Setter Property="CornerRadius" Value="12" />
         </Style>
 
-        <!-- Category chips: transparent capsules; the selected one gets the accent-tinted pill
-             the window writes into SpotlightSelectionBrush plus primary text. -->
+        <!-- Category chips: three states, one rule, one style — both bars (the search filter's
+             CategoryBar and the app grid's AppCategoryBar) are built in code with this class, so
+             the two can never drift.
+               初始   SpotlightChipRestBrush      (a capsule is always there, not only when chosen)
+               鼠标选中 SpotlightTileHoverBrush
+               当前   SpotlightSelectionBrush + primary text
+             The steps are ordered by depth (rest < hover < selected) and every one of them is a
+             999 radius capsule. Text stays legible on all three: the two washes are faint enough
+             for SpotlightSecondaryText, the accent-tinted selection takes SpotlightPrimaryText. -->
         <Style Selector="Button.category-chip">
-            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Background" Value="{DynamicResource SpotlightChipRestBrush}" />
             <Setter Property="BorderThickness" Value="0" />
             <Setter Property="Padding" Value="12,4" />
             <Setter Property="CornerRadius" Value="999" />
@@ -279,8 +296,9 @@
             <Setter Property="Foreground" Value="{DynamicResource SpotlightSecondaryText}" />
         </Style>
         <Style Selector="Button.category-chip /template/ ContentPresenter#PART_ContentPresenter">
-            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Background" Value="{DynamicResource SpotlightChipRestBrush}" />
             <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="CornerRadius" Value="999" />
         </Style>
         <Style Selector="Button.category-chip:pointerover /template/ ContentPresenter#PART_ContentPresenter">
             <Setter Property="Background" Value="{DynamicResource SpotlightTileHoverBrush}" />
@@ -290,6 +308,84 @@
         </Style>
         <Style Selector="Button.category-chip.selected /template/ ContentPresenter#PART_ContentPresenter">
             <Setter Property="Background" Value="{DynamicResource SpotlightSelectionBrush}" />
+        </Style>
+        <Style Selector="Button.category-chip.selected:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource SpotlightSelectionBrush}" />
+        </Style>
+
+        <!-- 分类圆钮: a circle that is the SAME PIECE OF SURFACE as the bar, not a chip beside it.
+             That is why the fill is not a style constant: ApplyAppearance hands every circle the
+             card's own brush (全彩 the opaque colour, 毛玻璃 the same translucent fill, 液态玻璃 a
+             frosted stand-in that the glass surface paints over), so the bar and the four circles
+             are literally one surface — the reported "圆圈背景色和搜索栏不一样".
+             The template therefore has TWO layers: the fill (the card's brush, plus the card's own
+             hairline) and a wash on top of it. Hover / 当前 tint the fill instead of replacing it —
+             a translucent wash swapped in for an opaque fill would punch a hole through the circle.
+             The mark is a Path child with its own class, because a filled artwork wants Fill and a
+             stroked mark wants Stroke; the .selected rules below are the only place the ink changes.
+             No Width/Height here on purpose: the diameter follows the bar (BuildCategoryOrbs). -->
+        <Style Selector="Button.category-orb">
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="999" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="RenderTransformOrigin" Value="0.5,0.5" />
+            <Setter Property="Template">
+                <ControlTemplate>
+                    <Panel>
+                        <Border x:Name="OrbFill"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="999" />
+                        <!-- 液态玻璃: a real glass surface per circle, the same material the bar paints
+                             itself with (ApplyAppearance hands it over). It sits ON TOP of the fill, so
+                             the fill stays as the fallback for devices where the surface cannot
+                             render, and is invisible wherever it can.
+                             No CornerRadius here: the radius is half the DIAMETER the current
+                             gesture pays for (ApplyOrbGlassLayer reads orbDiameter), and a literal
+                             in the template would be a component-level constant standing in for a
+                             launcher's metric — it is only correct at the full 64 DIP size. -->
+                        <controls:LiquidGlassSurface x:Name="OrbGlass"
+                                                     IsVisible="False" />
+                        <Border x:Name="OrbWash" Background="Transparent" CornerRadius="999" />
+                        <!-- NOT named PART_ContentPresenter on purpose: the Fluent Button theme paints
+                             its own pointerover/pressed background onto that exact part, and on this
+                             template that read as a SQUARE hover box behind a round button. -->
+                        <ContentPresenter x:Name="OrbContent"
+                                          Background="Transparent"
+                                          Content="{TemplateBinding Content}"
+                                          ContentTemplate="{TemplateBinding ContentTemplate}"
+                                          HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                          VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}" />
+                    </Panel>
+                </ControlTemplate>
+            </Setter>
+        </Style>
+        <Style Selector="Button.category-orb:pointerover /template/ Border#OrbWash">
+            <Setter Property="Background" Value="{DynamicResource SpotlightTileHoverBrush}" />
+        </Style>
+        <Style Selector="Button.category-orb:pressed /template/ Border#OrbWash">
+            <Setter Property="Background" Value="{DynamicResource SpotlightTileHoverBrush}" />
+        </Style>
+        <Style Selector="Button.category-orb.selected /template/ Border#OrbWash">
+            <Setter Property="Background" Value="{DynamicResource SpotlightSelectionBrush}" />
+        </Style>
+        <Style Selector="Path.orb-filled">
+            <Setter Property="Fill" Value="{DynamicResource SpotlightSecondaryText}" />
+        </Style>
+        <Style Selector="Path.orb-stroked">
+            <Setter Property="Stroke" Value="{DynamicResource SpotlightSecondaryText}" />
+            <Setter Property="StrokeThickness" Value="1.7" />
+            <Setter Property="StrokeLineCap" Value="Round" />
+            <Setter Property="StrokeJoin" Value="Round" />
+        </Style>
+        <Style Selector="Button.category-orb.selected Path.orb-filled">
+            <Setter Property="Fill" Value="{DynamicResource SpotlightPrimaryText}" />
+        </Style>
+        <Style Selector="Button.category-orb.selected Path.orb-stroked">
+            <Setter Property="Stroke" Value="{DynamicResource SpotlightPrimaryText}" />
         </Style>
 
         <!-- 新建分类 capsule: hidden until the pointer is over the capsule row. An always-visible
@@ -396,16 +492,47 @@
     </Window.Styles>
 
     <Grid x:Name="SurfaceRoot" RenderTransformOrigin="0.5,0.5">
-        <!-- 液态玻璃 layer. Hidden for 毛玻璃 / 全彩 (the Card paints those). -->
-        <controls:LiquidGlassSurface x:Name="GlassSurface" IsVisible="False" />
+        <!-- 分类圆钮（macOS 26 Spotlight 的四个类别按钮）: four INDEPENDENT circles in the strip of
+             window to the RIGHT of the card, never carved out of the card's own silhouette.
+             Three rules make that geometry work, and all three live in code:
+               · the card GIVES UP the room (<c>TargetCardWidth</c>) — the circles are paid for by
+                 the bar shrinking, so bar + circles is exactly the width the bar had alone;
+               · the window therefore never changes width during the gesture; it is the card that
+                 travels, and this panel is right-aligned inside the room the card released;
+               · they sit BEFORE the glass and the card in the tree, so a circle is covered by the
+                 bar while it is still wide (both the material layer and the card paint over them)
+                 and is uncovered as the bar narrows — the split reads as the bar tearing open, not
+                 as four buttons popping in.
+             Width, height, spacing and the diameter itself are written per gesture by
+             BuildCategoryOrbs/ApplyOrbClusterGeometry; nothing about their size is static here. -->
+        <!-- VerticalAlignment=Top with the margins written by ApplyOrbClusterGeometry: the window is
+             a little taller than the card (the summon rise needs the headroom), so centring in the
+             WINDOW would drop the circles half an inset below the bar's own centre. -->
+        <StackPanel x:Name="CategoryOrbCluster"
+                    Orientation="Horizontal"
+                    HorizontalAlignment="Right"
+                    VerticalAlignment="Top"
+                    IsVisible="False" />
+
+        <!-- 液态玻璃 layer. Hidden for 毛玻璃 / 全彩 (the Card paints those). The top margin is the
+             window's headroom (SpotlightWindow.SurfaceTopInset): the surface has to cover the card,
+             not the strip above it the summon rise travels through. -->
+        <controls:LiquidGlassSurface x:Name="GlassSurface" Margin="0,8,0,0" IsVisible="False" />
 
         <!-- VerticalAlignment=Top + HorizontalAlignment=Center: during a morph the card is smaller
              than the (already final) window on whichever axis is travelling — it grows downward out
              of the search bar and outward from its centre as the preview column opens, rather than
              floating in the middle of the window or sliding to the right
              (SpotlightWindow.AnimateCardMorph). Width is always set explicitly, so the card's own
-             size is what the glass is fed, not the window's. -->
+             size is what the glass is fed, not the window's.
+             The horizontal alignment is the one thing the code rewrites: while the 分类圆钮 hold the
+             strip on the right the card is pinned Left (ApplyCardDock), because the window is
+             <c>card + circles</c> wide and a centred card would split that room in two.
+             The top margin is SpotlightWindow.SurfaceTopInset — the headroom the summon/dismiss
+             flight lifts the surface through, so the bar's own top edge is never cut by the client
+             area. Keep the two in step. -->
         <Border x:Name="Card" BorderThickness="1" ClipToBounds="True" RenderTransformOrigin="0.5,0.5"
+                Margin="0,8,0,0"
                 VerticalAlignment="Top" HorizontalAlignment="Center">
             <Grid x:Name="CardColumns" ColumnDefinitions="*,Auto,280">
                 <!-- ===================== left: search + results ===================== -->
@@ -480,15 +607,19 @@
                                   StrokeLineCap="Round"
                                   Data="M10,10 m-8,0 a8,8 0 1,0 16,0 a8,8 0 1,0 -16,0 M7.2,7.2 L12.8,12.8 M12.8,7.2 L7.2,12.8" />
                         </Button>
+
                     </Grid>
 
-                    <!-- category bar: only while filtering (collapsed for the empty query). -->
+                    <!-- category bar: only while filtering (collapsed for the empty query).
+                         Its visibility is written by UpdateMode, not bound: the same method owns
+                         the other four surfaces, and a binding here would be a second owner of
+                         "what is on screen". -->
                     <StackPanel x:Name="CategoryBar"
                                 Grid.Row="1"
                                 Orientation="Horizontal"
                                 Spacing="6"
                                 Margin="24,0,20,12"
-                                IsVisible="{Binding IsFiltering}" />
+                                IsVisible="False" />
 
                     <!-- App-grid category capsules (macOS Launchpad's clusters, as a filter):
                          全部 + the user's own categories + the "new category" capsule. Shares
@@ -623,11 +754,14 @@
                                         Margin="0,6,0,0" />
                             </StackPanel>
 
-                            <!-- Query matched nothing. -->
+                            <!-- Query matched nothing (or a browse found nothing to list — the
+                                 view model picks the wording, see NoResultsText). -->
                             <TextBlock x:Name="NoResultState"
                                        IsVisible="False"
-                                       Text="{x:Static loc:Locale.Spotlight_NoResults}"
+                                       Text="{Binding NoResultsText}"
                                        FontSize="13"
+                                       TextAlignment="Center"
+                                       TextWrapping="Wrap"
                                        HorizontalAlignment="Center"
                                        VerticalAlignment="Center"
                                        Foreground="{DynamicResource SpotlightSecondaryText}" />
@@ -662,7 +796,13 @@
                                  VerticalAlignment MUST be Top: with an explicit Height the
                                  default Stretch arranges the bar centred in the margin-deflated
                                  remaining space, which reads as "stuck at the panel's middle,
-                                 moving half a row per step". -->
+                                 moving half a row per step".
+                                 It is positioned from the selected row's coordinates, so the row
+                                 leaving the viewport would take the bar with it, out over the
+                                 search field — an invisible row with its highlight still
+                                 climbing. ResultHighlightTarget clips the rect to the list's own
+                                 rect (SpotlightWindow.ResultListViewport) for exactly that
+                                 reason: the bar never leaves the window the rows scroll through. -->
                             <Border x:Name="ResultHighlight"
                                     IsVisible="False"
                                     IsHitTestVisible="False"

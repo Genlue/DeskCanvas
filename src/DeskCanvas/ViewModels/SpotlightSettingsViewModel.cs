@@ -57,6 +57,83 @@ public record LauncherBrowserOption(string Label, string? Path)
     public override string ToString() => Label;
 }
 
+/// <summary>One category a 分类圆钮 can be pointed at; <see cref="Key"/> is the storage key.</summary>
+public record OrbCategoryOption(string Key, string Label)
+{
+    public override string ToString() => Label;
+}
+
+/// <summary>
+/// One row of the 分类圆钮 editor: which circle (Alt+1..4) it is, the category it currently opens
+/// and the full list to pick from. Choosing a category the other three already use swaps the two
+/// (see <see cref="LauncherSettings.WithOrbCategory"/>) instead of rejecting the choice, so the
+/// four circles always name four different destinations.
+/// </summary>
+public sealed class OrbSlotRowViewModel : INotifyPropertyChanged
+{
+    private readonly Action<OrbSlotRowViewModel, string> onSelected;
+    private OrbCategoryOption selected;
+    private bool silent;
+
+    public OrbSlotRowViewModel(
+        int slot,
+        string label,
+        IReadOnlyList<OrbCategoryOption> options,
+        string key,
+        Action<OrbSlotRowViewModel, string> onSelected)
+    {
+        Slot = slot;
+        Label = label;
+        Options = options;
+        this.onSelected = onSelected;
+        selected = options.FirstOrDefault(option => option.Key == key) ?? options[0];
+    }
+
+    /// <summary>0-based position, i.e. Alt+<see cref="Slot"/>+1.</summary>
+    public int Slot { get; }
+
+    /// <summary>The circle this row edits ("Alt+1").</summary>
+    public string Label { get; }
+
+    /// <summary>Every category a circle may open (全部 is not one: it is "no filter").</summary>
+    public IReadOnlyList<OrbCategoryOption> Options { get; }
+
+    /// <summary>The category in force. Writing it commits the choice; a programmatic re-seed is silent.</summary>
+    public OrbCategoryOption SelectedOption
+    {
+        get => selected;
+        set
+        {
+            if (value == null || selected.Key == value.Key) return;
+            selected = value;
+            OnPropertyChanged();
+            if (!silent) onSelected(this, value.Key);
+        }
+    }
+
+    /// <summary>Re-seed the row from the settings without firing the commit callback.</summary>
+    public void SetSelection(string key)
+    {
+        var option = Options.FirstOrDefault(candidate => candidate.Key == key);
+        if (option == null || option.Key == selected.Key) return;
+
+        silent = true;
+        try
+        {
+            SelectedOption = option;
+        }
+        finally
+        {
+            silent = false;
+        }
+    }
+
+    public event PropertyChangedEventHandler? PropertyChanged;
+
+    private void OnPropertyChanged([CallerMemberName] string? propertyName = null)
+        => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+}
+
 /// <summary>
 /// One row of the category-lock editor: the chip it binds, its current gesture and a row-local
 /// error. The error lives on the row (not on the shared <c>Message</c>) so a rejected key does
@@ -259,6 +336,7 @@ public class SpotlightSettingsViewModel : ReactiveObject, IDisposable
         RefreshBlacklist();
         RefreshClipboardExcluded();
         RefreshCategoryKeys();
+        RefreshOrbSlots();
         Attach();
     }
 
@@ -1357,18 +1435,91 @@ public class SpotlightSettingsViewModel : ReactiveObject, IDisposable
         RefreshCategoryKeys();
     }
 
-    /// <summary>Localized chip label for a storage key.</summary>
-    private static string CategoryLabel(string key) => key switch
+    /// <summary>Localized chip label for a storage key (the same table the overlay draws from).</summary>
+    private static string CategoryLabel(string key) => SpotlightCategoryVisuals.LabelForKey(key);
+
+    // ---- 分类圆钮 (the four circles beside the field) --------------------------------
+
+    /// <summary>One row per circle, in Alt+1..4 order — the circle's own slot, never a sortable list.</summary>
+    public ObservableCollection<OrbSlotRowViewModel> OrbSlots { get; } = [];
+
+    /// <summary>Whether the 分类圆钮 block is unfolded (view state only, like 类别快捷键).</summary>
+    public bool OrbSlotsExpanded
     {
-        LauncherCategoryKeys.All => Locale.Spotlight_Category_All,
-        LauncherCategoryKeys.Apps => Locale.Spotlight_Category_Apps,
-        LauncherCategoryKeys.Images => Locale.Spotlight_Category_Images,
-        LauncherCategoryKeys.Files => Locale.Spotlight_Category_Files,
-        LauncherCategoryKeys.Folders => Locale.Spotlight_Category_Folders,
-        LauncherCategoryKeys.Widgets => Locale.Spotlight_Category_Widgets,
-        LauncherCategoryKeys.Web => Locale.Spotlight_Category_Web,
-        _ => Locale.Spotlight_Category_Clipboard,
-    };
+        get => orbSlotsExpanded;
+        set
+        {
+            if (orbSlotsExpanded == value) return;
+            orbSlotsExpanded = value;
+            this.RaisePropertyChanged();
+        }
+    }
+
+    private bool orbSlotsExpanded;
+
+    /// <summary>
+    /// Re-read the four circles from the settings. The row count never changes (it is the Alt+1..4
+    /// contract), so the rows are re-seeded in place rather than rebuilt: a rebuild while a
+    /// ComboBox is committing would remove the control that raised the event. The exception is the
+    /// first load and a UI-language flip, where the option labels themselves change.
+    /// </summary>
+    public void RefreshOrbSlots()
+    {
+        var keys = settings.Get().EffectiveLauncher.EffectiveOrbCategories;
+        var options = BuildOrbOptions();
+
+        // A language flip leaves the KEY list intact but every label different — the rows have to
+        // be rebuilt for the dropdown to speak the new language.
+        var relabel = OrbSlots.Count > 0 && OrbSlots[0].Options.Count > 0
+            && !string.Equals(OrbSlots[0].Options[0].Label, options[0].Label, StringComparison.Ordinal);
+
+        if (OrbSlots.Count != keys.Count || relabel)
+        {
+            OrbSlots.Clear();
+            for (var i = 0; i < keys.Count; i++)
+                OrbSlots.Add(new OrbSlotRowViewModel(i, $"Alt+{i + 1}", options, keys[i], OnOrbSlotChanged));
+            return;
+        }
+
+        for (var i = 0; i < keys.Count; i++) OrbSlots[i].SetSelection(keys[i]);
+    }
+
+    /// <summary>
+    /// Commit one circle's category. Picking a category another circle already opens <b>swaps</b>
+    /// the two (the settings rule), so the row that lost it is re-seeded here — the collection is
+    /// not rebuilt, because this runs from inside a ComboBox's own selection change.
+    /// </summary>
+    private void OnOrbSlotChanged(OrbSlotRowViewModel row, string key)
+    {
+        Save(launcher => launcher.WithOrbCategory(row.Slot, key));
+
+        var keys = settings.Get().EffectiveLauncher.EffectiveOrbCategories;
+        for (var i = 0; i < OrbSlots.Count && i < keys.Count; i++)
+        {
+            if (ReferenceEquals(OrbSlots[i], row)) continue;
+            OrbSlots[i].SetSelection(keys[i]);
+        }
+    }
+
+    /// <summary>Back to 应用 / 文件 / 组件 / 剪贴板.</summary>
+    public void ResetOrbSlots()
+    {
+        Save(launcher => launcher.WithoutOrbCategories());
+        RefreshOrbSlots();
+    }
+
+    /// <summary>Every category a circle may open: the chip order minus 全部 ("no filter" is not a place).</summary>
+    private static IReadOnlyList<OrbCategoryOption> BuildOrbOptions()
+    {
+        var result = new List<OrbCategoryOption>(LauncherCategoryKeys.Order.Count - 1);
+        foreach (var key in LauncherCategoryKeys.Order)
+        {
+            if (string.Equals(key, LauncherCategoryKeys.All, StringComparison.Ordinal)) continue;
+            result.Add(new OrbCategoryOption(key, SpotlightCategoryVisuals.LabelForKey(key)));
+        }
+
+        return result;
+    }
 
     // ---- clipboard history ----------------------------------------------------------
 
@@ -1877,6 +2028,7 @@ public class SpotlightSettingsViewModel : ReactiveObject, IDisposable
         RefreshBlacklist();
         RefreshClipboardExcluded();
         RefreshCategoryKeys();
+        RefreshOrbSlots();
 
         var launcher = settings.Get().EffectiveLauncher;
         cornerRadiusDraft = launcher.CornerRadius;

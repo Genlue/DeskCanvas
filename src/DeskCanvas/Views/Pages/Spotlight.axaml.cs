@@ -311,6 +311,8 @@ public partial class Spotlight : UserControl
 
     private void OnResetCategoryKeys(object? sender, RoutedEventArgs e) => viewModel.ResetCategoryKeys();
 
+    private void OnResetOrbSlots(object? sender, RoutedEventArgs e) => viewModel.ResetOrbSlots();
+
     /// <summary>One write per slider release, not per tick (the grid sliders' own rule).</summary>
     private void OnWebResultCountCommitted(object? sender, LabeledSliderValueCommittedEventArgs e)
         => viewModel.CommitWebResultCount();

@@ -49,14 +49,16 @@ public enum SpotlightGlyphKind
 /// <summary>
 /// The geometry behind <see cref="SpotlightGlyphKind"/>.
 /// <para>
-/// <b>Filled marks</b> (every category artwork) come from the user's own SVG files, kept verbatim
-/// as path data on their 1024-unit grid. They are <b>filled</b>, not stroked, with the theme's
-/// primary text brush — the artwork carries no colour of its own on purpose, so it reads black on
-/// the light card and light on the dark one exactly like the rest of the field's chrome.
+/// <b>Filled marks</b> come from the user's own SVG files, kept verbatim as path data on their
+/// 1024-unit grid: the app store, the document (文件), the folder (文件夹), the picture, the widget
+/// tile, the paperclip (剪贴板), the browser and the magnifier (搜索). They are <b>filled</b>, not
+/// stroked, with the theme's primary text brush — the artwork carries no colour of its own on
+/// purpose, so it reads black on the light card and light on the dark one exactly like the rest of
+/// the field's chrome.
 /// </para>
 /// <para>
-/// <b>Drawn marks</b> (magnifier / calculator) stay stroked: they are ours, and a stroke keeps the
-/// 20 px optical weight identical to the text beside them.
+/// <b>Drawn marks</b> (calculator) stay stroked: it is ours, and a stroke keeps the 20 px optical
+/// weight identical to the text beside it.
 /// </para>
 /// <para>
 /// Geometries are parsed once and cached: the converter that feeds the Path runs on every binding
@@ -83,15 +85,38 @@ public static class SpotlightGlyphs
         " 0 0 0-4.266667-4.266666-4.266667L793.6 725.333333h89.6c29.866667 0 51.2-25.6 51.2-51.2" +
         " 4.266667-29.866667-21.333333-55.466667-46.933333-55.466666z";
 
-    /// <summary>Document mark, from the user's <c>file.svg</c> (iconfont, 1024 grid, filled outline).</summary>
+    /// <summary>Document mark, from the user's <c>files.svg</c> (iconfont, 1024 grid, filled): two sheets, the front one with its folded corner.</summary>
     private const string FilesPath =
-        "M854.6 288.6L639.4 73.4c-6-6-14.1-9.4-22.6-9.4H192c-17.7 0-32 14.3-32 32v832c0 17.7 14.3 32 32" +
-        " 32h640c17.7 0 32-14.3 32-32V311.3c0-8.5-3.4-16.7-9.4-22.7zM790.2 326H602V137.8L790.2 326z" +
-        " m1.8 562H232V136h302v216c0 23.2 18.8 42 42 42h216v494z";
+        "M469.333333 42.666667C399.146667 42.666667 341.333333 100.48 341.333333 170.666667v469.333333c0 " +
+        "70.186667 57.813333 128 128 128h341.333334c70.186667 0 128-57.813333 " +
+        "128-128V341.333333a42.666667 42.666667 0 0 0-42.666667-42.666666 42.666667 42.666667 0 0 " +
+        "0-42.666667 42.666666v298.666667c0 24.064-18.602667 42.666667-42.666666 " +
+        "42.666667h-341.333334c-24.064 0-42.666667-18.602667-42.666666-42.666667V170.666667c0-24.064 " +
+        "18.602667-42.666667 42.666666-42.666667h170.666667a42.666667 42.666667 0 0 0 42.666667-42.666667" +
+        " 42.666667 42.666667 0 0 0-42.666667-42.666666z M639.914667 42.666667A42.666667 42.666667 0 0 0 " +
+        "597.333333 85.333333v213.333334c0 46.634667 38.698667 85.333333 85.333334 " +
+        "85.333333h213.333333a42.666667 42.666667 0 0 0 42.666667-42.581333 145.066667 145.066667 0 0 " +
+        "0-42.666667-103.082667L742.997333 85.333333a145.066667 145.066667 0 0 " +
+        "0-103.082666-42.666666zM682.666667 145.749333L835.584 298.666667H682.666667zM213.333333 " +
+        "256C143.146667 256 85.333333 313.813333 85.333333 384v469.333333c0 70.186667 57.813333 128 128 " +
+        "128h341.333334c45.653333 0 88.021333-24.448 110.848-64a42.666667 42.666667 0 0 0-15.616-58.24 " +
+        "42.666667 42.666667 0 0 0-58.325334 15.573334c-7.68 13.226667-21.589333 21.333333-36.906666 " +
+        "21.333333H213.333333c-24.064 0-42.666667-18.602667-42.666666-42.666667V384c0-24.064 " +
+        "18.602667-42.666667 42.666666-42.666667a42.666667 42.666667 0 0 0 42.666667-42.666666 42.666667 " +
+        "42.666667 0 0 0-42.666667-42.666667z";
 
-    /// <summary>Folder mark, from the user's <c>folder.svg</c> (iconfont, 1024 grid, filled outline).</summary>
+    /// <summary>Folder mark, from the user's <c>folder.svg</c> (iconfont, 1024 grid, filled).</summary>
     private const string FolderPath =
-        "M85.312 153.6v716.8h853.376V288H471.36L364.416 153.6h-279.04zM0 64h404.288L511.36 198.4H1024V960H0V64z";
+        "M810.666667 85.333333a85.333333 85.333333 0 0 1 85.333333 85.333334v152.021333c36.821333 " +
+        "9.493333 64 42.88 64 82.645333v405.333334a128 128 0 0 1-128 128H192a128 128 0 0 " +
+        "1-128-128V298.666667a85.376 85.376 0 0 1 64-82.645334V170.666667a85.333333 85.333333 0 0 1 " +
+        "85.333333-85.333334h597.333334zM128.149333 296.170667L128 298.666667v512a64 64 0 0 0 60.245333 " +
+        "63.893333L192 874.666667h640a64 64 0 0 0 63.893333-60.245334L896 810.666667V405.333333a21.333333" +
+        " 21.333333 0 0 0-18.837333-21.184L874.666667 384H638.165333l-122.069333-101.717333a21.333333 " +
+        "21.333333 0 0 0-10.688-4.736l-2.986667-0.213334H149.333333a21.333333 21.333333 0 0 0-21.184 " +
+        "18.837334zM535.189333 213.333333l127.978667 106.666667H832V170.666667a21.333333 21.333333 0 0 " +
+        "0-18.837333-21.184L810.666667 149.333333H213.333333a21.333333 21.333333 0 0 0-21.184 " +
+        "18.837334L192 170.666667v42.666666h343.168z";
 
     /// <summary>Picture mark, from the user's <c>photo.svg</c> (iconfont, 1024 grid, filled outline).</summary>
     private const string ImagePath =
@@ -120,18 +145,30 @@ public static class SpotlightGlyphs
         "l170.666666-170.666667a42.624 42.624 0 0 0 0-60.330667l-170.666666-170.666666zM725.333333" +
         " 409.002667L614.997333 298.666667 725.333333 188.330667 835.669333 298.666667 725.333333 409.002667z";
 
-    /// <summary>Clip mark, from the user's <c>clip.svg</c> (iconfont, 1024 grid, filled outline).</summary>
+    /// <summary>Clip mark, from the user's <c>clip.svg</c> (iconfont, 1024 grid, filled): the paperclip — "clip" is 剪贴板 here.</summary>
     private const string ClipboardPath =
-        "M839.36 582.485333L593.706667 827.306667c-91.904 91.584-240.917333 91.584-332.842667 0a233.664" +
-        " 233.664 0 0 1 0.021333-331.306667l327.552-326.4c55.637333-55.466667 146.176-55.424 201.813334" +
-        " 0a141.44 141.44 0 0 1 0.106666 200.597333L462.741333 696.661333a50.346667 50.346667 0 0" +
-        " 1-70.869333 0.064 49.429333 49.429333 0 0 1 0.106667-70.229333l245.568-244.714667a42.666667" +
-        " 42.666667 0 0 0-60.224-60.458666L331.733333 566.058667a134.741333 134.741333 0 0 0-0.085333" +
-        " 191.125333 135.68 135.68 0 0 0 191.317333-0.085333l327.637334-326.485334c89.024-88.746667" +
-        " 88.96-232.682667-0.128-321.472C761.557333 20.544 617.173333 20.48 528.213333 109.141333" +
-        "l-327.573333 326.4c-125.290667 124.842667-125.290667 327.338667-0.021333 452.181334 125.226667" +
-        " 124.8 328.106667 124.778667 453.312 0l245.674666-244.821334a42.666667 42.666667 0 1 0" +
-        "-60.245333-60.437333z";
+        "M861.465718 104.803951 510.147304 475.408617 157.334863 109.286032c0 0-24.963555 " +
+        "16.427134-24.787546 70.25918 0.242524 69.829392 57.171094 125.46041 109.395526 184.736445 " +
+        "56.413847 64.034409 102.655008 112.7489 102.655008 112.7489l82.148975 86.376253-93.307106 " +
+        "98.43694c-57.872059-23.357987-126.566604-10.066263-171.159218 38.703487-57.346079 " +
+        "62.712297-52.997028 160.060439 9.698896 217.414705 62.736856 57.363476 160.068625 53.006238 " +
+        "217.430054-9.716292 40.605813-44.381813 50.133817-106.083084 " +
+        "30.096459-158.708652l91.38943-97.679693 93.696985 98.501408c-19.611663 52.806693-9.575076 " +
+        "114.406656 31.397081 158.488641 57.874105 62.251809 155.23248 65.777099 217.479173 7.902994 " +
+        "62.251809-57.864896 65.802682-155.252947 7.93267-217.48429-44.998867-48.38908-113.789603-" +
+        "61.129242-171.46928-37.300534l-95.646384-99.249445 82.946131-88.643899c0 0 45.864584-49.079812 " +
+        "101.736079-113.585965 51.739385-59.697637 108.196211-115.813702 107.85545-185.627744C886.581746 " +
+        "121.010051 861.465718 104.803951 861.465718 104.803951zM331.035974 854.859765c-27.883047 " +
+        "30.479175-75.16491 32.602535-105.655342 " +
+        "4.727675-30.461779-27.864628-32.597419-75.173097-4.715395-105.652272 27.855418-30.489408 " +
+        "75.178213-32.593326 105.655342-4.727675C356.809987 777.093611 358.903671 824.400033 331.035974 " +
+        "854.859765zM485.548046 537.629727c14.579043-13.537318 37.355793-12.710486 50.903344 1.862417 " +
+        "13.561877 14.563694 12.729929 37.356816-1.832741 50.903344-14.594393 13.551644-37.372166 " +
+        "12.725836-50.918693-1.837858C470.138078 573.969377 470.97412 551.181371 485.548046 " +
+        "537.629727zM803.46063 753.123686c28.126594 30.249955 26.393113 77.56661-3.850701 " +
+        "105.692181-30.249955 28.125571-77.57275 " +
+        "26.403347-105.697297-3.836375-28.111245-30.238698-26.38288-77.56661 " +
+        "3.865028-105.692181C728.022497 721.16174 775.345292 722.894198 803.46063 753.123686z";
 
     /// <summary>
     /// Browser mark, from the user's <c>browser.svg</c> (iconfont, 1024 grid, filled outline):
@@ -148,8 +185,20 @@ public static class SpotlightGlyphs
         " 0 1 1 0-85.333334 42.666667 42.666667 0 0 1 0 85.333334z m106.666666 0a42.666667 42.666667" +
         " 0 1 1 0-85.333334 42.666667 42.666667 0 0 1 0 85.333334z";
 
-    /// <summary>Magnifier, 20-unit grid, stroked (the launcher's own fallback mark).</summary>
-    private const string SearchPath = "M16.5,9 A7.5,7.5 0 1 1 1.5,9 A7.5,7.5 0 1 1 16.5,9 M14.6,14.6 L19.5,19.5";
+    /// <summary>Magnifier, from the user's <c>search.svg</c> (iconfont, 1024 grid, filled).</summary>
+    private const string SearchPath =
+        "M644.096 251.904a277.333333 277.333333 0 1 0-392.192 392.192 277.333333 277.333333 0 0 0 " +
+        "392.192-392.192zM191.573333 191.573333a362.666667 362.666667 0 0 1 541.269334 " +
+        "480.938667l228.053333 228.053333-60.330667 60.330667-228.053333-228.053333A362.709333 362.709333" +
+        " 0 0 1 191.573333 191.573333z";
+
+    /// <summary>
+    /// Magnifier, 20-unit grid, <b>stroked</b>: the launcher's own fallback mark, kept for the one
+    /// path that asks <see cref="Stroke"/> for a geometry no artwork covers (every kind is filled
+    /// now — see <see cref="IsFilled"/> — so this is a safety net, not a mark on screen).
+    /// </summary>
+    private const string FallbackStrokePath =
+        "M16.5,9 A7.5,7.5 0 1 1 1.5,9 A7.5,7.5 0 1 1 16.5,9 M14.6,14.6 L19.5,19.5";
 
     /// <summary>
     /// Calculator, 20-unit grid, stroked: rounded body, a display line and four keys — the smallest
@@ -164,9 +213,16 @@ public static class SpotlightGlyphs
     private static readonly Dictionary<SpotlightGlyphKind, Geometry> FillCache = [];
     private static readonly Dictionary<SpotlightGlyphKind, Geometry> StrokeCache = [];
 
-    /// <summary>True when this kind is drawn from SVG artwork (filled), not from a stroked path.</summary>
-    public static bool IsFilled(SpotlightGlyphKind kind) => kind != SpotlightGlyphKind.Search
-        && kind != SpotlightGlyphKind.Calculator;
+    /// <summary>
+    /// True when this kind is drawn from SVG artwork (filled), not from a stroked path.
+    /// <para>
+    /// Every category mark — the magnifier included — is now artwork from a <c>.svg</c> file, so the
+    /// calculator is the only stroked kind left. The field's magnifier used to be a hand-drawn
+    /// stroke; it is the same 1024-grid iconfont family as the rest now, which is what keeps the
+    /// search mark's weight identical whether it sits in the field, in a 分类圆钮 or in a row.
+    /// </para>
+    /// </summary>
+    public static bool IsFilled(SpotlightGlyphKind kind) => kind != SpotlightGlyphKind.Calculator;
 
     /// <summary>The mark to paint, as a <b>filled</b> geometry. Falls back to the magnifier.</summary>
     public static Geometry Fill(SpotlightGlyphKind kind)
@@ -200,7 +256,7 @@ public static class SpotlightGlyphs
             var path = kind switch
             {
                 SpotlightGlyphKind.Calculator => CalculatorPath,
-                _ => SearchPath,
+                _ => FallbackStrokePath,
             };
             var geometry = Geometry.Parse(path);
             StrokeCache[kind] = geometry;

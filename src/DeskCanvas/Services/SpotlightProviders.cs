@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using DeskCanvas.Core.Services;
+using DeskCanvas.Locales;
 
 namespace DeskCanvas.Services;
 
@@ -99,6 +100,43 @@ public sealed class SpotlightAppProvider
         }
     }
 
+    /// <summary>
+    /// 浏览（应用圆钮 Alt+1）：列出目录里的每一个应用，不做任何文本匹配。
+    /// <para>
+    /// 排序仍走 <see cref="SpotlightRanking"/>：空查询时它输出 usage-only 分（置顶 / 近期 /
+    /// 次数），所以浏览列表和用户平时看到的顺序是同一把尺子，未用过的应用同分、按目录名字序
+    /// 稳定排列。这是与 <see cref="QueryAsync"/> 分开的一个方法而不是"空查询特例"：查询路径的
+    /// 契约（空查询 = 没有结果）被 <see cref="SpotlightQueryRouter"/> 的空查询短路依赖着，
+    /// 把它改宽会让每一次清空输入框都变成一次全目录扫描。
+    /// </para>
+    /// </summary>
+    public Task<IReadOnlyList<SpotlightResult>> BrowseAsync(int limit, CancellationToken ct)
+    {
+        if (limit <= 0) return Task.FromResult<IReadOnlyList<SpotlightResult>>([]);
+
+        try
+        {
+            var all = new List<SpotlightResult>(catalog.Entries.Count);
+            foreach (var entry in catalog.Entries)
+            {
+                ct.ThrowIfCancellationRequested();
+                var entryUsage = usage.Get(entry.Key);
+                all.Add(CreateResult(entry, entryUsage, SpotlightRanking.Score(entry.Name, string.Empty, entryUsage, entry.Target)));
+            }
+
+            return Task.FromResult<IReadOnlyList<SpotlightResult>>(
+                all.OrderByDescending(r => r.Score).Take(limit).ToList());
+        }
+        catch (OperationCanceledException)
+        {
+            throw; // 取消属于调用方的节奏控制，交由路由层统一降级。
+        }
+        catch
+        {
+            return Task.FromResult<IReadOnlyList<SpotlightResult>>([]);
+        }
+    }
+
     /// <summary>目录条目 → 统一结果行。TargetPath/IconPath 都用 lnk 路径：Enter 经 Shell 打开快捷方式（其参数 / 工作目录生效），图标也从 lnk 抽取。</summary>
     private static SpotlightResult CreateResult(LauncherEntry entry, LauncherUsage entryUsage, double score) =>
         new(
@@ -166,18 +204,42 @@ public sealed class SpotlightFileProvider
 
         return results;
     }
+
+    /// <summary>
+    /// 浏览（文件圆钮 Alt+2）：刻意返回空。
+    /// <para>
+    /// 文件源没有"列出全部"的廉价答案：Everything 的 IPC 与本地索引都只回答<b>查询</b>，让它们
+    /// 无查询地吐出内容等于把整块磁盘的索引搬到列表里——既慢，也不是"文件"这个类别想表达的
+    /// 东西。空贡献是诚实的答复，界面用现有文案请用户输入关键词（见 VM 的 NoResultsText），
+    /// 而不是编造几行最近文件。
+    /// </para>
+    /// </summary>
+    public Task<IReadOnlyList<SpotlightResult>> BrowseAsync(int limit, CancellationToken ct)
+    {
+        ct.ThrowIfCancellationRequested();
+        return Task.FromResult<IReadOnlyList<SpotlightResult>>([]);
+    }
 }
 
 /// <summary>
-/// 剪贴板历史结果源：对 <see cref="ClipboardEntry.Text"/> 的首行用
-/// <see cref="LauncherScoring.Score"/> 匹配，分大于 0 才出现；空查询不返回行。
+/// 剪贴板历史结果源：对每个条目的<b>可搜索文本</b>用 <see cref="LauncherScoring.Score"/> 匹配，
+/// 分大于 0 才出现；空查询不返回行。
 /// <para>
-/// 副标题在此层拼成数据风格的后缀（"来自 chrome · 3m"），相对时间用数字+字母简写而
-/// 不走 Locale——它不是句子而是数据后缀，VM 层不加工，这样分组标签之外的文案面保持为零。
+/// 三种格式各有一段可搜索文本：文本条目是正文首行，文件条目是每个文件名（取最高分），
+/// 图片条目是「图片 + 尺寸」——这样"复制一张截图后搜 图片 / 1080"仍然找得到它，而不是
+/// 因为图片没有文字就永远搜不到。
+/// </para>
+/// <para>
+/// 副标题在此层拼成数据风格的后缀（"来自 chrome · 3m"；文件多一条"等共 N 个文件"），
+/// 相对时间用数字+字母简写而不走 Locale——它不是句子而是数据后缀，VM 层不加工，
+/// 这样分组标签之外的文案面保持为零。
 /// </para>
 /// </summary>
 public sealed class SpotlightClipboardProvider
 {
+    /// <summary>浏览列表的首条分数；每条递减 1，只用于保序（组内互相比较，跨组无意义）。</summary>
+    private const double BrowseScore = 600;
+
     private readonly SpotlightClipboardService clipboard;
 
     /// <summary>Builds the provider over the clipboard history service.</summary>
@@ -200,22 +262,10 @@ public sealed class SpotlightClipboardProvider
             var results = new List<SpotlightResult>();
             foreach (var entry in clipboard.Entries) // 快照，newest first
             {
-                var firstLine = FirstLine(entry.Text);
-                var score = (double)LauncherScoring.Score(firstLine, trimmed);
+                var score = ScoreOf(entry, trimmed);
                 if (score <= 0) continue;
 
-                var captured = entry;
-                results.Add(new SpotlightResult(
-                    SpotlightResultKind.Clipboard,
-                    "clip:" + entry.Id,
-                    firstLine,
-                    Subtitle: DescribeSource(entry),
-                    Score: score,
-                    ClipboardText: entry.Text,
-                    IsLink: entry.IsLink,
-                    SourceProcess: entry.SourceProcess,
-                    CapturedUtc: entry.CapturedUtc,
-                    RunAsync: () => Task.FromResult(clipboard.CopyBack(captured.Id) is not null)));
+                results.Add(CreateResult(entry, score));
             }
 
             return Task.FromResult<IReadOnlyList<SpotlightResult>>(
@@ -224,6 +274,103 @@ public sealed class SpotlightClipboardProvider
         catch
         {
             return Task.FromResult<IReadOnlyList<SpotlightResult>>([]);
+        }
+    }
+
+    /// <summary>
+    /// 浏览（剪贴板圆钮 Alt+4）：整段历史，新在前，不做文本匹配。
+    /// <para>
+    /// 分数在这里只用来<b>保序</b>：<see cref="SpotlightQueryRouter"/> 会按分降序重排，所以给
+    /// 每条赋一个递减分即可把"历史顺序"翻译成"显示顺序"，与查询态同一个机制。历史本来就只有
+    /// 几十到几百条，全部列出不需要额外扫描。
+    /// </para>
+    /// </summary>
+    public Task<IReadOnlyList<SpotlightResult>> BrowseAsync(int limit, CancellationToken ct)
+    {
+        if (limit <= 0) return Task.FromResult<IReadOnlyList<SpotlightResult>>([]);
+
+        ct.ThrowIfCancellationRequested();
+
+        try
+        {
+            var entries = clipboard.Entries; // 快照，newest first
+            var results = new List<SpotlightResult>(Math.Min(entries.Count, limit));
+            for (var i = 0; i < entries.Count && results.Count < limit; i++)
+            {
+                results.Add(CreateResult(entries[i], BrowseScore - i));
+            }
+
+            return Task.FromResult<IReadOnlyList<SpotlightResult>>(results);
+        }
+        catch
+        {
+            return Task.FromResult<IReadOnlyList<SpotlightResult>>([]);
+        }
+    }
+
+    /// <summary>
+    /// 一条历史 → 一行结果。三种格式只在"标题 / 可搜索文本 / 载荷"上不同，其余（Id 规则、
+    /// 副标题、复制回去的执行体）完全共用，所以只有一个出口。
+    /// </summary>
+    private SpotlightResult CreateResult(ClipboardEntry entry, double score)
+    {
+        var captured = entry;
+        return new SpotlightResult(
+            SpotlightResultKind.Clipboard,
+            "clip:" + entry.Id,
+            TitleOf(entry),
+            Subtitle: SubtitleOf(entry),
+            Score: score,
+            ClipboardText: entry.Kind == ClipboardContentKind.Text ? entry.Text : null,
+            IsLink: entry.IsLink,
+            SourceProcess: entry.SourceProcess,
+            CapturedUtc: entry.CapturedUtc,
+            RunAsync: () => Task.FromResult(clipboard.CopyBack(captured.Id) is not null),
+            ClipboardKind: entry.Kind,
+            ClipboardImagePath: entry.ImagePath,
+            ClipboardFilePaths: entry.FilePaths,
+            ClipboardImageWidth: entry.ImageWidth,
+            ClipboardImageHeight: entry.ImageHeight);
+    }
+
+    /// <summary>
+    /// 行标题。文本：第一行（多行文本的"标题"永远是用户复制时看到的第一行）；图片：格式 + 尺寸；
+    /// 文件：第一个文件名（"等共 N 个"进副标题）。
+    /// </summary>
+    public static string TitleOf(ClipboardEntry entry) => entry.Kind switch
+    {
+        ClipboardContentKind.Image => string.Format(
+            Locale.Spotlight_Clipboard_Image_Title, entry.ImageWidth, entry.ImageHeight),
+        ClipboardContentKind.Files => entry.FilePaths is { Count: > 0 } files
+            ? Path.GetFileName(files[0].TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar))
+            : Locale.Spotlight_Clipboard_Files_Empty,
+        _ => FirstLine(entry.Text),
+    };
+
+    /// <summary>
+    /// 一条条目的匹配分。文本打分正文首行（历史行为的延续）；文件对<b>每个</b>文件名和完整路径
+    /// 各打一次取最高（文件名短，分数天然高于长字符串，正好符合"按文件名找人"）；
+    /// 图片用「图片 1920×1080」这类合成串，让"图片"和像素数都可搜。
+    /// </summary>
+    private static double ScoreOf(ClipboardEntry entry, string query)
+    {
+        switch (entry.Kind)
+        {
+            case ClipboardContentKind.Files when entry.FilePaths is { Count: > 0 } files:
+            {
+                var best = 0;
+                foreach (var file in files)
+                {
+                    best = Math.Max(best, LauncherScoring.Score(Path.GetFileName(file), query));
+                    if (best >= 700) break; // a real name hit: no longer string can beat it meaningfully
+                }
+                return best;
+            }
+            case ClipboardContentKind.Image:
+                return LauncherScoring.Score(
+                    TitleOf(entry) + " image 图片 png screenshot 截图", query);
+            default:
+                return LauncherScoring.Score(FirstLine(entry.Text), query);
         }
     }
 
@@ -249,12 +396,22 @@ public sealed class SpotlightClipboardProvider
         return line.Trim();
     }
 
-    /// <summary>副标题：有来源进程 → "来自 {source} · {相对时间}"，否则只有相对时间。</summary>
-    private static string DescribeSource(ClipboardEntry entry)
+    /// <summary>
+    /// 副标题：数量（仅多文件时）→ 来源 → 相对时间，用 " · " 连接。
+    /// 有来源进程时为"来自 {source} · {相对时间}"，否则只有相对时间。
+    /// </summary>
+    public static string SubtitleOf(ClipboardEntry entry)
     {
         var relative = RelativeTime(entry.CapturedUtc);
-        return string.IsNullOrEmpty(entry.SourceProcess)
-            ? relative
-            : $"来自 {entry.SourceProcess} · {relative}";
+        var parts = new List<string>(3);
+
+        if (entry.Kind == ClipboardContentKind.Files && entry.FilePaths is { Count: > 1 } files)
+            parts.Add(string.Format(Locale.Spotlight_Clipboard_Files_Count, files.Count));
+
+        if (!string.IsNullOrEmpty(entry.SourceProcess))
+            parts.Add(string.Format(Locale.Spotlight_Clipboard_Source, entry.SourceProcess));
+
+        parts.Add(relative);
+        return string.Join(" · ", parts);
     }
 }

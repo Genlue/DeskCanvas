@@ -8,6 +8,30 @@ using DeskCanvas.Core.Models.Settings;
 
 namespace DeskCanvas.Services;
 
+/// <summary>
+/// A category the launcher can list without a query (the 聚焦搜索 category orbs).
+/// <para>
+/// It lives here rather than reusing <c>ViewModels.SpotlightCategoryKind</c> because the router
+/// is the layer the view model depends on, not the other way round — and because the four browse
+/// targets are a <b>provider</b> question (who can enumerate what), while the chip kind is a
+/// <b>filter</b> question (which rows a chip keeps).
+/// </para>
+/// </summary>
+public enum SpotlightBrowseKind
+{
+    /// <summary>应用: the whole launcher catalogue.</summary>
+    Apps,
+
+    /// <summary>文件: whatever the file backend can list with no query (may be nothing).</summary>
+    Files,
+
+    /// <summary>组件: every external entry (workflows + widget data).</summary>
+    Widgets,
+
+    /// <summary>剪贴板: the full history.</summary>
+    Clipboard,
+}
+
 /// <summary>一次聚焦搜索查询。Limit 是每个结果源各自的上限（不是总量）。</summary>
 /// <param name="Query">原始查询文本；空白查询 → 只出 Recents。</param>
 /// <param name="Limit">应用 / 剪贴板 / 外部提供者各自的上限，默认 40。</param>
@@ -16,10 +40,16 @@ namespace DeskCanvas.Services;
 /// 其它源天然只有几十条候选，而一次文件名查询在整盘索引里能命中成千上万条——文件列表
 /// 必须给足，否则用户要找的那个文件根本进不了结果（见 FileSearchService 的候选池说明）。
 /// </param>
+/// <param name="Browse">
+/// 浏览请求：<b>不</b>按查询过滤，而是列出该类别能列出的全部内容（聚焦搜索的分类圆钮）。
+/// 设置后 <see cref="Query"/> 必须为空——浏览是"这个类别里有什么"，不是"哪条匹配"；
+/// 空查询的短路因此只在没有浏览类别时生效。null（默认）= 普通查询，行为与之前完全一致。
+/// </param>
 public sealed record SpotlightQueryRequest(
     string Query,
     int Limit = 40,
-    int FileLimit = FileSearchService.MaxResults);
+    int FileLimit = FileSearchService.MaxResults,
+    SpotlightBrowseKind? Browse = null);
 
 /// <summary>
 /// 一个结果分组。Kind 的顺序即展示顺序（由 <see cref="SpotlightQueryRouter"/> 固定），
@@ -120,25 +150,20 @@ public sealed class SpotlightQueryRouter
 
         var recents = SafeRecents(limit);
 
+        // A browse is the one request whose empty query means something: "list the category", not
+        // "there is nothing to search". It is answered before the short-circuit below, which keeps
+        // the query contract ("empty → recents only") intact for every ordinary keystroke.
+        if (request?.Browse is { } browse)
+            return await RouteBrowseAsync(browse, limit, fileLimit, recents, ct).ConfigureAwait(false);
+
         // 空白查询短路：apps 返回空、只填 Recents，其余全空（组契约：空组不出现）。
         if (query.Length == 0)
             return new SpotlightQueryOutcome([], recents, false, null);
 
-        bool filesEnabled;
-        try
-        {
-            filesEnabled = settings.Get().EffectiveLauncher.FileSearch;
-        }
-        catch
-        {
-            // 设置读不出来按"开启"降级：多查一次文件是安全的，静默少一个结果源不是。
-            filesEnabled = true;
-        }
-
         var appsTask = GuardAsync(() => apps.QueryAsync(query, limit, ct));
         var workflowTask = GuardGroupsAsync(() => QueryExternalAsync(query, limit, ct));
         var clipboardTask = GuardAsync(() => clipboard.QueryAsync(query, limit, ct));
-        var filesTask = filesEnabled
+        var filesTask = FilesEnabled()
             ? GuardAsync(() => files.QueryAsync(query, fileLimit, ct))
             : Task.FromResult((Items: EmptyResults, Faulted: false));
 
@@ -157,6 +182,80 @@ public sealed class SpotlightQueryRouter
             AddGroup(groups, SpotlightResultKind.Web, [SpotlightWebProvider.CreateResult(target)]);
 
         return new SpotlightQueryOutcome(groups, recents, filesTask.Result.Faulted, null);
+    }
+
+    /// <summary>
+    /// Answer a browse request: one category, no query, no ranking. Only that category's source
+    /// runs — a browse must cost the same as one normal query source, never four — and it is
+    /// guarded and cancellable exactly like the query path, so a slow source degrades to an empty
+    /// list instead of a stuck launcher.
+    /// <para>
+    /// The 网页 action row is deliberately absent: browsing is "show me what is in this category",
+    /// and a row that opens a browser is not in any category (see
+    /// <see cref="SpotlightQueryOutcome"/>'s Web-last rule for why it exists at all).
+    /// </para>
+    /// </summary>
+    private async Task<SpotlightQueryOutcome> RouteBrowseAsync(
+        SpotlightBrowseKind browse, int limit, int fileLimit,
+        IReadOnlyList<SpotlightResult> recents, CancellationToken ct)
+    {
+        var groups = new List<SpotlightGroup>(4);
+        var searchingFiles = false;
+
+        switch (browse)
+        {
+            case SpotlightBrowseKind.Apps:
+            {
+                var appsResult = await GuardAsync(() => apps.BrowseAsync(limit, ct)).ConfigureAwait(false);
+                AddGroup(groups, SpotlightResultKind.App, appsResult.Items);
+                break;
+            }
+
+            case SpotlightBrowseKind.Files:
+            {
+                if (FilesEnabled())
+                {
+                    var fileResult = await GuardAsync(() => files.BrowseAsync(fileLimit, ct)).ConfigureAwait(false);
+                    AddGroup(groups, SpotlightResultKind.File, fileResult.Items);
+                    searchingFiles = fileResult.Faulted;
+                }
+
+                break;
+            }
+
+            case SpotlightBrowseKind.Clipboard:
+            {
+                var clipboardResult = await GuardAsync(() => clipboard.BrowseAsync(limit, ct)).ConfigureAwait(false);
+                AddGroup(groups, SpotlightResultKind.Clipboard, clipboardResult.Items);
+                break;
+            }
+
+            case SpotlightBrowseKind.Widgets:
+            {
+                // The external providers are plugins: they get an empty query and answer with
+                // whatever they can list (see ISpotlightExternalProvider). A plugin that only
+                // knows how to score a query simply contributes nothing here.
+                var externalGroups = await GuardGroupsAsync(
+                    () => QueryExternalAsync(string.Empty, limit, ct)).ConfigureAwait(false);
+                groups.AddRange(externalGroups);
+                break;
+            }
+        }
+
+        return new SpotlightQueryOutcome(groups, recents, searchingFiles, null);
+    }
+
+    /// <summary>Whether 文件搜索 is on; a settings read that fails counts as on (same rule as the query path).</summary>
+    private bool FilesEnabled()
+    {
+        try
+        {
+            return settings.Get().EffectiveLauncher.FileSearch;
+        }
+        catch
+        {
+            return true;
+        }
     }
 
     /// <summary>
