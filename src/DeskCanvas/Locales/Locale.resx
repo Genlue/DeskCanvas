@@ -60,6 +60,18 @@
     <data name="Settings_Appearance_AccentColor_Title" xml:space="preserve">
         <value>Accent color</value>
     </data>
+    <data name="Settings_Appearance_AccentShift_Title" xml:space="preserve">
+        <value>Accent shift</value>
+    </data>
+    <data name="Settings_Appearance_AccentShift_Subtitle" xml:space="preserve">
+        <value>Pushes the accent toward either end: white in dark mode, black in light mode. 0 keeps the raw color</value>
+    </data>
+    <data name="Settings_Appearance_Background_FollowAccent_Title" xml:space="preserve">
+        <value>Follow accent color</value>
+    </data>
+    <data name="Settings_Appearance_Background_FollowAccent_Subtitle" xml:space="preserve">
+        <value>Use the accent as the background color, shifted per mode (toward white in light, toward black in dark) so text stays readable</value>
+    </data>
     <data name="Settings_Advanced_Size" xml:space="preserve">
         <value>Size</value>
     </data>
@@ -317,6 +329,12 @@
     </data>
     <data name="Settings_Advanced_LockPosition_Subtitle" xml:space="preserve">
         <value>Prevent accidental widget repositioning</value>
+    </data>
+    <data name="Settings_Advanced_ProhibitOverlap_Title" xml:space="preserve">
+        <value>Prohibit widget overlap</value>
+    </data>
+    <data name="Settings_Advanced_ProhibitOverlap_Subtitle" xml:space="preserve">
+        <value>When no free cell is left, refuse to place a new widget instead of stacking it on the first cell. Dragging a card onto an occupied cell is refused too</value>
     </data>
     <data name="Settings_Advanced_Position" xml:space="preserve">
         <value>Position</value>
@@ -1374,6 +1392,11 @@ Migrate (copy) the current data there? Choosing "Switch without migrating" start
   <data name="Spotlight_Category_Folders" xml:space="preserve"><value>Folders</value></data>
 
   <data name="Spotlight_Category_Clipboard" xml:space="preserve"><value>Clipboard</value></data>
+  <!-- 剪贴板条目：三种格式各自的标题/副标题片段（Provider 拼装，VM 不加工）。 -->
+  <data name="Spotlight_Clipboard_Image_Title" xml:space="preserve"><value>Image {0}×{1}</value></data>
+  <data name="Spotlight_Clipboard_Files_Count" xml:space="preserve"><value>{0} files</value></data>
+  <data name="Spotlight_Clipboard_Files_Empty" xml:space="preserve"><value>Files</value></data>
+  <data name="Spotlight_Clipboard_Source" xml:space="preserve"><value>from {0}</value></data>
   <data name="Spotlight_Category_Web" xml:space="preserve"><value>Web</value></data>
   <!-- App-grid categories (the launchpad-style capsule bar under the search field). -->
   <data name="Spotlight_AppCategory_New" xml:space="preserve"><value>New category</value></data>
@@ -1470,6 +1493,12 @@ Migrate (copy) the current data there? Choosing "Switch without migrating" start
 
   <data name="Settings_Spotlight_CategoryKeys_Taken" xml:space="preserve"><value>{0} is already used by {1}.</value></data>
 
+  <data name="Settings_Spotlight_Section_Orbs" xml:space="preserve"><value>Category buttons</value></data>
+
+  <data name="Settings_Spotlight_Orbs_Desc" xml:space="preserve"><value>The four circles beside the search field are shown while Alt is held, and Alt+1–4 opens the same categories without the gesture. Point each circle at any category; choosing one another circle already opens swaps the two, so the four always stay four different places. The number in front of each row is its shortcut and never moves.</value></data>
+
+  <data name="Settings_Spotlight_Orbs_Reset" xml:space="preserve"><value>Restore defaults</value></data>
+
   <data name="Settings_Spotlight_Section_Clipboard" xml:space="preserve"><value>Clipboard</value></data>
   <data name="Settings_Spotlight_Recent_Title" xml:space="preserve"><value>Show recently used</value></data>
   <data name="Settings_Spotlight_Recent_Subtitle" xml:space="preserve"><value>Show one row of recently used apps above the grid when the query is empty, using the grid's own icons and columns.</value></data>
@@ -1478,7 +1507,7 @@ Migrate (copy) the current data there? Choosing "Switch without migrating" start
   <data name="Settings_Spotlight_Preview_Title" xml:space="preserve"><value>Show preview pane</value></data>
   <data name="Settings_Spotlight_Preview_Subtitle" xml:space="preserve"><value>Show details for the selected result on the right; hides on narrow windows.</value></data>
   <data name="Settings_Spotlight_Clipboard_Title" xml:space="preserve"><value>Clipboard history</value></data>
-  <data name="Settings_Spotlight_Clipboard_Subtitle" xml:space="preserve"><value>Keep copied text and links (up to 100). Stored locally only; content is never logged.</value></data>
+  <data name="Settings_Spotlight_Clipboard_Subtitle" xml:space="preserve"><value>Keep copied text, links, images and files (up to 100). Stored locally only; content is never logged.</value></data>
   <data name="Settings_Spotlight_Clipboard_Retention_Title" xml:space="preserve"><value>Retention</value></data>
   <data name="Settings_Spotlight_Clipboard_Retention_Subtitle" xml:space="preserve"><value>Entries older than this are removed automatically.</value></data>
   <data name="Settings_Spotlight_Clipboard_Days" xml:space="preserve"><value>{0} days</value></data>

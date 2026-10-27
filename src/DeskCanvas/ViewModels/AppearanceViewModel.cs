@@ -111,6 +111,9 @@ public class AppearanceViewModel : ReactiveObject
             this.RaisePropertyChanged(nameof(SolidBackgroundLightHex));
             this.RaisePropertyChanged(nameof(ShowSolidBackgroundSetting));
             this.RaisePropertyChanged(nameof(AccentColorHex));
+            this.RaisePropertyChanged(nameof(AccentShift));
+            this.RaisePropertyChanged(nameof(FollowAccentBackground));
+            this.RaisePropertyChanged(nameof(SolidBackgroundEditable));
             // Only re-resolve the combo when the manual/system choice itself changed: a plain
             // colour change must not touch the selection, or the closed combo would flicker on
             // every pointer move of the palette.
@@ -291,7 +294,7 @@ public class AppearanceViewModel : ReactiveObject
             nameof(GlassHighlight), nameof(GlassHighlightAngle), nameof(GlassDispersion), nameof(GlassVibrancy),
             nameof(GlassBackdropClarity), nameof(V2Blur), nameof(V2Refraction), nameof(V2Highlight),
             nameof(V2HighlightAngle), nameof(V2Vibrancy), nameof(V2Dispersion), nameof(V2BackdropClarity),
-            nameof(TextShadowStrength) })
+            nameof(TextShadowStrength), nameof(AccentShift) })
             this.RaisePropertyChanged(name);
     }
 
@@ -452,6 +455,55 @@ public class AppearanceViewModel : ReactiveObject
             SaveTheme(settings.Theme with { AccentColor = value });
         }
     }
+
+    /// <summary>
+    /// 强调色偏移, 0-100 (%): how far the effective accent is pushed toward white (dark mode) or
+    /// black (light mode).
+    /// <para>
+    /// Saved on every tick instead of being staged until release: the accent ramp is what the
+    /// whole UI paints with, and the accent colour picker above already commits on every pointer
+    /// move. Staging would leave the slider visibly dead while it is dragged, then snap once.
+    /// </para>
+    /// </summary>
+    public double AccentShift
+    {
+        // A slider, so it follows the page's slider contract: the drag stages a draft (no file
+        // write per step) and ValueCommitted persists it. Saving from the setter instead would
+        // rewrite appSettings.json and re-run the whole theme apply on every pixel of the drag.
+        get => SliderTheme.EffectiveAccentShift;
+        set
+        {
+            var shift = AccentPalette.NormalizeShift(value);
+            StageSlider(draft => draft with { AccentShift = shift }, nameof(AccentShift));
+        }
+    }
+
+    /// <summary>
+    /// 跟随强调色: the 纯色 background pair follows the accent, shifted the opposite way (light
+    /// mode → toward white, dark mode → toward black) so text stays readable.
+    /// <para>
+    /// Only the flag is stored. The derived pair is computed at render time, so the user's own
+    /// hex values stay in the settings file and switching this back off restores them exactly.
+    /// </para>
+    /// </summary>
+    public bool FollowAccentBackground
+    {
+        get => appSettingsProvider.Get().Theme.FollowAccentBackground;
+        set
+        {
+            var settings = appSettingsProvider.Get();
+            if (settings.Theme.FollowAccentBackground == value) return;
+            SaveTheme(settings.Theme with { FollowAccentBackground = value });
+        }
+    }
+
+    /// <summary>
+    /// Whether the two 背景颜色 inputs still own the card colour. While 跟随强调色 is on they are
+    /// disabled rather than fed the derived colours: the inputs edit the <b>stored</b> pair, and
+    /// showing a computed value there would let the next edit silently overwrite the colour the
+    /// user is keeping for when they turn the switch back off.
+    /// </summary>
+    public bool SolidBackgroundEditable => !FollowAccentBackground;
 
     public DarkModeViewModel? DarkMode
     {

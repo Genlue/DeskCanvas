@@ -370,6 +370,24 @@ namespace DeskCanvas.Locales {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Prohibit widget overlap.
+        /// </summary>
+        public static string Settings_Advanced_ProhibitOverlap_Title {
+            get {
+                return ResourceManager.GetString("Settings_Advanced_ProhibitOverlap_Title", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to When no free cell is left, refuse to place a new widget instead of stacking it on the first cell.
+        /// </summary>
+        public static string Settings_Advanced_ProhibitOverlap_Subtitle {
+            get {
+                return ResourceManager.GetString("Settings_Advanced_ProhibitOverlap_Subtitle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Prevent accidental widget resizing.
         /// </summary>
         public static string Settings_Advanced_LockSize_Subtitle {
@@ -645,6 +663,42 @@ namespace DeskCanvas.Locales {
         public static string Settings_Appearance_AccentColor_Title {
             get {
                 return ResourceManager.GetString("Settings_Appearance_AccentColor_Title", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Accent shift.
+        /// </summary>
+        public static string Settings_Appearance_AccentShift_Title {
+            get {
+                return ResourceManager.GetString("Settings_Appearance_AccentShift_Title", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Pushes the accent toward either end.
+        /// </summary>
+        public static string Settings_Appearance_AccentShift_Subtitle {
+            get {
+                return ResourceManager.GetString("Settings_Appearance_AccentShift_Subtitle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Follow accent color.
+        /// </summary>
+        public static string Settings_Appearance_Background_FollowAccent_Title {
+            get {
+                return ResourceManager.GetString("Settings_Appearance_Background_FollowAccent_Title", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Use the accent as the background color.
+        /// </summary>
+        public static string Settings_Appearance_Background_FollowAccent_Subtitle {
+            get {
+                return ResourceManager.GetString("Settings_Appearance_Background_FollowAccent_Subtitle", resourceCulture);
             }
         }
         
@@ -2461,6 +2515,14 @@ namespace DeskCanvas.Locales {
 
         public static string Spotlight_Category_Clipboard => ResourceManager.GetString("Spotlight_Category_Clipboard", resourceCulture);
 
+        public static string Spotlight_Clipboard_Image_Title => ResourceManager.GetString("Spotlight_Clipboard_Image_Title", resourceCulture);
+
+        public static string Spotlight_Clipboard_Files_Count => ResourceManager.GetString("Spotlight_Clipboard_Files_Count", resourceCulture);
+
+        public static string Spotlight_Clipboard_Files_Empty => ResourceManager.GetString("Spotlight_Clipboard_Files_Empty", resourceCulture);
+
+        public static string Spotlight_Clipboard_Source => ResourceManager.GetString("Spotlight_Clipboard_Source", resourceCulture);
+
         public static string Spotlight_Category_Web => ResourceManager.GetString("Spotlight_Category_Web", resourceCulture);
 
         public static string Spotlight_AppCategory_New => ResourceManager.GetString("Spotlight_AppCategory_New", resourceCulture);
@@ -2628,6 +2690,12 @@ namespace DeskCanvas.Locales {
         public static string Settings_Spotlight_CategoryKeys_Invalid => ResourceManager.GetString("Settings_Spotlight_CategoryKeys_Invalid", resourceCulture);
 
         public static string Settings_Spotlight_CategoryKeys_Taken => ResourceManager.GetString("Settings_Spotlight_CategoryKeys_Taken", resourceCulture);
+
+        public static string Settings_Spotlight_Section_Orbs => ResourceManager.GetString("Settings_Spotlight_Section_Orbs", resourceCulture);
+
+        public static string Settings_Spotlight_Orbs_Desc => ResourceManager.GetString("Settings_Spotlight_Orbs_Desc", resourceCulture);
+
+        public static string Settings_Spotlight_Orbs_Reset => ResourceManager.GetString("Settings_Spotlight_Orbs_Reset", resourceCulture);
 
         public static string Settings_Spotlight_Section_Clipboard => ResourceManager.GetString("Settings_Spotlight_Section_Clipboard", resourceCulture);
 

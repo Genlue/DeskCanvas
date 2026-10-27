@@ -56,7 +56,28 @@ public class ThemeService : IThemeService
         if (Application.Current.PlatformSettings is { } platformSettings)
         {
             platformSettings.ColorValuesChanged += (_, _) =>
-                Dispatcher.UIThread.Post(RefreshTextSelectionPaletteCore, DispatcherPriority.Background);
+                Dispatcher.UIThread.Post(() =>
+                {
+                    // With 强调色偏移 / 跟随强调色 and no manual accent, the ramp and the derived
+                    // background pair were computed FROM the OS accent that just changed. The
+                    // tuple ApplyCore keys its cache on does not include that accent, so the
+                    // unchanged settings would short-circuit and leave the old shift on screen.
+                    // Drop the cache once and run the ordinary application path again; a manual
+                    // accent (or a zero shift) keeps the historic selection-only refresh.
+                    var settings = appSettingsProvider.Get();
+                    var theme = ResolveApplicationTheme(settings);
+                    var dependsOnSystemAccent = theme.AccentColor == null
+                        && (theme.EffectiveAccentShift > 0 || theme.FollowAccentBackground);
+
+                    if (dependsOnSystemAccent)
+                    {
+                        lastGlobalScope = default;
+                        Apply(settings);
+                        return;
+                    }
+
+                    RefreshTextSelectionPaletteCore();
+                }, DispatcherPriority.Background);
         }
     }
     
@@ -238,7 +259,13 @@ public class ThemeService : IThemeService
 
     private bool ApplyCoreWithTheme(AppSettings settings, Theme? scopeTheme, bool force = false)
     {
-        var appTheme = (scopeTheme ?? ResolveApplicationTheme(settings)).NormalizeForSurface();
+        // 跟随强调色 is baked once here, at the boundary where the app decides which theme it
+        // renders with. Everything downstream — the card resources below, the accent ramp, the
+        // glass coating, the launcher's own resolver — then reads one value, so a glass card and
+        // a solid card can not paint two different "backgrounds".
+        var appTheme = AccentPalette.ApplyDerivedBackgrounds(
+            (scopeTheme ?? ResolveApplicationTheme(settings)).NormalizeForSurface(),
+            AccentPalette.TryGetSystemAccent());
         var mode = new FocusMode(appTheme.DarkMode, appTheme.AutoTheme);
         var darkMode = mode.AutoTheme ? wallpaperThemeService.IsWallpaperDark() : mode.DarkMode;
         var appVariant = darkMode switch

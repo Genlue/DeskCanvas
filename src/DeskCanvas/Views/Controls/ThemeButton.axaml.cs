@@ -35,7 +35,11 @@ public partial class ThemeButton : UserControl, INotifyPropertyChanged
     {
         get
         {
-            var current = appSettingsProvider.Get().Theme;
+            // 跟随强调色 applies to the preview too: the coating is the same derived pair the
+            // real card will paint, otherwise the preview would promise a colour the theme can
+            // not deliver once chosen.
+            var current = AccentPalette.ApplyDerivedBackgrounds(
+                appSettingsProvider.Get().Theme, AccentPalette.TryGetSystemAccent());
             return current with
             {
                 Surface = AppTheme.UsesRenderedGlass ? AppTheme.EffectiveSurface : SurfaceStyle.LiquidGlass,
@@ -48,7 +52,8 @@ public partial class ThemeButton : UserControl, INotifyPropertyChanged
     {
         get
         {
-            var theme = appSettingsProvider.Get().Theme;
+            var theme = AccentPalette.ApplyDerivedBackgrounds(
+                appSettingsProvider.Get().Theme, AccentPalette.TryGetSystemAccent());
             var dark = IsDark();
             if (IsColorful)
             {

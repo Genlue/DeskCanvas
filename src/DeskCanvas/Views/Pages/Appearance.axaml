@@ -209,7 +209,7 @@
                     <controls:Setting Title="{x:Static locales:Locale.Settings_Appearance_Glass_BackdropClarity}"
                                       Subtitle="{x:Static locales:Locale.Settings_Appearance_Glass_BackdropClarityHint}">
                         <controls:LabeledSlider Width="264" Margin="14 0 0 0"
-                                                Minimum="25" Maximum="100" Step="5"
+                                                Minimum="5" Maximum="100" Step="1"
                                                 ShowEditableValue="True" DisplayFormat="F0"
                                                 Value="{Binding GlassBackdropClarity}" ValueCommitted="CommitThemeSliders"
                                                 AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_Glass_BackdropClarity}" />
@@ -276,6 +276,15 @@
                 </ComboBox>
             </StackPanel>
         </controls:Setting>
+        <controls:Setting Icon="{DynamicResource Color}"
+                          Title="{x:Static locales:Locale.Settings_Appearance_AccentShift_Title}"
+                          Subtitle="{x:Static locales:Locale.Settings_Appearance_AccentShift_Subtitle}"
+                          IsVisible="{Binding ShowAccentSetting}">
+            <controls:LabeledSlider Width="264" Minimum="0" Maximum="100" Step="1"
+                                    ShowEditableValue="True" DisplayFormat="F0" Unit="%"
+                                    Value="{Binding AccentShift}" ValueCommitted="CommitThemeSliders"
+                                    AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_AccentShift_Title}" />
+        </controls:Setting>
         <controls:Setting Icon="{DynamicResource Monochrome}" 
                           Title="{x:Static locales:Locale.Settings_Appearance_Monochrome_Title}" 
                           Subtitle="{x:Static locales:Locale.Settings_Appearance_Monochrome_Subtitle}"
@@ -298,7 +307,20 @@
                           Subtitle="{x:Static locales:Locale.Settings_Appearance_SolidBackground_Subtitle}"
                           IsVisible="{Binding ShowSolidBackgroundSetting}">
             <StackPanel Orientation="Vertical" Spacing="8">
+                <!-- 跟随强调色: while it is on, the two pickers below keep showing (and editing)
+                     the STORED pair but are disabled — the card actually paints the derived pair,
+                     and letting an edit through here would silently overwrite the colour the user
+                     keeps for switching the feature back off. -->
                 <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Right">
+                    <TextBlock MinWidth="70" VerticalAlignment="Center"
+                               Text="{x:Static locales:Locale.Settings_Appearance_Background_FollowAccent_Title}" />
+                    <ToggleSwitch IsChecked="{Binding FollowAccentBackground}" HorizontalAlignment="Right" />
+                </StackPanel>
+                <TextBlock HorizontalAlignment="Right" MaxWidth="360" TextWrapping="Wrap" Opacity="0.7"
+                           IsVisible="{Binding FollowAccentBackground}"
+                           Text="{x:Static locales:Locale.Settings_Appearance_Background_FollowAccent_Subtitle}" />
+                <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Right"
+                            IsEnabled="{Binding SolidBackgroundEditable}">
                     <TextBlock MinWidth="70" VerticalAlignment="Center"
                                Text="{x:Static locales:Locale.Settings_Appearance_SolidBackground_Dark}" />
                     <controls:ColorInput Value="{Binding SolidBackgroundDarkHex}"
@@ -306,7 +328,8 @@
                     <Button Content="{x:Static locales:Locale.Settings_Appearance_SolidBackground_ApplyToLight}"
                             Click="ApplySolidToLight" />
                 </StackPanel>
-                <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Right">
+                <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Right"
+                            IsEnabled="{Binding SolidBackgroundEditable}">
                     <TextBlock MinWidth="70" VerticalAlignment="Center"
                                Text="{x:Static locales:Locale.Settings_Appearance_SolidBackground_Light}" />
                     <controls:ColorInput Value="{Binding SolidBackgroundLightHex}"

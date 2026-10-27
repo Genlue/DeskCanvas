@@ -212,6 +212,12 @@ public static class ThemeResourceHelper
     /// <c>SolidBackgroundDark/Light</c> (the 纯色 card colours). Applied at application
     /// level for the live theme — the one theme the uniform 失焦自动切换 switch and the
     /// settings page's theme buttons both land on.
+    /// <para>
+    /// <paramref name="theme"/> is expected to be the theme already resolved for rendering
+    /// (i.e. with 跟随强调色 baked in by <see cref="AccentPalette"/>); writing the stored pair
+    /// here instead would make the 纯色 card disagree with the liquid-glass coating, which
+    /// reads the same derived value off the material record.
+    /// </para>
     /// </summary>
     public static void WriteScopeCardResources(IResourceDictionary resources, Theme theme)
     {
@@ -237,6 +243,18 @@ public static class ThemeResourceHelper
     /// <summary>
     /// Applies the computed accent ramp to the target resource dictionary under the Normal color policy.
     /// Colorful policy strictly forbids calling ApplyAccentRamp and will clear overrides immediately.
+    /// <para>
+    /// 强调色偏移 shifts the <b>effective</b> accent: the manual colour when one is stored,
+    /// otherwise the live OS accent. The no-manual-colour path therefore can no longer just clear
+    /// its overrides — with a shift &gt; 0 there is a colour to write, and Fluent's own unshifted
+    /// accent is exactly what the user asked to move away from. At 0% (and with no manual colour)
+    /// the clear is kept byte-for-byte, so existing settings files look untouched.
+    /// </para>
+    /// <para>
+    /// 黑白 is deliberately exempt: its accent is pure white/black by definition, and shifting
+    /// either endpoint is a no-op that would only muddy the "strictly achromatic" contract.
+    /// 背景色 needs no special case — it consumes the theme's already-baked background pair.
+    /// </para>
     /// </summary>
     public static void ApplyAccentRamp(IResourceDictionary resources, Theme theme, bool isDarkVariant)
     {
@@ -266,15 +284,28 @@ public static class ThemeResourceHelper
                     light: solidBackgroundLight);
                 break;
             default:
-                if (theme.AccentColor != null && Color.TryParse(theme.AccentColor, out var accentColor))
+            {
+                var shift = theme.EffectiveAccentShift;
+                // Read the platform accent only when it can actually be used: a 0% shift with no
+                // manual colour must keep the historic "let Fluent's accent show through" path
+                // without touching PlatformSettings at all.
+                var accent = AccentPalette.ResolveBaseAccent(
+                    theme.AccentColor,
+                    shift > 0 ? AccentPalette.TryGetSystemAccent() : null);
+
+                if (accent is { } baseAccent)
                 {
-                    ApplyAccent(resources, accentColor);
+                    // Dark mode pushes toward white so the accent lifts off a dark card; light
+                    // mode pushes toward black for the same contrast against a bright card.
+                    ApplyAccent(resources, AccentPalette.Shift(baseAccent, towardWhite: isDarkVariant, shift));
                 }
                 else
                 {
                     ClearAccentOverrides(resources);
                 }
+
                 break;
+            }
         }
     }
 

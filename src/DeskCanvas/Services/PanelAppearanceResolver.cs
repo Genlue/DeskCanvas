@@ -143,16 +143,26 @@ public static class PanelAppearanceResolver
 
     /// <summary>The per-screen entry: the panel window maps to its screen and follows that
     /// screen's state. A null window (or one without a resolvable screen) falls back to the
-    /// uniform entry — the behaviour before per-screen resolution existed.</summary>
+    /// uniform entry — the behaviour before per-screen resolution existed.
+    /// <para>
+    /// 跟随强调色 is baked before the theme leaves this method, so the panel's glass material,
+    /// its acrylic fill and the launcher that asks this same resolver all agree on the derived
+    /// background pair. The coordinator path already returns a baked theme; baking again is a
+    /// no-op by construction (the pair is always re-derived from the accent, never from the
+    /// pair already in the record).
+    /// </para>
+    /// </summary>
     public static Theme ResolveEffectiveTheme(IAppSettingsProvider? settings, Window? window)
     {
         if (settings is null) return FallbackTheme;
         try
         {
             var appSettings = settings.Get();
-            if (appSettings.FocusLink is not { Enabled: true }) return appSettings.Theme;
+            if (appSettings.FocusLink is not { Enabled: true })
+                return AccentPalette.ApplyDerivedBackgrounds(appSettings.Theme, AccentPalette.TryGetSystemAccent());
             var coordinator = App.Services?.GetService(typeof(FocusThemeCoordinator)) as FocusThemeCoordinator;
-            if (coordinator is null) return appSettings.Theme;
+            if (coordinator is null)
+                return AccentPalette.ApplyDerivedBackgrounds(appSettings.Theme, AccentPalette.TryGetSystemAccent());
             return window is { } w
                 ? coordinator.ResolveWindowTheme(appSettings, w)
                 : coordinator.ResolveWindowTheme(appSettings);

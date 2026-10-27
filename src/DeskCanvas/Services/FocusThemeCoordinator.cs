@@ -282,10 +282,14 @@ public sealed class FocusThemeCoordinator : IDisposable
         if (provider is null) return null;
 
         var settings = provider.Get();
-        if (settings.FocusLink is not { Enabled: true }) return settings.Theme;
+        // The feature-off branches below hand the shared theme straight out, so they bake the
+        // 跟随强调色 pair themselves; the coordinator branches already return a baked theme.
+        if (settings.FocusLink is not { Enabled: true })
+            return AccentPalette.ApplyDerivedBackgrounds(settings.Theme, AccentPalette.TryGetSystemAccent());
 
         var coordinator = App.Services?.GetService(typeof(FocusThemeCoordinator)) as FocusThemeCoordinator;
-        if (coordinator is null) return settings.Theme;
+        if (coordinator is null)
+            return AccentPalette.ApplyDerivedBackgrounds(settings.Theme, AccentPalette.TryGetSystemAccent());
 
         var window = visual as Window ?? TopLevel.GetTopLevel(visual) as Window;
         return window is { } w
@@ -296,18 +300,30 @@ public sealed class FocusThemeCoordinator : IDisposable
     /// <summary>The window's effective theme under the per-screen policy: the state theme of
     /// the screen the window itself sits on. Windows that cannot be mapped to a screen (no
     /// platform screens yet, headless without an injected mapping) fall back to the uniform
-    /// entry point below.</summary>
+    /// entry point below.
+    /// <para>
+    /// 跟随强调色 is baked into the returned theme here, because this is the only theme the
+    /// widget windows and the secondary panels ever receive: baking it at the resolution
+    /// boundary is what keeps the glass coating, the card fill and the launcher's card on the
+    /// same derived pair. The bake is idempotent (see <see cref="AccentPalette"/>), so a caller
+    /// that already received a baked theme is not shifted twice.
+    /// </para>
+    /// </summary>
     public Theme ResolveWindowTheme(AppSettings settings, Window window) =>
-        ResolveWindowTheme(settings, state, ResolveWindowScreen(window));
+        AccentPalette.ApplyDerivedBackgrounds(
+            ResolveWindowTheme(settings, state, ResolveWindowScreen(window)),
+            AccentPalette.TryGetSystemAccent());
 
     /// <summary>The window's effective theme with the live uniform state: the shared theme
     /// with the live state's light/dark pair and (optional) surface material substituted.
     /// Kept as the uniform compatibility entry — every caller that has no window at hand
     /// (and the headless fallback) resolves through here.</summary>
     public Theme ResolveWindowTheme(AppSettings settings) =>
-        settings.FocusLink is { Enabled: true } link
-            ? ResolveStateTheme(link, ResolveFocused(state), settings)
-            : settings.Theme;
+        AccentPalette.ApplyDerivedBackgrounds(
+            settings.FocusLink is { Enabled: true } link
+                ? ResolveStateTheme(link, ResolveFocused(state), settings)
+                : settings.Theme,
+            AccentPalette.TryGetSystemAccent());
 
     /// <summary>
     /// Resolves the physical-pixel rect of the screen a window sits on; <c>null</c> = unknown

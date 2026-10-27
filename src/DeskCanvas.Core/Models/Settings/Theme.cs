@@ -56,6 +56,19 @@ namespace DeskCanvas.Core.Models.Settings;
     /// 全局文字阴影 strength, 0-100. Scales the shadow's blur radius, depth and opacity; the
     /// whole effect is off while <see cref="TextShadowEnabled"/> is false.
     /// </param>
+    /// <param name="AccentShift">
+    /// 强调色偏移, 0-100 (%): how far the effective accent (the manual <see cref="AccentColor"/>
+    /// when set, otherwise the OS accent) is pushed toward white in dark mode or toward black in
+    /// light mode. 0 leaves the accent byte-identical to what the theme painted before the
+    /// feature existed, which is why it is the default — old settings files keep their exact look.
+    /// </param>
+    /// <param name="FollowAccentBackground">
+    /// 跟随强调色: the 纯色 background pair becomes the same base accent, shifted the <b>opposite</b>
+    /// way (light mode → toward white, dark mode → toward black) so the card recedes behind its
+    /// text instead of competing with the accent that stands on it. The stored
+    /// <see cref="SolidBackgroundDark"/> / <see cref="SolidBackgroundLight"/> are never rewritten,
+    /// so switching this off restores exactly what the user had picked.
+    /// </param>
     public record Theme(
         bool? DarkMode, 
         string? AccentColor, 
@@ -71,7 +84,9 @@ namespace DeskCanvas.Core.Models.Settings;
         LiquidGlassSettings? LiquidGlass = null,
         LiquidGlassV2Settings? LiquidGlassV2 = null,
         bool TextShadowEnabled = false,
-        double TextShadowStrength = 50)
+        double TextShadowStrength = 50,
+        double AccentShift = 0,
+        bool FollowAccentBackground = false)
 {
     /// <summary>Default 纯色 background in dark mode (dark gray, the historic look).</summary>
     public const string DefaultSolidBackgroundDark = "#2E2E2E";
@@ -143,10 +158,16 @@ namespace DeskCanvas.Core.Models.Settings;
     /// Normalizes theme settings for its effective surface material.
     /// FullColor enforces fixed colors (AccentColor=null, Monochrome=false, MonochromeVariant=null, OpacityLevel=1.0).
     /// Other surfaces preserve accent color and monochrome customizations.
+    /// <para>
+    /// 强调色偏移 is clamped here as well: the slider can only emit 0-100, but a hand-edited
+    /// settings file must not smuggle in 500% (which would turn every shift into a hard white /
+    /// black snap) or a NaN (which would poison every channel of the derived background). The
+    /// clamp is what keeps the persisted number meaning what the settings page shows.
+    /// </para>
     /// </summary>
     public Theme NormalizeForSurface()
     {
-        var theme = NormalizeMaterial();
+        var theme = NormalizeMaterial() with { AccentShift = EffectiveAccentShift };
         return theme.IsFullColor
             ? theme with
             {
@@ -180,4 +201,11 @@ namespace DeskCanvas.Core.Models.Settings;
 
     /// <summary>Clamped 0-1 strength of the global widget text shadow (0 = faintest, 1 = strongest).</summary>
     public double EffectiveTextShadowStrength => Math.Clamp(TextShadowStrength, 0, 100) / 100.0;
+
+    /// <summary>
+    /// Clamped 0-100 强调色偏移. The single reading every resolver uses, so a stored value that
+    /// is out of range (or not finite) can never make one consumer shift differently from another.
+    /// </summary>
+    public double EffectiveAccentShift =>
+        double.IsFinite(AccentShift) ? Math.Clamp(AccentShift, 0, 100) : 0;
 }
