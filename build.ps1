@@ -41,7 +41,10 @@ param(
 
     [switch]$Setup,
 
-    [switch]$Msi
+    [switch]$Msi,
+
+    # Skip the final "press Enter" pause (terminals / CI).
+    [switch]$NoPause
 )
 
 $ErrorActionPreference = "Stop"
@@ -49,13 +52,14 @@ $root = $PSScriptRoot
 $project = Join-Path $root "src\DeskCanvas\DeskCanvas.csproj"
 $dist = Join-Path $root "dist\$Runtime"
 
-# Detect if launched directly from Explorer ("Run with PowerShell" passes -File "...build.ps1")
-# so the console window does not vanish immediately on completion or error.
+# Detect a one-click launch from Explorer. The Windows PowerShell verb uses "-File",
+# while the PowerShell 7 verb uses "-Command ... & '...\build.ps1'". Both must pause.
 $isStandaloneLauncher = [Environment]::UserInteractive `
     -and ($Host.Name -eq "ConsoleHost") `
     -and (-not $env:CI) `
-    -and ([Environment]::CommandLine -notmatch "(?i)-NonInteractive|-NoProfile") `
-    -and ([Environment]::CommandLine -match '(?i)-File\s+"?\s*[^"]*build\.ps1')
+    -and (-not $NoPause) `
+    -and ([Environment]::CommandLine -notmatch "(?i)-NonInteractive") `
+    -and ([Environment]::CommandLine -match '(?i)(-File|-Command)[^\r\n]*build\.ps1')
 
 function Repair-DirectoryAcl([string]$Path) {
     if (-not (Test-Path $Path)) { return }
