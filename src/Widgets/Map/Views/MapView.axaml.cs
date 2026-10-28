@@ -265,7 +265,7 @@ public partial class MapView : UserControl, IWidgetSelfRefreshing, IWidgetSurfac
             var defaultBrush = isDark ? new SolidColorBrush(Color.Parse("#FFFFFF")) : new SolidColorBrush(Color.Parse("#1C1C1E"));
             ControlIconBrush = defaultBrush;
             ProviderIconBrush = defaultBrush;
-            PinIconBrush = new SolidColorBrush(Color.Parse("#FF3B30"));
+            PinIconBrush = defaultBrush;
         }
 
         Canvas.InvalidateVisual();
