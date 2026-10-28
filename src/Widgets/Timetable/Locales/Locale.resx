@@ -46,7 +46,7 @@
     <value>Timetable</value>
   </data>
   <data name="Timetable_Subtitle" xml:space="preserve">
-    <value>Weekly class schedule card, imported from JSON</value>
+    <value>Weekly timetable imported from JSON</value>
   </data>
   <data name="Timetable_Section_Data" xml:space="preserve">
     <value>Schedule data</value>
@@ -61,7 +61,7 @@
     <value>Period times</value>
   </data>
   <data name="Timetable_Periods_Hint" xml:space="preserve">
-    <value>Bell times per period — used by the current-lesson highlight and countdown. Filled automatically when the imported JSON contains them. Click a row to edit it.</value>
+    <value>Period times for the current-lesson highlight; filled from imported JSON. Click a row to edit.</value>
   </data>
   <data name="Timetable_Import" xml:space="preserve">
     <value>Import JSON file</value>
@@ -94,7 +94,7 @@
     <value>Clear schedule data</value>
   </data>
   <data name="Timetable_Clear_Subtitle" xml:space="preserve">
-    <value>Removes the imported courses from this widget</value>
+    <value>Clear courses, term start date and total weeks</value>
   </data>
   <data name="Timetable_ClearConfirm" xml:space="preserve">
     <value>Click again to confirm</value>
@@ -103,7 +103,7 @@
     <value>No schedule yet — import a JSON file first</value>
   </data>
   <data name="Timetable_DataStatus" xml:space="preserve">
-    <value>Imported: {0} courses · {1} slots</value>
+    <value>Imported: {0} courses · {1} class slots</value>
   </data>
   <data name="Timetable_StartDate" xml:space="preserve">
     <value>Term start date</value>

@@ -22,7 +22,7 @@
         <value>搜索</value>
     </data>
     <data name="Search_Subtitle" xml:space="preserve">
-        <value>快捷聚合与高度自定义搜索栏</value>
+        <value>可聚合、可自定义的快捷搜索栏</value>
     </data>
     <data name="Search_Placeholder" xml:space="preserve">
         <value>输入搜索内容...</value>

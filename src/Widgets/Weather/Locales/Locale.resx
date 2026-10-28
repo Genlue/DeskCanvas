@@ -52,13 +52,13 @@
         <value>Fog</value>
     </data>
     <data name="Weather_Code_51" xml:space="preserve">
-        <value>Drizzle</value>
+        <value>Light drizzle</value>
     </data>
     <data name="Weather_Code_53" xml:space="preserve">
         <value>Drizzle</value>
     </data>
     <data name="Weather_Code_55" xml:space="preserve">
-        <value>Drizzle</value>
+        <value>Dense drizzle</value>
     </data>
     <data name="Weather_Code_56" xml:space="preserve">
         <value>Freezing drizzle</value>
@@ -67,10 +67,10 @@
         <value>Freezing drizzle</value>
     </data>
     <data name="Weather_Code_61" xml:space="preserve">
-        <value>Rain</value>
+        <value>Light rain</value>
     </data>
     <data name="Weather_Code_63" xml:space="preserve">
-        <value>Rain</value>
+        <value>Moderate rain</value>
     </data>
     <data name="Weather_Code_65" xml:space="preserve">
         <value>Heavy rain</value>
@@ -82,25 +82,25 @@
         <value>Freezing rain</value>
     </data>
     <data name="Weather_Code_71" xml:space="preserve">
-        <value>Snow</value>
+        <value>Light snow</value>
     </data>
     <data name="Weather_Code_73" xml:space="preserve">
-        <value>Snow</value>
+        <value>Moderate snow</value>
     </data>
     <data name="Weather_Code_75" xml:space="preserve">
         <value>Heavy snow</value>
     </data>
     <data name="Weather_Code_77" xml:space="preserve">
-        <value>Snow</value>
+        <value>Snow grains</value>
     </data>
     <data name="Weather_Code_80" xml:space="preserve">
-        <value>Rain showers</value>
+        <value>Light rain showers</value>
     </data>
     <data name="Weather_Code_81" xml:space="preserve">
-        <value>Rain showers</value>
+        <value>Moderate rain showers</value>
     </data>
     <data name="Weather_Code_82" xml:space="preserve">
-        <value>Rain showers</value>
+        <value>Violent rain showers</value>
     </data>
     <data name="Weather_Code_85" xml:space="preserve">
         <value>Snow showers</value>
@@ -190,7 +190,7 @@
         <value>Air Quality &amp; Comfort</value>
     </data>
     <data name="Weather_Popup_AqiDefault" xml:space="preserve">
-        <value>Good (AQI 32)</value>
+        <value>—</value>
     </data>
     <data name="Weather_Popup_AqiDesc" xml:space="preserve">
         <value>Fresh &amp; Pleasant</value>

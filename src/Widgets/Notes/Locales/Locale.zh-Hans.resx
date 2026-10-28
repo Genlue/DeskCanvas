@@ -65,7 +65,7 @@
     <value>笔记</value>
   </data>
   <data name="Notes_Subtitle" xml:space="preserve">
-    <value>快速访问你的笔记</value>
+    <value>快速访问笔记</value>
   </data>
   <data name="Notes_Markdown" xml:space="preserve">
     <value>Markdown 渲染</value>

@@ -46,7 +46,7 @@
     <value>音频律动</value>
   </data>
   <data name="AudioVisualizer_Subtitle" xml:space="preserve">
-    <value>任意尺寸自适应音频律动组件，支持创作画板自由绘制曲线直线闭合图形、柱状或线条律动、单向双向及内外音频源</value>
+    <value>任意尺寸自适应的音频律动组件：可自绘路径，支持柱状／线条律动、单向／双向与内外音频源。</value>
   </data>
   <data name="Visualizer_SectionAppearance" xml:space="preserve">
     <value>律动表现与外观样式</value>

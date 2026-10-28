@@ -40,7 +40,7 @@
         <value>始于 {0}</value>
     </data>
     <data name="Countdown_EventArrived" xml:space="preserve">
-        <value>目标日已到达！</value>
+        <value>已到达目标日</value>
     </data>
     <data name="Countdown_Default_NewYear" xml:space="preserve">
         <value>元旦</value>
@@ -85,13 +85,13 @@
         <value>计数模式</value>
     </data>
     <data name="Countdown_Direction_Auto" xml:space="preserve">
-        <value>自动 (未来倒数/过去正数)</value>
+        <value>自动（未来倒数、过去正数）</value>
     </data>
     <data name="Countdown_Direction_Countdown" xml:space="preserve">
         <value>倒数日</value>
     </data>
     <data name="Countdown_Direction_Countup" xml:space="preserve">
-        <value>正数纪念日</value>
+        <value>正数日</value>
     </data>
     <data name="Countdown_Category" xml:space="preserve">
         <value>分类</value>
@@ -145,19 +145,19 @@
         <value>仅整天</value>
     </data>
     <data name="Countdown_Granularity_Auto24Hours" xml:space="preserve">
-        <value>最后24小时时分秒跳动</value>
+        <value>最后 24 小时显示时分秒</value>
     </data>
     <data name="Countdown_Granularity_AlwaysDetailed" xml:space="preserve">
-        <value>始终详细倒数</value>
+        <value>始终每秒刷新</value>
     </data>
     <data name="Countdown_TargetEvent" xml:space="preserve">
-        <value>展示事件</value>
+        <value>显示事件</value>
     </data>
     <data name="Countdown_TargetEvent_Auto" xml:space="preserve">
         <value>自动 (置顶或最近)</value>
     </data>
     <data name="Countdown_EmptyEvents" xml:space="preserve">
-        <value>暂无事件，点击上方按钮新增</value>
+        <value>暂无事件，点击右上角新增</value>
     </data>
     <data name="Countdown_Close" xml:space="preserve">
         <value>关闭面板</value>
@@ -169,7 +169,7 @@
         <value>流逝进度</value>
     </data>
     <data name="Countdown_Style_Subtitle" xml:space="preserve">
-        <value>应用于各尺寸卡片的外观布局表现</value>
+        <value>各尺寸卡片的外观布局</value>
     </data>
     <data name="Countdown_FestivalPreset" xml:space="preserve">
         <value>节日预设</value>

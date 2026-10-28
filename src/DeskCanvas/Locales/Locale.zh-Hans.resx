@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <root>
   <!-- 
     Microsoft ResX Schema 
@@ -136,7 +136,7 @@
     <value>选择模式</value>
   </data>
   <data name="Settings_Appearance_DarkMode_Subtitle" xml:space="preserve">
-    <value>更改小部件中显示的颜色</value>
+    <value>更改组件中显示的颜色</value>
   </data>
   <data name="Settings_Appearance_DarkMode_True" xml:space="preserve">
     <value>暗</value>
@@ -154,7 +154,7 @@
     <value>透明效果</value>
   </data>
   <data name="Settings_Appearance_Transparency_Subtitle" xml:space="preserve">
-    <value>小部件将呈现半透明状态</value>
+    <value>组件将呈现半透明状态</value>
   </data>
   <data name="Settings_Appearance_AccentColor_Title" xml:space="preserve">
     <value>强调色</value>
@@ -178,10 +178,10 @@
     <value>尺寸</value>
   </data>
   <data name="Settings_Advanced_WidgetMargin_Title" xml:space="preserve">
-    <value>小部件边距</value>
+    <value>组件边距</value>
   </data>
   <data name="Widget_Remove" xml:space="preserve">
-    <value>移除小部件</value>
+    <value>移除组件</value>
   </data>
   <data name="Widget_Size" xml:space="preserve">
     <value>尺寸</value>
@@ -220,13 +220,13 @@
     <value>编辑</value>
   </data>
   <data name="Widget_OpenSettings" xml:space="preserve">
-    <value>编辑小部件</value>
+    <value>编辑组件</value>
   </data>
   <data name="Settings" xml:space="preserve">
     <value>设置</value>
   </data>
   <data name="Widget" xml:space="preserve">
-    <value>小部件</value>
+    <value>组件</value>
   </data>
   <data name="Settings_About_Version" xml:space="preserve">
     <value>版本</value>
@@ -328,13 +328,13 @@
     <value>卸载...</value>
   </data>
   <data name="Widgets" xml:space="preserve">
-    <value>小部件</value>
+    <value>组件</value>
   </data>
   <data name="Settings_Advanced_SnapPosition_Title" xml:space="preserve">
     <value>对齐位置</value>
   </data>
   <data name="Settings_Advanced_SnapPosition_Subtitle" xml:space="preserve">
-    <value>将小部件位置与网格对齐</value>
+    <value>将组件位置与网格对齐</value>
   </data>
   <data name="Widget_Save" xml:space="preserve">
     <value>确定</value>
@@ -343,7 +343,7 @@
     <value>单色主题</value>
   </data>
   <data name="Settings_Appearance_Monochrome_Subtitle" xml:space="preserve">
-    <value>小部件元素以相同的颜色显示</value>
+    <value>组件元素以相同的颜色显示</value>
   </data>
   <data name="Settings_Appearance_Monochrome_Variant_BlackWhite" xml:space="preserve">
     <value>黑白</value>
@@ -406,7 +406,7 @@
     <value>开机自启</value>
   </data>
   <data name="Settings_General_Startup_Subtitle" xml:space="preserve">
-    <value>该程序将在系统启动时自动启动</value>
+    <value>登录 Windows 后自动启动 DeskCanvas。</value>
   </data>
   <data name="Settings_General_Startup" xml:space="preserve">
     <value>启动</value>
@@ -415,7 +415,7 @@
     <value>对齐尺寸</value>
   </data>
   <data name="Settings_Advanced_SnapSize_Subtitle" xml:space="preserve">
-    <value>将小部件大小与网格对齐</value>
+    <value>将组件大小与网格对齐</value>
   </data>
   <data name="Settings_Advanced_LockSize_Title" xml:space="preserve">
     <value>锁定尺寸</value>
@@ -424,10 +424,10 @@
     <value>锁定位置</value>
   </data>
   <data name="Settings_Advanced_LockSize_Subtitle" xml:space="preserve">
-    <value>防止意外调整小部件大小</value>
+    <value>防止意外调整组件大小</value>
   </data>
   <data name="Settings_Advanced_LockPosition_Subtitle" xml:space="preserve">
-    <value>防止意外重新定位小部件</value>
+    <value>防止误拖动组件。</value>
   </data>
   <data name="Settings_Advanced_ProhibitOverlap_Title" xml:space="preserve">
     <value>禁止组件重叠</value>
@@ -442,10 +442,10 @@
     <value>高级</value>
   </data>
   <data name="Settings_Advanced_WidgetRadius_Title" xml:space="preserve">
-    <value>小部件圆角大小</value>
+    <value>组件圆角大小</value>
   </data>
   <data name="Settings_Advanced_WidgetRadius_Subtitle" xml:space="preserve">
-    <value>小部件角半径</value>
+    <value>组件角半径</value>
   </data>
   <data name="Settings_RestartRequired" xml:space="preserve">
     <value>重新启动应用程序以应用更改</value>
@@ -481,7 +481,7 @@
     <value>字体</value>
   </data>
   <data name="Settings_Advanced_FontFamily_Subtitle" xml:space="preserve">
-    <value>小部件使用的字体</value>
+    <value>组件使用的字体</value>
   </data>
   <data name="Settings_Advanced_UseNativeFrame_Subtitle" xml:space="preserve">
     <value>使用原生窗口框架</value>
@@ -526,7 +526,7 @@
     <value>不透明度</value>
   </data>
   <data name="Settings_Appearance_OpacityLevel_Subtitle" xml:space="preserve">
-    <value>小部件背景的不透明度</value>
+    <value>组件背景的不透明度</value>
   </data>
   <data name="Settings_Appearance_TextShadow_Title" xml:space="preserve">
     <value>全局元素阴影</value>
@@ -583,7 +583,7 @@
         <value>编辑网格</value>
     </data>
     <data name="Settings_Advanced_GridEdit_Subtitle" xml:space="preserve">
-        <value>在桌面上拖动网格可移动位置，拖动右下角手柄可调整格子大小</value>
+        <value>管理每块屏幕的网格、边距与缩放。</value>
     </data>
     <data name="Settings_Advanced_GridEditorHint" xml:space="preserve">
         <value>拖动网格移动位置 · 在右侧面板编辑行列与格子大小 · Esc 关闭</value>
@@ -598,7 +598,7 @@
         <value>最大化或全屏时</value>
     </data>
     <data name="Settings_Advanced_Fullscreen_Subtitle" xml:space="preserve">
-        <value>桌面被全屏或最大化的窗口完全盖住时，组件的处理方式</value>
+        <value>有窗口铺满屏幕时，组件的处理方式。</value>
     </data>
     <data name="Settings_Advanced_Fullscreen_Hide" xml:space="preserve">
         <value>隐藏（释放资源）</value>
@@ -616,7 +616,7 @@
         <value>HTTP 代理</value>
     </data>
     <data name="Settings_Advanced_Proxy_Subtitle" xml:space="preserve">
-        <value>天气与更新请求的网络连接方式。自动检测会探测系统代理与本地代理端口，未开启时自动直连</value>
+        <value>天气、地区搜索与更新请求的网络连接方式。自动检测会探测系统代理与本地端口，未开启时直连。</value>
     </data>
     <data name="Settings_Advanced_Proxy_Auto" xml:space="preserve">
         <value>自动检测 (推荐)</value>
@@ -643,7 +643,7 @@
         <value>更新源</value>
     </data>
     <data name="Settings_Advanced_UpdateUrl_Subtitle" xml:space="preserve">
-        <value>自定义更新地址（releases/latest 页面）；留空则禁用更新检查</value>
+        <value>自定义更新地址（releases/latest 页面）；留空使用官方仓库。</value>
     </data>
     <data name="Widget_Size_Single" xml:space="preserve">
         <value>1×1</value>
@@ -685,16 +685,16 @@
         <value>导出备份</value>
     </data>
     <data name="Settings_Advanced_BackupExport_Subtitle" xml:space="preserve">
-        <value>将软件设置、网格配置、卡片布局与卡片内容保存到单个文件</value>
+        <value>将软件设置、网格配置、组件布局与内容保存到单个文件</value>
     </data>
     <data name="Settings_Advanced_BackupImport_Title" xml:space="preserve">
         <value>导入备份</value>
     </data>
     <data name="Settings_Advanced_BackupImport_Subtitle" xml:space="preserve">
-        <value>从备份文件恢复软件设置、网格配置与卡片布局</value>
+        <value>从备份恢复软件设置、网格配置、组件布局与内容。</value>
     </data>
     <data name="Settings_Advanced_BackupImport_Confirm" xml:space="preserve">
-        <value>导入将用备份内容替换当前的软件设置与卡片布局，并重启应用使更改生效。确定继续吗？</value>
+        <value>导入会用备份内容替换当前设置与组件布局，并重启应用。确定继续吗？</value>
     </data>
     <data name="Settings_Advanced_Backup_ImportButton" xml:space="preserve">
         <value>导入并重启</value>
@@ -715,7 +715,7 @@
         <value>屏幕</value>
     </data>
     <data name="Settings_MultiScreen_Description" xml:space="preserve">
-        <value>每个显示器独立管理自己的小组件布局、网格与内容缩放。按型号与分辨率识别屏幕；拔掉屏幕时组件自动隐藏，重新连接后自动恢复原位。每块屏幕可分别导出/导入为独立备份文件。</value>
+        <value>每块屏幕独立保存布局、网格与缩放；断开后组件自动隐藏，重连恢复原位。</value>
     </data>
     <data name="Settings_MultiScreen_Connected" xml:space="preserve">
         <value>已连接</value>
@@ -847,13 +847,13 @@
         <value>模糊度</value>
     </data>
     <data name="Settings_Appearance_Glass_BlurHint" xml:space="preserve">
-        <value>0–100 · 0 为清晰底图</value>
+        <value>0–100 · 数值越高背景越模糊，0 为清晰底图</value>
     </data>
     <data name="Settings_Appearance_Glass_Refraction" xml:space="preserve">
         <value>折射强度</value>
     </data>
     <data name="Settings_Appearance_Glass_RefractionHint" xml:space="preserve">
-        <value>0–100% · 控制边缘图像弯折</value>
+        <value>0–100% · 边缘折射强度</value>
     </data>
     <data name="Settings_Appearance_Glass_EdgeWidth" xml:space="preserve">
         <value>玻璃边缘宽度</value>
@@ -871,7 +871,7 @@
         <value>高光角度</value>
     </data>
     <data name="Settings_Appearance_Glass_HighlightAngleHint" xml:space="preserve">
-        <value>反射高光入射角 (0° - 360°)，默认 225°。</value>
+        <value>0–360° · 光线入射角度，90° 为默认</value>
     </data>
     <data name="Settings_Appearance_Glass_Vibrancy" xml:space="preserve">
         <value>活力</value>
@@ -883,13 +883,13 @@
         <value>背景清晰度</value>
     </data>
     <data name="Settings_Appearance_Glass_BackdropClarityHint" xml:space="preserve">
-        <value>25–100% · 壁纸采样分辨率；越低越快，100% 为原生</value>
+        <value>5–100% · 壁纸采样分辨率，越低越省性能，100% 为原生</value>
     </data>
     <data name="Settings_Appearance_Glass_Dispersion" xml:space="preserve">
         <value>色散强度</value>
     </data>
     <data name="Settings_Appearance_Glass_DispersionHint" xml:space="preserve">
-        <value>0–100% · 折射边缘的彩色分离</value>
+        <value>0–100% · 边缘色散强度</value>
     </data>
     <data name="Settings_Appearance_Glass_LightAngle" xml:space="preserve">
         <value>光照方向</value>
@@ -910,7 +910,7 @@
         <value>壁纸对准校正</value>
     </data>
     <data name="Settings_Appearance_Glass_Align_Hint" xml:space="preserve">
-        <value>调整水平/垂直偏移，直到小组件玻璃中的背景与真实壁纸重合。每次调整即时生效（对所有小组件）。</value>
+        <value>调整偏移，使玻璃中的背景与壁纸重合；即时生效。</value>
     </data>
     <data name="Settings_Appearance_Glass_Align_Horizontal" xml:space="preserve">
         <value>水平偏移</value>
@@ -931,13 +931,13 @@
         <value>实时采样动态壁纸</value>
     </data>
     <data name="Settings_Appearance_Glass_LiveSamplingHint" xml:space="preserve">
-        <value>持续采样桌面，让视频/动态壁纸在玻璃后保持实时；关闭后冻结当前帧</value>
+        <value>持续采样动态壁纸；关闭后冻结当前帧</value>
     </data>
     <data name="Settings_Appearance_Glass_LiveSamplingInterval" xml:space="preserve">
         <value>采样间隔（毫秒）</value>
     </data>
     <data name="Settings_Appearance_Glass_LiveSamplingIntervalHint" xml:space="preserve">
-        <value>3–1000 毫秒 · 越短越流畅、开销越大；模糊背景下 100 毫秒（10 fps）已足够顺滑</value>
+        <value>10–1000 毫秒 · 间隔越短越流畅，开销也越大</value>
     </data>
     <data name="Settings_Appearance_Glass_Refresh" xml:space="preserve">
         <value>刷新壁纸</value>
@@ -1000,7 +1000,7 @@
         <value>方案列表</value>
     </data>
     <data name="Profiles_Section_Subtitle" xml:space="preserve">
-        <value>支持保存多套小组件排版与外观配置，随时一键切换</value>
+        <value>支持保存多套组件排版与外观配置，随时一键切换</value>
     </data>
     <data name="Cancel" xml:space="preserve">
         <value>取消</value>
@@ -1399,7 +1399,7 @@
   <data name="WidgetCategory_Utilities" xml:space="preserve"><value>实用工具</value></data>
   <data name="WidgetCategory_Container" xml:space="preserve"><value>容器组合</value></data>
   <data name="WidgetCategory_Uncategorized" xml:space="preserve"><value>其他</value></data>
-  <data name="Spotlight_Placeholder" xml:space="preserve"><value>搜索应用、文件、动作或剪贴板内容</value></data>
+  <data name="Spotlight_Placeholder" xml:space="preserve"><value>搜索应用、文件、快捷指令或剪贴板内容</value></data>
   <data name="Spotlight_EmptyFolder_Title" xml:space="preserve"><value>把快捷方式放进这个文件夹</value></data>
   <data name="Spotlight_EmptyFolder_Hint" xml:space="preserve"><value>放入 .lnk 或 .url 快捷方式，就会出现在这里。</value></data>
   <data name="Spotlight_OpenFolder" xml:space="preserve"><value>打开文件夹</value></data>
@@ -1408,11 +1408,11 @@
   <data name="Settings_Spotlight" xml:space="preserve"><value>聚焦搜索</value></data>
   <data name="Settings_Spotlight_Section_General" xml:space="preserve"><value>启用与快捷键</value></data>
   <data name="Settings_Spotlight_Enable_Title" xml:space="preserve"><value>启用聚焦搜索</value></data>
-  <data name="Settings_Spotlight_Enable_Subtitle" xml:space="preserve"><value>用全局快捷键在任何窗口之上唤出应用启动器。</value></data>
+  <data name="Settings_Spotlight_Enable_Subtitle" xml:space="preserve"><value>用全局快捷键在任何窗口之上唤出聚焦搜索。</value></data>
   <data name="Settings_Spotlight_Hotkey_Title" xml:space="preserve"><value>唤出快捷键</value></data>
-  <data name="Settings_Spotlight_Hotkey_Subtitle" xml:space="preserve"><value>点击输入框后按下组合键。Win+S 等被系统占用的组合也可以直接录制，是否生效取决于下方的接管开关。Win+Space 被 Windows 输入法切换占用，因此默认是 Alt+Space。</value></data>
+  <data name="Settings_Spotlight_Hotkey_Subtitle" xml:space="preserve"><value>点击输入框后按下组合键。Win+S 等系统快捷键也可录制，是否生效取决于下方的接管开关。默认 Alt+Space。</value></data>
   <data name="Settings_Spotlight_TakeOver_Title" xml:space="preserve"><value>接管系统快捷键</value></data>
-  <data name="Settings_Spotlight_TakeOver_Subtitle" xml:space="preserve"><value>当快捷键已被 Windows 或其他程序占用时（例如 Win+S），改用低层键盘钩子接管，而不是提示冲突。DeskCanvas 运行期间该组合不再触发系统搜索等系统功能。若前台窗口本身以管理员权限运行，需要以管理员身份运行 DeskCanvas 才能拦截。</value></data>
+  <data name="Settings_Spotlight_TakeOver_Subtitle" xml:space="preserve"><value>快捷键被系统或其他程序占用时，用低层键盘钩子接管。DeskCanvas 运行期间该组合不再触发系统功能；前台窗口以管理员权限运行时，DeskCanvas 也需以管理员身份运行。</value></data>
   <data name="Settings_Spotlight_Hotkey_Record" xml:space="preserve"><value>录制</value></data>
   <data name="Settings_Spotlight_Hotkey_Recording" xml:space="preserve"><value>请按下按键…</value></data>
   <data name="Settings_Spotlight_Hotkey_Reset" xml:space="preserve"><value>恢复默认</value></data>
@@ -1455,7 +1455,7 @@
   <data name="Settings_Spotlight_Blacklist_Invalid" xml:space="preserve"><value>这个名称不可用。</value></data>
   <data name="Settings_Spotlight_Section_Appearance" xml:space="preserve"><value>外观</value></data>
   <data name="Settings_Spotlight_Appearance_FollowGlobal" xml:space="preserve"><value>跟随全局</value></data>
-  <data name="Settings_Spotlight_Appearance_Acrylic" xml:space="preserve"><value>毛玻璃</value></data>
+  <data name="Settings_Spotlight_Appearance_Acrylic" xml:space="preserve"><value>亚克力</value></data>
   <data name="Settings_Spotlight_Appearance_LiquidGlass" xml:space="preserve"><value>液态玻璃</value></data>
   <data name="Settings_Spotlight_Appearance_FullColor" xml:space="preserve"><value>全彩</value></data>
   <data name="Settings_Spotlight_Appearance_FollowSystem" xml:space="preserve"><value>跟随系统</value></data>
@@ -1468,11 +1468,11 @@
   <data name="Settings_Spotlight_Appearance_DarkMode_Title" xml:space="preserve"><value>明暗模式</value></data>
   <data name="Settings_Spotlight_Appearance_DarkMode_Subtitle" xml:space="preserve"><value>跟随全局＝与桌面组件同一模式；跟随系统＝只看 Windows 的浅色/深色，即使应用被固定成另一侧。</value></data>
   <data name="Settings_Spotlight_Appearance_Opacity_Title" xml:space="preserve"><value>不透明度</value></data>
-  <data name="Settings_Spotlight_Appearance_Opacity_Subtitle" xml:space="preserve"><value>卡片填充不透明度；毛玻璃用它给系统模糊染色。</value></data>
+  <data name="Settings_Spotlight_Appearance_Opacity_Subtitle" xml:space="preserve"><value>卡片填充不透明度；亚克力用它给系统模糊染色。</value></data>
   <data name="Settings_Spotlight_Appearance_Radius_Title" xml:space="preserve"><value>圆角</value></data>
   <data name="Settings_Spotlight_Appearance_Radius_Subtitle" xml:space="preserve"><value>0–100 px。默认与桌面组件无关，除非选择跟随。</value></data>
   <data name="Settings_Spotlight_Appearance_Radius_Follow" xml:space="preserve"><value>跟随组件圆角</value></data>
-  <data name="Settings_Spotlight_Appearance_Radius_Follow_Subtitle" xml:space="preserve"><value>使用桌面组件卡片配置的圆角（外观 → 组件圆角）。</value></data>
+  <data name="Settings_Spotlight_Appearance_Radius_Follow_Subtitle" xml:space="preserve"><value>跟随组件圆角设置（屏幕 → 组件圆角）。</value></data>
   <data name="Settings_Spotlight_Section_Glass" xml:space="preserve"><value>液态玻璃</value></data>
   <data name="Settings_Spotlight_Glass_Screen_Title" xml:space="preserve"><value>实时采样</value></data>
   <data name="Settings_Spotlight_Glass_Screen_Subtitle" xml:space="preserve"><value>折射启动器背后真实的画面，而不是壁纸。启动器自身的窗口已被排除在抓屏之外。</value></data>
@@ -1578,7 +1578,7 @@
   <data name="Settings_Spotlight_Section_Results" xml:space="preserve"><value>结果行为</value></data>
   <data name="Settings_Spotlight_Section_CategoryKeys" xml:space="preserve"><value>类别快捷键</value></data>
 
-  <data name="Settings_Spotlight_CategoryKeys_Desc" xml:space="preserve"><value>在聚焦搜索里按 F1–F8 直接锁定类别；搜索时按 ← / → 在同一排类别里切换（首尾相连）。用 ↑ / ↓ 调整顺序时，快捷键跟着类别走；「全部」固定在最前，因为它代表“不筛选”。点输入框或「录制」可改成别的键；只接受功能键或带修饰键的组合，避免和输入冲突。</value></data>
+  <data name="Settings_Spotlight_CategoryKeys_Desc" xml:space="preserve"><value>F1–F8 直接锁定类别，← / → 切换；↑ / ↓ 排序时快捷键跟随类别，「全部」固定最前。点击输入框或「录制」可改键，只接受功能键或带修饰键的组合。</value></data>
 
   <data name="Settings_Spotlight_CategoryKeys_Record" xml:space="preserve"><value>录制</value></data>
 
@@ -1594,7 +1594,7 @@
 
   <data name="Settings_Spotlight_Section_Orbs" xml:space="preserve"><value>分类圆钮</value></data>
 
-  <data name="Settings_Spotlight_Orbs_Desc" xml:space="preserve"><value>搜索栏右侧的四个圆钮在按住 Alt 时展开，Alt+1–4 也能直接打开同样的类别，无需展开。每个圆钮都可以改成任意类别；如果选中的类别已被另一个圆钮占用，两者会互换位置——四个圆钮始终是四个不同的去处。行首的编号就是它的快捷键，不会随改动移动。</value></data>
+  <data name="Settings_Spotlight_Orbs_Desc" xml:space="preserve"><value>按住 Alt 显示搜索栏右侧的四个圆钮，Alt+1–4 可直接打开对应类别。每个圆钮可改为任意类别；若类别已被占用，两者互换。行首编号即快捷键。</value></data>
 
   <data name="Settings_Spotlight_Orbs_Reset" xml:space="preserve"><value>恢复默认</value></data>
 
@@ -1627,7 +1627,7 @@
   <data name="Settings_Spotlight_Glass_Refraction_Subtitle" xml:space="preserve"><value>卡片边缘的透镜位移。</value></data>
   <data name="Settings_Spotlight_Glass_Highlight_Title" xml:space="preserve"><value>高光</value></data>
   <data name="Settings_Spotlight_Glass_Highlight_Subtitle" xml:space="preserve"><value>边缘镜面高光强度。</value></data>
-  <data name="Settings_Spotlight_Glass_Vibrancy_Title" xml:space="preserve"><value>色彩饱和</value></data>
+  <data name="Settings_Spotlight_Glass_Vibrancy_Title" xml:space="preserve"><value>活力</value></data>
   <data name="Settings_Spotlight_Glass_Vibrancy_Subtitle" xml:space="preserve"><value>折射内容的饱和度提升。</value></data>
   <data name="Settings_Spotlight_Glass_Dispersion_Title" xml:space="preserve"><value>色散</value></data>
   <data name="Settings_Spotlight_Glass_Dispersion_Subtitle" xml:space="preserve"><value>边缘的色差。</value></data>
@@ -1639,8 +1639,8 @@
   <data name="Settings_Spotlight_SearchHotkey_Subtitle" xml:space="preserve"><value>唤出只带搜索框的聚焦搜索：不显示应用网格，未输入时只有一行，出结果后自动展开。需与上面的应用列表快捷键不同。</value></data>
   <data name="Settings_Spotlight_SearchHotkey_Same" xml:space="preserve"><value>搜索栏快捷键不能与应用列表快捷键相同。</value></data>
   <data name="Settings_Spotlight_Status_SearchConflict" xml:space="preserve"><value>该组合已被占用（或与另一个唤出相同），搜索栏没有可用快捷键。</value></data>
-  <data name="Settings_Spotlight_Background_Title" xml:space="preserve"><value>背景色</value></data>
-  <data name="Settings_Spotlight_Background_Subtitle" xml:space="preserve"><value>跟随全局时取全局「纯色背景色」中与聚焦搜索自身明暗模式对应的那一支；关闭后可为亮/暗两种模式分别设定。透明度仍由材质与不透明度决定。</value></data>
+  <data name="Settings_Spotlight_Background_Title" xml:space="preserve"><value>背景颜色</value></data>
+  <data name="Settings_Spotlight_Background_Subtitle" xml:space="preserve"><value>跟随全局时使用全局背景颜色；关闭后可分别设置亮色与暗色。透明度仍由材质与不透明度决定。</value></data>
   <data name="Settings_Spotlight_Background_Follow" xml:space="preserve"><value>跟随全局背景色</value></data>
   <data name="Settings_Spotlight_Background_Light" xml:space="preserve"><value>亮色</value></data>
   <data name="Settings_Spotlight_Background_Dark" xml:space="preserve"><value>暗色</value></data>
@@ -1679,13 +1679,13 @@
   <data name="Settings_Spotlight_Glass_Sample_None" xml:space="preserve"><value>尚未抓到屏幕帧——唤起一次聚焦搜索即可。</value></data>
   <data name="Settings_Spotlight_Glass_Sample_Ok" xml:space="preserve"><value>屏幕采样正常——已抓取 {0} 帧，最近一帧均值 {1}。</value></data>
   <data name="Settings_Spotlight_Web_Results_Title" xml:space="preserve"><value>网页结果条数</value></data>
-  <data name="Settings_Spotlight_Web_Results_Subtitle" xml:space="preserve"><value>输入时在「在浏览器中搜索」下方列出几条真实结果（预览由必应提供，上一行仍按你选择的搜索引擎打开）；设为 0 则只保留那一行动作，聚焦搜索完全不发网络请求。</value></data>
+  <data name="Settings_Spotlight_Web_Results_Subtitle" xml:space="preserve"><value>在「在浏览器中搜索」下显示几条结果（来自必应）；设为 0 只保留搜索行，不联网。</value></data>
   <data name="Settings_Spotlight_CategoryKeys_MoveUp" xml:space="preserve"><value>上移</value></data>
   <data name="Settings_Spotlight_CategoryKeys_MoveDown" xml:space="preserve"><value>下移</value></data>
   <data name="Settings_Spotlight_SearchPlaceholder" xml:space="preserve"><value>自定义占位符</value></data>
   <data name="Settings_Spotlight_SearchPlaceholder_Hint" xml:space="preserve"><value>在全部类别下自定义搜索框中的占位提示文字，留空则使用默认提示。</value></data>
   <data name="Settings_Spotlight_SearchPlaceholder_Reset" xml:space="preserve"><value>恢复默认</value></data>
-  <data name="Settings_Spotlight_SpaceRecent_Title" xml:space="preserve"><value>双空格展示最近搜索打开</value></data>
+  <data name="Settings_Spotlight_SpaceRecent_Title" xml:space="preserve"><value>双空格显示最近打开</value></data>
   <data name="Settings_Spotlight_SpaceRecent_Subtitle" xml:space="preserve"><value>在搜索框中输入两个空格时，展示最近通过搜索打开过的应用、文件或页面。</value></data>
   <data name="Settings_Spotlight_SpaceRecentCount_Title" xml:space="preserve"><value>空格列表展示数量</value></data>
   <data name="Settings_Spotlight_SpaceRecentCount_Subtitle" xml:space="preserve"><value>输入空格时最近搜索与最近打开列表各自展示的条目数量（3–20 条）。</value></data>

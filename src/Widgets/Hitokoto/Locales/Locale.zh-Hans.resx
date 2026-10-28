@@ -124,7 +124,7 @@
     <value>正文字号 (0 为自适应)</value>
   </data>
   <data name="Hitokoto_FontSize_Subtitle" xml:space="preserve">
-    <value>设为 0 时随卡片大小自动缩放，也可固定为 12–28 px</value>
+    <value>设为 0 时随卡片自动缩放，也可固定为 11–32 px</value>
   </data>
   <data name="Hitokoto_SectionFilter" xml:space="preserve">
     <value>自动切换与句子过滤</value>

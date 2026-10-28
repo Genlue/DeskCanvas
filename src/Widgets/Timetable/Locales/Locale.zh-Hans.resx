@@ -46,7 +46,7 @@
     <value>课程表</value>
   </data>
   <data name="Timetable_Subtitle" xml:space="preserve">
-    <value>支持 JSON 导入的周课程表卡片</value>
+    <value>可导入的周课程表</value>
   </data>
   <data name="Timetable_Section_Data" xml:space="preserve">
     <value>课表数据</value>
@@ -55,19 +55,19 @@
     <value>学期与周次</value>
   </data>
   <data name="Timetable_Section_Display" xml:space="preserve">
-    <value>显示与排版</value>
+    <value>显示</value>
   </data>
   <data name="Timetable_Section_Periods" xml:space="preserve">
     <value>节次时间</value>
   </data>
   <data name="Timetable_Periods_Hint" xml:space="preserve">
-    <value>每节课的上下课时间——用于当前课程高亮与倒计时；导入的 JSON 中包含时会自动填入。点击行可展开编辑。</value>
+    <value>上下课时间，用于高亮当前课程；导入时自动填入。点击行编辑。</value>
   </data>
   <data name="Timetable_Import" xml:space="preserve">
     <value>导入 JSON 文件</value>
   </data>
   <data name="Timetable_Import_Subtitle" xml:space="preserve">
-    <value>导入前会先展示解析结果供审核，确认后才生效</value>
+    <value>导入前先审核解析结果，确认后生效</value>
   </data>
   <data name="Timetable_ImportBtn" xml:space="preserve">
     <value>导入</value>
@@ -76,7 +76,7 @@
     <value>复制 AI 提示词</value>
   </data>
   <data name="Timetable_CopyPrompt_Subtitle" xml:space="preserve">
-    <value>把提示词与课表照片一起发给 AI，保存返回的 JSON 后在此导入</value>
+    <value>把提示词与课表照片发给 AI，再导入返回的 JSON</value>
   </data>
   <data name="Timetable_ViewGuide" xml:space="preserve">
     <value>查看写法文档</value>
@@ -94,7 +94,7 @@
     <value>清除课表数据</value>
   </data>
   <data name="Timetable_Clear_Subtitle" xml:space="preserve">
-    <value>移除本组件中已导入的课程</value>
+    <value>清除课程、学期开始日期与总周数</value>
   </data>
   <data name="Timetable_ClearConfirm" xml:space="preserve">
     <value>再次点击确认清除</value>
@@ -103,7 +103,7 @@
     <value>尚未导入课表——请先导入 JSON 文件</value>
   </data>
   <data name="Timetable_DataStatus" xml:space="preserve">
-    <value>已导入：{0} 门课程 · {1} 个时段</value>
+    <value>已导入：{0} 门课程 · {1} 个上课时段</value>
   </data>
   <data name="Timetable_StartDate" xml:space="preserve">
     <value>学期开始日期</value>
@@ -136,7 +136,7 @@
     <value>显示教师</value>
   </data>
   <data name="Timetable_WorkflowHint" xml:space="preserve">
-    <value>使用流程：复制 AI 提示词 → 连同课表照片发给 AI → 把返回的 JSON 保存为文件 → 在此导入并审核。</value>
+    <value>复制提示词 → 连同课表照片发给 AI → 导入返回的 JSON。</value>
   </data>
   <data name="Timetable_Review_Title" xml:space="preserve">
     <value>导入审核</value>
@@ -145,7 +145,7 @@
     <value>{0} 门课程 · {1} 个时段</value>
   </data>
   <data name="Timetable_Review_Hint" xml:space="preserve">
-    <value>确认后才会写入课表；如有问题请取消，修改 JSON（或让 AI 重新输出）后再次导入。</value>
+    <value>确认后写入课表；有问题请取消并修改 JSON 后重试。</value>
   </data>
   <data name="Timetable_Review_StartDate" xml:space="preserve">
     <value>学期开始：{0}</value>

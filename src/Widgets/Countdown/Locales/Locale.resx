@@ -91,7 +91,7 @@
         <value>Countdown</value>
     </data>
     <data name="Countdown_Direction_Countup" xml:space="preserve">
-        <value>Anniversary</value>
+        <value>Count-up day</value>
     </data>
     <data name="Countdown_Category" xml:space="preserve">
         <value>Category</value>
@@ -148,7 +148,7 @@
         <value>Dynamic 24h Countdown</value>
     </data>
     <data name="Countdown_Granularity_AlwaysDetailed" xml:space="preserve">
-        <value>Always Detailed</value>
+        <value>Refresh every second</value>
     </data>
     <data name="Countdown_TargetEvent" xml:space="preserve">
         <value>Display Event</value>
@@ -157,7 +157,7 @@
         <value>Auto (Pinned / Nearest)</value>
     </data>
     <data name="Countdown_EmptyEvents" xml:space="preserve">
-        <value>No events yet, click + to add</value>
+        <value>No events yet. Add one from the top right.</value>
     </data>
     <data name="Countdown_Close" xml:space="preserve">
         <value>Close panel</value>

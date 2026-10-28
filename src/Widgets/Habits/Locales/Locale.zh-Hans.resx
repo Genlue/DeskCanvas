@@ -37,7 +37,7 @@
     <value>打卡</value>
   </data>
   <data name="Habits_Subtitle" xml:space="preserve">
-    <value>追踪每日习惯与打卡连击</value>
+    <value>追踪每日习惯与连续打卡</value>
   </data>
   <data name="Habits_ViewMode" xml:space="preserve">
     <value>显示模式</value>

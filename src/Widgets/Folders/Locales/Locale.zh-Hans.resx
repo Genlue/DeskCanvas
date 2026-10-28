@@ -92,7 +92,7 @@
     <value>提示：你也可以将文件或文件夹直接拖到小组件上</value>
   </data>
   <data name="Folders_ContextMenu_Hint" xml:space="preserve">
-    <value>提示：按住 Ctrl 再右键可打开组件菜单（编辑 / 尺寸 / 移除 / 设置）——不按 Ctrl 的右键归图标本身；按住 Ctrl 再左键拖动可移动组件。</value>
+    <value>提示：Ctrl+右键打开组件菜单；Ctrl+左键拖动移动组件。</value>
   </data>
   <data name="Folders_ShowNames" xml:space="preserve">
     <value>显示条目名称</value>
@@ -209,7 +209,7 @@
         <value>悬浮缩放</value>
     </data>
     <data name="Folders_HoverZoom_Subtitle" xml:space="preserve">
-        <value>鼠标悬停在图标上时的放大比例。100% 表示不放大；放大后的图标可以越过卡片边缘，一直用到整个网格单元——单元边缘是唯一的硬边界，放大到那里为止。</value>
+        <value>图标悬停放大比例。100% 表示不放大；放大后可越过卡片边缘，直到网格单元边界。</value>
     </data>
     <data name="Folders_WatchHideExt" xml:space="preserve">
         <value>不显示后缀名</value>

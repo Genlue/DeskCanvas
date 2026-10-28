@@ -48,7 +48,7 @@
         </controls:Setting>
 
         <controls:Setting x:Name="FontSizeSetting" Title="{x:Static locales:Locale.Hitokoto_FontSize}" Subtitle="{x:Static locales:Locale.Hitokoto_FontSize_Subtitle}">
-            <NumericUpDown x:Name="FontSizeBox" MinWidth="128" Minimum="0" Maximum="28"
+            <NumericUpDown x:Name="FontSizeBox" MinWidth="128" Minimum="0" Maximum="32"
                            Increment="1" FormatString="F0" ParsingNumberStyle="Integer"
                            ValueChanged="OnNumericChanged" />
         </controls:Setting>

@@ -124,7 +124,7 @@
     <value>预报</value>
   </data>
   <data name="Weather_Forecast_Subtitle" xml:space="preserve">
-    <value>查看某个地点的当前天气状况和预报</value>
+    <value>查看指定地点的实时天气与预报</value>
   </data>
   <data name="Weather_FourDayForecast_Title" xml:space="preserve">
     <value>四日预报</value>
@@ -151,13 +151,13 @@
     <value>多雾</value>
   </data>
   <data name="Weather_Code_51" xml:space="preserve">
-    <value>小雨</value>
+    <value>毛毛雨</value>
   </data>
   <data name="Weather_Code_53" xml:space="preserve">
-    <value>小雨</value>
+    <value>毛毛雨</value>
   </data>
   <data name="Weather_Code_55" xml:space="preserve">
-    <value>小雨</value>
+    <value>浓毛毛雨</value>
   </data>
   <data name="Weather_Code_56" xml:space="preserve">
     <value>冻毛毛雨</value>
@@ -166,10 +166,10 @@
     <value>冻毛毛雨</value>
   </data>
   <data name="Weather_Code_61" xml:space="preserve">
-    <value>雨</value>
+    <value>小雨</value>
   </data>
   <data name="Weather_Code_63" xml:space="preserve">
-    <value>雨</value>
+    <value>中雨</value>
   </data>
   <data name="Weather_Code_65" xml:space="preserve">
     <value>大雨</value>
@@ -181,25 +181,25 @@
     <value>冻雨</value>
   </data>
   <data name="Weather_Code_71" xml:space="preserve">
-    <value>雪</value>
+    <value>小雪</value>
   </data>
   <data name="Weather_Code_73" xml:space="preserve">
-    <value>雪</value>
+    <value>中雪</value>
   </data>
   <data name="Weather_Code_75" xml:space="preserve">
     <value>大雪</value>
   </data>
   <data name="Weather_Code_77" xml:space="preserve">
-    <value>冰雹</value>
+    <value>雪粒</value>
   </data>
   <data name="Weather_Code_80" xml:space="preserve">
-    <value>阵雨</value>
+    <value>小阵雨</value>
   </data>
   <data name="Weather_Code_81" xml:space="preserve">
-    <value>阵雨</value>
+    <value>中阵雨</value>
   </data>
   <data name="Weather_Code_82" xml:space="preserve">
-    <value>阵雨</value>
+    <value>强阵雨</value>
   </data>
   <data name="Weather_Code_85" xml:space="preserve">
     <value>阵雪</value>
@@ -289,7 +289,7 @@
     <value>空气质量与体感</value>
   </data>
   <data name="Weather_Popup_AqiDefault" xml:space="preserve">
-    <value>优良 (AQI 32)</value>
+    <value>—</value>
   </data>
   <data name="Weather_Popup_AqiDesc" xml:space="preserve">
     <value>清新宜人</value>

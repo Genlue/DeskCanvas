@@ -77,19 +77,19 @@
     <value>电池</value>
   </data>
   <data name="Monitor_Metric" xml:space="preserve">
-    <value>测量</value>
+    <value>指标</value>
   </data>
   <data name="Monitor_SingleMetric_Subtitle" xml:space="preserve">
-    <value>查看您的电脑状态</value>
+    <value>查看电脑状态</value>
   </data>
   <data name="Monitor_SingleMetric_Title" xml:space="preserve">
-    <value>简单仪表板</value>
+    <value>单指标</value>
   </data>
   <data name="Monitor_MultiDashboard_Title" xml:space="preserve">
-    <value>多仪表盘</value>
+    <value>多指标看板</value>
   </data>
   <data name="Monitor_MultiDashboard_Subtitle" xml:space="preserve">
-    <value>同时查看多项电脑状态</value>
+    <value>同时查看多项电脑指标</value>
   </data>
   <data name="Monitor_MultiDashboard_Item1" xml:space="preserve">
     <value>第 1 项</value>

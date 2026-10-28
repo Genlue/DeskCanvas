@@ -124,7 +124,7 @@
     <value>Font Size (0 = Auto)</value>
   </data>
   <data name="Hitokoto_FontSize_Subtitle" xml:space="preserve">
-    <value>Set to 0 for automatic responsive scaling, or fix between 12–28 px</value>
+    <value>Set to 0 for automatic scaling, or fix between 11–32 px</value>
   </data>
   <data name="Hitokoto_SectionFilter" xml:space="preserve">
     <value>Auto Refresh &amp; Filtering</value>

@@ -61,7 +61,7 @@
         <value>刷新磁盘</value>
     </data>
     <data name="Storage_DrivesHint" xml:space="preserve">
-        <value>可单独勾选或隐藏不想在小组件中展示的分区；超出会按盘符顺序自动截取适配卡片尺寸。</value>
+        <value>可单独勾选要展示的分区；超出卡片容量的分区按盘符顺序隐藏。</value>
     </data>
     <data name="Storage_NoDrives" xml:space="preserve">
         <value>未检测到可用的磁盘驱动器</value>
