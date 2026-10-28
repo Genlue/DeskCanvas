@@ -196,6 +196,7 @@ public partial class ImportReviewWindow : Window
         if (model is not { HasData: true }) return;
 
         var runtime = TimetableRuntime.Build(model);
+        var paint = ScheduleBlocks.ResolveBlockPaint(this, ActualThemeVariant);
         var rows = Math.Clamp(runtime.MaxPeriod, 1, 14);
         var usedPeriods = new List<int>(rows);
         for (var p = 1; p <= rows; p++) usedPeriods.Add(p);
@@ -268,7 +269,7 @@ public partial class ImportReviewWindow : Window
                 if (first.LaneCount == 1)
                 {
                     var block = ScheduleBlocks.Create(first.Slot, 10.5, 9, showSub: regionH >= 30,
-                        showRoom: true, showTeacher: true);
+                        showRoom: true, showTeacher: true, paint);
                     Grid.SetRow(block, row);
                     Grid.SetRowSpan(block, span);
                     Grid.SetColumn(block, day);
@@ -283,7 +284,7 @@ public partial class ImportReviewWindow : Window
                     foreach (var item in items)
                     {
                         var block = ScheduleBlocks.Create(item.Slot, 10.5, 9, showSub: regionH >= 34,
-                            showRoom: true, showTeacher: true);
+                            showRoom: true, showTeacher: true, paint);
                         Grid.SetColumn(block, item.Lane);
                         container.Children.Add(block);
                     }

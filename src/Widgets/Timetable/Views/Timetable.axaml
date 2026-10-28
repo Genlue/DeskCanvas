@@ -2,21 +2,19 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              x:Class="Timetable.Views.Timetable">
     <UserControl.Styles>
-        <!-- DynamicResource foregrounds keep every label theme-reactive; the course blocks
-             themselves set their own contrast colour in code (their fill IS the course colour). -->
+        <!-- Course fills and their contrast foreground are set in code. -->
         <Style Selector="TextBlock.section-label">
             <Setter Property="Opacity" Value="0.72" />
         </Style>
         <Style Selector="TextBlock.strong-label">
             <Setter Property="FontWeight" Value="SemiBold" />
         </Style>
-        <!-- The panel entry button: a quiet corner affordance that firms up on hover. -->
         <Style Selector="Button.panel-open">
             <Setter Property="Width" Value="26" />
             <Setter Property="Height" Value="26" />
             <Setter Property="Padding" Value="0" />
             <Setter Property="CornerRadius" Value="13" />
-            <Setter Property="Background" Value="#1C808080" />
+            <Setter Property="Background" Value="{DynamicResource SubtleSurfaceBrush}" />
             <Setter Property="BorderThickness" Value="0" />
             <Setter Property="HorizontalContentAlignment" Value="Center" />
             <Setter Property="VerticalContentAlignment" Value="Center" />
@@ -36,7 +34,7 @@
             <Setter Property="FontWeight" Value="SemiBold" />
         </Style>
         <Style Selector="Button.week-nav-btn:pointerover">
-            <Setter Property="Background" Value="#25808080" />
+            <Setter Property="Background" Value="{DynamicResource ControlHoverBrush}" />
         </Style>
         <Style Selector="Button.week-title-btn">
             <Setter Property="Padding" Value="4,1" />
@@ -47,12 +45,12 @@
             <Setter Property="VerticalAlignment" Value="Center" />
         </Style>
         <Style Selector="Button.week-title-btn:pointerover">
-            <Setter Property="Background" Value="#1A808080" />
+            <Setter Property="Background" Value="{DynamicResource ControlHoverBrush}" />
         </Style>
         <Style Selector="Button.week-reset-chip">
             <Setter Property="Padding" Value="5,1" />
             <Setter Property="CornerRadius" Value="9" />
-            <Setter Property="Background" Value="#22808080" />
+            <Setter Property="Background" Value="{DynamicResource SubtleSurfaceBrush}" />
             <Setter Property="BorderThickness" Value="0" />
             <Setter Property="Cursor" Value="Hand" />
             <Setter Property="FontSize" Value="10.5" />
@@ -60,12 +58,11 @@
             <Setter Property="VerticalAlignment" Value="Center" />
         </Style>
         <Style Selector="Button.week-reset-chip:pointerover">
-            <Setter Property="Background" Value="#38808080" />
+            <Setter Property="Background" Value="{DynamicResource ControlHoverBrush}" />
         </Style>
     </UserControl.Styles>
 
     <Panel Name="RootPanel">
-        <!-- 1×1: the next / current lesson only. -->
         <StackPanel Name="CellLayout" IsVisible="False" Spacing="2"
                     HorizontalAlignment="Center" VerticalAlignment="Center" Margin="8,8,30,8">
             <TextBlock Name="CellTag" Classes="section-label" TextAlignment="Center" TextWrapping="NoWrap" />
@@ -73,20 +70,7 @@
             <TextBlock Name="CellSub" Classes="section-label" TextAlignment="Center" TextWrapping="NoWrap" />
         </StackPanel>
 
-        <!-- 2×2: today's lessons as readable colour cards (scrollable — never squeezed).
-             Alignment contract with the overlay panel-open button (12px host inset + its own
-             4px margin): the header row is the button's 26px height starting at top margin 4,
-             so the day label and the corner button share one center line (Y = 17) at any header
-             font size. TodayHeader carries a 28px right margin to preserve clearance before the
-             corner button. The course cards fill the viewport with strictly equal left and right
-             margins (6px outer), and the scrollbar sits flush along the cards' right edge.
-             HorizontalScrollBarVisibility=Disabled is load-bearing: the widget host's
-             global rule (Widget.axaml) forces card ScrollViewers to Horizontal=Hidden,
-             and Hidden measures the content with an UNCONSTRAINED width — long lesson
-             text then widens the colour card past the viewport and the clip shaves its
-             right edge into a square corner. Disabled constrains the measure to the
-             viewport so TextTrimming actually trims. (Local value > host style, so this
-             survives the pointerover/non-pointerover style swap.) -->
+        <!-- Disabled horizontal scrolling constrains measure width so TextTrimming works. -->
         <Grid Name="TodayLayout" IsVisible="False" RowDefinitions="26,*" Margin="6,4,6,4">
             <TextBlock Name="TodayHeader" Classes="strong-label" TextTrimming="CharacterEllipsis"
                        VerticalAlignment="Center" Margin="0,0,28,0" />

@@ -15,26 +15,7 @@ using Timetable.Services;
 namespace Timetable.Views;
 
 /// <summary>
-/// The timetable card. Renders one of four layouts depending on the widget's grid span —
-/// 1×1 next lesson, 2×2 today list, 4×2 compact week grid, 4×4 full week grid — and keeps
-/// the time-dependent parts (current lesson ring, today highlight, countdown texts) fresh
-/// from the shared one-minute timer.
-/// <para>
-/// Memory contract (matching the repository's widget audit): the view keeps references only
-/// to the controls it builds (bounded by the import limits), never caches bitmaps, subscribes
-/// exactly one shared timer <b>and</b> the store event symmetrically in <see cref="OnLoaded"/>
-/// and releases both in <see cref="OnUnloaded"/> (so an instance detached before its first
-/// load is never rooted by a process-lifetime static), and implements
-/// <see cref="IWidgetSelfRefreshing"/> so settings changes rebind in place
-/// instead of recreating the whole view.
-/// </para>
-/// <para>
-/// Session gating (P8): with a host-injected <see cref="IWidgetSession"/> the shared timer
-/// subscription additionally follows the session's <see cref="ActivitySnapshot.RenderActive"/>
-/// (the view implements <see cref="IWidgetActivityConsumer"/> and reconciles
-/// <c>attached AND renderActive</c>). Without a session the historic always-on behaviour
-/// holds — that host never pushes activity either.
-/// </para>
+/// 课程表卡片：按网格跨度选择布局，并由共享分钟计时器刷新时间相关状态。
 /// </summary>
 public partial class Timetable : UserControl, IWidgetSelfRefreshing, IWidgetSurfaceHints, IWidgetActivityConsumer
 {
@@ -62,22 +43,10 @@ public partial class Timetable : UserControl, IWidgetSelfRefreshing, IWidgetSurf
     private int todayListDay = -1;
     private bool todayListIsToday;
 
-    /// <summary>
-    /// Reusable lane-background cells for the week grid (up to MaxPeriods × 7 — a fixed,
-    /// small ceiling). Each rebuild used to allocate that many fresh Borders only to show
-    /// the subtle slot background; the pool holds them across rebuilds so a rebuild
-    /// re-positions instead of re-allocating.
-    /// </summary>
+    /// <summary>Reusable lane-background cells (bounded by periods × 7).</summary>
     private readonly List<Border> laneCellPool = [];
 
-    /// <summary>
-    /// Pooled week-grid chrome and blocks. Every rebuild used to Clear the host and build a
-    /// fresh tree (headers, period labels, lane cells, course blocks); the discarded controls
-    /// release their native side (compositor visuals, shaped text) lazily, so a resize drag
-    /// or week flip retained tens of MB that GC could not attribute or reclaim. The pools
-    /// cap the tree at its steady-state size: a rebuild rebinds texts, sizes and positions
-    /// in place instead of allocating. Surplus entries stay detached after the host Clear.
-    /// </summary>
+    /// <summary>Pooled grid chrome and blocks; rebuilds rebind in place.</summary>
     private readonly List<Border> headerPool = [];
     private readonly List<TextBlock> periodLabelPool = [];
     private readonly List<Border> blockPool = [];
@@ -94,6 +63,8 @@ public partial class Timetable : UserControl, IWidgetSelfRefreshing, IWidgetSurf
 
     private IBrush? accentBrush;
     private Color accentColor;
+    private CoursePalette.BlockPaint blockPaint;
+    private IAppSettingsProvider? subscribedSettings;
 
     private sealed class BlockHandle
     {
@@ -114,14 +85,7 @@ public partial class Timetable : UserControl, IWidgetSelfRefreshing, IWidgetSurf
     {
     }
 
-    /// <summary>
-    /// The <paramref name="model"/> parameter exists only for the host activation contract
-    /// (<c>WidgetFactory.CreateWidgetControl</c> passes the legacy per-widget Settings copy or a
-    /// default instance). It is deliberately <b>ignored</b>: the unified store
-    /// (<c>timetable.json</c>) is the single source of truth. Preferring the layout copy here is
-    /// what let a stale Settings snapshot mask — or get masked by — the store after an update,
-    /// which surfaced as "时间设置还在，课程全丢".
-    /// </summary>
+    /// <summary><paramref name="model"/> is ignored; the unified store is the source of truth.</summary>
     public Timetable(TimetableModel? model, IWidgetSession? session = null)
     {
         this.session = session;
@@ -174,7 +138,21 @@ public partial class Timetable : UserControl, IWidgetSelfRefreshing, IWidgetSurf
         UpdateTickSubscription();
         TimetableStore.ModelChanged -= OnStoreModelChanged;
         TimetableStore.ModelChanged += OnStoreModelChanged;
+        UpdateBlockPaint();
         UpdateLiveState();
+        subscribedSettings = PanelAppearanceResolver.TryResolveSettingsProvider();
+        if (subscribedSettings != null)
+        {
+            subscribedSettings.DataChanged -= OnSettingsDataChanged;
+            subscribedSettings.DataChanged += OnSettingsDataChanged;
+        }
+        ActualThemeVariantChanged -= OnThemeChanged;
+        ActualThemeVariantChanged += OnThemeChanged;
+        if (Application.Current != null)
+        {
+            Application.Current.ResourcesChanged -= OnAppResourcesChanged;
+            Application.Current.ResourcesChanged += OnAppResourcesChanged;
+        }
 
         // A live timetable is what makes 聚焦搜索 able to find a course and open this schedule.
         SpotlightBridge.Attach(this);
@@ -185,7 +163,33 @@ public partial class Timetable : UserControl, IWidgetSelfRefreshing, IWidgetSurf
         attached = false;
         UpdateTickSubscription();
         TimetableStore.ModelChanged -= OnStoreModelChanged;
+        ActualThemeVariantChanged -= OnThemeChanged;
+        if (Application.Current != null)
+            Application.Current.ResourcesChanged -= OnAppResourcesChanged;
+        if (subscribedSettings != null)
+            subscribedSettings.DataChanged -= OnSettingsDataChanged;
+        subscribedSettings = null;
         SpotlightBridge.Detach(this);
+    }
+
+    private void OnSettingsDataChanged(object? sender, DeskCanvas.Core.Models.Settings.AppSettings? oldSettings, DeskCanvas.Core.Models.Settings.AppSettings newSettings) =>
+        UpdateBlockPaint();
+
+    private void OnThemeChanged(object? sender, EventArgs e) => UpdateBlockPaint();
+
+    private void OnAppResourcesChanged(object? sender, ResourcesChangedEventArgs e) => UpdateBlockPaint();
+
+    private void UpdateBlockPaint()
+    {
+        var next = ScheduleBlocks.ResolveBlockPaint(this, ActualThemeVariant);
+        if (next.Monochrome == blockPaint.Monochrome
+            && (!next.Monochrome
+                || (next.Accent == blockPaint.Accent
+                    && ReferenceEquals(next.Foreground, blockPaint.Foreground))))
+            return;
+
+        blockPaint = next;
+        if (IsInitialized) RebuildAll();
     }
 
     /// <summary>
@@ -426,8 +430,7 @@ public partial class Timetable : UserControl, IWidgetSelfRefreshing, IWidgetSurf
         var title = (TextBlock)panel.Children[0];
         var sub = (TextBlock)panel.Children[1];
 
-        var color = CoursePalette.ResolveColor(slot.Course);
-        var foreground = CoursePalette.ForegroundFor(color);
+        var (background, foreground) = CoursePalette.Paint(slot.Course, blockPaint);
         var (start, end) = SlotBounds(slot);
 
         title.Text = slot.Course.Name ?? "";
@@ -445,7 +448,7 @@ public partial class Timetable : UserControl, IWidgetSelfRefreshing, IWidgetSurf
         sub.Foreground = foreground;
         sub.IsVisible = infoParts.Count > 0;
 
-        row.Background = CoursePalette.BrushFor(color);
+        row.Background = background;
         ToolTip.SetTip(row, ScheduleBlocks.BuildTooltip(slot));
         todayRows.Add(new RowHandle { Row = row, Start = start, End = end });
     }
@@ -779,12 +782,7 @@ public partial class Timetable : UserControl, IWidgetSelfRefreshing, IWidgetSurf
         ResetWeekButton.IsVisible = (currentWeek >= 1 && week != currentWeek);
     }
 
-    /// <summary>
-    /// Pool accessor for controls that stay attached to <paramref name="parent"/> for their
-    /// whole life: grow with the factory as needed, then hand out slot <paramref name="index"/>.
-    /// Rebinds never remove and re-add controls — re-parenting resets inherited properties and
-    /// forces a full TextLayout rebuild per TextBlock (native memory the GC cannot reclaim).
-    /// </summary>
+    /// <summary>Grow the pool, keep controls attached, and return slot <paramref name="index"/>.</summary>
     private static T TakeAttachedFromPool<T>(List<T> pool, int index, Panel parent, Func<T> factory)
         where T : Control
     {
@@ -797,10 +795,7 @@ public partial class Timetable : UserControl, IWidgetSelfRefreshing, IWidgetSurf
         return pool[index];
     }
 
-    /// <summary>
-    /// Hide pool slots beyond the currently bound count; they stay attached, parked in the
-    /// grid's first cell (see <see cref="ParkInCell"/>).
-    /// </summary>
+    /// <summary>Hide surplus slots; they stay attached and parked.</summary>
     private static void HidePoolSurplus<T>(List<T> pool, int needed) where T : Control
     {
         for (var i = needed; i < pool.Count; i++)
@@ -811,26 +806,8 @@ public partial class Timetable : UserControl, IWidgetSelfRefreshing, IWidgetSurf
     }
 
     /// <summary>
-    /// Move a pooled control into cell (0,0) with 1×1 spans — the one cell every rebuild of
-    /// the week grid has.
-    /// <para>
-    /// Why this is mandatory, not cosmetic: Avalonia's Grid measures children even when they
-    /// are hidden (<c>IsVisible=false</c> only skips drawing), and <c>MeasureCell</c> indexes
-    /// the row/column definition collections with the child's attached cell <b>without</b>
-    /// clamping. A parked surplus slot that still pointed at row 9 of a previous 10-row grid
-    /// therefore threw <c>ArgumentOutOfRangeException</c> from
-    /// <c>Grid.GetMeasureSizeForRange</c> on the very first layout pass after the grid shrank —
-    /// which is exactly the reported crash on resizing the card from 4×4 down to 4×2
-    /// (the large tier lists every period, the medium tier only the periods in use, so the
-    /// row count collapses while the pool keeps its old entries):
-    /// <code>
-    /// ArgumentOutOfRangeException: Index was out of range...
-    ///    at Avalonia.Controls.Grid.GetMeasureSizeForRange(...)
-    ///    at Avalonia.Controls.Grid.MeasureCell(...)
-    ///    at Avalonia.Controls.Grid.MeasureOverride(...)
-    /// </code>
-    /// Hidden slots are re-positioned by the next rebuild, so parking costs nothing.
-    /// </para>
+    /// Park a pooled control in cell (0,0). Required: Avalonia measures hidden grid children,
+    /// and a stale row index throws <c>ArgumentOutOfRangeException</c> after the grid shrinks.
     /// </summary>
     private static void ParkInCell(Control control)
     {
@@ -840,13 +817,7 @@ public partial class Timetable : UserControl, IWidgetSelfRefreshing, IWidgetSurf
         if (Grid.GetColumnSpan(control) != 1) Grid.SetColumnSpan(control, 1);
     }
 
-    /// <summary>
-    /// Park every child of the week grid before its definitions are replaced. Even with the
-    /// surplus slots parked above, a shrinking shape changes the definition counts while the
-    /// still-live slots carry the old indices, and a layout pass can run in between (the size
-    /// handler runs inside one). Parking first keeps the grid self-consistent at every point
-    /// of the rebuild rather than only at its end.
-    /// </summary>
+    /// <summary>Park all children before replacing the grid definitions.</summary>
     private void ParkWeekGridChildren()
     {
         foreach (var child in WeekGridHost.Children) ParkInCell(child);
@@ -935,18 +906,17 @@ public partial class Timetable : UserControl, IWidgetSelfRefreshing, IWidgetSurf
     /// texts, fonts, colours and the info line's visibility. Equal assignments never
     /// invalidate, so an unchanged slot costs no TextLayout rebuild at all.
     /// </summary>
-    private static void RebindBlockInPlace(Border border, TimetableRuntime.Slot slot, double titleFont, double subFont,
+    private void RebindBlockInPlace(Border border, TimetableRuntime.Slot slot, double titleFont, double subFont,
         bool showSub, bool showRoom, bool showTeacher)
     {
         var panel = (StackPanel)border.Child!;
         var titleBlock = (TextBlock)panel.Children[0];
         var subBlock = (TextBlock)panel.Children[1];
 
-        var color = CoursePalette.ResolveColor(slot.Course);
-        var foreground = CoursePalette.ForegroundFor(color);
+        var (background, foreground) = CoursePalette.Paint(slot.Course, blockPaint);
         var info = showSub ? ScheduleBlocks.ComposeInfoLine(slot.Course, showRoom, showTeacher) : null;
 
-        border.Background = CoursePalette.BrushFor(color);
+        border.Background = background;
         titleBlock.Text = slot.Course.Name ?? "";
         titleBlock.FontSize = titleFont;
         titleBlock.Foreground = foreground;

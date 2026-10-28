@@ -4,16 +4,10 @@ using Timetable.Models;
 
 namespace Timetable.Services;
 
-/// <summary>
-/// Default course colours and helpers. Blocks use the course colour as a solid fill
-/// and pick a readable foreground from its luminance, so no per-theme tuning is needed.
-/// </summary>
+/// <summary>Default course colours; block foreground follows luminance.</summary>
 public static class CoursePalette
 {
-    /// <summary>
-    /// Harmonious Apple HIG-inspired pastel and jewel tones (Mint, Sky, Lavender, Coral, Orange, Teal, Rose, etc.)
-    /// with elegant saturation that avoids visual clutter or eye fatigue and coordinates with the desktop.
-    /// </summary>
+    /// <summary>Default Apple-inspired course colours.</summary>
     public static readonly string[] Defaults =
     [
         "#508AEB", // 蔚蓝 (Apple Blue)
@@ -22,7 +16,7 @@ public static class CoursePalette
         "#7B6BE6", // 梦幻紫 (Apple Purple)
         "#4EB5E6", // 海天蓝 (Apple Cyan)
         "#E86D83", // 珊瑚粉 (Apple Coral)
-        "#8E6FD8", // 珊瑚粉 (Apple Coral)
+        "#8E6FD8", // 紫罗兰 (Apple Violet)
         "#2BB7B3", // 冰川青 (Apple Teal)
         "#E08658", // 柔桃色 (Warm Peach)
         "#D45D79"  // 浆果红 (Apple Rose)
@@ -31,14 +25,22 @@ public static class CoursePalette
     private static readonly IBrush DarkForeground = new SolidColorBrush(Color.FromRgb(0x21, 0x23, 0x27));
     private static readonly IBrush LightForeground = Brushes.White;
 
-    /// <summary>
-    /// Shared immutable fill brushes, one per distinct course colour. Blocks used to
-    /// allocate a fresh mutable SolidColorBrush per block per rebuild (and a rebuild
-    /// happens on every resize step / week switch / settings change); the palette is
-    /// tiny, so one bounded cache serves every surface (widget, panel, review preview)
-    /// allocation-free. Immutable brushes also skip the mutable-object change tracking.
-    /// Bounded by the distinct course colours (≤ MaxCourses user colours + 10 defaults).
-    /// </summary>
+    /// <summary>Monochrome mode and the accent/text pair its course blocks use.</summary>
+    public readonly record struct BlockPaint(bool Monochrome, Color Accent, IBrush Foreground);
+
+    public static (IBrush Background, IBrush Foreground) Paint(TimetableCourse course, BlockPaint paint)
+    {
+        if (!paint.Monochrome)
+        {
+            var color = ResolveColor(course);
+            return (BrushFor(color), ForegroundFor(color));
+        }
+
+        var fill = Color.FromArgb(0x26, paint.Accent.R, paint.Accent.G, paint.Accent.B);
+        return (BrushFor(fill), paint.Foreground);
+    }
+
+    /// <summary>Immutable fill brushes, one per distinct course colour.</summary>
     private static readonly Dictionary<Color, IBrush> BrushCache = [];
 
     public static IBrush BrushFor(Color color)

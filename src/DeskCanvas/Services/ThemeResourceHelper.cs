@@ -163,6 +163,7 @@ public static class ThemeResourceHelper
         "WeatherIconBrush",
         "WeatherGaugeBrush",
         "WeatherTempBarBrush",
+        "MacosTealBrush",
         "TimetableCardBackground",
         "HabitsCardBackground",
         "AccentContrastColor",

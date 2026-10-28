@@ -16,26 +16,8 @@ using Timetable.Services;
 namespace Timetable.Views;
 
 /// <summary>
-/// The full-schedule secondary panel: opened by double-clicking the widget, it renders the
-/// complete week grid on a large, readable surface (plus the course notes), spawns from the
-/// widget and is dismissed by Escape / an outside click like every other panel.
-/// <para>
-/// Week navigation (prev / next / back to this week / one-week ↔ whole-term) is panel-local
-/// state: it rebuilds the grid and the badge only, never the window, and it is never written
-/// back to the model or the layout.
-/// </para>
-/// <para>
-/// Memory contract: the panel is a short-lived window; it holds only the model snapshot, the
-/// runtime index and the controls it builds (bounded by the import limits) and installs no
-/// timers — the current lesson outline is computed once when the panel opens.
-/// </para>
-/// <para>
-/// W8 migration: the card, the glass surface, the title chrome and the close button all live in
-/// the shared <see cref="SecondaryPanelShell"/> now — the window declares only business content
-/// (the week grid and the notes). The five-branch material ApplyTheme, the root drag handler and
-/// the per-open AppSettingsProvider are gone: <see cref="SecondaryPanelWindow"/> plus
-/// <see cref="DeskCanvas.Services.PanelAppearanceResolver"/> own the material and the transitions.
-/// </para>
+/// Full timetable panel: week grid and course notes. Week navigation is panel-local and never
+/// written back; the current-lesson outline is computed once on open.
 /// </summary>
 public partial class TimetablePanelWindow : SecondaryPanelWindow
 {
@@ -266,6 +248,7 @@ public partial class TimetablePanelWindow : SecondaryPanelWindow
 
         var accent = ThemeScopeResolver.ResolveBrush(this, "SystemAccentColor", ActualThemeVariant,
             new SolidColorBrush(Color.FromRgb(0x00, 0x78, 0xD4)));
+        var paint = ScheduleBlocks.ResolveBlockPaint(this, ActualThemeVariant);
 
         // Day header.
         for (var dayIdx = 0; dayIdx < dayCount; dayIdx++)
@@ -342,7 +325,7 @@ public partial class TimetablePanelWindow : SecondaryPanelWindow
                 if (first.LaneCount == 1)
                 {
                     var block = ScheduleBlocks.Create(first.Slot, 12, 10, showSub: true,
-                        model.ShowRoom, model.ShowTeacher);
+                        model.ShowRoom, model.ShowTeacher, paint);
                     if (highlightCurrent)
                         HighlightCurrent(block, first.Slot, day, today, nowTime, accent);
                     Grid.SetRow(block, row);
@@ -359,7 +342,7 @@ public partial class TimetablePanelWindow : SecondaryPanelWindow
                     foreach (var item in items)
                     {
                         var block = ScheduleBlocks.Create(item.Slot, 12, 10, showSub: true,
-                            model.ShowRoom, model.ShowTeacher);
+                            model.ShowRoom, model.ShowTeacher, paint);
                         if (highlightCurrent)
                             HighlightCurrent(block, item.Slot, day, today, nowTime, accent);
                         Grid.SetColumn(block, item.Lane);

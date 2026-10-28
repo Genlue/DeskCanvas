@@ -7,8 +7,10 @@ using Avalonia.Interactivity;
 using Countdown.Models;
 using Countdown.Services;
 using Countdown.ViewModels;
+using Avalonia.Media;
 using DeskCanvas.Core.Interfaces;
 using DeskCanvas.Core.Models;
+using DeskCanvas.Core.Models.Settings;
 using DeskCanvas.Contracts;
 using DeskCanvas.Runtime;
 using DeskCanvas.Services;
@@ -26,6 +28,7 @@ public partial class CountdownView : UserControl, IWidgetSelfRefreshing, IWidget
     private CountdownModel model;
     private CountdownViewModel? viewModel;
     private WidgetTier currentTier = (WidgetTier)(-1);
+    private IAppSettingsProvider? subscribedSettings;
 
     public CountdownView() : this(new CountdownModel(), null) { }
 
@@ -33,11 +36,7 @@ public partial class CountdownView : UserControl, IWidgetSelfRefreshing, IWidget
 
     public CountdownView(CountdownModel model) : this(model, null) { }
 
-    /// <summary>
-    /// <paramref name="session"/> is injected by WidgetFactory when the host runs the session
-    /// pipeline (a stable instance identity): the view model then gates its tick subscription
-    /// on the session's activity. Null keeps the legacy always-on behaviour.
-    /// </summary>
+    /// <summary>Session gates ticking; null keeps legacy always-on behaviour.</summary>
     public CountdownView(CountdownModel model, IWidgetLayoutProvider? layoutProvider, IWidgetSession? session = null)
     {
         this.layoutProvider = layoutProvider;
@@ -66,6 +65,20 @@ public partial class CountdownView : UserControl, IWidgetSelfRefreshing, IWidget
 
         viewModel.Start();
         statusPresenter.ShowCountdown("running");
+        UpdateMonochromeBrush();
+        subscribedSettings = PanelAppearanceResolver.TryResolveSettingsProvider();
+        if (subscribedSettings != null)
+        {
+            subscribedSettings.DataChanged -= OnSettingsDataChanged;
+            subscribedSettings.DataChanged += OnSettingsDataChanged;
+        }
+        ActualThemeVariantChanged -= OnThemeChanged;
+        ActualThemeVariantChanged += OnThemeChanged;
+        if (Application.Current != null)
+        {
+            Application.Current.ResourcesChanged -= OnAppResourcesChanged;
+            Application.Current.ResourcesChanged += OnAppResourcesChanged;
+        }
 
         if (Bounds.Width > 0 && Bounds.Height > 0)
         {
@@ -75,8 +88,39 @@ public partial class CountdownView : UserControl, IWidgetSelfRefreshing, IWidget
 
     private void OnUnloaded(object? sender, RoutedEventArgs e)
     {
+        ActualThemeVariantChanged -= OnThemeChanged;
+        if (Application.Current != null)
+            Application.Current.ResourcesChanged -= OnAppResourcesChanged;
+        if (subscribedSettings != null)
+            subscribedSettings.DataChanged -= OnSettingsDataChanged;
+        subscribedSettings = null;
         viewModel?.Dispose();
         viewModel = null;
+    }
+
+    private void OnSettingsDataChanged(object? sender, AppSettings? oldSettings, AppSettings newSettings) =>
+        UpdateMonochromeBrush();
+
+    private void OnThemeChanged(object? sender, EventArgs e) => UpdateMonochromeBrush();
+
+    private void OnAppResourcesChanged(object? sender, ResourcesChangedEventArgs e) => UpdateMonochromeBrush();
+
+    private void UpdateMonochromeBrush()
+    {
+        if (viewModel == null) return;
+
+        IBrush? brush = null;
+        try
+        {
+            var theme = PanelAppearanceResolver.ResolveEffectiveTheme(
+                PanelAppearanceResolver.TryResolveSettingsProvider(),
+                TopLevel.GetTopLevel(this) as Window);
+            if (theme is { IsColorful: false, Monochrome: true })
+                brush = ThemeScopeResolver.ResolveBrush(this, "SystemControlForegroundAccentBrush", ActualThemeVariant);
+        }
+        catch { }
+
+        viewModel.SetMonochromeBrush(brush);
     }
 
     private void OnSizeChanged(object? sender, SizeChangedEventArgs e)

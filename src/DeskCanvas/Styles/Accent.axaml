@@ -1,35 +1,15 @@
 <Styles xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
-    <!-- 强调色 accent foreground: widget titles and accent icons. Always loaded
-         (ThemeService.SwitchStyle keeps it on). The monochrome styles are added
-         after it, so they can unify this accent with the text color:
-         - 强调色 monochrome (Styles/Monochrome.axaml): text already becomes the
-           accent → identical look, nothing to override here;
-         - 黑白 monochrome (Styles/MonochromeBlackWhite.axaml): overrides this
-           accent with black (light) / white (dark) so BOTH colors are unified. -->
+    <!-- Accent foreground for widget titles and icons; monochrome styles load after it. -->
     <Styles.Resources>
         <ResourceDictionary>
             <ResourceDictionary.ThemeDictionaries>
                 <ResourceDictionary x:Key="Default">
-                    <!-- Foreground that stays readable ON an accent-colored surface
-                         (badges, active pills, toasts). The colored accent is a mid tone,
-                         so white works in both variants; 黑白 monochrome overrides this
-                         (see MonochromeBlackWhite.axaml) because its accent polarity
-                         flips per variant, and 背景色 because its accent is the inverted
-                         background color. -->
+                    <!-- Readable foreground on an accent fill; monochrome variants override it. -->
                     <SolidColorBrush x:Key="AccentContrastForegroundBrush" Color="White" />
-                    <!-- Color-level twin of the contrast brush: Fluent's selection-control
-                         glyph keys (below) are brushes whose polarity must follow the
-                         monochrome modes — binding their Color to this key keeps one
-                         polarity source. -->
+                    <!-- Color-level twin of the contrast brush. -->
                     <Color x:Key="AccentContrastColor">White</Color>
-                    <!-- Fluent 选中态控件（开关圆点/复选勾/单选点）默认取 ChromeWhite——彩色
-                         accent 上永远可读，但单色下 accent 就是黑/白（黑白）或反色背景（背景
-                         色），白 glyph 直接白上白（截图：开关开启轨道圆点全白、悬停更白）。
-                         这些键在应用资源里后注册即覆盖 Fluent 的定义（与上方
-                         SystemControlForegroundAccentBrush 的覆写同一机制），Color 绑定对比色
-                         键，彩色模式=ChromeWhite 同值，各单色档随极性翻转。Disabled 态保持
-                         Fluent 的灰色（有整体透明度，不参与对比）。 -->
+                    <!-- Fluent selection glyphs follow AccentContrastColor so they stay visible in every variant. -->
                     <SolidColorBrush x:Key="ToggleSwitchKnobFillOn" Color="{DynamicResource AccentContrastColor}" />
                     <SolidColorBrush x:Key="ToggleSwitchKnobFillOnPointerOver" Color="{DynamicResource AccentContrastColor}" />
                     <SolidColorBrush x:Key="ToggleSwitchKnobFillOnPressed" Color="{DynamicResource AccentContrastColor}" />
@@ -42,13 +22,7 @@
                     <SolidColorBrush x:Key="RadioButtonCheckGlyphFill" Color="{DynamicResource AccentContrastColor}" />
                     <SolidColorBrush x:Key="RadioButtonCheckGlyphFillPointerOver" Color="{DynamicResource AccentContrastColor}" />
                     <SolidColorBrush x:Key="RadioButtonCheckGlyphFillPressed" Color="{DynamicResource AccentContrastColor}" />
-                    <!-- 选中底色（开关 ON 轨道 / 复选勾底 / 单选圆）family。静止态 Fluent 用的是
-                         SystemControlHighlightAccentBrush = SystemAccentColor，即本变体正确的强调色；
-                         但 hover/pressed 被硬接在 SystemAccentColorLight1 / Dark1 上——本应用的渐变是
-                         交叉写入的（Dark* 供亮色字典读、Light* 供暗色字典读），于是"亮一点的强调色"在单色
-                         档下恰恰是对侧极性的纯色：hover 一下底色就跳成与圆点/勾/点同色，整个控件消失
-                         （亮色黑白：黑轨道 hover 变白，白圆点也是白）。这里把 hover/pressed 也钉回
-                         SystemAccentColor，只用透明度做深浅反馈——任何强调色、任何极性都不会撞色。 -->
+                    <!-- Pin hover/pressed accent fills to SystemAccentColor; opacity provides the feedback. -->
                     <SolidColorBrush x:Key="ToggleSwitchFillOnPointerOver" Color="{DynamicResource SystemAccentColor}" Opacity="0.85" />
                     <SolidColorBrush x:Key="ToggleSwitchFillOnPressed" Color="{DynamicResource SystemAccentColor}" Opacity="0.7" />
                     <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillCheckedPointerOver" Color="{DynamicResource SystemAccentColor}" Opacity="0.85" />
@@ -60,22 +34,11 @@
                     <SolidColorBrush x:Key="RadioButtonOuterEllipseCheckedStrokePointerOver" Color="{DynamicResource SystemAccentColor}" Opacity="0.85" />
                     <SolidColorBrush x:Key="RadioButtonOuterEllipseCheckedStrokePressed" Color="{DynamicResource SystemAccentColor}" Opacity="0.7" />
                     <SolidColorBrush x:Key="SystemControlForegroundAccentBrush" Color="{DynamicResource SystemAccentColorDark1}" />
-                    <!-- Normal 兜底，多彩模式由 ColorfulResources 覆盖。主按钮底色
-                         （PillButton.primary/active、各 Toast Banner 等）：对齐 Fluent 语义
-                         （= SystemAccentColor）；单色变体不覆盖此键，SystemAccentColor 即
-                         黑/白，主按钮自然并入单色统一。 -->
                     <SolidColorBrush x:Key="SystemControlHighlightAccentBrush" Color="{DynamicResource SystemAccentColor}" />
-                    <!-- Normal 兜底，多彩模式由 ColorfulResources 覆盖。小组件正文色
-                         （Habits 卡片文本）：按卡片底色对比度取黑/白而非强调色派生（否则
-                         Normal 下正文变彩色），值与 ColorfulResources 完全一致，与同文件
-                         ClockDigitalTimeBrush 同规，亮暗极性均可读。 -->
                     <SolidColorBrush x:Key="WidgetForeground" Color="#1C1C1E" />
-                    <!-- Normal 兜底，多彩模式由 ColorfulResources 覆盖。Countdown 胶囊底/
-                         进度轨道：半透明灰阶叠加，与 ColorfulResources 同值，任意卡片底色上均成立。 -->
                     <SolidColorBrush x:Key="CountdownPillBackgroundBrush" Color="#10000000" />
                     <SolidColorBrush x:Key="CountdownTrackBrush" Color="#15000000" />
-                    <!-- Normal 兜底，多彩模式由 ColorfulResources 覆盖。Aggregate 天气图标
-                         填充：macOS 系统青为固定品牌色（非强调色语义），中间调在亮暗底上均可读。 -->
+                    <!-- macOS system teal: a fixed brand accent for the aggregate weather icon. -->
                     <SolidColorBrush x:Key="MacosTealBrush" Color="#30B0C7" />
                     <!-- Semantic Fallback Brushes -->
                     <SolidColorBrush x:Key="CalendarHeaderBrush" Color="{DynamicResource SystemAccentColorDark1}" />

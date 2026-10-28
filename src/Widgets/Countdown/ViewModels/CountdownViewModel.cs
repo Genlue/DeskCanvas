@@ -4,6 +4,7 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using Avalonia.Media;
 using Avalonia.Threading;
 using Countdown.Models;
 using Countdown.Services;
@@ -18,6 +19,7 @@ public class CountdownViewModel : INotifyPropertyChanged, IDisposable
     private CountdownItemViewModel? selectedItem;
     private readonly ObservableCollection<CountdownItemViewModel> items = [];
     private readonly IWidgetSession? session;
+    private IBrush? monochromeBrush;
     private bool isDisposed;
     private bool isRunning;
     private bool renderActive = true;
@@ -28,12 +30,7 @@ public class CountdownViewModel : INotifyPropertyChanged, IDisposable
     /// 24-hour window demand — the old private DispatcherTimer's dynamic interval.</summary>
     private UpdateTimer? activeTimer;
 
-    /// <summary>
-    /// <paramref name="session"/> is injected by WidgetFactory when the host runs the session
-    /// pipeline: the tick subscription is then gated on the session's
-    /// <see cref="ActivitySnapshot.RenderActive"/>. Null keeps the legacy always-on behaviour
-    /// (preview, legacy layout entries) — those hosts never push activity either.
-    /// </summary>
+    /// <summary>Session gates ticking; null keeps legacy always-on behaviour.</summary>
     public CountdownViewModel(CountdownModel settings, IWidgetSession? session = null)
     {
         this.settings = settings;
@@ -70,6 +67,13 @@ public class CountdownViewModel : INotifyPropertyChanged, IDisposable
 
     public ObservableCollection<CountdownItemViewModel> Items => items;
 
+    public void SetMonochromeBrush(IBrush? brush)
+    {
+        if (ReferenceEquals(monochromeBrush, brush)) return;
+        monochromeBrush = brush;
+        foreach (var item in items) item.SetMonochromeBrush(brush);
+    }
+
     public void Start()
     {
         if (isDisposed || isRunning) return;
@@ -90,12 +94,7 @@ public class CountdownViewModel : INotifyPropertyChanged, IDisposable
         UpdateTickSubscription();
     }
 
-    /// <summary>
-    /// Host activity push (the <see cref="DeskCanvas.Runtime.IWidgetActivityConsumer"/> path,
-    /// invoked on the UI thread): ticking follows the snapshot's
-    /// <see cref="ActivitySnapshot.RenderActive"/>. Session-less view models ignore the push
-    /// entirely (the host never sends one to them).
-    /// </summary>
+    /// <summary>Host activity push: ticking follows <see cref="ActivitySnapshot.RenderActive"/>.</summary>
     public void OnSessionActivity(ActivitySnapshot activity)
     {
         if (session == null) return;
@@ -146,7 +145,9 @@ public class CountdownViewModel : INotifyPropertyChanged, IDisposable
         items.Clear();
         foreach (var evt in rawEvents)
         {
-            items.Add(new CountdownItemViewModel(evt, settings.Granularity, now));
+            var item = new CountdownItemViewModel(evt, settings.Granularity, now);
+            item.SetMonochromeBrush(monochromeBrush);
+            items.Add(item);
         }
 
         UpdateSelectedItem();
@@ -186,7 +187,9 @@ public class CountdownViewModel : INotifyPropertyChanged, IDisposable
             }
             else
             {
-                items.Insert(targetIndex, new CountdownItemViewModel(evt, settings.Granularity, now));
+                var added = new CountdownItemViewModel(evt, settings.Granularity, now);
+                added.SetMonochromeBrush(monochromeBrush);
+                items.Insert(targetIndex, added);
             }
             targetIndex++;
         }
@@ -254,13 +257,8 @@ public class CountdownViewModel : INotifyPropertyChanged, IDisposable
     }
 
     /// <summary>
-    /// Single subscription state machine over the shared timers: exactly one subscription
-    /// exists while the view model is running AND the session renders, and its tier (the
-    /// 1-second or the 1-minute shared timer) follows the granularity and the 24-hour window.
-    /// This replaces the old private DispatcherTimer and its dynamic interval: the shared
-    /// subscription is reconciled from the inputs on every change, so overlapping transitions
-    /// (a covered screen, a granularity flip, Start/Stop) can neither double-subscribe nor
-    /// double-unsubscribe, and the host-wide timer pause covers the countdown too.
+    /// Keeps exactly one shared-timer subscription while running and rendering, with the tier
+    /// following granularity and the 24-hour window.
     /// </summary>
     private void UpdateTickSubscription()
     {
@@ -292,13 +290,7 @@ public class CountdownViewModel : INotifyPropertyChanged, IDisposable
         }
     }
 
-    /// <summary>
-    /// Whether the 1-second tier is needed: <see cref="CountdownGranularity.AlwaysDetailed"/>
-    /// always, <see cref="CountdownGranularity.Auto24Hours"/> while at least one countdown
-    /// event is inside its 24-hour window. The former minute-alignment scheduling (a private
-    /// tick exactly on the next whole-minute / 24-hour boundary) collapses into the shared
-    /// 1-minute tier, which notices the same boundaries at most one minute later.
-    /// </summary>
+    /// <summary>Whether the 1-second tier is needed for the current granularity.</summary>
     private bool NeedsHighPrecisionTick()
     {
         if (settings.Granularity == CountdownGranularity.AlwaysDetailed)

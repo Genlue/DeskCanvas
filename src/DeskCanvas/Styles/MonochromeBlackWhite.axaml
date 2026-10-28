@@ -6,29 +6,15 @@
     <Styles.Resources>
         <ResourceDictionary>
             <ResourceDictionary.ThemeDictionaries>
-                <!-- 黑白 monochrome: dark mode → white, light mode → black.
-                     The TEXT family (BaseHigh and the derived notes/clock/weather text
-                     brushes) stays pure black/white. The ACCENT family resolves through
-                     ThemeService.ApplyAccent's 黑白 ramp instead: the accent is strictly
-                     achromatic — BLACK in light mode, WHITE in dark mode (the ramp's
-                     `dark:`/`light:` slots feed these dictionaries crosswise) — so
-                     accent-following elements never pick up the background colors.
-                     AccentContrast flips accordingly: white content on the black accent
-                     (light), black on white (dark). -->
+                <!-- 黑白: text and accent are pure black in light mode, white in dark mode. -->
                 <ResourceDictionary x:Key="Default">
                     <SolidColorBrush x:Key="SystemControlForegroundBaseHighBrush" Color="Black" />
+                    <SolidColorBrush x:Key="SystemControlForegroundBaseMediumBrush" Color="Black" Opacity="0.65" />
+                    <SolidColorBrush x:Key="WidgetForeground" Color="Black" />
                     <!-- The accent itself is black in this variant, so white stays readable on it. -->
                     <SolidColorBrush x:Key="AccentContrastForegroundBrush" Color="White" />
-                    <!-- Color-level twin of the contrast brush (consumed by Accent.axaml's
-                         selection-control glyph keys, e.g. ToggleSwitchKnobFillOn). -->
                     <Color x:Key="AccentContrastColor">White</Color>
-                    <!-- Slider 滑块 hover/pressed（FluentControlResources 的
-                         SliderThumbBackgroundPointerOver/Pressed）：Fluent 把这两个态硬接在
-                         SystemAccentColorLight1 / Dark1 上，而黑白 ramp 是交叉写入的——亮色
-                         变体的 Light1 就是纯白，黑滑块 hover 一下变成白点，在设置页白色内容
-                         区上彻底消失（与 Accent.axaml 选中态控件家族同一根因）。钉回静止态
-                         同源的 Dark1 槽，只用透明度做 hover/pressed 反馈（梯度与选中态家族
-                         0.85/0.7 对齐）。 -->
+                    <!-- Pin slider hover/pressed to the resting accent slot; opacity provides feedback. -->
                     <SolidColorBrush x:Key="SliderThumbBackgroundPointerOver" Color="{DynamicResource SystemAccentColorDark1}" Opacity="0.85" />
                     <SolidColorBrush x:Key="SliderThumbBackgroundPressed" Color="{DynamicResource SystemAccentColorDark1}" Opacity="0.7" />
                     <SolidColorBrush x:Key="SystemControlForegroundAccentBrush" Color="{DynamicResource SystemAccentColorDark1}" />
@@ -36,8 +22,8 @@
                     <SolidColorBrush x:Key="CalendarTodayBrush" Color="{DynamicResource SystemAccentColorDark1}" />
                     <SolidColorBrush x:Key="ClockSecondHandBrush" Color="{DynamicResource SystemAccentColorDark1}" />
                     <SolidColorBrush x:Key="ClockCenterPinBrush" Color="{DynamicResource SystemAccentColorDark1}" />
-                    <SolidColorBrush x:Key="ClockDigitalTimeBrush" Color="#1C1C1E" />
-                    <SolidColorBrush x:Key="ClockDigitalDateBrush" Color="#8E8E93" />
+                    <SolidColorBrush x:Key="ClockDigitalTimeBrush" Color="Black" />
+                    <SolidColorBrush x:Key="ClockDigitalDateBrush" Color="Black" Opacity="0.6" />
                     <SolidColorBrush x:Key="RemindersBadgeBrush" Color="{DynamicResource SystemAccentColorDark1}" />
                     <SolidColorBrush x:Key="RemindersCheckBrush" Color="{DynamicResource SystemAccentColorDark1}" />
                     <SolidColorBrush x:Key="NotesAccentBrush" Color="{DynamicResource SystemAccentColorDark1}" />
@@ -81,27 +67,25 @@
                     <SolidColorBrush x:Key="NotesUpdatedBrush" Color="Black" />
                     <SolidColorBrush x:Key="ClockHandBrush" Color="Black" />
                     <SolidColorBrush x:Key="WeatherForegroundBrush" Color="Black" />
+                    <SolidColorBrush x:Key="MacosTealBrush" Color="Black" />
                     <SolidColorBrush x:Key="HitokotoQuoteBrush" Color="Black" />
                     <SolidColorBrush x:Key="HitokotoAuthorBrush" Color="Black" />
                     <SolidColorBrush x:Key="ProgressCardBackground" Color="Transparent" />
                     <SolidColorBrush x:Key="SearchPillBackground" Color="Transparent" />
                     <SolidColorBrush x:Key="WidgetCardBorderBrush" Color="#15000000" />
                     <SolidColorBrush x:Key="ClockDialBackgroundBrush" Color="Black" Opacity="0.2" />
-                    <!-- 跟随背景 (表盘-1 不透明档) 交叉取值：亮色变体用暗色背景色、暗色变体用亮色背景色
-                         （与 Batteries/Storage 的 "inverted background" 同规），使表盘与当前卡片背景形成对比。 -->
+                    <!-- Opaque dial uses the inverted background color. -->
                     <SolidColorBrush x:Key="ClockOpaqueDialBackgroundBrush" Color="{DynamicResource SolidBackgroundDark}" Opacity="1.0" />
                     <SolidColorBrush x:Key="ClockStrokesBrush" Color="Black" />
                 </ResourceDictionary>
                 <ResourceDictionary x:Key="Dark">
                     <SolidColorBrush x:Key="SystemControlForegroundBaseHighBrush" Color="White" />
+                    <SolidColorBrush x:Key="SystemControlForegroundBaseMediumBrush" Color="White" Opacity="0.65" />
+                    <SolidColorBrush x:Key="WidgetForeground" Color="White" />
                     <!-- The accent itself is white in this variant, so black is required. -->
                     <SolidColorBrush x:Key="AccentContrastForegroundBrush" Color="Black" />
                     <Color x:Key="AccentContrastColor">Black</Color>
-                    <!-- Slider thumb hover/pressed: same fix as the light dictionary — Fluent's
-                         pointer-over source (Light1) happens to be achromatic white here, matching
-                         the resting thumb, but pressed (Fluent's Dark1 = black) sinks the thumb
-                         into the dark surface. Pin both states to the resting slot (Light2) with
-                         the same 0.85/0.7 feedback gradient as the selection-control family. -->
+                    <!-- Pin slider hover/pressed to the resting accent slot. -->
                     <SolidColorBrush x:Key="SliderThumbBackgroundPointerOver" Color="{DynamicResource SystemAccentColorLight2}" Opacity="0.85" />
                     <SolidColorBrush x:Key="SliderThumbBackgroundPressed" Color="{DynamicResource SystemAccentColorLight2}" Opacity="0.7" />
                     <SolidColorBrush x:Key="SystemControlForegroundAccentBrush" Color="{DynamicResource SystemAccentColorLight2}" />
@@ -109,8 +93,8 @@
                     <SolidColorBrush x:Key="CalendarTodayBrush" Color="{DynamicResource SystemAccentColorLight2}" />
                     <SolidColorBrush x:Key="ClockSecondHandBrush" Color="{DynamicResource SystemAccentColorLight2}" />
                     <SolidColorBrush x:Key="ClockCenterPinBrush" Color="{DynamicResource SystemAccentColorLight2}" />
-                    <SolidColorBrush x:Key="ClockDigitalTimeBrush" Color="#FFFFFF" />
-                    <SolidColorBrush x:Key="ClockDigitalDateBrush" Color="#8E8E93" />
+                    <SolidColorBrush x:Key="ClockDigitalTimeBrush" Color="White" />
+                    <SolidColorBrush x:Key="ClockDigitalDateBrush" Color="White" Opacity="0.6" />
                     <SolidColorBrush x:Key="RemindersBadgeBrush" Color="{DynamicResource SystemAccentColorLight2}" />
                     <SolidColorBrush x:Key="RemindersCheckBrush" Color="{DynamicResource SystemAccentColorLight2}" />
                     <SolidColorBrush x:Key="NotesAccentBrush" Color="{DynamicResource SystemAccentColorLight2}" />
@@ -154,6 +138,7 @@
                     <SolidColorBrush x:Key="NotesUpdatedBrush" Color="White" />
                     <SolidColorBrush x:Key="ClockHandBrush" Color="White" />
                     <SolidColorBrush x:Key="WeatherForegroundBrush" Color="White" />
+                    <SolidColorBrush x:Key="MacosTealBrush" Color="White" />
                     <SolidColorBrush x:Key="HitokotoQuoteBrush" Color="White" />
                     <SolidColorBrush x:Key="HitokotoAuthorBrush" Color="White" />
                     <SolidColorBrush x:Key="ProgressCardBackground" Color="Transparent" />

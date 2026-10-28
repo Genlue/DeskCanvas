@@ -187,7 +187,7 @@
                             CornerRadius="{DynamicResource WidgetPillCornerRadius}"
                             Padding="6,2" VerticalAlignment="Center"
                             IsVisible="{Binding FocusedHabit.IsCompleted}">
-                        <TextBlock Text="{x:Static locales:Locale.Habits_Achieved}" FontSize="10" FontWeight="SemiBold" Foreground="#34C759" />
+                        <TextBlock Text="{x:Static locales:Locale.Habits_Achieved}" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource SystemControlForegroundAccentBrush}" />
                     </Border>
                 </StackPanel>
             </StackPanel>

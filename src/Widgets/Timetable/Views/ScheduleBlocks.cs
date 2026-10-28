@@ -3,6 +3,8 @@ using Avalonia.Controls;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Media.Immutable;
+using Avalonia.Styling;
+using DeskCanvas.Services;
 using Timetable.Locales;
 using Timetable.Models;
 using Timetable.Services;
@@ -20,10 +22,9 @@ internal static class ScheduleBlocks
     public static readonly IBrush LaneBrush = new ImmutableSolidColorBrush(Color.FromArgb(0x14, 0x80, 0x80, 0x80));
 
     public static Border Create(TimetableRuntime.Slot slot, double titleFont, double subFont, bool showSub,
-        bool showRoom, bool showTeacher)
+        bool showRoom, bool showTeacher, CoursePalette.BlockPaint paint = default)
     {
-        var color = CoursePalette.ResolveColor(slot.Course);
-        var foreground = CoursePalette.ForegroundFor(color);
+        var (background, foreground) = CoursePalette.Paint(slot.Course, paint);
 
         var stack = new StackPanel
         {
@@ -61,7 +62,7 @@ internal static class ScheduleBlocks
 
         var border = new Border
         {
-            Background = CoursePalette.BrushFor(color),
+            Background = background,
             CornerRadius = new CornerRadius(6),
             Margin = new Thickness(1),
             Padding = new Thickness(2, 2, 2, 2),
@@ -73,6 +74,22 @@ internal static class ScheduleBlocks
 
         ToolTip.SetTip(border, BuildTooltip(slot));
         return border;
+    }
+
+    /// <summary>Resolve the monochrome block paint for a host window; colorful themes get the default.</summary>
+    public static CoursePalette.BlockPaint ResolveBlockPaint(Visual host, ThemeVariant variant)
+    {
+        var theme = PanelAppearanceResolver.ResolveEffectiveTheme(
+            PanelAppearanceResolver.TryResolveSettingsProvider(),
+            TopLevel.GetTopLevel(host) as Window);
+        if (theme is not { IsColorful: false, Monochrome: true })
+            return default;
+
+        var accent = ThemeScopeResolver.ResolveColor(host, "SystemControlForegroundAccentBrush", variant,
+            Color.FromRgb(0x00, 0x78, 0xD4));
+        var foreground = ThemeScopeResolver.ResolveBrush(host, "SystemControlForegroundBaseHighBrush", variant,
+            Brushes.White);
+        return new CoursePalette.BlockPaint(true, accent, foreground);
     }
 
     /// <summary>Room / teacher line per the widget's display settings; null when both are off or empty.</summary>

@@ -33,11 +33,11 @@
         </Style>
         <Style Selector="Button.action-icon-btn.active">
             <Setter Property="Opacity" Value="1.0" />
-            <Setter Property="Foreground" Value="#FF9F0A" />
+            <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundAccentBrush}" />
         </Style>
         <Style Selector="Button.action-icon-btn.danger:pointerover">
-            <Setter Property="Background" Value="#30FF3B30" />
-            <Setter Property="Foreground" Value="#FF3B30" />
+            <Setter Property="Background" Value="{DynamicResource ControlHoverBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource ValidationErrorBrush}" />
         </Style>
         <!-- 预设 chip 复用 pill-btn 的形状，仅收窄尺寸；选中态沿用全局 accent 资源。 -->
         <Style Selector="Button.preset-chip">
@@ -234,7 +234,7 @@
                         </StackPanel>
 
                         <!-- Color Tags Selection -->
-                        <StackPanel Spacing="4">
+                        <StackPanel x:Name="ColorTagGroup" Spacing="4">
                             <TextBlock Text="{x:Static locales:Locale.Countdown_Category}" FontSize="11" Opacity="0.75" />
                             <StackPanel Orientation="Horizontal" Spacing="8">
                                 <Button x:Name="ColorBtnRed" Classes="action-icon-btn" Width="20" Height="20" CornerRadius="10" Background="#FF5A5F" Click="OnColorTagSelected" Tag="#FF5A5F" />
@@ -251,7 +251,7 @@
                                     Content="{x:Static locales:Locale.Countdown_SaveAsPreset}"
                                     Click="OnSaveAsPresetClicked" />
                             <Button Classes="pill-btn" Content="{x:Static locales:Locale.Countdown_Cancel}" Click="OnCancelEditClicked" />
-                            <Button Classes="pill-btn" Background="#FF5A5F" Foreground="White"
+                            <Button Classes="pill-btn primary"
                                     Content="{x:Static locales:Locale.Countdown_Save}" Click="OnSaveEditClicked" />
                         </StackPanel>
                     </StackPanel>

@@ -27,6 +27,7 @@ public class CountdownPopupItemViewModel : INotifyPropertyChanged
     private CountdownItem model;
     private CountdownComputedResult computed;
     private IBrush colorBrush;
+    private IBrush? monochromeBrush;
 
     public CountdownPopupItemViewModel(CountdownItem model, DateTime now)
     {
@@ -43,7 +44,14 @@ public class CountdownPopupItemViewModel : INotifyPropertyChanged
     public bool IsPinned => model.IsPinned;
     public bool IsLunar => model.IsLunar;
 
-    public IBrush ColorBrush => colorBrush;
+    public IBrush ColorBrush => monochromeBrush ?? colorBrush;
+
+    public void SetMonochromeBrush(IBrush? brush)
+    {
+        if (ReferenceEquals(monochromeBrush, brush)) return;
+        monochromeBrush = brush;
+        OnPropertyChanged(nameof(ColorBrush));
+    }
     public string MainDisplayNumber => computed.MainDisplayNumber;
     public string UnitLabel => computed.UnitLabel;
     public string FormattedDate => computed.FormattedDate;
@@ -111,6 +119,25 @@ public partial class CountdownPopupWindow : SecondaryPanelWindow
 
         CountdownStore.ModelChanged += OnStoreModelChanged;
         Closed += OnWindowClosed;
+        Opened += (_, _) => UpdateMonochromeBrush();
+        ActualThemeVariantChanged += (_, _) => UpdateMonochromeBrush();
+        UpdateMonochromeBrush();
+    }
+
+    private void UpdateMonochromeBrush()
+    {
+        IBrush? brush = null;
+        try
+        {
+            var theme = PanelAppearanceResolver.ResolveEffectiveTheme(
+                PanelAppearanceResolver.TryResolveSettingsProvider(), this);
+            if (theme is { IsColorful: false, Monochrome: true })
+                brush = ThemeScopeResolver.ResolveBrush(this, "SystemControlForegroundAccentBrush", ActualThemeVariant);
+        }
+        catch { }
+
+        foreach (var item in items) item.SetMonochromeBrush(brush);
+        if (ColorTagGroup != null) ColorTagGroup.IsVisible = brush == null;
     }
 
     public static void ShowPopup(Point? screenCenter = null, Window? owner = null, double? cornerRadius = null)

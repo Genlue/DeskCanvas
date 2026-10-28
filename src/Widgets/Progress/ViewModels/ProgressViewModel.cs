@@ -9,6 +9,7 @@ using Progress.Models;
 using ReactiveUI;
 using DeskCanvas.Contracts;
 using DeskCanvas.Core.Interfaces;
+using DeskCanvas.Core.Models.Settings;
 using DeskCanvas.Services;
 
 namespace Progress.ViewModels;
@@ -294,6 +295,15 @@ public class ProgressViewModel : ReactiveObject, IDisposable
             curColor = parsedCur;
         }
         CurrentBrush = new SolidColorBrush(curColor);
+
+        if (theme is { IsColorful: false, Monochrome: true }
+            && theme.EffectiveMonochromeVariant != MonochromeStyle.Accent)
+        {
+            var mono = ThemeScopeResolver.ResolveColor(themeAnchor, "SystemControlForegroundAccentBrush",
+                ResolveProgressThemeVariant(themeAnchor), passedColor);
+            PassedBrush = new SolidColorBrush(mono);
+            CurrentBrush = new SolidColorBrush(mono);
+        }
 
         // Per-screen: the variant the anchor's window renders with. A missing theme flag
         // (follow-the-system / AutoTheme) and an unresolvable anchor both fall through to

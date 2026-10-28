@@ -36,7 +36,6 @@
     </UserControl.Styles>
 
     <Panel Cursor="Hand" PointerPressed="OnCardPointerPressed">
-        <!-- ══════════ 1x1 Cell Layout ══════════ -->
         <Grid x:Name="CellLayout" RowDefinitions="Auto,*,Auto" Margin="6" IsVisible="False">
             <TextBlock Grid.Row="0" Text="{Binding SelectedItem.Title}" FontSize="11" FontWeight="SemiBold"
                        TextTrimming="CharacterEllipsis" Opacity="0.85" />
@@ -50,9 +49,7 @@
                        HorizontalAlignment="Center" />
         </Grid>
 
-        <!-- ══════════ 2x2 Small Layout ══════════ -->
         <Grid x:Name="SmallLayout" Margin="12,10">
-            <!-- Style 0: Minimal Big Number -->
             <Grid RowDefinitions="Auto,*,Auto" IsVisible="{Binding IsMinimalNumberStyle}">
                 <!-- Header: 圆点 + 分类 + 标题 / 右侧弱化指示 -->
                 <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="0,0,0,4">
@@ -72,7 +69,6 @@
                     </StackPanel>
                 </Grid>
 
-                <!-- Center Big Number：单位贴数字右下角，不再单独占一行高度（矮卡片上不会压到进度条） -->
                 <Grid Grid.Row="1" VerticalAlignment="Center" Margin="0,2">
                     <controls:NumberWithCornerUnit HorizontalAlignment="Center">
                         <Viewbox Stretch="Uniform" MaxHeight="68">
@@ -86,7 +82,6 @@
                     </controls:NumberWithCornerUnit>
                 </Grid>
 
-                <!-- Footer: 进度条 + 日期左/百分比右 基线对齐 -->
                 <StackPanel Grid.Row="2" Spacing="4" Margin="0,4,0,0">
                     <ProgressBar Classes="countdown-bar"
                                  Minimum="0" Maximum="1"
@@ -101,7 +96,6 @@
                 </StackPanel>
             </Grid>
 
-            <!-- Style 1: Ring Progress -->
             <Grid RowDefinitions="Auto,*,Auto" IsVisible="{Binding IsRingProgressStyle}">
                 <!-- Header -->
                 <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="0,0,0,2">
@@ -120,17 +114,14 @@
                     </StackPanel>
                 </Grid>
 
-                <!-- Center Ring with Number -->
                 <Viewbox Grid.Row="1" Stretch="Uniform" ClipToBounds="False" Margin="0,2">
                     <Canvas Width="110" Height="110">
-                        <!-- Background Track -->
                         <Path StrokeThickness="6" Stroke="{DynamicResource CountdownTrackBrush}">
                             <Path.Data>
                                 <EllipseGeometry Center="55,55" RadiusX="48" RadiusY="48" />
                             </Path.Data>
                         </Path>
 
-                        <!-- Active Arc -->
                         <Path StrokeThickness="6" StrokeDashArray="43.085,43.085" StrokeLineCap="Round"
                               StrokeDashOffset="{Binding SelectedItem.StrokeDashOffset}"
                               Stroke="{Binding SelectedItem.ColorBrush}"
@@ -143,7 +134,6 @@
                             </Path.Data>
                         </Path>
 
-                        <!-- Inner Content -->
                         <StackPanel Canvas.Left="0" Canvas.Top="36" Width="110">
                             <TextBlock Text="{Binding SelectedItem.MainDisplayNumber}"
                                        FontSize="22" FontWeight="Bold" LetterSpacing="-0.5"
@@ -156,7 +146,6 @@
                     </Canvas>
                 </Viewbox>
 
-                <!-- Footer: 日期左/百分比右 -->
                 <Grid Grid.Row="2" ColumnDefinitions="*,Auto" Margin="0,2,0,0">
                     <TextBlock Grid.Column="0" Text="{Binding SelectedItem.FormattedDate}" FontSize="10"
                                Opacity="0.55" TextTrimming="CharacterEllipsis" VerticalAlignment="Bottom" />
@@ -165,7 +154,6 @@
                 </Grid>
             </Grid>
 
-            <!-- Style 2: Compact Event List -->
             <Grid RowDefinitions="Auto,*" IsVisible="{Binding IsEventListStyle}">
                 <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="0,0,0,4">
                     <TextBlock Grid.Column="0" Text="{x:Static locales:Locale.Countdown_Title}" FontSize="13"
@@ -200,9 +188,7 @@
             </Grid>
         </Grid>
 
-        <!-- ══════════ 4x2 Wide Layout ══════════ -->
         <Panel x:Name="WideLayout" Margin="14,10" IsVisible="False">
-            <!-- Style 0: Minimal Big Number (4x2) -->
             <Grid ColumnDefinitions="1.2*,0.8*" IsVisible="{Binding IsMinimalNumberStyle}">
                 <!-- Left: Big Number Focus -->
                 <Grid Grid.Column="0" RowDefinitions="Auto,*,Auto" Margin="0,0,12,0">
@@ -262,7 +248,6 @@
                 </Border>
             </Grid>
 
-            <!-- Style 1: Ring Progress (4x2) -->
             <Grid ColumnDefinitions="Auto,*" IsVisible="{Binding IsRingProgressStyle}">
                 <!-- Left: Big Ring（Max 尺寸代替固定尺寸，矮卡片下按比例缩小避免截断） -->
                 <Viewbox Grid.Column="0" MaxWidth="110" MaxHeight="110" Stretch="Uniform" Margin="0,0,12,0"

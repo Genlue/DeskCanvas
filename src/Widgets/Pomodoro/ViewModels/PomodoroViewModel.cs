@@ -1,7 +1,9 @@
 using System;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
+using Avalonia;
 using Avalonia.Media;
+using DeskCanvas.Services;
 using Avalonia.Threading;
 using Pomodoro.Locales;
 using Pomodoro.Models;
@@ -162,13 +164,25 @@ public class PomodoroViewModel : INotifyPropertyChanged
         _ => Locale.Pomodoro_Phase_Focus
     };
 
-    public IBrush PhaseBrush => Phase switch
+    public IBrush PhaseBrush
     {
-        PomodoroPhase.Focus => new SolidColorBrush(Color.Parse("#FF5A5F")),
-        PomodoroPhase.ShortBreak => new SolidColorBrush(Color.Parse("#34C759")),
-        PomodoroPhase.LongBreak => new SolidColorBrush(Color.Parse("#007AFF")),
-        _ => new SolidColorBrush(Color.Parse("#FF5A5F"))
-    };
+        get
+        {
+            var theme = PanelAppearanceResolver.ResolveEffectiveTheme(PanelAppearanceResolver.TryResolveSettingsProvider());
+            if (theme is { IsColorful: false, Monochrome: true }
+                && ThemeScopeResolver.ResolveBrush(null, "SystemControlForegroundAccentBrush",
+                    Application.Current?.ActualThemeVariant) is { } mono)
+                return mono;
+
+            return Phase switch
+            {
+                PomodoroPhase.Focus => new SolidColorBrush(Color.Parse("#FF5A5F")),
+                PomodoroPhase.ShortBreak => new SolidColorBrush(Color.Parse("#34C759")),
+                PomodoroPhase.LongBreak => new SolidColorBrush(Color.Parse("#007AFF")),
+                _ => new SolidColorBrush(Color.Parse("#FF5A5F"))
+            };
+        }
+    }
 
     public double ProgressFraction => TotalSeconds > 0 ? (double)RemainingSeconds / TotalSeconds : 0.0;
 

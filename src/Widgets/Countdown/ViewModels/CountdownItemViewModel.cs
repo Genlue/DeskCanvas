@@ -13,6 +13,7 @@ public class CountdownItemViewModel : INotifyPropertyChanged
     private CountdownGranularity granularity;
     private CountdownComputedResult computed;
     private IBrush colorBrush;
+    private IBrush? monochromeBrush;
 
     private static readonly string[] CachedPercentStrings = InitializePercentStrings();
     private static readonly System.Collections.Generic.Dictionary<string, IBrush> BrushCache = new(StringComparer.OrdinalIgnoreCase);
@@ -45,7 +46,14 @@ public class CountdownItemViewModel : INotifyPropertyChanged
     public bool IsLunar => model.IsLunar;
     public string? ColorTag => model.ColorTag;
 
-    public IBrush ColorBrush => colorBrush;
+    public IBrush ColorBrush => monochromeBrush ?? colorBrush;
+
+    public void SetMonochromeBrush(IBrush? brush)
+    {
+        if (ReferenceEquals(monochromeBrush, brush)) return;
+        monochromeBrush = brush;
+        OnPropertyChanged(nameof(ColorBrush));
+    }
 
     public CountdownComputedResult Computed => computed;
 
