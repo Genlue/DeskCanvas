@@ -70,7 +70,10 @@
         <value>World Clock</value>
     </data>
     <data name="Clock_Analog_Subtitle" xml:space="preserve">
-        <value>Add a clock for a city to check the time at that location</value>
+        <value>Classic analog dial</value>
+    </data>
+    <data name="Clock_Digital_Subtitle" xml:space="preserve">
+        <value>Large numerals with an optional date</value>
     </data>
     <data name="Clock_World_Subtitle" xml:space="preserve">
         <value>View the time in multiple cities from around the world</value>
@@ -97,7 +100,7 @@
         <value>Frameless Clock</value>
     </data>
     <data name="Clock_FramelessDigital_Subtitle" xml:space="preserve">
-        <value>Adaptive frameless digital clock with lock screen fonts and multi-theme materials</value>
+        <value>Adaptive large-number clock with configurable fonts and materials</value>
     </data>
     <data name="Clock_MaterialTheme" xml:space="preserve">
         <value>Material Theme</value>
@@ -127,7 +130,7 @@
         <value>System Font</value>
     </data>
     <data name="Clock_FontWeight_Subtitle" xml:space="preserve">
-        <value>Does not apply to all fonts (only effective on multi-weight or variable fonts)</value>
+        <value>Only applies to fonts with multiple or variable weights</value>
     </data>
     <data name="Clock_FixedWidthDigits" xml:space="preserve">
         <value>Fixed Digit Width (Anti-jitter)</value>
@@ -145,13 +148,13 @@
         <value>Stretch to Fill Grid</value>
     </data>
     <data name="Clock_StretchFill_Subtitle" xml:space="preserve">
-        <value>Allow non-uniform stretching to fully fill cell bounds</value>
+        <value>Allow non-uniform stretching to fill the cell</value>
     </data>
     <data name="Clock_EnableOverlay" xml:space="preserve">
         <value>Enable Color Overlay</value>
     </data>
     <data name="Clock_EnableOverlay_Subtitle" xml:space="preserve">
-        <value>Overlay a tinted color sheen on the numerals</value>
+        <value>Overlay a custom colour mask on the numerals</value>
     </data>
     <data name="Clock_FollowAccentColor" xml:space="preserve">
         <value>Follow Accent Color</value>
@@ -202,7 +205,7 @@
         <value>Flip Clock</value>
     </data>
     <data name="Clock_Flip_Subtitle" xml:space="preserve">
-        <value>Mechanical split-flap clock locked to 2:1 proportion</value>
+        <value>Mechanical split-flap clock with a fixed 2:1 ratio</value>
     </data>
     <data name="Clock_SecondsStyle" xml:space="preserve">
         <value>Seconds style</value>

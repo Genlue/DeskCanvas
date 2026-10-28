@@ -196,7 +196,7 @@
     <value>无边框时钟</value>
   </data>
   <data name="Clock_FramelessDigital_Subtitle" xml:space="preserve">
-    <value>自适应网格大字时钟，支持多款锁屏艺术字体与玻璃/纯色/多彩主题</value>
+    <value>自适应大字时钟，可调字体与材质</value>
   </data>
   <data name="Clock_MaterialTheme" xml:space="preserve">
     <value>材质主题</value>
@@ -208,7 +208,7 @@
     <value>跟随全局外观</value>
   </data>
   <data name="Clock_LiquidGlassOpacity" xml:space="preserve">
-    <value>液态玻璃透明度</value>
+    <value>液态玻璃不透明度</value>
   </data>
   <data name="Clock_FontSource" xml:space="preserve">
     <value>字体类型</value>
@@ -226,7 +226,7 @@
     <value>系统自带字体</value>
   </data>
   <data name="Clock_FontWeight_Subtitle" xml:space="preserve">
-    <value>不生效于所有字体（仅对包含多种字重或可变字重的字体生效）</value>
+    <value>仅对含多字重或可变字重的字体生效</value>
   </data>
   <data name="Clock_FixedWidthDigits" xml:space="preserve">
     <value>固定数字宽度（防跳动）</value>
@@ -244,13 +244,13 @@
     <value>拉伸填满网格</value>
   </data>
   <data name="Clock_StretchFill_Subtitle" xml:space="preserve">
-    <value>允许非等比拉伸数字，上下顶到头</value>
+    <value>允许非等比拉伸，让数字填满网格</value>
   </data>
   <data name="Clock_EnableOverlay" xml:space="preserve">
     <value>覆盖上层颜色遮罩</value>
   </data>
   <data name="Clock_EnableOverlay_Subtitle" xml:space="preserve">
-    <value>在数字材质上层覆盖一层自定义光泽</value>
+    <value>在数字上叠加自定义颜色遮罩</value>
   </data>
   <data name="Clock_FollowAccentColor" xml:space="preserve">
     <value>跟随强调色</value>
@@ -301,7 +301,7 @@
     <value>翻页时钟</value>
   </data>
   <data name="Clock_Flip_Subtitle" xml:space="preserve">
-    <value>经典机械翻页时钟，锁定 2:1 黄金比例</value>
+    <value>经典机械翻页时钟，固定 2:1 比例</value>
   </data>
   <data name="Clock_SecondsStyle" xml:space="preserve">
     <value>秒数样式</value>

@@ -27,20 +27,7 @@ using DeskCanvas.Views.Controls;
 namespace Clock.Views;
 
 /// <summary>
-/// 无边框时钟: a clock whose numerals ARE the widget — no card, no plate; the glyphs render
-/// straight onto the desktop across all themes (跟随全局外观, 毛玻璃, 液态玻璃, 新液态玻璃, 纯色, 多彩).
-/// <para>
-/// Architecture contract:
-/// <list type="number">
-/// <item><see cref="material"/> is the single resolved material snapshot, written in exactly one
-/// place (<see cref="ApplyCurrentMaterial"/>) and read everywhere else.</item>
-/// <item>Every material- or model-affecting event (load, theme change, variant change, model
-/// refresh, resume) funnels through <see cref="ApplyCurrentMaterial"/>, which synchronises the
-/// timer, material snapshot, frame cache, window transparency and native glyph region in one
-/// deterministic sequence.</item>
-/// </list>
-/// </para>
-/// </summary>
+/// <summary>无边框时钟：数字直接绘制在桌面上，材质由 <see cref="ApplyCurrentMaterial"/> 统一解析。</summary>
 public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSelfRefreshing, IWidgetSuspendable, IFocusThemedContent, IWidgetActivityConsumer
 {
     private FramelessClockModel model;
@@ -71,12 +58,7 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
     /// <summary>Renders currently running on the pool across all frameless clock instances.</summary>
     private static int inFlightRenderCount;
 
-    /// <summary>
-    /// Ceiling on concurrent pre-renders across all frameless clocks, aligned with
-    /// <see cref="GlyphLiquidGlassRenderer"/>'s 2-slot scratch pool so multiple clocks on multiple
-    /// screens reuse the pooled workspaces instead of burst-allocating on the LOH. Immediate
-    /// renders (the frame the clock is switching to right now) are never held back by this.
-    /// </summary>
+    /// <summary>Concurrent pre-render ceiling, aligned with the glyph renderer's 2-slot pool.</summary>
     private const int MaxConcurrentPreRenders = 2;
 
     private const long CacheBudgetBytes = 24L * 1024 * 1024;
@@ -341,13 +323,7 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
         SetupTimer();
     }
 
-    /// <summary>
-    /// Reconcile the shared timer subscription and its tier (the Digital pilot's shape): the
-    /// tier follows the current model (1 s while ShowSeconds renders on the desktop, 1 min
-    /// otherwise) and the subscription exists exactly while loaded AND rendering. A tier
-    /// switch re-subscribes atomically; a gate resume ticks once so the display catches up
-    /// without waiting the interval.
-    /// </summary>
+    /// <summary>Reconcile the shared timer and its 1 s / 1 min tier while loaded and rendering.</summary>
     private void SetupTimer()
     {
         var wanted = isRunning && renderActive;
@@ -563,14 +539,8 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
 
         var isDark = ClockPerScreenTheme.IsDarkVariant(this);
 
-        // Shared glass geometry (sampling origin walk + desktop extent), the one source of truth
-        // LiquidGlassSurface.BuildFrame uses too. The clock has no quality concept — originScale 1
-        // keeps the frame's desktop coordinates in raw physical pixels, numerically identical to
-        // what the clock's private copy used to compute — but the ORIGIN now goes through the
-        // transform-free layout walk: Avalonia's PointToScreen composes ancestor render
-        // transforms, so the clock inside a widget whose content is scaled (ContentScale ≠ 1)
-        // sampled the wallpaper shifted by a distance proportional to its offset from the scale
-        // anchor (the reported 采样错位 being position-dependent).
+        // Shared glass geometry: originScale 1 keeps physical pixels; the layout walk avoids
+        // PointToScreen composing ancestor scale transforms (which shifted sampling).
         var geometry = GlassSamplingOrigin.FrameDesktopGeometry(window, this, 1.0);
 
         var widget = window as DeskCanvas.Views.Widget;
@@ -1058,11 +1028,7 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
         context.DrawGeometry(null, rimPen, geometry);
     }
 
-    /// <summary>
-    /// Shared timezone resolution (the Runtime copy): a null/empty id keeps the local reading
-    /// (<c>DateTime.Now</c>), a known id converts, an unknown id falls back to Utc instead of
-    /// throwing (the SharedTimeZone contract — previously it silently fell back to local).
-    /// </summary>
+    /// <summary>Local when no id; known ids convert; unknown ids fall back to Utc.</summary>
     private DateTime GetCurrentTime()
     {
         if (string.IsNullOrEmpty(model.TimeZoneId)) return DateTime.Now;

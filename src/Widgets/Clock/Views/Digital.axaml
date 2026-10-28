@@ -17,7 +17,7 @@
                        IsVisible="{Binding ShowDate}"
                        HorizontalAlignment="Center"
                        Margin="0,4,0,0"
-                       FontSize="8" Opacity="0.9"
+                       FontSize="8"
                        FontWeight="SemiBold"
                        Foreground="{DynamicResource ClockDigitalDateBrush}" />
             <TextBlock Text="{Binding TimeText}"

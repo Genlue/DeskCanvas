@@ -851,8 +851,11 @@ public partial class MultiScreen : UserControl
         var owner = TopLevel.GetTopLevel(this) as Window;
         if (owner == null) return;
 
-        var confirmed = await ConfirmDialog.ConfirmAsync(owner,
-            $"Delete the configuration \"{config.DisplayName}\" and its {config.Layout.Count} widgets?",
+        var isZh = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName.Equals("zh", StringComparison.OrdinalIgnoreCase);
+        var message = isZh
+            ? $"确定要删除屏幕配置“{config.DisplayName}”及其 {config.Layout.Count} 个组件吗？"
+            : $"Delete the configuration \"{config.DisplayName}\" and its {config.Layout.Count} widgets?";
+        var confirmed = await ConfirmDialog.ConfirmAsync(owner, message,
             Locale.Settings_Advanced_Backup_OkButton,
             Locale.Settings_Advanced_Backup_CancelButton);
         if (!confirmed) return;

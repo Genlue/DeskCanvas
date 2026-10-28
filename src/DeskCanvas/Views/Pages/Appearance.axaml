@@ -1,4 +1,4 @@
-﻿<UserControl xmlns="https://github.com/avaloniaui"
+<UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:controls="clr-namespace:DeskCanvas.Views.Controls"
              xmlns:viewModels="clr-namespace:DeskCanvas.ViewModels"
@@ -12,9 +12,6 @@
             <Button Content="{x:Static locales:Locale.Settings_Appearance_SaveRetry}" Click="RetrySettingsSave" />
             <Button Content="{x:Static locales:Locale.Settings_Appearance_SaveReload}" Click="ReloadSettings" />
         </StackPanel>
-        <!-- 失焦自动切换: the feature's settings live ABOVE the shared 应用主题 section — the
-             section below configures the shared parameters, this block picks what each focus
-             state shows (theme + light/dark mode). -->
         <TextBlock FontSize="14" FontWeight="SemiBold" Margin="0 0 0 10"
                    Text="{x:Static locales:Locale.Settings_Appearance_FocusLink_Title}"/>
         <controls:Setting Icon="{DynamicResource Windows}"
@@ -158,8 +155,7 @@
                                      Margin="0 16 0 6"
                                      Header="{Binding GlassOpticsTitle}"
                                      IsExpanded="{Binding OpticsExpanded}">
-            <!-- The optics rows (实时采样 → 染色扩散) are expert knobs: the theme works out of the
-                 box without them, so they stay folded behind the section title. -->
+            <!-- Expert optics stay folded; defaults work out of the box. -->
             <controls:CollapsibleSection.SectionContent>
                 <StackPanel Spacing="3">
                     <controls:Setting Title="{x:Static locales:Locale.Settings_Appearance_Glass_LiveSampling}"
@@ -170,7 +166,7 @@
                     <controls:Setting Title="{x:Static locales:Locale.Settings_Appearance_Glass_LiveSamplingInterval}"
                                       Subtitle="{x:Static locales:Locale.Settings_Appearance_Glass_LiveSamplingIntervalHint}"
                                       IsVisible="{Binding LiveSampling}">
-                        <NumericUpDown MinWidth="130" Minimum="3" Maximum="1000" Increment="10" FormatString="F0"
+                        <NumericUpDown MinWidth="130" Minimum="10" Maximum="1000" Increment="10" FormatString="F0"
                                        Value="{Binding LiveSamplingInterval}"
                                        AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_Glass_LiveSamplingInterval}" />
                     </controls:Setting>
@@ -217,7 +213,6 @@
                 </StackPanel>
             </controls:CollapsibleSection.SectionContent>
         </controls:CollapsibleSection>
-        <!-- The three actions are not parameters: they stay outside the fold, right under the title. -->
         <WrapPanel Orientation="Horizontal" Margin="0 8 0 0">
             <Button Content="{x:Static locales:Locale.Settings_Appearance_Glass_Align}" Click="OpenWallpaperAlign" Margin="0 0 8 6" />
             <Button Content="{x:Static locales:Locale.Settings_Appearance_Glass_Reset}" Click="ResetLiquidGlass" Margin="0 0 8 6" />

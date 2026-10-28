@@ -9,9 +9,7 @@ using DeskCanvas.UI;
 
 namespace Clock.Views;
 
-/// <summary>
-/// 数字时钟小组件：通过 IWidgetSurfaceHints 声明 Colorful 模式下的专属卡片画刷。
-/// </summary>
+/// <summary>数字时钟小组件。</summary>
 public partial class Digital : UserControl, IWidgetSurfaceHints, IWidgetActivityConsumer
 {
     private readonly ClockStatusPresenter statusPresenter = new();
@@ -22,12 +20,7 @@ public partial class Digital : UserControl, IWidgetSurfaceHints, IWidgetActivity
 
     public Digital() : this(new ClockModel()) {}
 
-    /// <summary>
-    /// <paramref name="session"/> is injected by WidgetFactory when the host runs the session
-    /// pipeline (a stable instance identity): the view model then gates its timer subscription
-    /// on the session's activity. Null keeps the legacy always-on behaviour (preview, legacy
-    /// layout entries) — those hosts never push activity either.
-    /// </summary>
+    /// <summary>Session gates ticking; null keeps legacy always-on behaviour.</summary>
     public Digital(ClockModel clockModel, IWidgetSession? session = null)
     {
         viewModel = new DigitalClockViewModel(clockModel, session);
