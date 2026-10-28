@@ -55,6 +55,7 @@
 | HitokotoMemoryChecks | 正式门禁 | 一言组件内存释放契约 |
 | CalendarHollowChecks | 正式门禁 | 日历/聚合仪表盘「今天」镂空标记回归（明暗双主题像素验证） |
 | DateInkChecks | 正式门禁 | 日期组件日号字号回归：字号按卡片实际渲染物理像素数（DIP×DPI×宿主 ContentScale）经 FormattedText 墨迹占比推导（墨迹高 = 卡高 70%，用户基准），基线锚定 Margin 使墨迹居中于日号格（行盒被格高钳制时墨迹随基线下坠的补偿），普通 TextBlock 墨迹不截断（200×200 与 96×96 双尺寸像素验证 + 2× 光栅化密度不变性）；旧版内层 Viewbox+负 Margin 的顶部截断由本套件钉死 |
+| DateTwoChecks | 正式门禁 | 2×2 日期卡片（公历日号 + 农历）视觉契约：表头墨迹 ≈ 0.115 卡高且中心 ≈ 0.208、日号墨迹 ≈ 0.455 卡高且中心 ≈ 0.602，300×300 与 150×150 双尺寸、四/五字农历（腊月十六）与关闭农历两态；断言配色全部来自主题令牌（CalendarCardBackground / CalendarHeaderBrush / WidgetForeground）而非内置调色板，且墨迹不越出卡片 |
 | CountdownChecks | 正式门禁 | Countdown 组件模型/服务/视图契约 |
 | FixedSpanChecks | 正式门禁 | 固定组件 4×2 卡片的跨度晶格（2:1 等比整数跨度） |
 | HabitsChecks | 正式门禁 | Habits 组件模型/服务/视图契约 |

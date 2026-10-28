@@ -29,10 +29,8 @@
     </UserControl.Styles>
 
     <Grid RowDefinitions="Auto,*">
-        <!-- Header: Weekday & Day Number + Secondary Panel Button -->
-        <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="0,0,0,4">
-            <!-- Clickable date header to open secondary panel -->
-            <Button Grid.Column="0" Classes="ActionBtn" Click="OnHeaderClicked" HorizontalAlignment="Left" ToolTip.Tip="{x:Static locales:Locale.Calendar_Schedule_OpenPanel}">
+                <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="0,0,0,4">
+                        <Button Grid.Column="0" Classes="ActionBtn" Click="OnHeaderClicked" HorizontalAlignment="Left" ToolTip.Tip="{x:Static locales:Locale.Calendar_Schedule_OpenPanel}">
                 <StackPanel Orientation="Vertical">
                     <TextBlock Text="{Binding DayOfWeek}"
                                FontSize="15"
@@ -52,8 +50,7 @@
                 </StackPanel>
             </Button>
 
-            <!-- Top Right: More count indicator & Open Secondary Panel Button -->
-            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="3" VerticalAlignment="Top">
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="3" VerticalAlignment="Top">
                 <Border IsVisible="{Binding HasMoreThanTwoEvents}"
                         Background="{DynamicResource ControlHoverBrush}"
                         CornerRadius="4" Padding="4,1" VerticalAlignment="Center">
@@ -74,10 +71,8 @@
             </StackPanel>
         </Grid>
 
-        <!-- Body: Up to 2 Schedule Events or Empty State -->
-        <Panel Grid.Row="1">
-            <!-- When there are events: show up to 2 events -->
-            <ItemsControl IsVisible="{Binding HasEvents}"
+                <Panel Grid.Row="1">
+                        <ItemsControl IsVisible="{Binding HasEvents}"
                           ItemsSource="{Binding SmallEvents}"
                           VerticalAlignment="Bottom">
                 <ItemsControl.ItemTemplate>
@@ -86,15 +81,13 @@
                                 Tag="{Binding Id}"
                                 HorizontalAlignment="Stretch" Margin="0,0,0,2">
                             <Grid ColumnDefinitions="Auto,*">
-                                <!-- Category Accent Color Pill Bar -->
-                                <Border Grid.Column="0"
+                                                                <Border Grid.Column="0"
                                         Width="3" CornerRadius="1.5"
                                         Background="{Binding ColorBrush}"
                                         Margin="0,2,6,2"
                                         VerticalAlignment="Stretch" />
 
-                                <!-- Event Details: Title & Time/Location -->
-                                <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="0.5">
+                                                                <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="0.5">
                                     <TextBlock Text="{Binding Title}"
                                                FontSize="11.5"
                                                FontWeight="SemiBold"
@@ -112,8 +105,7 @@
                 </ItemsControl.ItemTemplate>
             </ItemsControl>
 
-            <!-- When no events -->
-            <StackPanel IsVisible="{Binding !HasEvents}" VerticalAlignment="Center" Spacing="2" Margin="0,4,0,0">
+                        <StackPanel IsVisible="{Binding !HasEvents}" VerticalAlignment="Center" Spacing="2" Margin="0,4,0,0">
                 <TextBlock Text="{x:Static locales:Locale.Calendar_Schedule_NoEvents}"
                            FontSize="12.5"
                            FontWeight="Bold"

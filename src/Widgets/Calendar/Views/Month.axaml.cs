@@ -132,10 +132,6 @@ public partial class Month : UserControl, IWidgetSurfaceHints, IFocusThemedConte
 
     private void OnAccentResourcesChanged(object? sender, ResourcesChangedEventArgs e) => UpdateTodayBrush();
 
-    /// <summary>
-    /// True when today's number is punched out of the marker disc (镂空) instead of being painted
-    /// on top of it. Drives the marker control and hides the day text block for today.
-    /// </summary>
     public static readonly StyledProperty<bool> HollowTodayProperty =
         AvaloniaProperty.Register<Month, bool>(nameof(HollowToday), true);
 
@@ -145,10 +141,6 @@ public partial class Month : UserControl, IWidgetSurfaceHints, IFocusThemedConte
         set => SetValue(HollowTodayProperty, value);
     }
 
-    /// <summary>
-    /// Color the today marker is filled with, resolved for the current theme: the custom color
-    /// when the model asks for one, otherwise the theme accent.
-    /// </summary>
     public static readonly StyledProperty<IBrush?> TodayDotBrushProperty =
         AvaloniaProperty.Register<Month, IBrush?>(nameof(TodayDotBrush));
 
@@ -158,10 +150,6 @@ public partial class Month : UserControl, IWidgetSurfaceHints, IFocusThemedConte
         set => SetValue(TodayDotBrushProperty, value);
     }
 
-    /// <summary>
-    /// True when the today-marker should use a fixed color instead of the
-    /// (theme-reactive) accent resource.
-    /// </summary>
     public static readonly StyledProperty<bool> IsCustomTodayColorProperty =
         AvaloniaProperty.Register<Month, bool>(nameof(IsCustomTodayColor));
 
@@ -171,9 +159,6 @@ public partial class Month : UserControl, IWidgetSurfaceHints, IFocusThemedConte
         set => SetValue(IsCustomTodayColorProperty, value);
     }
 
-    /// <summary>
-    /// The today-marker color for custom mode, resolved against the current theme.
-    /// </summary>
     public static readonly StyledProperty<IBrush?> TodayCustomBrushProperty =
         AvaloniaProperty.Register<Month, IBrush?>(nameof(TodayCustomBrush));
 

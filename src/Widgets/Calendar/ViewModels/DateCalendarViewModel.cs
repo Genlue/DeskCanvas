@@ -1,3 +1,5 @@
+using System;
+using Calendar.Services;
 using ReactiveUI;
 using DeskCanvas.Contracts;
 using DeskCanvas.Services;
@@ -7,6 +9,7 @@ namespace Calendar.ViewModels;
 public class DateCalendarViewModel : ReactiveObject, IDisposable
 {
     private readonly IWidgetSession? session;
+    private readonly bool showLunar;
     private DateTime currentDate;
     private bool isRunning;
     private bool renderActive = true;
@@ -17,13 +20,19 @@ public class DateCalendarViewModel : ReactiveObject, IDisposable
     /// pipeline: the timer subscription is then gated on the session's activity. Null keeps
     /// the legacy always-on behaviour (preview, legacy layout entries) — those hosts never
     /// push activity either.
+    /// <paramref name="showLunar"/> is read from <see cref="Calendar.Models.DateModel"/> once:
+    /// changing the setting recreates the widget content, so it does not need notifications.
     /// </summary>
-    public DateCalendarViewModel(IWidgetSession? session = null)
+    public DateCalendarViewModel(IWidgetSession? session = null, bool showLunar = true)
     {
         this.session = session;
+        this.showLunar = showLunar;
         renderActive = session?.Activity.RenderActive ?? true;
         Start();
     }
+
+    /// <summary>The 显示农历 setting, consumed by the date face binding.</summary>
+    public bool ShowLunar => showLunar;
 
     public void Start()
     {
@@ -94,9 +103,13 @@ public class DateCalendarViewModel : ReactiveObject, IDisposable
         if (currentDate.Date == now.Date) return;
 
         currentDate = now;
-        Month = format.GetAbbreviatedMonthName(now.Month).Replace(".", "");
-        DayOfWeek = format.GetAbbreviatedDayName(now.DayOfWeek).Replace(".", "");
+        var weekday = format.GetAbbreviatedDayName(now.DayOfWeek).Replace(".", "");
+        var month = format.GetAbbreviatedMonthName(now.Month).Replace(".", "");
+        DayOfWeek = weekday;
+        Month = month;
+        Header = $"{weekday} {month}";
         Day = now.Day.ToString();
+        LunarDate = LunarCalendarHelper.FormatLunarDate(now);
     }
     
     private string? month;
@@ -111,6 +124,22 @@ public class DateCalendarViewModel : ReactiveObject, IDisposable
     {
         get => dayOfWeek;
         private set => this.RaiseAndSetIfChanged(ref dayOfWeek, value);
+    }
+
+    private string? header;
+    /// <summary>Compact header line used by the 日期 face: "周二 2月".</summary>
+    public string? Header
+    {
+        get => header;
+        private set => this.RaiseAndSetIfChanged(ref header, value);
+    }
+
+    private string? lunarDate;
+    /// <summary>Chinese lunisolar date such as "腊月十六".</summary>
+    public string? LunarDate
+    {
+        get => lunarDate;
+        private set => this.RaiseAndSetIfChanged(ref lunarDate, value);
     }
 
     private string? day;

@@ -12,7 +12,7 @@ namespace DateInkChecks;
 /// <summary>
 /// Verifies the 1x1 date widget's day-number font contract: the FontSize is derived from the
 /// widget's actual rendered pixel count (DIP × DPI × host ContentScale) with a target ink
-/// height of <see cref="Date.DayInkCardHeightRatio"/> of the card — no stretching, no line-box
+/// height of <see cref="DateOne.DayInkCardHeightRatio"/> of the card — no stretching, no line-box
 /// surgery (the old TextBlock-in-Viewbox with a negative top Margin was what truncated the ink
 /// at the top), and a baseline-anchoring top margin keeps the ink centered in its row box at any
 /// size, so it can never be clipped.
@@ -89,9 +89,9 @@ class Program
     /// Arrange the view directly (fonts apply via SizeChanged during this pass), then force a
     /// second full measure/arrange so the text re-measures at the final font size.
     /// </summary>
-    private static Date BuildArrangedDate(int width, int height, out double fontSize)
+    private static DateOne BuildArrangedDate(int width, int height, out double fontSize)
     {
-        var view = new Date();
+        var view = new DateOne();
         view.FindControl<TextBlock>("DayLabel")!.Foreground = Brushes.White;
         view.Measure(new Size(width, height));
         view.Arrange(new Rect(0, 0, width, height));
@@ -120,12 +120,12 @@ class Program
         if (label == null || bytes == null) return;
 
         // The formula under test: target ink height = the view's own ratio of the card
-        // (Date.DayInkCardHeightRatio, the single source of truth), converted through the
+        // (DateOne.DayInkCardHeightRatio, the single source of truth), converted through the
         // measured ink ratio; the tight-ink-width constraint (0.94 card) takes the minimum.
         var metrics = Measure(label.Text ?? "21", label.FontFamily, label.FontWeight);
         var expected = Math.Min(
-            height * Date.DayInkCardHeightRatio / metrics.ink,
-            width * Date.DayInkCardWidthRatio / metrics.width);
+            height * DateOne.DayInkCardHeightRatio / metrics.ink,
+            width * DateOne.DayInkCardWidthRatio / metrics.width);
         Check($"{name}: FontSize matches the pixel derivation (got {label.FontSize:0.#}, want {expected:0.#})",
             Math.Abs(label.FontSize - expected) < Math.Max(0.5, expected * 0.01));
 
@@ -152,7 +152,7 @@ class Program
             Math.Abs(ink.Height - expectedInkHeight) <= Math.Max(2, expectedInkHeight * 0.08));
         // Upper bound: the ink never eats more than the configured share of the card (the
         // width constraint may legitimately make it smaller — "21" is wider than it is tall).
-        var budget = Date.DayInkCardHeightRatio;
+        var budget = DateOne.DayInkCardHeightRatio;
         Check($"{name}: the ink stays within the {budget:0.00} card-height budget",
             ink.Height <= (budget + 0.04) * height && ink.Height > 0.5 * height);
         var cellCenter = height * 0.6; // row 1 spans 20%..100% of the card

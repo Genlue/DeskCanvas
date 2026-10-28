@@ -40,12 +40,10 @@
     </UserControl.Styles>
 
     <Grid RowDefinitions="Auto,*">
-        <!-- Top Section: Mini Calendar -->
-        <Border Grid.Row="0" BorderBrush="{DynamicResource ControlStrokeColorDefault}"
+                <Border Grid.Row="0" BorderBrush="{DynamicResource ControlStrokeColorDefault}"
                 BorderThickness="0,0,0,1" Padding="0,0,0,8" Margin="0,0,0,8">
             <StackPanel Spacing="6">
-                <!-- Mini Calendar Top Bar -->
-                <Grid ColumnDefinitions="*,Auto">
+                                <Grid ColumnDefinitions="*,Auto">
                     <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
                         <TextBlock Text="{Binding MonthYear}"
                                    FontSize="15"
@@ -57,8 +55,7 @@
                                    VerticalAlignment="Center" />
                     </StackPanel>
 
-                    <!-- Open Secondary Panel Button -->
-                    <Button Grid.Column="1" Classes="ActionBtn"
+                                        <Button Grid.Column="1" Classes="ActionBtn"
                             CornerRadius="8" Padding="6,2"
                             Click="OnOpenPanelClicked"
                             ToolTip.Tip="{x:Static locales:Locale.Calendar_Schedule_OpenPanel}">
@@ -73,8 +70,7 @@
                     </Button>
                 </Grid>
 
-                <!-- Weekday Row Header -->
-                <UniformGrid Columns="7">
+                                <UniformGrid Columns="7">
                     <TextBlock Text="一" FontSize="11" FontWeight="SemiBold" TextAlignment="Center" Opacity="0.5" />
                     <TextBlock Text="二" FontSize="11" FontWeight="SemiBold" TextAlignment="Center" Opacity="0.5" />
                     <TextBlock Text="三" FontSize="11" FontWeight="SemiBold" TextAlignment="Center" Opacity="0.5" />
@@ -84,8 +80,7 @@
                     <TextBlock Text="日" FontSize="11" FontWeight="SemiBold" TextAlignment="Center" Opacity="0.35" />
                 </UniformGrid>
 
-                <!-- Days of Week Item Control -->
-                <ItemsControl ItemsSource="{Binding Days}">
+                                <ItemsControl ItemsSource="{Binding Days}">
                     <ItemsControl.ItemsPanel>
                         <ItemsPanelTemplate>
                             <UniformGrid Columns="7" />
@@ -96,18 +91,22 @@
                             <Button Classes="DayBtn" Click="OnDayItemClicked" Tag="{Binding Date}">
                                 <StackPanel HorizontalAlignment="Center" Spacing="2">
                                     <Panel Width="22" Height="22">
-                                        <!-- Today filled circle -->
-                                        <Ellipse IsVisible="{Binding IsToday}"
+                                                                                <Ellipse IsVisible="{Binding IsToday}"
                                                  Fill="{DynamicResource CalendarHeaderBrush}"
                                                  Width="22" Height="22" />
                                         <TextBlock Text="{Binding Day}"
                                                    FontSize="12"
                                                    FontWeight="Bold"
                                                    HorizontalAlignment="Center" VerticalAlignment="Center"
-                                                   Foreground="{Binding IsToday, Converter={x:Static ObjectConverters.IsNull}}" />
+                                                   IsVisible="{Binding !IsToday}" />
+                                        <TextBlock Text="{Binding Day}"
+                                                   FontSize="12"
+                                                   FontWeight="Bold"
+                                                   HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                   IsVisible="{Binding IsToday}"
+                                                   Foreground="{DynamicResource AccentContrastForegroundBrush}" />
                                     </Panel>
-                                    <!-- Event dot underneath -->
-                                    <Ellipse IsVisible="{Binding HasEvents}"
+                                                                        <Ellipse IsVisible="{Binding HasEvents}"
                                              Width="3.5" Height="3.5"
                                              Fill="{Binding DotBrush}"
                                              HorizontalAlignment="Center" />
@@ -119,8 +118,7 @@
             </StackPanel>
         </Border>
 
-        <!-- Bottom Section: Selected Date Agenda List -->
-        <Grid Grid.Row="1" RowDefinitions="Auto,*">
+                <Grid Grid.Row="1" RowDefinitions="Auto,*">
             <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="0,0,0,6">
                 <TextBlock Grid.Column="0" Text="{Binding SelectedDateTitle}"
                            FontSize="12.5" FontWeight="Bold" />
@@ -128,8 +126,7 @@
                            FontSize="11" Opacity="0.5" />
             </Grid>
 
-            <!-- Scrollable events for selected date -->
-            <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+                        <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
                 <StackPanel Spacing="5">
                     <ItemsControl ItemsSource="{Binding SelectedDateEvents}">
                         <ItemsControl.ItemTemplate>
@@ -137,13 +134,11 @@
                                 <Button Classes="EventItemBtn" HorizontalAlignment="Stretch"
                                         Tag="{Binding Id}" Click="OnEventItemClicked" Margin="0,0,0,4">
                                     <Grid ColumnDefinitions="Auto,*,Auto">
-                                        <!-- Color Pill -->
-                                        <Border Grid.Column="0" Width="3.5" CornerRadius="2"
+                                                                                <Border Grid.Column="0" Width="3.5" CornerRadius="2"
                                                 Background="{Binding ColorBrush}"
                                                 Margin="0,0,8,0" VerticalAlignment="Stretch" />
 
-                                        <!-- Title & Location -->
-                                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="1">
+                                                                                <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="1">
                                             <TextBlock Text="{Binding Title}"
                                                        FontSize="12" FontWeight="Bold"
                                                        TextTrimming="CharacterEllipsis" MaxLines="1" />
@@ -158,8 +153,7 @@
                                             </StackPanel>
                                         </StackPanel>
 
-                                        <!-- Category Tag Badge -->
-                                        <Border Grid.Column="2" VerticalAlignment="Center"
+                                                                                <Border Grid.Column="2" VerticalAlignment="Center"
                                                 CornerRadius="4" Padding="5,1.5"
                                                 Background="{DynamicResource ControlHoverBrush}"
                                                 IsVisible="{Binding Category, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
@@ -171,8 +165,7 @@
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
 
-                    <!-- Empty state if selected date has no events -->
-                    <StackPanel IsVisible="{Binding !SelectedDateEvents.Count}" VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="2" Margin="0,16,0,0">
+                                        <StackPanel IsVisible="{Binding !SelectedDateEvents.Count}" VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="2" Margin="0,16,0,0">
                         <TextBlock Text="该日期无日程安排" FontSize="12" FontWeight="Bold" Opacity="0.5" HorizontalAlignment="Center" />
                         <TextBlock Text="可点击上方「管理」添加新日程" FontSize="11" Opacity="0.4" HorizontalAlignment="Center" />
                     </StackPanel>

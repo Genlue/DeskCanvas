@@ -2,6 +2,7 @@ using System;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
+using Avalonia.Media;
 using Calendar.Models;
 using Calendar.Services;
 using Calendar.ViewModels;
@@ -9,6 +10,7 @@ using Calendar.Views.Controls;
 using DeskCanvas.Contracts;
 using DeskCanvas.Core.Interfaces;
 using DeskCanvas.Core.Models;
+using DeskCanvas.Core.Models.Settings;
 using DeskCanvas.Runtime;
 using DeskCanvas.Services;
 using DeskCanvas.Views;
@@ -23,6 +25,8 @@ public partial class Schedule : UserControl, IWidgetSelfRefreshing, IWidgetSurfa
     private readonly ScheduleViewModel viewModel;
     private readonly IWidgetSession? session;
     private WidgetTier currentTier = WidgetTier.Other;
+    private IBrush? monochromeBrush;
+    private IAppSettingsProvider? subscribedSettings;
 
     public Schedule() : this(null, null) { }
 
@@ -51,6 +55,20 @@ public partial class Schedule : UserControl, IWidgetSelfRefreshing, IWidgetSurfa
     private void OnLoaded(object? sender, RoutedEventArgs e)
     {
         viewModel.Start();
+        UpdateMonochromeBrush();
+        subscribedSettings = PanelAppearanceResolver.TryResolveSettingsProvider();
+        if (subscribedSettings != null)
+        {
+            subscribedSettings.DataChanged -= OnSettingsDataChanged;
+            subscribedSettings.DataChanged += OnSettingsDataChanged;
+        }
+        ActualThemeVariantChanged -= OnThemeChanged;
+        ActualThemeVariantChanged += OnThemeChanged;
+        if (Application.Current != null)
+        {
+            Application.Current.ResourcesChanged -= OnAppResourcesChanged;
+            Application.Current.ResourcesChanged += OnAppResourcesChanged;
+        }
     }
 
     private void OnUnloaded(object? sender, RoutedEventArgs e)
@@ -60,6 +78,37 @@ public partial class Schedule : UserControl, IWidgetSelfRefreshing, IWidgetSurfa
         Unloaded -= OnUnloaded;
         Loaded -= OnLoaded;
         ScheduleStore.ModelChanged -= OnStoreModelChanged;
+        ActualThemeVariantChanged -= OnThemeChanged;
+        if (Application.Current != null)
+            Application.Current.ResourcesChanged -= OnAppResourcesChanged;
+        if (subscribedSettings != null)
+            subscribedSettings.DataChanged -= OnSettingsDataChanged;
+        subscribedSettings = null;
+    }
+
+    private void OnSettingsDataChanged(object? sender, AppSettings? oldSettings, AppSettings newSettings) =>
+        UpdateMonochromeBrush();
+
+    private void OnThemeChanged(object? sender, EventArgs e) => UpdateMonochromeBrush();
+
+    private void OnAppResourcesChanged(object? sender, ResourcesChangedEventArgs e) => UpdateMonochromeBrush();
+
+    private void UpdateMonochromeBrush()
+    {
+        IBrush? brush = null;
+        try
+        {
+            var theme = PanelAppearanceResolver.ResolveEffectiveTheme(
+                PanelAppearanceResolver.TryResolveSettingsProvider(),
+                TopLevel.GetTopLevel(this) as Window);
+            if (theme is { IsColorful: false, Monochrome: true })
+                brush = ThemeScopeResolver.ResolveBrush(this, "SystemControlForegroundAccentBrush", ActualThemeVariant);
+        }
+        catch { }
+
+        if (ReferenceEquals(monochromeBrush, brush)) return;
+        monochromeBrush = brush;
+        viewModel.SetMonochromeBrush(brush);
     }
 
     private void OnStoreModelChanged(ScheduleModel newModel, object? sender)

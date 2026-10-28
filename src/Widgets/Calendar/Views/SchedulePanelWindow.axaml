@@ -232,7 +232,7 @@
                         <Button x:Name="CancelEditBtn" Classes="pill-btn" Content="取消编辑"
                                 IsVisible="False" Click="OnCancelEditClicked" />
                         <Button Classes="pill-btn" Background="{DynamicResource CalendarHeaderBrush}"
-                                Foreground="White" FontWeight="Bold"
+                                Foreground="{DynamicResource AccentContrastForegroundBrush}" FontWeight="Bold"
                                 Content="保存日程" Click="OnSaveEventClicked" />
                     </StackPanel>
                 </Grid>

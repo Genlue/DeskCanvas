@@ -87,6 +87,24 @@ namespace Calendar.Locales {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Show lunar date.
+        /// </summary>
+        public static string Calendar_ShowLunar {
+            get {
+                return ResourceManager.GetString("Calendar_ShowLunar", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Show the Chinese lunar date beside the day.
+        /// </summary>
+        public static string Calendar_ShowLunar_Subtitle {
+            get {
+                return ResourceManager.GetString("Calendar_ShowLunar_Subtitle", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   Looks up a localized string similar to First day of week.
         /// </summary>
         public static string Calendar_FirstDayOfWeek {

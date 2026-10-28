@@ -65,13 +65,19 @@
     <value>月份</value>
   </data>
   <data name="Calendar_Month_Subtitle" xml:space="preserve">
-    <value>追踪当前月份</value>
+    <value>月历视图</value>
   </data>
   <data name="Calendar_Date_Title" xml:space="preserve">
     <value>日期</value>
   </data>
   <data name="Calendar_Date_Subtitle" xml:space="preserve">
-    <value>追踪当前日期</value>
+    <value>公历日期与农历</value>
+  </data>
+  <data name="Calendar_ShowLunar" xml:space="preserve">
+    <value>显示农历</value>
+  </data>
+  <data name="Calendar_ShowLunar_Subtitle" xml:space="preserve">
+    <value>在日期旁显示农历；关闭后日期数字居中</value>
   </data>
   <data name="Calendar_FirstDayOfWeek" xml:space="preserve">
     <value>一周的第一天</value>
@@ -95,13 +101,13 @@
     <value>镂空今天数字</value>
   </data>
   <data name="Calendar_HollowToday_Subtitle" xml:space="preserve">
-    <value>把今天的日期数字从圆点中镂空挖出（数字处透出组件背后的画面），关闭后数字以白色绘制在圆点上</value>
+    <value>把今天的日期数字从圆点中镂空；关闭后数字绘制在圆点上</value>
   </data>
   <data name="Calendar_Schedule_Title" xml:space="preserve">
     <value>日程</value>
   </data>
   <data name="Calendar_Schedule_Subtitle" xml:space="preserve">
-    <value>查看并管理日程安排</value>
+    <value>查看今日安排</value>
   </data>
   <data name="Calendar_Schedule_NoEvents" xml:space="preserve">
     <value>今天没有日程</value>

@@ -1,0 +1,30 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:viewModels="clr-namespace:Calendar.ViewModels"
+             x:Class="Calendar.Views.DateOne"
+             x:DataType="viewModels:DateCalendarViewModel">
+    <!-- 无外层 Viewbox：日号字号由代码按卡片实际渲染的物理像素数直接推算
+         （见 DateOne.axaml.cs 的 ApplyFontSizes）。Viewbox 的等比重归一化会把任何
+         字号折算回同一视觉比例，"按实际像素定字号"就失去意义；行比保持原版
+         1*,4*，比例对齐参考图（表头墨迹 ≈ 卡高 14%，日号墨迹 = 卡高 70%）。 -->
+    <Grid RowDefinitions="*,4*" ColumnDefinitions="*,*">
+        <TextBlock x:Name="WeekdayLabel" Grid.Row="0" Grid.Column="0" Margin="0,0,2,0"
+                   FontWeight="Bold"
+                   Foreground="{DynamicResource CalendarHeaderBrush}"
+                   Text="{Binding DayOfWeek}"
+                   VerticalAlignment="Bottom" HorizontalAlignment="Right" />
+        <TextBlock x:Name="MonthLabel" Grid.Row="0" Grid.Column="1" Opacity="0.5"
+                   FontWeight="Bold"
+                   Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                   Text="{Binding Month}"
+                   VerticalAlignment="Bottom" HorizontalAlignment="Left" />
+        <!-- 日号：字体与原版一致（跟随应用默认字族），字号按实际 DPI 的物理像素数
+             推导（ApplyFontSizes），墨迹目标 = 卡高 70%。顶端对齐 + 代码算出的上
+             Margin（基线锚定补偿，行盒被格高钳制时墨迹会随基线下坠）使墨迹中心恒
+             在日号格中心；普通 TextBlock 的墨迹天然留在自己的布局盒内，不会截断。 -->
+        <TextBlock x:Name="DayLabel" Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2"
+                   Text="{Binding Day}" FontWeight="SemiBold"
+                   Foreground="{DynamicResource WidgetForeground}"
+                   VerticalAlignment="Top" HorizontalAlignment="Center" />
+    </Grid>
+</UserControl>

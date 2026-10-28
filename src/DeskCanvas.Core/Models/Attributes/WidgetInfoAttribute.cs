@@ -95,6 +95,14 @@ public class WidgetInfoAttribute(
     /// </summary>
     public string? Category { get; } = category;
 
+    /// <summary>
+    /// Optional comma-separated SubType names from before this widget type was renamed.
+    /// The host resolves a saved layout entry to this registration when no current
+    /// <see cref="ViewType"/> has that name, so renaming a widget does not strand layouts.
+    /// Set with a named attribute argument, e.g. <c>LegacySubTypes = "OldName"</c>.
+    /// </summary>
+    public string? LegacySubTypes { get; set; }
+
     private IReadOnlyList<(int Columns, int Rows)>? presetSpansCache;
 
     /// <summary>

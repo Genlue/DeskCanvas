@@ -18,6 +18,7 @@ namespace Calendar.ViewModels;
 public class ScheduleItemViewModel : INotifyPropertyChanged
 {
     private readonly ScheduleEventModel model;
+    private IBrush? monochromeBrush;
 
     public ScheduleItemViewModel(ScheduleEventModel model)
     {
@@ -36,18 +37,20 @@ public class ScheduleItemViewModel : INotifyPropertyChanged
     public string? Notes => model.Notes;
     public bool IsCompleted => model.IsCompleted;
 
-    public IBrush ColorBrush
+    public IBrush ColorBrush => monochromeBrush ?? ParseColorBrush(model.Color);
+
+    public void SetMonochromeBrush(IBrush? brush)
     {
-        get
-        {
-            try
-            {
-                if (Color.TryParse(model.Color, out var color))
-                    return new SolidColorBrush(color);
-            }
-            catch { }
-            return new SolidColorBrush(Color.Parse("#007AFF"));
-        }
+        if (ReferenceEquals(monochromeBrush, brush)) return;
+        monochromeBrush = brush;
+        OnPropertyChanged(nameof(ColorBrush));
+    }
+
+    private static IBrush ParseColorBrush(string? hex)
+    {
+        if (!string.IsNullOrWhiteSpace(hex) && Color.TryParse(hex, out var color))
+            return new SolidColorBrush(color);
+        return new SolidColorBrush(Color.Parse("#007AFF"));
     }
 
     public string TimeRangeText
@@ -113,7 +116,18 @@ public class ScheduleDayViewModel : INotifyPropertyChanged
     public bool IsCurrentMonth { get; set; } = true;
     public bool IsWeekend => Date.DayOfWeek == DayOfWeek.Saturday || Date.DayOfWeek == DayOfWeek.Sunday;
     public bool HasEvents { get; set; }
-    public IBrush? DotBrush { get; set; }
+    private IBrush? baseDotBrush;
+    private IBrush? monochromeBrush;
+    public IBrush? DotBrush => monochromeBrush ?? baseDotBrush;
+
+    public void SetDotBrush(IBrush? brush) => baseDotBrush = brush;
+
+    public void SetMonochromeBrush(IBrush? brush)
+    {
+        if (ReferenceEquals(monochromeBrush, brush)) return;
+        monochromeBrush = brush;
+        OnPropertyChanged(nameof(DotBrush));
+    }
 
     public event PropertyChangedEventHandler? PropertyChanged;
     protected void OnPropertyChanged([CallerMemberName] string? propName = null) =>
@@ -140,7 +154,18 @@ public class ScheduleViewModel : INotifyPropertyChanged
         Update(model);
     }
 
+    private IBrush? monochromeBrush;
+
     public ScheduleModel Model => model;
+
+    public void SetMonochromeBrush(IBrush? brush)
+    {
+        if (ReferenceEquals(monochromeBrush, brush)) return;
+        monochromeBrush = brush;
+        foreach (var item in UpcomingEvents) item.SetMonochromeBrush(brush);
+        foreach (var item in SelectedDateEvents) item.SetMonochromeBrush(brush);
+        foreach (var day in Days) day.SetMonochromeBrush(brush);
+    }
 
     public ObservableCollection<ScheduleItemViewModel> UpcomingEvents { get; }
     public ObservableCollection<ScheduleItemViewModel> SmallEvents { get; }
@@ -286,6 +311,7 @@ public class ScheduleViewModel : INotifyPropertyChanged
             .Select(e => new ScheduleItemViewModel(e))
             .ToList();
 
+        foreach (var item in rawEvents) item.SetMonochromeBrush(monochromeBrush);
         UpcomingEvents.Clear();
         SmallEvents.Clear();
         foreach (var ev in rawEvents)
@@ -308,6 +334,7 @@ public class ScheduleViewModel : INotifyPropertyChanged
             .Select(e => new ScheduleItemViewModel(e))
             .ToList();
 
+        foreach (var item in rawEvents) item.SetMonochromeBrush(monochromeBrush);
         SelectedDateEvents.Clear();
         foreach (var ev in rawEvents)
         {
@@ -343,13 +370,15 @@ public class ScheduleViewModel : INotifyPropertyChanged
                 catch { }
             }
 
-            Days.Add(new ScheduleDayViewModel
+            var day = new ScheduleDayViewModel
             {
                 Date = date,
                 IsCurrentMonth = date.Month == now.Month,
-                HasEvents = hasEvents,
-                DotBrush = dotBrush ?? new SolidColorBrush(Color.Parse("#FF3B30"))
-            });
+                HasEvents = hasEvents
+            };
+            day.SetDotBrush(dotBrush ?? new SolidColorBrush(Color.Parse("#FF3B30")));
+            day.SetMonochromeBrush(monochromeBrush);
+            Days.Add(day);
         }
     }
 

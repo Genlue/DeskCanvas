@@ -410,6 +410,7 @@ property DeskCanvas.Core.Models.Attributes.WidgetInfoAttribute Category -> Syste
 property DeskCanvas.Core.Models.Attributes.WidgetInfoAttribute DefaultColumns -> System.Int32
 property DeskCanvas.Core.Models.Attributes.WidgetInfoAttribute DefaultRows -> System.Int32
 property DeskCanvas.Core.Models.Attributes.WidgetInfoAttribute EditModelViewType -> System.Type
+property DeskCanvas.Core.Models.Attributes.WidgetInfoAttribute LegacySubTypes -> System.String
 property DeskCanvas.Core.Models.Attributes.WidgetInfoAttribute ModelType -> System.Type
 property DeskCanvas.Core.Models.Attributes.WidgetInfoAttribute PresetSpanList -> System.String
 property DeskCanvas.Core.Models.Attributes.WidgetInfoAttribute PresetSpans -> System.Collections.Generic.IReadOnlyList<System.ValueTuple<System.Int32,System.Int32>>

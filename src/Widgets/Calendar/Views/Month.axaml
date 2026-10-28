@@ -14,9 +14,7 @@
         <Style Selector="TextBlock.weekend:not(.today)">
             <Setter Property="Opacity" Value="0.5" />
         </Style>
-        <!-- 今日日期（无论是镂空还是实心白色数字）均由 HollowTodayMark 统一绘制，
-             以保证数字与圆心严格同心并与本行其他数字严格平行 -->
-        <Style Selector="TextBlock.today">
+                <Style Selector="TextBlock.today">
             <Setter Property="IsVisible" Value="False" />
         </Style>
     </UserControl.Styles>
@@ -60,9 +58,7 @@
             </ItemsControl>
         </Grid>
 
-        <!-- Compact week row: M tier (2×1). Weekday header + the seven days of the
-             current week, today filled — the 7×7 grid would be illegible here. -->
-        <Grid Name="WeekRow" IsVisible="False" RowDefinitions="*,1.4*">
+                <Grid Name="WeekRow" IsVisible="False" RowDefinitions="*,1.4*">
             <ItemsControl Grid.Row="0" ItemsSource="{Binding WeekHeaders}">
                 <ItemsControl.ItemTemplate>
                     <DataTemplate>
@@ -108,9 +104,7 @@
             </ItemsControl>
         </Grid>
 
-        <!-- Today only: S tier (1×1). Weekday + big number + month, like the Date
-             view — a whole week (let alone a month) cannot fit one cell. -->
-        <Viewbox Name="TodayOnly" Stretch="Uniform" Margin="4" IsVisible="False">
+                <Viewbox Name="TodayOnly" Stretch="Uniform" Margin="4" IsVisible="False">
             <Grid RowDefinitions="*,4*" ColumnDefinitions="*,*">
                 <TextBlock Grid.Row="0" Grid.Column="0" Margin="0,0,2,0" FontWeight="Bold"
                            FontSize="12"
@@ -121,9 +115,7 @@
                            FontSize="12"
                            Text="{Binding Month}"
                            VerticalAlignment="Bottom" HorizontalAlignment="Left" />
-                <!-- 今日日号：同 Date 视图，LineHeight 小于 FontSize 时行盒会裁掉字形底部，
-                     这里用约 1.2 倍的自然行高，并在行内垂直居中。 -->
-                <TextBlock Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" LetterSpacing="-3"
+                                <TextBlock Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" LetterSpacing="-3"
                            FontSize="44" LineHeight="53" Text="{Binding TodayNumber}" FontWeight="SemiBold"
                            VerticalAlignment="Center" HorizontalAlignment="Center" />
             </Grid>

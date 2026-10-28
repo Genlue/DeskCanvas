@@ -36,8 +36,8 @@ void Check(bool condition, string message)
 }
 MonthCalendarViewModel VmOf(Month month) =>
     (MonthCalendarViewModel)typeof(Month).GetField("viewModel", BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(month)!;
-DateCalendarViewModel DateVmOf(Date date) =>
-    (DateCalendarViewModel)typeof(Date).GetField("viewModel", BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(date)!;
+DateCalendarViewModel DateVmOf(DateOne date) =>
+    (DateCalendarViewModel)typeof(DateOne).GetField("viewModel", BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(date)!;
 
 // =========================================================================================
 // 1. Legacy path: no session — the historic always-on behaviour is untouched
@@ -49,7 +49,7 @@ Check(VmOf(legacyMonth).SessionForChecks == null, "1.2 a session-less Month carr
 legacyMonth.OnSessionActivity(new ActivitySnapshot(ActivityReason.ScreenCovered));
 Check(VmOf(legacyMonth).TickSubscriptionCountForChecks == 1, "1.3 a session-less Month ignores activity pushes (old path)");
 
-var legacyDate = new Date();
+var legacyDate = new DateOne();
 Check(DateVmOf(legacyDate).TickSubscriptionCountForChecks == 1, "1.4 a session-less Date keeps the legacy always-on subscription");
 legacyDate.OnSessionActivity(new ActivitySnapshot(ActivityReason.ScreenCovered));
 Check(DateVmOf(legacyDate).TickSubscriptionCountForChecks == 1, "1.5 a session-less Date ignores activity pushes (old path)");
@@ -115,7 +115,7 @@ Check(VmOf(month).TickSubscriptionCountForChecks == 0, "4.2 a push on the Month 
 
 var idE = WidgetInstanceId.New();
 var sE = WidgetSessionRegistry.GetOrCreate(idE);
-var date = new Date(sE);
+var date = new DateOne(sE);
 Check(DateVmOf(date).SessionForChecks == sE, "4.3 the Date view hands the injected session to its view model");
 date.OnSessionActivity(new ActivitySnapshot(ActivityReason.ScreenCovered));
 Check(DateVmOf(date).TickSubscriptionCountForChecks == 0, "4.4 a push on the Date view unsubscribes the view model's timer");
@@ -126,7 +126,7 @@ Check(DateVmOf(date).TickSubscriptionCountForChecks == 0, "4.4 a push on the Dat
 Console.WriteLine("--- Teardown activity ---");
 var idF = WidgetInstanceId.New();
 var sF = WidgetSessionRegistry.GetOrCreate(idF);
-var tornDown = new Date(sF);
+var tornDown = new DateOne(sF);
 Check(DateVmOf(tornDown).TickSubscriptionCountForChecks == 1, "5.1 the pre-teardown view model ticks");
 // The host's exact teardown order (Widget.axaml.cs PrepareForTeardown): push the
 // TeardownActivity (DisplayDetached) into the content, then release the registry entry.

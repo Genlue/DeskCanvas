@@ -673,9 +673,15 @@ public class WidgetFactory(IAssemblyProvider assemblyProvider, ILayoutProvider l
 
     private static WidgetInfoAttribute GetWidgetInfo(Assembly assembly, string typeName)
     {
-        var widgetInfo = assembly
-            .GetCustomAttributes<WidgetInfoAttribute>()
+        var attributes = assembly.GetCustomAttributes<WidgetInfoAttribute>().ToList();
+        var widgetInfo = attributes
             .SingleOrDefault(attribute => attribute.ViewType.Name == typeName);
+
+        // A renamed widget keeps loading layouts written under its old SubType. Match the
+        // comma-separated compatibility list only when no current type owns the saved name.
+        widgetInfo ??= attributes.FirstOrDefault(attribute =>
+            attribute.LegacySubTypes?.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .Any(name => string.Equals(name, typeName, StringComparison.Ordinal)) == true);
 
         if (widgetInfo == null)
             throw new ArgumentException($"No suitable WidgetInfoAttribute found for {typeName}");

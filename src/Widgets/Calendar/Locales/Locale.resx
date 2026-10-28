@@ -31,7 +31,13 @@
         <value>Date</value>
     </data>
     <data name="Calendar_Date_Subtitle" xml:space="preserve">
-        <value>Track the current date</value>
+        <value>A date with the Chinese lunar calendar</value>
+    </data>
+    <data name="Calendar_ShowLunar" xml:space="preserve">
+        <value>Show lunar date</value>
+    </data>
+    <data name="Calendar_ShowLunar_Subtitle" xml:space="preserve">
+        <value>Show the Chinese lunar date beside the day; when off, the day number is centred</value>
     </data>
     <data name="Calendar_FirstDayOfWeek" xml:space="preserve">
         <value>First day of week</value>
