@@ -3468,10 +3468,10 @@ public partial class SpotlightWindow : Window
             return;
         }
 
-        // The selected row's container is momentarily missing (a virtualized rebuild, a scroll
-        // recycling rows): HOLD the position and stop driving. ContainerPrepared and
-        // LayoutUpdated are guaranteed to re-run this method once the row exists again — hiding
-        // here instead is what let a mid-rebuild position survive as the "resting" one.
+        // The selected row's container is momentarily missing (a result-set rebuild recreating the
+        // rows): HOLD the position and stop driving. ContainerPrepared and LayoutUpdated are
+        // guaranteed to re-run this method once the row exists again — hiding here instead is what
+        // let a mid-rebuild position survive as the "resting" one.
         if (ResultHighlightTarget() is not { } rect)
         {
             highlightDriving = false;

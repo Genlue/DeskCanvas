@@ -109,6 +109,7 @@ internal static class Program
         RunAppCategoryChecks(catalog, icons, outDir);
         RunCategoryOrbChecks(catalog, icons, outDir);
         RunResultRowChecks(catalog, icons);
+        RunResultScrollChecks(catalog, icons);
         RunClipboardFormatChecks(catalog, icons, outDir);
         RunSelectionAccentChecks();
         RunFileSearchChecks();
@@ -740,8 +741,6 @@ internal static class Program
             Dispatcher.UIThread.RunJobs();
 
             var window = new SpotlightWindow(shotViewModel, provider);
-            if (window.FindControl<ListBox>("ResultList") is { } list)
-                list.ItemsPanel = new FuncTemplate<Panel?>(() => new StackPanel());
             window.ApplyAppearanceForChecks();
             Render(window, outDir, "clipboard-formats", (int)window.Width, (int)window.Height);
 
@@ -781,9 +780,15 @@ internal static class Program
         var multi = SpotlightItem.ForClipboard(
             "row-multi", "第一行复制的内容\n第二行复制的内容\n第三行复制的内容", isLink: false,
             DateTime.UtcNow, "Checks", () => Task.FromResult(true));
+        // A copied log/document, not a paragraph: the row has to stop at the template's line budget
+        // instead of growing to the height of the whole list (and costing a second of text layout).
+        var huge = SpotlightItem.ForClipboard(
+            "row-huge", string.Join("\n", Enumerable.Range(0, 400).Select(line => $"第 {line} 行复制的内容")),
+            isLink: false, DateTime.UtcNow, "Checks", () => Task.FromResult(true));
 
         var one = MeasureRow(window, single);
         var many = MeasureRow(window, multi);
+        var capped = MeasureRow(window, huge);
 
         Check(one is { IconTop: >= 0 } && Math.Abs(one.IconTop - 10) < 0.5,
             $"rows: a single-line row keeps its icon 10 DIP below the row's top ({one.IconTop:F1})");
@@ -792,6 +797,101 @@ internal static class Program
         Check(Math.Abs(many.IconTop - one.IconTop) < 0.5,
             $"rows: …and its icon sits exactly where a single-line row's does " +
             $"({many.IconTop:F1} of {one.IconTop:F1})");
+        Check(capped.RowHeight > one.RowHeight && capped.RowHeight < 120,
+            $"rows: a 400-line body is cut at the template's four-line budget " +
+            $"({capped.RowHeight:F0} DIP, a single line is {one.RowHeight:F0})");
+
+        viewModel.Dispose();
+        window.Close();
+    }
+
+    /// <summary>
+    /// 结果列表的滚动条回归. The result list must keep ONE exact extent while the wheel walks it.
+    /// Rows have no common height — a clipboard entry is drawn from its own body, so hard line
+    /// breaks make one row four lines tall and the next one single — and a virtualizing panel
+    /// measures only the rows in view, extrapolating the rest from their average. That average
+    /// moves as different rows realize, so the extent was rewritten on nearly every wheel step
+    /// (measured 4560…5388 px on a 60-row walk): the thumb suddenly shortened and jumped up, and
+    /// dragging it fought an extent that changed under the pointer. The shipped list therefore uses
+    /// a plain StackPanel; this check pins the consequence — exact extent, unchanged all the way down.
+    /// </summary>
+    private static void RunResultScrollChecks(LauncherCatalog catalog, ShellIconService icons)
+    {
+        Console.WriteLine("\n--- 结果列表 · 滚轮 / 滚动条 ---");
+
+        var settings = BuildSettings(SurfaceStyle.FullColor, dark: false);
+        var provider = new FakeSettingsProvider(settings);
+        var viewModel = BuildViewModel(provider, catalog, icons, "launcher-usage-scroll.json");
+        viewModel.Reload();
+
+        var window = new SpotlightWindow(viewModel, provider);
+        window.ApplyAppearanceForChecks();
+        window.ApplySummonModeForChecks(SpotlightSummonMode.Search);
+
+        // The card is only as tall as its surface allows: a bare search bar is one row, so the
+        // results list would be arranged at zero height. A query (even one that matches nothing)
+        // opens the results surface, which is the geometry the defect happened in.
+        window.SetQueryForChecks("滚动条回归");
+        PumpUntil(() => !viewModel.IsSearching);
+
+        var list = window.FindControl<ListBox>("ResultList")!;
+        // Rows are fed straight into the list: the defect is about their heights, not about which
+        // provider produced them, and a real clipboard history is a machine-wide service.
+        list.ItemsSource = Enumerable.Range(0, 40)
+            .Select(index => SpotlightItem.ForClipboard(
+                "scroll-" + index,
+                index % 4 == 0
+                    ? string.Join("\n", Enumerable.Range(1, 9)
+                        .Select(line => $"第 {line} 行：一段复制来的长文本，用来制造一个高得多的行"))
+                    : $"单行内容 {index}",
+                isLink: false, DateTime.UtcNow, "Checks", () => Task.FromResult(true)))
+            .ToList();
+        list.IsVisible = true;
+
+        Pin(window, (int)window.Width, (int)window.Height);
+
+        var scroll = list.GetVisualDescendants().OfType<ScrollViewer>().FirstOrDefault();
+        var panel = list.GetVisualDescendants().OfType<Avalonia.Controls.Presenters.ItemsPresenter>()
+            .FirstOrDefault()?.Panel;
+        Check(panel is StackPanel,
+            $"scroll: the result list measures every row (panel = {panel?.GetType().Name ?? "none"})");
+
+        if (scroll == null)
+        {
+            Check(false, "scroll: the result list owns a scroller");
+            viewModel.Dispose();
+            window.Close();
+            return;
+        }
+
+        var rows = list.GetRealizedContainers().ToList();
+        var rowHeights = rows.Sum(row => row.Bounds.Height);
+        Check(rows.Count == 40 && Math.Abs(scroll.Extent.Height - rowHeights) < 1,
+            $"scroll: the extent is the exact sum of the rows " +
+            $"({scroll.Extent.Height:F0} of {rowHeights:F0} over {rows.Count} rows)");
+
+        // A detached window never receives EffectiveViewportChanged, so ScrollViewer.Viewport stays
+        // 0 here even though the list is laid out; its own height is the viewport the wheel sees.
+        var viewport = scroll.Viewport.Height > 0 ? scroll.Viewport.Height : list.Bounds.Height;
+        Check(viewport > 0 && scroll.Extent.Height > viewport,
+            $"scroll: the seeded rows overflow the viewport, so there is something to scroll " +
+            $"({scroll.Extent.Height:F0} > {viewport:F0})");
+
+        var extent = scroll.Extent.Height;
+        var walked = 0;
+        var drifted = 0;
+        for (var step = 1; step <= 16 && scroll.Offset.Y < extent - viewport; step++)
+        {
+            scroll.Offset = new Vector(0, Math.Min(step * 40, extent - viewport));
+            Dispatcher.UIThread.RunJobs();
+            list.UpdateLayout();
+            walked++;
+            if (Math.Abs(scroll.Extent.Height - extent) > 0.5) drifted++;
+        }
+
+        Check(walked > 0 && drifted == 0,
+            $"scroll: the extent does not move while the wheel walks the list " +
+            $"({drifted} drifting steps of {walked})");
 
         viewModel.Dispose();
         window.Close();
@@ -800,8 +900,8 @@ internal static class Program
     /// <summary>
     /// Lay one result row out from the window's own template and report where its 28 DIP icon slot
     /// landed, plus how tall the row became. The template is instantiated outside the list on
-    /// purpose: a real list only ever holds single-line rows (file hits), and the case under test
-    /// is a clipboard entry that carries hard line breaks.
+    /// purpose: the case under test is a clipboard entry that carries hard line breaks, and the row
+    /// only needs its own width to answer for its height.
     /// </summary>
     private static (double IconTop, double RowHeight) MeasureRow(SpotlightWindow window, SpotlightItem item)
     {
@@ -1177,12 +1277,6 @@ internal static class Program
 
         var browseWindow = new SpotlightWindow(browseViewModel, provider);
         browseWindow.ApplyAppearanceForChecks();
-        // A never-shown window realizes no container for a virtualizing panel (the same harness
-        // artifact RunCardMorphChecks works around); a plain StackPanel puts the rows in the shot.
-        if (browseWindow.FindControl<ListBox>("ResultList") is { } browseList)
-        {
-            browseList.ItemsPanel = new FuncTemplate<Panel?>(() => new StackPanel());
-        }
 
         Render(browseWindow, outDir, "category-browse", (int)browseWindow.Width, (int)browseWindow.Height);
 
@@ -2643,11 +2737,6 @@ internal static class Program
             viewModel.SetCategory(category);
             var window = new SpotlightWindow(viewModel, provider);
 
-            // No virtualisation for the shot: the default panel realises one row in this detached,
-            // never-shown window, which would hide every row but the group caption.
-            if (window.FindControl<ListBox>("ResultList") is { } list)
-                list.ItemsPanel = new FuncTemplate<Panel?>(() => new StackPanel());
-
             window.ApplyAppearanceForChecks();
             window.SetQueryForChecks("halo sync");
 
@@ -2688,7 +2777,6 @@ internal static class Program
         viewModel.SetCategory((int)SpotlightCategoryKind.Web);
         var hitsWindow = new SpotlightWindow(viewModel, provider);
         var hitsList = hitsWindow.FindControl<ListBox>("ResultList");
-        if (hitsList != null) hitsList.ItemsPanel = new FuncTemplate<Panel?>(() => new StackPanel());
         hitsWindow.ApplyAppearanceForChecks();
         hitsWindow.SetQueryForChecks("halo sync");
         PumpUntil(() => !viewModel.IsSearching, 8000);
@@ -2929,15 +3017,9 @@ internal static class Program
             highlightWindow.ApplySummonModeForChecks(SpotlightSummonMode.Search);
             highlightWindow.SetQueryForChecks("a");
 
-            // A never-shown window never receives EffectiveViewportChanged, so the list's
-            // virtualizing panel would realize no container at all (the grid list works in other
-            // checks only because its panel is a plain WrapPanel). The harness swaps in a
-            // non-virtualized panel for this one assertion — production never runs this code.
-            if (highlightWindow.FindControl<ListBox>("ResultList") is { } virtualized)
-            {
-                virtualized.ItemsPanel = new FuncTemplate<Panel?>(() => new StackPanel());
-            }
-
+            // No panel swap: ResultList's ItemsPanel is a plain StackPanel in the shipped XAML
+            // (variable-height rows cannot be virtualized without the extent drifting), so a
+            // never-shown window still realizes every container during this measure/arrange.
             Pin(highlightWindow, (int)highlightWindow.Width, (int)highlightWindow.Height);
 
             var highlightList = highlightWindow.FindControl<ListBox>("ResultList");
