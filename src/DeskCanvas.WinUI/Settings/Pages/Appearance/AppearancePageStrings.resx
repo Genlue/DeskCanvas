@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<root>
+    <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+        <xsd:element name="root" msdata:IsDataSet="true">
+            
+        </xsd:element>
+    </xsd:schema>
+    <resheader name="resmimetype">
+        <value>text/microsoft-resx</value>
+    </resheader>
+    <resheader name="version">
+        <value>1.3</value>
+    </resheader>
+    <resheader name="reader">
+        <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    </resheader>
+    <resheader name="writer">
+        <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    </resheader>
+    <data name="CurrentMaterialFormat" xml:space="preserve">
+        <value>Current material: {0}</value>
+    </data>
+    <data name="WallpaperAlignUnavailableTitle" xml:space="preserve">
+        <value>Wallpaper alignment is not available yet</value>
+    </data>
+    <data name="WallpaperAlignUnavailable" xml:space="preserve">
+        <value>The wallpaper alignment window has not been migrated to WinUI yet (popup batch). This button will open it once that window exists; the stored offsets are not modified for now.</value>
+    </data>
+    <data name="TitleBarStyleWinUiNote" xml:space="preserve">
+        <value>The WinUI settings window currently renders the native title bar only. The traffic-light style is saved and will be rendered by the window-chrome batch.</value>
+    </data>
+    <data name="SettingsSaveFailed" xml:space="preserve">
+        <value>The appearance settings could not be written to the settings file. Check that the file is writable and try again.</value>
+    </data>
+</root>

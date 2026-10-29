@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl
+    x:Class="DeskCanvas.WinUI.Controls.CollapsibleSection"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- 折叠区（旧 CollapsibleSection 的 WinUI 版）：直接使用原生 Expander 的模板。
+
+         折叠时内容仍留在可视树里（只是不显示），所以行内编辑器状态在展开/收起之间不丢。 -->
+    <Expander x:Name="RootExpander"
+              HorizontalAlignment="Stretch"
+              HorizontalContentAlignment="Stretch"
+              VerticalAlignment="Top">
+        <Expander.Header>
+            <TextBlock x:Name="HeaderText"
+                       FontSize="{StaticResource HostFontSizeTitle}"
+                       FontWeight="SemiBold"
+                       Foreground="{ThemeResource HostTextPrimaryBrush}"
+                       TextWrapping="Wrap"
+                       VerticalAlignment="Center" />
+        </Expander.Header>
+        <Expander.Content>
+            <ContentControl x:Name="BodyHost"
+                            HorizontalAlignment="Stretch"
+                            HorizontalContentAlignment="Stretch" />
+        </Expander.Content>
+    </Expander>
+</UserControl>

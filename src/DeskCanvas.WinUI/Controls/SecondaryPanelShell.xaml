@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl
+    x:Class="DeskCanvas.WinUI.Controls.SecondaryPanelShell"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- 二级面板共用外壳（旧 SecondaryPanelShell 的 WinUI 版，报告 §3 第二步第五行）：
+         标题 / 副标题 / 业务操作 / 关闭 / 正文 / 底部槽位。13 个面板共用这一份，
+         面板窗口只负责定位、动画与关闭时机，不再各自拼标题栏。 -->
+    <Border x:Name="CardBorder"
+            Background="{ThemeResource HostPanelBackgroundBrush}"
+            BorderBrush="{ThemeResource HostPanelBorderBrush}"
+            BorderThickness="1"
+            CornerRadius="{StaticResource HostPanelCornerRadius}">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <Grid x:Name="HeaderRoot" Grid.Row="0"
+                  Padding="{StaticResource HostPanelHeaderPadding}">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                    <TextBlock x:Name="TitleText"
+                               FontSize="{StaticResource HostFontSizeTitle}"
+                               FontWeight="SemiBold"
+                               Foreground="{ThemeResource HostTextPrimaryBrush}"
+                               TextWrapping="Wrap" />
+                    <TextBlock x:Name="SubtitleText"
+                               FontSize="{StaticResource HostFontSizeCaption}"
+                               Foreground="{ThemeResource HostTextSecondaryBrush}"
+                               TextWrapping="Wrap"
+                               Visibility="Collapsed" />
+                </StackPanel>
+
+                <ContentControl x:Name="ActionsHost" Grid.Column="1"
+                                Margin="12,0,0,0"
+                                VerticalAlignment="Center"
+                                HorizontalContentAlignment="Right"
+                                Visibility="Collapsed" />
+
+                <Button x:Name="CloseButton" Grid.Column="2"
+                        Margin="8,0,0,0"
+                        Style="{StaticResource HostIconButtonStyle}"
+                        Click="OnCloseButtonClick">
+                    <FontIcon Glyph="{StaticResource HostGlyphClose}"
+                              FontFamily="{StaticResource HostSymbolFont}"
+                              FontSize="12" />
+                </Button>
+            </Grid>
+
+            <ContentControl x:Name="BodyHost" Grid.Row="1"
+                            Padding="{StaticResource HostPanelContentPadding}"
+                            HorizontalContentAlignment="Stretch"
+                            VerticalContentAlignment="Top" />
+
+            <Border x:Name="FooterRoot" Grid.Row="2"
+                    BorderThickness="0,1,0,0"
+                    BorderBrush="{ThemeResource HostDividerBrush}"
+                    Padding="{StaticResource HostPanelFooterPadding}"
+                    Visibility="Collapsed">
+                <ContentControl x:Name="FooterHost"
+                                HorizontalContentAlignment="Stretch" />
+            </Border>
+        </Grid>
+    </Border>
+</UserControl>

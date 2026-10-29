@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<root>
+    <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+        <xsd:element name="root" msdata:IsDataSet="true">
+            
+        </xsd:element>
+    </xsd:schema>
+    <resheader name="resmimetype">
+        <value>text/microsoft-resx</value>
+    </resheader>
+    <resheader name="version">
+        <value>1.3</value>
+    </resheader>
+    <resheader name="reader">
+        <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    </resheader>
+    <resheader name="writer">
+        <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    </resheader>
+    <data name="NotMigratedTitle" xml:space="preserve">
+        <value>该组件的设置页尚未迁移到 WinUI</value>
+    </data>
+    <data name="NotMigratedBody" xml:space="preserve">
+        <value>WinUI 编辑窗口及其生命周期已经就位，但这个内置页面还没有在 WinUI 上重建。这里刻意不显示旧的 Avalonia 页面，避免把未迁移的实现伪装成已完成；下方保留了原设置页类型，便于对照与跟踪。</value>
+    </data>
+    <data name="NeedsAdapterTitle" xml:space="preserve">
+        <value>该插件的设置页需要适配</value>
+    </data>
+    <data name="NeedsAdapterBody" xml:space="preserve">
+        <value>组件仍可正常加载与运行，但它只提供旧版 Avalonia 设置页，WinUI 编辑窗口无法承载。插件可以通过编辑页注册表登记一个 WinUI 页面工厂，从而恢复可编辑。</value>
+    </data>
+    <data name="PageUnavailableTitle" xml:space="preserve">
+        <value>该编辑页无法创建</value>
+    </data>
+    <data name="OriginalPageLabel" xml:space="preserve">
+        <value>原设置页</value>
+    </data>
+    <data name="SaveFailedTitle" xml:space="preserve">
+        <value>保存失败</value>
+    </data>
+</root>

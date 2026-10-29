@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl
+    x:Class="DeskCanvas.WinUI.Controls.ColorInput"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- 色块（打开 ColorPicker Flyout）+ Hex 文本框 + 内联错误（旧 ColorInput 的 WinUI 版）。
+
+         草稿/提交状态机在 code-behind；错误提示占真实布局位置，不覆盖输入。 -->
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto" />
+            <ColumnDefinition Width="Auto" />
+        </Grid.ColumnDefinitions>
+
+        <Button x:Name="SwatchButton" Grid.Row="0" Grid.Column="0"
+                Style="{StaticResource HostColorSwatchButtonStyle}">
+            <Button.Flyout>
+                <Flyout x:Name="PickerFlyout" Placement="Bottom" Opened="OnPickerFlyoutOpened" Closed="OnPickerFlyoutClosed">
+                    <ColorPicker x:Name="PickerPart"
+                                 IsHexInputVisible="False"
+                                 IsColorPreviewVisible="True"
+                                 IsColorSliderVisible="True"
+                                 IsColorChannelTextInputVisible="True"
+                                 IsMoreButtonVisible="False" />
+                </Flyout>
+            </Button.Flyout>
+            <Border x:Name="SwatchBorder" CornerRadius="{StaticResource HostControlCornerRadius}"
+                    BorderThickness="1" BorderBrush="{ThemeResource HostInputBorderBrush}"
+                    Background="Transparent">
+                <Path x:Name="EmptyMark" Data="M0,0 L1,1" Stretch="Fill"
+                      Stroke="{ThemeResource HostTextTertiaryBrush}" StrokeThickness="1"
+                      Visibility="Collapsed" />
+            </Border>
+        </Button>
+
+        <TextBox x:Name="HexBoxPart" Grid.Row="0" Grid.Column="1"
+                 Margin="8,0,0,0" MinWidth="{StaticResource HostColorHexMinWidth}"
+                 VerticalAlignment="Center" PlaceholderText="#AARRGGBB" />
+
+        <TextBlock x:Name="ErrorTextPart" Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2"
+                   Visibility="Collapsed" Margin="0,4,0,0"
+                   FontSize="{StaticResource HostFontSizeCaption}"
+                   Foreground="{ThemeResource HostErrorBrush}"
+                   TextWrapping="Wrap" />
+    </Grid>
+</UserControl>

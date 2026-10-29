@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl
+    x:Class="DeskCanvas.WinUI.Controls.LabeledSlider"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- 原生 Slider + 数值框（旧 LabeledSlider 的 WinUI 版）。静态树只负责摆放；
+         同步与提交语义全部在 code-behind：Value 是唯一事实源。 -->
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="Auto" />
+        </Grid.ColumnDefinitions>
+
+        <Slider x:Name="SliderPart" Grid.Column="0" VerticalAlignment="Center"
+                IsThumbToolTipEnabled="False" />
+
+        <TextBlock x:Name="ValueTextPart" Grid.Column="1"
+                   MinWidth="{StaticResource HostSliderValueMinWidth}"
+                   Margin="8,0,0,0" TextAlignment="Right" VerticalAlignment="Center"
+                   FontSize="{StaticResource HostFontSizeBody}"
+                   Foreground="{ThemeResource HostTextPrimaryBrush}" />
+
+        <NumberBox x:Name="NumericPart" Grid.Column="1"
+                   MinWidth="{StaticResource HostNumberBoxMinWidth}"
+                   Margin="8,0,0,0" VerticalAlignment="Center" Visibility="Collapsed"
+                   SpinButtonPlacementMode="Compact" />
+    </Grid>
+</UserControl>

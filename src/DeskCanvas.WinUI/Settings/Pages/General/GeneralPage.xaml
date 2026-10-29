@@ -1,0 +1,188 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl
+    x:Class="DeskCanvas.WinUI.Settings.Pages.GeneralPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="using:DeskCanvas.WinUI.Controls">
+
+    <!--
+        常规页（报告 §3 第二步系统页表第一行）。
+
+        对照源：src/DeskCanvas/Views/Pages/General.axaml(.cs) + ViewModels/GeneralViewModel.cs。
+
+
+        与旧页面的差异只在“呈现/调度”层：
+        * 设置读写仍走同一个 IAppSettingsProvider；没有第二套持久化。
+
+        * 旧 VM 的 Avalonia Dispatcher 改成页面自己的 DispatcherQueue；
+          旧 “new UpdatePopup(...).Show()” 改成页内 InfoBar + 发布页链接（WinUI 更新窗口
+          属于 S4.3，尚未实现，见回报的未完成项）。
+
+        * 文案全部在 code-behind 里从 Locale / GeneralStrings 取，XAML 不写字面文本。
+
+    -->
+    <ScrollViewer Background="{ThemeResource HostPageBackgroundBrush}"
+                  Padding="{StaticResource HostPagePadding}"
+                  HorizontalScrollMode="Disabled"
+                  HorizontalScrollBarVisibility="Disabled">
+        <StackPanel MaxWidth="880"
+                    HorizontalAlignment="Left"
+                    Spacing="{StaticResource HostSectionSpacing}">
+
+            <!-- 保存失败/自启动失败：只在真实失败时打开，初始化与外部刷新不会让它闪一下。 -->
+            <InfoBar x:Name="ErrorNotice"
+                     IsOpen="False"
+                     IsClosable="True"
+                     Severity="Error" />
+
+            <!-- ===================== 语言 ===================== -->
+            <StackPanel Spacing="4">
+                <TextBlock x:Name="LanguageHeader" Style="{StaticResource HostSectionHeaderStyle}" />
+                <Border Style="{StaticResource HostCardStyle}" Padding="0">
+                    <controls:SettingRow x:Name="LanguageRow"
+                                         RestartRequired="True"
+                                         EditorMinWidth="220">
+                        <controls:SettingRow.Icon>
+                            <FontIcon Glyph="&#xE774;"
+                                      FontFamily="{StaticResource HostSymbolFont}"
+                                      FontSize="18" />
+                        </controls:SettingRow.Icon>
+                        <ComboBox x:Name="LanguageCombo"
+                                  MinWidth="220"
+                                  DisplayMemberPath="DisplayName"
+                                  SelectionChanged="OnLanguageSelectionChanged" />
+                    </controls:SettingRow>
+                </Border>
+            </StackPanel>
+
+            <!-- ===================== 默认地区 ===================== -->
+            <StackPanel Spacing="4">
+                <TextBlock x:Name="DefaultRegionHeader" Style="{StaticResource HostSectionHeaderStyle}" />
+                <Border Style="{StaticResource HostCardStyle}" Padding="0">
+                    <StackPanel>
+                        <controls:SettingRow x:Name="RegionSearchRow" EditorMinWidth="330">
+                            <controls:SettingRow.Icon>
+                                <FontIcon Glyph="&#xE707;"
+                                          FontFamily="{StaticResource HostSymbolFont}"
+                                          FontSize="18" />
+                            </controls:SettingRow.Icon>
+                            <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                <TextBox x:Name="RegionQueryBox" Width="160" />
+                                <Button x:Name="RegionSearchButton" Click="OnSearchRegionClick" />
+                                <Button x:Name="RegionClearButton"
+                                        Click="OnClearRegionClick"
+                                        Visibility="Collapsed" />
+                            </StackPanel>
+                        </controls:SettingRow>
+
+                        <Border Style="{StaticResource HostDividerStyle}" />
+
+                        <controls:SettingRow x:Name="RegionResultRow" EditorMinWidth="260">
+                            <controls:SettingRow.Icon>
+                                <FontIcon Glyph="&#xE707;"
+                                          FontFamily="{StaticResource HostSymbolFont}"
+                                          FontSize="18" />
+                            </controls:SettingRow.Icon>
+                            <ComboBox x:Name="RegionResultsCombo"
+                                      MinWidth="260"
+                                      DisplayMemberPath="Display"
+                                      SelectionChanged="OnRegionResultSelectionChanged" />
+                        </controls:SettingRow>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+
+            <!-- ===================== 开机自启动 ===================== -->
+            <StackPanel Spacing="4">
+                <TextBlock x:Name="StartupHeader" Style="{StaticResource HostSectionHeaderStyle}" />
+                <Border Style="{StaticResource HostCardStyle}" Padding="0">
+                    <controls:SettingRow x:Name="StartupRow" AdminRequired="True">
+                        <controls:SettingRow.Icon>
+                            <FontIcon Glyph="&#xE768;"
+                                      FontFamily="{StaticResource HostSymbolFont}"
+                                      FontSize="18" />
+                        </controls:SettingRow.Icon>
+                        <ToggleSwitch x:Name="StartupToggle"
+                                      MinWidth="0"
+                                      OnContent=""
+                                      OffContent=""
+                                      Toggled="OnStartupToggled" />
+                    </controls:SettingRow>
+                </Border>
+            </StackPanel>
+
+            <!-- ===================== 软件更新 ===================== -->
+            <StackPanel Spacing="4">
+                <TextBlock x:Name="UpdateHeader" Style="{StaticResource HostSectionHeaderStyle}" />
+                <Border Style="{StaticResource HostCardStyle}" Padding="0">
+                    <StackPanel>
+                        <controls:SettingRow x:Name="UpdateIntervalRow" EditorMinWidth="220">
+                            <controls:SettingRow.Icon>
+                                <FontIcon Glyph="&#xE896;"
+                                          FontFamily="{StaticResource HostSymbolFont}"
+                                          FontSize="18" />
+                            </controls:SettingRow.Icon>
+                            <ComboBox x:Name="UpdateIntervalCombo"
+                                      MinWidth="220"
+                                      DisplayMemberPath="Label"
+                                      SelectionChanged="OnUpdateIntervalSelectionChanged" />
+                        </controls:SettingRow>
+
+                        <Border Style="{StaticResource HostDividerStyle}" />
+
+                        <controls:SettingRow x:Name="AutoProxyRow">
+                            <controls:SettingRow.Icon>
+                                <FontIcon Glyph="&#xE968;"
+                                          FontFamily="{StaticResource HostSymbolFont}"
+                                          FontSize="18" />
+                            </controls:SettingRow.Icon>
+                            <ToggleSwitch x:Name="AutoProxyToggle"
+                                          MinWidth="0"
+                                          OnContent=""
+                                          OffContent=""
+                                          Toggled="OnAutoProxyToggled" />
+                        </controls:SettingRow>
+
+                        <Border Style="{StaticResource HostDividerStyle}" />
+
+                        <controls:SettingRow x:Name="ConnectivityRow" EditorMinWidth="130">
+                            <controls:SettingRow.Icon>
+                                <FontIcon Glyph="&#xE774;"
+                                          FontFamily="{StaticResource HostSymbolFont}"
+                                          FontSize="18" />
+                            </controls:SettingRow.Icon>
+                            <Button x:Name="ConnectivityButton"
+                                    MinWidth="130"
+                                    HorizontalContentAlignment="Center"
+                                    Click="OnTestConnectivityClick" />
+                        </controls:SettingRow>
+
+                        <Border Style="{StaticResource HostDividerStyle}" />
+
+                        <controls:SettingRow x:Name="CheckNowRow" EditorMinWidth="130">
+                            <controls:SettingRow.Icon>
+                                <FontIcon Glyph="{StaticResource HostGlyphRefresh}"
+                                          FontFamily="{StaticResource HostSymbolFont}"
+                                          FontSize="18" />
+                            </controls:SettingRow.Icon>
+                            <Button x:Name="CheckNowButton"
+                                    MinWidth="130"
+                                    HorizontalContentAlignment="Center"
+                                    Click="OnCheckForUpdatesClick" />
+                        </controls:SettingRow>
+                    </StackPanel>
+                </Border>
+
+                <!-- 手动检查发现新版本时的呈现：UpdateService 只产出数据，更新窗口（S4.3）尚未迁移。 -->
+                <InfoBar x:Name="UpdateNotice"
+                         IsOpen="False"
+                         IsClosable="True"
+                         Severity="Informational">
+                    <InfoBar.ActionButton>
+                        <Button x:Name="UpdateNoticeAction" Click="OnOpenUpdatePageClick" />
+                    </InfoBar.ActionButton>
+                </InfoBar>
+            </StackPanel>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

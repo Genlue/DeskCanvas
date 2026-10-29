@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl
+    x:Class="DeskCanvas.WinUI.Controls.ThemeButton"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- 主题样片（旧 ThemeButton 的 WinUI 版，报告 §3 第二步第六行）：
+         一张模拟桌面壁纸上摆一张“这个材质的组件卡片”，外加名称与选中环。
+
+         本轮不做真实组件画面（那需要 Avalonia 嵌入）；需要真实预览时由页面另行嵌入。 -->
+    <StackPanel Spacing="6" HorizontalAlignment="Center">
+        <Grid>
+            <Border x:Name="SelectionRing"
+                    CornerRadius="{StaticResource HostThemeSampleRingCornerRadius}"
+                    BorderThickness="2"
+                    BorderBrush="Transparent" />
+
+            <Button x:Name="SampleButton"
+                    Style="{StaticResource HostThemeSampleButtonStyle}"
+                    Click="OnSampleClick">
+                <Border Width="{StaticResource HostThemeSampleWidth}"
+                        Height="{StaticResource HostThemeSampleHeight}"
+                        CornerRadius="{StaticResource HostSampleCornerRadius}"
+                        BorderBrush="{ThemeResource HostSampleRimBrush}"
+                        BorderThickness="1">
+                    <Grid>
+                        <Rectangle Fill="{StaticResource HostSampleWallpaperBrush}"
+                                   RadiusX="{StaticResource HostSampleRadius}"
+                                   RadiusY="{StaticResource HostSampleRadius}" />
+                        <Rectangle x:Name="DimOverlay"
+                                   Fill="{StaticResource HostSampleDimBrush}"
+                                   RadiusX="{StaticResource HostSampleRadius}"
+                                   RadiusY="{StaticResource HostSampleRadius}"
+                                   Visibility="Collapsed" />
+                        <Border x:Name="SampleCard"
+                                Width="{StaticResource HostThemeSampleCardSize}"
+                                Height="{StaticResource HostThemeSampleCardSize}"
+                                Margin="{StaticResource HostThemeSampleCardMargin}"
+                                HorizontalAlignment="Right"
+                                VerticalAlignment="Bottom"
+                                CornerRadius="{StaticResource HostSampleCardCornerRadius}"
+                                BorderThickness="1"
+                                BorderBrush="{ThemeResource HostSampleRimBrush}">
+                            <TextBlock x:Name="SampleText"
+                                       Text="Aa"
+                                       FontSize="{StaticResource HostThemeSampleFontSize}"
+                                       HorizontalAlignment="Center"
+                                       VerticalAlignment="Center" />
+                        </Border>
+                    </Grid>
+                </Border>
+            </Button>
+        </Grid>
+
+        <TextBlock x:Name="LabelText"
+                   Style="{StaticResource HostCaptionTextStyle}"
+                   HorizontalAlignment="Center" />
+    </StackPanel>
+</UserControl>

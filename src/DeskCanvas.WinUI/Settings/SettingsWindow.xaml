@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Window
+    x:Class="DeskCanvas.WinUI.Settings.SettingsWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!--
+        设置窗口外壳（报告 §3 第二步）：
+        * NavigationView(Left) 承载「系统设置 / 组件库 / 分类 / 其他扩展」，内容区是一个
+          ContentControl 而不是 Frame——WinUI 的导航缓存不保证隐藏窗口时把页面还给你，
+          而设置窗口关闭必须卸下内容（见 SettingsWindow.xaml.cs 的 UnloadCurrentPage）。
+
+        * 表面保持不透明：本轮不伪装亚克力/液态玻璃（报告 §4.1）。
+
+        * 文案一律来自 Locale/SettingsShellStrings，XAML 不写字面文本。
+
+    -->
+    <Grid x:Name="WindowSurface" Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+        <NavigationView
+            x:Name="NavRoot"
+            PaneDisplayMode="Auto"
+            CompactModeThresholdWidth="640"
+            ExpandedModeThresholdWidth="800"
+            CompactPaneLength="48"
+            OpenPaneLength="200"
+            IsBackButtonVisible="Collapsed"
+            IsSettingsVisible="False"
+            IsTitleBarAutoPaddingEnabled="False"
+            SelectionChanged="OnNavigationSelectionChanged">
+
+            <NavigationView.PaneHeader>
+                <!-- 产品名，不是可翻译文案；标题文字在 code-behind 里从资源取一次。 -->
+                <TextBlock x:Name="PaneHeaderText"
+                           Margin="12,0,0,12"
+                           FontSize="16"
+                           FontWeight="SemiBold" />
+            </NavigationView.PaneHeader>
+
+            <NavigationView.Content>
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+
+                    <!-- 页面标题：取自导航项的本地化标题（旧窗口的 CurrentPageTitle）。 -->
+                    <TextBlock x:Name="PageTitleText"
+                               Grid.Row="0"
+                               Margin="24,16,24,12"
+                               FontSize="28"
+                               FontWeight="SemiBold"
+                               TextTrimming="CharacterEllipsis" />
+
+                    <!-- 内容槽：页面实例由 SettingsPageFactory 创建；隐藏窗口时这里会被置空。 -->
+                    <ContentControl x:Name="PageHost"
+                                    Grid.Row="1"
+                                    HorizontalContentAlignment="Stretch"
+                                    VerticalContentAlignment="Stretch" />
+                </Grid>
+            </NavigationView.Content>
+        </NavigationView>
+    </Grid>
+</Window>

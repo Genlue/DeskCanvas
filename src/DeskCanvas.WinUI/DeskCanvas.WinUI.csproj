@@ -1,0 +1,105 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    DeskCanvas 的软件 GUI 入口（WinUI 3 / Windows App SDK）。
+    桌面组件仍由 src/DeskCanvas（Avalonia 宿主库）渲染；本工程只承载软件操作界面。
+    约定见 doc/WinUI迁移执行计划.md：本工程的 .cs 不得 using Avalonia.Controls 等命名空间，
+    需要 Avalonia 类型时用别名（using AvButton = Avalonia.Controls.Button;）或全名限定，
+    否则 Window/Button/Grid 等会与 Microsoft.UI.Xaml 同名类型冲突（CS0104）。
+  -->
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows10.0.19041.0</TargetFramework>
+    <TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
+    <RootNamespace>DeskCanvas.WinUI</RootNamespace>
+    <AssemblyName>DeskCanvas.WinUI</AssemblyName>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>..\..\.github\images\icon.ico</ApplicationIcon>
+    <Platforms>x86;x64;ARM64</Platforms>
+    <RuntimeIdentifiers>win-x86;win-x64;win-arm64</RuntimeIdentifiers>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <UseWinUI>true</UseWinUI>
+    <!-- 不用 Windows SDK 的 winmd 引用：WinRT 投影由 Avalonia/组件侧的统一运行时提供，
+         混用会让进程里出现两份 marshaller（报告 §4.2 末条）。 -->
+    <WinUISDKReferences>false</WinUISDKReferences>
+    <EnableMsixTooling>false</EnableMsixTooling>
+    <!-- 非打包（unpackaged）部署：不引入 MSIX 包身份，安装器/便携包继续沿用现有流程。 -->
+    <WindowsPackageType>None</WindowsPackageType>
+    <!-- 自包含 Windows App SDK 运行时：目标机没装 Windows App Runtime 也能启动。
+         报告 §6.5：目录发布、不做单文件、不做裁剪（组件大量反射/插件加载）。 -->
+    <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
+    <SelfContained>true</SelfContained>
+    <PublishSingleFile>false</PublishSingleFile>
+    <PublishTrimmed>false</PublishTrimmed>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!-- 自定义入口 Main（单实例、默认数据初始化、自启动同步），关掉 XAML 生成器的 Main。 -->
+    <DefineConstants>$(DefineConstants);DISABLE_XAML_GENERATED_MAIN</DefineConstants>
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.WindowsAppSDK" />
+    <PackageReference Include="Microsoft.Windows.SDK.BuildTools" />
+    <PackageReference Include="Avalonia" />
+    <PackageReference Include="Avalonia.Desktop" />
+    <PackageReference Include="Avalonia.Themes.Fluent" />
+    <PackageReference Include="Avalonia.WinUI" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- 原宿主（Avalonia 渲染层/服务容器）作为库引用；它与旧桌面组件共享同一份 DI 与 Store。 -->
+    <ProjectReference Include="..\DeskCanvas\DeskCanvas.csproj" />
+    <ProjectReference Include="..\DeskCanvas.Core\DeskCanvas.Core.csproj" />
+    <ProjectReference Include="..\DeskCanvas.Contracts\DeskCanvas.Contracts.csproj" />
+    <ProjectReference Include="..\DeskCanvas.Runtime\DeskCanvas.Runtime.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!--
+      报告 §3 第一步 5 的**限定例外**：内置组件的新 WinUI 编辑页要复用组件自己的模型/Store/
+      执行器，所以只允许 DeskCanvas.WinUI 静态引用 src/Widgets 下的内置组件工程。原 Avalonia
+      宿主（src/DeskCanvas）仍然不得静态依赖任何组件；对应结构守卫规则由 B 执行者维护，
+      不要在这里用 Private/exclude 之类的手段绕过它。
+      默认 Private（不写 Private=false）：组件 DLL 会复制到 WinUI 输出根目录，
+      再由 Widgets/WidgetAssemblyRegistry.Preload() 预加载进 AssemblyLoadContext.Default，
+      使 GUI 引用的类型与 AssemblyProvider 反射拿到的类型是同一个程序集实例
+      （报告 §3 第一步 6：内置包只保留一份实例，static 状态/DI/WinRT marshaller 不分裂）。
+    -->
+    <ProjectReference Include="..\Widgets\AudioVisualizer\AudioVisualizer.csproj" />
+    <ProjectReference Include="..\Widgets\Batteries\Batteries.csproj" />
+    <ProjectReference Include="..\Widgets\Calendar\Calendar.csproj" />
+    <ProjectReference Include="..\Widgets\Clock\Clock.csproj" />
+    <ProjectReference Include="..\Widgets\ControlCenter\ControlCenter.csproj" />
+    <ProjectReference Include="..\Widgets\Countdown\Countdown.csproj" />
+    <ProjectReference Include="..\Widgets\Fixed\Fixed.csproj" />
+    <ProjectReference Include="..\Widgets\Folders\Folders.csproj" />
+    <ProjectReference Include="..\Widgets\Habits\Habits.csproj" />
+    <ProjectReference Include="..\Widgets\Hitokoto\Hitokoto.csproj" />
+    <ProjectReference Include="..\Widgets\Map\Map.csproj" />
+    <ProjectReference Include="..\Widgets\Monitor\Monitor.csproj" />
+    <ProjectReference Include="..\Widgets\Music\Music.csproj" />
+    <ProjectReference Include="..\Widgets\Notes\Notes.csproj" />
+    <ProjectReference Include="..\Widgets\Picture\Picture.csproj" />
+    <ProjectReference Include="..\Widgets\Pomodoro\Pomodoro.csproj" />
+    <ProjectReference Include="..\Widgets\Progress\Progress.csproj" />
+    <ProjectReference Include="..\Widgets\Reminders\Reminders.csproj" />
+    <ProjectReference Include="..\Widgets\Search\Search.csproj" />
+    <ProjectReference Include="..\Widgets\Shortcuts\Shortcuts.csproj" />
+    <ProjectReference Include="..\Widgets\Stack\Stack.csproj" />
+    <ProjectReference Include="..\Widgets\Storage\Storage.csproj" />
+    <ProjectReference Include="..\Widgets\TickClock\TickClock.csproj" />
+    <ProjectReference Include="..\Widgets\Timetable\Timetable.csproj" />
+    <ProjectReference Include="..\Widgets\Tools\Tools.csproj" />
+    <ProjectReference Include="..\Widgets\Weather\Weather.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="app.manifest">
+      <DependentUpon>App.xaml</DependentUpon>
+    </None>
+    <None Include="..\..\.github\images\icon.ico">
+      <Link>icon.ico</Link>
+    </None>
+  </ItemGroup>
+</Project>

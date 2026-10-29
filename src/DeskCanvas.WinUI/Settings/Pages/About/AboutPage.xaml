@@ -1,0 +1,168 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl
+    x:Class="DeskCanvas.WinUI.Settings.Pages.AboutPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="using:DeskCanvas.WinUI.Controls">
+
+    <!--
+        关于页（报告 §3 第二步系统页表最后一行）。
+
+        对照源：src/DeskCanvas/Views/Pages/About.axaml(.cs)。
+
+
+        能力对照：版本号、更新入口、我的/原作者仓库、原作者问题反馈、卸载入口，以及旧页面的
+        「快捷操作与技巧」两行。更新数据只由原 UpdateService 产出；旧实现直接 new UpdatePopup，
+        这里改成页内 InfoBar（WinUI 更新通知窗口属于 S4.3，尚未实现，见回报的未完成项）。
+
+        文案在 code-behind 里从 Locale / AboutStrings 取，XAML 不写字面文本。
+
+    -->
+    <ScrollViewer Background="{ThemeResource HostPageBackgroundBrush}"
+                  Padding="{StaticResource HostPagePadding}"
+                  HorizontalScrollMode="Disabled"
+                  HorizontalScrollBarVisibility="Disabled">
+        <StackPanel MaxWidth="880"
+                    HorizontalAlignment="Left"
+                    Spacing="{StaticResource HostSectionSpacing}">
+
+            <!-- 更新发现 / 链接打开失败的统一提示条；只有一个，动作按钮只在“去看更新”时显示。 -->
+            <InfoBar x:Name="StatusNotice"
+                     IsOpen="False"
+                     IsClosable="True"
+                     Severity="Informational">
+                <InfoBar.ActionButton>
+                    <Button x:Name="StatusNoticeAction"
+                            Click="OnStatusNoticeActionClick"
+                            Visibility="Collapsed" />
+                </InfoBar.ActionButton>
+            </InfoBar>
+
+            <!-- ===================== 版本与更新 ===================== -->
+            <Border Style="{StaticResource HostCardStyle}" Padding="0">
+                <StackPanel>
+                    <controls:SettingRow x:Name="VersionRow">
+                        <controls:SettingRow.Icon>
+                            <FontIcon Glyph="&#xE946;"
+                                      FontFamily="{StaticResource HostSymbolFont}"
+                                      FontSize="18" />
+                        </controls:SettingRow.Icon>
+                        <Border Style="{StaticResource HostBadgeStyle}">
+                            <TextBlock x:Name="VersionText" Style="{StaticResource HostBadgeTextStyle}" />
+                        </Border>
+                    </controls:SettingRow>
+
+                    <Border x:Name="UpdateDivider"
+                            Style="{StaticResource HostDividerStyle}"
+                            Visibility="Collapsed" />
+
+                    <controls:SettingRow x:Name="UpdateRow" Visibility="Collapsed">
+                        <controls:SettingRow.Icon>
+                            <FontIcon Glyph="&#xE896;"
+                                      FontFamily="{StaticResource HostSymbolFont}"
+                                      FontSize="18" />
+                        </controls:SettingRow.Icon>
+                        <Button x:Name="UpdateButton"
+                                MinWidth="130"
+                                HorizontalContentAlignment="Center"
+                                Click="OnUpdateButtonClick" />
+                    </controls:SettingRow>
+                </StackPanel>
+            </Border>
+
+            <!-- ===================== 快捷操作与技巧 ===================== -->
+            <StackPanel Spacing="4">
+                <TextBlock x:Name="TipsHeader" Style="{StaticResource HostSectionHeaderStyle}" />
+                <Border Style="{StaticResource HostCardStyle}" Padding="0">
+                    <StackPanel>
+                        <controls:SettingRow x:Name="QuickMoveRow" LayoutMode="Stacked">
+                            <controls:SettingRow.Icon>
+                                <FontIcon Glyph="&#xE7C2;"
+                                          FontFamily="{StaticResource HostSymbolFont}"
+                                          FontSize="18" />
+                            </controls:SettingRow.Icon>
+                            <Border Style="{StaticResource HostBadgeStyle}">
+                                <TextBlock x:Name="QuickMoveShortcutText" Style="{StaticResource HostBadgeTextStyle}" />
+                            </Border>
+                        </controls:SettingRow>
+
+                        <Border Style="{StaticResource HostDividerStyle}" />
+
+                        <controls:SettingRow x:Name="SwitchStackRow" LayoutMode="Stacked">
+                            <controls:SettingRow.Icon>
+                                <FontIcon Glyph="&#xE8AB;"
+                                          FontFamily="{StaticResource HostSymbolFont}"
+                                          FontSize="18" />
+                            </controls:SettingRow.Icon>
+                            <Border Style="{StaticResource HostBadgeStyle}">
+                                <TextBlock x:Name="SwitchStackShortcutText" Style="{StaticResource HostBadgeTextStyle}" />
+                            </Border>
+                        </controls:SettingRow>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+
+            <!-- ===================== 操作 ===================== -->
+            <StackPanel Spacing="4">
+                <TextBlock x:Name="ActionsHeader" Style="{StaticResource HostSectionHeaderStyle}" />
+                <Border Style="{StaticResource HostCardStyle}" Padding="0">
+                    <StackPanel>
+                        <controls:SettingRow x:Name="MyRepositoryRow">
+                            <controls:SettingRow.Icon>
+                                <FontIcon Glyph="&#xE774;"
+                                          FontFamily="{StaticResource HostSymbolFont}"
+                                          FontSize="18" />
+                            </controls:SettingRow.Icon>
+                            <Button x:Name="MyRepositoryButton"
+                                    MinWidth="130"
+                                    HorizontalContentAlignment="Center"
+                                    Click="OnMyRepositoryClick" />
+                        </controls:SettingRow>
+
+                        <Border Style="{StaticResource HostDividerStyle}" />
+
+                        <controls:SettingRow x:Name="OriginalRepositoryRow">
+                            <controls:SettingRow.Icon>
+                                <FontIcon Glyph="&#xE774;"
+                                          FontFamily="{StaticResource HostSymbolFont}"
+                                          FontSize="18" />
+                            </controls:SettingRow.Icon>
+                            <Button x:Name="OriginalRepositoryButton"
+                                    MinWidth="130"
+                                    HorizontalContentAlignment="Center"
+                                    Click="OnOriginalRepositoryClick" />
+                        </controls:SettingRow>
+
+                        <Border Style="{StaticResource HostDividerStyle}" />
+
+                        <controls:SettingRow x:Name="ReportBugRow">
+                            <controls:SettingRow.Icon>
+                                <FontIcon Glyph="&#xE7BA;"
+                                          FontFamily="{StaticResource HostSymbolFont}"
+                                          FontSize="18" />
+                            </controls:SettingRow.Icon>
+                            <Button x:Name="ReportBugButton"
+                                    MinWidth="130"
+                                    HorizontalContentAlignment="Center"
+                                    Click="OnReportBugClick" />
+                        </controls:SettingRow>
+
+                        <Border Style="{StaticResource HostDividerStyle}" />
+
+                        <controls:SettingRow x:Name="UninstallRow">
+                            <controls:SettingRow.Icon>
+                                <FontIcon Glyph="&#xE74D;"
+                                          FontFamily="{StaticResource HostSymbolFont}"
+                                          FontSize="18" />
+                            </controls:SettingRow.Icon>
+                            <Button x:Name="UninstallButton"
+                                    MinWidth="130"
+                                    HorizontalContentAlignment="Center"
+                                    Click="OnUninstallClick" />
+                        </controls:SettingRow>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

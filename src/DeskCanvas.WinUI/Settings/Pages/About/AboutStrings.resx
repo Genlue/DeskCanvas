@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<root>
+    <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+        <xsd:element name="root" msdata:IsDataSet="true">
+            
+        </xsd:element>
+    </xsd:schema>
+    <resheader name="resmimetype">
+        <value>text/microsoft-resx</value>
+    </resheader>
+    <resheader name="version">
+        <value>1.3</value>
+    </resheader>
+    <resheader name="reader">
+        <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    </resheader>
+    <resheader name="writer">
+        <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    </resheader>
+    <data name="TipsHeader" xml:space="preserve">
+        <value>Shortcuts &amp; Tips</value>
+    </data>
+    <data name="QuickMoveTitle" xml:space="preserve">
+        <value>Quick Move Widget</value>
+    </data>
+    <data name="QuickMoveSubtitle" xml:space="preserve">
+        <value>Hold Ctrl and left-drag to move any widget window directly (including interactive widgets like Map, Notes, and Folders)</value>
+    </data>
+    <data name="QuickMoveShortcut" xml:space="preserve">
+        <value>Ctrl + Left Drag</value>
+    </data>
+    <data name="SwitchStackTitle" xml:space="preserve">
+        <value>Switch Stacked Widgets</value>
+    </data>
+    <data name="SwitchStackSubtitle" xml:space="preserve">
+        <value>Hold the middle mouse button and scroll the wheel over a Widget Stack to cycle through stacked widgets without aiming at the side dots</value>
+    </data>
+    <data name="SwitchStackShortcut" xml:space="preserve">
+        <value>Middle Click + Scroll</value>
+    </data>
+    <data name="OpenLinkFailedTitle" xml:space="preserve">
+        <value>Could not open the link</value>
+    </data>
+    <data name="OpenLinkFailedMessage" xml:space="preserve">
+        <value>Windows could not open '{0}'. Copy the address and open it manually.</value>
+    </data>
+</root>

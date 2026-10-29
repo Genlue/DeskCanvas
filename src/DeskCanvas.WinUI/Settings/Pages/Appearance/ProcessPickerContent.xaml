@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl
+    x:Class="DeskCanvas.WinUI.Settings.Pages.Appearance.ProcessPickerContent"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!--
+        失焦自动切换白名单的进程挑选内容（承载在外观页的 ContentDialog 里）。
+
+        旧实现是独立 Avalonia ProcessPickerDialog；统一 WinUI 弹窗属 S4.3，这里先给外观页一个可用的
+        页内版本：同样的进程枚举（只列有可见标题窗口的进程）、搜索、多选、关闭才返回所选进程名。
+
+        文案来自宿主 Locale 的 ProcessPicker_* 键（由 code-behind 注入，XAML 不写字面文案）。
+
+    -->
+    <StackPanel Spacing="10" Width="440" MinHeight="360">
+        <TextBox x:Name="SearchBox" TextChanged="OnSearchChanged" />
+
+        <Grid>
+            <ListView x:Name="ProcessList"
+                      SelectionMode="Multiple"
+                      Height="240"
+                      BorderThickness="0">
+                <ListView.ItemTemplate>
+                    <DataTemplate>
+                        <StackPanel Margin="0,2">
+                            <TextBlock Text="{Binding Name}" />
+                            <TextBlock Text="{Binding Title}"
+                                       Style="{StaticResource HostCaptionTextStyle}"
+                                       TextTrimming="CharacterEllipsis" />
+                        </StackPanel>
+                    </DataTemplate>
+                </ListView.ItemTemplate>
+            </ListView>
+            <TextBlock x:Name="EmptyText"
+                       HorizontalAlignment="Center"
+                       VerticalAlignment="Center"
+                       TextWrapping="Wrap"
+                       Style="{StaticResource HostCaptionTextStyle}" />
+        </Grid>
+
+        <StackPanel Orientation="Horizontal" Spacing="8">
+            <Button x:Name="RefreshButton" Click="OnRefreshClick" />
+        </StackPanel>
+
+        <TextBlock x:Name="HintText"
+                   TextWrapping="Wrap"
+                   Style="{StaticResource HostCaptionTextStyle}" />
+    </StackPanel>
+</UserControl>

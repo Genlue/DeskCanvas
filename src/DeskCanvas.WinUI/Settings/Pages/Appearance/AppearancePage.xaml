@@ -1,0 +1,403 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl
+    x:Class="DeskCanvas.WinUI.Settings.Pages.Appearance.AppearancePage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="using:DeskCanvas.WinUI.Controls">
+
+    <!--
+        外观设置页（旧 src/DeskCanvas/Views/Pages/Appearance.axaml + AppearanceViewModel 的 WinUI 版，
+        报告 §3 第二步系统设置表第二行）。
+
+
+        约定：
+        * 页面只放 WinUI 控件；所有用户可见文案在 code-behind 里从 Locale / AppearancePageStrings 注入
+          （WinUI XAML 没有 x:Static，且守卫规则 7 禁止在 .xaml 里写中文字面量）。
+
+        * 值编辑器（LabeledSlider / ColorInput）用 TwoWay 绑定到 AppearanceViewModel：拖动只改草稿，
+          ValueCommitted 才 CommitThemeSliders() 写盘（报告 §4.2）。
+
+        * 开关/下拉框由 code-behind 显式同步（WinUI 的 SelectedItem 与 record 项匹配、bool? 绑定都不够稳），
+          刷新期间用 syncing 标志避免把程序化赋值当成用户提交。
+
+        * 材质样片用 Controls/ThemeButton（不挖 Avalonia 嵌入；真实组件预览属 S5，本轮不接）。
+
+    -->
+    <ScrollViewer VerticalScrollBarVisibility="Auto"
+                  HorizontalScrollBarVisibility="Disabled"
+                  HorizontalScrollMode="Disabled">
+        <StackPanel Margin="{StaticResource HostPagePadding}" Spacing="0">
+
+            <!-- ===== 保存失败：错误 + 重试 / 重新加载（与旧页顶部同一位置与语义） ===== -->
+            <InfoBar x:Name="SaveErrorBar"
+                     IsOpen="False"
+                     IsClosable="False"
+                     Severity="Error"
+                     Margin="0,0,0,8" />
+            <StackPanel x:Name="SaveErrorActions"
+                        Orientation="Horizontal"
+                        Spacing="8"
+                        Margin="0,0,0,8"
+                        Visibility="Collapsed">
+                <Button x:Name="RetrySaveButton" Click="OnRetrySaveClick" />
+                <Button x:Name="ReloadSettingsButton" Click="OnReloadSettingsClick" />
+            </StackPanel>
+
+            <!-- ===== 失焦自动切换 ===== -->
+            <TextBlock x:Name="FocusLinkHeaderText" Style="{StaticResource HostSectionHeaderStyle}" />
+
+            <controls:SettingRow x:Name="FocusLinkEnabledRow" LayoutMode="Inline">
+                <ToggleSwitch x:Name="FocusLinkEnabledToggle" Toggled="OnFocusLinkEnabledToggled" />
+            </controls:SettingRow>
+
+            <controls:SettingRow x:Name="FocusFocusedRow" EditorMinWidth="300">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <ComboBox x:Name="FocusSurfaceFocusedCombo" MinWidth="150"
+                              DisplayMemberPath="Name"
+                              SelectionChanged="OnFocusSurfaceFocusedChanged" />
+                    <ComboBox x:Name="FocusModeFocusedCombo" MinWidth="130"
+                              DisplayMemberPath="Name"
+                              SelectionChanged="OnFocusModeFocusedChanged" />
+                </StackPanel>
+            </controls:SettingRow>
+
+            <controls:SettingRow x:Name="FocusUnfocusedRow" EditorMinWidth="300">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <ComboBox x:Name="FocusSurfaceUnfocusedCombo" MinWidth="150"
+                              DisplayMemberPath="Name"
+                              SelectionChanged="OnFocusSurfaceUnfocusedChanged" />
+                    <ComboBox x:Name="FocusModeUnfocusedCombo" MinWidth="130"
+                              DisplayMemberPath="Name"
+                              SelectionChanged="OnFocusModeUnfocusedChanged" />
+                </StackPanel>
+            </controls:SettingRow>
+
+            <TextBlock x:Name="FocusColorPolicyHintText"
+                       Style="{StaticResource HostCaptionTextStyle}"
+                       Margin="16,2,16,6" />
+
+            <controls:SettingRow x:Name="FocusDelayRow" LayoutMode="Inline">
+                <NumberBox x:Name="FocusDelayBox"
+                           MinWidth="130"
+                           Minimum="0"
+                           Maximum="1000"
+                           SmallChange="50"
+                           LargeChange="100"
+                           SpinButtonPlacementMode="Compact"
+                           ValueChanged="OnFocusDelayChanged" />
+            </controls:SettingRow>
+
+            <controls:SettingRow x:Name="FocusWhitelistRow" LayoutMode="Stacked">
+                <StackPanel Spacing="6" HorizontalAlignment="Stretch">
+                    <ScrollViewer x:Name="WhitelistChipsScroll"
+                                  HorizontalScrollBarVisibility="Auto"
+                                  HorizontalScrollMode="Enabled"
+                                  VerticalScrollBarVisibility="Disabled"
+                                  VerticalScrollMode="Disabled">
+                        <StackPanel x:Name="WhitelistChipsPanel"
+                                    Orientation="Horizontal"
+                                    Spacing="6"
+                                    MinHeight="28" />
+                    </ScrollViewer>
+                    <TextBlock x:Name="WhitelistEmptyText"
+                               Style="{StaticResource HostCaptionTextStyle}" />
+                    <Button x:Name="AddProcessButton"
+                            HorizontalAlignment="Left"
+                            Click="OnAddProcessClick" />
+                </StackPanel>
+            </controls:SettingRow>
+
+            <controls:SettingRow x:Name="FocusStatusRow" LayoutMode="Inline">
+                <TextBlock x:Name="FocusStatusText"
+                           TextWrapping="Wrap"
+                           VerticalAlignment="Center"
+                           Text="{Binding FocusStatusText}" />
+            </controls:SettingRow>
+
+            <!-- ===== 应用主题（材质样片） ===== -->
+            <TextBlock x:Name="ApplyThemeHeaderText" Style="{StaticResource HostSectionHeaderStyle}" />
+
+            <StackPanel x:Name="ThemeCardsPanel"
+                        Orientation="Horizontal"
+                        Spacing="12"
+                        Margin="16,4,16,4" />
+            <TextBlock x:Name="CurrentMaterialText"
+                       Style="{StaticResource HostCaptionTextStyle}"
+                       Margin="16,0,16,8" />
+
+            <!-- ===== 高光（所有非原生边框材质共用；液态玻璃在着色器里读同一组参数） ===== -->
+            <TextBlock x:Name="HighlightHeaderText" Style="{StaticResource HostSectionHeaderStyle}" />
+
+            <controls:SettingRow x:Name="HighlightRow" EditorMinWidth="264">
+                <controls:LabeledSlider x:Name="HighlightSlider"
+                                        Width="264"
+                                        Minimum="0"
+                                        Maximum="100"
+                                        Step="1"
+                                        DisplayFormat="F0"
+                                        ShowEditableValue="True"
+                                        Value="{Binding GlassHighlight, Mode=TwoWay}"
+                                        ValueCommitted="OnSliderValueCommitted" />
+            </controls:SettingRow>
+
+            <controls:SettingRow x:Name="HighlightAngleRow" EditorMinWidth="264">
+                <controls:LabeledSlider x:Name="HighlightAngleSlider"
+                                        Width="264"
+                                        Minimum="0"
+                                        Maximum="360"
+                                        Step="5"
+                                        DisplayFormat="F0"
+                                        ShowEditableValue="True"
+                                        Value="{Binding GlassHighlightAngle, Mode=TwoWay}"
+                                        ValueCommitted="OnSliderValueCommitted" />
+            </controls:SettingRow>
+
+            <!-- ===== 玻璃光学参数（仅壁纸采样材质：液态玻璃） ===== -->
+            <controls:CollapsibleSection x:Name="GlassOpticsSection" Margin="0,12,0,4">
+                <controls:CollapsibleSection.SectionContent>
+                    <StackPanel Spacing="0">
+                        <controls:SettingRow x:Name="LiveSamplingRow" LayoutMode="Inline">
+                            <ToggleSwitch x:Name="LiveSamplingToggle" Toggled="OnLiveSamplingToggled" />
+                        </controls:SettingRow>
+
+                        <controls:SettingRow x:Name="LiveSamplingIntervalRow" LayoutMode="Inline">
+                            <NumberBox x:Name="LiveSamplingIntervalBox"
+                                       MinWidth="130"
+                                       Minimum="10"
+                                       Maximum="1000"
+                                       SmallChange="10"
+                                       LargeChange="100"
+                                       SpinButtonPlacementMode="Compact"
+                                       ValueChanged="OnLiveSamplingIntervalChanged" />
+                        </controls:SettingRow>
+
+                        <controls:SettingRow x:Name="GlassBlurRow" EditorMinWidth="264">
+                            <controls:LabeledSlider x:Name="GlassBlurSlider"
+                                                    Width="264"
+                                                    Minimum="0"
+                                                    Maximum="100"
+                                                    Step="1"
+                                                    DisplayFormat="F0"
+                                                    ShowEditableValue="True"
+                                                    Value="{Binding GlassBlur, Mode=TwoWay}"
+                                                    ValueCommitted="OnSliderValueCommitted" />
+                        </controls:SettingRow>
+
+                        <controls:SettingRow x:Name="GlassRefractionRow" EditorMinWidth="264">
+                            <controls:LabeledSlider x:Name="GlassRefractionSlider"
+                                                    Width="264"
+                                                    Minimum="0"
+                                                    Maximum="100"
+                                                    Step="1"
+                                                    DisplayFormat="F0"
+                                                    ShowEditableValue="True"
+                                                    Value="{Binding GlassRefraction, Mode=TwoWay}"
+                                                    ValueCommitted="OnSliderValueCommitted" />
+                        </controls:SettingRow>
+
+                        <controls:SettingRow x:Name="GlassDispersionRow" EditorMinWidth="264">
+                            <controls:LabeledSlider x:Name="GlassDispersionSlider"
+                                                    Width="264"
+                                                    Minimum="0"
+                                                    Maximum="100"
+                                                    Step="1"
+                                                    DisplayFormat="F0"
+                                                    ShowEditableValue="True"
+                                                    Value="{Binding GlassDispersion, Mode=TwoWay}"
+                                                    ValueCommitted="OnSliderValueCommitted" />
+                        </controls:SettingRow>
+
+                        <controls:SettingRow x:Name="GlassVibrancyRow" EditorMinWidth="264">
+                            <controls:LabeledSlider x:Name="GlassVibrancySlider"
+                                                    Width="264"
+                                                    Minimum="0"
+                                                    Maximum="100"
+                                                    Step="1"
+                                                    DisplayFormat="F0"
+                                                    ShowEditableValue="True"
+                                                    Value="{Binding GlassVibrancy, Mode=TwoWay}"
+                                                    ValueCommitted="OnSliderValueCommitted" />
+                        </controls:SettingRow>
+
+                        <controls:SettingRow x:Name="GlassBackdropClarityRow" EditorMinWidth="264">
+                            <controls:LabeledSlider x:Name="GlassBackdropClaritySlider"
+                                                    Width="264"
+                                                    Minimum="5"
+                                                    Maximum="100"
+                                                    Step="1"
+                                                    DisplayFormat="F0"
+                                                    ShowEditableValue="True"
+                                                    Value="{Binding GlassBackdropClarity, Mode=TwoWay}"
+                                                    ValueCommitted="OnSliderValueCommitted" />
+                        </controls:SettingRow>
+                    </StackPanel>
+                </controls:CollapsibleSection.SectionContent>
+            </controls:CollapsibleSection>
+
+            <!-- 壁纸对齐 / 重置 / 刷新（对齐窗口属弹窗批次 S4.3，本轮按钮给出明确未实现状态） -->
+            <StackPanel Orientation="Horizontal" Spacing="8" Margin="16,4,16,8">
+                <Button x:Name="AlignButton" Click="OnOpenWallpaperAlignClick" />
+                <Button x:Name="ResetGlassButton" Click="OnResetGlassClick" />
+                <Button x:Name="RefreshWallpaperButton" Click="OnRefreshWallpaperClick" />
+            </StackPanel>
+            <InfoBar x:Name="AlignUnavailableBar"
+                     Severity="Warning"
+                     IsOpen="False"
+                     IsClosable="True"
+                     Margin="0,0,0,8" />
+
+            <!-- ===== 颜色 ===== -->
+            <TextBlock x:Name="ColorsHeaderText" Style="{StaticResource HostSectionHeaderStyle}" />
+
+            <controls:SettingRow x:Name="DarkModeRow" LayoutMode="Inline">
+                <ComboBox x:Name="DarkModeCombo" MinWidth="150"
+                          DisplayMemberPath="Name"
+                          SelectionChanged="OnDarkModeChanged" />
+            </controls:SettingRow>
+
+            <controls:SettingRow x:Name="OpacityRow" EditorMinWidth="264">
+                <controls:LabeledSlider x:Name="OpacitySlider"
+                                        Width="264"
+                                        Minimum="0"
+                                        Maximum="1"
+                                        Step="0.05"
+                                        DisplayFormat="F2"
+                                        ShowEditableValue="True"
+                                        Value="{Binding OpacityLevel, Mode=TwoWay}"
+                                        ValueCommitted="OnOpacityValueCommitted" />
+            </controls:SettingRow>
+
+            <controls:SettingRow x:Name="TextShadowRow" EditorMinWidth="300">
+                <StackPanel Spacing="6" HorizontalAlignment="Right">
+                    <ToggleSwitch x:Name="TextShadowToggle"
+                                  HorizontalAlignment="Right"
+                                  Toggled="OnTextShadowToggled" />
+                    <controls:LabeledSlider x:Name="TextShadowStrengthSlider"
+                                            Width="264"
+                                            Minimum="0"
+                                            Maximum="100"
+                                            Step="5"
+                                            DisplayFormat="F0"
+                                            ShowEditableValue="True"
+                                            Value="{Binding TextShadowStrength, Mode=TwoWay}"
+                                            ValueCommitted="OnSliderValueCommitted" />
+                </StackPanel>
+            </controls:SettingRow>
+
+            <controls:SettingRow x:Name="AccentColorRow" EditorMinWidth="320">
+                <StackPanel Orientation="Horizontal" Spacing="12">
+                    <controls:ColorInput x:Name="AccentColorInput"
+                                         AllowEmpty="True"
+                                         ColorFormat="Argb"
+                                         AlphaPolicy="Preserve"
+                                         Value="{Binding AccentColorHex, Mode=TwoWay}" />
+                    <ComboBox x:Name="AccentModeCombo" MinWidth="150"
+                              DisplayMemberPath="Name"
+                              SelectionChanged="OnAccentModeChanged" />
+                </StackPanel>
+            </controls:SettingRow>
+
+            <controls:SettingRow x:Name="AccentShiftRow" EditorMinWidth="264">
+                <controls:LabeledSlider x:Name="AccentShiftSlider"
+                                        Width="264"
+                                        Minimum="0"
+                                        Maximum="100"
+                                        Step="1"
+                                        DisplayFormat="F0"
+                                        Unit="%"
+                                        ShowEditableValue="True"
+                                        Value="{Binding AccentShift, Mode=TwoWay}"
+                                        ValueCommitted="OnSliderValueCommitted" />
+            </controls:SettingRow>
+
+            <controls:SettingRow x:Name="MonochromeRow" EditorMinWidth="160">
+                <StackPanel Spacing="6" HorizontalAlignment="Right">
+                    <ToggleSwitch x:Name="MonochromeToggle"
+                                  HorizontalAlignment="Right"
+                                  Toggled="OnMonochromeToggled" />
+                    <ComboBox x:Name="MonochromeVariantCombo"
+                              MinWidth="150"
+                              DisplayMemberPath="Name"
+                              SelectionChanged="OnMonochromeVariantChanged" />
+                </StackPanel>
+            </controls:SettingRow>
+
+            <controls:SettingRow x:Name="SolidBackgroundRow" LayoutMode="Stacked">
+                <StackPanel Spacing="8" HorizontalAlignment="Stretch">
+                    <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Right">
+                        <TextBlock x:Name="FollowAccentLabelText"
+                                   MinWidth="90"
+                                   VerticalAlignment="Center"
+                                   TextWrapping="Wrap" />
+                        <ToggleSwitch x:Name="FollowAccentToggle"
+                                      VerticalAlignment="Center"
+                                      Toggled="OnFollowAccentToggled" />
+                    </StackPanel>
+                    <TextBlock x:Name="FollowAccentHintText"
+                               Style="{StaticResource HostCaptionTextStyle}"
+                               HorizontalAlignment="Right"
+                               MaxWidth="420" />
+                    <StackPanel x:Name="SolidDarkPanel"
+                                Orientation="Horizontal"
+                                Spacing="10"
+                                HorizontalAlignment="Right">
+                        <TextBlock x:Name="SolidDarkLabelText"
+                                   MinWidth="90"
+                                   VerticalAlignment="Center"
+                                   TextWrapping="Wrap" />
+                        <controls:ColorInput x:Name="SolidDarkInput"
+                                             AllowEmpty="True"
+                                             ColorFormat="Rgb"
+                                             AlphaPolicy="ForceOpaque"
+                                             Value="{Binding SolidBackgroundDarkHex, Mode=TwoWay}" />
+                        <Button x:Name="ApplySolidToLightButton" Click="OnApplySolidToLightClick" />
+                    </StackPanel>
+                    <StackPanel x:Name="SolidLightPanel"
+                                Orientation="Horizontal"
+                                Spacing="10"
+                                HorizontalAlignment="Right">
+                        <TextBlock x:Name="SolidLightLabelText"
+                                   MinWidth="90"
+                                   VerticalAlignment="Center"
+                                   TextWrapping="Wrap" />
+                        <controls:ColorInput x:Name="SolidLightInput"
+                                             AllowEmpty="True"
+                                             ColorFormat="Rgb"
+                                             AlphaPolicy="ForceOpaque"
+                                             Value="{Binding SolidBackgroundLightHex, Mode=TwoWay}" />
+                        <Button x:Name="ApplySolidToDarkButton" Click="OnApplySolidToDarkClick" />
+                    </StackPanel>
+                </StackPanel>
+            </controls:SettingRow>
+
+            <!-- ===== 高级外观 ===== -->
+            <TextBlock x:Name="AdvancedHeaderText" Style="{StaticResource HostSectionHeaderStyle}" />
+
+            <controls:SettingRow x:Name="FontRow" LayoutMode="Stacked">
+                <StackPanel Spacing="6" HorizontalAlignment="Stretch" MinWidth="260">
+                    <TextBox x:Name="FontSearchBox" TextChanged="OnFontSearchChanged" />
+                    <ComboBox x:Name="FontCombo" HorizontalAlignment="Stretch"
+                              SelectionChanged="OnFontChanged" />
+                    <TextBlock x:Name="FontNoResultsText"
+                               Style="{StaticResource HostCaptionTextStyle}" />
+                </StackPanel>
+            </controls:SettingRow>
+
+            <controls:SettingRow x:Name="TitleBarStyleRow" LayoutMode="Inline">
+                <ComboBox x:Name="TitleBarStyleCombo" MinWidth="150"
+                          DisplayMemberPath="Name"
+                          SelectionChanged="OnTitleBarStyleChanged" />
+            </controls:SettingRow>
+
+            <TextBlock x:Name="TitleBarStyleNoteText"
+                       Style="{StaticResource HostCaptionTextStyle}"
+                       Margin="16,0,16,6" />
+
+            <controls:SettingRow x:Name="TitleBarSizeRow" LayoutMode="Inline">
+                <ComboBox x:Name="TitleBarSizeCombo" MinWidth="150"
+                          DisplayMemberPath="Name"
+                          SelectionChanged="OnTitleBarSizeChanged" />
+            </controls:SettingRow>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

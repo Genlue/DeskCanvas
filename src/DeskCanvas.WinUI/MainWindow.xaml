@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Window
+    x:Class="DeskCanvas.WinUI.MainWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Title="DeskCanvas">
+    <Grid Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+        <StackPanel Margin="24" Spacing="8">
+            <TextBlock Text="DeskCanvas" Style="{StaticResource TitleTextBlockStyle}" />
+            <TextBlock x:Name="StatusText" Text="appstartup" />
+            <TextBlock x:Name="StageText" IsTextSelectionEnabled="True" Opacity="0.75" />
+        </StackPanel>
+    </Grid>
+</Window>

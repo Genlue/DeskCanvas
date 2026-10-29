@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<root>
+    <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+        <xsd:element name="root" msdata:IsDataSet="true">
+            
+        </xsd:element>
+    </xsd:schema>
+    <resheader name="resmimetype">
+        <value>text/microsoft-resx</value>
+    </resheader>
+    <resheader name="version">
+        <value>1.3</value>
+    </resheader>
+    <resheader name="reader">
+        <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    </resheader>
+    <resheader name="writer">
+        <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    </resheader>
+    <data name="TipsHeader" xml:space="preserve">
+        <value>快捷操作与技巧</value>
+    </data>
+    <data name="QuickMoveTitle" xml:space="preserve">
+        <value>快捷移动小组件</value>
+    </data>
+    <data name="QuickMoveSubtitle" xml:space="preserve">
+        <value>按住 Ctrl 键并使用鼠标左键拖动，可在任何组件（包括地图、便签、文件夹等可交互组件）上直接移动窗口</value>
+    </data>
+    <data name="QuickMoveShortcut" xml:space="preserve">
+        <value>Ctrl + 鼠标左键拖动</value>
+    </data>
+    <data name="SwitchStackTitle" xml:space="preserve">
+        <value>切换重叠组件</value>
+    </data>
+    <data name="SwitchStackSubtitle" xml:space="preserve">
+        <value>在重叠组件上按住鼠标中键并滚动滚轮，即可在多个子组件间循环切换，无需对准右侧小圆点</value>
+    </data>
+    <data name="SwitchStackShortcut" xml:space="preserve">
+        <value>鼠标中键 + 滚轮</value>
+    </data>
+    <data name="OpenLinkFailedTitle" xml:space="preserve">
+        <value>无法打开链接</value>
+    </data>
+    <data name="OpenLinkFailedMessage" xml:space="preserve">
+        <value>Windows 无法打开“{0}”。请复制地址后手动打开。</value>
+    </data>
+</root>

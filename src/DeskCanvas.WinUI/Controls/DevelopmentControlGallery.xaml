@@ -1,0 +1,242 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl
+    x:Class="DeskCanvas.WinUI.Controls.DevelopmentControlGallery"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="using:DeskCanvas.WinUI.Controls">
+
+    <!--
+        开发用目检页（不是产品页面）：把公共控件和典型状态排在一起，供协调者截图验收。
+
+        无参构造，宿主可以直接：
+            var window = new Window { Content = new DevelopmentControlGallery() };
+            window.Activate();
+        用户可见的业务文案仍从 Locale 取（在 code-behind 里赋值），这里只有开发者标题。
+
+    -->
+    <ScrollViewer Background="{ThemeResource HostPageBackgroundBrush}"
+                  Padding="{StaticResource HostPagePadding}"
+                  HorizontalScrollMode="Disabled"
+                  HorizontalScrollBarVisibility="Disabled">
+        <StackPanel Spacing="{StaticResource HostSectionSpacing}" MaxWidth="880" HorizontalAlignment="Left">
+
+            <StackPanel Spacing="4">
+                <TextBlock Text="DeskCanvas WinUI — control gallery"
+                           Style="{StaticResource HostTitleTextStyle}"
+                           FontSize="{StaticResource HostFontSizeLargeTitle}" />
+                <TextBlock x:Name="CommitLog" Style="{StaticResource HostCaptionTextStyle}" />
+            </StackPanel>
+
+            <!-- ======================= SettingRow ======================= -->
+            <StackPanel Spacing="4">
+                <TextBlock Text="SettingRow — inline, adaptive, hints" Style="{StaticResource HostSectionHeaderStyle}" />
+
+                <Border Style="{StaticResource HostCardStyle}" Padding="0">
+                    <StackPanel>
+                        <controls:SettingRow x:Name="BlurRow">
+                            <controls:SettingRow.Icon>
+                                <FontIcon Glyph="{StaticResource HostGlyphColor}"
+                                          FontFamily="{StaticResource HostSymbolFont}"
+                                          FontSize="18" />
+                            </controls:SettingRow.Icon>
+                            <controls:LabeledSlider x:Name="BlurSlider" Width="264"
+                                                    Minimum="0" Maximum="100" Step="1"
+                                                    ShowEditableValue="True" DisplayFormat="F0" Unit="%" />
+                        </controls:SettingRow>
+
+                        <Border Style="{StaticResource HostDividerStyle}" />
+
+                        <controls:SettingRow x:Name="ToggleRow">
+                            <ToggleSwitch x:Name="LiveSamplingSwitch" HorizontalAlignment="Right" />
+                        </controls:SettingRow>
+
+                        <Border Style="{StaticResource HostDividerStyle}" />
+
+                        <controls:SettingRow x:Name="AdminRow" AdminRequired="True">
+                            <Button x:Name="AdminActionButton" Click="OnAdminActionClick" />
+                        </controls:SettingRow>
+
+                        <Border Style="{StaticResource HostDividerStyle}" />
+
+                        <controls:SettingRow x:Name="RestartRow" RestartRequired="True">
+                            <controls:LabeledSlider x:Name="HighlightSlider" Width="220"
+                                                    Minimum="0" Maximum="100" Step="5" DisplayFormat="F0" />
+                        </controls:SettingRow>
+                    </StackPanel>
+                </Border>
+
+                <TextBlock Text="SettingRow — forced wrap at 360 px" Style="{StaticResource HostCaptionTextStyle}" />
+                <Border Style="{StaticResource HostCardStyle}" Padding="0" Width="360" HorizontalAlignment="Left">
+                    <controls:SettingRow x:Name="NarrowRow">
+                        <TextBox x:Name="NarrowEditor" Width="220" />
+                    </controls:SettingRow>
+                </Border>
+            </StackPanel>
+
+            <!-- ======================= LabeledSlider ======================= -->
+            <StackPanel Spacing="4">
+                <TextBlock Text="LabeledSlider — preview vs commit" Style="{StaticResource HostSectionHeaderStyle}" />
+                <Border Style="{StaticResource HostCardStyle}" Padding="0">
+                    <StackPanel>
+                        <controls:SettingRow x:Name="OpacityRow">
+                            <controls:LabeledSlider x:Name="OpacitySlider" Width="264"
+                                                    Minimum="0" Maximum="1" Step="0.05"
+                                                    ShowEditableValue="True" DisplayFormat="F2"
+                                                    ValueCommitted="OnSliderCommitted" />
+                        </controls:SettingRow>
+                        <Border Style="{StaticResource HostDividerStyle}" />
+                        <controls:SettingRow x:Name="ReadOnlySliderRow">
+                            <controls:LabeledSlider x:Name="PlainSlider" Width="264"
+                                                    Minimum="0" Maximum="100" Step="1"
+                                                    DisplayFormat="F0" Unit=" px"
+                                                    ValueCommitted="OnSliderCommitted" />
+                        </controls:SettingRow>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+
+            <!-- ======================= ColorInput ======================= -->
+            <StackPanel Spacing="4">
+                <TextBlock Text="ColorInput — hex draft, flyout picker, invalid input" Style="{StaticResource HostSectionHeaderStyle}" />
+                <Border Style="{StaticResource HostCardStyle}" Padding="0">
+                    <StackPanel>
+                        <controls:SettingRow x:Name="AccentRow">
+                            <controls:ColorInput x:Name="AccentColorInput"
+                                                 ColorFormat="Argb" AlphaPolicy="Preserve" AllowEmpty="True"
+                                                 IsAlphaVisible="True"
+                                                 ValueCommitted="OnColorCommitted" />
+                        </controls:SettingRow>
+                        <Border Style="{StaticResource HostDividerStyle}" />
+                        <controls:SettingRow x:Name="BackgroundRow">
+                            <controls:ColorInput x:Name="BackgroundColorInput"
+                                                 ColorFormat="Rgb" AlphaPolicy="ForceOpaque"
+                                                 ValueCommitted="OnColorCommitted" />
+                        </controls:SettingRow>
+                        <Border Style="{StaticResource HostDividerStyle}" />
+                        <controls:SettingRow x:Name="InvalidColorRow">
+                            <!-- 演示“存档里是坏值”：错误提示占真实布局，模型不被改写。 -->
+                            <controls:ColorInput x:Name="InvalidColorInput"
+                                                 ColorFormat="Argb" AlphaPolicy="Preserve" />
+                        </controls:SettingRow>
+                    </StackPanel>
+                </Border>
+                <TextBlock Text="Try '#12' then Enter: the error stays inline and the model is untouched."
+                           Style="{StaticResource HostCaptionTextStyle}" />
+            </StackPanel>
+
+            <!-- ======================= CollapsibleSection ======================= -->
+            <StackPanel Spacing="4">
+                <TextBlock Text="CollapsibleSection — native Expander" Style="{StaticResource HostSectionHeaderStyle}" />
+                <Border Style="{StaticResource HostCardStyle}" Padding="0">
+                    <controls:CollapsibleSection x:Name="OpticsSection" Margin="16,8,16,8">
+                        <controls:CollapsibleSection.SectionContent>
+                            <StackPanel>
+                                <controls:SettingRow x:Name="OpticsRowA">
+                                    <ToggleSwitch HorizontalAlignment="Right" />
+                                </controls:SettingRow>
+                                <Border Style="{StaticResource HostDividerStyle}" />
+                                <controls:SettingRow x:Name="OpticsRowB">
+                                    <controls:LabeledSlider Minimum="5" Maximum="100" Step="1"
+                                                            ShowEditableValue="True" DisplayFormat="F0" />
+                                </controls:SettingRow>
+                            </StackPanel>
+                        </controls:CollapsibleSection.SectionContent>
+                    </controls:CollapsibleSection>
+                </Border>
+            </StackPanel>
+
+            <!-- ======================= ThemeButton ======================= -->
+            <StackPanel Spacing="4">
+                <TextBlock Text="ThemeButton — material samples (selected ring, dark preview)"
+                           Style="{StaticResource HostSectionHeaderStyle}" />
+                <Border Style="{StaticResource HostCardStyle}">
+                    <StackPanel Orientation="Horizontal" Spacing="18">
+                        <controls:ThemeButton x:Name="AcrylicSample" Click="OnThemeSampleClicked" />
+                        <controls:ThemeButton x:Name="GlassSample" Click="OnThemeSampleClicked" />
+                        <controls:ThemeButton x:Name="ColorfulSample" Click="OnThemeSampleClicked" />
+                        <controls:ThemeButton x:Name="DarkSample" Click="OnThemeSampleClicked" IsDarkPreview="True" />
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+
+            <!-- ======================= SharedStatusPresenter ======================= -->
+            <StackPanel Spacing="4">
+                <TextBlock Text="SharedStatusPresenter — loading / empty / stale / error"
+                           Style="{StaticResource HostSectionHeaderStyle}" />
+                <Border Style="{StaticResource HostCardStyle}">
+                    <StackPanel Spacing="10">
+                        <controls:SharedStatusPresenter x:Name="StatusLoading" />
+                        <controls:SharedStatusPresenter x:Name="StatusEmpty" />
+                        <controls:SharedStatusPresenter x:Name="StatusStale" />
+                        <controls:SharedStatusPresenter x:Name="StatusError" />
+                        <Button x:Name="CycleStatusButton" Click="OnCycleStatusClick" HorizontalAlignment="Left" />
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+
+            <!-- ======================= 图标按钮 / 徽标 / 卡片 / 分隔线 ======================= -->
+            <StackPanel Spacing="4">
+                <TextBlock Text="Icon buttons, badge, card, divider" Style="{StaticResource HostSectionHeaderStyle}" />
+                <Border Style="{StaticResource HostCardStyle}">
+                    <StackPanel Spacing="12">
+                        <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                            <Button Style="{StaticResource HostIconButtonStyle}"
+                                    ToolTipService.ToolTip="Add" AutomationProperties.Name="Add">
+                                <FontIcon Glyph="{StaticResource HostGlyphAdd}" FontFamily="{StaticResource HostSymbolFont}" FontSize="14" />
+                            </Button>
+                            <Button Style="{StaticResource HostIconButtonCompactStyle}"
+                                    ToolTipService.ToolTip="Refresh" AutomationProperties.Name="Refresh">
+                                <FontIcon Glyph="{StaticResource HostGlyphRefresh}" FontFamily="{StaticResource HostSymbolFont}" FontSize="12" />
+                            </Button>
+                            <Button Style="{StaticResource HostToolbarButtonStyle}">
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <FontIcon Glyph="{StaticResource HostGlyphSettings}" FontFamily="{StaticResource HostSymbolFont}" FontSize="14" />
+                                    <TextBlock Text="Toolbar" VerticalAlignment="Center" />
+                                </StackPanel>
+                            </Button>
+                            <Border Style="{StaticResource HostBadgeStyle}">
+                                <TextBlock Style="{StaticResource HostBadgeTextStyle}" Text="4×2" />
+                            </Border>
+                            <Border Style="{StaticResource HostBadgeStyle}">
+                                <TextBlock Style="{StaticResource HostBadgeTextStyle}" Text="Aa" />
+                            </Border>
+                        </StackPanel>
+                        <Border Style="{StaticResource HostDividerStyle}" />
+                        <Border Style="{StaticResource HostSubtleCardStyle}">
+                            <TextBlock Text="Subtle card — HostSubtleCardStyle"
+                                       Style="{StaticResource HostCaptionTextStyle}" />
+                        </Border>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+
+            <!-- ======================= SecondaryPanelShell ======================= -->
+            <StackPanel Spacing="4">
+                <TextBlock Text="SecondaryPanelShell — shared 13-panel chrome" Style="{StaticResource HostSectionHeaderStyle}" />
+                <Border Width="440" Height="380" HorizontalAlignment="Left">
+                    <controls:SecondaryPanelShell x:Name="PanelDemo">
+                        <controls:SecondaryPanelShell.HeaderActions>
+                            <Button Style="{StaticResource HostIconButtonCompactStyle}"
+                                    ToolTipService.ToolTip="Refresh" AutomationProperties.Name="Refresh">
+                                <FontIcon Glyph="{StaticResource HostGlyphRefresh}" FontFamily="{StaticResource HostSymbolFont}" FontSize="12" />
+                            </Button>
+                        </controls:SecondaryPanelShell.HeaderActions>
+                        <controls:SecondaryPanelShell.Body>
+                            <StackPanel>
+                                <controls:SettingRow x:Name="PanelRow" Padding="0,0,0,0">
+                                    <ToggleSwitch HorizontalAlignment="Right" />
+                                </controls:SettingRow>
+                                <Border Style="{StaticResource HostDividerStyle}" />
+                                <controls:ColorInput x:Name="PanelColorInput" ColorFormat="Argb" AlphaPolicy="Preserve" />
+                            </StackPanel>
+                        </controls:SecondaryPanelShell.Body>
+                        <controls:SecondaryPanelShell.Footer>
+                            <TextBlock x:Name="PanelFooterText" Style="{StaticResource HostCaptionTextStyle}" />
+                        </controls:SecondaryPanelShell.Footer>
+                    </controls:SecondaryPanelShell>
+                </Border>
+            </StackPanel>
+
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

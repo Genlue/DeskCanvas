@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl
+    x:Class="DeskCanvas.WinUI.Settings.Pages.PagePlaceholder"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!--
+        占位页：本轮只交付设置外壳、导航、页面生命周期。正文由后续批次按
+        报告 §3 第二步（7 个系统页）与 §3 第三步（37 个组件设置页）的页面表迁移。
+
+        这里只用 WinUI 原生控件，不引用 Controls/ 下的共享控件（S2.1 并行实现中）。
+
+        文案全部来自 SettingsShellStrings 资源，XAML 里不写字面文本。
+
+    -->
+    <!-- 横向必须禁用滚动：默认的无限宽度测量会让 TextWrapping 失效，正文只有一行然后被窗口裁掉。 -->
+    <ScrollViewer VerticalScrollBarVisibility="Auto"
+                  HorizontalScrollBarVisibility="Disabled"
+                  HorizontalScrollMode="Disabled">
+        <StackPanel Margin="24,0,24,24" Spacing="12">
+            <InfoBar x:Name="MigrationNotice"
+                     IsOpen="True"
+                     IsClosable="False"
+                     Severity="Warning" />
+            <TextBlock x:Name="BodyText"
+                       HorizontalAlignment="Stretch"
+                       TextWrapping="Wrap" />
+            <TextBlock x:Name="PageKeyText"
+                       FontFamily="Consolas"
+                       IsTextSelectionEnabled="True"
+                       Opacity="0.6" />
+            <TextBlock x:Name="PacksText"
+                       HorizontalAlignment="Stretch"
+                       TextWrapping="Wrap"
+                       Opacity="0.8" />
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>
