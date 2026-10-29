@@ -71,6 +71,18 @@ public static class ScreenSnapshotProvider
     /// </summary>
     private static int[]? lastSignature;
 
+    /// <summary>
+    /// The interest region the published frame was produced for. Guarded by <see cref="Gate"/>.
+    /// <para>
+    /// A capture is clipped to ONE monitor (<see cref="ScreenBackdropSource"/>), so on a multi-screen
+    /// desktop the frame can legitimately be smaller than the union it was asked for. Without this
+    /// record the coverage check would call that frame "too small" on every single call and capture
+    /// forever; with it, "asked for exactly this region already" is answered from the frame in hand
+    /// and the retry only happens when the requested region really changed.
+    /// </para>
+    /// </summary>
+    private static CaptureRect lastInterest;
+
     /// <summary>Diagnostics: how many captures have been taken since process start.</summary>
     public static int CaptureCount { get; private set; }
 
@@ -119,13 +131,24 @@ public static class ScreenSnapshotProvider
     /// The current screen snapshot. The caller <b>owns</b> the returned reference and must dispose
     /// it; returns <c>null</c> when the screen could not be captured at all (the caller then falls
     /// back to the wallpaper pipeline).
+    /// <para>
+    /// The cached frame is only handed out when it actually <b>covers</b> what the live surfaces are
+    /// asking for. A live capture is region-limited (see <see cref="GlassInterest"/>), so the frame
+    /// taken for the search card's own neighbourhood has no pixels where the four 分类圆钮 sit;
+    /// the shader then addresses texels outside the patch and clamps to its edge, which is the
+    /// reported "圆钮采样的是壁纸而不是屏幕". The interest is reported by every surface before it
+    /// asks for a frame (LiquidGlassSurface.ReportSamplingInterest), so a surface that just became
+    /// visible makes the next call capture instead of reusing a smaller frame.
+    /// </para>
     /// </summary>
     public static WallpaperSnapshot? Get()
     {
         var interval = Volatile.Read(ref intervalMs);
+        var interest = GlassInterest.ScreenSamplingRegion();
         lock (Gate)
         {
-            if (current != null && Environment.TickCount64 - capturedAt < interval)
+            if (current != null && Environment.TickCount64 - capturedAt < interval
+                && (Covers(current, interest) || interest == lastInterest))
             {
                 current.AddRef();
                 return current;
@@ -140,6 +163,23 @@ public static class ScreenSnapshotProvider
             current.AddRef();
             return current;
         }
+    }
+
+    /// <summary>
+    /// Whether a published live frame holds pixels for every part of <paramref name="interest"/>.
+    /// <para>
+    /// A patch snapshot covers exactly the rectangle it was cropped from
+    /// (<see cref="WallpaperSnapshot.RegionX"/> + the bitmap's size); a snapshot of the whole
+    /// desktop covers everything. A wallpaper snapshot is not a live frame and is never used on
+    /// this path, so it counts as "no coverage" and forces a real capture. The rule itself lives in
+    /// <see cref="SnapshotCoverage"/> so the check programs can pin it.
+    /// </para>
+    /// </summary>
+    private static bool Covers(WallpaperSnapshot? frame, CaptureRect interest)
+    {
+        if (interest.IsEmpty) return true;
+        if (frame is not { LiveCapture: true, CachedBitmap: { } bitmap }) return false;
+        return SnapshotCoverage.Covers(frame.RegionX, frame.RegionY, bitmap.Width, bitmap.Height, interest);
     }
 
     /// <summary>Force a fresh capture (the overlay was just summoned; the previous frame is stale).</summary>
@@ -165,13 +205,21 @@ public static class ScreenSnapshotProvider
     /// <summary>Whether the last capture actually replaced the frame (and therefore must be redrawn).</summary>
     private static bool CaptureFrame(bool skipUnchanged)
     {
-        if (skipUnchanged)
+        // One read for both the throttle and the capture: the region the live surfaces want.
+        var interest = GlassInterest.ScreenSamplingRegion();
+
+        // Set when the published frame does not hold the requested rectangle at all. Such a round
+        // must produce pixels even if the desktop itself did not change: the crop's geometry is
+        // what changed, so "same pixels" (the signature below) is not a reason to keep the old
+        // frame — the caller would go on sampling a region its control does not sit in.
+        bool coverageMiss;
+        lock (Gate)
         {
-            lock (Gate)
-            {
-                if (current != null && Environment.TickCount64 - capturedAt < Volatile.Read(ref intervalMs))
-                    return false;
-            }
+            var isFresh = current != null
+                          && Environment.TickCount64 - capturedAt < Volatile.Read(ref intervalMs);
+            var covers = Covers(current, interest) || interest == lastInterest;
+            if (skipUnchanged && isFresh && covers) return false;
+            coverageMiss = !covers;
         }
 
         WallpaperSnapshot? fresh = null;
@@ -180,13 +228,16 @@ public static class ScreenSnapshotProvider
         {
             // Region-limited: the capture samples the union of the screen-sampling glass rects (the
             // launcher's own neighbourhood), not the whole desktop.
-            var interest = GlassInterest.ScreenSamplingRegion();
-            var frame = ScreenBackdropSource.Acquire(interest, exclude, freshOnly: skipUnchanged);
+            var frame = ScreenBackdropSource.Acquire(interest, exclude, freshOnly: skipUnchanged && !coverageMiss);
             if (frame.IsCurrent)
             {
                 // Nothing on screen changed: skip the publish (and the copy behind it) instead of
                 // re-capturing and then discovering the same thing from the pixel signature.
-                lock (Gate) capturedAt = Environment.TickCount64;
+                lock (Gate)
+                {
+                    capturedAt = Environment.TickCount64;
+                    lastInterest = interest;
+                }
                 return false;
             }
 
@@ -197,6 +248,13 @@ public static class ScreenSnapshotProvider
                 // nothing per published frame (see PatchBitmapPool).
                 fresh = WallpaperSnapshot.FromBitmap(null, new SKColor(32, 38, 48), frame.Bitmap,
                     live: true, regionX: frame.OriginX, regionY: frame.OriginY, pooled: frame.Pooled);
+
+                // "The frame did not contain my rectangle" is otherwise invisible, and it is the
+                // first thing to check when a surface refracts a desktop that is not behind it.
+                if (coverageMiss)
+                    GlassDiagnostics.Event(
+                        $"[screen-sample] recropped for a larger interest {interest} → " +
+                        $"{frame.Bitmap.Width}x{frame.Bitmap.Height} at {frame.OriginX},{frame.OriginY}");
             }
         }
         catch (Exception ex)
@@ -229,11 +287,13 @@ public static class ScreenSnapshotProvider
         }
 
         // Same desktop as the frame already published: drop the new bitmap and stay silent. The
-        // overlay keeps drawing the material it has, which is still the truth.
+        // overlay keeps drawing the material it has, which is still the truth. Never on a coverage
+        // round — there the frame's *geometry* is what is out of date, so the pixels must publish
+        // even when they look identical (see coverageMiss above).
         if (fresh.CachedBitmap is { } bitmap)
         {
             var signature = DesktopCapturer.SampleGrid(bitmap, SignatureColumns, SignatureRows);
-            if (skipUnchanged && lastSignature is { } previous && SameSignature(signature, previous))
+            if (skipUnchanged && !coverageMiss && lastSignature is { } previous && SameSignature(signature, previous))
             {
                 fresh.Dispose();
                 lock (Gate) capturedAt = Environment.TickCount64;
@@ -251,6 +311,7 @@ public static class ScreenSnapshotProvider
             old = current;
             current = fresh;
             capturedAt = Environment.TickCount64;
+            lastInterest = interest;
             CaptureCount++;
         }
 
@@ -335,6 +396,7 @@ public static class ScreenSnapshotProvider
             previous = current;
             current = null;
             lastSignature = null;
+            lastInterest = default;
             capturedAt = long.MinValue / 2;
         }
 

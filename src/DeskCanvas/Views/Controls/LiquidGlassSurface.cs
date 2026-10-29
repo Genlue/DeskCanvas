@@ -71,6 +71,25 @@ public class LiquidGlassSurface : GlassSurfaceBase
     }
 
     /// <summary>
+    /// Publish a newer <b>live screen</b> frame to every surface that samples one.
+    /// <para>
+    /// The launcher's screen-sampling loop owns that frame, and the launcher is no longer the only
+    /// consumer: 聚焦搜索's four 分类圆钮 are independent <see cref="LiquidGlassSurface"/> instances
+    /// with their own material, so refreshing only the card's surface left them holding the frame
+    /// captured before they appeared — they kept refracting a piece of desktop that was not under
+    /// them (the reported "圆钮采样的是壁纸"). The wallpaper pacer cannot cover them either: it only
+    /// publishes when the wallpaper itself changes, and a still desktop publishes nothing.
+    /// </para>
+    /// </summary>
+    public static void RefreshScreenSamplingSurfaces()
+    {
+        foreach (var surface in Active)
+        {
+            if (surface.ScreenSampling) surface.RequestSampledFrame();
+        }
+    }
+
+    /// <summary>
     /// Check seam for the settle close-out sweep: replaces the per-surface action (the immediate
     /// re-render) with an observer, so the close-out contract is assertable without the render
     /// pipeline. Null in the app; the sweep's SELECTION logic (DemandsFrames + snapshot identity)

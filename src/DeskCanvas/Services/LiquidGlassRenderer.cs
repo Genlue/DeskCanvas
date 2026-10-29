@@ -18,6 +18,16 @@ namespace DeskCanvas.Services;
 /// </summary>
 public static class LiquidGlassRenderer
 {
+    /// <summary>
+    /// Sampling for a wallpaper drawn into a card backdrop: bilinear with mipmaps. The retired
+    /// <c>SKFilterQuality.High</c> meant bicubic + mipmaps; SkiaSharp 3 exposes cubic and mipmap
+    /// as separate, mutually exclusive <see cref="SKSamplingOptions"/> shapes, and for a desktop
+    /// capture that is nearly always minified into the card, the mipmap is the half that keeps
+    /// the 4K noise from aliasing. Callers that want the raw (nearest) behaviour pass nothing.
+    /// </summary>
+    public static readonly SKSamplingOptions WallpaperSampling =
+        new(SKFilterMode.Linear, SKMipmapMode.Linear);
+
     public record Frame(int Width, int Height, float Scale, float Radius,
         float DesktopX, float DesktopY, float DesktopWidth, float DesktopHeight,
         float ScreenX, float ScreenY, float ScreenWidth, float ScreenHeight,
@@ -109,12 +119,13 @@ public static class LiquidGlassRenderer
             using var surface = SKSurface.Create(new SKImageInfo(frame.Width + 2 * pad, frame.Height + 2 * pad));
             surface.Canvas.Clear(wallpaper.Background);
             using var filter = sigma > 0 ? SKImageFilter.CreateBlur(sigma, sigma) : null;
-            using var paint = new SKPaint { IsAntialias = true, FilterQuality = SKFilterQuality.High, ImageFilter = filter };
+            using var paint = new SKPaint { IsAntialias = true, ImageFilter = filter };
             surface.Canvas.Save();
             surface.Canvas.Translate(pad, pad);
             // A region-limited capture addresses the desktop from its own origin: shifting the
             // frame by -region puts the patch back where it belongs, and the optics are untouched.
-            DrawWallpaper(surface.Canvas, source, paint, RegionFrame(frame, wallpaper), wallpaper);
+            DrawWallpaper(surface.Canvas, source, paint, RegionFrame(frame, wallpaper), wallpaper,
+                WallpaperSampling);
             surface.Canvas.Restore();
             using var image = surface.Snapshot();
             var result = new SKBitmap(new SKImageInfo(frame.Width, frame.Height, SKColorType.Bgra8888, SKAlphaType.Premul));
@@ -196,10 +207,11 @@ public static class LiquidGlassRenderer
             if (image != null)
             {
                 using var filter = sigma > 0 ? SKImageFilter.CreateBlur(sigma, sigma) : null;
-                using var paint = new SKPaint { IsAntialias = true, FilterQuality = SKFilterQuality.High, ImageFilter = filter };
+                using var paint = new SKPaint { IsAntialias = true, ImageFilter = filter };
                 canvas.Save();
                 canvas.Translate(pad, pad);
-                DrawWallpaper(canvas, image, paint, RegionFrame(frame, wallpaper), wallpaper);
+                DrawWallpaper(canvas, image, paint, RegionFrame(frame, wallpaper), wallpaper,
+                    WallpaperSampling);
                 canvas.Restore();
             }
         }
@@ -429,8 +441,13 @@ public static class LiquidGlassRenderer
         }
     }
 
+    /// <param name="sampling">
+    /// Resampling for the scaled draws (see <see cref="WallpaperSampling"/>). Omitted keeps the
+    /// plain <c>DrawBitmap</c> route — nearest neighbour, and no pixel copy for a mutable bitmap,
+    /// which is what the per-frame live-capture path wants.
+    /// </param>
     public static void DrawWallpaper(SKCanvas canvas, SKBitmap image, SKPaint paint,
-        Frame frame, WallpaperSnapshot wallpaper)
+        Frame frame, WallpaperSnapshot wallpaper, SKSamplingOptions? sampling = null)
     {
         var glass = frame.Theme.EffectiveGlass;
         var offX = (float)(glass.WallpaperOffsetX * frame.Scale);
@@ -462,11 +479,11 @@ public static class LiquidGlassRenderer
                         rect.Top + srcTop * frame.PixelScale,
                         (srcRight - srcLeft) * frame.PixelScale,
                         (srcBottom - srcTop) * frame.PixelScale);
-                    canvas.DrawBitmap(image, srcRect, dstRect, paint);
+                    DrawMappedBitmap(canvas, image, srcRect, dstRect, paint, sampling);
                     return;
                 }
             }
-            canvas.DrawBitmap(image, rect, paint);
+            DrawMappedBitmap(canvas, image, rect, paint, sampling);
             return;
         }
 
@@ -502,7 +519,41 @@ public static class LiquidGlassRenderer
             drawWidth = image.Width * ratio;
             drawHeight = image.Height * ratio;
         }
-        canvas.DrawBitmap(image, SKRect.Create(x + (w - drawWidth) / 2 - offX, y + (h - drawHeight) / 2 - offY, drawWidth, drawHeight), paint);
+        DrawMappedBitmap(canvas, image,
+            SKRect.Create(x + (w - drawWidth) / 2 - offX, y + (h - drawHeight) / 2 - offY, drawWidth, drawHeight),
+            paint, sampling);
+    }
+
+    /// <summary>
+    /// One scaled bitmap draw with the sampling the caller asked for. SkiaSharp 3 dropped every
+    /// <c>DrawBitmap</c> overload that takes <see cref="SKSamplingOptions"/> — only
+    /// <see cref="SKCanvas.DrawImage(SKImage, SKRect, SKSamplingOptions, SKPaint)"/> carries one —
+    /// so an explicit sampling goes through an image wrapper, while the default keeps the straight
+    /// bitmap draw (no wrapper, and therefore no copy of a mutable bitmap).
+    /// </summary>
+    private static void DrawMappedBitmap(SKCanvas canvas, SKBitmap image, SKRect dest,
+        SKPaint paint, SKSamplingOptions? sampling)
+    {
+        if (sampling is not { } options)
+        {
+            canvas.DrawBitmap(image, dest, paint);
+            return;
+        }
+        using var snapshot = SKImage.FromBitmap(image);
+        canvas.DrawImage(snapshot, dest, options, paint);
+    }
+
+    /// <summary>Source-rect variant of <see cref="DrawMappedBitmap(SKCanvas, SKBitmap, SKRect, SKPaint, SKSamplingOptions?)"/>.</summary>
+    private static void DrawMappedBitmap(SKCanvas canvas, SKBitmap image, SKRect source, SKRect dest,
+        SKPaint paint, SKSamplingOptions? sampling)
+    {
+        if (sampling is not { } options)
+        {
+            canvas.DrawBitmap(image, source, dest, paint);
+            return;
+        }
+        using var snapshot = SKImage.FromBitmap(image);
+        canvas.DrawImage(snapshot, source, dest, options, paint);
     }
 }
 

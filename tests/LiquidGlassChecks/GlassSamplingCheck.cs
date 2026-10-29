@@ -32,6 +32,7 @@ internal static class GlassSamplingCheck
         RectAlgebra();
         HostSelection();
         RegionUnion();
+        FrameCoverage();
 
         Console.WriteLine(failures == 0 ? "glass sampling check passed" : $"{failures} SAMPLING GEOMETRY CHECK(S) FAILED");
         return failures;
@@ -143,6 +144,46 @@ internal static class GlassSamplingCheck
         GlassInterest.Remove("panel");
         Check(GlassInterest.Count == 0 && GlassInterest.SamplingRegion() == virtualScreen,
             "removing every surface restores the whole-screen fallback");
+    }
+
+    /// <summary>
+    /// A region-limited frame may only be reused when it actually contains the requester's
+    /// rectangle. Without this rule the 聚焦搜索 circles (which appear to the right of the card,
+    /// outside the patch the card captured) kept sampling the patch's edge — the reported
+    /// "圆钮采样的是壁纸".
+    /// </summary>
+    private static void FrameCoverage()
+    {
+        // A patch cropped at (600,300), 400×300 — roughly one card's neighbourhood.
+        const int left = 600, top = 300, width = 400, height = 300;
+
+        Check(SnapshotCoverage.Covers(left, top, width, height, new CaptureRect(650, 350, 950, 550)),
+            "a request inside the patch is covered");
+        Check(SnapshotCoverage.Covers(left, top, width, height, new CaptureRect(600, 300, 1000, 600)),
+            "a request equal to the patch is covered");
+
+        // The circles sit past the card's right edge: still inside the margin band that was
+        // captured for the card is fine, past it is not.
+        Check(!SnapshotCoverage.Covers(left, top, width, height, new CaptureRect(980, 320, 1100, 480)),
+            "a request past the patch's right edge is NOT covered");
+        Check(!SnapshotCoverage.Covers(left, top, width, height, new CaptureRect(500, 320, 700, 480)),
+            "a request past the patch's left edge is NOT covered");
+        Check(!SnapshotCoverage.Covers(left, top, width, height, new CaptureRect(650, 550, 950, 700)),
+            "a request past the patch's bottom edge is NOT covered");
+        Check(!SnapshotCoverage.Covers(left, top, width, height, new CaptureRect(650, 200, 950, 400)),
+            "a request past the patch's top edge is NOT covered");
+
+        Check(!SnapshotCoverage.Covers(left, top, width, height, new CaptureRect(0, 0, 2560, 1440)),
+            "the whole desktop is not covered by one card's patch");
+
+        // Degenerate inputs must not read as "covered": a frame with no pixels satisfies nothing,
+        // and an empty request is answered before any arithmetic.
+        Check(!SnapshotCoverage.Covers(left, top, 0, 0, new CaptureRect(650, 350, 950, 550)),
+            "a zero-sized frame covers nothing");
+        Check(SnapshotCoverage.Covers(left, top, width, height, default),
+            "an empty request needs no pixels");
+        Check(SnapshotCoverage.Covers(0, 0, 2560, 1440, new CaptureRect(0, 0, 2560, 1440)),
+            "a full-desktop frame covers the whole interest");
     }
 
     private static void Check(bool condition, string label)

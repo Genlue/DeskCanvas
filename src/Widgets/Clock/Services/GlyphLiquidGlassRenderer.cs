@@ -160,10 +160,11 @@ public static class GlyphLiquidGlassRenderer
                 if (image != null)
                 {
                     using var filter = sigma > 0 ? SKImageFilter.CreateBlur(sigma, sigma) : null;
-                    using var paint = new SKPaint { IsAntialias = true, FilterQuality = SKFilterQuality.High, ImageFilter = filter };
+                    using var paint = new SKPaint { IsAntialias = true, ImageFilter = filter };
                     canvas.Save();
                     canvas.Translate(pad, pad);
-                    LiquidGlassRenderer.DrawWallpaper(canvas, image, paint, frame, wallpaper);
+                    LiquidGlassRenderer.DrawWallpaper(canvas, image, paint, frame, wallpaper,
+                        LiquidGlassRenderer.WallpaperSampling);
                     canvas.Restore();
                 }
                 canvas.Flush();
@@ -209,8 +210,13 @@ public static class GlyphLiquidGlassRenderer
                     using var envCanvas = new SKCanvas(envBitmap);
                     var environmentSigma = Math.Max(3f * scale, strokeRadius * 0.65f) / environmentStep;
                     using var environmentFilter = SKImageFilter.CreateBlur(environmentSigma, environmentSigma);
-                    using var environmentPaint = new SKPaint { ImageFilter = environmentFilter, FilterQuality = SKFilterQuality.High };
-                    envCanvas.DrawBitmap(source, new SKRect(0, 0, environmentWidth, environmentHeight), environmentPaint);
+                    using var environmentPaint = new SKPaint { ImageFilter = environmentFilter };
+                    // The environment map is a deliberately tiny downscale of the card-sized
+                    // source; the image wrapper is what carries the sampling (DrawBitmap's paint
+                    // no longer can) and costs one small copy per frame.
+                    using var environmentSource = SKImage.FromBitmap(source);
+                    envCanvas.DrawImage(environmentSource, new SKRect(0, 0, environmentWidth, environmentHeight),
+                        LiquidGlassRenderer.WallpaperSampling, environmentPaint);
                     envCanvas.Flush();
                 }
                 finally

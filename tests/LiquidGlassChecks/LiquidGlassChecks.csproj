@@ -19,6 +19,8 @@
     <Compile Include="../../src/DeskCanvas/Services/GlassCapture/CaptureSpace.cs" Link="GlassCapture/CaptureSpace.cs" />
     <Compile Include="../../src/DeskCanvas/Services/GlassCapture/WallpaperHostDiscovery.cs" Link="GlassCapture/WallpaperHostDiscovery.cs" />
     <Compile Include="../../src/DeskCanvas/Services/GlassCapture/GlassInterest.cs" Link="GlassCapture/GlassInterest.cs" />
+    <!-- 缓存帧覆盖规则：屏幕局部采样只在帧真的包含请求矩形时才能复用（聚焦搜索圆钮采样错位）。 -->
+    <Compile Include="../../src/DeskCanvas/Services/GlassCapture/SnapshotCoverage.cs" Link="GlassCapture/SnapshotCoverage.cs" />
     <!-- 采集补丁缓冲池：LiquidGlassRenderer 的租约把缓冲还给池子，校验工程必须一起编。 -->
     <Compile Include="../../src/DeskCanvas/Services/GlassCapture/PatchBitmapPool.cs" Link="GlassCapture/PatchBitmapPool.cs" />
     <!-- 液态玻璃核心：背板 + 形状 + 参数 → 材质。CPU 孪生同时是形状几何的参考实现。 -->

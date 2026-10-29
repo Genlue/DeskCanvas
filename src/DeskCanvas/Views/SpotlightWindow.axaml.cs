@@ -1041,7 +1041,11 @@ public partial class SpotlightWindow : Window
             // Sampling a newer frame invalidates the prepared material, not the window's geometry —
             // RequestSampledFrame is the path that repaints without bumping the revision (which
             // would throw away an in-flight prepare on every tick).
-            GlassSurface.RequestSampledFrame();
+            //
+            // Every screen-sampling surface, not just the card's: the four 分类圆钮 carry their own
+            // glass and would otherwise keep the frame captured before they were revealed — the
+            // reported "圆钮采样的是壁纸" (their rectangle was outside that frame's patch).
+            Controls.LiquidGlassSurface.RefreshScreenSamplingSurfaces();
         }
         catch
         {

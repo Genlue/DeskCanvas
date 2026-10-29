@@ -669,8 +669,12 @@ internal static class StaticWallpaperBuilder
             top + (height - drawHeight) / 2f,
             drawWidth,
             drawHeight);
-        using var paint = new SKPaint { IsAntialias = true, FilterQuality = SKFilterQuality.High };
-        canvas.DrawBitmap(image, destination, paint);
+        // The wallpaper is resampled to the monitor rect once, so an image wrapper around the
+        // freshly decoded bitmap is a one-off cost, not a per-frame one. DrawBitmap itself can no
+        // longer carry a sampling option (SKPaint.FilterQuality is gone in SkiaSharp 3).
+        using var snapshot = SKImage.FromBitmap(image);
+        using var paint = new SKPaint { IsAntialias = true };
+        canvas.DrawImage(snapshot, destination, LiquidGlassRenderer.WallpaperSampling, paint);
         canvas.Restore();
     }
 
