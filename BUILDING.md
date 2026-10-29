@@ -27,17 +27,20 @@
 
 ## 打包：单文件 exe
 
-`build.ps1` 默认产出**框架依赖单文件 exe**（需目标机安装 .NET 10 运行时）：
+`build.ps1` 默认产出**自包含单文件 exe**（.NET 10 运行时打进 exe，目标机无需安装任何东西）：
+
+> 所有构建/校验脚本都要求 **PowerShell 7（`pwsh`）**。用 5.1 启动（例如资源管理器右键「使用 PowerShell 运行」——该动词写死在 `System32\WindowsPowerShell\v1.0\powershell.exe`）时，脚本会经 `scripts/ensure-pwsh7.ps1` 检测到并在 pwsh 下自动重启，脚本主体不会在 5.1 上执行。
 
 ```
 ./build.ps1                      # dist\win-x64\DeskCanvas.exe
 ./build.ps1 -Runtime win-arm64   # ARM64
 ./build.ps1 -Portable            # 额外产出官方式便携 zip（exe + Widgets + json）
+./build.ps1 -Setup               # 生成 Inno Setup 安装包（发行版唯一形式）
 ./build.ps1 -Msi                 # 生成 Windows 标准 MSI 安装包 (dist\installer\...)
 ```
 
 ### 原理
-1. `dotnet publish -r <rid> --self-contained false`，csproj 已开启 `PublishSingleFile` + `IncludeNativeLibrariesForSelfExtract`（Avalonia 原生库随 exe 打包，运行时自动解压到临时目录）。
+1. `dotnet publish -r <rid> --self-contained true`，csproj 已开启 `PublishSingleFile` + `PublishReadyToRun` + `IncludeNativeLibrariesForSelfExtract`（.NET 运行时与 Avalonia 原生库随 exe 打包，运行时自动解压到临时目录）。
 2. MSBuild 目标 `BuildWidgetsBundle`（挂 `AssignTargetPaths`）发布全部小组件 → 压缩为 `widgets.zip` → 作为内嵌资源打入 exe；`appSettings.json` / `layout.json` 默认值同样内嵌。
 3. 启动时 `WidgetBundle.ExtractIfNeeded()`（`Program.Main` 最先执行）：
    - **便携模式**：exe 旁存在 `Widgets/` 文件夹 → 全部走本地文件（官方/开发模式，行为不变）。
