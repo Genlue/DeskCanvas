@@ -59,8 +59,8 @@ namespace Storage.Locales {
         public static string Storage_DriveTypeNetwork => ResourceManager.GetString("Storage_DriveTypeNetwork", resourceCulture) ?? "Network";
         public static string Storage_DriveTypeLocal => ResourceManager.GetString("Storage_DriveTypeLocal", resourceCulture) ?? "Local";
         public static string Storage_UsedFreeFormat => ResourceManager.GetString("Storage_UsedFreeFormat", resourceCulture) ?? "Used {0} / {1} · {2} free";
-        public static string Storage_Mode_ProgressBarList => ResourceManager.GetString("Storage_Mode_ProgressBarList", resourceCulture) ?? "📊 Progress Bar List";
-        public static string Storage_Mode_RingDashboard => ResourceManager.GetString("Storage_Mode_RingDashboard", resourceCulture) ?? "⭕ Ring Dashboard";
+        public static string Storage_Mode_ProgressBarList => ResourceManager.GetString("Storage_Mode_ProgressBarList", resourceCulture) ?? "Progress Bar List";
+        public static string Storage_Mode_RingDashboard => ResourceManager.GetString("Storage_Mode_RingDashboard", resourceCulture) ?? "Ring Dashboard";
         public static string Storage_Format_FreeSpace => ResourceManager.GetString("Storage_Format_FreeSpace", resourceCulture) ?? "Free Space (e.g. 138G free)";
         public static string Storage_Format_UsedAndTotal => ResourceManager.GetString("Storage_Format_UsedAndTotal", resourceCulture) ?? "Used / Total (e.g. 374G / 512G)";
         public static string Storage_Format_Percentage => ResourceManager.GetString("Storage_Format_Percentage", resourceCulture) ?? "Percentage (e.g. 73%)";

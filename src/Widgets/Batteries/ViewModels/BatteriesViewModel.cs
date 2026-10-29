@@ -242,7 +242,7 @@ public class BatteryDeviceItem : INotifyPropertyChanged
 
     public string StatusText => !hasDevice
         ? string.Empty
-        : (IsCharging ? (IsZh ? "⚡ 充电中" : "⚡ Charging") : $"{Percentage}%");
+        : (IsCharging ? (IsZh ? "充电中" : "Charging") : $"{Percentage}%");
 
     public string TooltipText => !hasDevice
         ? string.Empty

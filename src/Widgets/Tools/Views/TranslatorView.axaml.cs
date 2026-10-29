@@ -560,7 +560,8 @@ public partial class TranslatorView : UserControl, IWidgetSelfRefreshing, IWidge
             bool isSelected = lang.Code.Equals(currentSourceLang, StringComparison.OrdinalIgnoreCase);
             var item = new MenuItem
             {
-                Header = isSelected ? $"✓ {lang.Name}" : $"   {lang.Name}",
+                Header = lang.Name,
+                    FontWeight = isSelected ? FontWeight.SemiBold : FontWeight.Normal,
                 Tag = lang.Code
             };
             item.Click += OnSelectSourceLang;
@@ -576,7 +577,8 @@ public partial class TranslatorView : UserControl, IWidgetSelfRefreshing, IWidge
             bool isSelected = lang.Code.Equals(currentTargetLang, StringComparison.OrdinalIgnoreCase);
             var item = new MenuItem
             {
-                Header = isSelected ? $"✓ {lang.Name}" : $"   {lang.Name}",
+                Header = lang.Name,
+                    FontWeight = isSelected ? FontWeight.SemiBold : FontWeight.Normal,
                 Tag = lang.Code
             };
             item.Click += OnSelectTargetLang;
@@ -592,7 +594,8 @@ public partial class TranslatorView : UserControl, IWidgetSelfRefreshing, IWidge
             bool isSelected = eng.Code.Equals(currentEngine, StringComparison.OrdinalIgnoreCase);
             var item = new MenuItem
             {
-                Header = isSelected ? $"✓ {eng.FullName}" : $"   {eng.FullName}",
+                Header = eng.FullName,
+                    FontWeight = isSelected ? FontWeight.SemiBold : FontWeight.Normal,
                 Tag = eng.Code
             };
             item.Click += OnSelectEngine;

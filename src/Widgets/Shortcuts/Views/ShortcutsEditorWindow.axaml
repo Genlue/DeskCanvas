@@ -1,19 +1,14 @@
-<Window xmlns="https://github.com/avaloniaui"
+<views:HostDialogWindow xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:views="clr-namespace:Shortcuts.Views"
+        xmlns:ui="using:DeskCanvas.UI.Controls"
         xmlns:locales="clr-namespace:Shortcuts.Locales"
-        xmlns:controls="clr-namespace:DeskCanvas.Views.Controls;assembly=DeskCanvas"
         xmlns:sc="clr-namespace:Shortcuts.Views.Controls"
         x:Class="Shortcuts.Views.ShortcutsEditorWindow"
         Title="{x:Static locales:Locale.Shortcuts_Editor_Title}"
-        Background="Transparent"
-        TransparencyLevelHint="AcrylicBlur, None"
-        TransparencyBackgroundFallback="{DynamicResource SettingsBackground}"
-        ExtendClientAreaToDecorationsHint="True"
-        WindowDecorations="BorderOnly"
-        ExtendClientAreaTitleBarHeightHint="52"
         ShowInTaskbar="True"
         CanResize="True"
-        Width="1040" Height="720" MinWidth="720" MinHeight="520"
+        Width="1072" Height="752" MinWidth="752" MinHeight="552"
         WindowStartupLocation="CenterScreen">
 
     <Window.Styles>
@@ -139,30 +134,32 @@
         </Style>
     </Window.Styles>
 
-    <Border Background="{DynamicResource MenuSurfaceBackground}"
-            BorderBrush="{DynamicResource MenuSurfaceBorder}"
-            BorderThickness="{DynamicResource HostSurfaceBorderThickness}"
-            CornerRadius="{DynamicResource HostSurfaceCornerRadius}"
-            ClipToBounds="True">
-        <Grid RowDefinitions="Auto,Auto,Auto,*,Auto" Margin="16,10,16,14">
-
-            <!-- Title bar: drag area + Done -->
-            <Grid Grid.Row="0" Height="38" ColumnDefinitions="Auto,*,Auto"
-                  Background="Transparent"
-                  controls:PanelDragBehavior.IsDragHandle="True">
+    <!-- 快捷指令编辑器: shared dialog chrome. The title strip (with the live action count) is the
+         shell's HeaderContent and therefore also the drag handle; 完成 is its HeaderActions, so the
+         button is excluded from the drag by the shared behaviour. ContentPadding keeps the editor's
+         own 16,10,16,14 inset, and the window is card + 2 × the shadow gutter wide/tall so the
+         canvas does not lose a pixel. -->
+    <ui:DialogShell ContentPadding="16,10,16,14">
+        <ui:DialogShell.HeaderContent>
+            <Grid ColumnDefinitions="Auto,*,Auto">
                 <TextBlock Grid.Column="0" VerticalAlignment="Center" FontSize="12" Opacity="0.55"
                            Text="{x:Static locales:Locale.Shortcuts_Editor_Title}" />
                 <TextBlock x:Name="ActionCountText" Grid.Column="1" IsHitTestVisible="False"
                            VerticalAlignment="Center" HorizontalAlignment="Center" FontSize="11"
                            Opacity="0.45" />
-                <Button Grid.Column="2" x:Name="DoneButton"
-                        Content="{x:Static locales:Locale.Shortcuts_Done}"
-                        Click="OnDoneClicked"
-                        VerticalAlignment="Center" />
             </Grid>
+        </ui:DialogShell.HeaderContent>
+        <ui:DialogShell.HeaderActions>
+            <Button x:Name="DoneButton"
+                    Content="{x:Static locales:Locale.Shortcuts_Done}"
+                    Click="OnDoneClicked"
+                    VerticalAlignment="Center" />
+        </ui:DialogShell.HeaderActions>
+
+        <Grid RowDefinitions="Auto,Auto,*,Auto">
 
             <!-- Toolbar: shortcut switcher + icon + name + undo/redo + AI + run -->
-            <Grid Grid.Row="1" ColumnDefinitions="Auto,*,Auto" Margin="0,2,0,8">
+            <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto" Margin="0,2,0,8">
                 <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="2">
                     <Button x:Name="SwitchButton" Classes="toolbar-icon"
                             Click="OnSwitchShortcutClicked"
@@ -233,7 +230,7 @@
 
             <!-- Global hotkey: one shared capture field + record/clear. Status stays visible
                  text (never color-only) for conflict / invalid / recording states. -->
-            <Grid Grid.Row="2" ColumnDefinitions="64,*,Auto" Margin="0,0,0,8">
+            <Grid Grid.Row="1" ColumnDefinitions="64,*,Auto" Margin="0,0,0,8">
                 <TextBlock Grid.Column="0"
                            Text="{x:Static locales:Locale.Shortcuts_Hotkey_Label}"
                            FontSize="12" Opacity="0.6" VerticalAlignment="Center" />
@@ -281,7 +278,7 @@
 
             <!-- Execution canvas -->
             <Border x:Name="CanvasHost"
-                    Grid.Row="3"
+                    Grid.Row="2"
                     CornerRadius="12"
                     Background="{DynamicResource SettingsContentBackground}"
                     BorderBrush="{DynamicResource MenuSurfaceBorder}"
@@ -296,7 +293,7 @@
             </Border>
 
             <!-- Canvas overlays: zoom + minimap + library + diagnostics + AI + toast -->
-            <Panel Grid.Row="3" IsHitTestVisible="True">
+            <Panel Grid.Row="2" IsHitTestVisible="True">
                 <!-- Toast：操作反馈（连线被拒 / 删除结果 / 导出成功…） -->
                 <Border x:Name="ToastBorder" IsVisible="False"
                         HorizontalAlignment="Center" VerticalAlignment="Top"
@@ -399,14 +396,14 @@
                                   IsExpanded="False">
                             <StackPanel Spacing="7" Margin="0,6,0,0">
                                 <TextBlock Text="{x:Static locales:Locale.Shortcuts_Ai_BaseUrl}" FontSize="10.5" Opacity="0.6" />
-                                <TextBox x:Name="AiBaseUrlBox" FontSize="11.5" Watermark="https://api.openai.com/v1"
+                                <TextBox x:Name="AiBaseUrlBox" FontSize="11.5" PlaceholderText="https://api.openai.com/v1"
                                          LostFocus="OnAiSettingCommitted" />
                                 <TextBlock Text="{x:Static locales:Locale.Shortcuts_Ai_ApiKey}" FontSize="10.5" Opacity="0.6" />
                                 <TextBox x:Name="AiApiKeyBox" FontSize="11.5" PasswordChar="●"
-                                         Watermark="sk-..."
+                                         PlaceholderText="sk-..."
                                          LostFocus="OnAiSettingCommitted" />
                                 <TextBlock Text="{x:Static locales:Locale.Shortcuts_Ai_Model}" FontSize="10.5" Opacity="0.6" />
-                                <TextBox x:Name="AiModelBox" FontSize="11.5" Watermark="gpt-4o-mini"
+                                <TextBox x:Name="AiModelBox" FontSize="11.5" PlaceholderText="gpt-4o-mini"
                                          LostFocus="OnAiSettingCommitted" />
                                 <TextBlock Text="{x:Static locales:Locale.Shortcuts_Ai_SettingsHint}"
                                            FontSize="10" Opacity="0.5" TextWrapping="Wrap" />
@@ -417,7 +414,7 @@
                                    FontSize="10.5" Opacity="0.6" Margin="0,12,0,4" />
                         <TextBox Grid.Row="3" x:Name="AiPromptBox" FontSize="12"
                                  AcceptsReturn="True" TextWrapping="Wrap"
-                                 Watermark="{x:Static locales:Locale.Shortcuts_Ai_PromptWatermark}"
+                                 PlaceholderText="{x:Static locales:Locale.Shortcuts_Ai_PromptWatermark}"
                                  MinHeight="120" MaxHeight="360" />
                         <Button Grid.Row="4" x:Name="AiGenerateButton" Margin="0,10,0,0"
                                 HorizontalAlignment="Stretch"
@@ -484,7 +481,7 @@
             </Panel>
 
             <!-- Bottom: add action -->
-            <Grid Grid.Row="4" Margin="0,8,0,0" ColumnDefinitions="*,Auto">
+            <Grid Grid.Row="3" Margin="0,8,0,0" ColumnDefinitions="*,Auto">
                 <Button x:Name="AddActionButton" Grid.Column="0" Classes="addbar-btn" Click="OnAddActionClicked">
                     <StackPanel Orientation="Horizontal" Spacing="8">
                         <sc:GlyphView Data="M12 5.5v13M5.5 12h13" Stroke="{DynamicResource SystemControlForegroundBaseHighBrush}"
@@ -499,5 +496,5 @@
                            Text="{x:Static locales:Locale.Shortcuts_Canvas_Hint}" />
             </Grid>
         </Grid>
-    </Border>
-</Window>
+    </ui:DialogShell>
+</views:HostDialogWindow>

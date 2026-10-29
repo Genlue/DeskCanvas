@@ -1,26 +1,19 @@
-<Window xmlns="https://github.com/avaloniaui"
+<views:HostDialogWindow xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:views="clr-namespace:DeskCanvas.Views"
+        xmlns:ui="using:DeskCanvas.UI.Controls"
         xmlns:locales="clr-namespace:DeskCanvas.Locales"
         xmlns:services="clr-namespace:DeskCanvas.Services"
         x:Class="DeskCanvas.Views.ProcessPickerDialog"
-        Width="440" Height="480"
-        WindowDecorations="None"
-        Background="Transparent"
-        TransparencyLevelHint="Transparent"
-        TransparencyBackgroundFallback="{DynamicResource SettingsBackground}"
+        Width="472" Height="512"
         CanResize="False"
         ShowInTaskbar="False"
         WindowStartupLocation="CenterOwner">
-    <Border Background="{DynamicResource MenuSurfaceBackground}"
-            BorderBrush="{DynamicResource MenuSurfaceBorder}"
-            BorderThickness="{DynamicResource HostSurfaceBorderThickness}"
-            CornerRadius="{DynamicResource HostSurfaceCornerRadius}"
-            BoxShadow="0 4 16 0 #80000000"
-            Padding="24"
-            Margin="16">
+
+    <!-- 进程选择: the shared dialog chrome; the title is the header (drag handle), everything else
+         is the business content. -->
+    <ui:DialogShell Title="{x:Static locales:Locale.ProcessPicker_Title}" ContentPadding="20">
         <DockPanel LastChildFill="True">
-            <TextBlock DockPanel.Dock="Top" FontWeight="SemiBold" Margin="0 0 0 12"
-                       Text="{x:Static locales:Locale.ProcessPicker_Title}" />
             <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="8" Margin="0 0 0 10">
                 <TextBox x:Name="SearchBox" Width="280"
                          PlaceholderText="{x:Static locales:Locale.ProcessPicker_Search}"
@@ -53,5 +46,5 @@
                            Text="{x:Static locales:Locale.ProcessPicker_Empty}" />
             </Panel>
         </DockPanel>
-    </Border>
-</Window>
+    </ui:DialogShell>
+</views:HostDialogWindow>

@@ -1,7 +1,6 @@
 using DeskCanvas.Services;
 using System;
 using System.Globalization;
-using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 
@@ -11,8 +10,15 @@ namespace DeskCanvas.Views;
 /// Free-form content scale input for a single widget: type any ratio
 /// (clamped to 0.1× – 5×); "恢复默认" clears the widget's own value so it
 /// follows the screen default (1.0× when the screen has none either).
+/// <para>
+/// The window chrome (transparent frame, card, draggable header, Escape) comes from
+/// <see cref="HostDialogWindow"/> + the shared <see cref="Controls.DialogShell"/>; this class keeps
+/// only the two actions and the Enter shortcut. The window used to declare its own acrylic card and
+/// its own drag handler on the content panel — the acrylic was the ring around the dialog, and the
+/// press never reached the handler because the extended caption area owned it.
+/// </para>
 /// </summary>
-public partial class ScaleDialog : Window
+public partial class ScaleDialog : HostDialogWindow
 {
     private readonly Action<double?> onApply;
 
@@ -20,17 +26,18 @@ public partial class ScaleDialog : Window
     {
         this.onApply = onApply;
         InitializeComponent();
-        WindowRoles.Register(this, WindowRole.Dialog);
         ScaleInput.Text = current.ToString("0.##", CultureInfo.InvariantCulture);
         Opened += (_, _) =>
         {
             ScaleInput.Focus();
             ScaleInput.SelectAll();
         };
+        // Enter applies. Escape is the base class's contract (one rule for every dialog).
         KeyDown += (_, e) =>
         {
-            if (e.Key == Key.Escape) Close();
-            if (e.Key == Key.Return) Apply(this, new RoutedEventArgs());
+            if (e.Key != Key.Return || e.Handled) return;
+            e.Handled = true;
+            Apply(this, new RoutedEventArgs());
         };
     }
 
@@ -45,12 +52,5 @@ public partial class ScaleDialog : Window
     {
         onApply(null);
         Close();
-    }
-
-    // Drag by the blank areas only; buttons and the text box keep their clicks.
-    private void Drag(object? sender, PointerPressedEventArgs e)
-    {
-        if (e.Source is Button or TextBox) return;
-        BeginMoveDrag(e);
     }
 }

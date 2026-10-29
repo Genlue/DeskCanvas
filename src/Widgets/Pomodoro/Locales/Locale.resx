@@ -34,13 +34,13 @@
         <value>Long Break</value>
     </data>
     <data name="Pomodoro_Tab_Focus" xml:space="preserve">
-        <value>🍅 Focus</value>
+        <value>Focus</value>
     </data>
     <data name="Pomodoro_Tab_ShortBreak" xml:space="preserve">
-        <value>☕ Short Break</value>
+        <value>Short Break</value>
     </data>
     <data name="Pomodoro_Tab_LongBreak" xml:space="preserve">
-        <value>🌴 Long Break</value>
+        <value>Long Break</value>
     </data>
     <data name="Pomodoro_Start" xml:space="preserve">
         <value>Start</value>

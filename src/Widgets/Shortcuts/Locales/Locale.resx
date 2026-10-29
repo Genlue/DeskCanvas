@@ -882,9 +882,6 @@
     <data name="Shortcuts_Action_note" xml:space="preserve">
         <value>Note</value>
     </data>
-    <data name="Shortcuts_Param_value" xml:space="preserve">
-        <value>Value</value>
-    </data>
     <data name="Shortcuts_Param_cases" xml:space="preserve">
         <value>Cases (separate with |)</value>
     </data>

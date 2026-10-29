@@ -1,29 +1,31 @@
-<Window xmlns="https://github.com/avaloniaui"
+<views:HostDialogWindow xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:views="clr-namespace:DeskCanvas.Views"
+        xmlns:ui="using:DeskCanvas.UI.Controls"
         x:Class="DeskCanvas.Views.InputDialog"
-        WindowDecorations="None"
-        Background="Transparent"
-        TransparencyLevelHint="Transparent"
-        TransparencyBackgroundFallback="{DynamicResource SettingsBackground}"
         CanResize="False"
         ShowInTaskbar="False"
         WindowStartupLocation="CenterOwner"
         SizeToContent="WidthAndHeight">
-    <Border Background="{DynamicResource MenuSurfaceBackground}"
-            BorderBrush="{DynamicResource MenuSurfaceBorder}"
-            BorderThickness="{DynamicResource HostSurfaceBorderThickness}"
-            CornerRadius="{DynamicResource HostSurfaceCornerRadius}"
-            BoxShadow="0 4 16 0 #80000000"
-            Padding="24"
-            Margin="16">
+
+    <!-- The title and the prompt are the shell's header (which is also what makes the dialog
+         movable); the field, the validation line and the two actions are the content. The button
+         labels are assigned in code from Locale, so this file carries no CJK literals. -->
+    <ui:DialogShell ContentPadding="24">
+        <ui:DialogShell.HeaderContent>
+            <StackPanel Spacing="4">
+                <TextBlock x:Name="TitleText"
+                           FontWeight="SemiBold"
+                           FontSize="15"
+                           Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}" />
+                <TextBlock x:Name="PromptText"
+                           FontSize="13"
+                           Opacity="0.8"
+                           TextWrapping="Wrap" />
+            </StackPanel>
+        </ui:DialogShell.HeaderContent>
+
         <StackPanel Spacing="14" Width="360">
-            <TextBlock x:Name="TitleText"
-                       FontWeight="SemiBold"
-                       FontSize="15" />
-            <TextBlock x:Name="PromptText"
-                       FontSize="13"
-                       Opacity="0.8"
-                       TextWrapping="Wrap" />
             <TextBox x:Name="InputBox"
                      FontSize="{DynamicResource FontSizeBody}"
                      KeyDown="OnInputBoxKeyDown" />
@@ -33,9 +35,9 @@
                        IsVisible="False"
                        TextWrapping="Wrap" />
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8" Margin="0 4 0 0">
-                <Button x:Name="CancelButton" Content="取消" Click="OnCancel" />
-                <Button x:Name="ConfirmButton" Classes="accent" Content="确定" Click="OnConfirm" />
+                <Button x:Name="CancelButton" Click="OnCancel" />
+                <Button x:Name="ConfirmButton" Classes="accent" Click="OnConfirm" />
             </StackPanel>
         </StackPanel>
-    </Border>
-</Window>
+    </ui:DialogShell>
+</views:HostDialogWindow>

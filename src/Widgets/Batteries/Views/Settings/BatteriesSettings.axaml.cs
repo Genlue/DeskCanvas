@@ -109,7 +109,7 @@ public partial class BatteriesSettings : UserControl
         {
             MainDeviceTitle.Text = IsZh ? "电脑内置电池" : Locale.Batteries_MainDevice;
             var status = power.IsCharging
-                ? (IsZh ? "正在充电 ⚡" : "Charging ⚡")
+                ? (IsZh ? "正在充电" : "Charging")
                 : (power.IsAcConnected
                     ? (IsZh ? "已连接电源 (未充电)" : "Plugged in (not charging)")
                     : (IsZh ? "使用电池" : "On battery"));
@@ -193,13 +193,13 @@ public partial class BatteriesSettings : UserControl
 
     private static DeviceKindOption[] GetKindOptions() =>
     [
-        new(IsZh ? "🖱️ 鼠标" : "🖱️ Mouse", DeviceKind.Mouse),
-        new(IsZh ? "🎮 游戏手柄" : "🎮 Controller", DeviceKind.Gamepad),
-        new(IsZh ? "🎧 蓝牙耳机" : "🎧 Headphones", DeviceKind.Headphones),
-        new(IsZh ? "⌨️ 蓝牙键盘" : "⌨️ Keyboard", DeviceKind.Keyboard),
-        new(IsZh ? "📱 手机" : "📱 Phone", DeviceKind.Phone),
-        new(IsZh ? "💻 电脑" : "💻 PC", DeviceKind.Computer),
-        new(IsZh ? "🔌 其他外设" : "🔌 Other", DeviceKind.Other)
+        new(IsZh ? "鼠标" : "Mouse", DeviceKind.Mouse),
+        new(IsZh ? "游戏手柄" : "Controller", DeviceKind.Gamepad),
+        new(IsZh ? "蓝牙耳机" : "Headphones", DeviceKind.Headphones),
+        new(IsZh ? "蓝牙键盘" : "Keyboard", DeviceKind.Keyboard),
+        new(IsZh ? "手机" : "Phone", DeviceKind.Phone),
+        new(IsZh ? "电脑" : "PC", DeviceKind.Computer),
+        new(IsZh ? "其他外设" : "Other", DeviceKind.Other)
     ];
 
     private void SetDeviceTypeOverride(string name, DeviceKind kind)

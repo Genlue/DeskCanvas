@@ -47,6 +47,44 @@
             <Setter Property="BorderBrush" Value="#60FF9500" />
             <Setter Property="Background" Value="#1CFF9500" />
         </Style>
+        <!-- The search field is a bare caret inside the panel's own inset box. Fluent paints its own
+             box in EVERY state (rest, pointer-over, focus), and this window focuses the field on
+             open — so the opaque white/blue input box was what the user saw over the glass card.
+             Same rule the launcher's search field carries. -->
+        <Style Selector="TextBox.search-box">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+        </Style>
+        <Style Selector="TextBox.search-box /template/ Border#PART_BorderElement">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+        </Style>
+        <Style Selector="TextBox.search-box:pointerover /template/ Border#PART_BorderElement">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+        </Style>
+        <Style Selector="TextBox.search-box:focus /template/ Border#PART_BorderElement">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+        </Style>
+        <Style Selector="TextBox.search-box:disabled /template/ Border#PART_BorderElement">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+        </Style>
+        <!-- Item marks (开发规范 §4.4): geometry, never emoji. The pin is one filled silhouette in
+             two states — faint at rest, accent + full opacity once the entry is pinned — so the
+             button never changes its own box between states. -->
+        <Style Selector="Path.item-mark">
+            <Setter Property="Fill" Value="{DynamicResource SystemControlForegroundBaseMediumBrush}" />
+            <Setter Property="Opacity" Value="0.5" />
+        </Style>
+        <Style Selector="Button:pointerover Path.item-mark">
+            <Setter Property="Opacity" Value="0.85" />
+        </Style>
+        <Style Selector="Button.pin-btn.pinned Path.item-mark">
+            <Setter Property="Fill" Value="{DynamicResource SystemControlForegroundAccentBrush}" />
+            <Setter Property="Opacity" Value="1" />
+        </Style>
     </Window.Styles>
 
     <!-- The shared secondary-panel shell (W7) owns the card, the glass, the header with the
@@ -72,8 +110,17 @@
             <!-- Search Box -->
             <Border Grid.Row="0" Background="#14808080" CornerRadius="10" Padding="8,4" Margin="0,0,0,8">
                 <Grid ColumnDefinitions="Auto,*">
-                    <TextBlock Grid.Column="0" Text="🔍" FontSize="12" Opacity="0.6" Margin="0,0,6,0" VerticalAlignment="Center" />
-                    <TextBox Grid.Column="1" x:Name="SearchBox"
+                    <!-- Magnifier as geometry (开发规范 §4.4) — framed on a square canvas so the
+                         box centres it (GlyphGeometry.Square). -->
+                    <Path Grid.Column="0"
+                          Width="13" Height="13"
+                          Margin="0,0,6,0"
+                          VerticalAlignment="Center"
+                          Stretch="Uniform"
+                          Fill="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                          Opacity="0.7"
+                          Data="{x:Static models:ToolGlyphs.Search}" />
+                    <TextBox Grid.Column="1" x:Name="SearchBox" Classes="search-box"
                              Background="Transparent" BorderThickness="0"
                              PlaceholderText="{x:Static locales:Locale.Tools_Clipboard_SearchWatermark}" FontSize="12"
                              Padding="0,2" VerticalAlignment="Center"
@@ -94,7 +141,12 @@
                 <StackPanel>
                     <!-- Empty state placeholder -->
                     <StackPanel x:Name="EmptyPanel" IsVisible="False" Margin="0,40,0,0" HorizontalAlignment="Center" Spacing="8">
-                        <TextBlock Text="📋" FontSize="36" HorizontalAlignment="Center" Opacity="0.5" />
+                        <Path Width="34" Height="34"
+                              HorizontalAlignment="Center"
+                              Stretch="Uniform"
+                              Fill="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                              Opacity="0.4"
+                              Data="{x:Static models:ToolGlyphs.Clipboard}" />
                         <TextBlock Text="{x:Static locales:Locale.Tools_Clipboard_NoMatches}" FontSize="13" HorizontalAlignment="Center" Opacity="0.5" />
                     </StackPanel>
 
@@ -107,8 +159,15 @@
                                         <!-- Type Icon / Thumbnail -->
                                         <Panel Grid.Column="0" Width="32" Height="32" Margin="0,0,10,0" VerticalAlignment="Center">
                                             <Border Background="#20808080" CornerRadius="8" IsVisible="{Binding Thumbnail, Converter={x:Static ObjectConverters.IsNull}}">
-                                                <TextBlock Text="{Binding TypeGlyph}"
-                                                           FontSize="14" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                                <!-- One geometry per entry type; the mark is a filled
+                                                     Path so it takes the theme foreground (P5). -->
+                                                <Path Width="16" Height="16"
+                                                      HorizontalAlignment="Center"
+                                                      VerticalAlignment="Center"
+                                                      Stretch="Uniform"
+                                                      Fill="{DynamicResource SystemControlForegroundBaseHighBrush}"
+                                                      Opacity="0.75"
+                                                      Data="{Binding TypeIcon}" />
                                             </Border>
                                             <Image Source="{Binding Thumbnail}" Stretch="UniformToFill"
                                                    IsVisible="{Binding Thumbnail, Converter={x:Static ObjectConverters.IsNotNull}}" />
@@ -127,13 +186,20 @@
 
                                         <!-- Action Buttons: Pin & Delete -->
                                         <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="2" VerticalAlignment="Center">
-                                            <Button Classes="icon-btn" Click="OnTogglePinClicked" DataContext="{Binding}"
+                                            <Button Classes="icon-btn pin-btn" Classes.pinned="{Binding IsPinned}"
+                                                    Click="OnTogglePinClicked" DataContext="{Binding}"
                                                     ToolTip.Tip="{x:Static locales:Locale.Tools_Clipboard_TogglePin}" AutomationProperties.Name="{x:Static locales:Locale.Tools_Clipboard_TogglePin}">
-                                                <TextBlock Text="📌" FontSize="11" Opacity="{Binding IsPinned, Converter={x:Static ObjectConverters.IsNotNull}}" />
+                                                <Path Classes="item-mark"
+                                                      Width="11" Height="11"
+                                                      Stretch="Uniform"
+                                                      Data="{x:Static models:ToolGlyphs.Pin}" />
                                             </Button>
                                             <Button Classes="icon-btn" Click="OnDeleteItemClicked" DataContext="{Binding}"
                                                     ToolTip.Tip="{x:Static locales:Locale.Tools_Clipboard_DeleteRecord}" AutomationProperties.Name="{x:Static locales:Locale.Tools_Clipboard_DeleteRecord}">
-                                                <TextBlock Text="✕" FontSize="10" Opacity="0.5" />
+                                                <Path Classes="item-mark"
+                                                      Width="9" Height="9"
+                                                      Stretch="Uniform"
+                                                      Data="{x:Static models:ToolGlyphs.Close}" />
                                             </Button>
                                         </StackPanel>
                                     </Grid>

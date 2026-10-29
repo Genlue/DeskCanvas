@@ -47,13 +47,15 @@
          negative margins. -->
     <controls:SecondaryPanelShell>
         <controls:SecondaryPanelShell.HeaderActions>
-            <!-- Settings Toggle Button ⚙ -->
+            <!-- Settings toggle: the shared gear geometry (开发规范 §4.4) — an icon inside a round
+                 button must be a vector, and a PathIcon box centres it. -->
             <Button x:Name="SettingsButton"
                     Classes="icon-btn"
-                    Content="⚙"
                     Click="OnToggleSettingsClicked"
                     Margin="0,0,4,0"
-                    ToolTip.Tip="{x:Static locales:Locale.Folders_BigFolder_PopupGroup}" AutomationProperties.Name="{x:Static locales:Locale.Folders_BigFolder_PopupGroup}" />
+                    ToolTip.Tip="{x:Static locales:Locale.Folders_BigFolder_PopupGroup}" AutomationProperties.Name="{x:Static locales:Locale.Folders_BigFolder_PopupGroup}">
+                <PathIcon Data="{DynamicResource General}" Width="13" Height="13" />
+            </Button>
         </controls:SecondaryPanelShell.HeaderActions>
 
         <Grid RowDefinitions="Auto,*">

@@ -882,9 +882,6 @@
     <data name="Shortcuts_Action_note" xml:space="preserve">
         <value>注释</value>
     </data>
-    <data name="Shortcuts_Param_value" xml:space="preserve">
-        <value>值</value>
-    </data>
     <data name="Shortcuts_Param_cases" xml:space="preserve">
         <value>分支值（用 | 分隔）</value>
     </data>

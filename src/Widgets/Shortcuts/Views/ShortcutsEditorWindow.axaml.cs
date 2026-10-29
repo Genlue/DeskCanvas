@@ -21,7 +21,7 @@ namespace Shortcuts.Views;
 /// action-library drawer and live run feedback. One instance at a time; edits are committed
 /// to <see cref="ShortcutsStore"/> on every change (history gives undo/redo).
 /// </summary>
-public partial class ShortcutsEditorWindow : Window
+public partial class ShortcutsEditorWindow : DeskCanvas.Views.HostDialogWindow
 {
     private const string GeometryKey = "Shortcuts:EditorWindow";
 
@@ -46,7 +46,6 @@ public partial class ShortcutsEditorWindow : Window
     public ShortcutsEditorWindow(string? shortcutId)
     {
         InitializeComponent();
-        WindowRoles.Register(this, WindowRole.Dialog);
 
         var existing = string.IsNullOrEmpty(shortcutId)
             ? null
@@ -511,6 +510,12 @@ public partial class ShortcutsEditorWindow : Window
             }
         }
     }
+
+    /// <summary>
+    /// Escape belongs to the editor: it unwinds the node library → AI panel → run details →
+    /// diagnostics → canvas selection, and never closes the window (unchanged behaviour).
+    /// </summary>
+    protected override bool ClosesOnEscape => false;
 
     /// <summary>焦点是否在文本输入控件里（名称框 / 参数编辑器 / 热键录制 / 搜索框）。</summary>
     private bool IsTextEditing() =>

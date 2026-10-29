@@ -21,10 +21,11 @@ public static class SearchMenuHelper
         foreach (var engine in vm.AllEngines.Where(e => e.IsEnabled))
         {
             var isCurrent = engine.Id.Equals(vm.CurrentEngine?.Id, StringComparison.OrdinalIgnoreCase);
-            var prefix = isCurrent ? "✓ " : "   ";
+            // Selection is carried by the weight, not by a "✓ " text prefix (开发规范 §4.4: a check
+            // mark is an icon, and a text glyph cannot follow the menu's foreground).
             var item = new MenuItem
             {
-                Header = $"{prefix}{engine.Name} ({engine.Category})",
+                Header = $"{engine.Name} ({engine.Category})",
                 FontWeight = isCurrent ? FontWeight.SemiBold : FontWeight.Normal,
                 Icon = new PathIcon
                 {
@@ -45,7 +46,7 @@ public static class SearchMenuHelper
         bool isZh = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName.Equals("zh", StringComparison.OrdinalIgnoreCase);
         var homeItem = new MenuItem
         {
-            Header = isZh ? $"🌐 打开 {vm.EngineName} 官网" : $"🌐 Open {vm.EngineName} Website",
+            Header = isZh ? $"打开 {vm.EngineName} 官网" : $"Open {vm.EngineName} Website",
             Icon = new PathIcon
             {
                 Data = Geometry.Parse(SearchIconProvider.ExternalLinkIcon),

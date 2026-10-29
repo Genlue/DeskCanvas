@@ -1,0 +1,15 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:ui="clr-namespace:DeskCanvas.UI.Controls;assembly=DeskCanvas.UI">
+    <!-- The dialog surface contract, in ONE place: every WindowRole.Dialog window draws its card
+         with the shell's properties, so the fill / hairline / foregrounds follow the theme variant
+         (light, dark, monochrome, colour accents) without a single dialog naming a colour. The
+         menu-surface family is the same one context menus and popups use — a dialog is another
+         transient surface over the desktop, never a third palette. -->
+    <Style Selector="ui|DialogShell">
+        <Setter Property="CardBackground" Value="{DynamicResource MenuSurfaceBackground}" />
+        <Setter Property="CardBorderBrush" Value="{DynamicResource MenuSurfaceBorder}" />
+        <Setter Property="TitleForeground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}" />
+        <Setter Property="SubtitleForeground" Value="{DynamicResource SystemControlForegroundBaseMediumBrush}" />
+    </Style>
+</Styles>

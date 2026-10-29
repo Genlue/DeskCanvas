@@ -1,33 +1,22 @@
-<Window xmlns="https://github.com/avaloniaui"
+<views:HostDialogWindow xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:views="clr-namespace:Timetable.Views"
+        xmlns:ui="using:DeskCanvas.UI.Controls"
         x:Class="Timetable.Views.ImportReviewWindow"
-        WindowDecorations="None"
-        Background="Transparent"
-        TransparencyLevelHint="AcrylicBlur, None"
-        TransparencyBackgroundFallback="{DynamicResource SettingsBackground}"
-        ExtendClientAreaToDecorationsHint="True"
-        ExtendClientAreaTitleBarHeightHint="48"
         ShowInTaskbar="False"
         WindowStartupLocation="CenterOwner"
         CanResize="True"
-        Width="580"
-        Height="660"
-        MinWidth="460"
-        MinHeight="420"
-        KeyDown="OnKeyDown">
+        Width="612" Height="692" MinWidth="492" MinHeight="452">
 
-    <Border Background="{DynamicResource MenuSurfaceBackground}"
-            BorderBrush="{DynamicResource MenuSurfaceBorder}"
-            BorderThickness="{DynamicResource HostSurfaceBorderThickness}"
-            CornerRadius="{DynamicResource HostSurfaceCornerRadius}"
-            ClipToBounds="True">
-        <Grid RowDefinitions="Auto,*,Auto" Margin="16">
-            <Grid Row="0" ColumnDefinitions="*,Auto" PointerPressed="OnHeaderPressed">
-                <TextBlock x:Name="TitleText" FontSize="{DynamicResource FontSizeBody}" FontWeight="Bold"
-                           VerticalAlignment="Center" IsHitTestVisible="False" />
-            </Grid>
+    <!-- 导入检视: shared dialog chrome. Window size is the old card plus 2 × the shadow gutter. -->
+    <ui:DialogShell>
+        <ui:DialogShell.HeaderContent>
+            <TextBlock x:Name="TitleText" FontSize="{DynamicResource FontSizeBody}" FontWeight="Bold"
+                       VerticalAlignment="Center" />
+        </ui:DialogShell.HeaderContent>
 
-            <ScrollViewer Grid.Row="1" Margin="0,12,0,0" VerticalScrollBarVisibility="Auto">
+        <Grid RowDefinitions="*,Auto">
+            <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto">
                 <StackPanel Orientation="Vertical" Spacing="6">
                     <TextBlock x:Name="SummaryText" FontWeight="SemiBold" TextWrapping="Wrap" />
                     <TextBlock x:Name="StartDateText" FontSize="{DynamicResource FontSizeCaption}"
@@ -35,11 +24,11 @@
                     <TextBlock x:Name="TimesText" FontSize="{DynamicResource FontSizeCaption}"
                                Opacity="0.7" TextWrapping="Wrap" />
 
-                    <Border Background="#0E808080" CornerRadius="8" Padding="10,8" Margin="0,4,0,0">
+                    <Border Background="{DynamicResource CardSubtleFill}" CornerRadius="8" Padding="10,8" Margin="0,4,0,0">
                         <StackPanel x:Name="IssuesPanel" Orientation="Vertical" Spacing="4" />
                     </Border>
 
-                    <Border x:Name="NotesBorder" Background="#0E808080" CornerRadius="8" Padding="10,8" IsVisible="False">
+                    <Border x:Name="NotesBorder" Background="{DynamicResource CardSubtleFill}" CornerRadius="8" Padding="10,8" IsVisible="False">
                         <StackPanel Orientation="Vertical" Spacing="4">
                             <TextBlock x:Name="NotesHeader" FontSize="12.5" FontWeight="SemiBold" Opacity="0.8" />
                             <StackPanel x:Name="NotesPanel" Orientation="Vertical" Spacing="4" />
@@ -48,18 +37,18 @@
 
                     <TextBlock x:Name="PreviewLabel" FontSize="{DynamicResource FontSizeCaption}"
                                FontWeight="SemiBold" Opacity="0.8" Margin="0,6,0,0" />
-                    <Border x:Name="PreviewBorder" Background="#0E808080" CornerRadius="8" Padding="8">
+                    <Border x:Name="PreviewBorder" Background="{DynamicResource CardSubtleFill}" CornerRadius="8" Padding="8">
                         <Grid x:Name="PreviewHost" />
                     </Border>
                 </StackPanel>
             </ScrollViewer>
 
-            <Grid Grid.Row="2" ColumnDefinitions="*,Auto,Auto" Margin="0,12,0,0">
+            <Grid Grid.Row="1" ColumnDefinitions="*,Auto,Auto" Margin="0,12,0,0">
                 <TextBlock x:Name="HintText" FontSize="{DynamicResource FontSizeCaption}" Opacity="0.55"
                            TextWrapping="Wrap" VerticalAlignment="Center" Margin="0,0,10,0" />
                 <Button Grid.Column="1" x:Name="CancelButton" Click="OnCancelClicked" />
                 <Button Grid.Column="2" x:Name="ConfirmButton" Click="OnConfirmClicked" Margin="8,0,0,0" />
             </Grid>
         </Grid>
-    </Border>
-</Window>
+    </ui:DialogShell>
+</views:HostDialogWindow>

@@ -1,9 +1,7 @@
 using Avalonia.Input.Platform;
 using Avalonia.Controls;
-using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Threading;
-using DeskCanvas.Services;
 using Timetable.Locales;
 using Timetable.Services;
 
@@ -13,14 +11,13 @@ namespace Timetable.Views;
 /// Read-only viewer for the embedded JSON format guide, with a one-click copy of the
 /// AI prompt (the marked section of the guide).
 /// </summary>
-public partial class GuideWindow : Window
+public partial class GuideWindow : DeskCanvas.Views.HostDialogWindow
 {
     private DispatcherTimer? copiedTimer;
 
     public GuideWindow()
     {
         InitializeComponent();
-        WindowRoles.Register(this, WindowRole.Dialog);
 
         TitleText.Text = Locale.Timetable_Guide_Title;
         HintText.Text = Locale.Timetable_Guide_Hint;
@@ -57,14 +54,4 @@ public partial class GuideWindow : Window
     }
 
     private void OnCloseClicked(object? sender, RoutedEventArgs e) => Close();
-
-    private void OnKeyDown(object? sender, KeyEventArgs e)
-    {
-        if (e.Key == Key.Escape) Close();
-    }
-
-    private void OnHeaderPressed(object? sender, PointerPressedEventArgs e)
-    {
-        if (e.GetCurrentPoint(this).Properties.IsLeftButtonPressed) BeginMoveDrag(e);
-    }
 }

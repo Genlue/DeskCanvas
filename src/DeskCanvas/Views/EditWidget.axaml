@@ -1,48 +1,43 @@
-<Window xmlns="https://github.com/avaloniaui"
+<views:HostDialogWindow xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:views="clr-namespace:DeskCanvas.Views"
-        xmlns:controls="clr-namespace:DeskCanvas.Views.Controls"
+        xmlns:ui="using:DeskCanvas.UI.Controls"
         xmlns:locales="clr-namespace:DeskCanvas.Locales"
         x:Class="DeskCanvas.Views.EditWidget"
-        Background="Transparent"
-        TransparencyLevelHint="AcrylicBlur, None"
-        TransparencyBackgroundFallback="{DynamicResource SettingsBackground}"
-        ExtendClientAreaToDecorationsHint="True"
-        WindowDecorations="BorderOnly"
-        ExtendClientAreaTitleBarHeightHint="60"
         ShowInTaskbar="True"
         WindowStartupLocation="CenterScreen"
-        Width="560" Height="640" MinWidth="440" MinHeight="360" CanResize="True"
+        Width="592" Height="672" MinWidth="472" MinHeight="392" CanResize="True"
         x:DataType="views:EditWidget">
-    <Border Background="{DynamicResource MenuSurfaceBackground}"
-            BorderBrush="{DynamicResource MenuSurfaceBorder}"
-            BorderThickness="{DynamicResource HostSurfaceBorderThickness}"
-            CornerRadius="{DynamicResource SettingsWindowCornerRadius}"
-            Margin="0"
-            ClipToBounds="True">
-      <Grid RowDefinitions="Auto,*" Margin="16">
-        <!-- The header strip is the drag handle: Background=Transparent makes the whole
-             row hit-testable (without it only the glyphs/text caught pointer presses), and
-             PanelDragBehavior keeps the Save button / interactive content out of the drag. -->
-        <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto" Background="Transparent"
-              controls:PanelDragBehavior.IsDragHandle="True">
-          <PathIcon Grid.Column="0" IsHitTestVisible="False" Margin="0,0,12,0" Data="{DynamicResource Appearance}" Height="32" />
-          <StackPanel Grid.Column="1" IsHitTestVisible="False">
-            <TextBlock Text="{Binding WidgetType}" FontSize="{DynamicResource FontSizeBody}" FontWeight="Bold" />
-            <TextBlock Text="{Binding WidgetSubType}" FontSize="{DynamicResource FontSizeCaption}" FontWeight="SemiBold" Opacity="0.5" />
-          </StackPanel>
-          <Button Grid.Column="2" Content="{x:Static locales:Locale.Widget_Save}" Click="Close" />
-        </Grid>
+
+    <!-- 组件设置: the shared dialog chrome. The header (icon + type + sub-type) is the shell's
+         HeaderContent — which is also the drag handle — and 保存 is its HeaderActions, so the
+         button is excluded from the drag by the shared behaviour instead of by a local rule.
+         Window size is card + 2 × the shell's shadow gutter, so the content keeps its 528 DIP
+         width and the card is the only painted surface (no acrylic wedges at the corners). -->
+    <ui:DialogShell>
+        <ui:DialogShell.HeaderContent>
+            <Grid ColumnDefinitions="Auto,*">
+                <PathIcon Grid.Column="0" IsHitTestVisible="False" Margin="0,0,12,0"
+                          Data="{DynamicResource Appearance}" Height="32" />
+                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                    <TextBlock Text="{Binding WidgetType}" FontSize="{DynamicResource FontSizeBody}" FontWeight="Bold" />
+                    <TextBlock Text="{Binding WidgetSubType}" FontSize="{DynamicResource FontSizeCaption}" FontWeight="SemiBold" Opacity="0.5" />
+                </StackPanel>
+            </Grid>
+        </ui:DialogShell.HeaderContent>
+        <ui:DialogShell.HeaderActions>
+            <Button Content="{x:Static locales:Locale.Widget_Save}" Click="Close" />
+        </ui:DialogShell.HeaderActions>
+
         <!-- Single content viewport. For pages that declare SettingsPage.ScrollOwnership=Host
              this ScrollViewer is the ONLY vertical scroll owner (page keeps no outer scroller);
              for LegacySelf pages both bars are Disabled, so the viewport merely supplies the
              finite box and the page's own scroller keeps working. Horizontal scrolling is
              always disabled — pages degrade vertically, never sideways. -->
-        <ScrollViewer x:Name="ContentViewport" Grid.Row="1" Margin="0,12,0,0"
+        <ScrollViewer x:Name="ContentViewport"
                       VerticalScrollBarVisibility="Disabled"
                       HorizontalScrollBarVisibility="Disabled">
-          <ContentPresenter IsHitTestVisible="True" Content="{Binding Control}" />
+            <ContentPresenter IsHitTestVisible="True" Content="{Binding Control}" />
         </ScrollViewer>
-      </Grid>
-    </Border>
-</Window>
+    </ui:DialogShell>
+</views:HostDialogWindow>

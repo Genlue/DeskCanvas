@@ -11,7 +11,7 @@ using DeskCanvas.Views.Controls;
 
 namespace DeskCanvas.Views;
 
-public partial class EditWidget : Window
+public partial class EditWidget : HostDialogWindow
 {
     private readonly IWidgetLayoutProvider widgetLayoutProvider;
     public UserControl Control { get; }
@@ -33,7 +33,6 @@ public partial class EditWidget : Window
         DataContext = this;
         Control = control;
         InitializeComponent();
-        WindowRoles.Register(this, WindowRole.Dialog);
 
         geometryKey = WindowGeometryStore.ComposeKey(control.GetType());
         ApplyScrollOwnership(control);

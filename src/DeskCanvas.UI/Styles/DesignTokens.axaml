@@ -27,6 +27,15 @@
     <CornerRadius x:Key="SecondaryPanelCornerRadius">18</CornerRadius>
     <Thickness x:Key="SecondaryPanelContentPadding">16,14,16,12</Thickness>
 
+    <!-- Dialog shell: one card geometry for every WindowRole.Dialog window. The gutter is the
+         TRANSPARENT room the card's shadow is drawn in — it must never carry a surface of its own
+         (that was the old "card inside an acrylic window" ring). ContentPadding is the 16 DIP inset
+         the small dialogs already used; the sheet-style ones raise it explicitly. -->
+    <CornerRadius x:Key="DialogCornerRadius">14</CornerRadius>
+    <Thickness x:Key="DialogContentPadding">16</Thickness>
+    <Thickness x:Key="DialogShadowGutter">16</Thickness>
+    <BoxShadows x:Key="DialogCardShadow">0 10 28 0 #43000000</BoxShadows>
+
     <!-- Typography scale used by host controls and settings surfaces. These
          are intentionally small, stable steps so individual views can opt in
          without inventing another font-size literal. -->

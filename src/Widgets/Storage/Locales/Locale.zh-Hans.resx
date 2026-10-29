@@ -91,10 +91,10 @@
         <value>已用 {0} / {1} · 剩余 {2}</value>
     </data>
     <data name="Storage_Mode_ProgressBarList" xml:space="preserve">
-        <value>📊 进度条列表</value>
+        <value>进度条列表</value>
     </data>
     <data name="Storage_Mode_RingDashboard" xml:space="preserve">
-        <value>⭕ 圆环仪表盘</value>
+        <value>圆环仪表盘</value>
     </data>
     <data name="Storage_Format_FreeSpace" xml:space="preserve">
         <value>剩余可用 (如 138G 可用)</value>

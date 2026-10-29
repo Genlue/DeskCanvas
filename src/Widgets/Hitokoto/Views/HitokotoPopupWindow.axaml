@@ -1,6 +1,7 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:controls="clr-namespace:DeskCanvas.Views.Controls;assembly=DeskCanvas"
+        xmlns:ui="using:DeskCanvas.UI.Controls"
         x:Class="Hitokoto.Views.HitokotoPopupWindow"
         Title="一言 · 灵感收纳箱"
         WindowDecorations="None"
@@ -53,7 +54,7 @@
                             <TextBlock x:Name="SpotlightMetaText" Text="hitokoto.cn" FontSize="11" Opacity="0.6"
                                        TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
                             <Button Grid.Column="1" x:Name="OpenWebBtn" Classes="action-pill" Padding="8,2" FontSize="11"
-                                    Content="🌐 网页详情" Click="OnOpenWebClicked" />
+                                    Content="网页详情" Click="OnOpenWebClicked" />
                         </Grid>
 
                         <TextBlock x:Name="SpotlightQuoteText" Text="往者不可谏，来者犹可追。"
@@ -64,15 +65,15 @@
 
                         <WrapPanel Orientation="Horizontal" Margin="0,2,0,0">
                             <Button x:Name="SpotlightNextBtn" Classes="action-pill" Margin="0,0,6,4"
-                                    Content="🎲 换一句" Click="OnNextQuoteClicked" />
+                                    Content="换一句" Click="OnNextQuoteClicked" />
                             <Button x:Name="SpotlightLikeBtn" Classes="action-pill" Margin="0,0,6,4"
-                                    Content="♡ 点赞 (0)" Click="OnLikeCurrentClicked" />
+                                    Content="点赞 (0)" Click="OnLikeCurrentClicked" />
                             <Button x:Name="SpotlightFavBtn" Classes="action-pill" Margin="0,0,6,4"
-                                    Content="☆ 收藏" Click="OnToggleFavCurrentClicked" />
+                                    Content="收藏" Click="OnToggleFavCurrentClicked" />
                             <Button x:Name="CopyPlainBtn" Classes="action-pill" Margin="0,0,6,4"
-                                    Content="📋 复制文本" Click="OnCopyPlainClicked" />
+                                    Content="复制文本" Click="OnCopyPlainClicked" />
                             <Button x:Name="CopyMarkdownBtn" Classes="action-pill" Margin="0,0,0,4"
-                                    Content="📝 复制 Markdown" Click="OnCopyMarkdownClicked" />
+                                    Content="复制 Markdown" Click="OnCopyMarkdownClicked" />
                         </WrapPanel>
                     </StackPanel>
                 </Border>
@@ -80,7 +81,9 @@
                 <!-- Row 1: Search Box -->
                 <Border Grid.Row="1" Background="{DynamicResource CardSubtleFill}" CornerRadius="{DynamicResource CardSubtleCornerRadius}" Padding="10,5" Margin="0,0,0,8">
                     <Grid ColumnDefinitions="Auto,*">
-                        <TextBlock Grid.Column="0" Text="🔍" FontSize="12" Opacity="0.6" Margin="0,0,6,0" VerticalAlignment="Center" />
+                        <Path Grid.Column="0" Data="{x:Static ui:CommonGlyphs.Search}" Width="13" Height="13"
+                              Stretch="Uniform" Fill="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                              Opacity="0.7" Margin="0,0,6,0" VerticalAlignment="Center" />
                         <TextBox Grid.Column="1" x:Name="SearchBox"
                                  Background="Transparent" BorderThickness="0"
                                  PlaceholderText="搜索收藏或偶遇过的句子、出处、作者..." FontSize="12"
@@ -92,9 +95,9 @@
                 <!-- Row 2: Tabs (Favorites / History) -->
                 <Grid Grid.Row="2" ColumnDefinitions="*,Auto" Margin="0,0,0,8">
                     <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="6">
-                        <Button x:Name="TabFavorites" Classes="tab-pill active" Content="⭐ 本地收藏 (0)"
+                        <Button x:Name="TabFavorites" Classes="tab-pill active" Content="本地收藏 (0)"
                                 Click="OnTabClicked" Tag="Favorites" />
-                        <Button x:Name="TabHistory" Classes="tab-pill" Content="🕒 最近偶遇 (0)"
+                        <Button x:Name="TabHistory" Classes="tab-pill" Content="最近偶遇 (0)"
                                 Click="OnTabClicked" Tag="History" />
                     </StackPanel>
                     <Button Grid.Column="1" x:Name="ClearHistoryBtn" Classes="action-pill"
@@ -108,7 +111,7 @@
                         <StackPanel x:Name="ItemsStack" Orientation="Vertical" />
                     </ScrollViewer>
                     <TextBlock x:Name="EmptyStateText"
-                               Text="暂无收藏句子，点击上方「☆ 收藏」即可收入摘抄本"
+                               Text="暂无收藏句子，点击上方「收藏」即可收入摘抄本"
                                FontSize="12" Opacity="0.5"
                                HorizontalAlignment="Center" VerticalAlignment="Center"
                                IsVisible="False" />

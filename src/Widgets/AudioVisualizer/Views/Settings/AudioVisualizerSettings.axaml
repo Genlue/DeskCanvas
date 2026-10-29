@@ -49,12 +49,12 @@
 
                 <!-- 第二行：快捷辅助操作按钮 -->
                 <WrapPanel Orientation="Horizontal" VerticalAlignment="Center">
-                    <Button Content="📐 居中对齐" Click="OnCenterClicked" FontSize="11" Padding="8,4" Margin="0,0,6,0"
+                    <Button Content="居中对齐" Click="OnCenterClicked" FontSize="11" Padding="8,4" Margin="0,0,6,0"
                             ToolTip.Tip="将当前绘制的图形水平与垂直居中" />
-                    <Button Content="✨ 平滑线条" Click="OnSmoothClicked" FontSize="11" Padding="8,4" Margin="0,0,6,0"
+                    <Button Content="平滑线条" Click="OnSmoothClicked" FontSize="11" Padding="8,4" Margin="0,0,6,0"
                             ToolTip.Tip="消除手绘尖角，自动平滑为流线型样条曲线" />
-                    <Button x:Name="UndoBtn" Content="↩ 撤销" Click="OnUndoClicked" FontSize="11" Padding="8,4" Margin="0,0,6,0" />
-                    <Button x:Name="ClearBtn" Content="🗑 清空重画" Click="OnClearClicked" FontSize="11" Padding="8,4" />
+                    <Button x:Name="UndoBtn" Content="撤销" Click="OnUndoClicked" FontSize="11" Padding="8,4" Margin="0,0,6,0" />
+                    <Button x:Name="ClearBtn" Content="清空重画" Click="OnClearClicked" FontSize="11" Padding="8,4" />
                 </WrapPanel>
             </StackPanel>
         </Border>

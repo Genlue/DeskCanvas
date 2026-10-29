@@ -54,7 +54,10 @@
                 <DataTemplate DataType="viewModels:WidgetCategoryGroup">
                     <StackPanel Margin="0,6,0,10">
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="7" Margin="0,2,0,14">
-                            <TextBlock Text="{Binding Icon}" FontSize="15" VerticalAlignment="Center" />
+                            <!-- 分类图标：几何图形（开发规范 §4.4），随主题前景色走。 -->
+                            <Path Data="{Binding Icon}" Width="15" Height="15" Stretch="Uniform"
+                                  Fill="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                                  VerticalAlignment="Center" />
                             <TextBlock Text="{Binding Title}"
                                        FontSize="15"
                                        FontWeight="SemiBold"

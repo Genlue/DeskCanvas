@@ -1,36 +1,34 @@
-<Window xmlns="https://github.com/avaloniaui"
+<views:HostDialogWindow xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:views="clr-namespace:DeskCanvas.Views"
+        xmlns:ui="using:DeskCanvas.UI.Controls"
         xmlns:locales="clr-namespace:DeskCanvas.Locales"
         x:Class="DeskCanvas.Views.WallpaperAlignDialog"
-        Background="Transparent"
-        TransparencyLevelHint="AcrylicBlur, None"
-        TransparencyBackgroundFallback="{DynamicResource SettingsBackground}"
-        ExtendClientAreaToDecorationsHint="True"
-        WindowDecorations="BorderOnly"
-        ExtendClientAreaTitleBarHeightHint="40"
         WindowStartupLocation="CenterOwner"
         Topmost="True"
-        Width="340" Height="250" CanResize="False">
-    <Border Background="{DynamicResource MenuSurfaceBackground}" BorderBrush="{DynamicResource MenuSurfaceBorder}" BorderThickness="{DynamicResource HostSurfaceBorderThickness}" CornerRadius="{DynamicResource HostSurfaceCornerRadius}" Margin="8">
-      <StackPanel Margin="16" Spacing="10" PointerPressed="Drag">
-        <TextBlock Text="{x:Static locales:Locale.Settings_Appearance_Glass_Align_Title}" FontSize="{DynamicResource FontSizeBody}" FontWeight="Bold"
-                   IsHitTestVisible="False" HorizontalAlignment="Center" Margin="0 4 0 0"/>
-        <TextBlock Text="{x:Static locales:Locale.Settings_Appearance_Glass_Align_Hint}" FontSize="{DynamicResource FontSizeCaption}" Opacity="0.75"
-                   TextWrapping="Wrap" IsHitTestVisible="False" HorizontalAlignment="Center" TextAlignment="Center"/>
-        <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto" Margin="0 4">
-            <TextBlock Text="{x:Static locales:Locale.Settings_Appearance_Glass_Align_Horizontal}"
-                       VerticalAlignment="Center" IsHitTestVisible="False" Margin="0 0 12 0"/>
-            <NumericUpDown Grid.Column="1" Name="OffsetX" Minimum="-1000" Maximum="1000" Increment="1"
-                           FormatString="F0" ValueChanged="OnOffsetChanged"/>
-            <TextBlock Grid.Row="1" Text="{x:Static locales:Locale.Settings_Appearance_Glass_Align_Vertical}"
-                       VerticalAlignment="Center" IsHitTestVisible="False" Margin="0 10 12 0"/>
-            <NumericUpDown Grid.Row="1" Grid.Column="1" Name="OffsetY" Minimum="-1000" Maximum="1000" Increment="1"
-                           FormatString="F0" Margin="0 10 0 0" ValueChanged="OnOffsetChanged"/>
-        </Grid>
-        <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
-            <Button Content="{x:Static locales:Locale.Settings_Appearance_Glass_Align_Reset}" Click="ResetOffsets" />
-            <Button Content="{x:Static locales:Locale.Settings_Appearance_Glass_Align_Close}" Click="CloseDialog" />
+        Width="372" Height="286" CanResize="False">
+
+    <!-- 壁纸对齐: shared chrome (card / draggable header / Escape), the hint line as the header's
+         subtitle. The old AXAML drew its own card with an 8 DIP margin inside an AcrylicBlur
+         window — the frosted ring around the dialog — and its drag handler never ran because the
+         extended caption area owned the press. -->
+    <ui:DialogShell Title="{x:Static locales:Locale.Settings_Appearance_Glass_Align_Title}"
+                    Subtitle="{x:Static locales:Locale.Settings_Appearance_Glass_Align_Hint}">
+        <StackPanel Spacing="10">
+            <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto">
+                <TextBlock Text="{x:Static locales:Locale.Settings_Appearance_Glass_Align_Horizontal}"
+                           VerticalAlignment="Center" Margin="0 0 12 0"/>
+                <NumericUpDown Grid.Column="1" Name="OffsetX" Minimum="-1000" Maximum="1000" Increment="1"
+                               FormatString="F0" ValueChanged="OnOffsetChanged"/>
+                <TextBlock Grid.Row="1" Text="{x:Static locales:Locale.Settings_Appearance_Glass_Align_Vertical}"
+                           VerticalAlignment="Center" Margin="0 10 12 0"/>
+                <NumericUpDown Grid.Row="1" Grid.Column="1" Name="OffsetY" Minimum="-1000" Maximum="1000" Increment="1"
+                               FormatString="F0" Margin="0 10 0 0" ValueChanged="OnOffsetChanged"/>
+            </Grid>
+            <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+                <Button Content="{x:Static locales:Locale.Settings_Appearance_Glass_Align_Reset}" Click="ResetOffsets" />
+                <Button Content="{x:Static locales:Locale.Settings_Appearance_Glass_Align_Close}" Click="CloseDialog" />
+            </StackPanel>
         </StackPanel>
-      </StackPanel>
-    </Border>
-</Window>
+    </ui:DialogShell>
+</views:HostDialogWindow>

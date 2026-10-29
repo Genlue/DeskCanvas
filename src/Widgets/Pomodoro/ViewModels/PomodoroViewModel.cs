@@ -192,7 +192,7 @@ public class PomodoroViewModel : INotifyPropertyChanged
     /// </summary>
     public double StrokeDashOffset => 43.085 * (1.0 - ProgressFraction);
 
-    public string SessionCounterText => $"🍅 × {CompletedSessions}";
+    public string SessionCounterText => $"× {CompletedSessions}";
 
     private static bool IsZh => System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName.Equals("zh", StringComparison.OrdinalIgnoreCase);
 
@@ -306,19 +306,19 @@ public class PomodoroViewModel : INotifyPropertyChanged
         switch (Phase)
         {
             case PomodoroPhase.Focus:
-                title = IsZh ? "🍅 番茄钟专注完成！" : "🍅 Focus Session Complete!";
+                title = IsZh ? "番茄钟专注完成！" : "Focus Session Complete!";
                 message = IsZh ? "太棒了，完成了一个番茄钟！放松一下吧。" : "Great job completing a Pomodoro session! Time to take a break.";
                 break;
             case PomodoroPhase.ShortBreak:
-                title = IsZh ? "☕ 短休结束" : "☕ Short Break Over";
+                title = IsZh ? "短休结束" : "Short Break Over";
                 message = IsZh ? "休息结束，准备开始新的专注！" : "Break is over, ready for the next focus session!";
                 break;
             case PomodoroPhase.LongBreak:
-                title = IsZh ? "🌴 长休结束" : "🌴 Long Break Over";
+                title = IsZh ? "长休结束" : "Long Break Over";
                 message = IsZh ? "长休结束，精神满满，开启新一轮专注！" : "Long break is over! Refreshed and ready for a new cycle!";
                 break;
             default:
-                title = IsZh ? "🍅 番茄钟" : "🍅 Pomodoro";
+                title = IsZh ? "番茄钟" : "Pomodoro";
                 message = IsZh ? "计时完成！" : "Timer complete!";
                 break;
         }

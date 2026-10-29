@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Globalization;
+using Avalonia.Media;
 
 namespace DeskCanvas.ViewModels;
 
@@ -9,7 +10,7 @@ namespace DeskCanvas.ViewModels;
 /// </summary>
 public sealed record WidgetCategoryGroup(
     string CategoryKey,
-    string Icon,
+    Geometry Icon,
     string Title,
     IReadOnlyList<WidgetPreviewViewModel> Widgets)
 {

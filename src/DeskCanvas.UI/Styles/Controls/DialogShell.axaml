@@ -1,0 +1,24 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:ui="clr-namespace:DeskCanvas.UI.Controls">
+    <!-- Shared dialog shell (one chrome for every WindowRole.Dialog window): the card, its shadow
+         gutter, the draggable header and the single content slot. The material is NOT decided
+         here — the host's dialog style assigns the card fill / hairline / foregrounds per theme
+         variant, exactly like the secondary-panel shell. The geometry below is the shared default
+         (DesignTokens.axaml), so a dialog only overrides ContentPadding when its content really
+         needs a different inset. -->
+    <Styles.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceInclude Source="avares://DeskCanvas.UI/Styles/Controls/DialogShellTemplate.axaml" />
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </Styles.Resources>
+    <Style Selector="ui|DialogShell">
+        <Setter Property="ContentPadding" Value="{DynamicResource DialogContentPadding}" />
+        <Setter Property="ShadowGutter" Value="{DynamicResource DialogShadowGutter}" />
+        <Setter Property="CardShadow" Value="{DynamicResource DialogCardShadow}" />
+        <Setter Property="CornerRadius" Value="{DynamicResource DialogCornerRadius}" />
+        <Setter Property="Template" Value="{StaticResource DialogShellTemplate}" />
+    </Style>
+</Styles>

@@ -12,14 +12,13 @@ namespace DeskCanvas.Views;
 /// titled top-level window (searchable by process name or window title), multi-select, closes
 /// with the chosen process names.
 /// </summary>
-public partial class ProcessPickerDialog : Window
+public partial class ProcessPickerDialog : HostDialogWindow
 {
     private IReadOnlyList<WindowedProcess> all = [];
 
     public ProcessPickerDialog()
     {
         InitializeComponent();
-        WindowRoles.Register(this, WindowRole.Dialog);
         Reload();
     }
 

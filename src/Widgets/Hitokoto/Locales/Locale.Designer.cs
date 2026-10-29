@@ -42,7 +42,7 @@ namespace Hitokoto.Locales
         public static string Hitokoto_Copy => ResourceManager.GetString("Hitokoto_Copy", resourceCulture) ?? "Copy quote and source";
         public static string Hitokoto_OpenPanel => ResourceManager.GetString("Hitokoto_OpenPanel", resourceCulture) ?? "Open quote collection (Favorites & History)";
         public static string Hitokoto_Copied => ResourceManager.GetString("Hitokoto_Copied", resourceCulture) ?? "Copied to clipboard";
-        public static string Hitokoto_LikedToast => ResourceManager.GetString("Hitokoto_LikedToast", resourceCulture) ?? "Liked via Hitokoto API ♡";
+        public static string Hitokoto_LikedToast => ResourceManager.GetString("Hitokoto_LikedToast", resourceCulture) ?? "Liked via Hitokoto API";
         public static string Hitokoto_FavoritedToast => ResourceManager.GetString("Hitokoto_FavoritedToast", resourceCulture) ?? "Added to local favorites";
         public static string Hitokoto_UnfavoritedToast => ResourceManager.GetString("Hitokoto_UnfavoritedToast", resourceCulture) ?? "Removed from local favorites";
         public static string Hitokoto_SectionAppearance => ResourceManager.GetString("Hitokoto_SectionAppearance", resourceCulture) ?? "Appearance & Typography";

@@ -1,105 +1,102 @@
-<Window xmlns="https://github.com/avaloniaui"
+<views:HostDialogWindow xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:locales="clr-namespace:DeskCanvas.Locales"
         xmlns:views="clr-namespace:DeskCanvas.Views"
+        xmlns:ui="using:DeskCanvas.UI.Controls"
         x:Class="DeskCanvas.Views.UpdatePopup"
-        Background="Transparent"
-        TransparencyLevelHint="AcrylicBlur, None"
-        TransparencyBackgroundFallback="{DynamicResource SettingsBackground}"
-        ExtendClientAreaToDecorationsHint="True"
-        WindowDecorations="BorderOnly"
-        ExtendClientAreaTitleBarHeightHint="40"
         WindowStartupLocation="CenterScreen"
-        Width="400" SizeToContent="Height" CanResize="False"
+        Width="432" SizeToContent="Height" CanResize="False"
         Title="Update" x:DataType="views:UpdatePopup">
+
+    <!-- 更新提示: shared dialog chrome. Its own layout is full-bleed (the action rows run edge to
+         edge with separators between them), so the shell's content inset is 0 here and every block
+         carries its own margins — no negative margins, and the card is the only painted surface
+         (the old AcrylicBlur + BorderOnly chrome left four blurred wedges outside the rounded
+         corners and gave the window no way to be moved). -->
     <Window.Styles>
-        <Styles>
-            <Style Selector="TextBlock">
-                <Setter Property="TextAlignment" Value="Center" />
-            </Style>
-            <Style Selector="Button.Action">
-                <Setter Property="Width" Value="400" />
-                <Setter Property="Height" Value="42" />
-                <Setter Property="Background" Value="Transparent" />
-                <Setter Property="HorizontalContentAlignment" Value="Center" />
-                <Setter Property="VerticalContentAlignment" Value="Center" />
-                <Setter Property="FontSize" Value="15" />
-            </Style>
-            <Style Selector="Button.Primary">
-                <Setter Property="Foreground" Value="{DynamicResource SystemAccentColor}" />
-                <Setter Property="FontWeight" Value="SemiBold" />
-            </Style>
-            <Style Selector="Separator">
-                <Setter Property="Margin" Value="0" />
-                <Setter Property="Opacity" Value="0.25" />
-            </Style>
-        </Styles>
+        <Style Selector="TextBlock">
+            <Setter Property="TextAlignment" Value="Center" />
+        </Style>
+        <Style Selector="Button.Action">
+            <Setter Property="HorizontalAlignment" Value="Stretch" />
+            <Setter Property="Height" Value="42" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="FontSize" Value="15" />
+        </Style>
+        <Style Selector="Button.Primary">
+            <Setter Property="Foreground" Value="{DynamicResource SystemAccentColor}" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+        </Style>
+        <Style Selector="Separator">
+            <Setter Property="Margin" Value="0" />
+            <Setter Property="Opacity" Value="0.25" />
+        </Style>
     </Window.Styles>
-    <Border Background="{DynamicResource MenuSurfaceBackground}"
-            BorderBrush="{DynamicResource MenuSurfaceBorder}"
-            BorderThickness="{DynamicResource HostSurfaceBorderThickness}"
-            CornerRadius="{DynamicResource HostSurfaceCornerRadius}"
-            Margin="0"
-            ClipToBounds="True">
-      <StackPanel Margin="0 0 0 4">
-        <!-- Header -->
-        <StackPanel Margin="28 22 28 8">
-            <PathIcon Data="{DynamicResource Download}" Width="28" Height="28" 
-                      Foreground="{DynamicResource SystemAccentColor}" Margin="0 0 0 10" />
-            <TextBlock FontSize="{DynamicResource FontSizeTitle}" FontWeight="SemiBold" Text="{x:Static locales:Locale.Update_SoftwareUpdate}" />
-            <TextBlock FontSize="13" Opacity="0.8" Margin="0 6 0 0" TextWrapping="Wrap" Text="{Binding UpdateText}" />
-        </StackPanel>
 
-        <!-- Changelog -->
-        <Border CornerRadius="{DynamicResource HostSurfaceCornerRadius}" Background="{DynamicResource MenuSurfaceBackground}"
-                BorderBrush="{DynamicResource MenuSurfaceBorder}" BorderThickness="{DynamicResource HostSurfaceBorderThickness}"
-                Margin="24 6 24 10" Padding="12" MaxHeight="130"
-                IsVisible="{Binding HasChangelog}">
-            <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
-                <TextBlock Text="{Binding Changelog}" TextWrapping="Wrap" FontSize="{DynamicResource FontSizeCaption}"
-                           Opacity="0.85" TextAlignment="Left" />
-            </ScrollViewer>
-        </Border>
+    <ui:DialogShell ContentPadding="0">
+        <ui:DialogShell.HeaderContent>
+            <!-- Header + the release line: this strip is also the drag handle. -->
+            <StackPanel Margin="28 20 28 6">
+                <PathIcon Data="{DynamicResource Download}" Width="28" Height="28"
+                          Foreground="{DynamicResource SystemAccentColor}" Margin="0 0 0 10" />
+                <TextBlock FontSize="{DynamicResource FontSizeTitle}" FontWeight="SemiBold" Text="{x:Static locales:Locale.Update_SoftwareUpdate}" />
+                <TextBlock FontSize="13" Opacity="0.8" Margin="0 6 0 0" TextWrapping="Wrap" Text="{Binding UpdateText}" />
+            </StackPanel>
+        </ui:DialogShell.HeaderContent>
 
-        <!-- Download Progress Area -->
-        <StackPanel Margin="28 4 28 12" IsVisible="{Binding ShowProgressArea}">
-            <ProgressBar Value="{Binding DownloadPercentage}" Minimum="0" Maximum="100"
-                         Height="6" CornerRadius="3"
-                         IsIndeterminate="{Binding IsProgressIndeterminate}" />
-            <TextBlock Margin="0 8 0 0" FontSize="{DynamicResource FontSizeCaption}" Opacity="0.8" Text="{Binding StatusText}" />
-        </StackPanel>
+        <StackPanel Margin="0 0 0 4">
+            <!-- Changelog -->
+            <Border CornerRadius="{DynamicResource HostSurfaceCornerRadius}" Background="{DynamicResource CardSubtleFill}"
+                    BorderBrush="{DynamicResource CardSubtleBorder}" BorderThickness="{DynamicResource HostSurfaceBorderThickness}"
+                    Margin="24 6 24 10" Padding="12" MaxHeight="130"
+                    IsVisible="{Binding HasChangelog}">
+                <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+                    <TextBlock Text="{Binding Changelog}" TextWrapping="Wrap" FontSize="{DynamicResource FontSizeCaption}"
+                               Opacity="0.85" TextAlignment="Left" />
+                </ScrollViewer>
+            </Border>
 
-        <!-- Normal State Buttons -->
-        <StackPanel IsVisible="{Binding ShowNormalButtons}">
-            <Separator />
-            <Button Classes="Action Primary" Content="{Binding DownloadButtonText}" Click="DownloadUpdate" />
-            <Separator />
-            <Button Classes="Action" Content="{x:Static locales:Locale.Update_Later}" Click="Later" />
-            <Separator />
-            <Button Classes="Action" Content="{x:Static locales:Locale.Update_SkipThisVersion}" Click="SkipThisVersion" />
-        </StackPanel>
+            <!-- Download Progress Area -->
+            <StackPanel Margin="28 4 28 12" IsVisible="{Binding ShowProgressArea}">
+                <ProgressBar Value="{Binding DownloadPercentage}" Minimum="0" Maximum="100"
+                             Height="6" CornerRadius="3"
+                             IsIndeterminate="{Binding IsProgressIndeterminate}" />
+                <TextBlock Margin="0 8 0 0" FontSize="{DynamicResource FontSizeCaption}" Opacity="0.8" Text="{Binding StatusText}" />
+            </StackPanel>
 
-        <!-- Downloading State Buttons -->
-        <StackPanel IsVisible="{Binding IsDownloading}">
-            <Separator />
-            <Button Classes="Action" Content="{x:Static locales:Locale.Cancel}" Click="CancelDownload" />
-        </StackPanel>
+            <!-- Normal State Buttons -->
+            <StackPanel IsVisible="{Binding ShowNormalButtons}">
+                <Separator />
+                <Button Classes="Action Primary" Content="{Binding DownloadButtonText}" Click="DownloadUpdate" />
+                <Separator />
+                <Button Classes="Action" Content="{x:Static locales:Locale.Update_Later}" Click="Later" />
+                <Separator />
+                <Button Classes="Action" Content="{x:Static locales:Locale.Update_SkipThisVersion}" Click="SkipThisVersion" />
+            </StackPanel>
 
-        <!-- Completed State Buttons -->
-        <StackPanel IsVisible="{Binding IsCompleted}">
-            <Separator />
-            <Button Classes="Action Primary" Content="{x:Static locales:Locale.Update_InstallNow}" Click="InstallNow" />
-        </StackPanel>
+            <!-- Downloading State Buttons -->
+            <StackPanel IsVisible="{Binding IsDownloading}">
+                <Separator />
+                <Button Classes="Action" Content="{x:Static locales:Locale.Cancel}" Click="CancelDownload" />
+            </StackPanel>
 
-        <!-- Error State Buttons -->
-        <StackPanel IsVisible="{Binding HasError}">
-            <Separator />
-            <Button Classes="Action Primary" Content="{Binding RetryButtonText}" Click="DownloadUpdate" />
-            <Separator />
-            <Button Classes="Action" Content="{Binding OpenInBrowserButtonText}" Click="OpenInBrowser" />
-            <Separator />
-            <Button Classes="Action" Content="{x:Static locales:Locale.Settings_Appearance_Glass_Align_Close}" Click="Later" />
+            <!-- Completed State Buttons -->
+            <StackPanel IsVisible="{Binding IsCompleted}">
+                <Separator />
+                <Button Classes="Action Primary" Content="{x:Static locales:Locale.Update_InstallNow}" Click="InstallNow" />
+            </StackPanel>
+
+            <!-- Error State Buttons -->
+            <StackPanel IsVisible="{Binding HasError}">
+                <Separator />
+                <Button Classes="Action Primary" Content="{Binding RetryButtonText}" Click="DownloadUpdate" />
+                <Separator />
+                <Button Classes="Action" Content="{Binding OpenInBrowserButtonText}" Click="OpenInBrowser" />
+                <Separator />
+                <Button Classes="Action" Content="{x:Static locales:Locale.Settings_Appearance_Glass_Align_Close}" Click="Later" />
+            </StackPanel>
         </StackPanel>
-      </StackPanel>
-    </Border>
-</Window>
+    </ui:DialogShell>
+</views:HostDialogWindow>

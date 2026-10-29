@@ -34,13 +34,13 @@
         <value>长休息</value>
     </data>
     <data name="Pomodoro_Tab_Focus" xml:space="preserve">
-        <value>🍅 专注</value>
+        <value>专注</value>
     </data>
     <data name="Pomodoro_Tab_ShortBreak" xml:space="preserve">
-        <value>☕ 短休</value>
+        <value>短休</value>
     </data>
     <data name="Pomodoro_Tab_LongBreak" xml:space="preserve">
-        <value>🌴 长休</value>
+        <value>长休</value>
     </data>
     <data name="Pomodoro_Start" xml:space="preserve">
         <value>开始</value>

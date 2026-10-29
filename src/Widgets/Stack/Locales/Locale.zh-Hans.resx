@@ -55,7 +55,7 @@
         <value>右键编辑以添加组件</value>
     </data>
     <data name="Setting_DropZone_Title" xml:space="preserve">
-        <value>📥 拖入桌面小组件</value>
+        <value>拖入桌面小组件</value>
     </data>
     <data name="Setting_DropZone_Desc" xml:space="preserve">
         <value>直接在桌面上拖拽任意小组件并松开在此窗口中，即可将其收纳进重叠卡片</value>
@@ -74,7 +74,7 @@
         <value>将此组件从重叠中移出并还原放回桌面</value>
     </data>
     <data name="Setting_Edit_Child" xml:space="preserve">
-        <value>⚙ 设置</value>
+        <value>设置</value>
     </data>
     <data name="Setting_Edit_Child_Tip" xml:space="preserve">
         <value>配置此组件</value>

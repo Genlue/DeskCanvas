@@ -136,7 +136,7 @@
         <value>添加要展示和轮播的照片或文件夹</value>
     </data>
     <data name="Picture_CropTip" xml:space="preserve">
-        <value>💡 提示：可在预览框内直接拖拽平移、滑动滚轮缩放</value>
+        <value>提示：可在预览框内直接拖拽平移、滑动滚轮缩放</value>
     </data>
     <data name="Picture_QuickAlign" xml:space="preserve">
         <value>快捷对齐:</value>

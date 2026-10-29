@@ -91,10 +91,10 @@
         <value>Used {0} / {1} · {2} free</value>
     </data>
     <data name="Storage_Mode_ProgressBarList" xml:space="preserve">
-        <value>📊 Progress Bar List</value>
+        <value>Progress Bar List</value>
     </data>
     <data name="Storage_Mode_RingDashboard" xml:space="preserve">
-        <value>⭕ Ring Dashboard</value>
+        <value>Ring Dashboard</value>
     </data>
     <data name="Storage_Format_FreeSpace" xml:space="preserve">
         <value>Free Space (e.g. 138G free)</value>

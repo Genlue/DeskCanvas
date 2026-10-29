@@ -40,9 +40,9 @@ namespace Pomodoro.Locales {
         public static string Pomodoro_Phase_Focus => ResourceManager.GetString("Pomodoro_Phase_Focus", resourceCulture) ?? "Focus";
         public static string Pomodoro_Phase_ShortBreak => ResourceManager.GetString("Pomodoro_Phase_ShortBreak", resourceCulture) ?? "Short Break";
         public static string Pomodoro_Phase_LongBreak => ResourceManager.GetString("Pomodoro_Phase_LongBreak", resourceCulture) ?? "Long Break";
-        public static string Pomodoro_Tab_Focus => ResourceManager.GetString("Pomodoro_Tab_Focus", resourceCulture) ?? "🍅 Focus";
-        public static string Pomodoro_Tab_ShortBreak => ResourceManager.GetString("Pomodoro_Tab_ShortBreak", resourceCulture) ?? "☕ Short Break";
-        public static string Pomodoro_Tab_LongBreak => ResourceManager.GetString("Pomodoro_Tab_LongBreak", resourceCulture) ?? "🌴 Long Break";
+        public static string Pomodoro_Tab_Focus => ResourceManager.GetString("Pomodoro_Tab_Focus", resourceCulture) ?? "Focus";
+        public static string Pomodoro_Tab_ShortBreak => ResourceManager.GetString("Pomodoro_Tab_ShortBreak", resourceCulture) ?? "Short Break";
+        public static string Pomodoro_Tab_LongBreak => ResourceManager.GetString("Pomodoro_Tab_LongBreak", resourceCulture) ?? "Long Break";
         public static string Pomodoro_Start => ResourceManager.GetString("Pomodoro_Start", resourceCulture) ?? "Start";
         public static string Pomodoro_Pause => ResourceManager.GetString("Pomodoro_Pause", resourceCulture) ?? "Pause";
         public static string Pomodoro_Reset => ResourceManager.GetString("Pomodoro_Reset", resourceCulture) ?? "Reset";

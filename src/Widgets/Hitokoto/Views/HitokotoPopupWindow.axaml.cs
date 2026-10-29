@@ -10,6 +10,7 @@ using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Layout;
 using Avalonia.Media;
+using DeskCanvas.UI.Controls;
 using Avalonia.Threading;
 using DeskCanvas.Services;
 using DeskCanvas.Views;
@@ -95,10 +96,10 @@ public partial class HitokotoPopupWindow : SecondaryPanelWindow
         Title = "Hitokoto · Quote Collection";
         HeaderTitleText.Text = "Hitokoto · Quote Collection";
         CurrentCategoryBadge.Text = "Quotes";
-        OpenWebBtn.Content = "🌐 Web Details";
-        SpotlightNextBtn.Content = "🎲 Next";
-        CopyPlainBtn.Content = "📋 Copy Text";
-        CopyMarkdownBtn.Content = "📝 Copy Markdown";
+        OpenWebBtn.Content = "Web Details";
+        SpotlightNextBtn.Content = "Next";
+        CopyPlainBtn.Content = "Copy Text";
+        CopyMarkdownBtn.Content = "Copy Markdown";
         SearchBox.PlaceholderText = "Search bookmarked or recent quotes, sources, authors...";
         ClearHistoryBtn.Content = "Clear History";
     }
@@ -150,13 +151,13 @@ public partial class HitokotoPopupWindow : SecondaryPanelWindow
 
         var isLiked = HitokotoStore.Instance.IsLiked(currentItem.Uuid);
         SpotlightLikeBtn.Content = isLiked
-            ? (isZh ? $"❤️ 已赞 ({currentItem.Likes})" : $"❤️ Liked ({currentItem.Likes})")
-            : (isZh ? $"♡ 点赞 ({currentItem.Likes})" : $"♡ Like ({currentItem.Likes})");
+            ? (isZh ? $"已赞 ({currentItem.Likes})" : $"Liked ({currentItem.Likes})")
+            : (isZh ? $"点赞 ({currentItem.Likes})" : $"Like ({currentItem.Likes})");
 
         var isFav = HitokotoStore.Instance.IsFavorite(currentItem.Uuid);
         SpotlightFavBtn.Content = isFav
-            ? (isZh ? "⭐ 已收藏" : "⭐ Bookmarked")
-            : (isZh ? "☆ 收藏" : "☆ Bookmark");
+            ? (isZh ? "已收藏" : "Bookmarked")
+            : (isZh ? "收藏" : "Bookmark");
     }
 
     private void RefreshList()
@@ -165,8 +166,8 @@ public partial class HitokotoPopupWindow : SecondaryPanelWindow
         var favs = HitokotoStore.Instance.GetFavorites();
         var hist = HitokotoStore.Instance.GetHistory();
 
-        TabFavorites.Content = isZh ? $"⭐ 本地收藏 ({favs.Count})" : $"⭐ Bookmarks ({favs.Count})";
-        TabHistory.Content = isZh ? $"🕒 最近偶遇 ({hist.Count})" : $"🕒 History ({hist.Count})";
+        TabFavorites.Content = isZh ? $"本地收藏 ({favs.Count})" : $"Bookmarks ({favs.Count})";
+        TabHistory.Content = isZh ? $"最近偶遇 ({hist.Count})" : $"History ({hist.Count})";
         ClearHistoryBtn.IsVisible = activeTab == "History" && hist.Count > 0;
 
         IEnumerable<HitokotoItem> source = activeTab == "Favorites" ? favs : hist;
@@ -195,7 +196,7 @@ public partial class HitokotoPopupWindow : SecondaryPanelWindow
         if (list.Count == 0)
         {
             EmptyStateText.Text = activeTab == "Favorites"
-                ? (isZh ? "暂无收藏句子，点击上方「☆ 收藏」即可收入摘抄本" : "No bookmarked quotes yet. Click '☆ Bookmark' above to save quotes.")
+                ? (isZh ? "暂无收藏句子，点击上方「收藏」即可收入摘抄本" : "No bookmarked quotes yet. Click 'Bookmark' above to save quotes.")
                 : (isZh ? "暂无历史记录，双击桌面一言卡片即可偶遇新句子" : "No history yet. Double-click the quote widget on desktop to discover more.");
             EmptyStateText.IsVisible = true;
             return;
@@ -318,7 +319,12 @@ public partial class HitokotoPopupWindow : SecondaryPanelWindow
         var favBtn = new Button
         {
             Classes = { "action-pill" },
-            Content = isFav ? "⭐" : "☆",
+            Content = new PathIcon
+            {
+                Data = isFav ? CommonGlyphs.StarFilled : CommonGlyphs.StarOutline,
+                Width = 12,
+                Height = 12
+            },
             FontSize = 11,
             Padding = new Thickness(7, 2)
         };
@@ -362,7 +368,7 @@ public partial class HitokotoPopupWindow : SecondaryPanelWindow
     {
         if (HitokotoStore.Instance.IsLiked(currentItem.Uuid))
         {
-            ShowToast(IsChinese ? "你已经为这句话点过赞啦 ❤️" : "Already liked ❤️");
+            ShowToast(IsChinese ? "你已经为这句话点过赞啦" : "Already liked");
             return;
         }
 

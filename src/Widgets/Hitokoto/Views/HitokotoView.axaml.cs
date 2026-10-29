@@ -10,6 +10,7 @@ using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Layout;
 using Avalonia.Media;
+using DeskCanvas.UI.Controls;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using DeskCanvas.Core.Interfaces;
@@ -353,11 +354,12 @@ public partial class HitokotoView : UserControl, IFramelessWidget, IWidgetSelfRe
         SourceBadgeText.Text = currentItem.Id > 0 ? $"hitokoto.cn #{currentItem.Id}" : "hitokoto.cn";
 
         var isLiked = HitokotoStore.Instance.IsLiked(currentItem.Uuid);
-        LikeIconText.Text = isLiked ? "❤️" : "♡";
+        // Filled vs outline is the state cue (开发规范 §4.4: a vector, not a text glyph).
+        LikeIcon.Data = isLiked ? CommonGlyphs.HeartFilled : CommonGlyphs.HeartOutline;
         LikeCountText.Text = currentItem.Likes.ToString();
 
         var isFav = HitokotoStore.Instance.IsFavorite(currentItem.Uuid);
-        FavoriteIconText.Text = isFav ? "⭐" : "☆";
+        FavoriteIcon.Data = isFav ? CommonGlyphs.StarFilled : CommonGlyphs.StarOutline;
 
         ApplyResponsiveLayout(Bounds.Size);
     }
@@ -524,7 +526,7 @@ public partial class HitokotoView : UserControl, IFramelessWidget, IWidgetSelfRe
         if (HitokotoStore.Instance.IsLiked(currentItem.Uuid))
         {
             var isZh = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName.Equals("zh", StringComparison.OrdinalIgnoreCase);
-            ShowToast(isZh ? "已经点过赞啦 ❤️" : "Already liked ❤️");
+            ShowToast(isZh ? "已经点过赞啦" : "Already liked");
             return;
         }
 

@@ -101,6 +101,8 @@ internal static partial class Program
         CheckIconButtonsAndSectionHeaders();
         CheckCompoundInputs();
         CheckPanelShell();
+        CheckDialogShell();
+        CheckGlyphCentring();
         CheckGlassSamplingOrigin();
         CheckGlassSettleProbing();
         CheckPopupMigrationTools();

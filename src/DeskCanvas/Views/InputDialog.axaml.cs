@@ -1,4 +1,3 @@
-using DeskCanvas.Services;
 using System;
 using System.Threading.Tasks;
 using Avalonia.Controls;
@@ -7,7 +6,7 @@ using Avalonia.Interactivity;
 
 namespace DeskCanvas.Views;
 
-public partial class InputDialog : Window
+public partial class InputDialog : HostDialogWindow
 {
     private bool confirmed;
     private Func<string, string?>? validator;
@@ -15,7 +14,6 @@ public partial class InputDialog : Window
     public InputDialog()
     {
         InitializeComponent();
-        WindowRoles.Register(this, WindowRole.Dialog);
         var isZh = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName.Equals("zh", StringComparison.OrdinalIgnoreCase);
         CancelButton.Content = Locales.Locale.Cancel ?? (isZh ? "取消" : "Cancel");
         ConfirmButton.Content = Locales.Locale.Settings_Advanced_Backup_OkButton ?? (isZh ? "确定" : "OK");

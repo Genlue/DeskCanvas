@@ -11,7 +11,7 @@
 
 | 项目 | 分类 | 用途 |
 |---|---|---|
-| UiFoundationChecks | 正式门禁（已验证套件） | UI 基础契约：玻璃起源/沉降、面板壳、弹窗迁移、设置本地化、冗余守卫等 |
+| UiFoundationChecks | 正式门禁（已验证套件） | UI 基础契约：玻璃起源/沉降、面板壳、弹窗外壳（DialogShell + HostDialogWindow）、弹窗迁移、图标居中（28 DIP 实测算墨迹中心）、设置本地化、冗余守卫等 |
 | IdentityStorageChecks | 正式门禁（已验证套件） | P1 稳定 InstanceId 幂等迁移、几何变化匹配、保存失败语义 |
 | ContractsLifecycleChecks | 正式门禁（已验证套件） | P2 Contracts/Runtime 会话串行生命周期与幂等释放 |
 | SchedulerChecks | 正式门禁（已验证套件） | P5 owner 调度租约、暂停恢复、失败隔离与统计 |
@@ -47,7 +47,7 @@
 | MonochromeAccentChecks | 正式门禁（已验证套件） | 单色强调色模式下的配色契约：黑白/背景色 ramp 交叉写入与归还、Fluent 选中态控件（开关/复选/单选）与 Slider 滑块三态（静止/hover/pressed）的可读性契约、accent-button 模板 |
 | WidgetAdaptiveChecks | 正式门禁（已验证套件） | 组件自适应档位/尺寸契约 |
 | FullscreenChecks | 正式门禁（已验证套件） | 全屏行为与原生窗口枚举冒烟 |
-| LiquidGlassChecks | 正式门禁（已验证套件） | 液态玻璃材质（P11 三元材质、Kyant0 光学模型、HighlightAngle 角度向量、默认关闭实时采样、GPU/CPU 渲染与壁纸布局等）契约；W5 收官时接入统一入口 |
+| LiquidGlassChecks | 正式门禁（已验证套件） | 液态玻璃材质（P11 三元材质、Kyant0 光学模型、HighlightAngle 角度向量、默认关闭实时采样、GPU/CPU 渲染与壁纸布局等）契约；采样几何含缓存帧覆盖规则（局部截屏只在真的包含请求矩形时才可复用）；W5 收官时接入统一入口 |
 | MultiScreenGridChecks | 正式门禁 | 多屏网格坐标与映射契约；组件库放置的行优先首个适配（占用矩阵、异构尺寸打包、换行、网格满回退、偏离网格存量组件保守占位、零两两重叠） |
 | BottomBandChecks | 正式门禁 | 底部条带布局/行为契约 |
 | SettingsReleaseChecks | 正式门禁 | 设置页关闭后的资源释放契约 |

@@ -67,7 +67,7 @@
     <value>已复制到剪贴板</value>
   </data>
   <data name="Hitokoto_LikedToast" xml:space="preserve">
-    <value>已通过一言接口送出赞 ♡</value>
+    <value>已通过一言接口送出赞 </value>
   </data>
   <data name="Hitokoto_FavoritedToast" xml:space="preserve">
     <value>已加入本地一言收藏夹</value>

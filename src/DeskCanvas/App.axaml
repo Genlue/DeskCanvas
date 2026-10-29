@@ -22,6 +22,8 @@
         <StyleInclude Source="avares://DeskCanvas/Styles/Controls/SettingsSectionHeader.axaml" />
         <!-- Shared secondary-panel shell (W7): the one ControlTheme the nine popups reuse. -->
         <StyleInclude Source="avares://DeskCanvas/Styles/Controls/SecondaryPanelShell.axaml" />
+        <!-- Shared dialog shell: the surface contract for every WindowRole.Dialog window. -->
+        <StyleInclude Source="avares://DeskCanvas/Styles/Controls/DialogShell.axaml" />
         <Style Selector="TextBox">
             <Setter Property="Background" Value="Transparent" />
             <Setter Property="BorderThickness" Value="0" />

@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Text.Json.Serialization;
+using Avalonia.Media;
 using Avalonia.Media.Imaging;
 
 namespace Tools.Models;
@@ -45,14 +46,13 @@ public class ClipboardItem
     [JsonIgnore]
     public bool IsPlainText => !string.IsNullOrWhiteSpace(Text) && !IsLink && !IsCode;
 
+    /// <summary>
+    /// The entry's type mark as geometry (开发规范 §4.4 — icons are vectors, never emoji).
+    /// The panel paints it in its 32 DIP badge from this single source, so a new
+    /// <see cref="ClipboardType"/> only has to be taught to <see cref="ToolGlyphs"/>.
+    /// </summary>
     [JsonIgnore]
-    public string TypeGlyph => Type switch
-    {
-        ClipboardType.Text => "📝",
-        ClipboardType.Image => "🖼️",
-        ClipboardType.Files => "📁",
-        _ => "📋"
-    };
+    public Geometry TypeIcon => ToolGlyphs.ForType(Type);
 
     [JsonIgnore]
     public string DisplayTitle => Type switch

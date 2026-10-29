@@ -16,7 +16,7 @@ namespace Timetable.Views;
 /// 星期 × 节次 preview (compared with the original image by the user) plus a grouped
 /// issue list. Course data is written by the caller only after <c>ShowDialog</c> returns true.
 /// </summary>
-public partial class ImportReviewWindow : Window
+public partial class ImportReviewWindow : DeskCanvas.Views.HostDialogWindow
 {
     private static readonly IBrush ErrorBrush = new SolidColorBrush(Color.Parse("#E24B4A"));
     private static readonly IBrush WarningBrush = new SolidColorBrush(Color.Parse("#B9770E"));
@@ -32,7 +32,6 @@ public partial class ImportReviewWindow : Window
     {
         this.result = result;
         InitializeComponent();
-        WindowRoles.Register(this, WindowRole.Dialog);
         ApplyLocalization();
         Populate();
     }
@@ -304,13 +303,13 @@ public partial class ImportReviewWindow : Window
 
     private void OnCancelClicked(object? sender, RoutedEventArgs e) => Close(false);
 
-    private void OnKeyDown(object? sender, KeyEventArgs e)
+    /// <summary>
+    /// Escape is a cancel: the caller expects a <c>false</c> result from
+    /// <c>ShowDialog&lt;bool&gt;</c>, which a plain Close() would not express (it returns default).
+    /// </summary>
+    protected override bool OnDialogEscape()
     {
-        if (e.Key == Key.Escape) Close(false);
-    }
-
-    private void OnHeaderPressed(object? sender, PointerPressedEventArgs e)
-    {
-        if (e.GetCurrentPoint(this).Properties.IsLeftButtonPressed) BeginMoveDrag(e);
+        Close(false);
+        return true;
     }
 }

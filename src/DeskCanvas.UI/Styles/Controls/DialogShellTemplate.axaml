@@ -1,0 +1,66 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:ui="clr-namespace:DeskCanvas.UI.Controls">
+    <!-- The single source of the shared dialog chrome. Keyed so a facade type (if one is ever
+         needed) or a host style can bind the identical template: a type selector only matches the
+         exact type, so the keyed template is the contract both would share. -->
+    <ControlTemplate x:Key="DialogShellTemplate" TargetType="ui:DialogShell">
+        <!-- The card IS the window's only painted surface. Margin = ShadowGutter is fully
+             transparent (the host window sets TransparencyLevelHint=Transparent), so what shows
+             around the card is its drop shadow over the desktop — not a second, blurred surface.
+             That distinction is the reported "弹窗外围多一圈毛玻璃". -->
+        <Border x:Name="PART_CardBorder"
+                Margin="{TemplateBinding ShadowGutter}"
+                Background="{TemplateBinding CardBackground}"
+                BorderBrush="{TemplateBinding CardBorderBrush}"
+                BorderThickness="1"
+                CornerRadius="{TemplateBinding CornerRadius}"
+                BoxShadow="{TemplateBinding CardShadow}"
+                ClipToBounds="True">
+            <Grid RowDefinitions="Auto,*,Auto" Margin="{TemplateBinding ContentPadding}">
+                <!-- PART_HeaderDragArea: hit-testable (transparent background) and marked as the
+                     shared drag handle from code behind, exactly like the panel shell's header.
+                     Collapsed when the dialog has no header at all (a message-only alert) — the
+                     shell then moves the window from its card instead. -->
+                <Grid x:Name="PART_HeaderDragArea" Grid.Row="0"
+                      ColumnDefinitions="*,Auto"
+                      Margin="0,0,0,12"
+                      IsVisible="{TemplateBinding HasHeader}"
+                      Background="Transparent">
+                    <!-- Default title block (used when the dialog does not supply HeaderContent). -->
+                    <StackPanel Grid.Column="0" Orientation="Vertical" Spacing="2"
+                                VerticalAlignment="Center"
+                                IsVisible="{TemplateBinding HeaderContent, Converter={x:Static ObjectConverters.IsNull}}">
+                        <TextBlock Text="{TemplateBinding Title}"
+                                   FontSize="15" FontWeight="SemiBold"
+                                   TextTrimming="CharacterEllipsis"
+                                   Foreground="{TemplateBinding TitleForeground}" />
+                        <TextBlock Text="{TemplateBinding Subtitle}"
+                                   FontSize="12" Opacity="0.7"
+                                   TextWrapping="Wrap"
+                                   IsVisible="{TemplateBinding Subtitle, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                                   Foreground="{TemplateBinding SubtitleForeground}" />
+                    </StackPanel>
+                    <!-- Custom header (an icon, a live count, a name editor…). -->
+                    <ContentPresenter Grid.Column="0"
+                                      Content="{TemplateBinding HeaderContent}"
+                                      IsVisible="{TemplateBinding HeaderContent, Converter={x:Static ObjectConverters.IsNotNull}}" />
+
+                    <ContentPresenter Grid.Column="1"
+                                      Content="{TemplateBinding HeaderActions}"
+                                      VerticalAlignment="Center" />
+                </Grid>
+
+                <!-- PART_ContentPresenter: the single business content slot. -->
+                <ContentPresenter x:Name="PART_ContentPresenter" Grid.Row="1"
+                                  Content="{TemplateBinding Content}"
+                                  ContentTemplate="{TemplateBinding ContentTemplate}" />
+
+                <ContentPresenter Grid.Row="2"
+                                  Margin="0,12,0,0"
+                                  Content="{TemplateBinding FooterContent}"
+                                  IsVisible="{TemplateBinding FooterContent, Converter={x:Static ObjectConverters.IsNotNull}}" />
+            </Grid>
+        </Border>
+    </ControlTemplate>
+</ResourceDictionary>

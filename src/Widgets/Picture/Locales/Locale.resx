@@ -136,7 +136,7 @@
         <value>Add photos or folders to display and rotate</value>
     </data>
     <data name="Picture_CropTip" xml:space="preserve">
-        <value>💡 Tip: Drag inside the preview to pan, scroll wheel to zoom</value>
+        <value>Tip: Drag inside the preview to pan, scroll wheel to zoom</value>
     </data>
     <data name="Picture_QuickAlign" xml:space="preserve">
         <value>Quick Align:</value>

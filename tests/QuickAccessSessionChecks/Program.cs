@@ -157,8 +157,11 @@ ScanPanel("NotePopupWindow", "Notes/Views/NotePopupWindow.axaml.cs", "Notes.Edit
 ScanPanel("ShortcutsPopupWindow", "Shortcuts/Views/ShortcutsPopupWindow.axaml.cs", "Shortcuts.QuickPanel");
 ScanPanel("BigFolderPopupWindow", "Folders/Views/BigFolderPopupWindow.axaml.cs", "Folders.BigFolderGrid");
 var editorSource = ReadSource("src", "Widgets", "Shortcuts", "Views", "ShortcutsEditorWindow.axaml.cs");
-Check(editorSource.Contains("WindowRoles.Register"),
-    "7.x ShortcutsEditorWindow keeps its P6 WindowRoles registration (untouched by the panel migration)");
+// The editor is a WindowRole.Dialog window and now takes its role from HostDialogWindow, so the
+// assertion is "the window is still wired to a dialog role" rather than "it still spells the call
+// itself" — a dialog that silently drops out of the role table is the regression this guards.
+Check(editorSource.Contains("WindowRoles.Register") || editorSource.Contains(": DeskCanvas.Views.HostDialogWindow"),
+    "7.x ShortcutsEditorWindow keeps its P6 WindowRoles registration (directly or through HostDialogWindow)");
 
 // =========================================================================================
 // 8. PanelService per-owner round trip with a real migrated panel

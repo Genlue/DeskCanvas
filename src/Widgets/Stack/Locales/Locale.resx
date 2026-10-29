@@ -55,7 +55,7 @@
         <value>Right-click &amp; Edit to add widgets</value>
     </data>
     <data name="Setting_DropZone_Title" xml:space="preserve">
-        <value>📥 Drag Desktop Widgets Here</value>
+        <value>Drag Desktop Widgets Here</value>
     </data>
     <data name="Setting_DropZone_Desc" xml:space="preserve">
         <value>Drag any widget on the desktop and drop it into this window to add it to the stack</value>
@@ -74,7 +74,7 @@ Drag widgets from the desktop into the drop zone above, or select and add one be
         <value>Remove this widget from the stack and restore it to the desktop</value>
     </data>
     <data name="Setting_Edit_Child" xml:space="preserve">
-        <value>⚙ Settings</value>
+        <value>Settings</value>
     </data>
     <data name="Setting_Edit_Child_Tip" xml:space="preserve">
         <value>Configure this widget</value>

@@ -99,7 +99,10 @@ public partial class DateOne : UserControl, IWidgetSurfaceHints, IWidgetActivity
             Brushes.Black);
 
         var inkHeightPerEm = formatted.Extent / ReferenceFontSize;
-        var tightInkWidthPerEm = formatted.BuildGeometry(default).Bounds.Width / ReferenceFontSize;
+        // BuildGeometry has no glyphs to return for some text/typeface pairs (null geometry);
+        // treat that as "no measurable ink" so the caller keeps its current size.
+        var inkGeometry = formatted.BuildGeometry(default);
+        var tightInkWidthPerEm = inkGeometry is null ? 0 : inkGeometry.Bounds.Width / ReferenceFontSize;
         if (inkHeightPerEm <= 0 || tightInkWidthPerEm <= 0) return;
 
         // 目标物理像素 ÷ 每 DIP 物理像素数 = DIP 字号；高度与宽度约束取小。

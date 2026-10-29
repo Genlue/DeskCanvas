@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using System.Reflection;
 using Avalonia;
 using Avalonia.Controls;
@@ -167,9 +168,21 @@ string[] dialogFiles =
     "src/Widgets/Timetable/Views/GuideWindow.axaml.cs",
     "src/Widgets/Timetable/Views/ImportReviewWindow.axaml.cs",
 ];
+// Every dialog reaches the role through ONE place: the HostDialogWindow base class. A file that
+// derives from it registers exactly once (from the constructor), and a file that still registers
+// itself is a legacy path (GridEditor, whose chrome is registered as an exception). The assertion
+// therefore accepts either wiring — but never "none", which is the regression this scan exists for
+// (a dialog that drops out of the role table loses its transparency/activation policy silently).
 foreach (var file in dialogFiles)
-    Check(Read(file).Contains("WindowRoles.Register(this, WindowRole.Dialog)"),
-        $"{file} registers its window as Dialog");
+{
+    var source = Read(file);
+    var wired = source.Contains("WindowRoles.Register(this, WindowRole.Dialog)")
+                || Regex.IsMatch(source, @":\s*([A-Za-z0-9_.]+\.)?HostDialogWindow\b");
+    Check(wired, $"{file} registers its window as Dialog (directly or through HostDialogWindow)");
+}
+
+Check(Read("src/DeskCanvas/Views/HostDialogWindow.cs").Contains("WindowRoles.Register(this, WindowRole.Dialog)"),
+    "HostDialogWindow is the single place a dialog role is registered");
 
 // -------------------------------------------------------------------------------------------
 // 4. Widget platform boundary: [DllImport] under src/Widgets stays on the pinned whitelist.

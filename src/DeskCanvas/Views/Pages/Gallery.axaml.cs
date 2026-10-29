@@ -15,6 +15,7 @@ using DeskCanvas.Core.Models.Attributes;
 using DeskCanvas.Core.Models.Settings;
 using DeskCanvas.Locales;
 using DeskCanvas.Services;
+using DeskCanvas.UI.Controls;
 using DeskCanvas.ViewModels;
 using GridSettings = DeskCanvas.Core.Models.Settings.Grid;
 
@@ -46,17 +47,21 @@ public partial class Gallery : UserControl, INotifyPropertyChanged
         "WidgetCategory_Container",
     ];
 
-    /// <summary>Glyph shown in each section header; mirrors the approved 8-category scheme.</summary>
-    private static readonly IReadOnlyDictionary<string, string> CategoryIcons = new Dictionary<string, string>
+    /// <summary>
+    /// Mark shown in each section header; mirrors the approved 8-category scheme. Geometry, not a
+    /// glyph string (开发规范 §4.4): the emoji these replace could not follow the theme foreground
+    /// and were not centred against the 15 DIP header text.
+    /// </summary>
+    private static readonly IReadOnlyDictionary<string, Geometry> CategoryIcons = new Dictionary<string, Geometry>
     {
-        ["WidgetCategory_ClockCalendar"] = "🕒",
-        ["WidgetCategory_Weather"] = "🌤️",
-        ["WidgetCategory_SystemStatus"] = "📊",
-        ["WidgetCategory_Productivity"] = "✅",
-        ["WidgetCategory_Launcher"] = "🚀",
-        ["WidgetCategory_Lifestyle"] = "🎵",
-        ["WidgetCategory_Utilities"] = "🧰",
-        ["WidgetCategory_Container"] = "🧩",
+        ["WidgetCategory_ClockCalendar"] = CommonGlyphs.Clock,
+        ["WidgetCategory_Weather"] = CommonGlyphs.Sun,
+        ["WidgetCategory_SystemStatus"] = CommonGlyphs.Chart,
+        ["WidgetCategory_Productivity"] = CommonGlyphs.CheckCircle,
+        ["WidgetCategory_Launcher"] = CommonGlyphs.Apps,
+        ["WidgetCategory_Lifestyle"] = CommonGlyphs.Music,
+        ["WidgetCategory_Utilities"] = CommonGlyphs.Wrench,
+        ["WidgetCategory_Container"] = CommonGlyphs.Puzzle,
     };
 
     /// <summary>Bucket for widgets whose assembly declares no category (stale or
@@ -197,7 +202,7 @@ public partial class Gallery : UserControl, INotifyPropertyChanged
 
     private static WidgetCategoryGroup MakeGroup(string key, List<WidgetPreviewViewModel> items) =>
         new(key,
-            CategoryIcons.GetValueOrDefault(key, "🧩"),
+            CategoryIcons.GetValueOrDefault(key, CommonGlyphs.Puzzle),
             Locale.ResourceManager.GetString(key, Locale.Culture) ?? key,
             items);
 

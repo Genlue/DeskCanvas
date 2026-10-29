@@ -6,4 +6,5 @@
     <StyleInclude Source="avares://DeskCanvas.UI/Styles/Controls/CardBox.axaml" />
     <StyleInclude Source="avares://DeskCanvas.UI/Styles/Controls/StatusBadge.axaml" />
     <StyleInclude Source="avares://DeskCanvas.UI/Styles/Controls/SecondaryPanelShell.axaml" />
+    <StyleInclude Source="avares://DeskCanvas.UI/Styles/Controls/DialogShell.axaml" />
 </Styles>

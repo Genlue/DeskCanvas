@@ -445,7 +445,7 @@ public static class ActionCatalog
 
         new("convertValue", ActionCategory.Text, "sliders", "Shortcuts_Action_convertValue",
         [
-            new("value", "Shortcuts_Param_value", ParamKind.Text, DataType: DataType.Any,
+            new("value", "Shortcuts_Param_Value", ParamKind.Text, DataType: DataType.Any,
                 Primary: true),
             new("target", "Shortcuts_Param_targetType", ParamKind.Choice, "text",
             [
@@ -493,14 +493,14 @@ public static class ActionCatalog
         // ---- Data nodes (green) ----------------------------------------------------
         new("text", ActionCategory.Data, "text", "Shortcuts_Action_text",
         [
-            new("value", "Shortcuts_Param_value", ParamKind.MultilineText, Primary: true),
+            new("value", "Shortcuts_Param_Value", ParamKind.MultilineText, Primary: true),
         ],
         Ports(new OutputSpec("value", "Shortcuts_Port_Value", DataType.Text, IsDefault: true)),
         "Shortcuts_Desc_text"),
 
         new("number", ActionCategory.Data, "sliders", "Shortcuts_Action_number",
         [
-            new("value", "Shortcuts_Param_value", ParamKind.Number, "0", Min: -1e12, Max: 1e12,
+            new("value", "Shortcuts_Param_Value", ParamKind.Number, "0", Min: -1e12, Max: 1e12,
                 Primary: true, DataType: DataType.Number),
         ],
         Ports(new OutputSpec("value", "Shortcuts_Port_Value", DataType.Number, IsDefault: true)),
@@ -508,7 +508,7 @@ public static class ActionCatalog
 
         new("boolean", ActionCategory.Data, "check", "Shortcuts_Action_boolean",
         [
-            new("value", "Shortcuts_Param_value", ParamKind.Choice, "true",
+            new("value", "Shortcuts_Param_Value", ParamKind.Choice, "true",
             [
                 ("true", "Shortcuts_Bool_true"),
                 ("false", "Shortcuts_Bool_false"),
@@ -617,7 +617,7 @@ public static class ActionCatalog
 
         new("toJson", ActionCategory.Data, "branch", "Shortcuts_Action_toJson",
         [
-            new("value", "Shortcuts_Param_value", ParamKind.Text, Primary: true,
+            new("value", "Shortcuts_Param_Value", ParamKind.Text, Primary: true,
                 DataType: DataType.Any),
         ],
         Ports(new OutputSpec("text", "Shortcuts_Port_Text", DataType.Text, IsDefault: true)),
@@ -641,7 +641,7 @@ public static class ActionCatalog
 
         new("showResult", ActionCategory.Data, "eye", "Shortcuts_Action_showResult",
         [
-            new("value", "Shortcuts_Param_value", ParamKind.Text, Primary: true,
+            new("value", "Shortcuts_Param_Value", ParamKind.Text, Primary: true,
                 DataType: DataType.Any),
             new("title", "Shortcuts_Param_title", ParamKind.Text),
         ],
@@ -815,7 +815,7 @@ public static class ActionCatalog
 
         new("switch", ActionCategory.Flow, "branch", "Shortcuts_Action_switch",
         [
-            new("value", "Shortcuts_Param_value", ParamKind.Text, Primary: true,
+            new("value", "Shortcuts_Param_Value", ParamKind.Text, Primary: true,
                 DataType: DataType.Any),
             new("ignoreCase", "Shortcuts_Param_ignoreCase", ParamKind.Choice, "true",
             [
@@ -888,7 +888,7 @@ public static class ActionCatalog
         [
             new("name", "Shortcuts_Param_varName", ParamKind.Text, "result", Primary: true,
                 Required: true, AllowEmpty: false, HelpKey: "Shortcuts_Help_setVarName"),
-            new("value", "Shortcuts_Param_value", ParamKind.MultilineText, Primary: true,
+            new("value", "Shortcuts_Param_Value", ParamKind.MultilineText, Primary: true,
                 DataType: DataType.Any),
         ],
         [
@@ -899,7 +899,7 @@ public static class ActionCatalog
 
         new("collect", ActionCategory.Flow, "list", "Shortcuts_Action_collect",
         [
-            new("value", "Shortcuts_Param_value", ParamKind.Text, Primary: true,
+            new("value", "Shortcuts_Param_Value", ParamKind.Text, Primary: true,
                 DataType: DataType.Any),
         ],
         [
@@ -923,7 +923,7 @@ public static class ActionCatalog
 
         new("return", ActionCategory.Flow, "next", "Shortcuts_Action_return",
         [
-            new("value", "Shortcuts_Param_value", ParamKind.Text, Primary: true,
+            new("value", "Shortcuts_Param_Value", ParamKind.Text, Primary: true,
                 DataType: DataType.Any),
         ], [], "Shortcuts_Desc_return"),
 

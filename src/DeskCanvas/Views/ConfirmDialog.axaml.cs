@@ -1,4 +1,3 @@
-using DeskCanvas.Services;
 using System.Threading.Tasks;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
@@ -9,14 +8,13 @@ namespace DeskCanvas.Views;
 /// Small modal dialog with a message and confirm/cancel (or OK-only) buttons,
 /// used by the backup import flow.
 /// </summary>
-public partial class ConfirmDialog : Window
+public partial class ConfirmDialog : HostDialogWindow
 {
     private bool confirmed;
 
     public ConfirmDialog()
     {
         InitializeComponent();
-        WindowRoles.Register(this, WindowRole.Dialog);
     }
 
     private void SetMessage(string? message) => MessageText.Text = message;

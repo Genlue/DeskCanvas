@@ -668,7 +668,7 @@ public partial class CalculatorPopupWindow : SecondaryPanelWindow
                     Classes = { "icon-btn" },
                     Width = 22,
                     Height = 22,
-                    Content = "📋"
+                    Content = CreateCopyIcon()
                 };
                 copyBtn.Click += (_, ev) =>
                 {
@@ -733,7 +733,7 @@ public partial class CalculatorPopupWindow : SecondaryPanelWindow
                 Classes = { "icon-btn" },
                 Width = 22,
                 Height = 22,
-                Content = "📋"
+                Content = CreateCopyIcon()
             };
             ToolTip.SetTip(copyBtn, Locale.Tools_Calculator_Copied);
             copyBtn.Click += (_, ev) =>
@@ -746,7 +746,7 @@ public partial class CalculatorPopupWindow : SecondaryPanelWindow
                 Classes = { "icon-btn" },
                 Width = 22,
                 Height = 22,
-                Content = "✕",
+                Content = CreateDeleteIcon(),
                 Opacity = 0.55
             };
             delBtn.Click += (_, ev) =>
@@ -787,6 +787,26 @@ public partial class CalculatorPopupWindow : SecondaryPanelWindow
         box.CaretIndex = caret + token.Length;
         box.Focus();
     }
+
+    /// <summary>
+    /// A history row's copy action as geometry (开发规范 §4.4). The rows are built in code, so the
+    /// mark is a <see cref="PathIcon"/> — it inherits the button's <c>Foreground</c> like every
+    /// other icon, which the 📋 it replaces could not.
+    /// </summary>
+    private static PathIcon CreateCopyIcon() => new()
+    {
+        Data = ToolGlyphs.Copy,
+        Width = 10,
+        Height = 10,
+    };
+
+    /// <summary>See <see cref="CreateCopyIcon"/> — the delete mark is the shared stroked cross.</summary>
+    private static PathIcon CreateDeleteIcon() => new()
+    {
+        Data = ToolGlyphs.Close,
+        Width = 8,
+        Height = 8,
+    };
 
     private void CopyTextWithToast(string? text)
     {

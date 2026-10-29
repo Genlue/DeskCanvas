@@ -97,10 +97,6 @@ $LocaleLiteralExceptions = @(
     [pscustomobject]@{ File = 'src/DeskCanvas/Views/GridEditor.axaml'; Attribute = 'Text'; Value = 'X 位置 (%)'; Reason = '同上。' }
     [pscustomobject]@{ File = 'src/DeskCanvas/Views/GridEditor.axaml'; Attribute = 'Text'; Value = 'Y 位置 (%)'; Reason = '同上。' }
 
-    # ---- InputDialog：通用对话框按钮（报告 §10.1 登记为待治理存量）----
-    [pscustomobject]@{ File = 'src/DeskCanvas/Views/InputDialog.axaml'; Attribute = 'Content'; Value = '取消'; Reason = 'InputDialog 通用按钮文案，报告 §10.1 列为待治理项但尚未迁移；存量登记，迁移时换 Locale.Input_* 键。' }
-    [pscustomobject]@{ File = 'src/DeskCanvas/Views/InputDialog.axaml'; Attribute = 'Content'; Value = '确定'; Reason = '同上。' }
-
     # ---- ControlCenter：Windows 专属插件卡片的固定说明文字 ----
     [pscustomobject]@{ File = 'src/Widgets/ControlCenter/Views/Controls/ControlCapsuleView.axaml'; Attribute = 'ToolTip.Tip'; Value = '打开系统设置'; Reason = 'ControlCenter 是 Windows 专属系统胶囊插件，说明文字未纳入 W9 治理批次；存量登记。' }
     [pscustomobject]@{ File = 'src/Widgets/ControlCenter/Views/Controls/ControlCapsuleView.axaml'; Attribute = 'Text'; Value = '音频输出设备'; Reason = '同上。' }
@@ -110,14 +106,17 @@ $LocaleLiteralExceptions = @(
     [pscustomobject]@{ File = 'src/Widgets/Hitokoto/Views/HitokotoPopupWindow.axaml'; Attribute = 'Title'; Value = '一言 · 灵感收纳箱'; Reason = '窗口标题默认值，code-behind 按 Culture 覆写（"Hitokoto · Quote Collection"）。' }
     [pscustomobject]@{ File = 'src/Widgets/Hitokoto/Views/HitokotoPopupWindow.axaml'; Attribute = 'Text'; Value = '一言 · 灵感收纳箱'; Reason = 'HeaderContent 标题默认值，code-behind L94 按 Culture 覆写。' }
     [pscustomobject]@{ File = 'src/Widgets/Hitokoto/Views/HitokotoPopupWindow.axaml'; Attribute = 'Text'; Value = '一言'; Reason = '分类徽标默认值，code-behind L95/L135 覆写。' }
-    [pscustomobject]@{ File = 'src/Widgets/Hitokoto/Views/HitokotoPopupWindow.axaml'; Attribute = 'Content'; Value = '🌐 网页详情'; Reason = '操作钮默认值，code-behind 按 Culture 覆写。' }
+    [pscustomobject]@{ File = 'src/Widgets/Hitokoto/Views/HitokotoPopupWindow.axaml'; Attribute = 'Content'; Value = '网页详情'; Reason = '操作钮设计时默认值（中文），运行时 ApplyLocalization 按 Culture 覆写为英文。' }
     [pscustomobject]@{ File = 'src/Widgets/Hitokoto/Views/HitokotoPopupWindow.axaml'; Attribute = 'Text'; Value = '往者不可谏，来者犹可追。'; Reason = '示例数据（W9 口径允许）：聚光灯名句占位，运行时被真实句子替换。' }
     [pscustomobject]@{ File = 'src/Widgets/Hitokoto/Views/HitokotoPopupWindow.axaml'; Attribute = 'Text'; Value = '—— 孔子《论语·微子篇》'; Reason = '示例数据（W9 口径允许）：出处占位。' }
-    [pscustomobject]@{ File = 'src/Widgets/Hitokoto/Views/HitokotoPopupWindow.axaml'; Attribute = 'Content'; Value = '🎲 换一句'; Reason = '操作钮默认值，code-behind 按 Culture 覆写。' }
-    [pscustomobject]@{ File = 'src/Widgets/Hitokoto/Views/HitokotoPopupWindow.axaml'; Attribute = 'Content'; Value = '♡ 点赞 (0)'; Reason = '点赞钮默认值，code-behind L149 按 Culture 覆写。' }
-    [pscustomobject]@{ File = 'src/Widgets/Hitokoto/Views/HitokotoPopupWindow.axaml'; Attribute = 'Content'; Value = '☆ 收藏'; Reason = '收藏钮默认值，code-behind L153 按 Culture 覆写。' }
-    [pscustomobject]@{ File = 'src/Widgets/Hitokoto/Views/HitokotoPopupWindow.axaml'; Attribute = 'Content'; Value = '📋 复制文本'; Reason = '复制钮默认值，code-behind 按 Culture 覆写。' }
-    [pscustomobject]@{ File = 'src/Widgets/Hitokoto/Views/HitokotoPopupWindow.axaml'; Attribute = 'Content'; Value = '📝 复制 Markdown'; Reason = '复制 Markdown 钮默认值，code-behind L99 覆写。' }
+    [pscustomobject]@{ File = 'src/Widgets/Hitokoto/Views/HitokotoPopupWindow.axaml'; Attribute = 'Content'; Value = '换一句'; Reason = '操作钮设计时默认值（中文），运行时按 Culture 覆写。' }
+    [pscustomobject]@{ File = 'src/Widgets/Hitokoto/Views/HitokotoPopupWindow.axaml'; Attribute = 'Content'; Value = '点赞 (0)'; Reason = '点赞钮设计时默认值（含计数占位 0），运行时按 Culture 与真实点赞数重写。' }
+    [pscustomobject]@{ File = 'src/Widgets/Hitokoto/Views/HitokotoPopupWindow.axaml'; Attribute = 'Content'; Value = '收藏'; Reason = '收藏钮设计时默认值（中文），运行时按 Culture 与收藏状态重写。' }
+    [pscustomobject]@{ File = 'src/Widgets/Hitokoto/Views/HitokotoPopupWindow.axaml'; Attribute = 'Content'; Value = '复制文本'; Reason = '复制钮设计时默认值（中文），运行时按 Culture 覆写。' }
+    [pscustomobject]@{ File = 'src/Widgets/Hitokoto/Views/HitokotoPopupWindow.axaml'; Attribute = 'Content'; Value = '复制 Markdown'; Reason = '复制 Markdown 钮设计时默认值（中文），运行时按 Culture 覆写。' }
+    [pscustomobject]@{ File = 'src/Widgets/Hitokoto/Views/HitokotoPopupWindow.axaml'; Attribute = 'Content'; Value = '本地收藏 (0)'; Reason = '收藏页签设计时默认值（含计数占位 0），运行时按 Culture 与真实条数重写。' }
+    [pscustomobject]@{ File = 'src/Widgets/Hitokoto/Views/HitokotoPopupWindow.axaml'; Attribute = 'Content'; Value = '最近偶遇 (0)'; Reason = '历史页签设计时默认值（含计数占位 0），运行时按 Culture 与真实条数重写。' }
+    [pscustomobject]@{ File = 'src/Widgets/Hitokoto/Views/HitokotoPopupWindow.axaml'; Attribute = 'Text'; Value = '暂无收藏句子，点击上方「收藏」即可收入摘抄本'; Reason = '空态提示设计时默认值（中文），运行时按 Culture 重写。' }
     [pscustomobject]@{ File = 'src/Widgets/Hitokoto/Views/HitokotoPopupWindow.axaml'; Attribute = 'Watermark'; Value = '搜索收藏或偶遇过的句子、出处、作者...'; Reason = '搜索框水印默认值，运行时按 Culture 设置；存量登记。' }
     [pscustomobject]@{ File = 'src/Widgets/Hitokoto/Views/HitokotoPopupWindow.axaml'; Attribute = 'Content'; Value = '⭐ 本地收藏 (0)'; Reason = '页签默认值，code-behind L163 按 Culture 覆写。' }
     [pscustomobject]@{ File = 'src/Widgets/Hitokoto/Views/HitokotoPopupWindow.axaml'; Attribute = 'Content'; Value = '🕒 最近偶遇 (0)'; Reason = '页签默认值，code-behind L164 按 Culture 覆写。' }
@@ -160,6 +159,42 @@ $PopupWindows = @(
     'src/Widgets/Weather/Views/WeatherPopupWindow.axaml',
     'src/Widgets/Folders/Views/BigFolderPopupWindow.axaml',
     'src/Widgets/Shortcuts/Views/ShortcutsPopupWindow.axaml'
+)
+
+# 规则 8：允许不经 HostDialogWindow 的对话框窗口（每一例都必须写明不能复用外壳的原因与移除条件）。
+$DialogChromeExceptions = @(
+    [pscustomobject]@{
+        File   = 'src/DeskCanvas/Views/GridEditor.axaml'
+        Reason = '网格编辑器不是卡片式对话框：它是全屏深色遮罩 + 固定浅色工具面板（RequestedThemeVariant=Light、Topmost、WindowStartupLocation=Manual），表面与主题契约和弹窗外壳正好相反。移除条件：网格编辑器改用共享的深色工具面板体系时一并迁移到 DialogShell。'
+    }
+    [pscustomobject]@{
+        File   = 'src/DeskCanvas/Views/GridEditor.axaml.cs'
+        Reason = '同上：该窗口自己注册 WindowRole.Dialog，因为它的窗口外壳与 DialogShell 契约相反（见上一条）。'
+    }
+)
+
+# 规则 9：允许保留 emoji / 装饰字符的文件（业务数据与内容渲染，不是界面图标）。
+$EmojiExceptions = @(
+    [pscustomobject]@{
+        File   = 'src/Widgets/Habits/Models/HabitItem.cs'
+        Reason = '习惯条目的自定义图标字段：用户自选的业务数据，不是界面图标（开发规范 §4.4 明确豁免）。'
+    }
+    [pscustomobject]@{
+        File   = 'src/Widgets/Habits/Services/HabitsStore.cs'
+        Reason = '同上：内置习惯的种子数据（图标字段初值）。'
+    }
+    [pscustomobject]@{
+        File   = 'src/Widgets/Habits/Views/HabitsPopupWindow.axaml.cs'
+        Reason = '同上：编辑表单里图标字段的默认值。'
+    }
+    [pscustomobject]@{
+        File   = 'src/Widgets/Notes/Services/MarkdownRenderer.cs'
+        Reason = 'Markdown 任务列表的渲染标记（内容渲染，不是按钮图标）；移除条件：任务项改为矢量勾选框时迁移。'
+    }
+    [pscustomobject]@{
+        File   = 'src/Widgets/Shortcuts/Services/WorkflowSpecDocument.cs'
+        Reason = '发给 AI 的提示词文档正文（内容，不是界面）；其中的「安全提示」图标是文档措辞。'
+    }
 )
 
 # 规则 5b 的强制范围：新共享 UI 文件（消费语义资源的站点；Styles 根下的资源定义字典豁免）。
@@ -381,6 +416,74 @@ try {
         }
     }
 
+    # ---- 规则 8：对话框外壳统一（DialogShell + HostDialogWindow）----
+    # 两个失效模式都被这条规则挡住：
+    #   a) 窗口自带 AcrylicBlur + ExtendClientAreaToDecorationsHint：卡片外多一圈毛玻璃，
+    #      且 OS 抢走标题区域的按键 → 弹窗拖不动（缩放比例/壁纸对齐即此）；
+    #   b) 自己再声明一份卡片 Border：外观分叉，主题与圆角再也收敛不到一处。
+    foreach ($file in $allAxaml) {
+        $rel = Get-Relative $rootPath $file.FullName
+        $doc = Load-Axaml $file.FullName
+        $rootNode = $doc.DocumentElement
+        if ($null -eq $rootNode) { continue }
+
+        $classAttr = $rootNode.GetAttribute('x:Class')
+        if ([string]::IsNullOrWhiteSpace($classAttr)) { continue }
+
+        $codeBehind = [System.IO.Path]::ChangeExtension($file.FullName, '.cs')
+        if (-not (Test-Path -LiteralPath $codeBehind -PathType Leaf)) { continue }
+        $codeText = Remove-CSharpComments (Get-Content -LiteralPath $codeBehind -Raw)
+        if ($codeText -notmatch ':\s*([A-Za-z0-9_.]+\.)?HostDialogWindow\b') { continue }
+
+        if (Test-Exception $DialogChromeExceptions $rel $null $null) { continue }
+
+        if ($rootNode.LocalName -ne 'HostDialogWindow') {
+            $failures.Add("R8 ${rel}: 代码继承 HostDialogWindow，但根元素是 <$($rootNode.LocalName)>（必须是 <HostDialogWindow>）")
+        }
+
+        if ($doc.SelectNodes("//*[local-name()='DialogShell']").Count -eq 0) {
+            $failures.Add("R8 ${rel}: 对话框没有使用共享 DialogShell（卡片/标题/内容槽必须来自共享外壳）")
+        }
+
+        $level = $rootNode.GetAttribute('TransparencyLevelHint')
+        if ($level -match 'AcrylicBlur|Mica|Blur') {
+            $failures.Add("R8 ${rel}: TransparencyLevelHint=`"$level`" 把卡片放在毛玻璃窗口里（弹窗外围会出现一圈毛玻璃；应为 Transparent + DialogShell 的阴影留白）")
+        }
+
+        if ($rootNode.HasAttribute('ExtendClientAreaToDecorationsHint')) {
+            $failures.Add("R8 ${rel}: 声明了 ExtendClientAreaToDecorationsHint（系统会抢走标题区按键，DialogShell 的拖动手势收不到，窗口拖不动）")
+        }
+    }
+
+    # 规则 8b：WindowRole.Dialog 只能由 HostDialogWindow 注册，避免各弹窗自行登记造成重复订阅。
+    foreach ($file in @(Get-SourceFiles $rootPath 'src' '*.cs')) {
+        $rel = Get-Relative $rootPath $file.FullName
+        if ($rel -eq 'src/DeskCanvas/Views/HostDialogWindow.cs') { continue }
+        if (Test-Exception $DialogChromeExceptions $rel $null $null) { continue }
+        $text = Remove-CSharpComments (Get-Content -LiteralPath $file.FullName -Raw)
+        if ($text -match 'WindowRoles.Register\s*\(*this\s*,\s*WindowRole.Dialog\s*\)*') {
+            $failures.Add("R8b ${rel}: 自行注册 WindowRole.Dialog（应由 HostDialogWindow 基类统一注册；WindowRoles.Register 不是幂等的）")
+        }
+    }
+
+    # ---- 规则 9：界面不得用 emoji / 装饰字符充当图标（开发规范 §4.4）----
+    # 允许的文本符号：✕ × ‹ ›（既有按钮沿用的关闭/步进符号），其余 emoji 与 dingbat 一律拦截。
+    $emojiPattern = '[\u2600-\u27BF\u2B00-\u2BFF\uFE0F]|[\uD83C-\uDBFF][\uDC00-\uDFFF]'
+    foreach ($file in @($allAxaml + @(Get-SourceFiles $rootPath 'src' '*.cs'))) {
+        $rel = Get-Relative $rootPath $file.FullName
+        if (Test-Exception $EmojiExceptions $rel $null $null) { continue }
+        $raw = Get-Content -LiteralPath $file.FullName -Raw
+        $text = if ($file.Extension -eq '.cs') { Remove-CSharpComments $raw } else { Remove-XmlComments $raw }
+        $text = $text -replace '[✕×‹›]', ''
+        if ($text -notmatch $emojiPattern) { continue }
+        $lines = $text -split "`r?`n"
+        for ($i = 0; $i -lt $lines.Count; $i++) {
+            if ($lines[$i] -match $emojiPattern) {
+                $failures.Add("R9 ${rel}:$($i + 1): 出现 emoji/装饰字符充当图标（应改用矢量 Path / PathIcon，或在清单登记业务数据例外）")
+            }
+        }
+    }
+
     # ---- 汇总 ----
     if ($failures.Count -gt 0) {
         Write-Error ("UI convention check failed with {0} issue(s):`n - {1}" -f $failures.Count, ($failures -join "`n - ")) -ErrorAction Continue
@@ -388,11 +491,14 @@ try {
     }
 
     if (-not $Quiet) {
-        Write-Output ("UI convention check passed: 7 rules enforced; exceptions registered: " +
-            "type-name={0}, selection-color={1}, shell={2}, scroll-ownership={3}, corner-radius={4}, grey-sentinel={5}, locale-literal={6}." -f `
+        $summary = "UI convention check passed: 9 rules enforced; exceptions registered: " +
+            "type-name={0}, selection-color={1}, shell={2}, scroll-ownership={3}, corner-radius={4}, " +
+            "grey-sentinel={5}, locale-literal={6}, dialog-chrome={7}, emoji={8}."
+        Write-Output ($summary -f `
             $TypeNameExceptions.Count, $SelectionColorExceptions.Count, $ShellExceptions.Count,
             $ScrollOwnershipExceptions.Count, $CornerRadiusExceptions.Count,
-            $GreySentinelExceptions.Count, $LocaleLiteralExceptions.Count)
+            $GreySentinelExceptions.Count, $LocaleLiteralExceptions.Count,
+            $DialogChromeExceptions.Count, $EmojiExceptions.Count)
     }
     exit 0
 }

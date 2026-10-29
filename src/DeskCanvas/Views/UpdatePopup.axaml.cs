@@ -12,7 +12,7 @@ using DeskCanvas.Services;
 
 namespace DeskCanvas.Views;
 
-public partial class UpdatePopup : Window, INotifyPropertyChanged
+public partial class UpdatePopup : HostDialogWindow, INotifyPropertyChanged
 {
     private readonly ReleaseInfo releaseInfo;
     private readonly UpdateService updateService;
@@ -27,7 +27,6 @@ public partial class UpdatePopup : Window, INotifyPropertyChanged
         this.updateService = updateService;
         DataContext = this;
         InitializeComponent();
-        WindowRoles.Register(this, WindowRole.Dialog);
     }
 
     public UpdatePopup(Version version, UpdateService updateService)
@@ -194,10 +193,21 @@ public partial class UpdatePopup : Window, INotifyPropertyChanged
         Close();
     }
 
+    /// <summary>
+    /// Escape means 稍后: a plain Close would leave an in-flight download running after the window
+    /// is gone, which is exactly what the 稍后 button exists to prevent.
+    /// </summary>
+    protected override bool OnDialogEscape()
+    {
+        downloadCts?.Cancel();
+        Close();
+        return true;
+    }
+
     private void SkipThisVersion(object? sender, RoutedEventArgs e)
     {
         downloadCts?.Cancel();
         updateService.SkipVersion(releaseInfo.Version);
         Close();
     }
-}
+}

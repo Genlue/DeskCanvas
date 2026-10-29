@@ -332,7 +332,6 @@ namespace Shortcuts.Locales {
         public static string Shortcuts_Action_end => ResourceManager.GetString("Shortcuts_Action_end", resourceCulture) ?? "Stop here";
         public static string Shortcuts_Action_setVar => ResourceManager.GetString("Shortcuts_Action_setVar", resourceCulture) ?? "Set variable";
         public static string Shortcuts_Action_note => ResourceManager.GetString("Shortcuts_Action_note", resourceCulture) ?? "Note";
-        public static string Shortcuts_Param_value => ResourceManager.GetString("Shortcuts_Param_value", resourceCulture) ?? "Value";
         public static string Shortcuts_Param_cases => ResourceManager.GetString("Shortcuts_Param_cases", resourceCulture) ?? "Cases (separate with |)";
         public static string Shortcuts_Param_list => ResourceManager.GetString("Shortcuts_Param_list", resourceCulture) ?? "List";
         public static string Shortcuts_Param_separator => ResourceManager.GetString("Shortcuts_Param_separator", resourceCulture) ?? "Separator";

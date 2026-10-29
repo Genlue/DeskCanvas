@@ -1541,11 +1541,73 @@ enumvalue DeskCanvas.UI.Controls.ColorInputFormat Argb
 enumvalue DeskCanvas.UI.Controls.ColorInputFormat Rgb
 type DeskCanvas.UI.Controls.ColorInputValueCommittedEventArgs
 property DeskCanvas.UI.Controls.ColorInputValueCommittedEventArgs Value -> System.String
+type DeskCanvas.UI.Controls.CommonGlyphs
+field DeskCanvas.UI.Controls.CommonGlyphs Apps -> Avalonia.Media.Geometry
+field DeskCanvas.UI.Controls.CommonGlyphs ArrowNorthEast -> Avalonia.Media.Geometry
+field DeskCanvas.UI.Controls.CommonGlyphs Bolt -> Avalonia.Media.Geometry
+field DeskCanvas.UI.Controls.CommonGlyphs Chart -> Avalonia.Media.Geometry
+field DeskCanvas.UI.Controls.CommonGlyphs Check -> Avalonia.Media.Geometry
+field DeskCanvas.UI.Controls.CommonGlyphs CheckCircle -> Avalonia.Media.Geometry
+field DeskCanvas.UI.Controls.CommonGlyphs Clock -> Avalonia.Media.Geometry
+field DeskCanvas.UI.Controls.CommonGlyphs Copy -> Avalonia.Media.Geometry
+field DeskCanvas.UI.Controls.CommonGlyphs Dice -> Avalonia.Media.Geometry
+field DeskCanvas.UI.Controls.CommonGlyphs Document -> Avalonia.Media.Geometry
+field DeskCanvas.UI.Controls.CommonGlyphs Frame -> Avalonia.Media.Geometry
+field DeskCanvas.UI.Controls.CommonGlyphs Globe -> Avalonia.Media.Geometry
+field DeskCanvas.UI.Controls.CommonGlyphs HeartFilled -> Avalonia.Media.Geometry
+field DeskCanvas.UI.Controls.CommonGlyphs HeartOutline -> Avalonia.Media.Geometry
+field DeskCanvas.UI.Controls.CommonGlyphs Music -> Avalonia.Media.Geometry
+field DeskCanvas.UI.Controls.CommonGlyphs Pencil -> Avalonia.Media.Geometry
+field DeskCanvas.UI.Controls.CommonGlyphs Puzzle -> Avalonia.Media.Geometry
+field DeskCanvas.UI.Controls.CommonGlyphs Ruler -> Avalonia.Media.Geometry
+field DeskCanvas.UI.Controls.CommonGlyphs Search -> Avalonia.Media.Geometry
+field DeskCanvas.UI.Controls.CommonGlyphs Sparkle -> Avalonia.Media.Geometry
+field DeskCanvas.UI.Controls.CommonGlyphs StarFilled -> Avalonia.Media.Geometry
+field DeskCanvas.UI.Controls.CommonGlyphs StarOutline -> Avalonia.Media.Geometry
+field DeskCanvas.UI.Controls.CommonGlyphs Sun -> Avalonia.Media.Geometry
+field DeskCanvas.UI.Controls.CommonGlyphs Trash -> Avalonia.Media.Geometry
+field DeskCanvas.UI.Controls.CommonGlyphs Wrench -> Avalonia.Media.Geometry
+type DeskCanvas.UI.Controls.DialogShell
+property DeskCanvas.UI.Controls.DialogShell CardBackground -> Avalonia.Media.IBrush
+property DeskCanvas.UI.Controls.DialogShell CardBorder -> Avalonia.Controls.Border
+property DeskCanvas.UI.Controls.DialogShell CardBorderBrush -> Avalonia.Media.IBrush
+property DeskCanvas.UI.Controls.DialogShell CardShadow -> Avalonia.Media.BoxShadows
+property DeskCanvas.UI.Controls.DialogShell ContentHost -> Avalonia.Controls.Presenters.ContentPresenter
+property DeskCanvas.UI.Controls.DialogShell ContentPadding -> Avalonia.Thickness
+property DeskCanvas.UI.Controls.DialogShell FooterContent -> System.Object
+property DeskCanvas.UI.Controls.DialogShell HasHeader -> System.Boolean
+property DeskCanvas.UI.Controls.DialogShell HeaderActions -> System.Object
+property DeskCanvas.UI.Controls.DialogShell HeaderContent -> System.Object
+property DeskCanvas.UI.Controls.DialogShell HeaderDragArea -> Avalonia.Controls.Control
+property DeskCanvas.UI.Controls.DialogShell IsTemplateApplied -> System.Boolean
+property DeskCanvas.UI.Controls.DialogShell ShadowGutter -> Avalonia.Thickness
+property DeskCanvas.UI.Controls.DialogShell Subtitle -> System.String
+property DeskCanvas.UI.Controls.DialogShell SubtitleForeground -> Avalonia.Media.IBrush
+property DeskCanvas.UI.Controls.DialogShell Title -> System.String
+property DeskCanvas.UI.Controls.DialogShell TitleForeground -> Avalonia.Media.IBrush
+field DeskCanvas.UI.Controls.DialogShell CardBackgroundProperty -> Avalonia.StyledProperty<Avalonia.Media.IBrush>
+field DeskCanvas.UI.Controls.DialogShell CardBorderBrushProperty -> Avalonia.StyledProperty<Avalonia.Media.IBrush>
+field DeskCanvas.UI.Controls.DialogShell CardShadowProperty -> Avalonia.StyledProperty<Avalonia.Media.BoxShadows>
+field DeskCanvas.UI.Controls.DialogShell ContentPaddingProperty -> Avalonia.StyledProperty<Avalonia.Thickness>
+field DeskCanvas.UI.Controls.DialogShell FooterContentProperty -> Avalonia.StyledProperty<System.Object>
+field DeskCanvas.UI.Controls.DialogShell HasHeaderProperty -> Avalonia.DirectProperty<DeskCanvas.UI.Controls.DialogShell,System.Boolean>
+field DeskCanvas.UI.Controls.DialogShell HeaderActionsProperty -> Avalonia.StyledProperty<System.Object>
+field DeskCanvas.UI.Controls.DialogShell HeaderContentProperty -> Avalonia.StyledProperty<System.Object>
+field DeskCanvas.UI.Controls.DialogShell ShadowGutterProperty -> Avalonia.StyledProperty<Avalonia.Thickness>
+field DeskCanvas.UI.Controls.DialogShell SubtitleForegroundProperty -> Avalonia.StyledProperty<Avalonia.Media.IBrush>
+field DeskCanvas.UI.Controls.DialogShell SubtitleProperty -> Avalonia.StyledProperty<System.String>
+field DeskCanvas.UI.Controls.DialogShell TitleForegroundProperty -> Avalonia.StyledProperty<Avalonia.Media.IBrush>
+field DeskCanvas.UI.Controls.DialogShell TitleProperty -> Avalonia.StyledProperty<System.String>
+event DeskCanvas.UI.Controls.DialogShell TemplateConnected -> System.EventHandler
 type DeskCanvas.UI.Controls.GlassSurfaceBase
 method DeskCanvas.UI.Controls.GlassSurfaceBase RequestRender(System.Boolean) -> System.Void
 method DeskCanvas.UI.Controls.GlassSurfaceBase SetAnimationFrameScale(System.Double,Avalonia.Point) -> System.Void
 method DeskCanvas.UI.Controls.GlassSurfaceBase SetAnimationFrameShape(Avalonia.Rect,System.Double) -> System.Void
 property DeskCanvas.UI.Controls.GlassSurfaceBase CornerRadius -> Avalonia.CornerRadius
+type DeskCanvas.UI.Controls.GlyphGeometry
+method DeskCanvas.UI.Controls.GlyphGeometry IsSquare(Avalonia.Media.Geometry,System.Double) -> System.Boolean
+method DeskCanvas.UI.Controls.GlyphGeometry Square(Avalonia.Media.Geometry,System.Double) -> Avalonia.Media.Geometry
+field DeskCanvas.UI.Controls.GlyphGeometry DefaultCanvas -> System.Double
 type DeskCanvas.UI.Controls.LabeledSlider
 method DeskCanvas.UI.Controls.LabeledSlider InitializeComponent(System.Boolean) -> System.Void
 property DeskCanvas.UI.Controls.LabeledSlider DisplayFormat -> System.String

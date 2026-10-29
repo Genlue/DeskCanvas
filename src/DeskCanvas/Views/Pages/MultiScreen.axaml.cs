@@ -279,7 +279,7 @@ public partial class MultiScreen : UserControl
 
         gridSection.Children.Add(new TextBlock
         {
-            Text = isZh ? "📐 桌面网格 (本屏独立)" : "📐 Desktop Grid (Per-Screen)",
+            Text = isZh ? "桌面网格 (本屏独立)" : "Desktop Grid (Per-Screen)",
             FontSize = 13,
             FontWeight = FontWeight.SemiBold
         });
@@ -365,7 +365,7 @@ public partial class MultiScreen : UserControl
         });
 
         var gridButtons = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, Margin = new Thickness(0, 2) };
-        gridButtons.Children.Add(Button(isZh ? "✏️ 全屏可视化网格编辑" : $"✏️ {Locale.Settings_Advanced_GridEdit ?? "Edit Grid Visually"}", (_, _) =>
+        gridButtons.Children.Add(Button(isZh ? "全屏可视化网格编辑" : $"{Locale.Settings_Advanced_GridEdit ?? "Edit Grid Visually"}", (_, _) =>
         {
             var targetConfig = currentConfig ?? displayMonitor.EnsureConfig(attached);
             new GridEditor(appSettingsProvider, layoutProvider, displayMonitor, targetConfig.Id, attached.Screen).Show();
@@ -380,7 +380,7 @@ public partial class MultiScreen : UserControl
         var dimsSection = new StackPanel { Spacing = 6 };
         dimsSection.Children.Add(new TextBlock
         {
-            Text = isZh ? "📏 边距、圆角与缩放 (本屏独立)" : "📏 Margin, Corner Radius & Scale (Per-Screen)",
+            Text = isZh ? "边距、圆角与缩放 (本屏独立)" : "Margin, Corner Radius & Scale (Per-Screen)",
             FontSize = 13,
             FontWeight = FontWeight.SemiBold
         });
@@ -529,7 +529,7 @@ public partial class MultiScreen : UserControl
 
         // 7. Maintenance & Rebinding
         var maintSection = new StackPanel { Spacing = 6 };
-        maintSection.Children.Add(new TextBlock { Text = isZh ? "⚙️ 布局维护与端口绑定" : "⚙️ Layout Maintenance & Port Binding", FontSize = 13, FontWeight = FontWeight.SemiBold });
+        maintSection.Children.Add(new TextBlock { Text = isZh ? "布局维护与端口绑定" : "Layout Maintenance & Port Binding", FontSize = 13, FontWeight = FontWeight.SemiBold });
 
         var maintButtons = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
         maintButtons.Children.Add(Button(Locale.Settings_MultiScreen_Export, async (_, _) => await ExportScreen(currentConfig ?? displayMonitor.EnsureConfig(attached))));
