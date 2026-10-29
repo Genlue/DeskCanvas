@@ -59,6 +59,7 @@ public sealed class SpotlightRecentLaunchStore : IDisposable
 
     public void RecordLaunch(SpotlightItem item)
     {
+        if (_disposed) return;
         if (item == null || string.IsNullOrWhiteSpace(item.Id)) return;
         if (item.Kind == SpotlightItemKind.Header) return;
 

@@ -391,7 +391,7 @@ public sealed class SpotlightClipboardService : IDisposable
         {
             activeInstance = this;
             if (!NativeMethods.EnsureWindowClassRegistered(WindowClassName, WindowProcedure) ||
-                !NativeMethods.TryCreateMessageWindow(WindowClassName, Marshal.GetHINSTANCE(typeof(SpotlightClipboardService).Module), out var window))
+                !NativeMethods.TryCreateMessageWindow(WindowClassName, NativeMethods.ExecutableModuleHandle, out var window))
             {
                 GlassDiagnostics.Event("clipboard history: message window creation failed");
                 return;
@@ -1100,13 +1100,26 @@ public sealed class SpotlightClipboardService : IDisposable
 
         private static bool windowClassRegistered;
 
+        /// <summary>
+        /// HINSTANCE of the running executable.
+        /// <para>
+        /// This is what <c>RegisterClassW</c> / <c>CreateWindowExW</c> expect as the owner module.
+        /// <c>Marshal.GetHINSTANCE(Module)</c> — the previous source — is documented to return -1
+        /// for an assembly without a file on disk, which is exactly the shape the shipped app has
+        /// (single-file publish), so the message window would be created against an invalid
+        /// instance. <c>GetModuleHandle(null)</c> answers with the exe's own module in both the
+        /// single-file and the folder layout.
+        /// </para>
+        /// </summary>
+        public static IntPtr ExecutableModuleHandle => GetModuleHandleW(null);
+
         public static bool EnsureWindowClassRegistered(string className, WndProcCallback callback)
         {
             if (windowClassRegistered) return true;
             var wndClass = new WndClass
             {
                 lpfnWndProc = callback,
-                hInstance = Marshal.GetHINSTANCE(typeof(SpotlightClipboardService).Module),
+                hInstance = ExecutableModuleHandle,
                 lpszClassName = className,
             };
             var atom = RegisterClassW(ref wndClass);
@@ -1128,6 +1141,9 @@ public sealed class SpotlightClipboardService : IDisposable
 
         [DllImport("user32.dll", SetLastError = true)]
         private static extern ushort RegisterClassW(ref WndClass wndClass);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern IntPtr GetModuleHandleW(string? moduleName);
 
         [DllImport("user32.dll", SetLastError = true)]
         private static extern IntPtr CreateWindowExW(uint exStyle,
