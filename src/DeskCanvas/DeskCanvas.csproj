@@ -1,15 +1,16 @@
 <Project Sdk="Microsoft.NET.Sdk">
     <PropertyGroup>
-        <OutputType>WinExe</OutputType>
+        <!-- 迁移第 1 步：宿主改为被 WinUI 入口引用的库（报告 §3 第一步 2）。
+             程序集名、命名空间、嵌入默认资源、Avalonia 资源与组件包输出目录都保持不变；
+             生产入口是 src/DeskCanvas.WinUI。Program.BuildAvaloniaApp() 仍供初始化与测试使用。 -->
+        <OutputType>Library</OutputType>
         <TargetFramework>net10.0</TargetFramework>
         <RuntimeIdentifiers>win-x86;win-x64;win-arm64</RuntimeIdentifiers>
         <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
         <!-- 捕获读回按行 memcpy（staging texture → SKBitmap），需要指针。 -->
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
         <ApplicationManifest>app.manifest</ApplicationManifest>
-        <PublishSingleFile>true</PublishSingleFile>
-        <PublishReadyToRun>true</PublishReadyToRun>
-        <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+        <!-- 单文件/ReadyToRun 发布属性不随库保留：目录发布由 WinUI 入口负责（报告 §3 第六步 5）。 -->
         <ApplicationIcon>..\..\.github\images\icon.ico</ApplicationIcon>
         <!-- Memory & GC optimizations: Workstation GC uses far less baseline memory and releases virtual memory -->
         <ServerGarbageCollection>false</ServerGarbageCollection>

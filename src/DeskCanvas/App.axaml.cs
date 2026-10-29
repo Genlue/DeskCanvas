@@ -19,6 +19,24 @@ public class App : Application
 {
     public static IServiceProvider? Services { get; private set; }
 
+    /// <summary>
+    /// 新 GUI 的窄接口工厂，由 WinUI 入口在 Avalonia 初始化之前设置。为空时（旧入口、测试）
+    /// 所有软件 UI 仍然走原来的 Avalonia 路径。
+    /// </summary>
+    public static Func<IServiceProvider, ISoftwareUi>? SoftwareUiFactory { get; set; }
+
+    /// <summary>
+    /// 本次进程的软件 UI 接缝；DI 建好后创建，供二启动接管、--settings、无组件自动打开设置、
+    /// 聚焦搜索和统一退出转发使用。
+    /// </summary>
+    public static ISoftwareUi? SoftwareUi { get; private set; }
+
+    /// <summary>
+    /// 启动阶段观察者（冒烟日志/诊断窗口用）。新入口在 Avalonia 初始化前设置；为空时无副作用。
+    /// 只报告阶段名，不携带任何控件类型，旧入口保持不感知。
+    /// </summary>
+    public static Action<string>? StartupStageReporter { get; set; }
+
     public override void Initialize()
     {
         HorizontalScrollHelper.RegisterGlobal();
@@ -27,6 +45,9 @@ public class App : Application
 
     public override void OnFrameworkInitializationCompleted()
     {
+        // 到这里 Avalonia 平台（窗口/渲染/输入）已经初始化完成，但 DI 与桌面组件还没开始建。
+        StartupStageReporter?.Invoke("avalonia-init");
+
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktopLifetime)
         {
             desktopLifetime.ShutdownMode = ShutdownMode.OnExplicitShutdown;
@@ -78,6 +99,20 @@ public class App : Application
             .BuildServiceProvider();
 
         Services = services;
+
+        // 新入口注册的软件 UI 实现在这里落到容器边上。构造失败不能挡住桌面组件启动：
+        // 此时旧路径仍是完整的回退，而接缝缺失只意味着新的 WinUI 设置窗口暂时打不开。
+        try
+        {
+            SoftwareUi = SoftwareUiFactory?.Invoke(services);
+        }
+        catch (Exception ex)
+        {
+            SoftwareUi = null;
+            GlassDiagnostics.Event($"software UI factory failed: {ex.GetType().Name}: {ex.Message}");
+        }
+
+        StartupStageReporter?.Invoke("di-built");
 
         var appSettingsProvider = services
             .GetRequiredService<IAppSettingsProvider>();
@@ -250,10 +285,31 @@ public class App : Application
         foreach (var widget in widgetFactory.Create())
             widget.Show();
 
+        StartupStageReporter?.Invoke("widgets-shown");
+
         // Resolved on demand: a widget-only start must not pay for building the settings window,
         // while both the primary launch and a hand-over from a second launch address the same
         // instance (it is a DI singleton).
         Settings SharedSettingsWindow() => services.GetRequiredService<Settings>();
+
+        // 软件设置的唯一唤出入口：新 GUI 已注册时转发给 WinUI；否则保持原来的共享 Avalonia
+        // 设置窗口。pageKey/legacyPage 只用于“打开到某一页”，二者不会同时生效。
+        void OpenSoftwareSettings(string? pageKey, Type? legacyPage)
+        {
+            if (SoftwareUi is { } softwareUi)
+            {
+                if (pageKey is null)
+                    softwareUi.ActivateSettings();
+                else
+                    softwareUi.OpenSettings(pageKey);
+                return;
+            }
+
+            var settingsWindow = SharedSettingsWindow();
+            settingsWindow.ShowAndActivate();
+            if (legacyPage is not null)
+                settingsWindow.SelectPage(legacyPage);
+        }
 
         // A second launch of the exe signals this instance instead of starting a rival process;
         // surface the settings window so the user sees why nothing new appeared. The hand-over
@@ -265,7 +321,7 @@ public class App : Application
             {
                 try
                 {
-                    SharedSettingsWindow().ShowAndActivate();
+                    OpenSoftwareSettings(null, null);
                 }
                 catch (Exception ex)
                 {
@@ -289,9 +345,7 @@ public class App : Application
         {
             try
             {
-                var settingsWindow = SharedSettingsWindow();
-                settingsWindow.ShowAndActivate();
-                settingsWindow.SelectPage(typeof(Views.Pages.Spotlight));
+                OpenSoftwareSettings(SettingsPageKeys.Spotlight, typeof(Views.Pages.Spotlight));
             }
             catch (Exception ex)
             {
@@ -300,7 +354,7 @@ public class App : Application
         });
 
         if ((ApplicationLifetime is IClassicDesktopStyleApplicationLifetime { Args.Length: > 0 } desktop && desktop.Args[0] == "--settings") || !widgetFactory.HasWidgets)
-            SharedSettingsWindow().ShowAndActivate();
+            OpenSoftwareSettings(null, null);
 
         // Development / shortcut entry: open 聚焦搜索 immediately instead of waiting for the
         // global hotkey. Only meaningful on the first launch — a second launch hands over to the

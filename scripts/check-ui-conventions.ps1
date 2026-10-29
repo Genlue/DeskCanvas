@@ -19,7 +19,9 @@
       5. The legacy grey sentinel #AA808080 must not reappear anywhere in src; the new
          shared UI files must not use numeric CornerRadius magic numbers (semantic
          resource or registered exception; business data colors / geometry / charts are
-         out of scope for the sentinel).
+         out of scope for the sentinel). The WinUI XAML in src/DeskCanvas.WinUI is in
+         scope too: 5b's legal form is a semantic token from Styles/ThemeResources.xaml
+         (report §3 step 6.8 — scanning only legacy .axaml would pass by omission).
       6. Host Widget.axaml.cs must not branch on concrete plugin type names
          (Forecast/FourDayForecast/Progress/ProgressView/MapView; comments excluded),
          except registered ones.
@@ -27,7 +29,9 @@
          OffContent/ToolTip.Tip) containing CJK must resolve to a Locale resource
          (x:Static) or be registered as an exception — W9 SettingsLocaleChecks 口径:
          comments / font names / sample data are allowed, and any-language enforcement
-         stays with the per-page SettingsLocaleChecks suite.
+         stays with the per-page SettingsLocaleChecks suite. WinUI .xaml uses its own
+         attribute set (PlaceholderText/Description/ToolTipService.ToolTip replace
+         Watermark/ToolTip.Tip); markup extensions and x:Uid are compliant.
 
     Scope model: "当前迁移范围先强制 + 其余范围禁止新增" — rules 3/4/7 scan all of
     src, so any NEW violation anywhere fails; legacy literals live in the exception
@@ -78,17 +82,19 @@ $ShellExceptions = @()
 # 规则 4：允许在 ScrollOwnership=Host 页面保留无界 ScrollViewer 的文件（当前为零）。
 $ScrollOwnershipExceptions = @()
 
-# 规则 5b：新共享 UI 文件允许的数字 CornerRadius 魔数（业务数据颜色/几何算法/图表不在本规则范围）。
+# 规则 5b：新共享 UI 文件（含 WinUI 页面）允许的数字 CornerRadius 魔数（业务数据颜色/几何算法/图表不在本规则范围）。
+# WinUI 的合法写法是引用 Styles/ThemeResources.xaml 的语义 Token；数字/数字列表一律视为魔数。
 $CornerRadiusExceptions = @(
     [pscustomobject]@{ File = 'src/DeskCanvas/Views/Controls/ThemeButton.axaml'; Attribute = 'CornerRadius'; Value = '7'; Reason = '存量控件（主题样片按钮，非本轮新 UI），7 是按钮胶囊的视觉设计值；登记为存量，待主题样片接入语义 Token 时一并迁移。' }
     [pscustomobject]@{ File = 'src/DeskCanvas/Views/Controls/ThemeButton.axaml'; Attribute = 'CornerRadius'; Value = '4'; Reason = '存量控件：样片外框圆角，同上。' }
     [pscustomobject]@{ File = 'src/DeskCanvas/Views/Controls/ThemeButton.axaml'; Attribute = 'CornerRadius'; Value = '10'; Reason = '存量控件：玻璃表面预览的圆角继承展示值，同上。' }
 )
 
-# 规则 5a：#AA808080 哨兵允许出现的文件（当前为零——该历史灰色已全部语义化）。
+# 规则 5a：#AA808080 哨兵允许出现的文件（当前为零——该历史灰色已全部语义化；WinUI .xaml 也在扫描范围）。
 $GreySentinelExceptions = @()
 
 # 规则 7：用户可见 CJK 字面量例外（file | attribute | value，附原因）。
+# WinUI 的属性集不同（PlaceholderText/Description/ToolTipService.ToolTip），例外条目按实际 LocalName 登记。
 $LocaleLiteralExceptions = @(
     # ---- GridEditor：固定浅色工具面板的技术参数标签（中英混排），工具面板非业务页 ----
     [pscustomobject]@{ File = 'src/DeskCanvas/Views/GridEditor.axaml'; Attribute = 'Text'; Value = '列数 (Columns)'; Reason = '网格编辑器固定浅色工具面板的参数标签，中英混排技术词汇；工具面板不在 Locale 治理范围（W2 批次口径）。' }
@@ -165,6 +171,14 @@ $PopupWindows = @(
 # 规则 5b 的强制范围：新共享 UI 文件（消费语义资源的站点；Styles 根下的资源定义字典豁免）。
 $NewUiGlobs = @('src/DeskCanvas/Styles/Controls', 'src/DeskCanvas/Views/Controls')
 
+# WinUI 新 GUI 的 XAML 根。.xaml 与旧 .axaml 是两套工具链，必须显式纳入扫描，
+# 否则规则只扫旧文件会产生“假通过”（报告 §3 第六步 8）。
+$WinUiXamlRoot = 'src/DeskCanvas.WinUI'
+
+# 规则 5b 的定义点：语义 Token 源文件允许出现数值（这是唯一合法定义位置）；
+# 消费站点（页面/控件）仍必须引用 Token。只豁免该文件，不排除整个 WinUI 工程。
+$CornerRadiusDefinitionFiles = @('src/DeskCanvas.WinUI/Styles/ThemeResources.xaml')
+
 # =============================================================================================
 # 基础设施
 # =============================================================================================
@@ -215,6 +229,11 @@ function Get-SelectorClasses([string]$Selector) {
     return @([regex]::Matches($Selector, '\.([A-Za-z0-9_-]+)') | ForEach-Object { $_.Groups[1].Value })
 }
 
+function Test-NumericCornerRadius([string]$Value) {
+    # WinUI CornerRadius 接受 1 个或 4 个数字（"8" / "8,8,0,0"）；这些都属于魔数。
+    return $Value -match '^[0-9]+(\.[0-9]+)?(\s*,\s*[0-9]+(\.[0-9]+)?){0,3}$'
+}
+
 # =============================================================================================
 try {
     if ([string]::IsNullOrWhiteSpace($Root)) {
@@ -226,6 +245,7 @@ try {
     $cjk = [regex]'[\u4e00-\u9fff]'
 
     $allAxaml = @(Get-SourceFiles $rootPath 'src' '*.axaml')
+    $winUiXaml = @(Get-SourceFiles $rootPath $WinUiXamlRoot '*.xaml')
     $pluginAxaml = @($allAxaml | Where-Object { $_.FullName -match '[\\/]src[\\/]Widgets[\\/]' })
 
     # ---- 规则 1：插件内不得定义通用 icon-btn/icon-button、group-header/section-header 基础样式 ----
@@ -316,8 +336,8 @@ try {
         }
     }
 
-    # ---- 规则 5a：#AA808080 历史灰色哨兵（去注释后全文扫描，含 C#）----
-    foreach ($file in @($allAxaml + @(Get-SourceFiles $rootPath 'src' '*.cs'))) {
+    # ---- 规则 5a：#AA808080 历史灰色哨兵（去注释后全文扫描，含 C# 与 WinUI .xaml）----
+    foreach ($file in @($allAxaml + $winUiXaml + @(Get-SourceFiles $rootPath 'src' '*.cs'))) {
         $rel = Get-Relative $rootPath $file.FullName
         $text = if ($file.Extension -eq '.cs') { Remove-CSharpComments (Get-Content -LiteralPath $file.FullName -Raw) }
                 else { Remove-XmlComments (Get-Content -LiteralPath $file.FullName -Raw) }
@@ -331,20 +351,36 @@ try {
         }
     }
 
-    # ---- 规则 5b：新共享 UI 文件不得出现数字 CornerRadius 魔数 ----
+    # ---- 规则 5b：新共享 UI 文件（含 WinUI .xaml）不得出现数字 CornerRadius 魔数 ----
     $newUiFiles = @()
     foreach ($dir in $NewUiGlobs) {
         $newUiFiles += @(Get-SourceFiles $rootPath $dir '*.axaml')
     }
+    $newUiFiles += $winUiXaml
+    $winUiRootPath = Join-Path $rootPath $WinUiXamlRoot
     foreach ($file in $newUiFiles) {
         $rel = Get-Relative $rootPath $file.FullName
+        if ($CornerRadiusDefinitionFiles -contains $rel) { continue }   # 语义 Token 的定义点
+        $isWinUiFile = $file.FullName.StartsWith($winUiRootPath + [System.IO.Path]::DirectorySeparatorChar, [System.StringComparison]::OrdinalIgnoreCase)
         $doc = Load-Axaml $file.FullName
         foreach ($node in @($doc.SelectNodes('//*[@CornerRadius]'))) {
             $value = $node.GetAttribute('CornerRadius')
-            if ($value -notmatch '^[0-9.]+$') { continue }   # 资源引用/绑定合法
+            $isNumeric = if ($isWinUiFile) { Test-NumericCornerRadius $value } else { $value -match '^[0-9.]+$' }
+            if (-not $isNumeric) { continue }   # 资源引用/绑定合法
             $registered = @(Test-Exception $CornerRadiusExceptions $rel 'CornerRadius' $value)
             if ($registered -notcontains $true) {
                 $failures.Add("R5b ${rel}: <$($node.LocalName) CornerRadius=`"$value`"> 数字魔数（应消费语义 Token 或登记例外）")
+            }
+        }
+        # WinUI 常用 <Setter Property="CornerRadius"> 写模板；只对 WinUI 范围检查，旧 Avalonia 规则口径不变。
+        if ($isWinUiFile) {
+            foreach ($setter in @($doc.SelectNodes("//*[local-name()='Setter'][@Property='CornerRadius']"))) {
+                $value = $setter.GetAttribute('Value')
+                if (-not (Test-NumericCornerRadius $value)) { continue }
+                $registered = @(Test-Exception $CornerRadiusExceptions $rel 'CornerRadius' $value)
+                if ($registered -notcontains $true) {
+                    $failures.Add("R5b ${rel}: <Setter Property=`"CornerRadius`" Value=`"$value`"> 数字魔数（应引用 ThemeResources 语义 Token 或登记例外）")
+                }
             }
         }
     }
@@ -363,6 +399,7 @@ try {
     }
 
     # ---- 规则 7：用户可见 CJK 文案必须可定位到 Locale 资源或登记例外 ----
+    # Avalonia 口径保持不变。
     $userVisibleAttributes = @('Text', 'Content', 'Header', 'Watermark', 'Title', 'Subtitle', 'OnContent', 'OffContent', 'ToolTip.Tip')
     foreach ($file in $allAxaml) {
         $rel = Get-Relative $rootPath $file.FullName
@@ -381,6 +418,28 @@ try {
         }
     }
 
+    # WinUI 口径：属性集按 WinUI 调整；x:Uid 表示文案在 .resw/.pri 中，视为合规；
+    # {...} 是绑定/XAML 标记扩展，同样不需要 Locale 资源。
+    $winUiUserVisibleAttributes = @('Text', 'Content', 'Header', 'PlaceholderText', 'Title', 'Description', 'ToolTipService.ToolTip', 'OnContent', 'OffContent')
+    foreach ($file in $winUiXaml) {
+        $rel = Get-Relative $rootPath $file.FullName
+        $doc = Load-Axaml $file.FullName
+        foreach ($node in @($doc.SelectNodes('//*'))) {
+            $hasUid = @($node.Attributes | Where-Object { $_.Prefix -eq 'x' -and $_.LocalName -eq 'Uid' -and -not [string]::IsNullOrWhiteSpace($_.Value) }).Count -gt 0
+            if ($hasUid) { continue }
+            foreach ($attr in @($node.Attributes)) {
+                if ($attr.LocalName -notin $winUiUserVisibleAttributes) { continue }
+                $value = $attr.Value
+                if ([string]::IsNullOrWhiteSpace($value)) { continue }
+                if ($value.StartsWith('{')) { continue }
+                if (-not $cjk.IsMatch($value)) { continue }
+                if (-not (Test-Exception $LocaleLiteralExceptions $rel $attr.LocalName $value)) {
+                    $failures.Add("R7 ${rel}: <$($node.LocalName) $($attr.LocalName)=`"$value`"> 未登记的用户可见中文文案（WinUI 应走 .resw/x:Uid 或 Locale 适配资源，或登记例外）")
+                }
+            }
+        }
+    }
+
     # ---- 汇总 ----
     if ($failures.Count -gt 0) {
         Write-Error ("UI convention check failed with {0} issue(s):`n - {1}" -f $failures.Count, ($failures -join "`n - ")) -ErrorAction Continue
@@ -388,8 +447,9 @@ try {
     }
 
     if (-not $Quiet) {
-        Write-Output ("UI convention check passed: 7 rules enforced; exceptions registered: " +
-            "type-name={0}, selection-color={1}, shell={2}, scroll-ownership={3}, corner-radius={4}, grey-sentinel={5}, locale-literal={6}." -f `
+        Write-Output (("UI convention check passed: 7 rules enforced; XAML scope: {0} Avalonia .axaml + {1} WinUI .xaml; exceptions registered: " +
+            "type-name={2}, selection-color={3}, shell={4}, scroll-ownership={5}, corner-radius={6}, grey-sentinel={7}, locale-literal={8}.") -f `
+            $allAxaml.Count, $winUiXaml.Count,
             $TypeNameExceptions.Count, $SelectionColorExceptions.Count, $ShellExceptions.Count,
             $ScrollOwnershipExceptions.Count, $CornerRadiusExceptions.Count,
             $GreySentinelExceptions.Count, $LocaleLiteralExceptions.Count)

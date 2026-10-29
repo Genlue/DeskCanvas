@@ -4,17 +4,30 @@
     One-click build & package for the DeskCanvas fork.
 
 .DESCRIPTION
-    Produces a single-file DeskCanvas.exe with all widgets embedded (widgets are
-    extracted to %LocalAppData%\DeskCanvas on first run, so they stay hot-updatable).
+    Publishes the WinUI entry (src\DeskCanvas.WinUI) as a DIRECTORY, not a single exe
+    (report §3 step 6.5): PublishSingleFile=false, PublishTrimmed=false, self-contained.
+    WinUI / Windows App SDK native libraries and .pri/.xbf XAML resources cannot be
+    folded into one file, and widget assemblies are loaded by reflection.
 
-    The exe is SELF-CONTAINED: the .NET 10 runtime travels inside it, so a target
-    machine needs nothing installed. That is what the Setup installer ships — the
-    framework-dependent build only ever existed for the old zip/portable releases.
-    Expect ~150 MB for the raw exe (ReadyToRun + embedded runtime) and roughly half
-    that for the compressed Setup.
+    The original Avalonia host (src\DeskCanvas) is now a library; its DeskCanvas.dll
+    keeps the assembly identity that widgets reference. Only the apphost is renamed to
+    DeskCanvas.exe, so the product name stays stable while the loadable apphost still
+    points at DeskCanvas.WinUI.dll / .deps.json / .runtimeconfig.json.
 
-    Portable mode (-Portable) additionally copies the Widgets folder and JSON
-    settings next to the exe (classic official layout) and zips the whole thing.
+    Output layout (dist\<Runtime>\):
+        DeskCanvas.exe                     renamed apphost (loads DeskCanvas.WinUI.dll)
+        DeskCanvas.WinUI.dll/.deps.json/.runtimeconfig.json
+        DeskCanvas.dll                     original Avalonia host library (same identity)
+        DeskCanvas.Core/Contracts/Runtime/UI.dll
+        DeskCanvas.pri / DeskCanvas.WinUI.pri   WinUI resource index (framework resolves by exe name)
+        Microsoft.ui.xaml.dll, Windows App SDK natives, other *.pri, *.xbf, WebView2 loader
+        appSettings.json / layout.json     default resources (embedded into DeskCanvas.dll too)
+        Widgets\                           portable widget layout (widget + shared/native deps; DeskCanvas.dll
+                                            also keeps the embedded bundle for installed layouts)
+
+    Portable mode (-Portable) zips the complete directory publish. The installer
+    sections (-Setup/-Msi) still collect the legacy single exe: updating installer
+    file trees is report §3 step 6.7 and is deliberately out of this change.
 
 .PARAMETER Runtime
     Target runtime: win-x64 (default), win-x86, win-arm64.
@@ -23,12 +36,12 @@
     Release (default) or Debug.
 
 .PARAMETER Portable
-    Also produce the classic portable zip (exe + Widgets + json files).
+    Also zip the complete directory publish (the classic portable layout).
 
 .EXAMPLE
-    ./build.ps1                       # dist\win-x64\DeskCanvas.exe (single file)
-    ./build.ps1 -Runtime win-arm64    # ARM64 single file
-    ./build.ps1 -Portable             # single file + portable zip
+    ./build.ps1                       # dist\win-x64\ (directory publish, DeskCanvas.exe + deps + Widgets)
+    ./build.ps1 -Runtime win-arm64    # ARM64 directory publish
+    ./build.ps1 -Portable             # directory publish + portable zip
 #>
 param(
     [ValidateSet("win-x64", "win-x86", "win-arm64")]
@@ -49,8 +62,10 @@ param(
 
 $ErrorActionPreference = "Stop"
 $root = $PSScriptRoot
-$project = Join-Path $root "src\DeskCanvas\DeskCanvas.csproj"
+$project = Join-Path $root "src\DeskCanvas.WinUI\DeskCanvas.WinUI.csproj"
+$hostSource = Join-Path $root "src\DeskCanvas"
 $dist = Join-Path $root "dist\$Runtime"
+$widgetsBundleDir = Join-Path $root "artifacts\widgets-bundle"
 
 # Detect a one-click launch from Explorer. The Windows PowerShell verb uses "-File",
 # while the PowerShell 7 verb uses "-Command ... & '...\build.ps1'". Both must pause.
@@ -107,56 +122,93 @@ try {
     Repair-DirectoryAcl $root
     Repair-DirectoryAcl $dist
 
-    # Stop any running DeskCanvas instances to prevent file lock during publish
-    $running = Get-Process -Name "DeskCanvas" -ErrorAction SilentlyContinue
+    # Stop any running DeskCanvas instances to prevent file locks during publish. Both the
+    # shipped name (DeskCanvas.exe) and the development apphost (DeskCanvas.WinUI.exe, which is
+    # what the WinUI project produces before the rename) can hold the output files.
+    $running = @(Get-Process -Name "DeskCanvas", "DeskCanvas.WinUI" -ErrorAction SilentlyContinue)
     if ($running) {
-        Write-Warning "DeskCanvas is currently running. Stopping process to overwrite output binary..."
-        Stop-Process -Name "DeskCanvas" -Force -ErrorAction SilentlyContinue
+        Write-Warning "DeskCanvas is currently running. Stopping process to overwrite output files..."
+        $running | Stop-Process -Force -ErrorAction SilentlyContinue
         Start-Sleep -Milliseconds 500
     }
 
-    Write-Host "==> Publishing DeskCanvas ($Configuration, $Runtime, single-file)..." -ForegroundColor Cyan
+    # 目录发布：先清空旧产物，避免上一版单文件/旧 SDK 的 DeskCanvas.WinUI.exe、原生 DLL 混进新目录。
+    if (Test-Path $dist) {
+        Write-Host "==> Cleaning previous publish output: $dist" -ForegroundColor Cyan
+        Remove-Item -LiteralPath $dist -Recurse -Force
+    }
+
+    Write-Host "==> Publishing DeskCanvas WinUI entry ($Configuration, $Runtime, directory, self-contained)..." -ForegroundColor Cyan
     dotnet publish $project `
         -c $Configuration `
         -r $Runtime `
         --self-contained true `
         -o $dist `
-        --nologo
+        --nologo `
+        -p:PublishSingleFile=false `
+        -p:PublishTrimmed=false `
+        -p:WindowsAppSDKSelfContained=true
 
     if ($LASTEXITCODE -ne 0) { throw "Publish failed (exit code $LASTEXITCODE)" }
 
-    # --- Strict single exe: remove stray content copied next to the exe ---
-    # Each delete is guarded individually: safe-delete/trash guards on some machines throw
-    # terminating errors out of Remove-Item even with -ErrorAction SilentlyContinue, and one
-    # blocked file must not abort the rest of the packaging steps.
-    Get-ChildItem $dist -File | Where-Object {
-        $_.Extension -in ".pdb", ".xml", ".err" -or $_.Name -in "appSettings.json", "layout.json", "icon.ico", "weather_crash_log.txt"
-    } | ForEach-Object {
-        try { Remove-Item -LiteralPath $_.FullName -Force -ErrorAction Stop }
-        catch { Write-Warning "Could not delete stray file $($_.FullName): $($_.Exception.Message)" }
+    # WinUI XAML 资源补收集：本工程未启用 MSIX tooling，dotnet publish 只把 XBF 当作
+    # CopyToOutputDirectory，项目资源索引（DeskCanvas.WinUI.pri）也不在 publish 项里；
+    # 结果是发布目录能生成，但 Application.LoadComponent 启动时找不到 App.xbf/资源索引。
+    # 目录发布必须从本次构建输出显式复制（报告 §3 第六步 7 要求安装器收集 .pri/.xbf）。
+    $winUiBinRoot = Join-Path $root "src\DeskCanvas.WinUI\bin\$Configuration"
+    $appPri = @(Get-ChildItem -LiteralPath $winUiBinRoot -Recurse -Filter "DeskCanvas.WinUI.pri" -File -ErrorAction SilentlyContinue |
+        Where-Object { $_.DirectoryName.EndsWith([System.IO.Path]::DirectorySeparatorChar + $Runtime, [System.StringComparison]::OrdinalIgnoreCase) } |
+        Sort-Object LastWriteTime -Descending) | Select-Object -First 1
+    if ($null -eq $appPri) { throw "WinUI resource index not found under $winUiBinRoot for $Runtime" }
+    $winUiBuildOutput = $appPri.DirectoryName
+    Copy-Item -LiteralPath $appPri.FullName -Destination (Join-Path $dist "DeskCanvas.WinUI.pri") -Force
+    $xbfFiles = @(Get-ChildItem -LiteralPath $winUiBuildOutput -Recurse -Filter "*.xbf" -File)
+    if ($xbfFiles.Count -eq 0) { throw "No XBF files found under $winUiBuildOutput" }
+    foreach ($xbf in $xbfFiles) {
+        $relative = $xbf.FullName.Substring($winUiBuildOutput.Length).TrimStart([System.IO.Path]::DirectorySeparatorChar)
+        $target = Join-Path $dist $relative
+        New-Item -ItemType Directory -Path (Split-Path -Parent $target) -Force | Out-Null
+        Copy-Item -LiteralPath $xbf.FullName -Destination $target -Force
     }
 
-    # A leftover portable-layout Widgets folder next to the single-file exe silently flips the
-    # app into portable mode (Const.GetWidgetsFolder prefers the exe-adjacent Widgets folder and
-    # WidgetBundle.ExtractIfNeeded skips the embedded bundle when one exists there), so every
-    # rebuild would keep hot-loading stale widget DLLs from disk instead of the fresh bundle.
-    # Single-file dist must never carry one — remove it so the embedded bundle stays authoritative.
-    # If a delete guard blocks the removal, a rename achieves the same effect: the folder no
-    # longer sits next to the exe under the name "Widgets", so packaged mode resumes.
-    $staleDistWidgets = Join-Path $dist "Widgets"
-    if (Test-Path $staleDistWidgets) {
-        Write-Warning "Removing stale portable-layout Widgets folder next to the exe: $staleDistWidgets"
-        try {
-            Remove-Item -LiteralPath $staleDistWidgets -Recurse -Force -ErrorAction Stop
-        } catch {
-            $staleName = "Widgets.stale-" + (Get-Date -Format "yyyyMMdd-HHmmss")
-            Rename-Item -LiteralPath $staleDistWidgets -NewName $staleName -Force
-            Write-Warning "Delete blocked ($($_.Exception.Message)); renamed to $staleName instead."
-        }
-    }
-
+    # 报告 §3 第六步 4：产品 exe 继续叫 DeskCanvas.exe；只重命名 publish 暂存目录里的 apphost
+    # DeskCanvas.WinUI.dll/.deps.json/.runtimeconfig.json 保持原名，原 DeskCanvas.dll 不被覆盖。
+    $winUiExe = Join-Path $dist "DeskCanvas.WinUI.exe"
+    if (-not (Test-Path $winUiExe)) { throw "WinUI apphost not found: $winUiExe" }
     $exe = Join-Path $dist "DeskCanvas.exe"
-    if (-not (Test-Path $exe)) { throw "Single-file exe not found: $exe" }
+    if (Test-Path $exe) { Remove-Item -LiteralPath $exe -Force }
+    Move-Item -LiteralPath $winUiExe -Destination $exe
+    if (-not (Test-Path (Join-Path $dist "DeskCanvas.WinUI.dll"))) { throw "DeskCanvas.WinUI.dll not found next to $exe" }
+
+    # 非打包 WinUI 按 exe 文件名解析资源索引（DeskCanvas.exe -> DeskCanvas.pri）。只改 apphost 名
+    # 而不提供同名 PRI，App 构造时会以 0xC000027B 退出（本次实机验证）。同时保留 TargetName 副本，
+    # 便于在同一目录直接运行未改名的开发 apphost。
+    Copy-Item -LiteralPath (Join-Path $dist "DeskCanvas.WinUI.pri") -Destination (Join-Path $dist "DeskCanvas.pri") -Force
+
+    # 默认资源：publish 已经从宿主复制；这里显式保证存在（目录发布不再像单文件那样删掉它们）。
+    foreach ($defaultName in @("appSettings.json", "layout.json")) {
+        Copy-Item -LiteralPath (Join-Path $hostSource $defaultName) -Destination (Join-Path $dist $defaultName) -Force
+    }
+
+    # 组件包：exe 旁的 Widgets 目录是 portable/开发布局（Const.GetWidgetsFolder 优先使用）；
+    # 同时保留宿主对 widgets.zip 的嵌入（Release+RID publish 会运行原构建目标），这样安装器
+    # 在第六步 7 里若选择不复制 Widgets（Program Files 不可写），仍走旧的首次运行解包路径：
+    # %LocalAppData%\DeskCanvas\Widgets。代价是 Release 构建会多发布一次组件。
+    # 这里复用现成的 bundle 脚本，把同一份组件 DLL 平铺进 publish 目录。
+    Write-Host "==> Publishing built-in widgets (flat Widgets layout)..." -ForegroundColor Cyan
+    New-Item -ItemType Directory -Path $widgetsBundleDir -Force | Out-Null
+    $widgetZip = Join-Path $widgetsBundleDir ("widgets-{0}-{1}.zip" -f $Runtime, $Configuration)
+    $pwshCommand = Get-Command pwsh -ErrorAction SilentlyContinue
+    $bundleShell = if ($pwshCommand) { $pwshCommand.Source } else { "powershell" }
+    & $bundleShell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $root "scripts\build-widgets-bundle.ps1") `
+        -WidgetsSourceDir (Join-Path $root "src\Widgets") `
+        -StageDir (Join-Path $dist "Widgets") `
+        -ZipPath $widgetZip `
+        -Configuration $Configuration `
+        -RuntimeIdentifier $Runtime
+    if ($LASTEXITCODE -ne 0) { throw "Widget bundle build failed (exit code $LASTEXITCODE)" }
+    $widgetDlls = @(Get-ChildItem -LiteralPath (Join-Path $dist "Widgets") -Filter "*.dll" -File -ErrorAction SilentlyContinue)
+    if ($widgetDlls.Count -eq 0) { throw "Widget publish produced no DLLs under $dist\Widgets" }
 
     # Clear the mandatory integrity label from the output (and from the dist folder so future
     # publishes do not re-inherit a cap). The old behaviour stamped M here — which reads as
@@ -172,34 +224,22 @@ try {
         & icacls $exe /setintegritylevel M /q 2>$null | Out-Null
     }
 
-    Write-Host "==> Single file: $exe ($([math]::Round((Get-Item $exe).Length / 1MB, 1)) MB)" -ForegroundColor Green
+    $exeSizeMb = [math]::Round((Get-Item $exe).Length / 1MB, 1)
+    $fileCount = @(Get-ChildItem -LiteralPath $dist -Recurse -File).Count
+    Write-Host "==> Directory publish: $dist" -ForegroundColor Green
+    Write-Host ("    DeskCanvas.exe ({0} MB) -> DeskCanvas.WinUI.dll; Widgets: {1} DLL(s); {2} XBF file(s); {3} files total." -f $exeSizeMb, $widgetDlls.Count, $xbfFiles.Count, $fileCount)
 
-    # --- Optional: classic portable layout (exe + Widgets + settings), zipped ---
+    # --- Optional: portable zip = the complete directory publish ---
     if ($Portable) {
-        $portableDir = Join-Path $root "dist\portable-$Runtime"
-        if (Test-Path $portableDir) { Remove-Item $portableDir -Recurse -Force }
-        New-Item -ItemType Directory -Path $portableDir -Force | Out-Null
-
-        Copy-Item $exe $portableDir
-        Copy-Item (Join-Path $root "src\DeskCanvas\appSettings.json") $portableDir
-        Copy-Item (Join-Path $root "src\DeskCanvas\layout.json") $portableDir
-
-        $widgetsSrc = Join-Path $project "..\DeskCanvas\bin\$Configuration\net10.0\Widgets"
-        if (-not (Test-Path $widgetsSrc)) { $widgetsSrc = Join-Path $root "src\DeskCanvas\bin\$Configuration\net10.0\Widgets" }
-        if (Test-Path $widgetsSrc) {
-            Copy-Item $widgetsSrc (Join-Path $portableDir "Widgets") -Recurse
-        } else {
-            Write-Warning "Widgets build output not found at $widgetsSrc -- portable zip will lack widgets."
-        }
-
         $zip = Join-Path $root "dist\DeskCanvas-$Runtime-portable.zip"
         if (Test-Path $zip) { Remove-Item $zip -Force }
-        Compress-Archive -Path "$portableDir\*" -DestinationPath $zip
+        Compress-Archive -Path (Join-Path $dist "*") -DestinationPath $zip
         Write-Host "==> Portable zip: $zip" -ForegroundColor Green
     }
 
     # --- Optional: Setup installer packaging via Inno Setup ---
     if ($Setup) {
+        Write-Warning "The Setup installer still copies only the legacy single exe. Collecting the full publish tree (Windows App SDK natives, .pri/.xbf, Widgets) is report §3 step 6.7 and is NOT implemented yet."
         Write-Host "==> Building Setup Installer ($Runtime)..." -ForegroundColor Cyan
         $assemblyInfo = Get-Content (Join-Path $root "src\DeskCanvas\AssemblyInfo.cs") -Raw
         $appVerMatch = [regex]::Match($assemblyInfo, 'AssemblyVersion\("([0-9\.]+)"\)')
@@ -243,6 +283,7 @@ try {
 
     # --- Optional: MSI installer packaging via WiX v5 ---
     if ($Msi) {
+        Write-Warning "The MSI still references only the legacy single exe. Collecting the full publish tree is report §3 step 6.7 and is NOT implemented yet."
         Write-Host "==> Building MSI Installer ($Runtime)..." -ForegroundColor Cyan
         $wxsPath = Join-Path $root "installer\Package.wxs"
         $wxsContent = Get-Content $wxsPath -Raw

@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Reflection;
 using System.Resources;
 using System.Runtime.Loader;
@@ -16,6 +17,24 @@ public class AssemblyProvider : IAssemblyProvider
     private readonly IServiceProvider serviceProvider;
 
     /// <summary>
+    /// Core 的诊断出口：写 <see cref="Trace"/>。默认的 <see cref="DefaultTraceListener"/> 已经覆盖
+    /// 附加调试器的场景；宿主还可以再挂一个 <see cref="TraceListener"/> 把这条通道接到自己的日志
+    /// （新 WinUI 入口的预加载器就是这么把「内置包无法卸载」写进 GlassDiagnostics 的）。
+    /// 不新增公开成员，<c>tests/ApiSnapshotChecks</c> 的基线保持不动。
+    /// </summary>
+    private static void Log(string message)
+    {
+        try
+        {
+            Trace.WriteLine($"[AssemblyProvider] {message}");
+        }
+        catch
+        {
+            // 诊断输出失败不能影响加载/卸载路径。
+        }
+    }
+
+    /// <summary>
     /// Initializes a new instance of the <see cref="AssemblyProvider"/> class.
     /// </summary>
     /// <param name="serviceProvider">The service provider.</param>
@@ -28,7 +47,41 @@ public class AssemblyProvider : IAssemblyProvider
     private readonly Dictionary<string, ILookup<string, AssemblyInfo>> assemblyInfoCache = new(StringComparer.OrdinalIgnoreCase);
 
     /// <inheritdoc />
+    /// <remarks>
+    /// 返回值 = 目录扫描结果 + <see cref="AssemblyLoadContext.Default"/> 里「已加载且带
+    /// <see cref="WidgetInfoAttribute"/>」的程序集（新 GUI 用 ProjectReference 引入的内置组件
+    /// 由 WinUI 入口的预加载器加载进来）。
+    /// <para>
+    /// 同名只保留 Default 的那一份（内置优先）：否则内置包会同时以「GUI 引用的类型」和
+    /// 「插件上下文里的类型」出现两次，static 状态、DI 与 WinRT marshaller 都会分裂
+    /// （报告 §3 第一步 6、§4.2）。目录扫描仍按目录独立缓存；内置清单是另一份缓存并按
+    /// Default 上下文内容变化失效，两者不会互相污染。没有预加载时（旧桌面入口）内置清单为空，
+    /// 这里原样返回目录扫描结果对象，行为与迁移前完全一致。
+    /// </para>
+    /// </remarks>
     public ILookup<string, AssemblyInfo> GetAssemblyInfos(string directoryPath)
+    {
+        var scanned = GetScannedAssemblyInfos(directoryPath);
+        var builtIn = GetBuiltInAssemblyInfos();
+        if (builtIn.Count == 0) return scanned;
+
+        var builtInNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var info in builtIn) builtInNames.Add(info.AssemblyName);
+
+        // Default 优先：内置包的条目先入列，目录扫描里同名组整组丢弃。
+        var merged = new List<AssemblyInfo>(builtIn.Count + scanned.Count);
+        merged.AddRange(builtIn);
+        foreach (var group in scanned)
+        {
+            if (!builtInNames.Contains(group.Key))
+                merged.AddRange(group);
+        }
+
+        return merged.ToLookup(assembly => assembly.AssemblyName);
+    }
+
+    /// <summary>迁移前的方法体：只扫目录，按目录路径缓存。</summary>
+    private ILookup<string, AssemblyInfo> GetScannedAssemblyInfos(string directoryPath)
     {
         lock (assemblyInfoCache)
         {
@@ -44,10 +97,101 @@ public class AssemblyProvider : IAssemblyProvider
                     .Cast<AssemblyInfo>()
                     .ToList()
                 : [];
-            
+
             var lookup = assemblies.ToLookup(assembly => assembly.AssemblyName);
             assemblyInfoCache[directoryPath] = lookup;
             return lookup;
+        }
+    }
+
+    private static readonly object builtInGate = new();
+
+    /// <summary>上一次计算内置清单时 Default 上下文里的程序集集合（Default 只增不减）。</summary>
+    private static HashSet<Assembly> builtInSnapshot = [];
+
+    private static IReadOnlyList<AssemblyInfo> builtInInfos = [];
+
+    /// <summary>
+    /// Default 上下文里「已加载 + 带 WidgetInfoAttribute」的程序集清单。
+    /// <para>
+    /// 缓存按 Default 上下文的内容失效：预加载发生在 <see cref="AssemblyProvider"/> 构造之前或之后
+    /// 都能合并进来，不会把构造时那份空清单永远钉死。描述一份程序集需要读 Locale 资源管理器
+    /// （会走类型加载），所以缓存是必要的——Default 很少新增程序集，失效次数有限。
+    /// </para>
+    /// </summary>
+    private static IReadOnlyList<AssemblyInfo> GetBuiltInAssemblyInfos()
+    {
+        var loaded = AssemblyLoadContext.Default.Assemblies.ToArray();
+
+        lock (builtInGate)
+        {
+            if (builtInSnapshot.Count == loaded.Length && loaded.All(builtInSnapshot.Contains))
+                return builtInInfos;
+
+            var infos = new List<AssemblyInfo>();
+            foreach (var assembly in loaded)
+            {
+                if (DescribeLoadedAssembly(assembly) is { } info)
+                    infos.Add(info);
+            }
+
+            builtInSnapshot = new HashSet<Assembly>(loaded);
+            builtInInfos = infos;
+            return builtInInfos;
+        }
+    }
+
+    /// <summary>
+    /// 把 Default 上下文里已加载的程序集描述成 <see cref="AssemblyInfo"/>；不是组件包返回 null。
+    /// 与目录扫描版的唯一区别是不创建（也不卸载）插件上下文。
+    /// </summary>
+    private static AssemblyInfo? DescribeLoadedAssembly(Assembly assembly)
+    {
+        try
+        {
+            var widgetAttributes = assembly.GetCustomAttributes<WidgetInfoAttribute>().ToList();
+            if (widgetAttributes.Count == 0) return null;
+
+            var assemblyName = assembly.GetName().Name;
+            if (string.IsNullOrEmpty(assemblyName)) return null;
+
+            var localeAttribute = assembly.GetCustomAttributes<LocaleAttribute>().FirstOrDefault();
+            var companyAttribute = assembly.GetCustomAttributes<AssemblyCompanyAttribute>().FirstOrDefault();
+            var locale = GetLocaleResourceManagerCore(assembly);
+            var displayName = locale?.GetString(localeAttribute?.DisplayName ?? "") ?? assemblyName;
+            var categories = widgetAttributes
+                .Select(widget => widget.Category)
+                .Where(category => !string.IsNullOrEmpty(category))
+                .Cast<string>()
+                .Distinct(StringComparer.Ordinal)
+                .ToList();
+
+            return new AssemblyInfo(
+                GetLocation(assembly),
+                assemblyName,
+                displayName,
+                companyAttribute?.Company ?? "",
+                assembly.GetName().Version ?? new Version(0, 0),
+                localeAttribute?.IconData ?? "",
+                categories);
+        }
+        catch (Exception ex)
+        {
+            Log($"describing loaded assembly {assembly.FullName} failed: {ex.GetType().Name}: {ex.Message}");
+            return null;
+        }
+    }
+
+    /// <summary>已加载程序集的磁盘路径；动态程序集/单文件形态没有路径时返回空串。</summary>
+    private static string GetLocation(Assembly assembly)
+    {
+        try
+        {
+            return assembly.Location;
+        }
+        catch (NotSupportedException)
+        {
+            return string.Empty;
         }
     }
 
@@ -103,8 +247,22 @@ public class AssemblyProvider : IAssemblyProvider
     }
     
     /// <inheritdoc />
+    /// <remarks>
+    /// 顺序（报告 §3 第一步 6）：<see cref="AssemblyLoadContext.Default"/> 里已加载的同名程序集 →
+    /// 本类此前建立的插件上下文 → 原「扫描 <see cref="Const.WidgetsFolder"/> 并新建
+    /// <see cref="PluginLoadContext"/>」路径。
+    /// <para>
+    /// Default 优先是内置组件「只保留一份实例」的关键：新 GUI 用 ProjectReference 引入的
+    /// Notes/Clock 等随版本发布的 DLL 在启动时被预加载进 Default，宿主与组件反射拿到的必须是
+    /// 同一个 <see cref="Assembly"/>，否则组件里的 static 状态、DI 注册和 WinRT marshaller 都会
+    /// 各有一份。第三方包不在 Default 里，继续走原来的插件上下文，行为不变。
+    /// </para>
+    /// </remarks>
     public Assembly LoadAssembly(string name)
     {
+        if (FindLoadedInDefault(name) is { } builtIn)
+            return builtIn;
+
         if (loadedContexts.TryGetValue(name, out var context))
             return context.Assemblies.Single(assembly => 
                 assembly.ManifestModule.Name == $"{name}.dll");
@@ -115,10 +273,54 @@ public class AssemblyProvider : IAssemblyProvider
 
         return context.LoadFromAssemblyPath(filePath);
     }
-    
+
+    /// <summary>
+    /// <paramref name="assemblyName"/> 是否已经在 <see cref="AssemblyLoadContext.Default"/> 里加载。
+    /// 命中说明它是内置组件（或宿主直接引用的程序集），进程里已经存在唯一实例。
+    /// </summary>
+    /// <param name="assemblyName">程序集简单名（例如 <c>Notes</c>）。</param>
+    /// <returns>已加载的程序集；没有时返回 null。</returns>
+    private static Assembly? FindLoadedInDefault(string assemblyName)
+    {
+        if (string.IsNullOrWhiteSpace(assemblyName)) return null;
+
+        var name = assemblyName.Trim();
+        var moduleName = name.EndsWith(".dll", StringComparison.OrdinalIgnoreCase) ? name : $"{name}.dll";
+
+        foreach (var assembly in AssemblyLoadContext.Default.Assemblies)
+        {
+            if (!string.Equals(assembly.ManifestModule.Name, moduleName, StringComparison.OrdinalIgnoreCase))
+                continue;
+            if (!string.Equals(assembly.GetName().Name, name, StringComparison.OrdinalIgnoreCase))
+                continue;
+            return assembly;
+        }
+
+        return null;
+    }
+
     /// <inheritdoc />
+    /// <remarks>
+    /// <para>
+    /// 内置组件（<see cref="AssemblyLoadContext.Default"/> 里的程序集）无法卸载：Default 上下文在
+    /// 进程结束前一直存活，CLR 也不提供卸载它的 API。所以这里记录日志后直接返回，不抛给调用方
+    /// ——组件设置页的「重新加载」之类的入口不应因此把整个进程带崩。
+    /// </para>
+    /// <para>
+    /// 由此得到迁移期的已知限制（报告 §3 第一步 6、R6）：<b>内置组件的热替换改为下次启动生效</b>。
+    /// 新 GUI 引用的内置包统一使用随版本发布的 DLL；需要换版本时替换文件并重启。
+    /// 通过 <see cref="PluginLoadContext"/> 加载的第三方包仍按原逻辑真正卸载。
+    /// </para>
+    /// </remarks>
     public void UnloadAssembly(string name)
     {
+        if (FindLoadedInDefault(name) is { } builtIn)
+        {
+            Log($"UnloadAssembly({name}): built-in assembly at {GetLocation(builtIn)} lives in the default " +
+                "load context and cannot be unloaded; its replacement takes effect after the next restart.");
+            return;
+        }
+
         if (!loadedContexts.TryGetValue(name, out var context))
             throw new InvalidOperationException($"Assembly {name} is not loaded");
 
@@ -197,7 +399,13 @@ public class AssemblyProvider : IAssemblyProvider
     }
 
     /// <inheritdoc />
-    public ResourceManager? GetLocaleResourceManager(Assembly assembly)
+    public ResourceManager? GetLocaleResourceManager(Assembly assembly) => GetLocaleResourceManagerCore(assembly);
+
+    /// <summary>
+    /// 与 <see cref="GetLocaleResourceManager"/> 相同，但为静态：Default 上下文里的内置组件
+    /// 在 <see cref="DescribeLoadedAssembly"/> 中也要解析显示名/图标。
+    /// </summary>
+    private static ResourceManager? GetLocaleResourceManagerCore(Assembly assembly)
     {
         try
         {

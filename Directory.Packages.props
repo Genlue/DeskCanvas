@@ -20,6 +20,12 @@
     <PackageVersion Include="Avalonia.Headless" Version="12.1.4" />
     <PackageVersion Include="Avalonia.Themes.Fluent" Version="12.1.4" />
     <PackageVersion Include="Avalonia.Fonts.Inter" Version="12.1.4" />
+    <!-- WinUI 3 混合宿主：AvaloniaSwapChainPanel 把 Avalonia 内容嵌进 WinUI 窗口。
+         集成包声明的最低依赖是 Windows App SDK 1.8.260209005；这里取当前受支持稳定包 2.6.4，
+         混宿组合已在实机冒烟验证（见 doc/WinUI迁移执行计划.md §0）。 -->
+    <PackageVersion Include="Avalonia.WinUI" Version="12.1.4" />
+    <PackageVersion Include="Microsoft.WindowsAppSDK" Version="2.6.4" />
+    <PackageVersion Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.26100.7705" />
     <PackageVersion Include="ReactiveUI.Avalonia" Version="12.1.4" />
     <!-- ReactiveUI 25 起不再依赖 System.Reactive；项目代码用到的 Subscribe(Action<T>) 扩展来自它，
          显式引用以恢复 11.x 时代的编译契约（无 Rx 操作符，仅此一个扩展）。 -->

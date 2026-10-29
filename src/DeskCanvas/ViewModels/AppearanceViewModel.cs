@@ -16,7 +16,7 @@ using TitleBarStyleEnum = DeskCanvas.Core.Models.Settings.TitleBarStyle;
 
 namespace DeskCanvas.ViewModels;
 
-public class AppearanceViewModel : ReactiveObject
+public class AppearanceViewModel : ReactiveObject, IDisposable
 {
     private readonly IAppSettingsProvider appSettingsProvider;
     private readonly FocusWatchService? focusWatch;
@@ -26,6 +26,13 @@ public class AppearanceViewModel : ReactiveObject
     private bool pendingSliderSave;
     private string? themeSaveError;
     private string? sliderSaveError;
+
+    /// <summary>
+    /// WinUI 适配（只新增的字段）：构造时挂上的外部订阅委托，供 <see cref="Dispose"/> 解除。
+    /// 旧 Avalonia 页面从不调用 Dispose，因此这些字段的存在不改变旧页面的行为。
+    /// </summary>
+    private EventHandler<FocusStateSnapshot>? focusWatchStateChangedHandler;
+    private DataChangedEvent<AppSettings>? appSettingsDataChangedHandler;
     private Theme SliderTheme => pendingSliderSave ? sliderSettings.Draft : appSettingsProvider.Get().Theme;
     private string? settingsError;
     public string? SettingsError
@@ -41,6 +48,16 @@ public class AppearanceViewModel : ReactiveObject
     public Theme? PendingTheme => pendingThemeSave ? themeSettings.Draft : null;
 
     public AppearanceViewModel(IAppSettingsProvider appSettingsProvider, FocusWatchService? focusWatch = null)
+        : this(appSettingsProvider, focusWatch, createThemeSamples: true)
+    {
+    }
+
+    /// <summary>
+    /// WinUI 适配（只新增的重载）：<paramref name="createThemeSamples"/> = false 时不创建旧的
+    /// Avalonia <c>ThemeButton</c> 样片——新页面用 WinUI 的 <c>Controls/ThemeButton</c> 画样片
+    /// （报告 §3 第二步）。两个构造函数共用同一段初始化，旧页面调用的两参重载行为不变。
+    /// </summary>
+    public AppearanceViewModel(IAppSettingsProvider appSettingsProvider, FocusWatchService? focusWatch, bool createThemeSamples)
     {
         this.appSettingsProvider = appSettingsProvider;
         themeSettings = new AppearanceSettingsSession(appSettingsProvider);
@@ -50,17 +67,18 @@ public class AppearanceViewModel : ReactiveObject
         {
             // The status line follows the live activation state (the watcher raises on the UI
             // thread; the marshal is only a safety net for a shutdown-time raise).
-            focusWatch.StateChanged += (_, _) =>
+            focusWatchStateChangedHandler = (_, _) =>
             {
                 if (Dispatcher.UIThread.CheckAccess())
                     this.RaisePropertyChanged(nameof(FocusStatusText));
                 else
                     Dispatcher.UIThread.Post(() => this.RaisePropertyChanged(nameof(FocusStatusText)));
             };
+            focusWatch.StateChanged += focusWatchStateChangedHandler;
         }
         // Surface-dependent rows (高光) and the monochrome color picker
         // appear/disappear when the settings change.
-        appSettingsProvider.DataChanged += (_, oldData, newData) =>
+        appSettingsDataChangedHandler = (_, oldData, newData) =>
         {
             this.RaisePropertyChanged(nameof(ShowHighlightSettings));
             this.RaisePropertyChanged(nameof(ShowGlassOpticsSettings));
@@ -131,8 +149,12 @@ public class AppearanceViewModel : ReactiveObject
             this.RaisePropertyChanged(nameof(FocusStatusText));
             RefreshFocusWhitelist();
         };
+        appSettingsProvider.DataChanged += appSettingsDataChangedHandler;
         // Fixed material presets; other appearance preferences are preserved.
-        Themes = SurfaceTemplates.Select(theme => new ThemeButton(appSettingsProvider, theme)).ToArray();
+        // WinUI 页面（createThemeSamples = false）不创建 Avalonia 样片，样片由 Controls/ThemeButton 画。
+        Themes = createThemeSamples
+            ? SurfaceTemplates.Select(theme => new ThemeButton(appSettingsProvider, theme)).ToArray()
+            : [];
         RefreshFocusWhitelist();
     }
 
@@ -998,4 +1020,27 @@ public class AppearanceViewModel : ReactiveObject
         }
     }
 
+    /// <summary>
+    /// WinUI 适配（只新增）：解除构造时挂上的设置 Provider / 失焦监视器订阅，可重复调用。
+    /// <para>
+    /// 旧 Avalonia 页面不调用它（页面实例由设置窗口缓存到进程结束），所以旧行为不变；
+    /// WinUI 页面在 <c>Detach</c> 时调用，保证「离开页面即退订」，重新创建页面不会叠加处理器
+    /// （报告 §4.2 的对称生命周期）。
+    /// </para>
+    /// </summary>
+    public void Dispose()
+    {
+        if (focusWatch is not null && focusWatchStateChangedHandler is not null)
+        {
+            focusWatch.StateChanged -= focusWatchStateChangedHandler;
+        }
+
+        focusWatchStateChangedHandler = null;
+
+        if (appSettingsDataChangedHandler is not null)
+        {
+            appSettingsProvider.DataChanged -= appSettingsDataChangedHandler;
+            appSettingsDataChangedHandler = null;
+        }
+    }
 }

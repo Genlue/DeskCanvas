@@ -18,7 +18,21 @@ namespace DeskCanvas.Services;
 public sealed class SingleInstance : IDisposable
 {
     /// <summary>One instance per signed-in user, not per machine.</summary>
-    public const string DefaultScope = @"Local\DeskCanvas.SingleInstance";
+    public const string BaseScope = @"Local\DeskCanvas.SingleInstance";
+
+    /// <summary>
+    /// 当前进程的单实例作用域。默认按会话隔离；<c>DESKCANVAS_INSTANCE_SCOPE</c> 可覆盖，
+    /// 用于开发/冒烟：新 WinUI 入口在切换期间需要与已安装的成品版并存运行，
+    /// 两者共用同一个互斥体时，开发版会把自己当成「第二次启动」直接退出。
+    /// </summary>
+    public static string DefaultScope
+    {
+        get
+        {
+            var overrideScope = Environment.GetEnvironmentVariable("DESKCANVAS_INSTANCE_SCOPE");
+            return string.IsNullOrWhiteSpace(overrideScope) ? BaseScope : overrideScope.Trim();
+        }
+    }
 
     private const string MutexSuffix = ".Mutex";
     private const string SignalSuffix = ".Show";
@@ -48,8 +62,9 @@ public sealed class SingleInstance : IDisposable
     /// process already owns the scope. The guard fails open: if it cannot be set up at all the
     /// app still starts rather than refusing to run.
     /// </returns>
-    public static SingleInstance? Acquire(string scope = DefaultScope)
+    public static SingleInstance? Acquire(string? scope = null)
     {
+        scope ??= DefaultScope;
         Mutex mutex;
         try
         {
@@ -85,8 +100,9 @@ public sealed class SingleInstance : IDisposable
     /// Ask the primary instance of <paramref name="scope"/> to surface its UI. Best effort —
     /// called by a secondary launch right before it exits.
     /// </summary>
-    public static void Signal(string scope = DefaultScope)
+    public static void Signal(string? scope = null)
     {
+        scope ??= DefaultScope;
         // This process was started by the shell, so it is still allowed to hand the foreground
         // over; the primary instance is not, and would otherwise only flash its taskbar button.
         InteropService.AllowOtherProcessToTakeForeground();

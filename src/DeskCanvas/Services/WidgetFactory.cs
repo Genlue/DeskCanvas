@@ -35,6 +35,12 @@ public class WidgetFactory(IAssemblyProvider assemblyProvider, ILayoutProvider l
     private readonly Dictionary<string, List<Widget>> activeWidgets = [];
 
     /// <summary>
+    /// 存活组件 → 它自己的 <see cref="WidgetLayoutProvider"/>。供新 WinUI 编辑窗口复用同一个
+    /// Provider（保存后桌面组件立即刷新，存档仍是原模型/JSON）。组件关闭时移除。
+    /// </summary>
+    private readonly Dictionary<Widget, WidgetLayoutProvider> editorProviders = [];
+
+    /// <summary>
     /// True while at least one widget window is alive. The settings window asks this to decide
     /// whether closing it should only hide the shared window or really let the app exit.
     /// </summary>
@@ -227,23 +233,26 @@ public class WidgetFactory(IAssemblyProvider assemblyProvider, ILayoutProvider l
         var widgetInfo = GetWidgetInfo(assembly, widgetLayout.SubType);
         var widgetControl = () => CreateWidgetControl(widgetInfo.ViewType, widgetLayoutProvider, widgetLayoutProvider.Get().GetModel(widgetInfo.ModelType), session);
 
-        var editWidgetWindow = widgetInfo.EditModelViewType != null
-            ? () => CreateEditWidgetWindow(widgetLayoutProvider, widgetInfo.EditModelViewType)
-            : (Func<EditWidget>?) null;
+        // 编辑能力（报告 §3 第三步）：不再把 Func<EditWidget> 交给 Widget。这里只声明
+        // “这个组件可编辑”并给出纯数据请求；新入口由 ISoftwareUi 打开 WinUI 编辑窗口，
+        // 没有新入口（旧入口/检查工程）时才用 Binding 里的旧窗口委托维持原 Avalonia 行为。
+        var editor = CreateEditorBinding(widgetLayoutProvider, widgetLayout, widgetInfo);
 
-        var widget = editWidgetWindow != null
-            ? (Widget) assemblyProvider.Activate(typeof(Widget), widgetLayoutProvider, widgetControl, settingsWindow, editWidgetWindow)
+        var widget = editor != null
+            ? (Widget) assemblyProvider.Activate(typeof(Widget), widgetLayoutProvider, widgetControl, settingsWindow, editor)
             : (Widget) assemblyProvider.Activate(typeof(Widget), widgetLayoutProvider, widgetControl, settingsWindow);
 
         if (!activeWidgets.TryGetValue(screen.Id, out var list))
             activeWidgets[screen.Id] = list = [];
         list.Add(widget);
+        editorProviders[widget] = widgetLayoutProvider;
         widget.Closed += (_, _) =>
         {
             // A user drag may have changed ownership since this window was created.
             foreach (var currentList in activeWidgets.Values)
                 currentList.Remove(widget);
 
+            editorProviders.Remove(widget);
             OnWidgetClosed();
         };
 
@@ -641,11 +650,94 @@ public class WidgetFactory(IAssemblyProvider assemblyProvider, ILayoutProvider l
         }
     }
 
-    private EditWidget CreateEditWidgetWindow(IWidgetLayoutProvider widgetLayoutProvider, Type type)
+    /// <summary>
+    /// 组件的“可编辑能力 + 打开编辑器委托”。没有 <c>EditModelViewType</c> 的组件返回 null
+    /// （右键菜单沿用 <c>ShowEditButton</c> 的可见性规则）。
+    /// <para>
+    /// 生产路径只把 <see cref="WidgetEditorRequest"/> 转给 <see cref="ISoftwareUi"/>；
+    /// 旧 Avalonia 编辑窗口的构造委托只有在新入口缺席时才会被 <see cref="WidgetEditorBinding.Open"/>
+    /// 调用（报告 §3 第三步：生产路径不得再创建旧窗口）。
+    /// </para>
+    /// </summary>
+    private WidgetEditorBinding? CreateEditorBinding(WidgetLayoutProvider widgetLayoutProvider,
+        WidgetLayout widgetLayout, WidgetInfoAttribute widgetInfo)
+    {
+        if (widgetInfo.EditModelViewType is not { } editType) return null;
+
+        var request = new WidgetEditorRequest(
+            widgetLayout.InstanceId,
+            widgetLayout.Generation,
+            widgetLayout.Type,
+            widgetLayout.SubType,
+            widgetLayoutProvider.ScreenId,
+            editType.Assembly.GetName().Name,
+            editType.FullName ?? editType.Name,
+            // 旧槽位键 "assembly:settingsViewFullName"：用 EditModelViewType 原类型算，
+            // 新 WinUI 页面换程序集/类名也不会让窗口几何记忆全部丢失（报告 §3 第三步）。
+            WindowGeometryStore.ComposeKey(editType));
+
+        return new WidgetEditorBinding(request, () =>
+        {
+            CreateLegacyEditWidgetWindow(widgetLayoutProvider, editType);
+            return WidgetEditorOpenResult.Started;
+        });
+    }
+
+    /// <summary>
+    /// 旧 Avalonia 编辑窗口：<b>只</b>在没有 <see cref="ISoftwareUi"/> 的旧入口/检查工程里创建。
+    /// 有 WinUI 入口时 <see cref="WidgetEditorBinding.Open"/> 直接转发请求，走不到这里。
+    /// </summary>
+    private void CreateLegacyEditWidgetWindow(IWidgetLayoutProvider widgetLayoutProvider, Type type)
     {
         var control = (UserControl) assemblyProvider.Activate(type, widgetLayoutProvider);
 
-        return new EditWidget(widgetLayoutProvider, control);
+        new EditWidget(widgetLayoutProvider, control).Show();
+    }
+
+    /// <summary>
+    /// 新编辑窗口的上下文来源：按稳定身份找存活组件，返回它<b>自己</b>的
+    /// <see cref="IWidgetLayoutProvider"/>（同一实例）。
+    /// <para>
+    /// 复用同一个 Provider 而不是按存档重建一个：页面保存会触发该 Provider 的
+    /// <c>DataChanged</c>，桌面组件随即按新模型刷新；存档仍是原来的 layout.json/Settings JSON
+    /// （报告 §4.2）。组件已关闭或换代时返回 null，调用方必须拒绝打开。
+    /// </para>
+    /// </summary>
+    public IWidgetLayoutProvider? TryGetLiveLayoutProvider(Guid instanceId, string type, string subType)
+    {
+        foreach (var (widget, provider) in editorProviders.ToList())
+        {
+            var layout = provider.Get();
+            if (layout == null) continue;
+            if (!string.Equals(layout.Type, type, StringComparison.Ordinal)) continue;
+            if (!string.Equals(layout.SubType, subType, StringComparison.Ordinal)) continue;
+            if (instanceId != Guid.Empty && layout.InstanceId != instanceId) continue;
+            if (!activeWidgets.Values.Any(list => list.Contains(widget))) continue;
+            return provider;
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// 开发/冒烟诊断（<c>--edit-widget=Type/SubType</c>）：找第一个可编辑的存活组件。
+    /// 正常功能一律由组件自己的右键菜单触发，这里不是生产路径。
+    /// </summary>
+    public Widget? FindLiveWidget(string? type, string? subType)
+    {
+        foreach (var (widget, provider) in editorProviders.ToList())
+        {
+            var layout = provider.Get();
+            if (layout == null) continue;
+            if (!string.IsNullOrEmpty(type)
+                && !string.Equals(layout.Type, type, StringComparison.OrdinalIgnoreCase)) continue;
+            if (!string.IsNullOrEmpty(subType)
+                && !string.Equals(layout.SubType, subType, StringComparison.OrdinalIgnoreCase)) continue;
+            if (!activeWidgets.Values.Any(list => list.Contains(widget))) continue;
+            return widget;
+        }
+
+        return null;
     }
 
     private bool NeedsWidgetLayoutProvider(Type type)

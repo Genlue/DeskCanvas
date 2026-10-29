@@ -4,7 +4,9 @@
     Read-only check for DeskCanvas source and widget boundaries.
 .DESCRIPTION
     Verifies the repository shape and the minimum plugin contract without
-    building, loading assemblies, or changing files.
+    building, loading assemblies, or changing files. Includes the WinUI entry
+    project (src/DeskCanvas.WinUI) and the one migration-scoped exception:
+    only the WinUI entry may reference src/Widgets projects (report §3 step 1.5).
     Exit codes: 0 = pass, 1 = contract failures, 2 = invocation/runtime error.
 .PARAMETER Root
     Repository root. Defaults to the parent of this script directory.
@@ -57,7 +59,7 @@ try {
         $Root = Split-Path -Parent $Root
     }
     $rootPath = (Resolve-Path -LiteralPath $Root -ErrorAction Stop).Path
-    $required = @('src', 'src/DeskCanvas', 'src/DeskCanvas.Core', 'src/DeskCanvas.Contracts', 'src/DeskCanvas.UI', 'src/DeskCanvas.Runtime', 'src/Widgets', 'docs', 'scripts')
+    $required = @('src', 'src/DeskCanvas', 'src/DeskCanvas.Core', 'src/DeskCanvas.Contracts', 'src/DeskCanvas.UI', 'src/DeskCanvas.Runtime', 'src/DeskCanvas.WinUI', 'src/Widgets', 'docs', 'scripts')
     $failures = [System.Collections.Generic.List[string]]::new()
 
     foreach ($relative in $required) {
@@ -71,8 +73,11 @@ try {
     $runtimeProject = Join-Path $rootPath 'src/DeskCanvas.Runtime/DeskCanvas.Runtime.csproj'
     $uiProject = Join-Path $rootPath 'src/DeskCanvas.UI/DeskCanvas.UI.csproj'
     $contractsProject = Join-Path $rootPath 'src/DeskCanvas.Contracts/DeskCanvas.Contracts.csproj'
+    $winUiProject = Join-Path $rootPath 'src/DeskCanvas.WinUI/DeskCanvas.WinUI.csproj'
+    $solutionPath = Join-Path $rootPath 'src/DeskCanvas.sln'
     if (-not (Test-Path -LiteralPath $hostProject -PathType Leaf)) { $failures.Add('Missing host project: src/DeskCanvas/DeskCanvas.csproj') }
     if (-not (Test-Path -LiteralPath $coreProject -PathType Leaf)) { $failures.Add('Missing SDK project: src/DeskCanvas.Core/DeskCanvas.Core.csproj') }
+    if (-not (Test-Path -LiteralPath $winUiProject -PathType Leaf)) { $failures.Add('Missing WinUI entry project: src/DeskCanvas.WinUI/DeskCanvas.WinUI.csproj') }
 
     $widgetRoot = Join-Path $rootPath 'src/Widgets'
     $widgets = @()
@@ -83,13 +88,74 @@ try {
 
     if (Test-Path -LiteralPath $hostProject -PathType Leaf) {
         $hostXml = Read-ProjectXml $hostProject
+        # The host stopped being the executable entry when the GUI moved to WinUI:
+        # it is now a referenced library (report §3 step 1.2). A stray WinExe/Exe here
+        # would reintroduce a second startup path and duplicate the apphost.
+        $hostOutputType = Get-Property $hostXml 'OutputType'
+        if ($hostOutputType -ne 'Library') {
+            $failures.Add("Host project must be OutputType=Library (found '$hostOutputType'); the only entry is src/DeskCanvas.WinUI.")
+        }
         $hostReferences = @(Get-ProjectNodes $hostXml 'ProjectReference' | ForEach-Object { Get-ReferencePath $hostProject $_ })
         if ($hostReferences -notcontains $coreProject) { $failures.Add('Host project must reference DeskCanvas.Core.') }
         foreach ($reference in $hostReferences) {
             if ($reference.StartsWith($widgetRoot + [System.IO.Path]::DirectorySeparatorChar, [System.StringComparison]::OrdinalIgnoreCase)) {
                 $failures.Add('Host project must not hard-code a widget project reference.')
             }
+            if ($reference -eq $winUiProject) {
+                $failures.Add('Host project must not reference the WinUI entry (the GUI entry depends on the host, not the reverse).')
+            }
         }
+    }
+
+    $winUiWidgetReferenceCount = 0
+    if (Test-Path -LiteralPath $winUiProject -PathType Leaf) {
+        $winUiXml = Read-ProjectXml $winUiProject
+        $winUiReferences = @(Get-ProjectNodes $winUiXml 'ProjectReference' | ForEach-Object { Get-ReferencePath $winUiProject $_ })
+        foreach ($requiredReference in @($hostProject, $coreProject, $contractsProject, $runtimeProject)) {
+            if ($winUiReferences -notcontains $requiredReference) {
+                $failures.Add("WinUI entry must reference $(Split-Path -Leaf $requiredReference).")
+            }
+        }
+
+        # 报告 §3 第一步 5：27 个内置组件的新编辑页要复用模型/Store，只给 WinUI 开这个口子；
+        # 其余工程仍按原边界检查（宿主不得静态依赖组件，Core/Runtime/UI/组件不得反向依赖 WinUI）。
+        $allowedWinUiReferences = @($hostProject, $coreProject, $contractsProject, $runtimeProject)
+        foreach ($reference in (Get-ProjectNodes $winUiXml 'ProjectReference')) {
+            $referencePath = Get-ReferencePath $winUiProject $reference
+            if ($referencePath.StartsWith($widgetRoot + [System.IO.Path]::DirectorySeparatorChar, [System.StringComparison]::OrdinalIgnoreCase)) {
+                $winUiWidgetReferenceCount++
+                continue
+            }
+            if ($allowedWinUiReferences -notcontains $referencePath) {
+                $failures.Add("WinUI entry may reference only the host/Core/Contracts/Runtime and explicit src/Widgets projects; unexpected ProjectReference: $($reference.GetAttribute('Include'))")
+            }
+        }
+
+        foreach ($projectFile in @(Get-ChildItem -LiteralPath (Join-Path $rootPath 'src') -Recurse -Filter '*.csproj' -File |
+            Where-Object { $_.FullName -notmatch '[\/](bin|obj)[\/]' })) {
+            if ($projectFile.FullName -eq $winUiProject) { continue }
+            $isWidgetProject = $projectFile.FullName.StartsWith($widgetRoot + [System.IO.Path]::DirectorySeparatorChar, [System.StringComparison]::OrdinalIgnoreCase)
+            $projectName = [System.IO.Path]::GetFileNameWithoutExtension($projectFile.FullName)
+            $projectXml = Read-ProjectXml $projectFile.FullName
+            foreach ($reference in (Get-ProjectNodes $projectXml 'ProjectReference')) {
+                $referencePath = Get-ReferencePath $projectFile.FullName $reference
+                if ($referencePath -eq $winUiProject) {
+                    $failures.Add("${projectName}: must not reference the WinUI entry (reverse dependency; components reach the GUI through ISoftwareUi).")
+                }
+                elseif (-not $isWidgetProject -and
+                    $referencePath.StartsWith($widgetRoot + [System.IO.Path]::DirectorySeparatorChar, [System.StringComparison]::OrdinalIgnoreCase)) {
+                    $failures.Add("${projectName}: only src/DeskCanvas.WinUI may reference src/Widgets projects (migration-scope exception).")
+                }
+            }
+        }
+    }
+
+    # 解决方案必须登记唯一新入口，避免“工程在磁盘上但没被任何入口构建”。
+    if (-not (Test-Path -LiteralPath $solutionPath -PathType Leaf)) {
+        $failures.Add('Missing solution: src/DeskCanvas.sln')
+    }
+    elseif ((Get-Content -LiteralPath $solutionPath -Raw).IndexOf('DeskCanvas.WinUI\DeskCanvas.WinUI.csproj', [System.StringComparison]::OrdinalIgnoreCase) -lt 0) {
+        $failures.Add('Solution must list the WinUI entry project: src/DeskCanvas.WinUI/DeskCanvas.WinUI.csproj')
     }
     if (Test-Path -LiteralPath $coreProject -PathType Leaf) {
         $coreXml = Read-ProjectXml $coreProject
@@ -183,6 +249,10 @@ try {
         if ($referencePaths -notcontains $coreProject) { $failures.Add("${name}: project does not reference DeskCanvas.Core.") }
         foreach ($reference in $references) {
             $referencePath = Get-ReferencePath $project $reference
+            if ($referencePath -eq $winUiProject) {
+                $failures.Add("${name}: widget project must not reference the WinUI entry (reverse dependency).")
+                continue
+            }
             if ($referencePath -ne $hostProject -and $referencePath -ne $coreProject -and $referencePath -ne $runtimeProject -and $referencePath -ne $uiProject) {
                 $failures.Add("${name}: project reference must target host or Core: $($reference.GetAttribute('Include'))")
             }
@@ -219,7 +289,7 @@ try {
     }
 
     if (-not $Quiet) {
-        Write-Output ("Structure check passed: {0} widget projects; host/Core and Contracts/UI/Runtime boundaries are present." -f $widgets.Count)
+        Write-Output ("Structure check passed: {0} widget projects; host is a Library; WinUI entry present in the solution and references {1} widget project(s); no reverse dependency on the WinUI entry; host/Core and Contracts/UI/Runtime boundaries are present; central package versions enforced." -f $widgets.Count, $winUiWidgetReferenceCount)
     }
     exit 0
 }

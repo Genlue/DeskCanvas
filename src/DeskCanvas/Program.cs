@@ -2,7 +2,6 @@ using Avalonia;
 using System;
 using System.IO;
 using DeskCanvas.Core;
-using DeskCanvas.Core.Services;
 using DeskCanvas.Services;
 
 namespace DeskCanvas;
@@ -20,25 +19,16 @@ public class Program
             // Only one DeskCanvas+ process per session. A later launch hands the request over to
             // the running instance (which brings its settings window to the front) and exits,
             // instead of starting a rival copy that would fight over the data folder, the widget
-            // windows and the auto-start entry.
-            var singleInstance = SingleInstance.Acquire();
+            // windows and the auto-start entry. The same helper is used by the WinUI entry.
+            var singleInstance = AppStartup.AcquireSingleInstance();
             if (singleInstance == null)
-            {
-                SingleInstance.Signal();
                 return;
-            }
-
-            SingleInstance.Current = singleInstance;
 
             try
             {
-                // Single-file mode: extract the embedded widget bundle & default settings first,
-                // so the rest of the app sees a regular data folder. No-op in portable mode.
-                WidgetBundle.ExtractIfNeeded();
-
-                // Keep the Windows auto-start entry in sync with the saved preference so the
-                // feature reliably takes effect (re-asserts the path each launch; safe when off).
-                SyncRunOnStartup();
+                // Default data / widget bundle extraction and the auto-start re-assert happen
+                // before any UI framework is initialized; behavior and order are unchanged.
+                AppStartup.InitializeDataAndStartup();
 
                 BuildAvaloniaApp()
                     .StartWithClassicDesktopLifetime(args);
@@ -54,24 +44,6 @@ public class Program
             var fileName = Path.Combine(Const.DataFolder, "crash_log.txt");
             File.WriteAllText(fileName, e.ToString());
             throw;
-        }
-    }
-
-    /// <summary>
-    /// Re-asserts the Windows auto-start registry entry when the user has enabled it.
-    /// This is best-effort and never blocks app startup; it fixes a stale or missing
-    /// entry (e.g. after the exe was moved) so "Run on startup" reliably takes effect.
-    /// </summary>
-    private static void SyncRunOnStartup()
-    {
-        try
-        {
-            if (new AppSettingsProvider().Get().RunOnStartup)
-                new StartupService().SetRunOnStartup(true);
-        }
-        catch
-        {
-            // Auto-start is non-critical; ignore any failure here.
         }
     }
 

@@ -88,7 +88,23 @@ public class GeneralViewModel : ReactiveObject, IDisposable
             : "";
     }
 
+    /// <summary>
+    /// WinUI General 页读取“上次检查结果”的入口。与旧页共用同一段格式化逻辑，
+    /// 避免两套页面显示不同的状态文本（报告 §4.2：设置状态只有一个事实源）。
+    /// </summary>
+    public static string FormatStoredUpdateStatusForDisplay(AppSettings settings)
+        => FormatStoredUpdateStatus(settings);
+
     public CultureInfo[] Languages => GetAvailableCultures().ToHashSet().OrderBy(x => x.DisplayName).ToArray();
+
+    /// <summary>
+    /// The same language list the old page binds, exposed statically for the WinUI General page.
+    /// The WinUI page has no Avalonia binding layer and must not construct this view model (its
+    /// constructor subscribes to settings and its update path shows the old Avalonia UpdatePopup);
+    /// this entry point keeps both pages reading one list (报告 §3 第二步 General 行).
+    /// </summary>
+    public static CultureInfo[] GetAvailableLanguages()
+        => GetAvailableCultures().ToHashSet().OrderBy(x => x.DisplayName).ToArray();
     
     public CultureInfo Language
     {
@@ -425,6 +441,13 @@ public class GeneralViewModel : ReactiveObject, IDisposable
         this.RaisePropertyChanged(nameof(DefaultRegionSummary));
         this.RaisePropertyChanged(nameof(HasDefaultRegion));
     }
+
+    /// <summary>
+    /// WinUI General 页搜索默认地区时使用的解析入口。实际字段展开仍走
+    /// <see cref="ParseGeocodingResults"/>，保证新旧页面把同一份 Open-Meteo 响应解释成同一批命中。
+    /// </summary>
+    public static IReadOnlyList<RegionSearchResult> ParseGeocodingResultsForDisplay(string? json)
+        => ParseGeocodingResults(json).ToList();
 
     /// <summary>
     /// Flatten the Open-Meteo geocoding payload. Only the fields the settings page shows are read;

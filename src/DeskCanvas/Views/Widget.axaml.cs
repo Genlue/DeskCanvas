@@ -36,7 +36,9 @@ public partial class Widget : Window, INotifyPropertyChanged, IFocusThemedWindow
     private readonly DisplayMonitorService displayMonitor;
     private readonly Func<UserControl> userControl;
     private readonly Func<Settings> settingsWindow;
-    private readonly Func<EditWidget>? editWidgetWindow;
+    // 可编辑能力 + 打开编辑器委托（报告 §3 第三步）。生产路径经 ISoftwareUi 打开 WinUI 编辑窗口，
+    // 只有旧入口（ISoftwareUi 为空）才回落到旧 Avalonia EditWidget。
+    private readonly WidgetEditorBinding? editor;
     private readonly ProfileService profileService;
     private (int Columns, int Rows)? manualSpan;
     private bool isFrameless;
@@ -259,10 +261,10 @@ public partial class Widget : Window, INotifyPropertyChanged, IFocusThemedWindow
         IGridService<Widget> gridService, ILayoutProvider layoutProvider, DisplayMonitorService displayMonitor,
         ProfileService profileService,
         Func<UserControl> userControl, Func<Settings> settingsWindow, 
-        Func<EditWidget>? editWidgetWindow = null)
+        WidgetEditorBinding? editor = null)
     {
         this.settingsWindow = settingsWindow;
-        this.editWidgetWindow = editWidgetWindow;
+        this.editor = editor;
         this.widgetLayoutProvider = widgetLayoutProvider;
         this.userControl = userControl;
         this.appSettingsProvider = appSettingsProvider;
@@ -580,7 +582,7 @@ public partial class Widget : Window, INotifyPropertyChanged, IFocusThemedWindow
             Math.Clamp(Position.Y, area.Y, area.Y + Math.Max(0, area.Height - height)));
     }
 
-    public bool ShowEditButton => editWidgetWindow != null;
+    public bool ShowEditButton => editor != null;
     public string Edit => $"{Locale.Widget_Edit} \"{widgetLayoutProvider.Get().Type}\"";
 
     public bool IsStackWidget =>
@@ -1073,7 +1075,7 @@ public partial class Widget : Window, INotifyPropertyChanged, IFocusThemedWindow
         : WindowDecorations.None;
 
     public bool WidgetExtendClientArea => GlassMaterial.UseNativeFrame;
-    public void EditWidget() => editWidgetWindow?.Invoke().Show();
+    public void EditWidget() => editor?.Open();
 
     private IFixedSizeWidget? FixedSizeWidget => ContentPresenter.Content as IFixedSizeWidget;
     public bool IsFixedWidget => FixedSizeWidget != null;
@@ -1205,7 +1207,17 @@ public partial class Widget : Window, INotifyPropertyChanged, IFocusThemedWindow
         _ = Resize(columns, rows, afterInputEvent);
     }
 
-    public void OpenSettings() => settingsWindow.Invoke().ShowAndActivate();
+    public void OpenSettings()
+    {
+        // 有新入口时统一转发（无参 → 恢复上次页面）；旧入口保持原 Avalonia 设置窗口。
+        if (App.SoftwareUi is { } softwareUi)
+        {
+            softwareUi.ActivateSettings();
+            return;
+        }
+
+        settingsWindow.Invoke().ShowAndActivate();
+    }
 
     /// <summary>
     /// Tray icon visibility. The tray menu can hide the icon, so this widget menu item is the
@@ -1260,8 +1272,35 @@ public partial class Widget : Window, INotifyPropertyChanged, IFocusThemedWindow
     public string ScaleMenuTitle => $"{Locale.Widget_Scale} · {EffectiveContentScale:0.##}×";
 
     /// <summary>Open the free-form scale input dialog for this widget.</summary>
-    public void OpenScaleDialog() =>
+    public void OpenScaleDialog()
+    {
+        if (App.SoftwareUi is { } softwareUi)
+        {
+            // TODO(第四步)：缩放弹窗的 WinUI 实现。当前实现方返回 NotImplemented，
+            // 这里把它当成明确的失败记录下来——不是“点了没反应”。
+            var layout = widgetLayoutProvider.Get();
+            try
+            {
+                var result = softwareUi.OpenWidgetScale(new WidgetScaleRequest(
+                    layout.InstanceId, layout.Generation, layout.Type, layout.SubType, EffectiveContentScale));
+                if (result != WidgetScaleRequestResult.Shown)
+                {
+                    AppStartup.LogDiagnostic(
+                        $"scale dialog for {layout.Type}/{layout.SubType} was not shown ({result}); " +
+                        "the WinUI scale dialog is implemented in migration step 4.");
+                }
+            }
+            catch (Exception ex)
+            {
+                AppStartup.LogDiagnostic(
+                    $"scale dialog request for {layout.Type}/{layout.SubType} failed: {ex.GetType().Name}: {ex.Message}");
+            }
+
+            return;
+        }
+
         new ScaleDialog(EffectiveContentScale, ApplyContentScale).ShowDialog(this);
+    }
 
     private void ApplyContentScale(double? value)
     {

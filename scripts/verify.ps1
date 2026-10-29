@@ -7,7 +7,11 @@
       1. scripts/check-structure.ps1
       2. scripts/check-ui-conventions.ps1
       3. dotnet build src/DeskCanvas.sln -c Debug
-      4. dotnet run --project <suite> -c Release for the 38 verified check suites,
+      4. build src/DeskCanvas.WinUI/DeskCanvas.WinUI.csproj (Debug) via
+          scripts/dev/winui-build.ps1 — the solution/original entry succeeding does NOT
+          prove the WinUI entry builds (report §6), and the serialized script is
+          mandatory because parallel executors share the WinUI obj/bin.
+      5. dotnet run --project <suite> -c Release for the 40 verified check suites,
          including the P1-P8 architecture gates, the P10/P11 UI and material gates,
          P12 profile storage and P13 uninstaller/setup contracts.
 
@@ -18,17 +22,24 @@
     own location unless -Root is given. Child check scripts are invoked in a
     separate powershell process so their `exit` statements cannot abort this script.
 
+    -BuildOnly runs the two guards and both build steps, then stops before the Release
+    suites. It exists for build-stage acceptance during the WinUI migration; the
+    default invocation still runs the complete list.
+
     The full gate list beyond the verified suites is registered in tests/README.md;
     add them here as they are validated.
 .PARAMETER Root
     Repository root. Defaults to the parent of this script directory.
 .PARAMETER NoRestore
     Pass --no-restore through to dotnet build / dotnet run (use after a prior restore).
+.PARAMETER BuildOnly
+    Run guards + solution build + WinUI entry build, then exit before the Release suites.
 ##>
 [CmdletBinding()]
 param(
     [string]$Root,
-    [switch]$NoRestore
+    [switch]$NoRestore,
+    [switch]$BuildOnly
 )
 
 $ErrorActionPreference = 'Stop'
@@ -81,52 +92,67 @@ try {
         Invoke-Step 'build DeskCanvas.sln (Debug)' 'dotnet' (@(
             'build', (Join-Path $Root 'src/DeskCanvas.sln'), '-c', 'Debug') + $restoreArgs)
 
-        $verifiedSuites = @(
-            'IdentityStorageChecks',
-            'ContractsLifecycleChecks',
-            'SchedulerChecks',
-            'UiSharedChecks',
-            'UiSharedAvaloniaChecks',
-            'PanelShellAvaloniaChecks',
-            'PerScreenThemeChecks',
-            'ThemeSettingsChecks',
-            'SettingsIntegrationChecks',
-            'WeatherSharedChecks',
-            'ProviderIntegrationChecks',
-            'SharedDataSourcesChecks',
-            'PanelOwnershipChecks',
-            'WindowRoleChecks',
-            'ResourceLedgerChecks',
-            'ResourcePressureChecks',
-            'SessionHookChecks',
-            'CalendarSessionChecks',
-            'ProgressChecks',
-            'BatteriesChecks',
-            'ApiSnapshotChecks',
-            'DataWidgetSessionChecks',
-            'ListWidgetSessionChecks',
-            'QuickAccessSessionChecks',
-            'ClockFamilySessionChecks',
-            'MediaWidgetSessionChecks',
-            'ToolsWidgetSessionChecks',
-            'ProfileStorageChecks',
-            'UiFoundationChecks',
-            'LayoutOwnershipChecks',
-            'FocusSwitchChecks',
-            'MonochromeAccentChecks',
-            'WidgetAdaptiveChecks',
-            'FullscreenChecks',
-            'LiquidGlassChecks',
-            'UninstallerChecks',
-            'GeometryThreadChecks',
-            'ShortcutsGraphChecks',
-            'ShortcutsSmoke',
-            'SpotlightVisualChecks'
-        )
-        foreach ($suite in $verifiedSuites) {
-            Invoke-Step ("run " + $suite + " (Release)") 'dotnet' (@(
-                'run', '--project', (Join-Path $Root ('tests/' + $suite)), '-c', 'Release') + $restoreArgs)
+        # 报告 §6：原入口（解决方案里的旧宿主库/组件）构建成功不代表 WinUI 入口能构建。
+        # 新入口有独立的 XAML 编译与 Windows App SDK 依赖；这里必须单独验证一次。
+        # 通过 scripts/dev/winui-build.ps1 串行执行：并行执行者共享同一个 obj/bin，
+        # 直接 dotnet build 会互相踩中间产物（doc/WinUI迁移执行计划.md §0.1）。
+        $winUiBuildArgs = @(
+            '-NoProfile', '-ExecutionPolicy', 'Bypass',
+            '-File', (Join-Path $Root 'scripts/dev/winui-build.ps1'), '-Configuration', 'Debug')
+        if ($NoRestore) { $winUiBuildArgs += @('-ExtraArguments', '--no-restore') }
+        Invoke-Step 'build DeskCanvas.WinUI (Debug)' $childShell $winUiBuildArgs
+
+        if ($BuildOnly) {
+            Write-Output '=== Build-only: skipping the Release check suites (-BuildOnly) ==='
         }
+        else {
+            $verifiedSuites = @(
+                'IdentityStorageChecks',
+                'ContractsLifecycleChecks',
+                'SchedulerChecks',
+                'UiSharedChecks',
+                'UiSharedAvaloniaChecks',
+                'PanelShellAvaloniaChecks',
+                'PerScreenThemeChecks',
+                'ThemeSettingsChecks',
+                'SettingsIntegrationChecks',
+                'WeatherSharedChecks',
+                'ProviderIntegrationChecks',
+                'SharedDataSourcesChecks',
+                'PanelOwnershipChecks',
+                'WindowRoleChecks',
+                'ResourceLedgerChecks',
+                'ResourcePressureChecks',
+                'SessionHookChecks',
+                'CalendarSessionChecks',
+                'ProgressChecks',
+                'BatteriesChecks',
+                'ApiSnapshotChecks',
+                'DataWidgetSessionChecks',
+                'ListWidgetSessionChecks',
+                'QuickAccessSessionChecks',
+                'ClockFamilySessionChecks',
+                'MediaWidgetSessionChecks',
+                'ToolsWidgetSessionChecks',
+                'ProfileStorageChecks',
+                'UiFoundationChecks',
+                'LayoutOwnershipChecks',
+                'FocusSwitchChecks',
+                'MonochromeAccentChecks',
+                'WidgetAdaptiveChecks',
+                'FullscreenChecks',
+                'LiquidGlassChecks',
+                'UninstallerChecks',
+                'GeometryThreadChecks',
+                'ShortcutsGraphChecks',
+                'ShortcutsSmoke',
+                'SpotlightVisualChecks'
+            )
+            foreach ($suite in $verifiedSuites) {
+                Invoke-Step ("run " + $suite + " (Release)") 'dotnet' (@(
+                    'run', '--project', (Join-Path $Root ('tests/' + $suite)), '-c', 'Release') + $restoreArgs)
+            }
+            }
     }
     finally {
         Pop-Location
