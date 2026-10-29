@@ -31,6 +31,10 @@ param(
     [switch]$NoRestore
 )
 
+# Never run on Windows PowerShell 5.1, even when launched by the Explorer verb.
+. (Join-Path $PSScriptRoot 'ensure-pwsh7.ps1')
+Assert-Pwsh7Host -ScriptPath $PSCommandPath -BoundParameters $PSBoundParameters
+
 $ErrorActionPreference = 'Stop'
 
 # Decode child-process output as UTF-8 so Chinese diagnostic lines survive console redirection
@@ -46,10 +50,14 @@ try {
     $restoreArgs = @()
     if ($NoRestore) { $restoreArgs = @('--no-restore') }
 
-    # Child guards run under PowerShell 7 (pwsh) per the repo shell policy; fall back to
-    # the host executable only when pwsh is unavailable so a clean checkout still verifies.
+    # Child guards run under PowerShell 7 (pwsh) per the repo shell policy. Never fall back to
+    # powershell.exe (Windows PowerShell 5.1): the guards must run on the same engine the build
+    # does, so a missing pwsh is a hard error rather than a silent downgrade.
     $pwsh = Get-Command pwsh -ErrorAction SilentlyContinue
-    $childShell = if ($pwsh) { $pwsh.Source } else { 'powershell' }
+    if (-not $pwsh) {
+        throw "PowerShell 7 (pwsh) is required but was not found on PATH. Install it from https://aka.ms/powershell."
+    }
+    $childShell = $pwsh.Source
     Write-Output ("child shell: {0}" -f $childShell)
 
     $steps = New-Object System.Collections.Generic.List[object]

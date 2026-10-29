@@ -17,6 +17,10 @@ param(
     [switch]$Quiet
 )
 
+# Never run on Windows PowerShell 5.1, even when launched by the Explorer verb.
+. (Join-Path $PSScriptRoot 'ensure-pwsh7.ps1')
+Assert-Pwsh7Host -ScriptPath $PSCommandPath -BoundParameters $PSBoundParameters
+
 $ErrorActionPreference = 'Stop'
 
 function Read-ProjectXml([string]$Path) {

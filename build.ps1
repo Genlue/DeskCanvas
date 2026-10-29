@@ -47,7 +47,18 @@ param(
     [switch]$NoPause
 )
 
+# Explorer's "Run with PowerShell" verb always launches Windows PowerShell 5.1, so hand the whole
+# invocation over to pwsh: a double-click still works, and this script's body never runs on 5.1.
+. (Join-Path $PSScriptRoot 'scripts/ensure-pwsh7.ps1')
+Assert-Pwsh7Host -ScriptPath $PSCommandPath -BoundParameters $PSBoundParameters
+
 $ErrorActionPreference = "Stop"
+
+# dotnet / MSBuild write UTF-8; a console started on a legacy code page (936) decodes those bytes
+# as GBK, which turns every Chinese warning into mojibake and makes the build log unreadable.
+# Same fix verify.ps1 applies to its child processes.
+try { [Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false) } catch { }
+
 $root = $PSScriptRoot
 $project = Join-Path $root "src\DeskCanvas\DeskCanvas.csproj"
 $dist = Join-Path $root "dist\$Runtime"

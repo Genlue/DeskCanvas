@@ -18,7 +18,14 @@
         <!-- AVLN3001 is benign here: every flagged view is instantiated from code / DataTemplates
              and never resolved through the runtime XAML loader, so the missing public
              parameterless constructor is intentional. -->
-        <NoWarn>$(NoWarn);AVLN3001</NoWarn>
+        <!-- CA1416: the host is a Windows desktop app by construction (WinExe, app.manifest,
+             win-* RIDs) and the flagged sites are its Win32 / Registry / System.Drawing half —
+             Registry reads, shell icons, the clipboard listener's message window. The analyzer
+             only sees a platform-neutral TFM, and marking the assembly [SupportedOSPlatform]
+             would push "call site reachable on all platforms" into every widget project that
+             compiles against the host, so the rule is off for this project (same as
+             ControlCenter / Music / Shortcuts do for their Win32 code). -->
+        <NoWarn>$(NoWarn);AVLN3001;CA1416</NoWarn>
     </PropertyGroup>
 
     <ItemGroup>
@@ -88,7 +95,9 @@
 
     <Target Name="BuildWidgetsBundle" BeforeTargets="AssignTargetPaths"
             Condition="'$(RuntimeIdentifier)' != '' and '$(Configuration)' == 'Release' and '$(BuildingWidgetBundle)' != 'true' and '$(DesignTimeBuild)' != 'true' and '$(BuildingInsideVisualStudio)' != 'true'">
-      <Exec Command="powershell -NoProfile -ExecutionPolicy Bypass -File &quot;$(MSBuildProjectDirectory)\..\..\scripts\build-widgets-bundle.ps1&quot; -WidgetsSourceDir &quot;$(WidgetsSourceDir)&quot; -StageDir &quot;$(WidgetsBundleDir)\stage&quot; -ZipPath &quot;$(WidgetsBundleZip)&quot; -Configuration $(Configuration) -RuntimeIdentifier $(RuntimeIdentifier)" />
+      <!-- PowerShell 7 only (pwsh): this project targets Windows PowerShell 7+ for every build
+           step. Do not fall back to powershell.exe (5.1) — see the repo's build notes. -->
+      <Exec Command="pwsh -NoProfile -ExecutionPolicy Bypass -File &quot;$(MSBuildProjectDirectory)\..\..\scripts\build-widgets-bundle.ps1&quot; -WidgetsSourceDir &quot;$(WidgetsSourceDir)&quot; -StageDir &quot;$(WidgetsBundleDir)\stage&quot; -ZipPath &quot;$(WidgetsBundleZip)&quot; -Configuration $(Configuration) -RuntimeIdentifier $(RuntimeIdentifier)" />
       <ItemGroup>
         <EmbeddedResource Include="$(WidgetsBundleZip)" Condition="Exists('$(WidgetsBundleZip)')">
           <LogicalName>DeskCanvas.Resources.widgets.zip</LogicalName>
