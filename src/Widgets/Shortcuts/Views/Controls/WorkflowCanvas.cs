@@ -122,9 +122,6 @@ public sealed class WorkflowCanvas : Canvas
     /// <summary>A dropped link was rejected by the validator — the editor shows it as a toast.</summary>
     public event Action<WorkflowDiagnostic>? LinkRejected;
 
-    /// <summary>General purpose one-line feedback (message, isError).</summary>
-    public event Action<string, bool>? StatusMessage;
-
     /// <summary>Pan / zoom / extent changed — the minimap listens to this.</summary>
     public event Action? ViewChanged;
 

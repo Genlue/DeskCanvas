@@ -560,7 +560,7 @@ public sealed class SpotlightViewModel : INotifyPropertyChanged, IDisposable
 		OnPropertyChanged("ActiveCategory");
 		OnPropertyChanged("PlaceholderText");
 		ApplyResults();
-		RefreshRecentsAsync();
+		_ = RefreshRecentsAsync();
 	}
 
 	/// <summary>
@@ -643,8 +643,8 @@ public sealed class SpotlightViewModel : INotifyPropertyChanged, IDisposable
 
 	private void UpdateCalculation()
 	{
-		string text = ExpressionCalculator.TryFormat(query);
-		string text2 = ((text == null) ? null : ("= " + text));
+		string? text = ExpressionCalculator.TryFormat(query);
+		string? text2 = ((text == null) ? null : ("= " + text));
 		if (!(text2 == calculation))
 		{
 			calculation = text2;
@@ -681,8 +681,7 @@ public sealed class SpotlightViewModel : INotifyPropertyChanged, IDisposable
 			{
 			case SpotlightItemKind.App:
 			{
-				LauncherEntry entry = item.Entry;
-				if ((object)entry == null)
+				if (item.Entry is not { } entry)
 				{
 					return false;
 				}
@@ -698,7 +697,7 @@ public sealed class SpotlightViewModel : INotifyPropertyChanged, IDisposable
 			}
 			case SpotlightItemKind.File:
 			{
-				string path = item.FilePath;
+				string? path = item.FilePath;
 				if (path == null)
 				{
 					return false;
@@ -718,7 +717,7 @@ public sealed class SpotlightViewModel : INotifyPropertyChanged, IDisposable
 			case SpotlightItemKind.Web:
 			case SpotlightItemKind.WebResult:
 			{
-				Func<Task<bool>> run = item.Run;
+				Func<Task<bool>>? run = item.Run;
 				if (run == null)
 				{
 					return false;
@@ -759,7 +758,7 @@ public sealed class SpotlightViewModel : INotifyPropertyChanged, IDisposable
 	{
 		usage.RecordLaunch(item.Id);
 		ApplyUsage(item);
-		RefreshRecentsAsync();
+		_ = RefreshRecentsAsync();
 		if (IsFiltering)
 		{
 			recentLaunches.RecordLaunch(item);
@@ -783,7 +782,7 @@ public sealed class SpotlightViewModel : INotifyPropertyChanged, IDisposable
 		{
 			return;
 		}
-		Dictionary<string, Bitmap> dictionary = Items.Where((SpotlightItem item) => item.Entry != null).ToDictionary((SpotlightItem item) => item.Id, (SpotlightItem item) => item.Icon, StringComparer.Ordinal);
+		Dictionary<string, Bitmap?> dictionary = Items.Where((SpotlightItem item) => item.Entry != null).ToDictionary((SpotlightItem item) => item.Id, (SpotlightItem item) => item.Icon, StringComparer.Ordinal);
 		bool showNames = settings.Get().EffectiveLauncher.ShowNames;
 		List<SpotlightItem> list = new List<SpotlightItem>(catalog.Entries.Count);
 		foreach (LauncherEntry entry in catalog.Entries)
@@ -813,7 +812,7 @@ public sealed class SpotlightViewModel : INotifyPropertyChanged, IDisposable
 		PruneAppCategoryKeys();
 		RefreshAppCategories();
 		OnPropertyChanged("IsEmptyFolder");
-		RefreshRecentsAsync();
+		_ = RefreshRecentsAsync();
 		StartQuery();
 		StartIconLoad();
 	}
@@ -1125,7 +1124,7 @@ public sealed class SpotlightViewModel : INotifyPropertyChanged, IDisposable
 			SearchHint = null;
 			lastGroups = Array.Empty<SpotlightGroup>();
 			ApplyResults();
-			RefreshRecentsAsync();
+			_ = RefreshRecentsAsync();
 			return;
 		}
 
@@ -1188,7 +1187,7 @@ public sealed class SpotlightViewModel : INotifyPropertyChanged, IDisposable
 		CancellationTokenSource cancellationTokenSource = (searchCancellation = new CancellationTokenSource());
 		IsSearching = true;
 		_ = RouteFastAppsAsync(searchText, generation, cancellationTokenSource.Token);
-		RouteAsync(searchText, generation, cancellationTokenSource.Token);
+		_ = RouteAsync(searchText, generation, cancellationTokenSource.Token);
 	}
 
 	/// <summary>
@@ -1233,7 +1232,7 @@ public sealed class SpotlightViewModel : INotifyPropertyChanged, IDisposable
 				_ = LoadClipboardThumbnailAsync(item, imagePath, generation);
 				break;
 			case ClipboardContentKind.Files when item.ClipboardFilePaths is { Count: > 0 } files:
-				LoadResultIconAsync(item, files[0], generation);
+				_ = LoadResultIconAsync(item, files[0], generation);
 				break;
 		}
 	}
@@ -1281,7 +1280,7 @@ public sealed class SpotlightViewModel : INotifyPropertyChanged, IDisposable
 			ApplyUsage(item);
 			if (!string.IsNullOrEmpty(entry.ShortcutPath))
 			{
-				LoadResultIconAsync(item, entry.ShortcutPath, generation);
+				_ = LoadResultIconAsync(item, entry.ShortcutPath, generation);
 			}
 			return item;
 		}
@@ -1299,7 +1298,7 @@ public sealed class SpotlightViewModel : INotifyPropertyChanged, IDisposable
 			{
 				item.Subtitle = recent.Sub;
 			}
-			LoadResultIconAsync(item, path, generation);
+			_ = LoadResultIconAsync(item, path, generation);
 			return item;
 		}
 		case SpotlightItemKind.Clipboard:
@@ -1420,7 +1419,7 @@ public sealed class SpotlightViewModel : INotifyPropertyChanged, IDisposable
 	{
 		IReadOnlyList<SpotlightGroup> groups = Array.Empty<SpotlightGroup>();
 		bool stillSearching = false;
-		string hint = null;
+		string? hint = null;
 		try
 		{
 			await Task.Delay(110, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
@@ -1485,11 +1484,11 @@ public sealed class SpotlightViewModel : INotifyPropertyChanged, IDisposable
 
 	private string? BuildFileHint()
 	{
-		string detail = files.Detail;
+		string? detail = files.Detail;
 		if (1 == 0)
 		{
 		}
-		string result;
+		string? result;
 		if (detail == "invalid-regex")
 		{
 			result = Locale.Spotlight_Search_InvalidRegex;
@@ -1539,7 +1538,7 @@ public sealed class SpotlightViewModel : INotifyPropertyChanged, IDisposable
 			List<SpotlightItem> mapped = new List<SpotlightItem>(lastGroup.Items.Count);
 			foreach (SpotlightResult item in lastGroup.Items)
 			{
-				SpotlightItem spotlightItem = MapResult(item, generation);
+				SpotlightItem? spotlightItem = MapResult(item, generation);
 				if (spotlightItem != null && MatchesCategory(spotlightItem, category))
 				{
 					mapped.Add(spotlightItem);
@@ -1551,7 +1550,7 @@ public sealed class SpotlightViewModel : INotifyPropertyChanged, IDisposable
 				continue;
 			}
 
-			string text = HeaderFor(lastGroup, category);
+			string? text = HeaderFor(lastGroup, category);
 			if (text != null && hashSet.Add(text))
 			{
 				Results.Add(SpotlightItem.CreateHeader(text));
@@ -1648,16 +1647,16 @@ public sealed class SpotlightViewModel : INotifyPropertyChanged, IDisposable
 		{
 		case SpotlightResultKind.App:
 		{
-			SpotlightItem spotlightItem = Items.FirstOrDefault((SpotlightItem candidate) => candidate.Id == result.Id);
+			SpotlightItem? spotlightItem = Items.FirstOrDefault((SpotlightItem candidate) => candidate.Id == result.Id);
 			if (spotlightItem == null)
 			{
 				LauncherEntry launcherEntry = catalog.Entries.FirstOrDefault((LauncherEntry candidate) => candidate.Key == result.Id) ?? new LauncherEntry(result.Title, result.TargetPath ?? result.Id, result.TargetPath, result.IsBroken);
 				spotlightItem = new SpotlightItem(launcherEntry);
-				LoadResultIconAsync(spotlightItem, launcherEntry.ShortcutPath, generation);
+				_ = LoadResultIconAsync(spotlightItem, launcherEntry.ShortcutPath, generation);
 			}
 			else
 			{
-				LoadResultIconAsync(spotlightItem, spotlightItem.Entry.ShortcutPath, generation);
+				_ = LoadResultIconAsync(spotlightItem, spotlightItem.Entry?.ShortcutPath, generation);
 			}
 			if (spotlightItem.IsBroken)
 			{
@@ -1668,7 +1667,7 @@ public sealed class SpotlightViewModel : INotifyPropertyChanged, IDisposable
 		}
 		case SpotlightResultKind.File:
 		{
-			string targetPath = result.TargetPath;
+			string? targetPath = result.TargetPath;
 			if (string.IsNullOrEmpty(targetPath))
 			{
 				return null;
@@ -1690,7 +1689,7 @@ public sealed class SpotlightViewModel : INotifyPropertyChanged, IDisposable
 			{
 				spotlightItem2.Subtitle = Locale.Spotlight_Broken;
 			}
-			LoadResultIconAsync(spotlightItem2, targetPath, generation);
+			_ = LoadResultIconAsync(spotlightItem2, targetPath, generation);
 			return spotlightItem2;
 		}
 		case SpotlightResultKind.Clipboard:
@@ -1803,7 +1802,7 @@ public sealed class SpotlightViewModel : INotifyPropertyChanged, IDisposable
 			RecentItems.Clear();
 			foreach (SpotlightResult item in recents)
 			{
-				SpotlightItem spotlightItem = MapRecent(item);
+				SpotlightItem? spotlightItem = MapRecent(item);
 				if (spotlightItem != null)
 				{
 					RecentItems.Add(spotlightItem);
@@ -1818,7 +1817,7 @@ public sealed class SpotlightViewModel : INotifyPropertyChanged, IDisposable
 		{
 			return null;
 		}
-		SpotlightItem spotlightItem = Items.FirstOrDefault((SpotlightItem candidate) => candidate.Id == result.Id);
+		SpotlightItem? spotlightItem = Items.FirstOrDefault((SpotlightItem candidate) => candidate.Id == result.Id);
 		if (spotlightItem == null)
 		{
 			LauncherEntry launcherEntry = catalog.Entries.FirstOrDefault((LauncherEntry candidate) => candidate.Key == result.Id) ?? new LauncherEntry(result.Title, result.TargetPath ?? result.Id, result.TargetPath, result.IsBroken);
@@ -1827,7 +1826,7 @@ public sealed class SpotlightViewModel : INotifyPropertyChanged, IDisposable
 			{
 				spotlightItem.Subtitle = Locale.Spotlight_Broken;
 			}
-			LoadResultIconAsync(spotlightItem, launcherEntry.ShortcutPath, Volatile.Read(in iconGeneration));
+			_ = LoadResultIconAsync(spotlightItem, launcherEntry.ShortcutPath, Volatile.Read(in iconGeneration));
 		}
 		ApplyUsage(spotlightItem);
 		return spotlightItem;
@@ -1850,7 +1849,7 @@ public sealed class SpotlightViewModel : INotifyPropertyChanged, IDisposable
 			SpotlightItem[] array = Items.Where((SpotlightItem item) => item.Icon == null).ToArray();
 			if (array.Length != 0)
 			{
-				LoadIconsAsync(array, pixels2, generation);
+				_ = LoadIconsAsync(array, pixels2, generation);
 			}
 		}
 	}
@@ -1865,7 +1864,11 @@ public sealed class SpotlightViewModel : INotifyPropertyChanged, IDisposable
 				{
 					break;
 				}
-				Bitmap bitmap = await icons.GetIconAsync(item.Entry.ShortcutPath, pixels).ConfigureAwait(continueOnCapturedContext: false);
+				if (item.Entry is not { } entry)
+				{
+					continue;
+				}
+				Bitmap? bitmap = await icons.GetIconAsync(entry.ShortcutPath, pixels).ConfigureAwait(continueOnCapturedContext: false);
 				if (bitmap == null)
 				{
 					continue;
@@ -1896,7 +1899,7 @@ public sealed class SpotlightViewModel : INotifyPropertyChanged, IDisposable
 		}
 		try
 		{
-			Bitmap bitmap = await icons.GetIconAsync(path, 256).ConfigureAwait(continueOnCapturedContext: false);
+			Bitmap? bitmap = await icons.GetIconAsync(path, 256).ConfigureAwait(continueOnCapturedContext: false);
 			if (bitmap == null || disposed)
 			{
 				return;
@@ -1929,7 +1932,10 @@ public sealed class SpotlightViewModel : INotifyPropertyChanged, IDisposable
 		{
 		case SpotlightItemKind.App:
 		{
-			LauncherEntry entry = item.Entry;
+			if (item.Entry is not { } entry)
+			{
+				break;
+			}
 			LauncherUsage launcherUsage = usage.Get(item.Id);
 			ApplyPreview(item.Name, item.Subtitle, Locale.Spotlight_Preview_Kind_App, string.Empty, new SpotlightPreviewRow[4]
 			{
@@ -1938,12 +1944,15 @@ public sealed class SpotlightViewModel : INotifyPropertyChanged, IDisposable
 				new SpotlightPreviewRow(Locale.Spotlight_Preview_Label_Recent, FormatRelative(launcherUsage.LastLaunchedUtc)),
 				new SpotlightPreviewRow(Locale.Spotlight_Preview_Label_Launches, launcherUsage.LaunchCount.ToString(CultureInfo.CurrentCulture))
 			}, hasOpen: true, hasReveal: true, hasRun: false, hasCopy: false);
-			LoadPreviewIconAsync(entry.ShortcutPath, generation);
+			_ = LoadPreviewIconAsync(entry.ShortcutPath, generation);
 			break;
 		}
 		case SpotlightItemKind.File:
 		{
-			string filePath = item.FilePath;
+			if (item.FilePath is not { } filePath)
+			{
+				break;
+			}
 
 			// The type line is known before any IO — classification is extension-only, the same
 			// rule the category bar uses. Waiting for the thumbnail to say "图片" would leave the
@@ -1957,7 +1966,7 @@ public sealed class SpotlightViewModel : INotifyPropertyChanged, IDisposable
 
 			// The icon is the immediate fallback: a thumbnail can take a beat, and an empty frame
 			// in the meantime is worse than the type's generic icon.
-			LoadPreviewIconAsync(filePath, generation);
+			_ = LoadPreviewIconAsync(filePath, generation);
 
 			CancellationTokenSource cancellation = new CancellationTokenSource();
 			previewCancellation = cancellation;
@@ -2178,9 +2187,10 @@ public sealed class SpotlightViewModel : INotifyPropertyChanged, IDisposable
 	}
 
 	private async Task LoadPreviewIconAsync(string path, int generation)
-	{		try
+	{
+		try
 		{
-			Bitmap bitmap = await icons.GetIconAsync(path, 256).ConfigureAwait(continueOnCapturedContext: false);
+			Bitmap? bitmap = await icons.GetIconAsync(path, 256).ConfigureAwait(continueOnCapturedContext: false);
 			if (bitmap == null || disposed)
 			{
 				return;
@@ -2364,7 +2374,7 @@ public sealed class SpotlightViewModel : INotifyPropertyChanged, IDisposable
 		{
 			if (!disposed)
 			{
-				RefreshRecentsAsync();
+				_ = RefreshRecentsAsync();
 			}
 		});
 	}
@@ -2447,7 +2457,7 @@ public sealed class SpotlightViewModel : INotifyPropertyChanged, IDisposable
 		{
 			Dispatcher.UIThread.Post(Reload);
 		}
-		string a = oldData?.EffectiveLauncher.EffectiveFolder;
+		string? a = oldData?.EffectiveLauncher.EffectiveFolder;
 		string current = newData.EffectiveLauncher.EffectiveFolder;
 		if (!string.Equals(a, current, StringComparison.OrdinalIgnoreCase))
 		{

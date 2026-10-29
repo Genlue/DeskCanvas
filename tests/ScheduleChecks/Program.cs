@@ -138,10 +138,12 @@ public class Program
 
         // 4. View construction checks
         Console.WriteLine("\n--- 4. Widget View Construction Checks ---");
-        var scheduleView = new Schedule();
-        Check(scheduleView != null, "4.1 Schedule UserControl instantiated");
-        Check(scheduleView.ColorfulBackgroundResourceKey == "CalendarCardBackground", "4.2 ColorfulBackgroundResourceKey matches CalendarCardBackground");
-        Check(scheduleView.Content is Calendar.Views.Controls.ScheduleSmall, "4.3 Default content is ScheduleSmall");
+        // Declared nullable on purpose: the three checks below are exactly "was a view built,
+        // and does it carry the card material / default content", so each read goes through ?.
+        Schedule? scheduleView = new Schedule();
+        Check(scheduleView is not null, "4.1 Schedule UserControl instantiated");
+        Check(scheduleView?.ColorfulBackgroundResourceKey == "CalendarCardBackground", "4.2 ColorfulBackgroundResourceKey matches CalendarCardBackground");
+        Check(scheduleView?.Content is Calendar.Views.Controls.ScheduleSmall, "4.3 Default content is ScheduleSmall");
 
         Console.WriteLine($"\nChecks completed: {checks - fails}/{checks} passed.");
         if (fails > 0)

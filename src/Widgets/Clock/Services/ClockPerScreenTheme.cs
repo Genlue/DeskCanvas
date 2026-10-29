@@ -21,7 +21,11 @@ internal static class ClockPerScreenTheme
     /// the per-screen path without a window. Production code never touches it; the fixture
     /// sets and clears it around each assertion.
     /// </summary>
+    // Never assigned here by design — the fixture writes it through reflection, which the
+    // compiler cannot see, hence the "never assigned" warning being switched off for the seam.
+#pragma warning disable CS0649
     internal static Func<Visual, ThemeVariant?>? WindowVariantResolverForChecks;
+#pragma warning restore CS0649
 
     /// <summary>True when the visual renders with the dark variant.</summary>
     internal static bool IsDarkVariant(Visual? visual) => Resolve(visual) == ThemeVariant.Dark;

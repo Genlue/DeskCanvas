@@ -67,7 +67,6 @@ public partial class ShortcutsEditorWindow
             canvas.ParamMenuRequested += OpenBindingMenu;
             canvas.NodeActivated += RenameNode;
             canvas.LinkRejected += rejection => ShowToast(rejection.Text, isError: true);
-            canvas.StatusMessage += (message, error) => ShowToast(message, error);
             canvas.NodeCardCreated += AttachNodeMenu;
 
             if (CanvasHost.Child is Panel host)
@@ -168,7 +167,7 @@ public partial class ShortcutsEditorWindow
         duplicate.Click += (_, _) =>
         {
             card.ContextMenu?.Close();
-            canvas.Select(node.Id);
+            canvas?.Select(node.Id);
             DuplicateSelected();
         };
         menu.Items.Add(duplicate);
@@ -182,7 +181,7 @@ public partial class ShortcutsEditorWindow
                 // 先关菜单再删除：菜单锚在即将被移除的卡片上，先关闭可以彻底避免
                 // 旧版"删除节点时 ContextMenu 锚点被销毁"的崩溃路径。
                 card.ContextMenu?.Close();
-                canvas.Select(node.Id);
+                canvas?.Select(node.Id);
                 DeleteSelected();
             };
             menu.Items.Add(delete);
@@ -400,7 +399,7 @@ public partial class ShortcutsEditorWindow
         DiagnosticsContent.Children.Clear();
         foreach (var diagnostic in report.Diagnostics.Take(50))
         {
-            var nodeTitle = diagnostic.NodeId != null ? canvas.ResolveNodeTitle(diagnostic.NodeId) : null;
+            var nodeTitle = diagnostic.NodeId != null ? canvas?.ResolveNodeTitle(diagnostic.NodeId) : null;
             var row = new Button
             {
                 Classes = { "library-item" },
@@ -934,8 +933,9 @@ public partial class ShortcutsEditorWindow
     /// <summary>Remove whatever feeds a parameter and keep its current value as a literal.</summary>
     private void DetachBinding(WorkflowNode node, ParamSpec spec)
     {
-        var graph = canvas?.Graph;
-        if (graph == null) return;
+        // Bind the surface itself, not just its graph: the two writes below (links + card
+        // refresh) are canvas calls, and a null canvas means there is nothing to detach from.
+        if (canvas is not { Graph: { } graph }) return;
 
         var literal = node.Params.GetValueOrDefault(spec.Key) is { IsVariable: false } existing
             ? existing.Text ?? string.Empty

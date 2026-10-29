@@ -332,7 +332,11 @@ public class ProgressViewModel : ReactiveObject, IDisposable
     /// the per-screen path without a window, a screen walk or host services. Production code
     /// never touches this; the fixture sets and clears it around each assertion.
     /// </summary>
+    // Never assigned here by design — the fixture writes it through reflection, which the
+    // compiler cannot see, hence the "never assigned" warning being switched off for the seam.
+#pragma warning disable CS0649
     internal static Func<Visual, ThemeVariant?>? WindowVariantResolverForChecks;
+#pragma warning restore CS0649
 
     /// <summary>
     /// The theme variant the given visual renders with, per screen: the effective theme's
