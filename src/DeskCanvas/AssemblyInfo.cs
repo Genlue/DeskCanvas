@@ -3,4 +3,4 @@ using System.Reflection;
 [assembly: AssemblyTitle("DeskCanvas")]
 [assembly: AssemblyDescription("A macOS styled widget pack for Windows")]
 [assembly: AssemblyCompany("creewick")]
-[assembly: AssemblyVersion("4.10.0")]
+[assembly: AssemblyVersion("4.10.1")]
