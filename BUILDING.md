@@ -7,6 +7,7 @@
 
 ```
 ├── Directory.Packages.props   ← 集中包版本管理 (CPM)，所有包版本只在这里改
+├── Directory.Build.props      ← 组件 SDK 公共配置（含 OutputPath / 目录深度判定）
 ├── build.ps1                  ← 一键构建脚本（单 exe / 便携 zip）
 ├── scripts/
 │   └── build-widgets-bundle.ps1 ← widget 打包脚本（被 MSBuild 目标调用）
@@ -15,15 +16,54 @@
     ├── DeskCanvas/              ← 主程序（Avalonia 桌面应用）
     │   └── Services/WidgetBundle.cs ← 单文件模式自解压逻辑
     ├── DeskCanvas.Core/         ← 小组件 SDK（插件契约：WidgetInfo/IAssemblyProvider/…）
-    └── Widgets/               ← 小组件，每个目录一个模块
-        ├── Clock/ Calendar/ Weather/ Monitor/ Notes/ Reminders/
-        └── Folders/           ← 自定义：文件夹快捷方式 / 监视文件夹实时刷新
+    └── Widgets/                 ← 小组件，按 8 个分类分组，每个目录一个模块
+        ├── ClockCalendar/       Clock  Calendar  TickClock
+        ├── Weather/             Weather
+        ├── SystemStatus/        Monitor  Batteries  Storage  ControlCenter
+        ├── Productivity/        Notes  Reminders  Pomodoro  Habits  Countdown  Timetable  TimeProgress
+        ├── Launcher/            Folders  Search  Shortcuts
+        ├── Lifestyle/           Music  AudioVisualizer  Picture  Map  Hitokoto
+        ├── Utilities/           Toolbox            ← 剪贴板 / 翻译 / 计算器三合一
+        └── Container/           Aggregate  Stack    ← 聚合卡 / 组件重叠
 ```
+
+### 组件目录规范
+
+1. **第一层 = 分类**，与 `WidgetInfoAttribute.Category` 一一对应（`WidgetCategory_ClockCalendar` ↔ `ClockCalendar/`），
+   顺序与 `Views/Pages/Gallery.axaml.cs` 的 `CategoryOrder` 一致。
+2. **第二层 = 组件**，PascalCase 语义名词：不带 `Widget`/`Widgets` 后缀（在 `Widgets/` 下冗余），
+   不用缩写、版本号，不用 `Tools` / `Common` / `Misc` 这类泛词。
+3. **目录名必须等于 csproj 名**（`Widgets/<Category>/<Widget>/<Widget>.csproj`）——打包脚本按此定位工程。
+4. **程序集身份冻结**：目录可以为了准确而改名，但 `AssemblyName` / `RootNamespace` 一律保持历史值
+   （如 `Container/Aggregate/Aggregate.csproj` 里仍是 `FixedWidgets`，`Utilities/Toolbox` 里仍是 `Tools`）。
+   DLL 名、`layout.json` 里保存的历史类型引用、热更新路径都依赖它，改名只发生在路径层。
+5. 组件产物路径由 `Directory.Build.props` 统一给出，工程文件里不再写 `<OutputPath>`；
+   新增一层目录也不会影响产物落点。
+6. 新增小组件：复制任一组件目录结构，修改 `AssemblyInfo.cs` 里的 `[WidgetInfo(...)]` 与 `[Locale(...)]`，
+   加入 sln 对应分类的解决方案文件夹即可（打包目标递归发现全部 `*.csproj`）。
+
+### 预览图
+
+每个组件目录下的 `Preview/` 存放该组件**所有形态 × 所有预设尺寸**的预览图（不参与编译，不会被塞进 DLL）：
+
+```
+Clock/Preview/
+├── analog-i@2x2.png
+├── digital@2x1.png
+├── digital@4x2.png
+└── flip-clock@4x2.png
+```
+
+- 文件名：`<ViewType 的 kebab-case>@<列>x<行>.png`
+- 尺寸口径：1 格 = 96 DIP（默认栅格 = 1920 宽屏的 5%），导出 2× 像素
+- 统一深色卡底；无边框组件（`IFramelessWidget`）保持透明底
+- 重新生成：`DeskCanvas.exe --export-widget-previews src/Widgets`（开发机便携模式下运行；
+  内容取自当次运行的真实数据，联网组件需要网络可用）
 
 ### 模块边界
 - 每个小组件是独立 `csproj`，产出 DLL，由主程序通过 `AssemblyLoadContext` 从 `Widgets/` 目录动态加载（`DeskCanvas.Core/Services/AssemblyProvider.cs`）。
 - 小组件**不携带** Avalonia/Core 副本（`PrivateAssets=all` + `ExcludeAssets=runtime`），运行时由宿主提供。
-- 新增小组件：复制 `Widgets/Clock/` 结构，修改 `AssemblyInfo.cs` 里的 `[WidgetInfo(...)]` 与 `[Locale(...)]`，加入 sln 即可（打包目标自动发现）。
+- 新增小组件：复制 `Widgets/ClockCalendar/Clock/` 结构，修改 `AssemblyInfo.cs` 里的 `[WidgetInfo(...)]` 与 `[Locale(...)]`，加入 sln 即可（打包目标自动发现）。
 
 ## 打包：单文件 exe
 

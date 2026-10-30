@@ -101,6 +101,32 @@ public class App : Application
         // radius in Dimensions.Radius, which is a different (and much larger) setting.
         Resources["SettingsWindowCornerRadius"] = new CornerRadius(Program.EffectiveWindowCornerRadius);
 
+        // 开发者工具：导出组件预览图后立刻退出，不进入正常的窗口/组件启动流程。
+        // 放在主题与语言应用之后、任何窗口创建之前，导出的卡底与前景色才和真实组件一致。
+        if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime previewLifetime
+            && WidgetPreviewExporter.IsRequested(previewLifetime.Args ?? []))
+        {
+            var args = previewLifetime.Args ?? [];
+            var outputRoot = WidgetPreviewExporter.ResolveOutputRoot(args);
+            Dispatcher.UIThread.Post(async () =>
+            {
+                try
+                {
+                    Environment.ExitCode = await WidgetPreviewExporter.RunAsync(Services, outputRoot);
+                }
+                catch (Exception ex)
+                {
+                    Console.Error.WriteLine($"[preview-export] {ex}");
+                    Environment.ExitCode = 1;
+                }
+                finally
+                {
+                    previewLifetime.Shutdown();
+                }
+            });
+            return;
+        }
+
 
         Control.LoadedEvent.AddClassHandler<ContextMenu>((cm, _) =>
         {

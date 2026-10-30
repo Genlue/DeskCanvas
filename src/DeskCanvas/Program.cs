@@ -17,12 +17,16 @@ public class Program
     {
         try
         {
+            // 预览图导出是离线开发工具：它必须能和正在运行的 DeskCanvas 并存，
+            // 也不该把请求转交给那个实例，因此完全跳过单实例握手。
+            var exportingPreviews = WidgetPreviewExporter.IsRequested(args);
+
             // Only one DeskCanvas+ process per session. A later launch hands the request over to
             // the running instance (which brings its settings window to the front) and exits,
             // instead of starting a rival copy that would fight over the data folder, the widget
             // windows and the auto-start entry.
-            var singleInstance = SingleInstance.Acquire();
-            if (singleInstance == null)
+            var singleInstance = exportingPreviews ? null : SingleInstance.Acquire();
+            if (!exportingPreviews && singleInstance == null)
             {
                 SingleInstance.Signal();
                 return;
@@ -38,7 +42,7 @@ public class Program
 
                 // Keep the Windows auto-start entry in sync with the saved preference so the
                 // feature reliably takes effect (re-asserts the path each launch; safe when off).
-                SyncRunOnStartup();
+                if (!exportingPreviews) SyncRunOnStartup();
 
                 BuildAvaloniaApp()
                     .StartWithClassicDesktopLifetime(args);
@@ -46,7 +50,7 @@ public class Program
             finally
             {
                 SingleInstance.Current = null;
-                singleInstance.Dispose();
+                singleInstance?.Dispose();
             }
         }
         catch (Exception e)
