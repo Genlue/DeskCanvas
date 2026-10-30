@@ -98,67 +98,67 @@ $LocaleLiteralExceptions = @(
     [pscustomobject]@{ File = 'src/DeskCanvas/Views/GridEditor.axaml'; Attribute = 'Text'; Value = 'Y 位置 (%)'; Reason = '同上。' }
 
     # ---- ControlCenter：Windows 专属插件卡片的固定说明文字 ----
-    [pscustomobject]@{ File = 'src/Widgets/ControlCenter/Views/Controls/ControlCapsuleView.axaml'; Attribute = 'ToolTip.Tip'; Value = '打开系统设置'; Reason = 'ControlCenter 是 Windows 专属系统胶囊插件，说明文字未纳入 W9 治理批次；存量登记。' }
-    [pscustomobject]@{ File = 'src/Widgets/ControlCenter/Views/Controls/ControlCapsuleView.axaml'; Attribute = 'Text'; Value = '音频输出设备'; Reason = '同上。' }
-    [pscustomobject]@{ File = 'src/Widgets/ControlCenter/Views/Controls/ControlCapsuleView.axaml'; Attribute = 'ToolTip.Tip'; Value = '打开系统声音设置'; Reason = '同上。' }
+    [pscustomobject]@{ File = 'src/Widgets/SystemStatus/ControlCenter/Views/Controls/ControlCapsuleView.axaml'; Attribute = 'ToolTip.Tip'; Value = '打开系统设置'; Reason = 'ControlCenter 是 Windows 专属系统胶囊插件，说明文字未纳入 W9 治理批次；存量登记。' }
+    [pscustomobject]@{ File = 'src/Widgets/SystemStatus/ControlCenter/Views/Controls/ControlCapsuleView.axaml'; Attribute = 'Text'; Value = '音频输出设备'; Reason = '同上。' }
+    [pscustomobject]@{ File = 'src/Widgets/SystemStatus/ControlCenter/Views/Controls/ControlCapsuleView.axaml'; Attribute = 'ToolTip.Tip'; Value = '打开系统声音设置'; Reason = '同上。' }
 
     # ---- Hitokoto 弹窗：运行时被 code-behind 按文化覆盖的占位默认值 + 示例数据 ----
-    [pscustomobject]@{ File = 'src/Widgets/Hitokoto/Views/HitokotoPopupWindow.axaml'; Attribute = 'Title'; Value = '一言 · 灵感收纳箱'; Reason = '窗口标题默认值，code-behind 按 Culture 覆写（"Hitokoto · Quote Collection"）。' }
-    [pscustomobject]@{ File = 'src/Widgets/Hitokoto/Views/HitokotoPopupWindow.axaml'; Attribute = 'Text'; Value = '一言 · 灵感收纳箱'; Reason = 'HeaderContent 标题默认值，code-behind L94 按 Culture 覆写。' }
-    [pscustomobject]@{ File = 'src/Widgets/Hitokoto/Views/HitokotoPopupWindow.axaml'; Attribute = 'Text'; Value = '一言'; Reason = '分类徽标默认值，code-behind L95/L135 覆写。' }
-    [pscustomobject]@{ File = 'src/Widgets/Hitokoto/Views/HitokotoPopupWindow.axaml'; Attribute = 'Content'; Value = '网页详情'; Reason = '操作钮设计时默认值（中文），运行时 ApplyLocalization 按 Culture 覆写为英文。' }
-    [pscustomobject]@{ File = 'src/Widgets/Hitokoto/Views/HitokotoPopupWindow.axaml'; Attribute = 'Text'; Value = '往者不可谏，来者犹可追。'; Reason = '示例数据（W9 口径允许）：聚光灯名句占位，运行时被真实句子替换。' }
-    [pscustomobject]@{ File = 'src/Widgets/Hitokoto/Views/HitokotoPopupWindow.axaml'; Attribute = 'Text'; Value = '—— 孔子《论语·微子篇》'; Reason = '示例数据（W9 口径允许）：出处占位。' }
-    [pscustomobject]@{ File = 'src/Widgets/Hitokoto/Views/HitokotoPopupWindow.axaml'; Attribute = 'Content'; Value = '换一句'; Reason = '操作钮设计时默认值（中文），运行时按 Culture 覆写。' }
-    [pscustomobject]@{ File = 'src/Widgets/Hitokoto/Views/HitokotoPopupWindow.axaml'; Attribute = 'Content'; Value = '点赞 (0)'; Reason = '点赞钮设计时默认值（含计数占位 0），运行时按 Culture 与真实点赞数重写。' }
-    [pscustomobject]@{ File = 'src/Widgets/Hitokoto/Views/HitokotoPopupWindow.axaml'; Attribute = 'Content'; Value = '收藏'; Reason = '收藏钮设计时默认值（中文），运行时按 Culture 与收藏状态重写。' }
-    [pscustomobject]@{ File = 'src/Widgets/Hitokoto/Views/HitokotoPopupWindow.axaml'; Attribute = 'Content'; Value = '复制文本'; Reason = '复制钮设计时默认值（中文），运行时按 Culture 覆写。' }
-    [pscustomobject]@{ File = 'src/Widgets/Hitokoto/Views/HitokotoPopupWindow.axaml'; Attribute = 'Content'; Value = '复制 Markdown'; Reason = '复制 Markdown 钮设计时默认值（中文），运行时按 Culture 覆写。' }
-    [pscustomobject]@{ File = 'src/Widgets/Hitokoto/Views/HitokotoPopupWindow.axaml'; Attribute = 'Content'; Value = '本地收藏 (0)'; Reason = '收藏页签设计时默认值（含计数占位 0），运行时按 Culture 与真实条数重写。' }
-    [pscustomobject]@{ File = 'src/Widgets/Hitokoto/Views/HitokotoPopupWindow.axaml'; Attribute = 'Content'; Value = '最近偶遇 (0)'; Reason = '历史页签设计时默认值（含计数占位 0），运行时按 Culture 与真实条数重写。' }
-    [pscustomobject]@{ File = 'src/Widgets/Hitokoto/Views/HitokotoPopupWindow.axaml'; Attribute = 'Text'; Value = '暂无收藏句子，点击上方「收藏」即可收入摘抄本'; Reason = '空态提示设计时默认值（中文），运行时按 Culture 重写。' }
-    [pscustomobject]@{ File = 'src/Widgets/Hitokoto/Views/HitokotoPopupWindow.axaml'; Attribute = 'Watermark'; Value = '搜索收藏或偶遇过的句子、出处、作者...'; Reason = '搜索框水印默认值，运行时按 Culture 设置；存量登记。' }
-    [pscustomobject]@{ File = 'src/Widgets/Hitokoto/Views/HitokotoPopupWindow.axaml'; Attribute = 'Content'; Value = '⭐ 本地收藏 (0)'; Reason = '页签默认值，code-behind L163 按 Culture 覆写。' }
-    [pscustomobject]@{ File = 'src/Widgets/Hitokoto/Views/HitokotoPopupWindow.axaml'; Attribute = 'Content'; Value = '🕒 最近偶遇 (0)'; Reason = '页签默认值，code-behind L164 按 Culture 覆写。' }
-    [pscustomobject]@{ File = 'src/Widgets/Hitokoto/Views/HitokotoPopupWindow.axaml'; Attribute = 'Content'; Value = '清空历史'; Reason = '动作钮默认值，code-behind 按 Culture 覆写。' }
-    [pscustomobject]@{ File = 'src/Widgets/Hitokoto/Views/HitokotoPopupWindow.axaml'; Attribute = 'Text'; Value = '暂无收藏句子，点击上方「☆ 收藏」即可收入摘抄本'; Reason = '空态提示默认值，code-behind L193 按 Culture 覆写。' }
-    [pscustomobject]@{ File = 'src/Widgets/Hitokoto/Views/HitokotoPopupWindow.axaml'; Attribute = 'Text'; Value = '已复制'; Reason = 'Toast 默认值，code-behind L435 覆写。' }
+    [pscustomobject]@{ File = 'src/Widgets/Lifestyle/Hitokoto/Views/HitokotoPopupWindow.axaml'; Attribute = 'Title'; Value = '一言 · 灵感收纳箱'; Reason = '窗口标题默认值，code-behind 按 Culture 覆写（"Hitokoto · Quote Collection"）。' }
+    [pscustomobject]@{ File = 'src/Widgets/Lifestyle/Hitokoto/Views/HitokotoPopupWindow.axaml'; Attribute = 'Text'; Value = '一言 · 灵感收纳箱'; Reason = 'HeaderContent 标题默认值，code-behind L94 按 Culture 覆写。' }
+    [pscustomobject]@{ File = 'src/Widgets/Lifestyle/Hitokoto/Views/HitokotoPopupWindow.axaml'; Attribute = 'Text'; Value = '一言'; Reason = '分类徽标默认值，code-behind L95/L135 覆写。' }
+    [pscustomobject]@{ File = 'src/Widgets/Lifestyle/Hitokoto/Views/HitokotoPopupWindow.axaml'; Attribute = 'Content'; Value = '网页详情'; Reason = '操作钮设计时默认值（中文），运行时 ApplyLocalization 按 Culture 覆写为英文。' }
+    [pscustomobject]@{ File = 'src/Widgets/Lifestyle/Hitokoto/Views/HitokotoPopupWindow.axaml'; Attribute = 'Text'; Value = '往者不可谏，来者犹可追。'; Reason = '示例数据（W9 口径允许）：聚光灯名句占位，运行时被真实句子替换。' }
+    [pscustomobject]@{ File = 'src/Widgets/Lifestyle/Hitokoto/Views/HitokotoPopupWindow.axaml'; Attribute = 'Text'; Value = '—— 孔子《论语·微子篇》'; Reason = '示例数据（W9 口径允许）：出处占位。' }
+    [pscustomobject]@{ File = 'src/Widgets/Lifestyle/Hitokoto/Views/HitokotoPopupWindow.axaml'; Attribute = 'Content'; Value = '换一句'; Reason = '操作钮设计时默认值（中文），运行时按 Culture 覆写。' }
+    [pscustomobject]@{ File = 'src/Widgets/Lifestyle/Hitokoto/Views/HitokotoPopupWindow.axaml'; Attribute = 'Content'; Value = '点赞 (0)'; Reason = '点赞钮设计时默认值（含计数占位 0），运行时按 Culture 与真实点赞数重写。' }
+    [pscustomobject]@{ File = 'src/Widgets/Lifestyle/Hitokoto/Views/HitokotoPopupWindow.axaml'; Attribute = 'Content'; Value = '收藏'; Reason = '收藏钮设计时默认值（中文），运行时按 Culture 与收藏状态重写。' }
+    [pscustomobject]@{ File = 'src/Widgets/Lifestyle/Hitokoto/Views/HitokotoPopupWindow.axaml'; Attribute = 'Content'; Value = '复制文本'; Reason = '复制钮设计时默认值（中文），运行时按 Culture 覆写。' }
+    [pscustomobject]@{ File = 'src/Widgets/Lifestyle/Hitokoto/Views/HitokotoPopupWindow.axaml'; Attribute = 'Content'; Value = '复制 Markdown'; Reason = '复制 Markdown 钮设计时默认值（中文），运行时按 Culture 覆写。' }
+    [pscustomobject]@{ File = 'src/Widgets/Lifestyle/Hitokoto/Views/HitokotoPopupWindow.axaml'; Attribute = 'Content'; Value = '本地收藏 (0)'; Reason = '收藏页签设计时默认值（含计数占位 0），运行时按 Culture 与真实条数重写。' }
+    [pscustomobject]@{ File = 'src/Widgets/Lifestyle/Hitokoto/Views/HitokotoPopupWindow.axaml'; Attribute = 'Content'; Value = '最近偶遇 (0)'; Reason = '历史页签设计时默认值（含计数占位 0），运行时按 Culture 与真实条数重写。' }
+    [pscustomobject]@{ File = 'src/Widgets/Lifestyle/Hitokoto/Views/HitokotoPopupWindow.axaml'; Attribute = 'Text'; Value = '暂无收藏句子，点击上方「收藏」即可收入摘抄本'; Reason = '空态提示设计时默认值（中文），运行时按 Culture 重写。' }
+    [pscustomobject]@{ File = 'src/Widgets/Lifestyle/Hitokoto/Views/HitokotoPopupWindow.axaml'; Attribute = 'Watermark'; Value = '搜索收藏或偶遇过的句子、出处、作者...'; Reason = '搜索框水印默认值，运行时按 Culture 设置；存量登记。' }
+    [pscustomobject]@{ File = 'src/Widgets/Lifestyle/Hitokoto/Views/HitokotoPopupWindow.axaml'; Attribute = 'Content'; Value = '⭐ 本地收藏 (0)'; Reason = '页签默认值，code-behind L163 按 Culture 覆写。' }
+    [pscustomobject]@{ File = 'src/Widgets/Lifestyle/Hitokoto/Views/HitokotoPopupWindow.axaml'; Attribute = 'Content'; Value = '🕒 最近偶遇 (0)'; Reason = '页签默认值，code-behind L164 按 Culture 覆写。' }
+    [pscustomobject]@{ File = 'src/Widgets/Lifestyle/Hitokoto/Views/HitokotoPopupWindow.axaml'; Attribute = 'Content'; Value = '清空历史'; Reason = '动作钮默认值，code-behind 按 Culture 覆写。' }
+    [pscustomobject]@{ File = 'src/Widgets/Lifestyle/Hitokoto/Views/HitokotoPopupWindow.axaml'; Attribute = 'Text'; Value = '暂无收藏句子，点击上方「☆ 收藏」即可收入摘抄本'; Reason = '空态提示默认值，code-behind L193 按 Culture 覆写。' }
+    [pscustomobject]@{ File = 'src/Widgets/Lifestyle/Hitokoto/Views/HitokotoPopupWindow.axaml'; Attribute = 'Text'; Value = '已复制'; Reason = 'Toast 默认值，code-behind L435 覆写。' }
 
     # ---- Hitokoto 卡片视图：示例数据 + 运行时覆盖 ----
-    [pscustomobject]@{ File = 'src/Widgets/Hitokoto/Views/HitokotoView.axaml'; Attribute = 'Text'; Value = '诗词'; Reason = '分类角标默认值，运行时被真实分类替换。' }
-    [pscustomobject]@{ File = 'src/Widgets/Hitokoto/Views/HitokotoView.axaml'; Attribute = 'Text'; Value = '往者不可谏，来者犹可追。'; Reason = '示例数据（W9 口径允许）：卡片名句占位。' }
-    [pscustomobject]@{ File = 'src/Widgets/Hitokoto/Views/HitokotoView.axaml'; Attribute = 'ToolTip.Tip'; Value = '点击在浏览器查看该一言详情'; Reason = '工具提示默认值，运行时按 Culture 设置；存量登记。' }
-    [pscustomobject]@{ File = 'src/Widgets/Hitokoto/Views/HitokotoView.axaml'; Attribute = 'Text'; Value = '—— 孔子《论语·微子篇》'; Reason = '示例数据（W9 口径允许）：出处占位。' }
+    [pscustomobject]@{ File = 'src/Widgets/Lifestyle/Hitokoto/Views/HitokotoView.axaml'; Attribute = 'Text'; Value = '诗词'; Reason = '分类角标默认值，运行时被真实分类替换。' }
+    [pscustomobject]@{ File = 'src/Widgets/Lifestyle/Hitokoto/Views/HitokotoView.axaml'; Attribute = 'Text'; Value = '往者不可谏，来者犹可追。'; Reason = '示例数据（W9 口径允许）：卡片名句占位。' }
+    [pscustomobject]@{ File = 'src/Widgets/Lifestyle/Hitokoto/Views/HitokotoView.axaml'; Attribute = 'ToolTip.Tip'; Value = '点击在浏览器查看该一言详情'; Reason = '工具提示默认值，运行时按 Culture 设置；存量登记。' }
+    [pscustomobject]@{ File = 'src/Widgets/Lifestyle/Hitokoto/Views/HitokotoView.axaml'; Attribute = 'Text'; Value = '—— 孔子《论语·微子篇》'; Reason = '示例数据（W9 口径允许）：出处占位。' }
 
     # ---- Timetable 卡片：周导航工具提示（未治理存量）----
-    [pscustomobject]@{ File = 'src/Widgets/Timetable/Views/Timetable.axaml'; Attribute = 'ToolTip.Tip'; Value = '上一周'; Reason = '课程表卡片周导航工具提示，卡片视图未纳入 W9 设置页治理批次；存量登记。' }
-    [pscustomobject]@{ File = 'src/Widgets/Timetable/Views/Timetable.axaml'; Attribute = 'ToolTip.Tip'; Value = '切换周数'; Reason = '同上。' }
-    [pscustomobject]@{ File = 'src/Widgets/Timetable/Views/Timetable.axaml'; Attribute = 'ToolTip.Tip'; Value = '下一周'; Reason = '同上。' }
-    [pscustomobject]@{ File = 'src/Widgets/Timetable/Views/Timetable.axaml'; Attribute = 'Content'; Value = '本周'; Reason = '同上。' }
-    [pscustomobject]@{ File = 'src/Widgets/Timetable/Views/Timetable.axaml'; Attribute = 'ToolTip.Tip'; Value = '回到本周'; Reason = '同上。' }
+    [pscustomobject]@{ File = 'src/Widgets/Productivity/Timetable/Views/Timetable.axaml'; Attribute = 'ToolTip.Tip'; Value = '上一周'; Reason = '课程表卡片周导航工具提示，卡片视图未纳入 W9 设置页治理批次；存量登记。' }
+    [pscustomobject]@{ File = 'src/Widgets/Productivity/Timetable/Views/Timetable.axaml'; Attribute = 'ToolTip.Tip'; Value = '切换周数'; Reason = '同上。' }
+    [pscustomobject]@{ File = 'src/Widgets/Productivity/Timetable/Views/Timetable.axaml'; Attribute = 'ToolTip.Tip'; Value = '下一周'; Reason = '同上。' }
+    [pscustomobject]@{ File = 'src/Widgets/Productivity/Timetable/Views/Timetable.axaml'; Attribute = 'Content'; Value = '本周'; Reason = '同上。' }
+    [pscustomobject]@{ File = 'src/Widgets/Productivity/Timetable/Views/Timetable.axaml'; Attribute = 'ToolTip.Tip'; Value = '回到本周'; Reason = '同上。' }
 
     # ---- AudioVisualizer 创作画板操作栏与动态尺寸说明 ----
-    [pscustomobject]@{ File = 'src/Widgets/AudioVisualizer/Views/Settings/AudioVisualizerSettings.axaml'; Reason = 'AudioVisualizer 创作画板操作栏与动态尺寸说明。' }
+    [pscustomobject]@{ File = 'src/Widgets/Lifestyle/AudioVisualizer/Views/Settings/AudioVisualizerSettings.axaml'; Reason = 'AudioVisualizer 创作画板操作栏与动态尺寸说明。' }
 
     # ---- Calendar 日程管理组件与二级面板 ----
-    [pscustomobject]@{ File = 'src/Widgets/Calendar/Views/SchedulePanelWindow.axaml'; Reason = 'Calendar 日程管理二级面板。' }
-    [pscustomobject]@{ File = 'src/Widgets/Calendar/Views/Controls/ScheduleLarge.axaml'; Reason = 'Calendar 大尺寸日程组件。' }
-    [pscustomobject]@{ File = 'src/Widgets/Calendar/Views/Controls/ScheduleMedium.axaml'; Reason = 'Calendar 中尺寸日程组件。' }
-    [pscustomobject]@{ File = 'src/Widgets/Calendar/Views/Controls/ScheduleSmall.axaml'; Reason = 'Calendar 小尺寸日程组件。' }
+    [pscustomobject]@{ File = 'src/Widgets/ClockCalendar/Calendar/Views/SchedulePanelWindow.axaml'; Reason = 'Calendar 日程管理二级面板。' }
+    [pscustomobject]@{ File = 'src/Widgets/ClockCalendar/Calendar/Views/Controls/ScheduleLarge.axaml'; Reason = 'Calendar 大尺寸日程组件。' }
+    [pscustomobject]@{ File = 'src/Widgets/ClockCalendar/Calendar/Views/Controls/ScheduleMedium.axaml'; Reason = 'Calendar 中尺寸日程组件。' }
+    [pscustomobject]@{ File = 'src/Widgets/ClockCalendar/Calendar/Views/Controls/ScheduleSmall.axaml'; Reason = 'Calendar 小尺寸日程组件。' }
 )
 
 # 规则 3 的强制范围：9 个二级弹窗（与报告附录 A.3 一致）。
 $PopupWindows = @(
-    'src/Widgets/Tools/Views/ClipboardPopupWindow.axaml',
-    'src/Widgets/Tools/Views/TranslatorPopupWindow.axaml',
-    'src/Widgets/Tools/Views/CalculatorPopupWindow.axaml',
-    'src/Widgets/Hitokoto/Views/HitokotoPopupWindow.axaml',
-    'src/Widgets/Timetable/Views/TimetablePanelWindow.axaml',
-    'src/Widgets/Reminders/Views/RemindersPopupWindow.axaml',
-    'src/Widgets/Notes/Views/NotePopupWindow.axaml',
-    'src/Widgets/Weather/Views/WeatherPopupWindow.axaml',
-    'src/Widgets/Folders/Views/BigFolderPopupWindow.axaml',
-    'src/Widgets/Shortcuts/Views/ShortcutsPopupWindow.axaml'
+    'src/Widgets/Utilities/Toolbox/Views/ClipboardPopupWindow.axaml',
+    'src/Widgets/Utilities/Toolbox/Views/TranslatorPopupWindow.axaml',
+    'src/Widgets/Utilities/Toolbox/Views/CalculatorPopupWindow.axaml',
+    'src/Widgets/Lifestyle/Hitokoto/Views/HitokotoPopupWindow.axaml',
+    'src/Widgets/Productivity/Timetable/Views/TimetablePanelWindow.axaml',
+    'src/Widgets/Productivity/Reminders/Views/RemindersPopupWindow.axaml',
+    'src/Widgets/Productivity/Notes/Views/NotePopupWindow.axaml',
+    'src/Widgets/Weather/Weather/Views/WeatherPopupWindow.axaml',
+    'src/Widgets/Launcher/Folders/Views/BigFolderPopupWindow.axaml',
+    'src/Widgets/Launcher/Shortcuts/Views/ShortcutsPopupWindow.axaml'
 )
 
 # 规则 8：允许不经 HostDialogWindow 的对话框窗口（每一例都必须写明不能复用外壳的原因与移除条件）。
@@ -176,23 +176,23 @@ $DialogChromeExceptions = @(
 # 规则 9：允许保留 emoji / 装饰字符的文件（业务数据与内容渲染，不是界面图标）。
 $EmojiExceptions = @(
     [pscustomobject]@{
-        File   = 'src/Widgets/Habits/Models/HabitItem.cs'
+        File   = 'src/Widgets/Productivity/Habits/Models/HabitItem.cs'
         Reason = '习惯条目的自定义图标字段：用户自选的业务数据，不是界面图标（开发规范 §4.4 明确豁免）。'
     }
     [pscustomobject]@{
-        File   = 'src/Widgets/Habits/Services/HabitsStore.cs'
+        File   = 'src/Widgets/Productivity/Habits/Services/HabitsStore.cs'
         Reason = '同上：内置习惯的种子数据（图标字段初值）。'
     }
     [pscustomobject]@{
-        File   = 'src/Widgets/Habits/Views/HabitsPopupWindow.axaml.cs'
+        File   = 'src/Widgets/Productivity/Habits/Views/HabitsPopupWindow.axaml.cs'
         Reason = '同上：编辑表单里图标字段的默认值。'
     }
     [pscustomobject]@{
-        File   = 'src/Widgets/Notes/Services/MarkdownRenderer.cs'
+        File   = 'src/Widgets/Productivity/Notes/Services/MarkdownRenderer.cs'
         Reason = 'Markdown 任务列表的渲染标记（内容渲染，不是按钮图标）；移除条件：任务项改为矢量勾选框时迁移。'
     }
     [pscustomobject]@{
-        File   = 'src/Widgets/Shortcuts/Services/WorkflowSpecDocument.cs'
+        File   = 'src/Widgets/Launcher/Shortcuts/Services/WorkflowSpecDocument.cs'
         Reason = '发给 AI 的提示词文档正文（内容，不是界面）；其中的「安全提示」图标是文档措辞。'
     }
 )

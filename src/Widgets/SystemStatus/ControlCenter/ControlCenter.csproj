@@ -1,0 +1,58 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net10.0-windows10.0.19041.0</TargetFramework>
+        <SupportedOSPlatformVersion>10.0.17763.0</SupportedOSPlatformVersion>
+        <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+        <NoWarn>$(NoWarn);CA1416;AVLN3001</NoWarn>
+        <RootNamespace>ControlCenter</RootNamespace>
+        <AssemblyName>ControlCenter</AssemblyName>
+        <Version>1.0.0</Version>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\..\..\DeskCanvas.Core\DeskCanvas.Core.csproj">
+            <Private>false</Private>
+            <ExcludeAssets>runtime</ExcludeAssets>
+        </ProjectReference>
+        <ProjectReference Include="..\..\..\DeskCanvas\DeskCanvas.csproj">
+            <Private>false</Private>
+            <ExcludeAssets>runtime</ExcludeAssets>
+        </ProjectReference>
+        <ProjectReference Include="..\..\..\DeskCanvas.Runtime\DeskCanvas.Runtime.csproj">
+            <Private>false</Private>
+            <ExcludeAssets>runtime</ExcludeAssets>
+        </ProjectReference>
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Avalonia" PrivateAssets="all" ExcludeAssets="runtime">
+            <IncludeAssets>compile; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        </PackageReference>
+        <PackageReference Include="ReactiveUI.Avalonia" PrivateAssets="all" ExcludeAssets="runtime">
+            <IncludeAssets>compile; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        </PackageReference>
+        <PackageReference Include="System.Management" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <EmbeddedResource Update="Locales\Locale.resx">
+            <Generator>PublicResXFileCodeGenerator</Generator>
+            <LastGenOutput>Locale.Designer.cs</LastGenOutput>
+            <LogicalName>ControlCenter.Locales.Locale.resources</LogicalName>
+        </EmbeddedResource>
+        <EmbeddedResource Update="Locales\Locale.zh-Hans.resx">
+            <LogicalName>ControlCenter.Locales.Locale.zh-Hans.resources</LogicalName>
+        </EmbeddedResource>
+    </ItemGroup>
+
+    <ItemGroup>
+        <Compile Update="Locales\Locale.Designer.cs">
+            <DesignTime>True</DesignTime>
+            <AutoGen>True</AutoGen>
+            <DependentUpon>Locale.resx</DependentUpon>
+            <Generator>PublicResXFileCodeGenerator</Generator>
+        </Compile>
+    </ItemGroup>
+
+</Project>

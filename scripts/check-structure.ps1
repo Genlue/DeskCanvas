@@ -79,11 +79,20 @@ try {
     if (-not (Test-Path -LiteralPath $coreProject -PathType Leaf)) { $failures.Add('Missing SDK project: src/DeskCanvas.Core/DeskCanvas.Core.csproj') }
 
     $widgetRoot = Join-Path $rootPath 'src/Widgets'
+    # src/Widgets/<Category>/<Widget>/ — one flat list of widget directories, plus the
+    # category each one sits in (used to cross-check WidgetInfoAttribute.Category).
     $widgets = @()
     if (Test-Path -LiteralPath $widgetRoot -PathType Container) {
-        $widgets = @(Get-ChildItem -LiteralPath $widgetRoot -Directory | Sort-Object Name)
+        $widgets = @(
+            Get-ChildItem -LiteralPath $widgetRoot -Directory | Sort-Object Name | ForEach-Object {
+                $category = $_
+                Get-ChildItem -LiteralPath $category.FullName -Directory | Sort-Object Name | ForEach-Object {
+                    [pscustomobject]@{ Name = $_.Name; FullName = $_.FullName; Category = $category.Name }
+                }
+            }
+        )
     }
-    if ($widgets.Count -eq 0) { $failures.Add('No widget directories found under src/Widgets.') }
+    if ($widgets.Count -eq 0) { $failures.Add('No widget directories found under src/Widgets/<Category>/<Widget>.') }
 
     if (Test-Path -LiteralPath $hostProject -PathType Leaf) {
         $hostXml = Read-ProjectXml $hostProject
@@ -194,13 +203,14 @@ try {
                 $failures.Add("${name}: each project reference must set Private=false and ExcludeAssets=runtime.")
             }
         }
-        $outputPath = (Get-Property $projectXml 'OutputPath').Replace('/', '\').TrimEnd('\')
-        $expectedOutput = '..\..\DeskCanvas\bin\$(Configuration)\$(TargetFramework)\Widgets'
-        # Platform-specific widgets (Windows APIs) keep a windows TFM but still output to the
-        # host's net10.0\Widgets directory.
-        if ($name -eq 'Music' -or $name -eq 'ControlCenter' -or $name -eq 'Shortcuts') { $expectedOutput = '..\..\DeskCanvas\bin\$(Configuration)\net10.0\Widgets' }
-        if ($outputPath -ne $expectedOutput -or (Get-Property $projectXml 'AppendTargetFrameworkToOutputPath') -ne 'false') {
-            $failures.Add("${name}: output must target the host Widgets directory without appending a framework.")
+        $outputPath = Get-Property $projectXml 'OutputPath'
+        # OutputPath is owned by Directory.Build.props (one rule for every widget, immune to
+        # the widget moving between category folders); a per-project override is the regression.
+        if (-not [string]::IsNullOrWhiteSpace($outputPath)) {
+            $failures.Add("${name}: do not set OutputPath per project — Directory.Build.props owns it.")
+        }
+        if ((Get-Property $projectXml 'AppendTargetFrameworkToOutputPath') -ne 'false') {
+            $failures.Add("${name}: must keep AppendTargetFrameworkToOutputPath=false.")
         }
         foreach ($package in (Get-ProjectNodes $projectXml 'PackageReference')) {
             $id = $package.GetAttribute('Include')

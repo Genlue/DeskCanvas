@@ -261,7 +261,7 @@ else
 {
     string Source(params string[] parts) => File.ReadAllText(Path.Combine([repoRoot, .. parts]));
 
-    var calculatorPopup = Source("src", "Widgets", "Tools", "Views", "CalculatorPopupWindow.axaml.cs");
+    var calculatorPopup = Source("src", "Widgets", "Utilities", "Toolbox", "Views", "CalculatorPopupWindow.axaml.cs");
     Check(calculatorPopup.Contains("PanelService.Open(new PanelRequest(")
           && calculatorPopup.Contains("\"tools.calculator\"")
           && calculatorPopup.Contains("PanelScope.PerOwner"),
@@ -269,7 +269,7 @@ else
     Check(!calculatorPopup.Contains("PanelCoolingDown<") && !calculatorPopup.Contains("TryCloseActivePanel<"),
         "5.2 CalculatorPopupWindow no longer drives the legacy cooldown/toggle helpers itself");
 
-    var clipboardPopup = Source("src", "Widgets", "Tools", "Views", "ClipboardPopupWindow.axaml.cs");
+    var clipboardPopup = Source("src", "Widgets", "Utilities", "Toolbox", "Views", "ClipboardPopupWindow.axaml.cs");
     Check(clipboardPopup.Contains("PanelService.Open(new PanelRequest(")
           && clipboardPopup.Contains("\"tools.clipboard\"")
           && clipboardPopup.Contains("PanelScope.PerOwner"),
@@ -277,7 +277,7 @@ else
     Check(!clipboardPopup.Contains("PanelCoolingDown<") && !clipboardPopup.Contains("TryCloseActivePanel<"),
         "5.4 ClipboardPopupWindow no longer drives the legacy cooldown/toggle helpers itself");
 
-    var translatorPopup = Source("src", "Widgets", "Tools", "Views", "TranslatorPopupWindow.axaml.cs");
+    var translatorPopup = Source("src", "Widgets", "Utilities", "Toolbox", "Views", "TranslatorPopupWindow.axaml.cs");
     Check(translatorPopup.Contains("PanelService.Open(new PanelRequest(")
           && translatorPopup.Contains("\"tools.translator\"")
           && translatorPopup.Contains("PanelScope.PerOwner"),
@@ -310,13 +310,13 @@ if (repoRoot != null)
 {
     string Source(params string[] parts) => File.ReadAllText(Path.Combine([repoRoot, .. parts]));
 
-    var searchVm = Source("src", "Widgets", "Search", "ViewModels", "SearchViewModel.cs");
-    var searchView = Source("src", "Widgets", "Search", "Views", "SearchView.axaml.cs");
+    var searchVm = Source("src", "Widgets", "Launcher", "Search", "ViewModels", "SearchViewModel.cs");
+    var searchView = Source("src", "Widgets", "Launcher", "Search", "Views", "SearchView.axaml.cs");
     Check(!searchVm.Contains("DispatcherTimer") && !searchVm.Contains("TimerService")
           && !searchView.Contains("DispatcherTimer") && !searchView.Contains("TimerService"),
         "6.1 Search has no timed cadence at all — session gating is N/A by construction");
 
-    var stackView = Source("src", "Widgets", "Stack", "Views", "WidgetStackView.axaml.cs");
+    var stackView = Source("src", "Widgets", "Container", "Stack", "Views", "WidgetStackView.axaml.cs");
     Check(!stackView.Contains("TimerService."),
         "6.2 Stack subscribes no shared timer — its debounce/transition timers are interaction-driven (N/A)");
     Check(stackView.Contains("IWidgetSuspendable") && stackView.Contains("ForwardSuspend"),
@@ -325,10 +325,10 @@ if (repoRoot != null)
     // Theme per-screen: no component may read the global application variant.
     string[] scanned =
     [
-        Path.Combine(repoRoot, "src", "Widgets", "Tools"),
-        Path.Combine(repoRoot, "src", "Widgets", "Search"),
-        Path.Combine(repoRoot, "src", "Widgets", "Stack"),
-        Path.Combine(repoRoot, "src", "Widgets", "ControlCenter"),
+        Path.Combine(repoRoot, "src", "Widgets", "Utilities", "Toolbox"),
+        Path.Combine(repoRoot, "src", "Widgets", "Launcher", "Search"),
+        Path.Combine(repoRoot, "src", "Widgets", "Container", "Stack"),
+        Path.Combine(repoRoot, "src", "Widgets", "SystemStatus", "ControlCenter"),
     ];
     var globalReads = new List<string>();
     foreach (var dir in scanned)
@@ -358,18 +358,18 @@ if (repoRoot != null)
 {
     string Source(params string[] parts) => File.ReadAllText(Path.Combine([repoRoot, .. parts]));
 
-    var clipboardViewSource = Source("src", "Widgets", "Tools", "Views", "ClipboardView.axaml.cs");
+    var clipboardViewSource = Source("src", "Widgets", "Utilities", "Toolbox", "Views", "ClipboardView.axaml.cs");
     Check(clipboardViewSource.Contains("IWidgetActivityConsumer") && clipboardViewSource.Contains("IWidgetSession? session = null"),
         "7.1 ClipboardView keeps the session constructor parameter and the activity-consumer relay");
-    var monitorSource = Source("src", "Widgets", "Tools", "Services", "ClipboardMonitorService.cs");
+    var monitorSource = Source("src", "Widgets", "Utilities", "Toolbox", "Services", "ClipboardMonitorService.cs");
     Check(monitorSource.Contains("ReconcilePolling") && monitorSource.Contains("private void ReconcilePolling()"),
         "7.2 the clipboard monitor reconciles its poll instead of self-starting it");
     Check(monitorSource.Contains("legacyViews.Count > 0 || renderActiveViews.Count > 0"),
         "7.3 the poll's wanted-rule keeps the session-less always-on contract");
-    var translatorViewSource = Source("src", "Widgets", "Tools", "Views", "TranslatorView.axaml.cs");
+    var translatorViewSource = Source("src", "Widgets", "Utilities", "Toolbox", "Views", "TranslatorView.axaml.cs");
     Check(translatorViewSource.Contains("IWidgetActivityConsumer") && translatorViewSource.Contains("IWidgetSession? session = null"),
         "7.4 TranslatorView keeps the session constructor parameter and the debounce gate");
-    var controlCenterSource = Source("src", "Widgets", "ControlCenter", "Views", "ControlCenterView.axaml.cs");
+    var controlCenterSource = Source("src", "Widgets", "SystemStatus", "ControlCenter", "Views", "ControlCenterView.axaml.cs");
     Check(controlCenterSource.Contains("IWidgetActivityConsumer") && controlCenterSource.Contains("IWidgetSession? session = null")
           && controlCenterSource.Contains("IsLoaded && !isSuspended && renderActive"),
         "7.5 ControlCenterView keeps the session constructor parameter and the three-input poll gate");

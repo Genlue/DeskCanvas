@@ -1,0 +1,52 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+        <!-- 目录/工程名已改为 Aggregate，程序集身份保持历史名 FixedWidgets 冻结：
+             DLL 文件名与 layout.json 里存的历史引用都不允许变。 -->
+        <RootNamespace>FixedWidgets</RootNamespace>
+        <AssemblyName>FixedWidgets</AssemblyName>
+        <Version>1.0.0</Version>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <PackageReference Include="Avalonia" PrivateAssets="all" ExcludeAssets="runtime">
+        <IncludeAssets>compile; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      </PackageReference>
+      <PackageReference Include="ReactiveUI.Avalonia" PrivateAssets="all" ExcludeAssets="runtime">
+        <IncludeAssets>compile; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      </PackageReference>
+    </ItemGroup>
+
+    <ItemGroup>
+      <EmbeddedResource Update="Locales\Locale.resx">
+        <Generator>PublicResXFileCodeGenerator</Generator>
+        <LastGenOutput>Locale.Designer.cs</LastGenOutput>
+      </EmbeddedResource>
+    </ItemGroup>
+
+    <ItemGroup>
+      <Compile Update="Locales\Locale.Designer.cs">
+        <DesignTime>True</DesignTime>
+        <AutoGen>True</AutoGen>
+        <DependentUpon>Locale.resx</DependentUpon>
+        <Generator>PublicResXFileCodeGenerator</Generator>
+      </Compile>
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\..\..\DeskCanvas\DeskCanvas.csproj">
+            <Private>false</Private>
+            <ExcludeAssets>runtime</ExcludeAssets>
+        </ProjectReference>
+        <ProjectReference Include="..\..\..\DeskCanvas.Core\DeskCanvas.Core.csproj">
+            <Private>false</Private>
+            <ExcludeAssets>runtime</ExcludeAssets>
+        </ProjectReference>
+        <ProjectReference Include="..\..\..\DeskCanvas.Runtime\DeskCanvas.Runtime.csproj">
+            <Private>false</Private>
+            <ExcludeAssets>runtime</ExcludeAssets>
+        </ProjectReference>
+    </ItemGroup>
+</Project>

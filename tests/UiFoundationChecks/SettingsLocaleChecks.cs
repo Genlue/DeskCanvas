@@ -242,9 +242,10 @@ internal static partial class Program
         {
             Console.WriteLine($"--- {page}Settings ---");
 
-            var xamlPath = Path.Combine(root, "src", "Widgets", page, "Views", "Settings", $"{page}Settings.axaml");
-            var csPath = Path.Combine(root, "src", "Widgets", page, "Views", "Settings", $"{page}Settings.axaml.cs");
-            var localeDir = Path.Combine(root, "src", "Widgets", page, "Locales");
+            var widgetDir = WidgetDir(root, page);
+            var xamlPath = Path.Combine(widgetDir, "Views", "Settings", $"{page}Settings.axaml");
+            var csPath = Path.Combine(widgetDir, "Views", "Settings", $"{page}Settings.axaml.cs");
+            var localeDir = Path.Combine(widgetDir, "Locales");
             var xaml = File.ReadAllText(xamlPath);
             var code = File.ReadAllText(csPath);
 
@@ -347,7 +348,7 @@ internal static partial class Program
 
             // 固定 Width 只允许登记过的例外（XAML 源级断言）
             var widthViolations = CollectUnregisteredWidths(name, File.ReadAllText(
-                Path.Combine(FindRepoRoot(), "src", "Widgets", name, "Views", "Settings", $"{name}Settings.axaml")));
+                Path.Combine(WidgetDir(FindRepoRoot(), name), "Views", "Settings", $"{name}Settings.axaml")));
             Check(widthViolations.Count == 0,
                 widthViolations.Count == 0
                     ? $"{name}Settings 固定 Width 均为登记过的例外（无业务理由的宽度已改 Stretch/MinWidth）"
@@ -415,6 +416,11 @@ internal static partial class Program
                 d => d.Element("value")?.Value ?? string.Empty,
                 StringComparer.Ordinal);
     }
+
+    /// <summary>src/Widgets 现在按分类分两层，组件目录按名字在整棵树里定位。</summary>
+    private static string WidgetDir(string repoRoot, string widget) =>
+        Directory.GetDirectories(Path.Combine(repoRoot, "src", "Widgets"), widget, SearchOption.AllDirectories)
+            .FirstOrDefault() ?? Path.Combine(repoRoot, "src", "Widgets", widget);
 
     private static string FindRepoRoot()
     {

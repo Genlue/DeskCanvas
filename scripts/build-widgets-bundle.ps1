@@ -41,9 +41,13 @@ if (Test-Path $StageDir) { Remove-Item $StageDir -Recurse -Force }
 New-Item -ItemType Directory -Path $StageDir -Force | Out-Null
 
 # 1. Publish every widget into one flat staging dir (files merge, like the official layout).
-Get-ChildItem $WidgetsSourceDir -Directory | ForEach-Object {
-    $csproj = Join-Path $_.FullName "$($_.Name).csproj"
-    if (-not (Test-Path $csproj)) { return }
+#    Widgets live at src\Widgets\<Category>\<Widget>\<Widget>.csproj, so the scan is recursive;
+#    obj\ is skipped because intermediate folders can hold stale project copies.
+Get-ChildItem $WidgetsSourceDir -Filter *.csproj -Recurse -File |
+    Where-Object { $_.FullName -notmatch '[\\/]obj[\\/]' } |
+    Sort-Object FullName |
+    ForEach-Object {
+    $csproj = $_.FullName
 
     & dotnet publish $csproj `
         -c $Configuration `
@@ -53,7 +57,7 @@ Get-ChildItem $WidgetsSourceDir -Directory | ForEach-Object {
         --nologo -v:q `
         /p:BuildingWidgetBundle=true
 
-    if ($LASTEXITCODE -ne 0) { throw "Widget publish failed: $($_.Name)" }
+    if ($LASTEXITCODE -ne 0) { throw "Widget publish failed: $($_.Directory.Name)" }
 }
 
 # 2. Clean unneeded files (mirrors the official publish workflow).

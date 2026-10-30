@@ -151,7 +151,7 @@ string? FindRepoRoot()
     DirectoryInfo? dir = new DirectoryInfo(AppContext.BaseDirectory);
     while (dir != null)
     {
-        if (File.Exists(Path.Combine(dir.FullName, "src", "Widgets", "Calendar", "Views", "Month.axaml.cs")))
+        if (File.Exists(Path.Combine(dir.FullName, "src", "Widgets", "ClockCalendar", "Calendar", "Views", "Month.axaml.cs")))
             return dir.FullName;
         dir = dir.Parent;
     }
@@ -164,10 +164,10 @@ if (repoRoot == null)
 }
 else
 {
-    var monthSource = File.ReadAllText(Path.Combine(repoRoot, "src", "Widgets", "Calendar", "Views", "Month.axaml.cs"));
-    var dateSource = File.ReadAllText(Path.Combine(repoRoot, "src", "Widgets", "Calendar", "Views", "Date.axaml.cs"));
-    var monthVmSource = File.ReadAllText(Path.Combine(repoRoot, "src", "Widgets", "Calendar", "ViewModels", "MonthCalendarViewModel.cs"));
-    var dateVmSource = File.ReadAllText(Path.Combine(repoRoot, "src", "Widgets", "Calendar", "ViewModels", "DateCalendarViewModel.cs"));
+    var monthSource = File.ReadAllText(Path.Combine(repoRoot, "src", "Widgets", "ClockCalendar", "Calendar", "Views", "Month.axaml.cs"));
+    var dateSource = File.ReadAllText(Path.Combine(repoRoot, "src", "Widgets", "ClockCalendar", "Calendar", "Views", "Date.axaml.cs"));
+    var monthVmSource = File.ReadAllText(Path.Combine(repoRoot, "src", "Widgets", "ClockCalendar", "Calendar", "ViewModels", "MonthCalendarViewModel.cs"));
+    var dateVmSource = File.ReadAllText(Path.Combine(repoRoot, "src", "Widgets", "ClockCalendar", "Calendar", "ViewModels", "DateCalendarViewModel.cs"));
 
     Check(monthSource.Contains("IWidgetSession? session = null"), "6.1 Month.axaml.cs declares the optional session constructor parameter");
     Check(monthSource.Contains("IWidgetActivityConsumer"), "6.2 Month.axaml.cs implements IWidgetActivityConsumer");

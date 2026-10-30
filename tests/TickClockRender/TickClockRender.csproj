@@ -10,7 +10,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Widgets\TickClock\TickClock.csproj" />
+    <ProjectReference Include="..\..\src\Widgets\ClockCalendar\TickClock\TickClock.csproj" />
   </ItemGroup>
 
   <ItemGroup>

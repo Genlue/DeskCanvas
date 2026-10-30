@@ -14,7 +14,7 @@
     <PackageReference Include="Avalonia.Fonts.Inter" />
     <PackageReference Include="Avalonia.Themes.Fluent" />
     <ProjectReference Include="..\..\src\DeskCanvas\DeskCanvas.csproj" />
-    <ProjectReference Include="..\..\src\Widgets\Fixed\Fixed.csproj" />
+    <ProjectReference Include="..\..\src\Widgets\Container\Aggregate\Aggregate.csproj" />
   </ItemGroup>
 
 </Project>

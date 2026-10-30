@@ -1,0 +1,55 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+        <!-- AVLN3001 is benign here: the flagged views are created from code / DataTemplates,
+             never through the runtime XAML loader. -->
+        <NoWarn>$(NoWarn);AVLN3001</NoWarn>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\..\..\DeskCanvas\DeskCanvas.csproj">
+            <Private>false</Private>
+            <ExcludeAssets>runtime</ExcludeAssets>
+        </ProjectReference>
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\..\..\DeskCanvas.Core\DeskCanvas.Core.csproj">
+            <Private>false</Private>
+            <ExcludeAssets>runtime</ExcludeAssets>
+        </ProjectReference>
+        <!-- IWidgetActivityConsumer (the host activity push the views forward to their VMs). -->
+        <ProjectReference Include="..\..\..\DeskCanvas.Runtime\DeskCanvas.Runtime.csproj">
+            <Private>false</Private>
+            <ExcludeAssets>runtime</ExcludeAssets>
+        </ProjectReference>
+    </ItemGroup>
+
+    <ItemGroup>
+      <PackageReference Include="Avalonia" PrivateAssets="all" ExcludeAssets="runtime">
+        <IncludeAssets>compile; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      </PackageReference>
+    </ItemGroup>
+
+    <ItemGroup>
+      <EmbeddedResource Update="Locales\Locale.resx">
+        <Generator>PublicResXFileCodeGenerator</Generator>
+        <LastGenOutput>Locale.Designer.cs</LastGenOutput>
+      </EmbeddedResource>
+      <!-- The JSON writing guide / AI prompt shipped inside the widget settings. -->
+      <EmbeddedResource Include="Assets\timetable-json-guide.md">
+        <LogicalName>Timetable.Assets.timetable-json-guide.md</LogicalName>
+      </EmbeddedResource>
+    </ItemGroup>
+
+    <ItemGroup>
+      <Compile Update="Locales\Locale.Designer.cs">
+        <DesignTime>True</DesignTime>
+        <AutoGen>True</AutoGen>
+        <DependentUpon>Locale.resx</DependentUpon>
+      </Compile>
+    </ItemGroup>
+
+</Project>

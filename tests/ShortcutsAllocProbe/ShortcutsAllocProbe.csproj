@@ -10,7 +10,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Widgets\Shortcuts\Shortcuts.csproj" />
+    <ProjectReference Include="..\..\src\Widgets\Launcher\Shortcuts\Shortcuts.csproj" />
   </ItemGroup>
 
   <ItemGroup>

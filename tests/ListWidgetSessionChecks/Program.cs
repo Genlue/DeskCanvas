@@ -204,6 +204,11 @@ Check(VmOf(bareView).SessionForChecks == null, "5.4 the legacy CountdownView con
 // 6. Theme: per-screen N/A pins (source scans)
 // =========================================================================================
 Console.WriteLine("--- Theme pins ---");
+/// <summary>src/Widgets 现在按分类分两层，组件目录按名字在整棵树里定位。</summary>
+static string WidgetDir(string repoRoot, string widget) =>
+    Directory.GetDirectories(Path.Combine(repoRoot, "src", "Widgets"), widget, SearchOption.AllDirectories)
+        .FirstOrDefault() ?? Path.Combine(repoRoot, "src", "Widgets", widget);
+
 string? FindRepoRoot()
 {
     DirectoryInfo? dir = new DirectoryInfo(AppContext.BaseDirectory);
@@ -224,7 +229,7 @@ else
 {
     static IEnumerable<string> WidgetSources(string repoRoot, string widget)
     {
-        var dir = Path.Combine(repoRoot, "src", "Widgets", widget);
+        var dir = WidgetDir(repoRoot, widget);
         foreach (var file in Directory.EnumerateFiles(dir, "*.cs", SearchOption.AllDirectories))
         {
             if (file.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}") ||
@@ -241,10 +246,10 @@ else
                 globalThemeReads++;
     Check(globalThemeReads == 0, "6.1 no list-family widget reads the global Application.Current.ActualThemeVariant (per-screen N/A holds)");
 
-    var timetableSource = File.ReadAllText(Path.Combine(repoRoot, "src", "Widgets", "Timetable", "Views", "Timetable.axaml.cs"));
+    var timetableSource = File.ReadAllText(Path.Combine(repoRoot, "src", "Widgets", "Productivity", "Timetable", "Views", "Timetable.axaml.cs"));
     Check(timetableSource.Contains("ThemeScopeResolver.ResolveColor(this, \"SystemAccentColor\", ActualThemeVariant"),
         "6.2 Timetable resolves its accent against the visual's own ActualThemeVariant (per-screen)");
-    var panelSource = File.ReadAllText(Path.Combine(repoRoot, "src", "Widgets", "Timetable", "Views", "TimetablePanelWindow.axaml.cs"));
+    var panelSource = File.ReadAllText(Path.Combine(repoRoot, "src", "Widgets", "Productivity", "Timetable", "Views", "TimetablePanelWindow.axaml.cs"));
     Check(panelSource.Contains("ThemeScopeResolver.ResolveBrush(this, \"SystemAccentColor\", ActualThemeVariant"),
         "6.3 the timetable panel resolves its accent against the visual's own ActualThemeVariant (per-screen)");
 
@@ -264,7 +269,7 @@ else
     var seenKeys = new HashSet<string>();
     foreach (var (widget, fileName, key) in popupFiles)
     {
-        var source = File.ReadAllText(Path.Combine(repoRoot, "src", "Widgets", widget, "Views", fileName));
+        var source = File.ReadAllText(Path.Combine(WidgetDir(repoRoot, widget), "Views", fileName));
         Check(source.Contains("PanelService.Open(new PanelRequest("), $"7.{index} {fileName} opens through PanelService.Open");
         index++;
         Check(source.Contains($"\"{key}\""), $"7.{index} {fileName} declares the identity key \"{key}\"");

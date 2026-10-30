@@ -259,7 +259,7 @@ string? FindRepoRoot()
     DirectoryInfo? dir = new DirectoryInfo(AppContext.BaseDirectory);
     while (dir != null)
     {
-        if (File.Exists(Path.Combine(dir.FullName, "src", "Widgets", "Clock", "Views", "Digital.axaml.cs")))
+        if (File.Exists(Path.Combine(dir.FullName, "src", "Widgets", "ClockCalendar", "Clock", "Views", "Digital.axaml.cs")))
             return dir.FullName;
         dir = dir.Parent;
     }
@@ -275,7 +275,7 @@ else
     string Read(params string[] parts) => File.ReadAllText(Path.Combine(repoRoot, Path.Combine(parts)));
 
     // No private timezone boilerplate remains anywhere in the Clock component.
-    var clockDir = Path.Combine(repoRoot, "src", "Widgets", "Clock");
+    var clockDir = Path.Combine(repoRoot, "src", "Widgets", "ClockCalendar", "Clock");
     var clockSources = Directory.EnumerateFiles(clockDir, "*.cs", SearchOption.AllDirectories)
         .Where(f => !f.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}")
                     && !f.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}"))
@@ -300,7 +300,7 @@ else
         ("FramelessDigital", Path.Combine("Views", "FramelessDigital.axaml.cs"))
     })
     {
-        Check(Read("src", "Widgets", "Clock", file).Contains("SharedTimeZone.Resolve"), $"8.3 {name} consumes the shared timezone");
+        Check(Read("src", "Widgets", "ClockCalendar", "Clock", file).Contains("SharedTimeZone.Resolve"), $"8.3 {name} consumes the shared timezone");
     }
 
     foreach (var (name, file) in new[]
@@ -312,7 +312,7 @@ else
         ("FramelessDigital", "FramelessDigital.axaml.cs")
     })
     {
-        var source = Read("src", "Widgets", "Clock", "Views", file);
+        var source = Read("src", "Widgets", "ClockCalendar", "Clock", "Views", file);
         Check(source.Contains("IWidgetActivityConsumer") && source.Contains("OnSessionActivity"),
             $"8.4 {name} declares the session activity consumer and forwards pushes");
     }

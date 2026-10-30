@@ -117,16 +117,16 @@ string[] wiredFiles =
     "src/DeskCanvas/Services/LiquidGlassSource.cs",            // glass.source-cache / GlassBackdrop
     "src/DeskCanvas/Services/LiquidGlassWallpaper.cs",         // glass.wallpaper / GlassCapture
     "src/DeskCanvas/Services/LiquidGlassRenderer.cs",          // glass.wallpaper-lease / GlassLease
-    "src/Widgets/Picture/ViewModels/PictureViewModel.cs",      // picture:{n} / PictureFrame
-    "src/Widgets/Clock/Services/FramelessGlassFrameCache.cs",  // clock.frame-cache:{n} / GlyphMask
+    "src/Widgets/Lifestyle/Picture/ViewModels/PictureViewModel.cs",      // picture:{n} / PictureFrame
+    "src/Widgets/ClockCalendar/Clock/Services/FramelessGlassFrameCache.cs",  // clock.frame-cache:{n} / GlyphMask
 ];
 foreach (var file in wiredFiles)
     Check($"{file} reports to the ledger", Read(file).Contains("ResourceLedger.Instance.Report"));
 
 string[] notWiredFiles =
 [
-    "src/Widgets/Map/Services/MapTileService.cs",      // MapTile wiring is the P8 batch
-    "src/Widgets/Folders/Services/FolderIconService.cs", // FileIcon wiring is the P8 batch
+    "src/Widgets/Lifestyle/Map/Services/MapTileService.cs",      // MapTile wiring is the P8 batch
+    "src/Widgets/Launcher/Folders/Services/FolderIconService.cs", // FileIcon wiring is the P8 batch
 ];
 foreach (var file in notWiredFiles)
     Check($"{file} is NOT wired in this slice (P8 placeholder)", !Read(file).Contains("ResourceLedger"));

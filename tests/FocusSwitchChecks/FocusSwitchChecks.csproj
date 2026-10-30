@@ -10,7 +10,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\DeskCanvas\DeskCanvas.csproj" />
-    <ProjectReference Include="..\..\src\Widgets\Fixed\Fixed.csproj" />
+    <ProjectReference Include="..\..\src\Widgets\Container\Aggregate\Aggregate.csproj" />
   </ItemGroup>
 
 </Project>

@@ -17,8 +17,8 @@
     <ProjectReference Include="..\..\src\DeskCanvas.Runtime\DeskCanvas.Runtime.csproj" />
     <ProjectReference Include="..\..\src\DeskCanvas\DeskCanvas.csproj" />
     <!-- The components under test (P8 batch F: Tools / Stack / Search / ControlCenter). -->
-    <ProjectReference Include="..\..\src\Widgets\Tools\Tools.csproj" />
-    <ProjectReference Include="..\..\src\Widgets\ControlCenter\ControlCenter.csproj" />
+    <ProjectReference Include="..\..\src\Widgets\Utilities\Toolbox\Toolbox.csproj" />
+    <ProjectReference Include="..\..\src\Widgets\SystemStatus\ControlCenter\ControlCenter.csproj" />
   </ItemGroup>
 
 </Project>

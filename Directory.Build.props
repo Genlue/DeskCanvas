@@ -9,10 +9,12 @@
   <PropertyGroup>
     <_DeskCanvasSourceRoot>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)src'))</_DeskCanvasSourceRoot>
     <_DeskCanvasProjectParent>$([System.IO.Path]::GetDirectoryName('$(MSBuildProjectDirectory)'))</_DeskCanvasProjectParent>
+    <!-- src/Widgets/<Category>/<Widget>/ — the widget root sits two levels above a project. -->
+    <_DeskCanvasProjectGrandParent>$([System.IO.Path]::GetDirectoryName('$(_DeskCanvasProjectParent)'))</_DeskCanvasProjectGrandParent>
     <_DeskCanvasWidgetRoot>$([System.IO.Path]::GetFullPath('$(_DeskCanvasSourceRoot)/Widgets'))</_DeskCanvasWidgetRoot>
     <_DeskCanvasHostRoot>$([System.IO.Path]::GetFullPath('$(_DeskCanvasSourceRoot)/DeskCanvas'))</_DeskCanvasHostRoot>
     <_DeskCanvasCoreRoot>$([System.IO.Path]::GetFullPath('$(_DeskCanvasSourceRoot)/DeskCanvas.Core'))</_DeskCanvasCoreRoot>
-    <_DeskCanvasIsWidget Condition="'$(_DeskCanvasProjectParent)' == '$(_DeskCanvasWidgetRoot)'">true</_DeskCanvasIsWidget>
+    <_DeskCanvasIsWidget Condition="'$(_DeskCanvasProjectGrandParent)' == '$(_DeskCanvasWidgetRoot)'">true</_DeskCanvasIsWidget>
   </PropertyGroup>
 
   <!-- Source projects intentionally suppress SDK-generated assembly attributes; test probes keep SDK defaults. -->
@@ -20,8 +22,21 @@
     <GenerateAssemblyInfo Condition="'$(GenerateAssemblyInfo)' == ''">false</GenerateAssemblyInfo>
   </PropertyGroup>
 
-  <!-- Widgets in the standard src/Widgets layout are loaded at runtime. -->
+  <!-- Widgets in the standard src/Widgets/<Category>/<Widget> layout are loaded at runtime.
+       OutputPath lives here on purpose: every widget emits its DLL into the host's Widgets
+       folder, and a per-project relative path would break the moment a widget changes depth
+       (which is exactly what the category layer did).
+       The host TFM is spelled out instead of $(TargetFramework): this file is evaluated
+       before the project body sets its own TFM, so $(TargetFramework) would expand to empty
+       and drop the DLLs one level up. Platform-specific widgets (net10.0-windows) must land
+       in the same net10.0 folder the host loads from. -->
+  <PropertyGroup>
+    <DeskCanvasHostTargetFramework>net10.0</DeskCanvasHostTargetFramework>
+  </PropertyGroup>
+
   <PropertyGroup Condition="'$(_DeskCanvasIsWidget)' == 'true'">
     <EnableDynamicLoading Condition="'$(EnableDynamicLoading)' == ''">true</EnableDynamicLoading>
+    <AppendTargetFrameworkToOutputPath Condition="'$(AppendTargetFrameworkToOutputPath)' == ''">false</AppendTargetFrameworkToOutputPath>
+    <OutputPath>$(_DeskCanvasHostRoot)\bin\$(Configuration)\$(DeskCanvasHostTargetFramework)\Widgets\</OutputPath>
   </PropertyGroup>
 </Project>

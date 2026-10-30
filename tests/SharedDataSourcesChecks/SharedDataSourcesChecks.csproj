@@ -2,7 +2,7 @@
   <PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net10.0-windows10.0.19041.0</TargetFramework><ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable><NoWarn>$(NoWarn);CA1416</NoWarn></PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\DeskCanvas.Runtime\DeskCanvas.Runtime.csproj" />
-    <ProjectReference Include="..\..\src\Widgets\Storage\Storage.csproj" />
-    <ProjectReference Include="..\..\src\Widgets\Music\Music.csproj" />
+    <ProjectReference Include="..\..\src\Widgets\SystemStatus\Storage\Storage.csproj" />
+    <ProjectReference Include="..\..\src\Widgets\Lifestyle\Music\Music.csproj" />
   </ItemGroup>
 </Project>

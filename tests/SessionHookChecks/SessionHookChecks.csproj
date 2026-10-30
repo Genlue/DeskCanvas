@@ -13,6 +13,6 @@
     <ProjectReference Include="..\..\src\DeskCanvas.Runtime\DeskCanvas.Runtime.csproj" />
     <ProjectReference Include="..\..\src\DeskCanvas\DeskCanvas.csproj" />
     <!-- The pilot widget assembly is activated by name through the factory path. -->
-    <ProjectReference Include="..\..\src\Widgets\Clock\Clock.csproj" />
+    <ProjectReference Include="..\..\src\Widgets\ClockCalendar\Clock\Clock.csproj" />
   </ItemGroup>
 </Project>

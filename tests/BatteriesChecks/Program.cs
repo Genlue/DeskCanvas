@@ -260,7 +260,7 @@ string? FindRepoRoot()
     DirectoryInfo? dir = new DirectoryInfo(AppContext.BaseDirectory);
     while (dir != null)
     {
-        if (File.Exists(Path.Combine(dir.FullName, "src", "Widgets", "Batteries", "Batteries.csproj")))
+        if (File.Exists(Path.Combine(dir.FullName, "src", "Widgets", "SystemStatus", "Batteries", "Batteries.csproj")))
             return dir.FullName;
         dir = dir.Parent;
     }
@@ -273,16 +273,16 @@ if (repoRoot == null)
 }
 else
 {
-    var vmSource = File.ReadAllText(Path.Combine(repoRoot, "src", "Widgets", "Batteries", "ViewModels", "BatteriesViewModel.cs"));
+    var vmSource = File.ReadAllText(Path.Combine(repoRoot, "src", "Widgets", "SystemStatus", "Batteries", "ViewModels", "BatteriesViewModel.cs"));
     Check(!vmSource.Contains("DispatcherTimer"), "9.1 the private DispatcherTimer is gone from the view model");
     Check(vmSource.Contains("TimerService.Timer1Second") && vmSource.Contains("ShouldPollOnTick"),
         "9.2 the poll rides the shared 1 s timer through the 3-tick divider");
     Check(!vmSource.Contains("new AppSettingsProvider()"), "9.3 the third-tier standalone provider fallback is removed");
-    var viewSource = File.ReadAllText(Path.Combine(repoRoot, "src", "Widgets", "Batteries", "Views", "BatteriesView.axaml.cs"));
+    var viewSource = File.ReadAllText(Path.Combine(repoRoot, "src", "Widgets", "SystemStatus", "Batteries", "Views", "BatteriesView.axaml.cs"));
     Check(viewSource.Contains("IWidgetActivityConsumer") && viewSource.Contains("IFocusThemedContent"),
         "9.4 the view consumes session activity and the focus-theme host entry");
     Check(viewSource.Contains("IWidgetSession"), "9.5 the view declares the session constructor parameter");
-    var powerService = File.ReadAllText(Path.Combine(repoRoot, "src", "Widgets", "Batteries", "Services", "PowerService.cs"));
+    var powerService = File.ReadAllText(Path.Combine(repoRoot, "src", "Widgets", "SystemStatus", "Batteries", "Services", "PowerService.cs"));
     Check(powerService.Contains("GetCurrentPowerInfo"), "9.6 PowerService is still the component-internal power source (single consumer, not abstracted)");
 }
 

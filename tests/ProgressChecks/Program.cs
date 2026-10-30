@@ -333,9 +333,9 @@ class Program
         Console.WriteLine("--- source invariants ---");
 
         var root = FindRepoRoot();
-        var viewPath = Path.Combine(root, "src", "Widgets", "Progress", "Views", "ProgressView.axaml.cs");
-        var vmPath = Path.Combine(root, "src", "Widgets", "Progress", "ViewModels", "ProgressViewModel.cs");
-        var settingsPath = Path.Combine(root, "src", "Widgets", "Progress", "Views", "Settings", "ProgressSettings.axaml");
+        var viewPath = Path.Combine(root, "src", "Widgets", "Productivity", "TimeProgress", "Views", "ProgressView.axaml.cs");
+        var vmPath = Path.Combine(root, "src", "Widgets", "Productivity", "TimeProgress", "ViewModels", "ProgressViewModel.cs");
+        var settingsPath = Path.Combine(root, "src", "Widgets", "Productivity", "TimeProgress", "Views", "Settings", "ProgressSettings.axaml");
 
         var viewSource = File.ReadAllText(viewPath);
         var vmSource = File.ReadAllText(vmPath);
@@ -382,7 +382,7 @@ class Program
     private static string FindRepoRoot()
     {
         var dir = new DirectoryInfo(AppContext.BaseDirectory);
-        while (dir != null && !Directory.Exists(Path.Combine(dir.FullName, "src", "Widgets", "Progress")))
+        while (dir != null && !Directory.Exists(Path.Combine(dir.FullName, "src", "Widgets", "Productivity", "TimeProgress")))
         {
             dir = dir.Parent;
         }

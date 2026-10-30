@@ -199,7 +199,7 @@ musicView.OnSessionActivity(new ActivitySnapshot(ActivityReason.ScreenCovered));
 Check(!musicVm.IsProgressTimerRunningForChecks, "2.11 the view's activity push gates the progress tick");
 musicVm.Dispose();
 
-var musicSource = Source("src/Widgets/Music/ViewModels/MusicViewModel.cs");
+var musicSource = Source("src/Widgets/Lifestyle/Music/ViewModels/MusicViewModel.cs");
 var pushBody = MethodBody(musicSource, "public void OnSessionActivity");
 Check(!string.IsNullOrEmpty(pushBody) && !pushBody.Contains("PausePolling") && !pushBody.Contains("ResumePolling"),
     "2.12 (source) the session push never touches the shared SMTC poll engine");
@@ -304,7 +304,7 @@ Check(MapViewWidget.ResolveAutoIsDark(null, ThemeVariant.Dark), "5.3 a detached 
 Check(!MapViewWidget.ResolveAutoIsDark(ThemeVariant.Default, ThemeVariant.Light),
     "5.4 the Default (unattached) variant falls through to the uniform variant");
 
-var mapSource = Source("src/Widgets/Map/Views/MapView.axaml.cs");
+var mapSource = Source("src/Widgets/Lifestyle/Map/Views/MapView.axaml.cs");
 Check(mapSource.Contains("ResolveAutoIsDark(ActualThemeVariant, Application.Current?.ActualThemeVariant)"),
     "5.5 (source) the AutoTheme branch resolves the variant per window first");
 Check(!mapSource.Contains("IWidgetActivityConsumer"),
@@ -315,19 +315,19 @@ Check(!mapSource.Contains("IWidgetActivityConsumer"),
 // =========================================================================================
 Console.WriteLine("--- Wiring source scan ---");
 
-Check(Source("src/Widgets/Picture/Views/PictureView.axaml.cs").Contains("IWidgetActivityConsumer"),
+Check(Source("src/Widgets/Lifestyle/Picture/Views/PictureView.axaml.cs").Contains("IWidgetActivityConsumer"),
     "6.1 (source) PictureView declares the activity consumer");
-var pomodoroSource = Source("src/Widgets/Pomodoro/ViewModels/PomodoroViewModel.cs");
+var pomodoroSource = Source("src/Widgets/Productivity/Pomodoro/ViewModels/PomodoroViewModel.cs");
 Check(pomodoroSource.Contains("CompensateGatedSeconds") && pomodoroSource.Contains("gateClosedAtUtc"),
     "6.2 (source) the Pomodoro countdown replays the gated stretch from a recorded boundary");
 Check(pomodoroSource.Contains("State == PomodoroState.Running && renderActive") ||
       pomodoroSource.Contains("State != PomodoroState.Running"),
     "6.3 (source) the Pomodoro tick subscription is reconciled from state AND gate (no toggling)");
-Check(Source("src/Widgets/Picture/ViewModels/PictureViewModel.cs").Contains("UpdatePlaybackGating"),
+Check(Source("src/Widgets/Lifestyle/Picture/ViewModels/PictureViewModel.cs").Contains("UpdatePlaybackGating"),
     "6.4 (source) the Picture beats reconcile through a single gating state machine");
-Check(Source("src/Widgets/Music/ViewModels/MusicViewModel.cs").Contains("UpdateProgressTimer"),
+Check(Source("src/Widgets/Lifestyle/Music/ViewModels/MusicViewModel.cs").Contains("UpdateProgressTimer"),
     "6.5 (source) the Music progress tick reconciles through a single state machine");
-var musicVmSource = Source("src/Widgets/Music/ViewModels/MusicViewModel.cs");
+var musicVmSource = Source("src/Widgets/Lifestyle/Music/ViewModels/MusicViewModel.cs");
 var subscribeAt = musicVmSource.IndexOf("mediaService.TrackChanged += OnTrackChanged", StringComparison.Ordinal);
 var replayAt = musicVmSource.IndexOf("mediaService.PublishCurrentTrack()", StringComparison.Ordinal);
 Check(subscribeAt >= 0 && replayAt > subscribeAt,

@@ -8,7 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Widgets\Timetable\Timetable.csproj" />
+    <ProjectReference Include="..\..\src\Widgets\Productivity\Timetable\Timetable.csproj" />
   </ItemGroup>
 
   <ItemGroup>

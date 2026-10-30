@@ -14,10 +14,10 @@
     <ProjectReference Include="..\..\src\DeskCanvas.Runtime\DeskCanvas.Runtime.csproj" />
     <ProjectReference Include="..\..\src\DeskCanvas\DeskCanvas.csproj" />
     <!-- The five data-display widgets under check (P8 batch B, slice B1). -->
-    <ProjectReference Include="..\..\src\Widgets\Monitor\Monitor.csproj" />
-    <ProjectReference Include="..\..\src\Widgets\Weather\Weather.csproj" />
-    <ProjectReference Include="..\..\src\Widgets\Fixed\Fixed.csproj" />
-    <ProjectReference Include="..\..\src\Widgets\Hitokoto\Hitokoto.csproj" />
-    <ProjectReference Include="..\..\src\Widgets\Storage\Storage.csproj" />
+    <ProjectReference Include="..\..\src\Widgets\SystemStatus\Monitor\Monitor.csproj" />
+    <ProjectReference Include="..\..\src\Widgets\Weather\Weather\Weather.csproj" />
+    <ProjectReference Include="..\..\src\Widgets\Container\Aggregate\Aggregate.csproj" />
+    <ProjectReference Include="..\..\src\Widgets\Lifestyle\Hitokoto\Hitokoto.csproj" />
+    <ProjectReference Include="..\..\src\Widgets\SystemStatus\Storage\Storage.csproj" />
   </ItemGroup>
 </Project>

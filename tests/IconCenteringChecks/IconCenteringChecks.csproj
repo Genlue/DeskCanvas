@@ -9,7 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Widgets\Folders\Folders.csproj" />
+    <ProjectReference Include="..\..\src\Widgets\Launcher\Folders\Folders.csproj" />
     <ProjectReference Include="..\..\src\DeskCanvas\DeskCanvas.csproj" />
   </ItemGroup>
 

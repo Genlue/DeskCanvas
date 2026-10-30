@@ -8,7 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Widgets\Habits\Habits.csproj" />
+    <ProjectReference Include="..\..\src\Widgets\Productivity\Habits\Habits.csproj" />
   </ItemGroup>
 
   <ItemGroup>

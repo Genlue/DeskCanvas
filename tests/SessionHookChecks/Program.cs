@@ -245,7 +245,7 @@ else
     var factorySource = File.ReadAllText(Path.Combine(repoRoot, "src", "DeskCanvas", "Services", "WidgetFactory.cs"));
     Check(factorySource.Contains("WidgetSessionRegistry.GetOrCreate"), "6.3 WidgetFactory.cs creates the session on the creation path");
     Check(factorySource.Contains("NeedsSession"), "6.4 WidgetFactory.cs probes the session constructor parameter");
-    var vmSource = File.ReadAllText(Path.Combine(repoRoot, "src", "Widgets", "Clock", "ViewModels", "DigitalClockViewModel.cs"));
+    var vmSource = File.ReadAllText(Path.Combine(repoRoot, "src", "Widgets", "ClockCalendar", "Clock", "ViewModels", "DigitalClockViewModel.cs"));
     Check(vmSource.Contains("SharedTimeZone.Resolve"), "6.5 DigitalClockViewModel consumes the shared timezone");
 }
 

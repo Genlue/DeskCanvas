@@ -63,6 +63,16 @@ static string RepoRoot()
     return dir!.FullName;
 }
 static string ReadSource(params string[] parts) => File.ReadAllText(Path.Combine(RepoRoot(), Path.Combine(parts)));
+// src/Widgets 现在是 <Category>/<Widget> 两层：按组件目录名把相对路径展开成真实层级。
+static string[] WidgetParts(string relativePath)
+{
+    var parts = relativePath.Split('/');
+    var root = Path.Combine(RepoRoot(), "src", "Widgets");
+    var dir = Directory.GetDirectories(root, parts[0], SearchOption.AllDirectories).FirstOrDefault()
+              ?? Path.Combine(root, parts[0]);
+    var rel = Path.GetRelativePath(root, dir).Split(Path.DirectorySeparatorChar);
+    return new[] { "src", "Widgets" }.Concat(rel).Concat(parts.Skip(1)).ToArray();
+}
 
 void PanelServiceReset() =>
     typeof(PanelService).GetMethod("ResetForChecks", BindingFlags.NonPublic | BindingFlags.Static)!
@@ -89,7 +99,7 @@ Check(ReferenceEquals(pushed, pushedOnce),
 commit.Invoke(popup, null);
 Check(ReferenceEquals(pushed, pushedOnce), "5.4 repeated no-diff commits stay silent");
 
-var noteSource = ReadSource("src", "Widgets", "Notes", "Views", "Note.axaml.cs");
+var noteSource = ReadSource("src", "Widgets", "Productivity", "Notes", "Views", "Note.axaml.cs");
 Check(noteSource.Contains("Model with { Content = newText, Updated = DateTime.Now }"),
     "5.5 the card's inline commit still stamps and persists on focus loss (the UpdateContent pipeline is untouched)");
 Check(noteSource.Contains("JsonSerializer.SerializeToElement(newModel)") && noteSource.Contains("widgetLayoutProvider!.Save(newLayout)"),
@@ -101,7 +111,7 @@ Check(!noteSource.Contains("AutoSave") && !noteSource.Contains("autosave"),
 // 6. The Notes per-screen markdown palette seam
 // =========================================================================================
 Console.WriteLine("--- Notes markdown palette per-screen seam ---");
-var rendererSource = ReadSource("src", "Widgets", "Notes", "Services", "MarkdownRenderer.cs");
+var rendererSource = ReadSource("src", "Widgets", "Productivity", "Notes", "Services", "MarkdownRenderer.cs");
 Check(rendererSource.Contains("scope?.ActualThemeVariant"),
     "6.1 the palette resolves the variant from the render scope first (per-screen light/dark)");
 Check(!rendererSource.Contains("Application.Current?.ActualThemeVariant =="),
@@ -143,7 +153,7 @@ Check(BodyOf(fallbackPalette, bodyProperty) == appExpected,
 Console.WriteLine("--- Panel migration source scan ---");
 void ScanPanel(string label, string relativePath, string identityKey)
 {
-    var source = ReadSource(new[] { "src", "Widgets" }.Concat(relativePath.Split('/')).ToArray());
+    var source = ReadSource(WidgetParts(relativePath));
     Check(source.Contains("PanelService.Open(new PanelRequest("),
         $"{label}: ShowPopup routes through PanelService.Open");
     Check(source.Contains("\"" + identityKey + "\""),
@@ -156,7 +166,7 @@ void ScanPanel(string label, string relativePath, string identityKey)
 ScanPanel("NotePopupWindow", "Notes/Views/NotePopupWindow.axaml.cs", "Notes.Editor");
 ScanPanel("ShortcutsPopupWindow", "Shortcuts/Views/ShortcutsPopupWindow.axaml.cs", "Shortcuts.QuickPanel");
 ScanPanel("BigFolderPopupWindow", "Folders/Views/BigFolderPopupWindow.axaml.cs", "Folders.BigFolderGrid");
-var editorSource = ReadSource("src", "Widgets", "Shortcuts", "Views", "ShortcutsEditorWindow.axaml.cs");
+var editorSource = ReadSource("src", "Widgets", "Launcher", "Shortcuts", "Views", "ShortcutsEditorWindow.axaml.cs");
 // The editor is a WindowRole.Dialog window and now takes its role from HostDialogWindow, so the
 // assertion is "the window is still wired to a dialog role" rather than "it still spells the call
 // itself" — a dialog that silently drops out of the role table is the regression this guards.
@@ -233,10 +243,10 @@ string ReadRepo(params string[] parts)
     return File.ReadAllText(Path.Combine(new[] { dir!.FullName }.Concat(parts).ToArray()));
 }
 
-var bigFolderView = ReadRepo("src", "Widgets", "Folders", "Views", "BigFolder.axaml.cs");
-var folderView = ReadRepo("src", "Widgets", "Folders", "Views", "Folder.axaml.cs");
-var singleFileView = ReadRepo("src", "Widgets", "Folders", "Views", "SingleFile.axaml.cs");
-var singleLinkView = ReadRepo("src", "Widgets", "Folders", "Views", "SingleLink.axaml.cs");
+var bigFolderView = ReadRepo("src", "Widgets", "Launcher", "Folders", "Views", "BigFolder.axaml.cs");
+var folderView = ReadRepo("src", "Widgets", "Launcher", "Folders", "Views", "Folder.axaml.cs");
+var singleFileView = ReadRepo("src", "Widgets", "Launcher", "Folders", "Views", "SingleFile.axaml.cs");
+var singleLinkView = ReadRepo("src", "Widgets", "Launcher", "Folders", "Views", "SingleLink.axaml.cs");
 
 Check(bigFolderView.Contains("model.EffectiveHoverScale") &&
       !bigFolderView.Contains("const double HoverScale"),
@@ -257,7 +267,7 @@ Check(singleFileView.Contains("CardOverflowRoom.Around(") && singleLinkView.Cont
     "10.13b 单文件 / 单链接 cap the zoom at the grid cell edge, not at the card edge");
 Check(bigFolderView.Contains("CardOverflowRoom.Around(") && !bigFolderView.Contains("PaddingThickness.Left + CardOverflowRoom"),
     "10.13c 大文件夹 measures the room from its icon grid to the cell edge (uniform for every tile)");
-var overflowRoom = ReadRepo("src", "Widgets", "Folders", "Services", "CardOverflowRoom.cs");
+var overflowRoom = ReadRepo("src", "Widgets", "Launcher", "Folders", "Services", "CardOverflowRoom.cs");
 Check(overflowRoom.Contains("client.Width") && overflowRoom.Contains("client.Height") &&
       overflowRoom.Contains("icon.Bounds"),
     "10.13d CardOverflowRoom measures the icon's resting rect against the window client area");
@@ -267,7 +277,7 @@ foreach (var (name, file) in new[]
              ("单链接", "SingleLinkSettings.axaml"),
          })
 {
-    var slider = ReadRepo("src", "Widgets", "Folders", "Views", "Settings", file);
+    var slider = ReadRepo("src", "Widgets", "Launcher", "Folders", "Views", "Settings", file);
     Check(slider.Contains("Maximum=\"200\""),
         $"10.13e {name}'s 悬浮缩放 slider reaches the 200% ceiling (the cell edge is reachable)");
 }
@@ -288,7 +298,7 @@ foreach (var (name, file) in new[]
              ("大文件夹", "BigFolder.axaml"),
          })
 {
-    var axaml = ReadRepo("src", "Widgets", "Folders", "Views", file);
+    var axaml = ReadRepo("src", "Widgets", "Launcher", "Folders", "Views", file);
     Check(axaml.Contains("ClipToBounds=\"False\""),
         $"10.16 {name} turns its own ClipToBounds off (otherwise the view cuts the zoom at the card box)");
 }
@@ -297,10 +307,10 @@ foreach (var (name, file) in new[]
 // are the grid box (inset by the padding) — the cut the user still saw inside 大文件夹 after the
 // view-level fix. Measured: with the ItemsControl clipping, 0 px of the zoomed tile painted
 // outside the card; with it off, 555 px did.
-var bigFolderAxaml = ReadRepo("src", "Widgets", "Folders", "Views", "BigFolder.axaml");
+var bigFolderAxaml = ReadRepo("src", "Widgets", "Launcher", "Folders", "Views", "BigFolder.axaml");
 Check(bigFolderAxaml.Split("ClipToBounds=\"False\"").Length - 1 >= 2,
     "10.17 大文件夹's IconGrid does not clip its own bounds either (the zoom reaches the card edge)");
-var folderAxaml = ReadRepo("src", "Widgets", "Folders", "Views", "Folder.axaml");
+var folderAxaml = ReadRepo("src", "Widgets", "Launcher", "Folders", "Views", "Folder.axaml");
 Check(folderAxaml.Split("ClipToBounds=\"False\"").Length - 1 >= 2,
     "10.18 文件展示框's two item hosts do not clip (the viewport gutter is what keeps the zoom whole)");
 
@@ -430,7 +440,7 @@ Check(linkImage?.Source != null,
 Check(linkImage is { IsVisible: true }, "single link: the cached icon is shown, not the fallback");
 
 // 9.4 opening: a chosen browser is used, otherwise the URL goes to the default handler.
-var singleLinkSource = ReadSource("src", "Widgets", "Folders", "Views", "SingleLink.axaml.cs");
+var singleLinkSource = ReadSource("src", "Widgets", "Launcher", "Folders", "Views", "SingleLink.axaml.cs");
 Check(singleLinkSource.Contains("File.Exists(model.BrowserPath)"),
     "single link: a browser is only used while its executable is still there");
 Check(singleLinkSource.Contains("Process.Start(new ProcessStartInfo(targetUrl)"),

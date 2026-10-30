@@ -307,6 +307,11 @@ Flush();
 // 7. Wiring source scan (guards the B1 wiring against accidental removal)
 // =========================================================================================
 Console.WriteLine("--- Wiring source scan ---");
+/// <summary>src/Widgets 现在按分类分两层，组件目录按名字在整棵树里定位。</summary>
+static string WidgetDir(string repoRoot, string widget) =>
+    Directory.GetDirectories(Path.Combine(repoRoot, "src", "Widgets"), widget, SearchOption.AllDirectories)
+        .FirstOrDefault() ?? Path.Combine(repoRoot, "src", "Widgets", widget);
+
 string? FindRepoRoot()
 {
     DirectoryInfo? dir = new DirectoryInfo(AppContext.BaseDirectory);
@@ -327,7 +332,7 @@ else
 {
     string Read(string relative) => File.ReadAllText(Path.Combine(repoRoot, relative));
 
-    var hitokotoPopup = Read("src/Widgets/Hitokoto/Views/HitokotoPopupWindow.axaml.cs");
+    var hitokotoPopup = Read("src/Widgets/Lifestyle/Hitokoto/Views/HitokotoPopupWindow.axaml.cs");
     Check(hitokotoPopup.Contains("PanelService.Open(new PanelRequest("),
         "7.1 the Hitokoto popup opens through PanelService");
     Check(hitokotoPopup.Contains("PanelScope.PerOwner") && hitokotoPopup.Contains("\"hitokoto\""),
@@ -336,25 +341,25 @@ else
           !hitokotoPopup.Contains("ShowAsSecondaryPanel(owner)"),
         "7.3 the bare legacy open path (cooldown probe + toggle + Show) is gone from the Hitokoto popup");
 
-    var weatherPopup = Read("src/Widgets/Weather/Views/WeatherPopupWindow.axaml.cs");
+    var weatherPopup = Read("src/Widgets/Weather/Weather/Views/WeatherPopupWindow.axaml.cs");
     Check(weatherPopup.Contains("PanelService.Open(new PanelRequest(") &&
           weatherPopup.Contains("PanelScope.PerOwner"),
         "7.4 the Weather popup keeps its migrated PanelService wiring (regression pin)");
 
     var viewFiles = new[]
     {
-        "src/Widgets/Monitor/Views/SingleMetric.axaml.cs",
-        "src/Widgets/Monitor/Views/MultiDashboard.axaml.cs",
-        "src/Widgets/Weather/Views/Forecast.axaml.cs",
-        "src/Widgets/Weather/Views/FourDayForecast.axaml.cs",
-        "src/Widgets/Weather/Views/Temperature.axaml.cs",
-        "src/Widgets/Weather/Views/UVIndex.axaml.cs",
-        "src/Widgets/Weather/Views/Pressure.axaml.cs",
-        "src/Widgets/Weather/Views/SunriseSunset.axaml.cs",
-        "src/Widgets/Weather/Views/AirQuality.axaml.cs",
-        "src/Widgets/Fixed/Views/AggregateView.axaml.cs",
-        "src/Widgets/Hitokoto/Views/HitokotoView.axaml.cs",
-        "src/Widgets/Storage/Views/StorageView.axaml.cs",
+        "src/Widgets/SystemStatus/Monitor/Views/SingleMetric.axaml.cs",
+        "src/Widgets/SystemStatus/Monitor/Views/MultiDashboard.axaml.cs",
+        "src/Widgets/Weather/Weather/Views/Forecast.axaml.cs",
+        "src/Widgets/Weather/Weather/Views/FourDayForecast.axaml.cs",
+        "src/Widgets/Weather/Weather/Views/Temperature.axaml.cs",
+        "src/Widgets/Weather/Weather/Views/UVIndex.axaml.cs",
+        "src/Widgets/Weather/Weather/Views/Pressure.axaml.cs",
+        "src/Widgets/Weather/Weather/Views/SunriseSunset.axaml.cs",
+        "src/Widgets/Weather/Weather/Views/AirQuality.axaml.cs",
+        "src/Widgets/Container/Aggregate/Views/AggregateView.axaml.cs",
+        "src/Widgets/Lifestyle/Hitokoto/Views/HitokotoView.axaml.cs",
+        "src/Widgets/SystemStatus/Storage/Views/StorageView.axaml.cs",
     };
     Check(viewFiles.All(view => Read(view).Contains("IWidgetSession? session = null")),
         "7.5 all twelve data-widget views declare the optional session constructor parameter");
@@ -364,12 +369,12 @@ else
 
     var vmFiles = new[]
     {
-        "src/Widgets/Monitor/ViewModels/SingleMetricViewModel.cs",
-        "src/Widgets/Monitor/ViewModels/MultiDashboardViewModel.cs",
-        "src/Widgets/Weather/ViewModels/ForecastViewModel.cs",
-        "src/Widgets/Weather/ViewModels/AirQualityViewModel.cs",
-        "src/Widgets/Fixed/ViewModels/AggregateViewModel.cs",
-        "src/Widgets/Storage/ViewModels/StorageViewModel.cs",
+        "src/Widgets/SystemStatus/Monitor/ViewModels/SingleMetricViewModel.cs",
+        "src/Widgets/SystemStatus/Monitor/ViewModels/MultiDashboardViewModel.cs",
+        "src/Widgets/Weather/Weather/ViewModels/ForecastViewModel.cs",
+        "src/Widgets/Weather/Weather/ViewModels/AirQualityViewModel.cs",
+        "src/Widgets/Container/Aggregate/ViewModels/AggregateViewModel.cs",
+        "src/Widgets/SystemStatus/Storage/ViewModels/StorageViewModel.cs",
     };
     Check(vmFiles.All(vm => Read(vm).Contains("IWidgetSession? session = null")),
         "7.7 all six data-widget view models declare the optional session constructor parameter");
@@ -380,8 +385,8 @@ else
     // it — both weather view models, not just the forecast.
     var retryWiring = new[]
     {
-        "src/Widgets/Weather/ViewModels/ForecastViewModel.cs",
-        "src/Widgets/Weather/ViewModels/AirQualityViewModel.cs",
+        "src/Widgets/Weather/Weather/ViewModels/ForecastViewModel.cs",
+        "src/Widgets/Weather/Weather/ViewModels/AirQualityViewModel.cs",
     };
     Check(retryWiring.All(vm => Read(vm).Contains("retry.Schedule(UpdateForecast)")),
         "7.13 both weather view models retry after a failed fetch");
@@ -391,11 +396,11 @@ else
     // Theme residue: no readout may decide darkness straight from the uniform Application
     // variant any more — the host window's variant wins, the Application variant only falls
     // through as the documented uniform fallback inside the resolve seams.
-    var widgetDirs = new[] { "Monitor", "Weather", "Fixed", "Hitokoto", "Storage" };
+    var widgetDirs = new[] { "Monitor", "Weather", "Aggregate", "Hitokoto", "Storage" };
     var residue = new List<string>();
     foreach (var widget in widgetDirs)
     {
-        var dir = Path.Combine(repoRoot, "src", "Widgets", widget);
+        var dir = WidgetDir(repoRoot, widget);
         foreach (var file in Directory.EnumerateFiles(dir, "*.cs", SearchOption.AllDirectories))
         {
             if (file.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}") ||
@@ -410,14 +415,14 @@ else
             ? "7.9 no readout compares the uniform Application variant to decide darkness any more"
             : $"7.9 uniform-variant dark decisions remain in: {string.Join(", ", residue)}");
 
-    var storageView = Read("src/Widgets/Storage/Views/StorageView.axaml.cs");
+    var storageView = Read("src/Widgets/SystemStatus/Storage/Views/StorageView.axaml.cs");
     Check(storageView.Contains("VariantProvider = () => ActualThemeVariant") &&
           !storageView.Contains("Application.Current.ActualThemeVariant"),
         "7.10 the Storage view wires the per-screen variant provider (no uniform fallback read left)");
-    var fixedVm = Read("src/Widgets/Fixed/ViewModels/AggregateViewModel.cs");
+    var fixedVm = Read("src/Widgets/Container/Aggregate/ViewModels/AggregateViewModel.cs");
     Check(!fixedVm.Contains("|| Application.Current?.ActualThemeVariant"),
         "7.11 the Fixed today-marker no longer ORs the uniform Application variant into the dark decision");
-    var storageVm = Read("src/Widgets/Storage/ViewModels/StorageViewModel.cs");
+    var storageVm = Read("src/Widgets/SystemStatus/Storage/ViewModels/StorageViewModel.cs");
     Check(storageVm.Contains("ResolveVariant(VariantProvider?.Invoke(), Application.Current?.ActualThemeVariant)"),
         "7.12 the Storage readout resolves through the host-window-first variant seam");
 }

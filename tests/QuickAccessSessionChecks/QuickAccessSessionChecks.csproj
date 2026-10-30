@@ -12,8 +12,8 @@
     <ProjectReference Include="..\..\src\DeskCanvas.Runtime\DeskCanvas.Runtime.csproj" />
     <ProjectReference Include="..\..\src\DeskCanvas\DeskCanvas.csproj" />
     <!-- The B3 slice widgets: Folders / Shortcuts / Notes. -->
-    <ProjectReference Include="..\..\src\Widgets\Folders\Folders.csproj" />
-    <ProjectReference Include="..\..\src\Widgets\Notes\Notes.csproj" />
-    <ProjectReference Include="..\..\src\Widgets\Shortcuts\Shortcuts.csproj" />
+    <ProjectReference Include="..\..\src\Widgets\Launcher\Folders\Folders.csproj" />
+    <ProjectReference Include="..\..\src\Widgets\Productivity\Notes\Notes.csproj" />
+    <ProjectReference Include="..\..\src\Widgets\Launcher\Shortcuts\Shortcuts.csproj" />
   </ItemGroup>
 </Project>

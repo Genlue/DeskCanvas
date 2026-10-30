@@ -164,9 +164,9 @@ string[] dialogFiles =
     "src/DeskCanvas/Views/UpdatePopup.axaml.cs",
     "src/DeskCanvas/Views/EditWidget.axaml.cs",
     "src/DeskCanvas/Views/GridEditor.axaml.cs",
-    "src/Widgets/Shortcuts/Views/ShortcutsEditorWindow.axaml.cs",
-    "src/Widgets/Timetable/Views/GuideWindow.axaml.cs",
-    "src/Widgets/Timetable/Views/ImportReviewWindow.axaml.cs",
+    "src/Widgets/Launcher/Shortcuts/Views/ShortcutsEditorWindow.axaml.cs",
+    "src/Widgets/Productivity/Timetable/Views/GuideWindow.axaml.cs",
+    "src/Widgets/Productivity/Timetable/Views/ImportReviewWindow.axaml.cs",
 ];
 // Every dialog reaches the role through ONE place: the HostDialogWindow base class. A file that
 // derives from it registers exactly once (from the constructor), and a file that still registers
@@ -194,21 +194,21 @@ Console.WriteLine("--- widget interop boundary scan ---");
 
 var widgetImportWhitelist = new Dictionary<string, int>
 {
-    ["src/Widgets/Batteries/Services/PowerService.cs"] = 5,
-    ["src/Widgets/ControlCenter/Services/SystemControlService.cs"] = 13,
-    ["src/Widgets/Folders/Services/WidgetOleDropTarget.cs"] = 13,
-    ["src/Widgets/Folders/Services/FolderIconService.cs"] = 12,
-    ["src/Widgets/Folders/Views/BigFolder.axaml.cs"] = 1,
-    ["src/Widgets/Folders/Views/Folder.axaml.cs"] = 1,
-    ["src/Widgets/Picture/Views/PictureView.axaml.cs"] = 1,
-    ["src/Widgets/Shortcuts/Services/ISystemAdapter.cs"] = 11,
-    ["src/Widgets/Shortcuts/Services/Executors/SystemExecutors.cs"] = 1,
-    ["src/Widgets/Shortcuts/Services/KeyboardInput.cs"] = 1,
-    // src/Widgets/Shortcuts/Services/ShortcutHotkeyService.cs is deliberately absent: the hotkey
+    ["src/Widgets/SystemStatus/Batteries/Services/PowerService.cs"] = 5,
+    ["src/Widgets/SystemStatus/ControlCenter/Services/SystemControlService.cs"] = 13,
+    ["src/Widgets/Launcher/Folders/Services/WidgetOleDropTarget.cs"] = 13,
+    ["src/Widgets/Launcher/Folders/Services/FolderIconService.cs"] = 12,
+    ["src/Widgets/Launcher/Folders/Views/BigFolder.axaml.cs"] = 1,
+    ["src/Widgets/Launcher/Folders/Views/Folder.axaml.cs"] = 1,
+    ["src/Widgets/Lifestyle/Picture/Views/PictureView.axaml.cs"] = 1,
+    ["src/Widgets/Launcher/Shortcuts/Services/ISystemAdapter.cs"] = 11,
+    ["src/Widgets/Launcher/Shortcuts/Services/Executors/SystemExecutors.cs"] = 1,
+    ["src/Widgets/Launcher/Shortcuts/Services/KeyboardInput.cs"] = 1,
+    // src/Widgets/Launcher/Shortcuts/Services/ShortcutHotkeyService.cs is deliberately absent: the hotkey
     // interop moved to the host (DeskCanvas/Services/GlobalHotkeyRegistrar.cs), so it has no
     // [DllImport] left. An entry with a count of 0 would itself be reported as drift, because only
     // files that actually import something appear in the scanned set.
-    ["src/Widgets/Tools/Services/ClipboardNative.cs"] = 12,
+    ["src/Widgets/Utilities/Toolbox/Services/ClipboardNative.cs"] = 12,
 };
 
 var widgetsRoot = Path.Combine(repoRoot, "src", "Widgets");

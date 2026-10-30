@@ -682,7 +682,7 @@ internal static class Program
             "标签：qualifySameWeek 时 = 本周X");
 
         // --- The user-visible zh-Hans text lives in the resx, so pin the literals there ---
-        var zhResx = FindRepoFile("src/Widgets/Timetable/Locales/Locale.zh-Hans.resx");
+        var zhResx = FindRepoFile("src/Widgets/Productivity/Timetable/Locales/Locale.zh-Hans.resx");
         Check(zhResx != null, "能定位 Locale.zh-Hans.resx");
         if (zhResx != null)
         {
@@ -694,7 +694,7 @@ internal static class Program
         }
 
         // --- Source scan: both forward scans must derive the week per day ---
-        var view = FindRepoFile("src/Widgets/Timetable/Views/Timetable.axaml.cs");
+        var view = FindRepoFile("src/Widgets/Productivity/Timetable/Views/Timetable.axaml.cs");
         Check(view != null, "能定位 Timetable.axaml.cs（源码扫描）");
         if (view != null)
         {

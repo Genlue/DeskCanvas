@@ -281,7 +281,7 @@ internal static class Program
         while (dir != null && !Directory.Exists(Path.Combine(dir.FullName, "scripts")))
             dir = dir.Parent!;
 
-        return File.ReadAllText(Path.Combine(new[] { dir!.FullName, "src", "Widgets", "Shortcuts" }.Concat(parts).ToArray()));
+        return File.ReadAllText(Path.Combine(new[] { dir!.FullName, "src", "Widgets", "Launcher", "Shortcuts" }.Concat(parts).ToArray()));
     }
 
     /// <summary>Reads a repo-relative file (the plugin-loading rule lives outside this widget).</summary>

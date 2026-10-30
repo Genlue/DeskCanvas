@@ -92,15 +92,15 @@ internal static partial class Program
     /// <summary>9 个二级弹窗（报告附录 A.3，与脚本 $PopupWindows 同源）。</summary>
     private static readonly string[] GuardedPopups =
     [
-        "src/Widgets/Tools/Views/ClipboardPopupWindow.axaml",
-        "src/Widgets/Tools/Views/TranslatorPopupWindow.axaml",
-        "src/Widgets/Tools/Views/CalculatorPopupWindow.axaml",
-        "src/Widgets/Hitokoto/Views/HitokotoPopupWindow.axaml",
-        "src/Widgets/Timetable/Views/TimetablePanelWindow.axaml",
-        "src/Widgets/Reminders/Views/RemindersPopupWindow.axaml",
-        "src/Widgets/Notes/Views/NotePopupWindow.axaml",
-        "src/Widgets/Weather/Views/WeatherPopupWindow.axaml",
-        "src/Widgets/Folders/Views/BigFolderPopupWindow.axaml",
+        "src/Widgets/Utilities/Toolbox/Views/ClipboardPopupWindow.axaml",
+        "src/Widgets/Utilities/Toolbox/Views/TranslatorPopupWindow.axaml",
+        "src/Widgets/Utilities/Toolbox/Views/CalculatorPopupWindow.axaml",
+        "src/Widgets/Lifestyle/Hitokoto/Views/HitokotoPopupWindow.axaml",
+        "src/Widgets/Productivity/Timetable/Views/TimetablePanelWindow.axaml",
+        "src/Widgets/Productivity/Reminders/Views/RemindersPopupWindow.axaml",
+        "src/Widgets/Productivity/Notes/Views/NotePopupWindow.axaml",
+        "src/Widgets/Weather/Weather/Views/WeatherPopupWindow.axaml",
+        "src/Widgets/Launcher/Folders/Views/BigFolderPopupWindow.axaml",
     ];
 
     /// <summary>外壳三件套：本地声明即回流。</summary>
