@@ -30,6 +30,14 @@
 
 ---
 
+> [!IMPORTANT]
+> **Maintenance status: paused (2026-10-31)**
+>
+> DeskCanvas is no longer planned to receive new features, new widgets, or compatibility fixes. **v4.12.0 is the final release.**
+> - The repository stays public — fork it, modify it, build it yourself (see [BUILDING.md](BUILDING.md)).
+> - Issues and pull requests are no longer guaranteed a reply or a merge.
+> - Existing installers keep working, but the third-party services they depend on (weather, maps, translation, music, …) may stop working over time.
+
 ## 🌟 Key Highlights
 
 ### 1. 🕒 Frameless Display Clock

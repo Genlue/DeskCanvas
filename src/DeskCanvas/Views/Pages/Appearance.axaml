@@ -5,380 +5,453 @@
              xmlns:locales="clr-namespace:DeskCanvas.Locales"
              x:Class="DeskCanvas.Views.Pages.Appearance"
              x:DataType="viewModels:AppearanceViewModel">
-    <StackPanel Orientation="Vertical" Spacing="3">
-        <TextBlock Text="{Binding SettingsError}" IsVisible="{Binding HasSettingsError}"
-                   TextWrapping="Wrap" Foreground="Crimson" Margin="0 0 0 8" />
-        <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding HasSettingsError}">
-            <Button Content="{x:Static locales:Locale.Settings_Appearance_SaveRetry}" Click="RetrySettingsSave" />
-            <Button Content="{x:Static locales:Locale.Settings_Appearance_SaveReload}" Click="ReloadSettings" />
+    <StackPanel Orientation="Vertical" Spacing="10">
+        <!-- 错误提示与恢复 -->
+        <Border Background="#20FF0000" BorderBrush="#50FF0000" BorderThickness="1" CornerRadius="8" Padding="12"
+                IsVisible="{Binding HasSettingsError}" Margin="0,0,0,4">
+            <StackPanel Spacing="8">
+                <TextBlock Text="{Binding SettingsError}" TextWrapping="Wrap" Foreground="Crimson" FontWeight="SemiBold" />
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <Button Content="{x:Static locales:Locale.Settings_Appearance_SaveRetry}" Click="RetrySettingsSave" />
+                    <Button Content="{x:Static locales:Locale.Settings_Appearance_SaveReload}" Click="ReloadSettings" />
+                </StackPanel>
+            </StackPanel>
+        </Border>
+
+        <!-- 智能失焦切换模块 -->
+        <StackPanel Spacing="4">
+            <TextBlock Classes="dc-section-header" Margin="4,0,0,2"
+                       Text="{x:Static locales:Locale.Settings_Appearance_FocusLink_Title}"/>
+            <Border Classes="settings-group-card">
+                <StackPanel>
+                    <controls:Setting Icon="{DynamicResource Windows}"
+                        Title="{x:Static locales:Locale.Settings_Appearance_FocusLink_Enable_Title}"
+                        Subtitle="{x:Static locales:Locale.Settings_Appearance_FocusLink_Enable_Subtitle}">
+                        <ToggleSwitch IsChecked="{Binding FocusLinkEnabled}" HorizontalAlignment="Right"
+                                      AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_FocusLink_Enable_Title}" />
+                    </controls:Setting>
+
+                    <Rectangle Classes="settings-separator" IsVisible="{Binding FocusLinkEnabled}" />
+                    <controls:Setting Icon="{DynamicResource Brush}" IsVisible="{Binding FocusLinkEnabled}"
+                        Title="{x:Static locales:Locale.Settings_Appearance_FocusLink_FocusedState_Title}"
+                        Subtitle="{x:Static locales:Locale.Settings_Appearance_FocusLink_State_Subtitle}">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <ComboBox MinWidth="130" ItemsSource="{Binding FocusSurfaceOptions}"
+                                      SelectedItem="{Binding FocusSurfaceFocused}"
+                                      AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_FocusLink_FocusedState_Title}">
+                                <ComboBox.ItemTemplate>
+                                    <DataTemplate DataType="viewModels:FocusSurfaceViewModel">
+                                        <TextBlock Text="{Binding Name}" Margin="0 4" />
+                                    </DataTemplate>
+                                </ComboBox.ItemTemplate>
+                            </ComboBox>
+                            <ComboBox MinWidth="110" ItemsSource="{Binding DarkModes}"
+                                      SelectedItem="{Binding FocusModeFocused}">
+                                <ComboBox.ItemTemplate>
+                                    <DataTemplate DataType="viewModels:DarkModeViewModel">
+                                        <TextBlock Text="{Binding Name}" Margin="0 4" />
+                                    </DataTemplate>
+                                </ComboBox.ItemTemplate>
+                            </ComboBox>
+                        </StackPanel>
+                    </controls:Setting>
+
+                    <Rectangle Classes="settings-separator" IsVisible="{Binding FocusLinkEnabled}" />
+                    <controls:Setting Icon="{DynamicResource Brush}" IsVisible="{Binding FocusLinkEnabled}"
+                        Title="{x:Static locales:Locale.Settings_Appearance_FocusLink_UnfocusedState_Title}"
+                        Subtitle="{x:Static locales:Locale.Settings_Appearance_FocusLink_State_Subtitle}">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <ComboBox MinWidth="130" ItemsSource="{Binding FocusSurfaceOptions}"
+                                      SelectedItem="{Binding FocusSurfaceUnfocused}"
+                                      AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_FocusLink_UnfocusedState_Title}">
+                                <ComboBox.ItemTemplate>
+                                    <DataTemplate DataType="viewModels:FocusSurfaceViewModel">
+                                        <TextBlock Text="{Binding Name}" Margin="0 4" />
+                                    </DataTemplate>
+                                </ComboBox.ItemTemplate>
+                            </ComboBox>
+                            <ComboBox MinWidth="110" ItemsSource="{Binding DarkModes}"
+                                      SelectedItem="{Binding FocusModeUnfocused}">
+                                <ComboBox.ItemTemplate>
+                                    <DataTemplate DataType="viewModels:DarkModeViewModel">
+                                        <TextBlock Text="{Binding Name}" Margin="0 4" />
+                                    </DataTemplate>
+                                </ComboBox.ItemTemplate>
+                            </ComboBox>
+                        </StackPanel>
+                    </controls:Setting>
+
+                    <Rectangle Classes="settings-separator" IsVisible="{Binding FocusLinkEnabled}" />
+                    <controls:Setting Icon="{DynamicResource Brush}" IsVisible="{Binding FocusLinkEnabled}"
+                        Title="{x:Static locales:Locale.Settings_Appearance_FocusLink_Delay_Title}"
+                        Subtitle="{x:Static locales:Locale.Settings_Appearance_FocusLink_Delay_Subtitle}">
+                        <NumericUpDown MinWidth="130" Minimum="0" Maximum="1000" Increment="50" FormatString="F0"
+                                       ParsingNumberStyle="Integer" Value="{Binding FocusSwitchDelayMs}"
+                                       AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_FocusLink_Delay_Title}" />
+                    </controls:Setting>
+
+                    <Rectangle Classes="settings-separator" IsVisible="{Binding FocusLinkEnabled}" />
+                    <controls:Setting Icon="{DynamicResource Color}" IsVisible="{Binding FocusLinkEnabled}"
+                        Title="{x:Static locales:Locale.Settings_Appearance_FocusLink_Whitelist_Title}"
+                        Subtitle="{x:Static locales:Locale.Settings_Appearance_FocusLink_Whitelist_Subtitle}">
+                        <StackPanel Orientation="Vertical" Spacing="6" MinWidth="260" HorizontalAlignment="Right">
+                            <ItemsControl ItemsSource="{Binding FocusWhitelist}" HorizontalAlignment="Right">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <WrapPanel MaxWidth="300" HorizontalAlignment="Right" />
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate DataType="viewModels:FocusWhitelistItemViewModel">
+                                        <Border Margin="0 0 4 4" Padding="8 2"
+                                                CornerRadius="{DynamicResource HostSurfaceCornerRadius}"
+                                                Background="{DynamicResource SystemControlBackgroundAltHighBrush}">
+                                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                                <TextBlock Text="{Binding Name}" VerticalAlignment="Center" />
+                                                <Button Padding="2" Background="Transparent" BorderThickness="0"
+                                                        FontSize="{DynamicResource FontSizeCaption}"
+                                                        Content="{x:Static locales:Locale.Settings_Appearance_FocusLink_Whitelist_Remove}"
+                                                        Tag="{Binding Name}" Click="RemoveFocusProcess" />
+                                            </StackPanel>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                            <TextBlock Text="{x:Static locales:Locale.Settings_Appearance_FocusLink_Whitelist_Empty}"
+                                       IsVisible="{Binding ShowFocusWhitelistEmpty}" HorizontalAlignment="Right"
+                                       Opacity="0.6" FontSize="{DynamicResource FontSizeCaption}" />
+                            <Button Content="{x:Static locales:Locale.Settings_Appearance_FocusLink_Whitelist_Add}"
+                                    Click="AddFocusProcess" HorizontalAlignment="Right" />
+                        </StackPanel>
+                    </controls:Setting>
+
+                    <Rectangle Classes="settings-separator" IsVisible="{Binding FocusLinkEnabled}" />
+                    <controls:Setting Icon="{DynamicResource Brush}" IsVisible="{Binding FocusLinkEnabled}"
+                        Title="{x:Static locales:Locale.Settings_Appearance_FocusLink_Status_Title}">
+                        <TextBlock Text="{Binding FocusStatusText}" VerticalAlignment="Center" HorizontalAlignment="Right"
+                                   AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_FocusLink_Status_Title}" />
+                    </controls:Setting>
+                </StackPanel>
+            </Border>
         </StackPanel>
-        <TextBlock FontSize="14" FontWeight="SemiBold" Margin="0 0 0 10"
-                   Text="{x:Static locales:Locale.Settings_Appearance_FocusLink_Title}"/>
-        <controls:Setting Icon="{DynamicResource Windows}"
-            Title="{x:Static locales:Locale.Settings_Appearance_FocusLink_Enable_Title}"
-            Subtitle="{x:Static locales:Locale.Settings_Appearance_FocusLink_Enable_Subtitle}">
-            <ToggleSwitch IsChecked="{Binding FocusLinkEnabled}" HorizontalAlignment="Right"
-                          AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_FocusLink_Enable_Title}" />
-        </controls:Setting>
-        <controls:Setting Icon="{DynamicResource Brush}" IsVisible="{Binding FocusLinkEnabled}"
-            Title="{x:Static locales:Locale.Settings_Appearance_FocusLink_FocusedState_Title}"
-            Subtitle="{x:Static locales:Locale.Settings_Appearance_FocusLink_State_Subtitle}">
-            <StackPanel Orientation="Horizontal" Spacing="8">
-                <ComboBox MinWidth="120" ItemsSource="{Binding FocusSurfaceOptions}"
-                          SelectedItem="{Binding FocusSurfaceFocused}"
-                          AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_FocusLink_FocusedState_Title}">
-                    <ComboBox.ItemTemplate>
-                        <DataTemplate DataType="viewModels:FocusSurfaceViewModel">
-                            <TextBlock Text="{Binding Name}" Margin="0 4" />
-                        </DataTemplate>
-                    </ComboBox.ItemTemplate>
-                </ComboBox>
-                <ComboBox MinWidth="110" ItemsSource="{Binding DarkModes}"
-                          SelectedItem="{Binding FocusModeFocused}">
-                    <ComboBox.ItemTemplate>
-                        <DataTemplate DataType="viewModels:DarkModeViewModel">
-                            <TextBlock Text="{Binding Name}" Margin="0 4" />
-                        </DataTemplate>
-                    </ComboBox.ItemTemplate>
-                </ComboBox>
-            </StackPanel>
-        </controls:Setting>
-        <controls:Setting Icon="{DynamicResource Brush}" IsVisible="{Binding FocusLinkEnabled}"
-            Title="{x:Static locales:Locale.Settings_Appearance_FocusLink_UnfocusedState_Title}"
-            Subtitle="{x:Static locales:Locale.Settings_Appearance_FocusLink_State_Subtitle}">
-            <StackPanel Orientation="Horizontal" Spacing="8">
-                <ComboBox MinWidth="120" ItemsSource="{Binding FocusSurfaceOptions}"
-                          SelectedItem="{Binding FocusSurfaceUnfocused}"
-                          AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_FocusLink_UnfocusedState_Title}">
-                    <ComboBox.ItemTemplate>
-                        <DataTemplate DataType="viewModels:FocusSurfaceViewModel">
-                            <TextBlock Text="{Binding Name}" Margin="0 4" />
-                        </DataTemplate>
-                    </ComboBox.ItemTemplate>
-                </ComboBox>
-                <ComboBox MinWidth="110" ItemsSource="{Binding DarkModes}"
-                          SelectedItem="{Binding FocusModeUnfocused}">
-                    <ComboBox.ItemTemplate>
-                        <DataTemplate DataType="viewModels:DarkModeViewModel">
-                            <TextBlock Text="{Binding Name}" Margin="0 4" />
-                        </DataTemplate>
-                    </ComboBox.ItemTemplate>
-                </ComboBox>
-            </StackPanel>
-        </controls:Setting>
-        <TextBlock Margin="40 2 0 6" FontSize="{DynamicResource FontSizeCaption}"
-                   Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"
-                   Text="{x:Static locales:Locale.Settings_Appearance_FocusLink_ColorPolicy_Hint}"
-                   IsVisible="{Binding FocusLinkEnabled}" TextWrapping="Wrap" />
-        <controls:Setting Icon="{DynamicResource Brush}" IsVisible="{Binding FocusLinkEnabled}"
-            Title="{x:Static locales:Locale.Settings_Appearance_FocusLink_Delay_Title}"
-            Subtitle="{x:Static locales:Locale.Settings_Appearance_FocusLink_Delay_Subtitle}">
-            <NumericUpDown MinWidth="130" Minimum="0" Maximum="1000" Increment="50" FormatString="F0"
-                           ParsingNumberStyle="Integer" Value="{Binding FocusSwitchDelayMs}"
-                           AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_FocusLink_Delay_Title}" />
-        </controls:Setting>
-        <controls:Setting Icon="{DynamicResource Color}" IsVisible="{Binding FocusLinkEnabled}"
-            Title="{x:Static locales:Locale.Settings_Appearance_FocusLink_Whitelist_Title}"
-            Subtitle="{x:Static locales:Locale.Settings_Appearance_FocusLink_Whitelist_Subtitle}">
-            <StackPanel Orientation="Vertical" Spacing="6" MinWidth="260" HorizontalAlignment="Right">
-                <ItemsControl ItemsSource="{Binding FocusWhitelist}" HorizontalAlignment="Right">
-                    <ItemsControl.ItemsPanel>
-                        <ItemsPanelTemplate>
-                            <WrapPanel MaxWidth="300" HorizontalAlignment="Right" />
-                        </ItemsPanelTemplate>
-                    </ItemsControl.ItemsPanel>
-                    <ItemsControl.ItemTemplate>
-                        <DataTemplate DataType="viewModels:FocusWhitelistItemViewModel">
-                            <Border Margin="0 0 4 4" Padding="8 2"
-                                    CornerRadius="{DynamicResource HostSurfaceCornerRadius}"
-                                    Background="{DynamicResource SystemControlBackgroundAltHighBrush}">
-                                <StackPanel Orientation="Horizontal" Spacing="6">
-                                    <TextBlock Text="{Binding Name}" VerticalAlignment="Center" />
-                                    <Button Padding="2" Background="Transparent" BorderThickness="0"
-                                            FontSize="{DynamicResource FontSizeCaption}"
-                                            Content="{x:Static locales:Locale.Settings_Appearance_FocusLink_Whitelist_Remove}"
-                                            Tag="{Binding Name}" Click="RemoveFocusProcess" />
-                                </StackPanel>
-                            </Border>
-                        </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>
-                <TextBlock Text="{x:Static locales:Locale.Settings_Appearance_FocusLink_Whitelist_Empty}"
-                           IsVisible="{Binding ShowFocusWhitelistEmpty}" HorizontalAlignment="Right"
-                           Opacity="0.6" FontSize="{DynamicResource FontSizeCaption}" />
-                <Button Content="{x:Static locales:Locale.Settings_Appearance_FocusLink_Whitelist_Add}"
-                        Click="AddFocusProcess" HorizontalAlignment="Right" />
-            </StackPanel>
-        </controls:Setting>
-        <controls:Setting Icon="{DynamicResource Brush}" IsVisible="{Binding FocusLinkEnabled}"
-            Title="{x:Static locales:Locale.Settings_Appearance_FocusLink_Status_Title}">
-            <TextBlock Text="{Binding FocusStatusText}" VerticalAlignment="Center" HorizontalAlignment="Right"
-                       AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_FocusLink_Status_Title}" />
-        </controls:Setting>
-        <TextBlock FontSize="14" FontWeight="SemiBold" Margin="0 20 0 10" 
-                   Text="{x:Static locales:Locale.Settings_Appearance_ApplyTheme}"/>
-        <ItemsControl ItemsSource="{Binding Themes}">
-            <ItemsControl.ItemTemplate>
-                <DataTemplate DataType="controls:ThemeButton">
-                    <ContentControl Content="{Binding}" />
-                </DataTemplate>
-            </ItemsControl.ItemTemplate>
-            <ItemsControl.ItemsPanel>
-                <ItemsPanelTemplate>
-                    <WrapPanel Orientation="Horizontal" HorizontalAlignment="Left" MaxWidth="600" />
-                </ItemsPanelTemplate>
-            </ItemsControl.ItemsPanel>
-        </ItemsControl>
-        <StackPanel IsVisible="{Binding ShowHighlightSettings}" Spacing="3" Margin="0 0 0 6">
-            <!-- 高光 is shared by every material: 液态玻璃 evaluates it inside the glass shader,
-                 毛玻璃 / 全彩 draw the same rim through the host's SpecularHighlight overlay. -->
-            <TextBlock FontSize="14" FontWeight="SemiBold" Margin="0 20 0 10"
+
+        <!-- 主题预设模块 -->
+        <StackPanel Spacing="4">
+            <TextBlock Classes="dc-section-header" Margin="4,0,0,2"
+                       Text="{x:Static locales:Locale.Settings_Appearance_ApplyTheme}"/>
+            <Border Classes="settings-group-card" Padding="14,12">
+                <StackPanel Spacing="10">
+                    <ItemsControl ItemsSource="{Binding Themes}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate DataType="controls:ThemeButton">
+                                <ContentControl Content="{Binding}" />
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <WrapPanel Orientation="Horizontal" HorizontalAlignment="Left" MaxWidth="600" />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                    </ItemsControl>
+
+                    <Rectangle Classes="settings-separator" Margin="0,2" />
+
+                    <!-- 壁纸与光学快捷操作 -->
+                    <WrapPanel Orientation="Horizontal">
+                        <Button Content="{x:Static locales:Locale.Settings_Appearance_Glass_Align}" Click="OpenWallpaperAlign" Margin="0 0 8 4" />
+                        <Button Content="{x:Static locales:Locale.Settings_Appearance_Glass_Reset}" Click="ResetLiquidGlass" Margin="0 0 8 4" />
+                        <Button Content="{x:Static locales:Locale.Settings_Appearance_Glass_Refresh}" Click="RefreshLiquidGlassWallpaper" Margin="0 0 0 4" />
+                    </WrapPanel>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+
+        <!-- 高光与光学效果模块 -->
+        <StackPanel Spacing="4" IsVisible="{Binding ShowHighlightSettings}">
+            <TextBlock Classes="dc-section-header" Margin="4,0,0,2"
                        Text="{x:Static locales:Locale.Settings_Appearance_Highlight}" />
-            <controls:Setting Title="{x:Static locales:Locale.Settings_Appearance_Glass_Highlight}"
-                              Subtitle="{x:Static locales:Locale.Settings_Appearance_Glass_HighlightHint}">
-                <controls:LabeledSlider Width="264" Margin="14 0 0 0"
-                                        Minimum="0" Maximum="100" Step="1"
-                                        ShowEditableValue="True" DisplayFormat="F0"
-                                        Value="{Binding GlassHighlight}" ValueCommitted="CommitThemeSliders"
-                                        AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_Glass_Highlight}" />
-            </controls:Setting>
-            <controls:Setting Title="{x:Static locales:Locale.Settings_Appearance_Glass_HighlightAngle}"
-                              Subtitle="{x:Static locales:Locale.Settings_Appearance_Glass_HighlightAngleHint}">
-                <controls:LabeledSlider Width="264" Margin="14 0 0 0"
-                                        Minimum="0" Maximum="360" Step="5"
-                                        ShowEditableValue="True" DisplayFormat="F0"
-                                        Value="{Binding GlassHighlightAngle}" ValueCommitted="CommitThemeSliders"
-                                        AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_Glass_HighlightAngle}" />
-            </controls:Setting>
+            <Border Classes="settings-group-card">
+                <StackPanel>
+                    <controls:Setting Title="{x:Static locales:Locale.Settings_Appearance_Glass_Highlight}"
+                                      Subtitle="{x:Static locales:Locale.Settings_Appearance_Glass_HighlightHint}">
+                        <controls:LabeledSlider Width="264" Margin="14 0 0 0"
+                                                Minimum="0" Maximum="100" Step="1"
+                                                ShowEditableValue="True" DisplayFormat="F0"
+                                                Value="{Binding GlassHighlight}" ValueCommitted="CommitThemeSliders"
+                                                AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_Glass_Highlight}" />
+                    </controls:Setting>
+                    <Rectangle Classes="settings-separator" />
+                    <controls:Setting Title="{x:Static locales:Locale.Settings_Appearance_Glass_HighlightAngle}"
+                                      Subtitle="{x:Static locales:Locale.Settings_Appearance_Glass_HighlightAngleHint}">
+                        <controls:LabeledSlider Width="264" Margin="14 0 0 0"
+                                                Minimum="0" Maximum="360" Step="5"
+                                                ShowEditableValue="True" DisplayFormat="F0"
+                                                Value="{Binding GlassHighlightAngle}" ValueCommitted="CommitThemeSliders"
+                                                AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_Glass_HighlightAngle}" />
+                    </controls:Setting>
+                </StackPanel>
+            </Border>
         </StackPanel>
+
+        <!-- 液态玻璃光学高级设置（折叠面板） -->
         <controls:CollapsibleSection IsVisible="{Binding ShowGlassOpticsSettings}"
-                                     Margin="0 16 0 6"
+                                     Margin="0 2 0 2"
                                      Header="{Binding GlassOpticsTitle}"
                                      IsExpanded="{Binding OpticsExpanded}">
-            <!-- Expert optics stay folded; defaults work out of the box. -->
             <controls:CollapsibleSection.SectionContent>
-                <StackPanel Spacing="3">
-                    <controls:Setting Title="{x:Static locales:Locale.Settings_Appearance_Glass_LiveSampling}"
-                                      Subtitle="{x:Static locales:Locale.Settings_Appearance_Glass_LiveSamplingHint}">
-                        <ToggleSwitch IsChecked="{Binding LiveSampling}" HorizontalAlignment="Right"
-                                      AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_Glass_LiveSampling}" />
-                    </controls:Setting>
-                    <controls:Setting Title="{x:Static locales:Locale.Settings_Appearance_Glass_LiveSamplingInterval}"
-                                      Subtitle="{x:Static locales:Locale.Settings_Appearance_Glass_LiveSamplingIntervalHint}"
-                                      IsVisible="{Binding LiveSampling}">
-                        <NumericUpDown MinWidth="130" Minimum="10" Maximum="1000" Increment="10" FormatString="F0"
-                                       Value="{Binding LiveSamplingInterval}"
-                                       AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_Glass_LiveSamplingInterval}" />
-                    </controls:Setting>
-                    <controls:Setting Title="{x:Static locales:Locale.Settings_Appearance_Glass_Blur}"
-                                      Subtitle="{x:Static locales:Locale.Settings_Appearance_Glass_BlurHint}">
-                        <controls:LabeledSlider Width="264" Margin="14 0 0 0"
-                                                Minimum="0" Maximum="100" Step="1"
-                                                ShowEditableValue="True" DisplayFormat="F0"
-                                                Value="{Binding GlassBlur}" ValueCommitted="CommitThemeSliders"
-                                                AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_Glass_Blur}" />
-                    </controls:Setting>
-                    <controls:Setting Title="{x:Static locales:Locale.Settings_Appearance_Glass_Refraction}"
-                                      Subtitle="{x:Static locales:Locale.Settings_Appearance_Glass_RefractionHint}">
-                        <controls:LabeledSlider Width="264" Margin="14 0 0 0"
-                                                Minimum="0" Maximum="100" Step="1"
-                                                ShowEditableValue="True" DisplayFormat="F0"
-                                                Value="{Binding GlassRefraction}" ValueCommitted="CommitThemeSliders"
-                                                AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_Glass_Refraction}" />
-                    </controls:Setting>
-                    <controls:Setting Title="{x:Static locales:Locale.Settings_Appearance_Glass_Dispersion}"
-                                      Subtitle="{x:Static locales:Locale.Settings_Appearance_Glass_DispersionHint}">
-                        <controls:LabeledSlider Width="264" Margin="14 0 0 0"
-                                                Minimum="0" Maximum="100" Step="1"
-                                                ShowEditableValue="True" DisplayFormat="F0"
-                                                Value="{Binding GlassDispersion}" ValueCommitted="CommitThemeSliders"
-                                                AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_Glass_Dispersion}" />
-                    </controls:Setting>
-                    <controls:Setting Title="{x:Static locales:Locale.Settings_Appearance_Glass_Vibrancy}"
-                                      Subtitle="{x:Static locales:Locale.Settings_Appearance_Glass_VibrancyHint}">
-                        <controls:LabeledSlider Width="264" Margin="14 0 0 0"
-                                                Minimum="0" Maximum="100" Step="1"
-                                                ShowEditableValue="True" DisplayFormat="F0"
-                                                Value="{Binding GlassVibrancy}" ValueCommitted="CommitThemeSliders"
-                                                AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_Glass_Vibrancy}" />
-                    </controls:Setting>
-                    <controls:Setting Title="{x:Static locales:Locale.Settings_Appearance_Glass_BackdropClarity}"
-                                      Subtitle="{x:Static locales:Locale.Settings_Appearance_Glass_BackdropClarityHint}">
-                        <controls:LabeledSlider Width="264" Margin="14 0 0 0"
-                                                Minimum="5" Maximum="100" Step="1"
-                                                ShowEditableValue="True" DisplayFormat="F0"
-                                                Value="{Binding GlassBackdropClarity}" ValueCommitted="CommitThemeSliders"
-                                                AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_Glass_BackdropClarity}" />
-                    </controls:Setting>
-                </StackPanel>
+                <Border Classes="settings-group-card" Margin="0 4 0 0">
+                    <StackPanel>
+                        <controls:Setting Title="{x:Static locales:Locale.Settings_Appearance_Glass_LiveSampling}"
+                                          Subtitle="{x:Static locales:Locale.Settings_Appearance_Glass_LiveSamplingHint}">
+                            <ToggleSwitch IsChecked="{Binding LiveSampling}" HorizontalAlignment="Right"
+                                          AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_Glass_LiveSampling}" />
+                        </controls:Setting>
+                        <Rectangle Classes="settings-separator" IsVisible="{Binding LiveSampling}" />
+                        <controls:Setting Title="{x:Static locales:Locale.Settings_Appearance_Glass_LiveSamplingInterval}"
+                                          Subtitle="{x:Static locales:Locale.Settings_Appearance_Glass_LiveSamplingIntervalHint}"
+                                          IsVisible="{Binding LiveSampling}">
+                            <NumericUpDown MinWidth="130" Minimum="10" Maximum="1000" Increment="10" FormatString="F0"
+                                           Value="{Binding LiveSamplingInterval}"
+                                           AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_Glass_LiveSamplingInterval}" />
+                        </controls:Setting>
+                        <Rectangle Classes="settings-separator" />
+                        <controls:Setting Title="{x:Static locales:Locale.Settings_Appearance_Glass_Blur}"
+                                          Subtitle="{x:Static locales:Locale.Settings_Appearance_Glass_BlurHint}">
+                            <controls:LabeledSlider Width="264" Margin="14 0 0 0"
+                                                    Minimum="0" Maximum="100" Step="1"
+                                                    ShowEditableValue="True" DisplayFormat="F0"
+                                                    Value="{Binding GlassBlur}" ValueCommitted="CommitThemeSliders"
+                                                    AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_Glass_Blur}" />
+                        </controls:Setting>
+                        <Rectangle Classes="settings-separator" />
+                        <controls:Setting Title="{x:Static locales:Locale.Settings_Appearance_Glass_Refraction}"
+                                          Subtitle="{x:Static locales:Locale.Settings_Appearance_Glass_RefractionHint}">
+                            <controls:LabeledSlider Width="264" Margin="14 0 0 0"
+                                                    Minimum="0" Maximum="100" Step="1"
+                                                    ShowEditableValue="True" DisplayFormat="F0"
+                                                    Value="{Binding GlassRefraction}" ValueCommitted="CommitThemeSliders"
+                                                    AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_Glass_Refraction}" />
+                        </controls:Setting>
+                        <Rectangle Classes="settings-separator" />
+                        <controls:Setting Title="{x:Static locales:Locale.Settings_Appearance_Glass_Dispersion}"
+                                          Subtitle="{x:Static locales:Locale.Settings_Appearance_Glass_DispersionHint}">
+                            <controls:LabeledSlider Width="264" Margin="14 0 0 0"
+                                                    Minimum="0" Maximum="100" Step="1"
+                                                    ShowEditableValue="True" DisplayFormat="F0"
+                                                    Value="{Binding GlassDispersion}" ValueCommitted="CommitThemeSliders"
+                                                    AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_Glass_Dispersion}" />
+                        </controls:Setting>
+                        <Rectangle Classes="settings-separator" />
+                        <controls:Setting Title="{x:Static locales:Locale.Settings_Appearance_Glass_Vibrancy}"
+                                          Subtitle="{x:Static locales:Locale.Settings_Appearance_Glass_VibrancyHint}">
+                            <controls:LabeledSlider Width="264" Margin="14 0 0 0"
+                                                    Minimum="0" Maximum="100" Step="1"
+                                                    ShowEditableValue="True" DisplayFormat="F0"
+                                                    Value="{Binding GlassVibrancy}" ValueCommitted="CommitThemeSliders"
+                                                    AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_Glass_Vibrancy}" />
+                        </controls:Setting>
+                        <Rectangle Classes="settings-separator" />
+                        <controls:Setting Title="{x:Static locales:Locale.Settings_Appearance_Glass_BackdropClarity}"
+                                          Subtitle="{x:Static locales:Locale.Settings_Appearance_Glass_BackdropClarityHint}">
+                            <controls:LabeledSlider Width="264" Margin="14 0 0 0"
+                                                    Minimum="5" Maximum="100" Step="1"
+                                                    ShowEditableValue="True" DisplayFormat="F0"
+                                                    Value="{Binding GlassBackdropClarity}" ValueCommitted="CommitThemeSliders"
+                                                    AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_Glass_BackdropClarity}" />
+                        </controls:Setting>
+                    </StackPanel>
+                </Border>
             </controls:CollapsibleSection.SectionContent>
         </controls:CollapsibleSection>
-        <WrapPanel Orientation="Horizontal" Margin="0 8 0 0">
-            <Button Content="{x:Static locales:Locale.Settings_Appearance_Glass_Align}" Click="OpenWallpaperAlign" Margin="0 0 8 6" />
-            <Button Content="{x:Static locales:Locale.Settings_Appearance_Glass_Reset}" Click="ResetLiquidGlass" Margin="0 0 8 6" />
-            <Button Content="{x:Static locales:Locale.Settings_Appearance_Glass_Refresh}" Click="RefreshLiquidGlassWallpaper" Margin="0 0 0 6" />
-        </WrapPanel>
-        <TextBlock FontSize="14" FontWeight="SemiBold" Margin="0 20 0 10" 
-                   Text="{x:Static locales:Locale.Settings_Appearance_Colors}"/>
-        <controls:Setting Icon="{DynamicResource Brush}" 
-            Title="{x:Static locales:Locale.Settings_Appearance_DarkMode_Title}" 
-            Subtitle="{x:Static locales:Locale.Settings_Appearance_DarkMode_Subtitle}"
-            IsVisible="{Binding ShowDarkModeRow}">
-            <ComboBox ItemsSource="{Binding DarkModes}" MinWidth="130" 
-                      SelectedItem="{Binding DarkMode}">
-                <ComboBox.ItemTemplate>
-                    <DataTemplate DataType="viewModels:DarkModeViewModel">
-                        <TextBlock Text="{Binding Name}" Margin="0 4" />
-                    </DataTemplate>
-                </ComboBox.ItemTemplate>
-            </ComboBox>
-        </controls:Setting>
-        <controls:Setting Icon="{DynamicResource Transparency}" 
-            Title="{x:Static locales:Locale.Settings_Appearance_OpacityLevel_Title}" 
-            Subtitle="{x:Static locales:Locale.Settings_Appearance_OpacityLevel_Subtitle}"
-            IsVisible="{Binding ShowOpacitySetting}">
-            <controls:LabeledSlider x:Name="OpacityEditor" Width="264" Minimum="0" Maximum="1" Step="0.05"
-                                    ShowEditableValue="True" DisplayFormat="F2"
-                                    Value="{Binding OpacityLevel}" ValueCommitted="CommitOpacityLevel"
-                                    AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_OpacityLevel_Title}" />
-        </controls:Setting>
-        <controls:Setting Icon="{DynamicResource Font}"
-            Title="{x:Static locales:Locale.Settings_Appearance_TextShadow_Title}"
-            Subtitle="{x:Static locales:Locale.Settings_Appearance_TextShadow_Subtitle}">
-            <StackPanel Orientation="Vertical" Spacing="6" HorizontalAlignment="Right">
-                <ToggleSwitch IsChecked="{Binding TextShadowEnabled}" HorizontalAlignment="Right" />
-                <controls:LabeledSlider Width="264" Margin="14 0 0 0"
-                                        Minimum="0" Maximum="100" Step="5"
-                                        ShowEditableValue="True" DisplayFormat="F0"
-                                        Value="{Binding TextShadowStrength}" ValueCommitted="CommitThemeSliders"
-                                        AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_TextShadow_Strength}" />
-            </StackPanel>
-        </controls:Setting>
-        <controls:Setting Icon="{DynamicResource Color}" 
-                          Title="{x:Static locales:Locale.Settings_Appearance_AccentColor_Title}"
-                          IsVisible="{Binding ShowAccentSetting}">
-            <StackPanel Orientation="Horizontal" Spacing="16">
-                <controls:ColorInput IsVisible="{Binding ShowColorPalette}"
-                                     Value="{Binding AccentColorHex}"
-                                     AllowEmpty="True" ColorFormat="Argb" AlphaPolicy="Preserve" />
-                <ComboBox ItemsSource="{Binding AccentComboboxItems}" MinWidth="130" 
-                          SelectedItem="{Binding AccentMode}">
-                    <ComboBox.ItemTemplate>
-                        <DataTemplate DataType="viewModels:AccentColorViewModel">
-                            <TextBlock Text="{Binding Name}" Margin="0 4" />
-                        </DataTemplate>
-                    </ComboBox.ItemTemplate>
-                </ComboBox>
-            </StackPanel>
-        </controls:Setting>
-        <controls:Setting Icon="{DynamicResource Color}"
-                          Title="{x:Static locales:Locale.Settings_Appearance_AccentShift_Title}"
-                          Subtitle="{x:Static locales:Locale.Settings_Appearance_AccentShift_Subtitle}"
-                          IsVisible="{Binding ShowAccentSetting}">
-            <controls:LabeledSlider Width="264" Minimum="0" Maximum="100" Step="1"
-                                    ShowEditableValue="True" DisplayFormat="F0" Unit="%"
-                                    Value="{Binding AccentShift}" ValueCommitted="CommitThemeSliders"
-                                    AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_AccentShift_Title}" />
-        </controls:Setting>
-        <controls:Setting Icon="{DynamicResource Monochrome}" 
-                          Title="{x:Static locales:Locale.Settings_Appearance_Monochrome_Title}" 
-                          Subtitle="{x:Static locales:Locale.Settings_Appearance_Monochrome_Subtitle}"
-                          IsVisible="{Binding ShowMonochromeSetting}">
-            <StackPanel Orientation="Vertical" Spacing="6" HorizontalAlignment="Right">
-                <ToggleSwitch IsChecked="{Binding Monochrome}" HorizontalAlignment="Right" />
-                <ComboBox IsVisible="{Binding ShowMonochromeVariant}" MinWidth="130"
-                          ItemsSource="{Binding MonochromeVariants}"
-                          SelectedItem="{Binding MonochromeVariant}">
-                    <ComboBox.ItemTemplate>
-                        <DataTemplate DataType="viewModels:MonochromeVariantViewModel">
-                            <TextBlock Text="{Binding Name}" Margin="0 4" />
-                        </DataTemplate>
-                    </ComboBox.ItemTemplate>
-                </ComboBox>
-            </StackPanel>
-        </controls:Setting>
-        <controls:Setting Icon="{DynamicResource Color}"
-                          Title="{x:Static locales:Locale.Settings_Appearance_SolidBackground_Title}"
-                          Subtitle="{x:Static locales:Locale.Settings_Appearance_SolidBackground_Subtitle}"
-                          IsVisible="{Binding ShowSolidBackgroundSetting}">
-            <StackPanel Orientation="Vertical" Spacing="8">
-                <!-- 跟随强调色: while it is on, the two pickers below keep showing (and editing)
-                     the STORED pair but are disabled — the card actually paints the derived pair,
-                     and letting an edit through here would silently overwrite the colour the user
-                     keeps for switching the feature back off. -->
-                <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Right">
-                    <TextBlock MinWidth="70" VerticalAlignment="Center"
-                               Text="{x:Static locales:Locale.Settings_Appearance_Background_FollowAccent_Title}" />
-                    <ToggleSwitch IsChecked="{Binding FollowAccentBackground}" HorizontalAlignment="Right" />
+
+        <!-- 色彩与个性化模块 -->
+        <StackPanel Spacing="4">
+            <TextBlock Classes="dc-section-header" Margin="4,0,0,2"
+                       Text="{x:Static locales:Locale.Settings_Appearance_Colors}"/>
+            <Border Classes="settings-group-card">
+                <StackPanel>
+                    <controls:Setting Icon="{DynamicResource Brush}" 
+                        Title="{x:Static locales:Locale.Settings_Appearance_DarkMode_Title}" 
+                        Subtitle="{x:Static locales:Locale.Settings_Appearance_DarkMode_Subtitle}"
+                        IsVisible="{Binding ShowDarkModeRow}">
+                        <ComboBox ItemsSource="{Binding DarkModes}" MinWidth="140" 
+                                  SelectedItem="{Binding DarkMode}">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate DataType="viewModels:DarkModeViewModel">
+                                    <TextBlock Text="{Binding Name}" Margin="0 4" />
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
+                    </controls:Setting>
+
+                    <Rectangle Classes="settings-separator" IsVisible="{Binding ShowOpacitySetting}" />
+                    <controls:Setting Icon="{DynamicResource Transparency}" 
+                        Title="{x:Static locales:Locale.Settings_Appearance_OpacityLevel_Title}" 
+                        Subtitle="{x:Static locales:Locale.Settings_Appearance_OpacityLevel_Subtitle}"
+                        IsVisible="{Binding ShowOpacitySetting}">
+                        <controls:LabeledSlider x:Name="OpacityEditor" Width="264" Minimum="0" Maximum="1" Step="0.05"
+                                                ShowEditableValue="True" DisplayFormat="F2"
+                                                Value="{Binding OpacityLevel}" ValueCommitted="CommitOpacityLevel"
+                                                AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_OpacityLevel_Title}" />
+                    </controls:Setting>
+
+                    <Rectangle Classes="settings-separator" />
+                    <controls:Setting Icon="{DynamicResource Font}"
+                        Title="{x:Static locales:Locale.Settings_Appearance_TextShadow_Title}"
+                        Subtitle="{x:Static locales:Locale.Settings_Appearance_TextShadow_Subtitle}">
+                        <StackPanel Orientation="Vertical" Spacing="6" HorizontalAlignment="Right">
+                            <ToggleSwitch IsChecked="{Binding TextShadowEnabled}" HorizontalAlignment="Right" />
+                            <controls:LabeledSlider Width="264" Margin="14 0 0 0"
+                                                    Minimum="0" Maximum="100" Step="5"
+                                                    ShowEditableValue="True" DisplayFormat="F0"
+                                                    Value="{Binding TextShadowStrength}" ValueCommitted="CommitThemeSliders"
+                                                    AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_TextShadow_Strength}" />
+                        </StackPanel>
+                    </controls:Setting>
+
+                    <Rectangle Classes="settings-separator" IsVisible="{Binding ShowAccentSetting}" />
+                    <controls:Setting Icon="{DynamicResource Color}" 
+                                      Title="{x:Static locales:Locale.Settings_Appearance_AccentColor_Title}"
+                                      IsVisible="{Binding ShowAccentSetting}">
+                        <StackPanel Orientation="Horizontal" Spacing="16">
+                            <controls:ColorInput IsVisible="{Binding ShowColorPalette}"
+                                                 Value="{Binding AccentColorHex}"
+                                                 AllowEmpty="True" ColorFormat="Argb" AlphaPolicy="Preserve" />
+                            <ComboBox ItemsSource="{Binding AccentComboboxItems}" MinWidth="140" 
+                                      SelectedItem="{Binding AccentMode}">
+                                <ComboBox.ItemTemplate>
+                                    <DataTemplate DataType="viewModels:AccentColorViewModel">
+                                        <TextBlock Text="{Binding Name}" Margin="0 4" />
+                                    </DataTemplate>
+                                </ComboBox.ItemTemplate>
+                            </ComboBox>
+                        </StackPanel>
+                    </controls:Setting>
+
+                    <Rectangle Classes="settings-separator" IsVisible="{Binding ShowAccentSetting}" />
+                    <controls:Setting Icon="{DynamicResource Color}"
+                                      Title="{x:Static locales:Locale.Settings_Appearance_AccentShift_Title}"
+                                      Subtitle="{x:Static locales:Locale.Settings_Appearance_AccentShift_Subtitle}"
+                                      IsVisible="{Binding ShowAccentSetting}">
+                        <controls:LabeledSlider Width="264" Minimum="0" Maximum="100" Step="1"
+                                                ShowEditableValue="True" DisplayFormat="F0" Unit="%"
+                                                Value="{Binding AccentShift}" ValueCommitted="CommitThemeSliders"
+                                                AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_AccentShift_Title}" />
+                    </controls:Setting>
+
+                    <Rectangle Classes="settings-separator" IsVisible="{Binding ShowMonochromeSetting}" />
+                    <controls:Setting Icon="{DynamicResource Monochrome}" 
+                                      Title="{x:Static locales:Locale.Settings_Appearance_Monochrome_Title}" 
+                                      Subtitle="{x:Static locales:Locale.Settings_Appearance_Monochrome_Subtitle}"
+                                      IsVisible="{Binding ShowMonochromeSetting}">
+                        <StackPanel Orientation="Vertical" Spacing="6" HorizontalAlignment="Right">
+                            <ToggleSwitch IsChecked="{Binding Monochrome}" HorizontalAlignment="Right" />
+                            <ComboBox IsVisible="{Binding ShowMonochromeVariant}" MinWidth="140"
+                                      ItemsSource="{Binding MonochromeVariants}"
+                                      SelectedItem="{Binding MonochromeVariant}">
+                                <ComboBox.ItemTemplate>
+                                    <DataTemplate DataType="viewModels:MonochromeVariantViewModel">
+                                        <TextBlock Text="{Binding Name}" Margin="0 4" />
+                                    </DataTemplate>
+                                </ComboBox.ItemTemplate>
+                            </ComboBox>
+                        </StackPanel>
+                    </controls:Setting>
+
+                    <Rectangle Classes="settings-separator" IsVisible="{Binding ShowSolidBackgroundSetting}" />
+                    <controls:Setting Icon="{DynamicResource Color}"
+                                      Title="{x:Static locales:Locale.Settings_Appearance_SolidBackground_Title}"
+                                      Subtitle="{x:Static locales:Locale.Settings_Appearance_SolidBackground_Subtitle}"
+                                      IsVisible="{Binding ShowSolidBackgroundSetting}">
+                        <StackPanel Orientation="Vertical" Spacing="8">
+                            <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Right">
+                                <TextBlock MinWidth="70" VerticalAlignment="Center"
+                                           Text="{x:Static locales:Locale.Settings_Appearance_Background_FollowAccent_Title}" />
+                                <ToggleSwitch IsChecked="{Binding FollowAccentBackground}" HorizontalAlignment="Right" />
+                            </StackPanel>
+                            <TextBlock HorizontalAlignment="Right" MaxWidth="360" TextWrapping="Wrap" Opacity="0.7"
+                                       IsVisible="{Binding FollowAccentBackground}"
+                                       Text="{x:Static locales:Locale.Settings_Appearance_Background_FollowAccent_Subtitle}" />
+                            <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Right"
+                                        IsEnabled="{Binding SolidBackgroundEditable}">
+                                <TextBlock MinWidth="70" VerticalAlignment="Center"
+                                           Text="{x:Static locales:Locale.Settings_Appearance_SolidBackground_Dark}" />
+                                <controls:ColorInput Value="{Binding SolidBackgroundDarkHex}"
+                                                     AllowEmpty="True" ColorFormat="Rgb" AlphaPolicy="ForceOpaque" />
+                                <Button Content="{x:Static locales:Locale.Settings_Appearance_SolidBackground_ApplyToLight}"
+                                        Click="ApplySolidToLight" />
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Right"
+                                        IsEnabled="{Binding SolidBackgroundEditable}">
+                                <TextBlock MinWidth="70" VerticalAlignment="Center"
+                                           Text="{x:Static locales:Locale.Settings_Appearance_SolidBackground_Light}" />
+                                <controls:ColorInput Value="{Binding SolidBackgroundLightHex}"
+                                                     AllowEmpty="True" ColorFormat="Rgb" AlphaPolicy="ForceOpaque" />
+                                <Button Content="{x:Static locales:Locale.Settings_Appearance_SolidBackground_ApplyToDark}"
+                                        Click="ApplySolidToDark" />
+                            </StackPanel>
+                        </StackPanel>
+                    </controls:Setting>
                 </StackPanel>
-                <TextBlock HorizontalAlignment="Right" MaxWidth="360" TextWrapping="Wrap" Opacity="0.7"
-                           IsVisible="{Binding FollowAccentBackground}"
-                           Text="{x:Static locales:Locale.Settings_Appearance_Background_FollowAccent_Subtitle}" />
-                <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Right"
-                            IsEnabled="{Binding SolidBackgroundEditable}">
-                    <TextBlock MinWidth="70" VerticalAlignment="Center"
-                               Text="{x:Static locales:Locale.Settings_Appearance_SolidBackground_Dark}" />
-                    <controls:ColorInput Value="{Binding SolidBackgroundDarkHex}"
-                                         AllowEmpty="True" ColorFormat="Rgb" AlphaPolicy="ForceOpaque" />
-                    <Button Content="{x:Static locales:Locale.Settings_Appearance_SolidBackground_ApplyToLight}"
-                            Click="ApplySolidToLight" />
+            </Border>
+        </StackPanel>
+
+        <!-- 字体与窗口装饰模块 -->
+        <StackPanel Spacing="4">
+            <TextBlock Classes="dc-section-header" Margin="4,0,0,2"
+                       Text="{x:Static locales:Locale.Settings_Advanced_Appearance}"/>
+            <Border Classes="settings-group-card">
+                <StackPanel>
+                    <controls:Setting Icon="{DynamicResource Font}" 
+                                      Title="{x:Static locales:Locale.Settings_Advanced_FontFamily_Title}" 
+                                      Subtitle="{x:Static locales:Locale.Settings_Advanced_FontFamily_Subtitle}">
+                        <StackPanel Orientation="Vertical" Spacing="6" MinWidth="260">
+                            <TextBox PlaceholderText="{x:Static locales:Locale.Settings_Appearance_FontSearchWatermark}"
+                                     Text="{Binding FontSearchText}" />
+                            <ComboBox ItemsSource="{Binding FilteredFonts}" 
+                                      SelectedItem="{Binding Font}"
+                                      VerticalAlignment="Center">
+                                <ComboBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding}" Margin="0 4" />
+                                    </DataTemplate>
+                                </ComboBox.ItemTemplate>
+                            </ComboBox>
+                            <TextBlock Text="{x:Static locales:Locale.Settings_Appearance_FontNoResults}"
+                                       IsVisible="{Binding NoFontResults}"
+                                       Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}" />
+                        </StackPanel>
+                    </controls:Setting>
+
+                    <Rectangle Classes="settings-separator" />
+                    <controls:Setting Icon="{DynamicResource Windows}" 
+                                      Title="{x:Static locales:Locale.Settings_Advanced_TitleBarStyle_Title}" 
+                                      Subtitle="{x:Static locales:Locale.Settings_Advanced_TitleBarStyle_Subtitle}">
+                        <ComboBox MinWidth="140" ItemsSource="{Binding TitleBarStyles}"
+                                  SelectedItem="{Binding TitleBarStyle}">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate DataType="viewModels:TitleBarStyleViewModel">
+                                    <TextBlock Text="{Binding Name}" Margin="0 4" />
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
+                    </controls:Setting>
+
+                    <Rectangle Classes="settings-separator" IsVisible="{Binding ShowTitleBarSize}" />
+                    <controls:Setting IsVisible="{Binding ShowTitleBarSize}" Icon="{DynamicResource WidgetSize}"
+                                      Title="{x:Static locales:Locale.Settings_Advanced_TitleBarSize_Title}"
+                                      Subtitle="{x:Static locales:Locale.Settings_Advanced_TitleBarSize_Subtitle}">
+                        <ComboBox MinWidth="140" ItemsSource="{Binding TitleBarSizes}"
+                                  SelectedItem="{Binding TitleBarSize}">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate DataType="viewModels:TitleBarSizeViewModel">
+                                    <TextBlock Text="{Binding Name}" Margin="0 4" />
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
+                    </controls:Setting>
                 </StackPanel>
-                <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Right"
-                            IsEnabled="{Binding SolidBackgroundEditable}">
-                    <TextBlock MinWidth="70" VerticalAlignment="Center"
-                               Text="{x:Static locales:Locale.Settings_Appearance_SolidBackground_Light}" />
-                    <controls:ColorInput Value="{Binding SolidBackgroundLightHex}"
-                                         AllowEmpty="True" ColorFormat="Rgb" AlphaPolicy="ForceOpaque" />
-                    <Button Content="{x:Static locales:Locale.Settings_Appearance_SolidBackground_ApplyToDark}"
-                            Click="ApplySolidToDark" />
-                </StackPanel>
-            </StackPanel>
-        </controls:Setting>
-        <TextBlock FontSize="14" FontWeight="SemiBold" Margin="0 20 0 10"
-                   Text="{x:Static locales:Locale.Settings_Advanced_Appearance}"/>
-        <controls:Setting Icon="{DynamicResource Font}" 
-                          Title="{x:Static locales:Locale.Settings_Advanced_FontFamily_Title}" 
-                          Subtitle="{x:Static locales:Locale.Settings_Advanced_FontFamily_Subtitle}">
-            <StackPanel Orientation="Vertical" Spacing="6" MinWidth="260">
-                <TextBox PlaceholderText="{x:Static locales:Locale.Settings_Appearance_FontSearchWatermark}"
-                         Text="{Binding FontSearchText}" />
-                <ComboBox ItemsSource="{Binding FilteredFonts}" 
-                          SelectedItem="{Binding Font}"
-                          VerticalAlignment="Center">
-                    <ComboBox.ItemTemplate>
-                        <DataTemplate>
-                            <TextBlock Text="{Binding}" Margin="0 4" />
-                        </DataTemplate>
-                    </ComboBox.ItemTemplate>
-                </ComboBox>
-                <TextBlock Text="{x:Static locales:Locale.Settings_Appearance_FontNoResults}"
-                           IsVisible="{Binding NoFontResults}"
-                           Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}" />
-            </StackPanel>
-        </controls:Setting>
-        <controls:Setting Icon="{DynamicResource Windows}" 
-                          Title="{x:Static locales:Locale.Settings_Advanced_TitleBarStyle_Title}" 
-                          Subtitle="{x:Static locales:Locale.Settings_Advanced_TitleBarStyle_Subtitle}">
-            <ComboBox MinWidth="130" ItemsSource="{Binding TitleBarStyles}"
-                      SelectedItem="{Binding TitleBarStyle}">
-                <ComboBox.ItemTemplate>
-                    <DataTemplate DataType="viewModels:TitleBarStyleViewModel">
-                        <TextBlock Text="{Binding Name}" Margin="0 4" />
-                    </DataTemplate>
-                </ComboBox.ItemTemplate>
-            </ComboBox>
-        </controls:Setting>
-        <controls:Setting IsVisible="{Binding ShowTitleBarSize}" Icon="{DynamicResource WidgetSize}"
-                          Title="{x:Static locales:Locale.Settings_Advanced_TitleBarSize_Title}"
-                          Subtitle="{x:Static locales:Locale.Settings_Advanced_TitleBarSize_Subtitle}">
-            <ComboBox MinWidth="130" ItemsSource="{Binding TitleBarSizes}"
-                      SelectedItem="{Binding TitleBarSize}">
-                <ComboBox.ItemTemplate>
-                    <DataTemplate DataType="viewModels:TitleBarSizeViewModel">
-                        <TextBlock Text="{Binding Name}" Margin="0 4" />
-                    </DataTemplate>
-                </ComboBox.ItemTemplate>
-            </ComboBox>
-        </controls:Setting>
+            </Border>
+        </StackPanel>
     </StackPanel>
 </UserControl>

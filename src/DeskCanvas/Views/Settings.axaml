@@ -14,6 +14,7 @@
         x:DataType="viewModels:SettingsViewModel">
 
     <Window.Styles>
+        <StyleInclude Source="avares://DeskCanvas/Styles/Controls/SettingsSectionHeader.axaml" />
         <!-- The sidebar tint is style-driven (not a local attribute) so code can swap it for the
              fully opaque fallback by toggling the "opaque" class when the acrylic backdrop drops
              (see Settings.ApplySurfaceFallback). -->

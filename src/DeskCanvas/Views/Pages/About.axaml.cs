@@ -20,13 +20,13 @@ public partial class About : UserControl
     public string TipsHeader => IsZh ? "快捷操作与技巧" : "Shortcuts & Tips";
     public string QuickMoveTitle => IsZh ? "快捷移动小组件" : "Quick Move Widget";
     public string QuickMoveSubtitle => IsZh
-        ? "按住 Ctrl 键并使用鼠标左键拖动，可在任何组件（包括地图、便签、文件夹等可交互组件）上直接移动窗口"
-        : "Hold Ctrl and left-drag to move any widget window directly (including interactive widgets like Map, Notes, and Folders)";
+        ? "按住 Ctrl 拖动鼠标左键，可直接移动任何小组件窗口"
+        : "Hold Ctrl and drag left mouse button to directly move any widget";
     public string QuickMoveShortcut => IsZh ? "Ctrl + 鼠标左键拖动" : "Ctrl + Left Drag";
     public string SwitchStackTitle => IsZh ? "切换重叠组件" : "Switch Stacked Widgets";
     public string SwitchStackSubtitle => IsZh
-        ? "在重叠组件上按住鼠标中键并滚动滚轮，即可在多个子组件间循环切换，无需对准右侧小圆点"
-        : "Hold the middle mouse button and scroll the wheel over a Widget Stack to cycle through stacked widgets without aiming at the side dots";
+        ? "在重叠组件上按住鼠标中键并滚动滚轮，快速循环切换卡片"
+        : "Hold middle mouse button and scroll over stacked widgets to cycle items";
     public string SwitchStackShortcut => IsZh ? "鼠标中键 + 滚轮" : "Middle Click + Scroll";
     
     public About(IAppSettingsProvider appSettingsProvider)

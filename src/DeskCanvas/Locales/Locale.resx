@@ -37,7 +37,7 @@
         <value>Choose your mode</value>
     </data>
     <data name="Settings_Appearance_DarkMode_Subtitle" xml:space="preserve">
-        <value>Change the colors that appear in widget</value>
+        <value>Choose light, dark, or follow system</value>
     </data>
     <data name="Settings_Appearance_DarkMode_True" xml:space="preserve">
         <value>Dark </value>
@@ -64,13 +64,13 @@
         <value>Accent shift</value>
     </data>
     <data name="Settings_Appearance_AccentShift_Subtitle" xml:space="preserve">
-        <value>Pushes the accent toward either end: white in dark mode, black in light mode. 0 keeps the raw color</value>
+        <value>Adjust accent color luminance for optimal contrast</value>
     </data>
     <data name="Settings_Appearance_Background_FollowAccent_Title" xml:space="preserve">
         <value>Follow accent color</value>
     </data>
     <data name="Settings_Appearance_Background_FollowAccent_Subtitle" xml:space="preserve">
-        <value>Use the accent as the background color, shifted per mode (toward white in light, toward black in dark) so text stays readable</value>
+        <value>Derive subtle background tint automatically from accent color.</value>
     </data>
     <data name="Settings_Advanced_Size" xml:space="preserve">
         <value>Size</value>
@@ -145,7 +145,7 @@
         <value>Display language</value>
     </data>
     <data name="Settings_General_Language_Subtitle" xml:space="preserve">
-        <value>DeskCanvas will appear in this language</value>
+        <value>Select display language</value>
     </data>
     <data name="Settings_General_DefaultRegion" xml:space="preserve">
         <value>Default region</value>
@@ -166,7 +166,7 @@
         <value>Search result</value>
     </data>
     <data name="Settings_General_DefaultRegion_NotSet" xml:space="preserve">
-        <value>Not set · every widget keeps its own location</value>
+        <value>Not configured (widgets manage locations individually)</value>
     </data>
     <data name="Settings_General_DefaultRegion_Current" xml:space="preserve">
         <value>Current: {0} ({1:0.0000}, {2:0.0000})</value>
@@ -223,7 +223,7 @@
         <value>Uninstall DeskCanvas</value>
     </data>
     <data name="Settings_About_Uninstall_Subtitle" xml:space="preserve">
-        <value>Launch uninstaller to remove DeskCanvas and its shortcuts</value>
+        <value>Launch uninstaller to remove DeskCanvas.</value>
     </data>
     <data name="Settings_About_Uninstall_Action" xml:space="preserve">
         <value>Uninstall...</value>
@@ -244,7 +244,7 @@
         <value>Monochrome theme</value>
     </data>
     <data name="Settings_Appearance_Monochrome_Subtitle" xml:space="preserve">
-        <value>Widgets elements appear in the same color</value>
+        <value>Render widgets in a clean monochrome style</value>
     </data>
     <data name="Settings_Appearance_Monochrome_Variant_BlackWhite" xml:space="preserve">
         <value>Black &amp; white</value>
@@ -268,7 +268,7 @@
         <value>Background color</value>
     </data>
     <data name="Settings_Appearance_SolidBackground_Subtitle" xml:space="preserve">
-        <value>Custom background colors for dark and light mode</value>
+        <value>Custom solid backgrounds for light and dark modes</value>
     </data>
     <data name="Settings_Appearance_SolidBackground_Dark" xml:space="preserve">
         <value>Dark mode</value>
@@ -286,7 +286,7 @@
         <value>Software Update</value>
     </data>
     <data name="Update_UpdateFormat" xml:space="preserve">
-        <value>DeskCanvas {0} is available to&#160;download</value>
+        <value>DeskCanvas {0} is available to download</value>
     </data>
     <data name="Update_Download" xml:space="preserve">
         <value>Download</value>
@@ -307,7 +307,7 @@
         <value>Run on startup</value>
     </data>
     <data name="Settings_General_Startup_Subtitle" xml:space="preserve">
-        <value>Start DeskCanvas automatically after you sign in to Windows.</value>
+        <value>Launch automatically on system startup</value>
     </data>
     <data name="Settings_General_Startup" xml:space="preserve">
         <value>Startup</value>
@@ -328,13 +328,13 @@
         <value>Prevent accidental widget resizing</value>
     </data>
     <data name="Settings_Advanced_LockPosition_Subtitle" xml:space="preserve">
-        <value>Prevent accidental widget drags.</value>
+        <value>Lock desktop widgets to prevent accidental dragging</value>
     </data>
     <data name="Settings_Advanced_ProhibitOverlap_Title" xml:space="preserve">
         <value>Prohibit widget overlap</value>
     </data>
     <data name="Settings_Advanced_ProhibitOverlap_Subtitle" xml:space="preserve">
-        <value>When no free cell is left, refuse to place a new widget instead of stacking it on the first cell. Dragging a card onto an occupied cell is refused too</value>
+        <value>Prevent widgets from overlapping on the desktop</value>
     </data>
     <data name="Settings_Advanced_Position" xml:space="preserve">
         <value>Position</value>
@@ -382,7 +382,7 @@
         <value>Font Family</value>
     </data>
     <data name="Settings_Advanced_FontFamily_Subtitle" xml:space="preserve">
-        <value>Font family used in widgets</value>
+        <value>UI text font family</value>
     </data>
     <data name="Settings_Advanced_UseNativeFrame_Subtitle" xml:space="preserve">
         <value>Use native window frame</value>
@@ -394,7 +394,7 @@
         <value>Title bar style</value>
     </data>
     <data name="Settings_Advanced_TitleBarStyle_Subtitle" xml:space="preserve">
-        <value>Title bar of the settings window (system buttons or macOS traffic lights)</value>
+        <value>Window title bar and caption buttons style</value>
     </data>
     <data name="Settings_Advanced_TitleBarStyle_Native" xml:space="preserve">
         <value>Native</value>
@@ -406,7 +406,7 @@
         <value>Traffic light size</value>
     </data>
     <data name="Settings_Advanced_TitleBarSize_Subtitle" xml:space="preserve">
-        <value>Diameter of the traffic lights (proportional scaling); 12px is the macOS standard</value>
+        <value>Adjust traffic light button diameter</value>
     </data>
     <data name="TrafficLight_Close" xml:space="preserve">
         <value>Close</value>
@@ -427,13 +427,13 @@
         <value>Opacity Level</value>
     </data>
     <data name="Settings_Appearance_OpacityLevel_Subtitle" xml:space="preserve">
-        <value>Opacity level of widget's background</value>
+        <value>Adjust widget background opacity</value>
     </data>
     <data name="Settings_Appearance_TextShadow_Title" xml:space="preserve">
         <value>Global element shadows</value>
     </data>
     <data name="Settings_Appearance_TextShadow_Subtitle" xml:space="preserve">
-        <value>Add a soft drop shadow to widget text and elements like progress bars for readability over busy wallpapers (off by default)</value>
+        <value>Add text shadow for better readability on complex wallpapers</value>
     </data>
     <data name="Settings_Appearance_TextShadow_Strength" xml:space="preserve">
         <value>Shadow strength</value>
@@ -484,7 +484,7 @@
         <value>Edit grid</value>
     </data>
     <data name="Settings_Advanced_GridEdit_Subtitle" xml:space="preserve">
-        <value>Manage each screen's grid, margins and scale.</value>
+        <value>Configure screen grid layout, margins, and scaling</value>
     </data>
     <data name="Settings_Advanced_GridEditorHint" xml:space="preserve">
         <value>Drag the grid to move it · edit rows / columns / cell size in the panel · Esc to close</value>
@@ -499,7 +499,7 @@
         <value>When maximized or fullscreen</value>
     </data>
     <data name="Settings_Advanced_Fullscreen_Subtitle" xml:space="preserve">
-        <value>What widgets do when a window fills the screen.</value>
+        <value>Display behavior when full screen or maximized apps run</value>
     </data>
     <data name="Settings_Advanced_Fullscreen_Hide" xml:space="preserve">
         <value>Hide (release resources)</value>
@@ -517,7 +517,7 @@
         <value>HTTP proxy</value>
     </data>
     <data name="Settings_Advanced_Proxy_Subtitle" xml:space="preserve">
-        <value>How weather, location search and update requests reach the network. Auto-detect probes system and local proxies, then falls back to direct.</value>
+        <value>Select proxy mode for network requests</value>
     </data>
     <data name="Settings_Advanced_Proxy_Auto" xml:space="preserve">
         <value>Auto-detect (Recommended)</value>
@@ -535,7 +535,7 @@
         <value>Custom proxy URL</value>
     </data>
     <data name="Settings_Advanced_ProxyCustom_Subtitle" xml:space="preserve">
-        <value>Used when the proxy mode is Custom</value>
+        <value>Custom proxy server connection address</value>
     </data>
     <data name="Settings_Advanced_ProxyCustom_Watermark" xml:space="preserve">
         <value>http://host:port</value>
@@ -544,7 +544,7 @@
         <value>Update source</value>
     </data>
     <data name="Settings_Advanced_UpdateUrl_Subtitle" xml:space="preserve">
-        <value>Custom update URL (releases/latest page); empty uses the official repository.</value>
+        <value>Version update endpoint (leave empty for official)</value>
     </data>
     <data name="Widget_Size_Single" xml:space="preserve">
         <value>1×1</value>
@@ -586,13 +586,13 @@
         <value>Export backup</value>
     </data>
     <data name="Settings_Advanced_BackupExport_Subtitle" xml:space="preserve">
-        <value>Save app settings, grids, widget layout and content to one file</value>
+        <value>Export settings, grid, layout, and widget data</value>
     </data>
     <data name="Settings_Advanced_BackupImport_Title" xml:space="preserve">
         <value>Import backup</value>
     </data>
     <data name="Settings_Advanced_BackupImport_Subtitle" xml:space="preserve">
-        <value>Restore app settings, grids, widget layout and content from a backup.</value>
+        <value>Restore all settings and data from backup</value>
     </data>
     <data name="Settings_Advanced_BackupImport_Confirm" xml:space="preserve">
         <value>Import replaces the current settings and widget layout with the backup and restarts the app. Continue?</value>
@@ -688,31 +688,31 @@
         <value>Blur</value>
     </data>
     <data name="Settings_Appearance_V2_BlurHint" xml:space="preserve">
-        <value>A light backdrop blur — the glass stays readable, like the iOS material.</value>
+        <value>Blur radius of the background behind glass.</value>
     </data>
     <data name="Settings_Appearance_V2_Refraction" xml:space="preserve">
         <value>Refraction</value>
     </data>
     <data name="Settings_Appearance_V2_RefractionHint" xml:space="preserve">
-        <value>The rim lens: a quarter-circle bend that peaks at the outline and magnifies the backdrop, gone across the interior.</value>
+        <value>Refractive distortion of background wallpaper along edges.</value>
     </data>
     <data name="Settings_Appearance_V2_Dispersion" xml:space="preserve">
         <value>Dispersion</value>
     </data>
     <data name="Settings_Appearance_V2_DispersionHint" xml:space="preserve">
-        <value>A seven-tap spectral split along the rim displacement, strongest on the light-facing diagonal.</value>
+        <value>Spectral dispersion intensity along edges.</value>
     </data>
     <data name="Settings_Appearance_V2_Highlight" xml:space="preserve">
         <value>Edge highlight</value>
     </data>
     <data name="Settings_Appearance_V2_HighlightHint" xml:space="preserve">
-        <value>The hairline rim stroke: additive white lit from the top-left and bottom-right diagonals, like the iOS double rim.</value>
+        <value>Highlight and rim reflection intensity along edges.</value>
     </data>
     <data name="Settings_Appearance_V2_Vibrancy" xml:space="preserve">
         <value>Vibrancy</value>
     </data>
     <data name="Settings_Appearance_V2_VibrancyHint" xml:space="preserve">
-        <value>The iOS vibrancy colour boost; 33 ≈ the reference saturation ×1.5.</value>
+        <value>Adjust vibrancy and color saturation of the glass background.</value>
     </data>
     <data name="Settings_Appearance_Surface_SoftGlow" xml:space="preserve">
         <value>Soft glow glass</value>
@@ -721,7 +721,7 @@
         <value>Soft glow glass · static</value>
     </data>
     <data name="Settings_Appearance_SoftGlow_Description" xml:space="preserve">
-        <value>The same wallpaper refraction as liquid glass, with a softer recipe: wide, gentle bending instead of a lens ring, a diffused halo instead of a hard highlight line, and an optional full-spectrum dispersion. Changes apply immediately; text stays sharp.</value>
+        <value>Soft frosted glass material with diffused edge glow.</value>
     </data>
     <data name="Settings_Appearance_SoftGlow_Glow" xml:space="preserve">
         <value>Soft halo</value>
@@ -739,7 +739,7 @@
         <value>Dye spread</value>
     </data>
     <data name="Settings_Appearance_SoftGlow_DyeSpreadHint" xml:space="preserve">
-        <value>0–100% · how far the edge colour reaches into the card; 0 = a clean rim with no wash over the content</value>
+        <value>Spread distance of edge tint into the card.</value>
     </data>
     <data name="Settings_Appearance_Glass_Title" xml:space="preserve">
         <value>Liquid glass</value>
@@ -748,13 +748,13 @@
         <value>Blur radius</value>
     </data>
     <data name="Settings_Appearance_Glass_BlurHint" xml:space="preserve">
-        <value>0–100 · higher blurs the backdrop; 0 keeps the wallpaper sharp</value>
+        <value>Gaussian blur radius of background</value>
     </data>
     <data name="Settings_Appearance_Glass_Refraction" xml:space="preserve">
         <value>Refraction</value>
     </data>
     <data name="Settings_Appearance_Glass_RefractionHint" xml:space="preserve">
-        <value>0–100% · refraction strength at the edge</value>
+        <value>Edge refraction distortion intensity</value>
     </data>
     <data name="Settings_Appearance_Glass_EdgeWidth" xml:space="preserve">
         <value>Glass edge depth</value>
@@ -766,31 +766,31 @@
         <value>Highlight intensity</value>
     </data>
     <data name="Settings_Appearance_Glass_HighlightHint" xml:space="preserve">
-        <value>0–100% · rim light and inner reflections</value>
+        <value>Edge rim and interior reflection intensity</value>
     </data>
     <data name="Settings_Appearance_Glass_HighlightAngle" xml:space="preserve">
         <value>Highlight angle</value>
     </data>
     <data name="Settings_Appearance_Glass_HighlightAngleHint" xml:space="preserve">
-        <value>0–360° · light direction; 90° is the default</value>
+        <value>Light incident angle</value>
     </data>
     <data name="Settings_Appearance_Glass_Vibrancy" xml:space="preserve">
         <value>Vibrancy</value>
     </data>
     <data name="Settings_Appearance_Glass_VibrancyHint" xml:space="preserve">
-        <value>Colour vibrancy boost (0-100).</value>
+        <value>Enhance color vibrancy in blurred regions</value>
     </data>
     <data name="Settings_Appearance_Glass_BackdropClarity" xml:space="preserve">
         <value>Backdrop clarity</value>
     </data>
     <data name="Settings_Appearance_Glass_BackdropClarityHint" xml:space="preserve">
-        <value>5–100% · wallpaper sampling resolution; lower is cheaper, 100% is native</value>
+        <value>Background sampling resolution</value>
     </data>
     <data name="Settings_Appearance_Glass_Dispersion" xml:space="preserve">
         <value>Chromatic dispersion</value>
     </data>
     <data name="Settings_Appearance_Glass_DispersionHint" xml:space="preserve">
-        <value>0–100% · chromatic dispersion at the edge</value>
+        <value>Edge chromatic dispersion effect</value>
     </data>
     <data name="Settings_Appearance_Glass_LightAngle" xml:space="preserve">
         <value>Light direction</value>
@@ -832,13 +832,13 @@
         <value>Sample animated wallpapers</value>
     </data>
     <data name="Settings_Appearance_Glass_LiveSamplingHint" xml:space="preserve">
-        <value>Keep animated wallpapers live behind the glass; off freezes the current frame.</value>
+        <value>Sample dynamic wallpaper in real time; freeze when disabled</value>
     </data>
     <data name="Settings_Appearance_Glass_LiveSamplingInterval" xml:space="preserve">
         <value>Sampling interval (ms)</value>
     </data>
     <data name="Settings_Appearance_Glass_LiveSamplingIntervalHint" xml:space="preserve">
-        <value>10–1000 ms · shorter is smoother and costs more</value>
+        <value>Dynamic wallpaper sampling interval (ms)</value>
     </data>
     <data name="Settings_Appearance_Glass_Refresh" xml:space="preserve">
         <value>Refresh wallpaper</value>
@@ -928,19 +928,19 @@
         <value>Tray</value>
     </data>
     <data name="Settings_Advanced_TrayIcon_Subtitle" xml:space="preserve">
-        <value>Notification-area icon; when off it can be switched back on from a widget's right-click menu</value>
+        <value>Display icon in system notification tray</value>
     </data>
     <data name="Settings_General_Update_Title" xml:space="preserve">
         <value>Software Update</value>
     </data>
     <data name="Settings_General_Update_Subtitle" xml:space="preserve">
-        <value>Check and get the latest version and features</value>
+        <value>Check for and install the latest updates and features.</value>
     </data>
     <data name="Settings_General_Update_Interval" xml:space="preserve">
         <value>Check for Updates</value>
     </data>
     <data name="Settings_General_Update_Interval_Subtitle" xml:space="preserve">
-        <value>Set how frequently to check for updates in the background</value>
+        <value>Interval for automatically checking updates</value>
     </data>
     <data name="Settings_General_Update_Interval_Disabled" xml:space="preserve">
         <value>Disabled (Never check)</value>
@@ -1000,7 +1000,7 @@
         <value>Auto-detect Proxy</value>
     </data>
     <data name="Settings_General_Update_AutoProxy_Subtitle_On" xml:space="preserve">
-        <value>Automatically detect system proxy, environment variables, and local proxy ports (7890/7897/10809, etc.); falls back to direct when inactive</value>
+        <value>Automatically detect system and local proxies, falling back to direct connection.</value>
     </data>
     <data name="Settings_General_Update_AutoProxy_Subtitle_Direct" xml:space="preserve">
         <value>Auto-detect is off; currently using direct connection (no proxy)</value>
@@ -1015,7 +1015,7 @@
         <value>GitHub Connectivity Test</value>
     </data>
     <data name="Settings_General_Update_Connectivity_Subtitle" xml:space="preserve">
-        <value>Test connection latency and active proxy status to GitHub update server</value>
+        <value>Test connection latency to GitHub update server.</value>
     </data>
     <data name="Settings_General_Update_Connectivity_Action" xml:space="preserve">
         <value>Test Connection</value>
@@ -1027,7 +1027,7 @@
         <value>Connected (HTTP {0}) · {1} ms · {2}</value>
     </data>
     <data name="Settings_General_Update_Connectivity_RateLimited" xml:space="preserve">
-        <value>Reached GitHub (API rate-limited HTTP 403) · {0} ms · {1}</value>
+        <value>Reached GitHub (API rate limited HTTP 403) · {0} ms · {1}</value>
     </data>
     <data name="Settings_General_Update_Connectivity_Failed" xml:space="preserve">
         <value>Connection failed ({0}) · {1} ms · {2}</value>
@@ -1093,13 +1093,13 @@
         <value>Enable auto switching</value>
     </data>
     <data name="Settings_Appearance_FocusLink_Enable_Subtitle" xml:space="preserve">
-        <value>Use the “while unfocused” mode while an application window still occupies the screen, and switch back to “while focused” once the last one is minimized or closed — clicking the desktop never changes the state</value>
+        <value>Switch to secondary appearance when foreground windows are active.</value>
     </data>
     <data name="Settings_Appearance_FocusLink_Scope_Title" xml:space="preserve">
         <value>Evaluation scope</value>
     </data>
     <data name="Settings_Appearance_FocusLink_Scope_Subtitle" xml:space="preserve">
-        <value>Per screen: each screen is judged by the application windows it carries; Global: one screen with an application switches the whole desktop</value>
+        <value>Evaluate each display independently or synchronize all displays.</value>
     </data>
     <data name="Settings_Appearance_FocusLink_Scope_PerScreen" xml:space="preserve">
         <value>Per screen</value>
@@ -1114,16 +1114,16 @@
         <value>While unfocused</value>
     </data>
     <data name="Settings_Appearance_FocusLink_State_Subtitle" xml:space="preserve">
-        <value>Theme and light/dark mode used by the widgets</value>
+        <value>Theme preset and dark mode</value>
     </data>
     <data name="Settings_Appearance_FocusLink_Delay_Title" xml:space="preserve">
         <value>Detection delay</value>
     </data>
     <data name="Settings_Appearance_FocusLink_Delay_Subtitle" xml:space="preserve">
-        <value>How long a new focus state must hold before the switch is applied — prevents flicker from windows flashing open and shut; 0 = switch immediately (0–1000 ms)</value>
+        <value>Delay before triggering appearance switch (ms)</value>
     </data>
     <data name="Settings_Appearance_FocusLink_ColorPolicy_Hint" xml:space="preserve">
-        <value>Colorful states use fixed widget palettes; normal states continue using the accent and monochrome settings from the Appearance page.</value>
+        <value>Colorful materials use preset palettes; others follow accent color.</value>
     </data>
     <data name="Settings_Appearance_FocusLink_Theme_Shared" xml:space="preserve">
         <value>App theme</value>
@@ -1132,7 +1132,7 @@
         <value>Process allowlist</value>
     </data>
     <data name="Settings_Appearance_FocusLink_Whitelist_Subtitle" xml:space="preserve">
-        <value>Processes that count as part of the desktop: their windows neither keep the state unfocused nor stand in the way of the focused mode</value>
+        <value>Ignore listed processes for appearance switching</value>
     </data>
     <data name="Settings_Appearance_FocusLink_Whitelist_Empty" xml:space="preserve">
         <value>No processes added yet</value>
@@ -1198,13 +1198,13 @@
         <value>Data folder</value>
     </data>
     <data name="Settings_Advanced_DataFolder_Current_Subtitle" xml:space="preserve">
-        <value>Settings, widget layout, widget data and configuration profiles are all stored here</value>
+        <value>Location of configuration, layout, and widget data.</value>
     </data>
     <data name="Settings_Advanced_CacheFolder" xml:space="preserve">
         <value>Cache folder</value>
     </data>
     <data name="Settings_Advanced_CacheFolder_Subtitle" xml:space="preserve">
-        <value>Icon bitmaps, map tiles and other regenerable data. It always lives inside the data folder, so changing the data folder moves it too; deleting its contents is safe.</value>
+        <value>Temporary cache files; safe to clear and regenerates automatically.</value>
     </data>
     <data name="Settings_Advanced_DataFolder_Source_Title" xml:space="preserve">
         <value>Source</value>
@@ -1246,7 +1246,7 @@
         <value>New data folder:
 {0}
 
-The app restarts to apply the change. Migrate (copy) the current data into the new folder? Choosing "Switch without migrating" starts from an empty folder.</value>
+Restart required. Copy current data to the new folder? Choosing "Switch without migrating" starts with an empty folder.</value>
     </data>
     <data name="Settings_Advanced_DataFolder_ChangeMigrate" xml:space="preserve">
         <value>Migrate and restart</value>
@@ -1255,10 +1255,10 @@ The app restarts to apply the change. Migrate (copy) the current data into the n
         <value>Switch without migrating</value>
     </data>
     <data name="Settings_Advanced_DataFolder_ResetPrompt" xml:space="preserve">
-        <value>After restoring the default the app uses:
+        <value>Restore default data folder:
 {0}
 
-Migrate (copy) the current data there? Choosing "Switch without migrating" starts from an empty folder.</value>
+Copy current data to default folder? Choosing "Switch without migrating" starts with an empty folder.</value>
     </data>
     <data name="Settings_Advanced_DataFolder_Err_Empty" xml:space="preserve">
         <value>The path is empty.</value>
@@ -1288,7 +1288,7 @@ Migrate (copy) the current data there? Choosing "Switch without migrating" start
   <data name="Settings_Appearance_SaveRetry" xml:space="preserve"><value>Retry save</value></data>
   <data name="Settings_Appearance_SaveConflict" xml:space="preserve"><value>Settings changed elsewhere. Your draft is retained; reload before editing again.</value></data>
   <data name="Settings_Appearance_SaveReload" xml:space="preserve"><value>Reload and discard draft</value></data>
-  <data name="Gallery_NoRoom" xml:space="preserve"><value>There is no free grid cell on this screen for this card. Move or remove an existing widget, enlarge the grid, or pick a smaller size.</value></data>
+  <data name="Gallery_NoRoom" xml:space="preserve"><value>Not enough space on current screen for this widget. Move existing widgets or adjust grid size.</value></data>
   <data name="Gallery_NoRoom_Ok" xml:space="preserve"><value>OK</value></data>
   <data name="WidgetCategory_All" xml:space="preserve"><value>All</value></data>
   <data name="WidgetCategory_ClockCalendar" xml:space="preserve"><value>Clocks &amp; Calendar</value></data>
@@ -1311,18 +1311,18 @@ Migrate (copy) the current data there? Choosing "Switch without migrating" start
   <data name="Settings_Spotlight_Enable_Title" xml:space="preserve"><value>Enable Spotlight Search</value></data>
   <data name="Settings_Spotlight_Enable_Subtitle" xml:space="preserve"><value>Summon Spotlight over any window with a global shortcut.</value></data>
   <data name="Settings_Spotlight_Hotkey_Title" xml:space="preserve"><value>Shortcut</value></data>
-  <data name="Settings_Spotlight_Hotkey_Subtitle" xml:space="preserve"><value>Click the field, then press a combination. System shortcuts such as Win+S can be recorded; the takeover switch below decides whether they work. Default: Alt+Space.</value></data>
+  <data name="Settings_Spotlight_Hotkey_Subtitle" xml:space="preserve"><value>Global shortcut to open search (Default: Alt+Space).</value></data>
   <data name="Settings_Spotlight_TakeOver_Title" xml:space="preserve"><value>Take over system shortcuts</value></data>
-  <data name="Settings_Spotlight_TakeOver_Subtitle" xml:space="preserve"><value>Take over a shortcut owned by Windows or another app with a low-level keyboard hook. While DeskCanvas runs, the shortcut no longer opens the system surface. If the foreground window is elevated, DeskCanvas must be elevated too.</value></data>
+  <data name="Settings_Spotlight_TakeOver_Subtitle" xml:space="preserve"><value>Prioritize capturing and responding to hotkeys</value></data>
   <data name="Settings_Spotlight_Hotkey_Record" xml:space="preserve"><value>Record</value></data>
   <data name="Settings_Spotlight_Hotkey_Recording" xml:space="preserve"><value>Press keys…</value></data>
   <data name="Settings_Spotlight_Hotkey_Reset" xml:space="preserve"><value>Reset</value></data>
   <data name="Settings_Spotlight_Hotkey_Preview" xml:space="preserve"><value>Preview</value></data>
-  <data name="Settings_Spotlight_Hotkey_NeedModifier" xml:space="preserve"><value>Use at least one modifier (Ctrl/Alt/Shift/Win), or a function key.</value></data>
+  <data name="Settings_Spotlight_Hotkey_NeedModifier" xml:space="preserve"><value>Shortcut must include a modifier key (Ctrl/Alt/Shift/Win) or a function key.</value></data>
   <data name="Settings_Spotlight_Hotkey_UnknownKey" xml:space="preserve"><value>That key cannot be used in a shortcut.</value></data>
   <data name="Settings_Spotlight_Hotkey_MissingKey" xml:space="preserve"><value>The combination has no main key.</value></data>
   <data name="Settings_Spotlight_Hotkey_Invalid" xml:space="preserve"><value>That shortcut cannot be used.</value></data>
-  <data name="Settings_Spotlight_Hotkey_Reserved" xml:space="preserve"><value>Windows reserves this combination (Win+L / Ctrl+Alt+Del); it cannot be taken over.</value></data>
+  <data name="Settings_Spotlight_Hotkey_Reserved" xml:space="preserve"><value>System reserved shortcut; cannot be taken over.</value></data>
   <data name="Settings_Spotlight_Status_Registered" xml:space="preserve"><value>Active — {0}</value></data>
   <data name="Settings_Spotlight_Status_TakenOver" xml:space="preserve"><value>Active — {0} (taken over; admin needed for elevated windows)</value></data>
   <data name="Settings_Spotlight_Status_Conflict" xml:space="preserve"><value>Inactive: another program already owns this shortcut.</value></data>
@@ -1331,19 +1331,19 @@ Migrate (copy) the current data there? Choosing "Switch without migrating" start
   <data name="Settings_Spotlight_Status_Disabled" xml:space="preserve"><value>Off.</value></data>
   <data name="Settings_Spotlight_Section_Folder" xml:space="preserve"><value>App Folder</value></data>
   <data name="Settings_Spotlight_Folder_Title" xml:space="preserve"><value>Shortcuts folder</value></data>
-  <data name="Settings_Spotlight_Folder_Subtitle" xml:space="preserve"><value>Only .lnk and .url files directly in this folder are listed (no subfolders). Add or remove shortcuts here and the grid follows.</value></data>
+  <data name="Settings_Spotlight_Folder_Subtitle" xml:space="preserve"><value>Custom shortcuts directory</value></data>
   <data name="Settings_Spotlight_Folder_Open" xml:space="preserve"><value>Open folder</value></data>
   <data name="Settings_Spotlight_Folder_Change" xml:space="preserve"><value>Change…</value></data>
   <data name="Settings_Spotlight_Folder_PickTitle" xml:space="preserve"><value>Choose the shortcuts folder</value></data>
   <data name="Settings_Spotlight_Columns_Title" xml:space="preserve"><value>Columns</value></data>
-  <data name="Settings_Spotlight_Columns_Subtitle" xml:space="preserve"><value>How many tiles per row in the app grid.</value></data>
+  <data name="Settings_Spotlight_Columns_Subtitle" xml:space="preserve"><value>Number of icon columns per row</value></data>
   <data name="Settings_Spotlight_Height_Title" xml:space="preserve"><value>Maximum Height</value></data>
-  <data name="Settings_Spotlight_Height_Subtitle" xml:space="preserve"><value>Maximum vertical height of the Spotlight window when expanded.</value></data>
+  <data name="Settings_Spotlight_Height_Subtitle" xml:space="preserve"><value>Maximum vertical height when expanded</value></data>
   <data name="Settings_Spotlight_Section_Blacklist" xml:space="preserve"><value>Blacklist</value></data>
   <data name="Settings_Spotlight_BlockFullscreen_Title" xml:space="preserve"><value>Block full-screen processes</value></data>
-  <data name="Settings_Spotlight_BlockFullscreen_Subtitle" xml:space="preserve"><value>Suppress the shortcut when a game or full-screen app owns the screen.</value></data>
+  <data name="Settings_Spotlight_BlockFullscreen_Subtitle" xml:space="preserve"><value>Pause hotkey during full-screen games or presentations</value></data>
   <data name="Settings_Spotlight_Blacklist_Title" xml:space="preserve"><value>Do not open in these apps</value></data>
-  <data name="Settings_Spotlight_Blacklist_Subtitle" xml:space="preserve"><value>While one of these apps is in front, the shortcut does nothing. Apps running as administrator cannot be detected.</value></data>
+  <data name="Settings_Spotlight_Blacklist_Subtitle" xml:space="preserve"><value>Disable hotkeys when listed apps are foreground</value></data>
   <data name="Settings_Spotlight_Blacklist_AddPlaceholder" xml:space="preserve"><value>Process name, e.g. chrome</value></data>
   <data name="Settings_Spotlight_Blacklist_Add" xml:space="preserve"><value>Add</value></data>
   <data name="Settings_Spotlight_Blacklist_AddCurrent" xml:space="preserve"><value>Pick from running apps…</value></data>
@@ -1363,22 +1363,22 @@ Migrate (copy) the current data there? Choosing "Switch without migrating" start
   <data name="Settings_Spotlight_Appearance_Light" xml:space="preserve"><value>Light</value></data>
   <data name="Settings_Spotlight_Appearance_Dark" xml:space="preserve"><value>Dark</value></data>
   <data name="Settings_Spotlight_Appearance_Theme_Title" xml:space="preserve"><value>Follow the global theme</value></data>
-  <data name="Settings_Spotlight_Appearance_Theme_Subtitle" xml:space="preserve"><value>Off lets this launcher use its own material, light/dark mode and opacity without touching the rest of the app.</value></data>
+  <data name="Settings_Spotlight_Appearance_Theme_Subtitle" xml:space="preserve"><value>Configure material and appearance independently for search.</value></data>
   <data name="Settings_Spotlight_Appearance_Surface_Title" xml:space="preserve"><value>Material</value></data>
   <data name="Settings_Spotlight_Appearance_Surface_Subtitle" xml:space="preserve"><value>Which material the launcher card is drawn with.</value></data>
   <data name="Settings_Spotlight_Appearance_DarkMode_Title" xml:space="preserve"><value>Light / dark</value></data>
-  <data name="Settings_Spotlight_Appearance_DarkMode_Subtitle" xml:space="preserve"><value>Follow global = the same mode as the widgets; Follow system = Windows' own light/dark, even when the app is pinned the other way.</value></data>
+  <data name="Settings_Spotlight_Appearance_DarkMode_Subtitle" xml:space="preserve"><value>Choose light or dark scheme, or follow system / global mode.</value></data>
   <data name="Settings_Spotlight_Appearance_Opacity_Title" xml:space="preserve"><value>Opacity</value></data>
   <data name="Settings_Spotlight_Appearance_Opacity_Subtitle" xml:space="preserve"><value>Card fill opacity. Acrylic uses it to tint the native blur.</value></data>
   <data name="Settings_Spotlight_Appearance_Radius_Title" xml:space="preserve"><value>Corner radius</value></data>
-  <data name="Settings_Spotlight_Appearance_Radius_Subtitle" xml:space="preserve"><value>0–100 px. Independent of the widget cards unless you follow them.</value></data>
+  <data name="Settings_Spotlight_Appearance_Radius_Subtitle" xml:space="preserve"><value>Adjust panel corner radius (0–100 px).</value></data>
   <data name="Settings_Spotlight_Appearance_Radius_Follow" xml:space="preserve"><value>Follow the widget radius</value></data>
   <data name="Settings_Spotlight_Appearance_Radius_Follow_Subtitle" xml:space="preserve"><value>Follow the widget radius setting (Screens → Widget radius).</value></data>
   <data name="Settings_Spotlight_Section_Glass" xml:space="preserve"><value>Liquid glass</value></data>
   <data name="Settings_Spotlight_Glass_Screen_Title" xml:space="preserve"><value>Real-time sampling</value></data>
-  <data name="Settings_Spotlight_Glass_Screen_Subtitle" xml:space="preserve"><value>Refract what is actually behind the launcher instead of the wallpaper. The launcher's own windows are excluded from the capture.</value></data>
+  <data name="Settings_Spotlight_Glass_Screen_Subtitle" xml:space="preserve"><value>Refract live screen content behind window</value></data>
   <data name="Settings_Spotlight_Sort_Title" xml:space="preserve"><value>App order</value></data>
-  <data name="Settings_Spotlight_Sort_Subtitle" xml:space="preserve"><value>How the app grid is ordered. Pinned apps always stay in front.</value></data>
+  <data name="Settings_Spotlight_Sort_Subtitle" xml:space="preserve"><value>App icons sorting order</value></data>
   <data name="Settings_Spotlight_Sort_Name" xml:space="preserve"><value>Name</value></data>
   <data name="Settings_Spotlight_Sort_LastUsed" xml:space="preserve"><value>Recently used</value></data>
   <data name="Settings_Spotlight_Sort_MostUsed" xml:space="preserve"><value>Most used</value></data>
@@ -1417,17 +1417,17 @@ Migrate (copy) the current data there? Choosing "Switch without migrating" start
   <data name="Spotlight_Preview_Label_Address" xml:space="preserve"><value>Address</value></data>
   <data name="Settings_Spotlight_Section_Web" xml:space="preserve"><value>Web search</value></data>
   <data name="Settings_Spotlight_Web_Enable_Title" xml:space="preserve"><value>Search the web from the results</value></data>
-  <data name="Settings_Spotlight_Web_Enable_Subtitle" xml:space="preserve"><value>Every query also gets a “search the web” row; Enter opens the browser.</value></data>
+  <data name="Settings_Spotlight_Web_Enable_Subtitle" xml:space="preserve"><value>Show web search entry in results</value></data>
   <data name="Settings_Spotlight_Web_Engine_Title" xml:space="preserve"><value>Search engine</value></data>
-  <data name="Settings_Spotlight_Web_Engine_Subtitle" xml:space="preserve"><value>Which site the web row searches on.</value></data>
+  <data name="Settings_Spotlight_Web_Engine_Subtitle" xml:space="preserve"><value>Default web search engine</value></data>
   <data name="Settings_Spotlight_Web_Engine_Custom" xml:space="preserve"><value>Custom…</value></data>
   <data name="Settings_Spotlight_Web_Engine_CustomName" xml:space="preserve"><value>Custom</value></data>
   <data name="Settings_Spotlight_Web_Custom_Title" xml:space="preserve"><value>Custom search address</value></data>
-  <data name="Settings_Spotlight_Web_Custom_Subtitle" xml:space="preserve"><value>The typed query replaces {q}. Anything else in the address is kept as written.</value></data>
+  <data name="Settings_Spotlight_Web_Custom_Subtitle" xml:space="preserve"><value>Custom search engine URL</value></data>
   <data name="Settings_Spotlight_Web_Custom_Placeholder" xml:space="preserve"><value>https://example.com/search?q={q}</value></data>
   <data name="Settings_Spotlight_Web_Custom_Invalid" xml:space="preserve"><value>The address must be a full URL containing {q}, otherwise the query cannot be passed on.</value></data>
   <data name="Settings_Spotlight_Web_Browser_Title" xml:space="preserve"><value>Browser</value></data>
-  <data name="Settings_Spotlight_Web_Browser_Subtitle" xml:space="preserve"><value>Which browser opens the result. The default browser follows Windows’ default apps.</value></data>
+  <data name="Settings_Spotlight_Web_Browser_Subtitle" xml:space="preserve"><value>Target browser for opening search results</value></data>
   <data name="Settings_Spotlight_Web_Browser_Default" xml:space="preserve"><value>Default browser</value></data>
   <data name="Settings_Spotlight_Web_Preview" xml:space="preserve"><value>Enter opens in {0}: {1}</value></data>
   <data name="Settings_Spotlight_Web_SampleQuery" xml:space="preserve"><value>DeskCanvas</value></data>
@@ -1479,7 +1479,7 @@ Migrate (copy) the current data there? Choosing "Switch without migrating" start
   <data name="Settings_Spotlight_Section_Results" xml:space="preserve"><value>Results</value></data>
   <data name="Settings_Spotlight_Section_CategoryKeys" xml:space="preserve"><value>Category keys</value></data>
 
-  <data name="Settings_Spotlight_CategoryKeys_Desc" xml:space="preserve"><value>F1–F8 locks a category, ← / → switches; keys follow categories when reordered with ↑ / ↓, and “All” stays first. Click a box or Record to rebind; only function keys or modifier combinations are accepted.</value></data>
+  <data name="Settings_Spotlight_CategoryKeys_Desc" xml:space="preserve"><value>Use F1–F8 or arrow keys to switch and reorder search categories.</value></data>
 
   <data name="Settings_Spotlight_CategoryKeys_Record" xml:space="preserve"><value>Record</value></data>
 
@@ -1495,53 +1495,53 @@ Migrate (copy) the current data there? Choosing "Switch without migrating" start
 
   <data name="Settings_Spotlight_Section_Orbs" xml:space="preserve"><value>Category buttons</value></data>
 
-  <data name="Settings_Spotlight_Orbs_Desc" xml:space="preserve"><value>Hold Alt to show the four circles beside the search field; Alt+1–4 opens the same categories directly. Each circle can point at any category; choosing an occupied one swaps them. The leading number is its shortcut.</value></data>
+  <data name="Settings_Spotlight_Orbs_Desc" xml:space="preserve"><value>Hold Alt to display category buttons; use Alt+1–4 to open directly.</value></data>
 
   <data name="Settings_Spotlight_Orbs_Reset" xml:space="preserve"><value>Restore defaults</value></data>
 
   <data name="Settings_Spotlight_Section_Clipboard" xml:space="preserve"><value>Clipboard</value></data>
   <data name="Settings_Spotlight_Recent_Title" xml:space="preserve"><value>Show recently used</value></data>
-  <data name="Settings_Spotlight_Recent_Subtitle" xml:space="preserve"><value>Show one row of recently used apps above the grid when the query is empty, using the grid's own icons and columns.</value></data>
+  <data name="Settings_Spotlight_Recent_Subtitle" xml:space="preserve"><value>Display recent items at top of grid</value></data>
   <data name="Settings_Spotlight_Recent_Clear" xml:space="preserve"><value>Clear usage data</value></data>
   <data name="Settings_Spotlight_Recent_Cleared" xml:space="preserve"><value>Usage data cleared.</value></data>
   <data name="Settings_Spotlight_Preview_Title" xml:space="preserve"><value>Show preview pane</value></data>
-  <data name="Settings_Spotlight_Preview_Subtitle" xml:space="preserve"><value>Show details for the selected result on the right; hides on narrow windows.</value></data>
+  <data name="Settings_Spotlight_Preview_Subtitle" xml:space="preserve"><value>Show preview pane on right for selected item</value></data>
   <data name="Settings_Spotlight_Clipboard_Title" xml:space="preserve"><value>Clipboard history</value></data>
-  <data name="Settings_Spotlight_Clipboard_Subtitle" xml:space="preserve"><value>Keep copied text, links, images and files (up to 100). Stored locally only; content is never logged.</value></data>
+  <data name="Settings_Spotlight_Clipboard_Subtitle" xml:space="preserve"><value>Keep clipboard history (up to 100 items)</value></data>
   <data name="Settings_Spotlight_Clipboard_Retention_Title" xml:space="preserve"><value>Retention</value></data>
-  <data name="Settings_Spotlight_Clipboard_Retention_Subtitle" xml:space="preserve"><value>Entries older than this are removed automatically.</value></data>
+  <data name="Settings_Spotlight_Clipboard_Retention_Subtitle" xml:space="preserve"><value>Days to retain clipboard history</value></data>
   <data name="Settings_Spotlight_Clipboard_Days" xml:space="preserve"><value>{0} days</value></data>
   <data name="Settings_Spotlight_Clipboard_Clear" xml:space="preserve"><value>Clear history</value></data>
   <data name="Settings_Spotlight_Clipboard_Cleared" xml:space="preserve"><value>Clipboard history cleared.</value></data>
   <data name="Settings_Spotlight_Clipboard_Count" xml:space="preserve"><value>{0} entries</value></data>
   <data name="Settings_Spotlight_Clipboard_Excluded_Title" xml:space="preserve"><value>Excluded apps</value></data>
-  <data name="Settings_Spotlight_Clipboard_Excluded_Subtitle" xml:space="preserve"><value>Clipboard changes are not recorded while one of these apps is in front.</value></data>
+  <data name="Settings_Spotlight_Clipboard_Excluded_Subtitle" xml:space="preserve"><value>Exclude clipboard from listed foreground apps</value></data>
   <data name="Settings_Spotlight_Clipboard_Excluded_AddPlaceholder" xml:space="preserve"><value>Process name, e.g. word</value></data>
   <data name="Settings_Spotlight_Clipboard_Excluded_Add" xml:space="preserve"><value>Add</value></data>
   <data name="Settings_Spotlight_Clipboard_Excluded_Empty" xml:space="preserve"><value>No apps excluded.</value></data>
   <data name="Settings_Spotlight_Clipboard_Excluded_Remove" xml:space="preserve"><value>Remove</value></data>
   <data name="Settings_Spotlight_Glass_Clarity_Title" xml:space="preserve"><value>Backdrop clarity</value></data>
-  <data name="Settings_Spotlight_Glass_Clarity_Subtitle" xml:space="preserve"><value>Resolution the backdrop is sampled at. Lower is cheaper.</value></data>
+  <data name="Settings_Spotlight_Glass_Clarity_Subtitle" xml:space="preserve"><value>Screen sampling resolution and clarity</value></data>
   <data name="Settings_Spotlight_Glass_Blur_Title" xml:space="preserve"><value>Blur</value></data>
-  <data name="Settings_Spotlight_Glass_Blur_Subtitle" xml:space="preserve"><value>Blur strength of the sampled backdrop.</value></data>
+  <data name="Settings_Spotlight_Glass_Blur_Subtitle" xml:space="preserve"><value>Background Gaussian blur radius</value></data>
   <data name="Settings_Spotlight_Glass_Refraction_Title" xml:space="preserve"><value>Refraction</value></data>
-  <data name="Settings_Spotlight_Glass_Refraction_Subtitle" xml:space="preserve"><value>Lens displacement at the card's edge.</value></data>
+  <data name="Settings_Spotlight_Glass_Refraction_Subtitle" xml:space="preserve"><value>Edge optical refraction intensity</value></data>
   <data name="Settings_Spotlight_Glass_Highlight_Title" xml:space="preserve"><value>Highlight</value></data>
-  <data name="Settings_Spotlight_Glass_Highlight_Subtitle" xml:space="preserve"><value>Specular rim strength.</value></data>
+  <data name="Settings_Spotlight_Glass_Highlight_Subtitle" xml:space="preserve"><value>Edge specular highlight intensity</value></data>
   <data name="Settings_Spotlight_Glass_Vibrancy_Title" xml:space="preserve"><value>Vibrancy</value></data>
-  <data name="Settings_Spotlight_Glass_Vibrancy_Subtitle" xml:space="preserve"><value>Saturation boost of the refracted content.</value></data>
+  <data name="Settings_Spotlight_Glass_Vibrancy_Subtitle" xml:space="preserve"><value>Enhance color vibrancy in blurred regions</value></data>
   <data name="Settings_Spotlight_Glass_Dispersion_Title" xml:space="preserve"><value>Dispersion</value></data>
-  <data name="Settings_Spotlight_Glass_Dispersion_Subtitle" xml:space="preserve"><value>Chromatic aberration at the edges.</value></data>
+  <data name="Settings_Spotlight_Glass_Dispersion_Subtitle" xml:space="preserve"><value>Edge chromatic dispersion effect</value></data>
   <data name="Settings_Spotlight_Names_Title" xml:space="preserve"><value>Show names</value></data>
-  <data name="Settings_Spotlight_Names_Subtitle" xml:space="preserve"><value>Draw the app name under each icon. Off leaves an icon-only grid; the filtered list still shows names.</value></data>
+  <data name="Settings_Spotlight_Names_Subtitle" xml:space="preserve"><value>Show text label below icons</value></data>
   <data name="Settings_Spotlight_NameLines_Title" xml:space="preserve"><value>Name lines</value></data>
-  <data name="Settings_Spotlight_NameLines_Subtitle" xml:space="preserve"><value>How many lines a name may take. Every tile reserves that much space, so all icons in a row stay on one baseline; longer names end with an ellipsis.</value></data>
+  <data name="Settings_Spotlight_NameLines_Subtitle" xml:space="preserve"><value>Maximum text label lines</value></data>
   <data name="Settings_Spotlight_SearchHotkey_Title" xml:space="preserve"><value>Search bar shortcut</value></data>
-  <data name="Settings_Spotlight_SearchHotkey_Subtitle" xml:space="preserve"><value>Summons the launcher as a bare search field — no app grid, one row tall until results arrive. Must differ from the app-list shortcut above.</value></data>
+  <data name="Settings_Spotlight_SearchHotkey_Subtitle" xml:space="preserve"><value>Summon lightweight single-line search bar</value></data>
   <data name="Settings_Spotlight_SearchHotkey_Same" xml:space="preserve"><value>The search-bar shortcut must differ from the app-list shortcut.</value></data>
   <data name="Settings_Spotlight_Status_SearchConflict" xml:space="preserve"><value>That combination is taken (or equals the app-list shortcut), so the search bar has no gesture.</value></data>
   <data name="Settings_Spotlight_Background_Title" xml:space="preserve"><value>Background colour</value></data>
-  <data name="Settings_Spotlight_Background_Subtitle" xml:space="preserve"><value>Follows the global background color; turn off to set light and dark backgrounds separately. Transparency still follows the material and opacity.</value></data>
+  <data name="Settings_Spotlight_Background_Subtitle" xml:space="preserve"><value>Customize light and dark background colors independently.</value></data>
   <data name="Settings_Spotlight_Background_Follow" xml:space="preserve"><value>Follow global colour</value></data>
   <data name="Settings_Spotlight_Background_Light" xml:space="preserve"><value>Light</value></data>
   <data name="Settings_Spotlight_Background_Dark" xml:space="preserve"><value>Dark</value></data>
@@ -1551,45 +1551,45 @@ Migrate (copy) the current data there? Choosing "Switch without migrating" start
   <data name="Spotlight_Search_FilesHeader" xml:space="preserve"><value>Files</value></data>
   <data name="Spotlight_Search_InvalidRegex" xml:space="preserve"><value>That regular expression is not valid.</value></data>
   <data name="Spotlight_Search_EverythingElevated" xml:space="preserve"><value>Everything is running as administrator, so its index cannot be queried.</value></data>
-  <data name="Spotlight_Search_EverythingUnresponsive" xml:space="preserve"><value>Everything is running but did not answer the query — searching local folders instead. If you are using Everything Lite, note that it does not support IPC; install the full version.</value></data>
+  <data name="Spotlight_Search_EverythingUnresponsive" xml:space="preserve"><value>Everything is unresponsive; using built-in folder index (Lite build unsupported).</value></data>
 
   <data name="Spotlight_Search_LocalIndex" xml:space="preserve"><value>Local folders only — start Everything to search the whole disk.</value></data>
   <data name="Spotlight_Searching" xml:space="preserve"><value>Searching…</value></data>
   <data name="Settings_Spotlight_Gap_Title" xml:space="preserve"><value>Column gap</value></data>
-  <data name="Settings_Spotlight_Gap_Subtitle" xml:space="preserve"><value>Gutter between two cells as a percentage of a cell. The icon size is derived from the column count and this gap, so the grid always fills the row exactly.</value></data>
+  <data name="Settings_Spotlight_Gap_Subtitle" xml:space="preserve"><value>Icon margin gap ratio</value></data>
   <data name="Settings_Spotlight_RowGap_Title" xml:space="preserve"><value>Row gap</value></data>
-  <data name="Settings_Spotlight_RowGap_Subtitle" xml:space="preserve"><value>Vertical gutter between two rows, as a percentage of a cell. With app names on, the label block already makes a row taller — this is the air added on top of it, so it can be tightened to 0.</value></data>
+  <data name="Settings_Spotlight_RowGap_Subtitle" xml:space="preserve"><value>Grid row gap ratio</value></data>
   <data name="Settings_Spotlight_Section_Files" xml:space="preserve"><value>File search</value></data>
   <data name="Settings_Spotlight_Files_Title" xml:space="preserve"><value>Search files</value></data>
-  <data name="Settings_Spotlight_Files_Subtitle" xml:space="preserve"><value>Show file results under the app matches. Everything answers when its client is running; otherwise the built-in folder index does.</value></data>
+  <data name="Settings_Spotlight_Files_Subtitle" xml:space="preserve"><value>Search files with Everything index</value></data>
   <data name="Settings_Spotlight_Files_AutoStart_Title" xml:space="preserve"><value>Start Everything on demand</value></data>
-  <data name="Settings_Spotlight_Files_AutoStart_Subtitle" xml:space="preserve"><value>Everything's index is only reachable while its client runs. The launcher starts it minimised the first time a file query needs it.</value></data>
+  <data name="Settings_Spotlight_Files_AutoStart_Subtitle" xml:space="preserve"><value>Automatically start Everything when needed</value></data>
   <data name="Settings_Spotlight_Files_Status_Connected" xml:space="preserve"><value>Everything connected — whole-disk results.</value></data>
   <data name="Settings_Spotlight_Files_Status_NotRunning" xml:space="preserve"><value>Everything is installed but not running — using the built-in folder index.</value></data>
-  <data name="Settings_Spotlight_Files_Status_NotInstalled" xml:space="preserve"><value>Everything is not installed — searching desktop, documents, downloads, pictures, music and videos only.</value></data>
-  <data name="Settings_Spotlight_Files_Status_Elevated" xml:space="preserve"><value>Everything runs as administrator, so a normal-integrity launcher cannot query it. Restart Everything without elevation for whole-disk results.</value></data>
-  <data name="Settings_Spotlight_Files_Status_Unresponsive" xml:space="preserve"><value>Everything is running, but the last query did not answer — using the built-in folder index. If you are using the Lite build, note that it does not support IPC; install the full version.</value></data>
+  <data name="Settings_Spotlight_Files_Status_NotInstalled" xml:space="preserve"><value>Everything not installed; searching user folders only.</value></data>
+  <data name="Settings_Spotlight_Files_Status_Elevated" xml:space="preserve"><value>Cannot query Everything due to administrator elevation; restart as standard user.</value></data>
+  <data name="Settings_Spotlight_Files_Status_Unresponsive" xml:space="preserve"><value>Everything is unresponsive; using built-in index (Lite build unsupported).</value></data>
 
   <data name="Settings_Spotlight_Files_Start" xml:space="preserve"><value>Start Everything</value></data>
   <data name="Settings_Spotlight_Files_Refresh" xml:space="preserve"><value>Rebuild index</value></data>
   <data name="Settings_Spotlight_Glass_Interval_Title" xml:space="preserve"><value>Sampling interval</value></data>
-  <data name="Settings_Spotlight_Glass_Interval_Subtitle" xml:space="preserve"><value>How often the screen behind the launcher is re-captured, in milliseconds. Shorter keeps motion alive and costs more.</value></data>
-  <data name="Settings_Spotlight_Gap_Preview" xml:space="preserve"><value>Icon {0:F0} px · gap {1:F0} px · cell {2:F0} px · row {3:F0} px</value></data>
+  <data name="Settings_Spotlight_Glass_Interval_Subtitle" xml:space="preserve"><value>Screen frame capture interval (ms)</value></data>
+  <data name="Settings_Spotlight_Gap_Preview" xml:space="preserve"><value>Icon {0:F0} px · Gap {1:F0} px · Cell {2:F0} px · Row {3:F0} px</value></data>
   <data name="Settings_Spotlight_Files_Engine_Title" xml:space="preserve"><value>Everything index</value></data>
   <data name="Settings_Spotlight_Glass_Sample_Off" xml:space="preserve"><value>Screen sampling is off — the glass refracts the wallpaper.</value></data>
   <data name="Settings_Spotlight_Glass_Sample_None" xml:space="preserve"><value>No screen frame yet — summon the launcher once to capture one.</value></data>
   <data name="Settings_Spotlight_Glass_Sample_Ok" xml:space="preserve"><value>Screen sampling active — {0} frame(s) captured, last mean {1}.</value></data>
   <data name="Settings_Spotlight_Web_Results_Title" xml:space="preserve"><value>Inline web results</value></data>
-  <data name="Settings_Spotlight_Web_Results_Subtitle" xml:space="preserve"><value>Show a few results under the browser-search row (provided by Bing). 0 keeps only the search row and makes no network request.</value></data>
+  <data name="Settings_Spotlight_Web_Results_Subtitle" xml:space="preserve"><value>Instant web search results count (0 to disable)</value></data>
   <data name="Settings_Spotlight_CategoryKeys_MoveUp" xml:space="preserve"><value>Move up</value></data>
   <data name="Settings_Spotlight_CategoryKeys_MoveDown" xml:space="preserve"><value>Move down</value></data>
   <data name="Settings_Spotlight_SearchPlaceholder" xml:space="preserve"><value>Custom Search Placeholder</value></data>
   <data name="Settings_Spotlight_SearchPlaceholder_Hint" xml:space="preserve"><value>Customize the search placeholder text in All category. Leave blank to use the default.</value></data>
   <data name="Settings_Spotlight_SearchPlaceholder_Reset" xml:space="preserve"><value>Reset to Default</value></data>
   <data name="Settings_Spotlight_SpaceRecent_Title" xml:space="preserve"><value>Double Space Shows Recent Items</value></data>
-  <data name="Settings_Spotlight_SpaceRecent_Subtitle" xml:space="preserve"><value>When entering two spaces in the search field, show items recently opened via search.</value></data>
+  <data name="Settings_Spotlight_SpaceRecent_Subtitle" xml:space="preserve"><value>Double space to show recent items</value></data>
   <data name="Settings_Spotlight_SpaceRecentCount_Title" xml:space="preserve"><value>Space List Count</value></data>
-  <data name="Settings_Spotlight_SpaceRecentCount_Subtitle" xml:space="preserve"><value>Rows shown in the single-space (recent searches) and double-space (recently opened) lists (3–20).</value></data>
+  <data name="Settings_Spotlight_SpaceRecentCount_Subtitle" xml:space="preserve"><value>Maximum items shown in quick list</value></data>
   <data name="Spotlight_RecentLaunches_Header" xml:space="preserve"><value>Recently Opened</value></data>
   <data name="Spotlight_SearchHistory_Header" xml:space="preserve"><value>Recent Searches</value></data>
   <data name="Spotlight_Preview_Label_Searched" xml:space="preserve"><value>Searched</value></data>

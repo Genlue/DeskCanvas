@@ -1,5 +1,27 @@
 <Styles xmlns="https://github.com/avaloniaui"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:ui="using:DeskCanvas.UI.Controls"
+        xmlns:legacy="using:DeskCanvas.Views.Controls">
+
+    <Styles.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.ThemeDictionaries>
+                <ResourceDictionary x:Key="Light">
+                    <SolidColorBrush x:Key="SettingsGroupCardBackground" Color="#F7F8FA" />
+                    <SolidColorBrush x:Key="SettingsGroupCardBorder" Color="#E2E4E8" />
+                    <SolidColorBrush x:Key="SettingsGroupCardSeparator" Color="#EAECEF" />
+                    <SolidColorBrush x:Key="SettingsGroupRowHover" Color="#EDEFF2" />
+                </ResourceDictionary>
+                <ResourceDictionary x:Key="Dark">
+                    <SolidColorBrush x:Key="SettingsGroupCardBackground" Color="#262629" />
+                    <SolidColorBrush x:Key="SettingsGroupCardBorder" Color="#38383C" />
+                    <SolidColorBrush x:Key="SettingsGroupCardSeparator" Color="#333336" />
+                    <SolidColorBrush x:Key="SettingsGroupRowHover" Color="#2E2E32" />
+                </ResourceDictionary>
+            </ResourceDictionary.ThemeDictionaries>
+        </ResourceDictionary>
+    </Styles.Resources>
+
     <!-- Shared settings group header (W5): one definition for the text that separates groups
          of setting rows. Size / weight / accent colour / group spacing come from the shared
          tokens; pages only provide the text (and, for a first group that needs different
@@ -12,5 +34,43 @@
         <Setter Property="FontWeight" Value="SemiBold" />
         <Setter Property="Margin" Value="{DynamicResource SettingsSectionHeaderMargin}" />
         <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundAccentBrush}" />
+    </Style>
+
+    <!-- Modular settings group card container -->
+    <Style Selector="Border.settings-group-card">
+        <Setter Property="Background" Value="{DynamicResource SettingsGroupCardBackground}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource SettingsGroupCardBorder}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="8" />
+        <Setter Property="ClipToBounds" Value="True" />
+    </Style>
+
+    <!-- Inset hairline divider between settings in a group card -->
+    <Style Selector="Rectangle.settings-separator">
+        <Setter Property="Height" Value="1" />
+        <Setter Property="Fill" Value="{DynamicResource SettingsGroupCardSeparator}" />
+        <Setter Property="Margin" Value="16,0" />
+    </Style>
+
+    <!-- Seamless row inside group card: removes row background and corner radius -->
+    <Style Selector="Border.settings-group-card :is(ui|Setting),
+                     Border.settings-group-card :is(legacy|Setting)">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="CornerRadius" Value="0" />
+    </Style>
+    <Style Selector="Border.settings-group-card :is(ui|Setting) /template/ Border#PART_RootBorder,
+                     Border.settings-group-card :is(legacy|Setting) /template/ Border#PART_RootBorder">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="CornerRadius" Value="0" />
+    </Style>
+
+    <!-- Row hover inside group card -->
+    <Style Selector="Border.settings-group-card :is(ui|Setting):pointerover,
+                     Border.settings-group-card :is(legacy|Setting):pointerover">
+        <Setter Property="Background" Value="{DynamicResource SettingsGroupRowHover}" />
+    </Style>
+    <Style Selector="Border.settings-group-card :is(ui|Setting):pointerover /template/ Border#PART_RootBorder,
+                     Border.settings-group-card :is(legacy|Setting):pointerover /template/ Border#PART_RootBorder">
+        <Setter Property="Background" Value="{DynamicResource SettingsGroupRowHover}" />
     </Style>
 </Styles>

@@ -2,11 +2,18 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:controls="clr-namespace:DeskCanvas.UI.Controls"
              x:Class="DeskCanvas.UI.Controls.Setting">
+    <UserControl.Styles>
+        <Style Selector=":is(controls|Setting)">
+            <Setter Property="Background" Value="{DynamicResource SystemControlBackgroundAltHighBrush}" />
+            <Setter Property="CornerRadius" Value="{DynamicResource HostSurfaceCornerRadius}" />
+        </Style>
+    </UserControl.Styles>
     <UserControl.Template>
         <ControlTemplate>
-            <Border CornerRadius="{DynamicResource HostSurfaceCornerRadius}" BorderThickness="0"
+            <Border x:Name="PART_RootBorder"
+                    CornerRadius="{TemplateBinding CornerRadius}" BorderThickness="0"
                     Padding="{DynamicResource SettingsRowPadding}"
-                    Background="{DynamicResource SystemControlBackgroundAltHighBrush}">
+                    Background="{TemplateBinding Background}">
                 <!-- One layout engine for the whole row: icon / label group / the SINGLE editor
                      presenter. The panel decides horizontal vs stacked during measurement (see
                      SettingLayoutPanel); the title wraps instead of truncating, and the

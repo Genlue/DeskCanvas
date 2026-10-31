@@ -5,111 +5,148 @@
              xmlns:viewModels="clr-namespace:DeskCanvas.ViewModels"
              x:Class="DeskCanvas.Views.Pages.Advanced"
              x:DataType="viewModels:AdvancedViewModel">
-    <StackPanel Orientation="Vertical" Spacing="3">
-        <TextBlock FontSize="14" FontWeight="SemiBold" Margin="0 0 0 10"
-                   Text="{x:Static locales:Locale.Settings_Advanced_GridMode}"/>
-        <controls:Setting Icon="{DynamicResource SnapPosition}" 
-                          Title="{x:Static locales:Locale.Settings_MultiScreen}"
-                          Subtitle="{x:Static locales:Locale.Settings_Advanced_GridEdit_Subtitle}">
-            <Button Content="{x:Static locales:Locale.Settings_MultiScreen}" Click="OnGoToMultiScreenClicked" />
-        </controls:Setting>
-        <TextBlock FontSize="14" FontWeight="SemiBold" Margin="0 20 0 10"
-                   Text="{x:Static locales:Locale.Settings_Advanced_Position}"/>
-        <controls:Setting Icon="{DynamicResource Lock}" 
-                          Title="{x:Static locales:Locale.Settings_Advanced_LockPosition_Title}" 
-                          Subtitle="{x:Static locales:Locale.Settings_Advanced_LockPosition_Subtitle}">
-            <ToggleSwitch IsChecked="{Binding LockPosition}" />
-        </controls:Setting>
-        <controls:Setting Icon="{DynamicResource SnapPosition}"
-                          Title="{x:Static locales:Locale.Settings_Advanced_ProhibitOverlap_Title}"
-                          Subtitle="{x:Static locales:Locale.Settings_Advanced_ProhibitOverlap_Subtitle}">
-            <ToggleSwitch IsChecked="{Binding ProhibitOverlap}" />
-        </controls:Setting>
-        <TextBlock FontSize="14" FontWeight="SemiBold" Margin="0 20 0 10"
-                   Text="{x:Static locales:Locale.Settings_Advanced_Fullscreen_Section}"/>
-        <controls:Setting Icon="{DynamicResource MultiScreen}"
-                          Title="{x:Static locales:Locale.Settings_Advanced_Fullscreen_Title}"
-                          Subtitle="{x:Static locales:Locale.Settings_Advanced_Fullscreen_Subtitle}">
-            <ComboBox ItemsSource="{Binding FullscreenOptions}" SelectedItem="{Binding SelectedFullscreenBehavior}" MinWidth="150">
-                <ComboBox.ItemTemplate>
-                    <DataTemplate DataType="viewModels:FullscreenBehaviorOption">
-                        <TextBlock Text="{Binding Label}" Margin="0 4" />
-                    </DataTemplate>
-                </ComboBox.ItemTemplate>
-            </ComboBox>
-        </controls:Setting>
-        <TextBlock FontSize="14" FontWeight="SemiBold" Margin="0 20 0 10"
-                   Text="{x:Static locales:Locale.Settings_Advanced_Network}"/>
-        <controls:Setting Icon="{DynamicResource SnapPosition}" 
-                          Title="{x:Static locales:Locale.Settings_Advanced_Proxy_Title}" 
-                          Subtitle="{x:Static locales:Locale.Settings_Advanced_Proxy_Subtitle}">
-            <ComboBox ItemsSource="{Binding ProxyOptions}" SelectedItem="{Binding ProxyMode}" MinWidth="150">
-                <ComboBox.ItemTemplate>
-                    <DataTemplate DataType="viewModels:ProxyOption">
-                        <TextBlock Text="{Binding Label}" Margin="0 4" />
-                    </DataTemplate>
-                </ComboBox.ItemTemplate>
-            </ComboBox>
-        </controls:Setting>
-        <controls:Setting Icon="{DynamicResource SnapPosition}"
-                          Title="{x:Static locales:Locale.Settings_Advanced_ProxyCustom_Title}"
-                          Subtitle="{x:Static locales:Locale.Settings_Advanced_ProxyCustom_Subtitle}">
-            <TextBox MinWidth="260" PlaceholderText="{x:Static locales:Locale.Settings_Advanced_ProxyCustom_Watermark}"
-                     Text="{Binding ProxyCustomUrl}" />
-        </controls:Setting>
-        <controls:Setting Icon="{DynamicResource Refresh}" 
-                          Title="{x:Static locales:Locale.Settings_Advanced_UpdateUrl_Title}" 
-                          Subtitle="{x:Static locales:Locale.Settings_Advanced_UpdateUrl_Subtitle}">
-            <TextBox MinWidth="260" PlaceholderText="https://github.com/owner/repo/releases/latest"
-                     Text="{Binding UpdateUrl}" />
-        </controls:Setting>
-        <TextBlock FontSize="14" FontWeight="SemiBold" Margin="0 20 0 10"
-                   Text="{x:Static locales:Locale.Settings_Advanced_Backup}"/>
-        <controls:Setting Icon="{DynamicResource WidgetSize}" 
-                          Title="{x:Static locales:Locale.Settings_Advanced_BackupExport_Title}" 
-                          Subtitle="{x:Static locales:Locale.Settings_Advanced_BackupExport_Subtitle}">
-            <Button Content="{x:Static locales:Locale.Settings_Advanced_BackupExport_Title}" Click="OnExportBackup" />
-        </controls:Setting>
-        <controls:Setting Icon="{DynamicResource Refresh}" 
-                          Title="{x:Static locales:Locale.Settings_Advanced_BackupImport_Title}" 
-                          Subtitle="{x:Static locales:Locale.Settings_Advanced_BackupImport_Subtitle}">
-            <Button Content="{x:Static locales:Locale.Settings_Advanced_BackupImport_Title}" Click="OnImportBackup" />
-        </controls:Setting>
-        <TextBlock FontSize="14" FontWeight="SemiBold" Margin="0 20 0 10"
-                   Text="{x:Static locales:Locale.Settings_Advanced_DataFolder}"/>
-        <controls:Setting Icon="{DynamicResource Layers}"
-                          Title="{x:Static locales:Locale.Settings_Advanced_DataFolder_Current_Title}"
-                          Subtitle="{Binding DataFolderPath}"
-                          RestartRequired="True">
-            <StackPanel Orientation="Horizontal" Spacing="6">
-                <Button Content="{x:Static locales:Locale.Settings_Advanced_DataFolder_Change}"
-                        IsEnabled="{Binding CanChangeDataFolder}"
-                        Click="OnChangeDataFolderClicked" />
-                <Button Content="{x:Static locales:Locale.Settings_Advanced_DataFolder_Open}"
-                        Click="OnOpenDataFolderClicked" />
-                <Button Content="{x:Static locales:Locale.Settings_Advanced_DataFolder_Reset}"
-                        IsEnabled="{Binding CanResetDataFolder}"
-                        Click="OnResetDataFolderClicked" />
-            </StackPanel>
-        </controls:Setting>
-        <controls:Setting Title="{x:Static locales:Locale.Settings_Advanced_DataFolder_Source_Title}"
-                          Subtitle="{Binding DataFolderSourceText}" />
-        <!-- 缓存文件夹: derived from the data folder, so it moves with it. Nothing here is
-             irreplaceable — the entry exists so the user can see and clear it. -->
-        <controls:Setting Icon="{DynamicResource Layers}"
-                          Title="{x:Static locales:Locale.Settings_Advanced_CacheFolder}"
-                          Subtitle="{Binding CacheFolderPath}">
-            <Button Content="{x:Static locales:Locale.Settings_Advanced_DataFolder_Open}"
-                    Click="OnOpenCacheFolderClicked" />
-        </controls:Setting>
-        <TextBlock Text="{Binding CacheFolderSubtitle}" FontSize="12" TextWrapping="Wrap"
-                   Margin="0,-2,0,0" Foreground="{DynamicResource SecondaryTextBrush}" />
-        <TextBlock FontSize="14" FontWeight="SemiBold" Margin="0 20 0 10"
-                   Text="{x:Static locales:Locale.Settings_Advanced_Tray}"/>
-        <controls:Setting Icon="{DynamicResource Windows}"
-                          Title="{x:Static locales:Locale.Tray_ShowIcon}"
-                          Subtitle="{x:Static locales:Locale.Settings_Advanced_TrayIcon_Subtitle}">
-            <ToggleSwitch IsChecked="{Binding ShowTrayIcon}" />
-        </controls:Setting>
+    <StackPanel Orientation="Vertical" Spacing="20">
+        <!-- 桌面与交互模块 -->
+        <StackPanel Spacing="6">
+            <TextBlock Classes="dc-section-header" Margin="4,0,0,6"
+                       Text="{x:Static locales:Locale.Settings_Advanced_Position}"/>
+            <Border Classes="settings-group-card">
+                <StackPanel>
+                    <controls:Setting Icon="{DynamicResource Lock}" 
+                                      Title="{x:Static locales:Locale.Settings_Advanced_LockPosition_Title}" 
+                                      Subtitle="{x:Static locales:Locale.Settings_Advanced_LockPosition_Subtitle}">
+                        <ToggleSwitch IsChecked="{Binding LockPosition}" />
+                    </controls:Setting>
+                    <Rectangle Classes="settings-separator" />
+                    <controls:Setting Icon="{DynamicResource SnapPosition}"
+                                      Title="{x:Static locales:Locale.Settings_Advanced_ProhibitOverlap_Title}"
+                                      Subtitle="{x:Static locales:Locale.Settings_Advanced_ProhibitOverlap_Subtitle}">
+                        <ToggleSwitch IsChecked="{Binding ProhibitOverlap}" />
+                    </controls:Setting>
+                    <Rectangle Classes="settings-separator" />
+                    <controls:Setting Icon="{DynamicResource MultiScreen}"
+                                      Title="{x:Static locales:Locale.Settings_Advanced_Fullscreen_Title}"
+                                      Subtitle="{x:Static locales:Locale.Settings_Advanced_Fullscreen_Subtitle}">
+                        <ComboBox ItemsSource="{Binding FullscreenOptions}" SelectedItem="{Binding SelectedFullscreenBehavior}" MinWidth="160">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate DataType="viewModels:FullscreenBehaviorOption">
+                                    <TextBlock Text="{Binding Label}" Margin="0 4" />
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
+                    </controls:Setting>
+                    <Rectangle Classes="settings-separator" />
+                    <controls:Setting Icon="{DynamicResource SnapPosition}" 
+                                      Title="{x:Static locales:Locale.Settings_MultiScreen}"
+                                      Subtitle="{x:Static locales:Locale.Settings_Advanced_GridEdit_Subtitle}">
+                        <Button Content="{x:Static locales:Locale.Settings_MultiScreen}" Click="OnGoToMultiScreenClicked" />
+                    </controls:Setting>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+
+        <!-- 网络与连接模块 -->
+        <StackPanel Spacing="6">
+            <TextBlock Classes="dc-section-header" Margin="4,0,0,6"
+                       Text="{x:Static locales:Locale.Settings_Advanced_Network}"/>
+            <Border Classes="settings-group-card">
+                <StackPanel>
+                    <controls:Setting Icon="{DynamicResource SnapPosition}" 
+                                      Title="{x:Static locales:Locale.Settings_Advanced_Proxy_Title}" 
+                                      Subtitle="{x:Static locales:Locale.Settings_Advanced_Proxy_Subtitle}">
+                        <ComboBox ItemsSource="{Binding ProxyOptions}" SelectedItem="{Binding ProxyMode}" MinWidth="160">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate DataType="viewModels:ProxyOption">
+                                    <TextBlock Text="{Binding Label}" Margin="0 4" />
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
+                    </controls:Setting>
+                    <Rectangle Classes="settings-separator" />
+                    <controls:Setting Icon="{DynamicResource SnapPosition}"
+                                      Title="{x:Static locales:Locale.Settings_Advanced_ProxyCustom_Title}"
+                                      Subtitle="{x:Static locales:Locale.Settings_Advanced_ProxyCustom_Subtitle}">
+                        <TextBox MinWidth="260" PlaceholderText="{x:Static locales:Locale.Settings_Advanced_ProxyCustom_Watermark}"
+                                 Text="{Binding ProxyCustomUrl}" />
+                    </controls:Setting>
+                    <Rectangle Classes="settings-separator" />
+                    <controls:Setting Icon="{DynamicResource Refresh}" 
+                                      Title="{x:Static locales:Locale.Settings_Advanced_UpdateUrl_Title}" 
+                                      Subtitle="{x:Static locales:Locale.Settings_Advanced_UpdateUrl_Subtitle}">
+                        <TextBox MinWidth="260" PlaceholderText="https://github.com/owner/repo/releases/latest"
+                                 Text="{Binding UpdateUrl}" />
+                    </controls:Setting>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+
+        <!-- 数据与缓存模块 -->
+        <StackPanel Spacing="6">
+            <TextBlock Classes="dc-section-header" Margin="4,0,0,6"
+                       Text="{x:Static locales:Locale.Settings_Advanced_DataFolder}"/>
+            <Border Classes="settings-group-card">
+                <StackPanel>
+                    <controls:Setting Icon="{DynamicResource Layers}"
+                                      Title="{x:Static locales:Locale.Settings_Advanced_DataFolder_Current_Title}"
+                                      Subtitle="{Binding DataFolderPath}"
+                                      RestartRequired="True">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <Button Content="{x:Static locales:Locale.Settings_Advanced_DataFolder_Change}"
+                                    IsEnabled="{Binding CanChangeDataFolder}"
+                                    Click="OnChangeDataFolderClicked" />
+                            <Button Content="{x:Static locales:Locale.Settings_Advanced_DataFolder_Open}"
+                                    Click="OnOpenDataFolderClicked" />
+                            <Button Content="{x:Static locales:Locale.Settings_Advanced_DataFolder_Reset}"
+                                    IsEnabled="{Binding CanResetDataFolder}"
+                                    Click="OnResetDataFolderClicked" />
+                        </StackPanel>
+                    </controls:Setting>
+                    <Rectangle Classes="settings-separator" />
+                    <controls:Setting Title="{x:Static locales:Locale.Settings_Advanced_DataFolder_Source_Title}"
+                                      Subtitle="{Binding DataFolderSourceText}" />
+                    <Rectangle Classes="settings-separator" />
+                    <controls:Setting Icon="{DynamicResource Layers}"
+                                      Title="{x:Static locales:Locale.Settings_Advanced_CacheFolder}"
+                                      Subtitle="{Binding CacheFolderPath}">
+                        <Button Content="{x:Static locales:Locale.Settings_Advanced_DataFolder_Open}"
+                                Click="OnOpenCacheFolderClicked" />
+                    </controls:Setting>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+
+        <!-- 备份与恢复模块 -->
+        <StackPanel Spacing="6">
+            <TextBlock Classes="dc-section-header" Margin="4,0,0,6"
+                       Text="{x:Static locales:Locale.Settings_Advanced_Backup}"/>
+            <Border Classes="settings-group-card">
+                <StackPanel>
+                    <controls:Setting Icon="{DynamicResource WidgetSize}" 
+                                      Title="{x:Static locales:Locale.Settings_Advanced_BackupExport_Title}" 
+                                      Subtitle="{x:Static locales:Locale.Settings_Advanced_BackupExport_Subtitle}">
+                        <Button Content="{x:Static locales:Locale.Settings_Advanced_BackupExport_Title}" Click="OnExportBackup" />
+                    </controls:Setting>
+                    <Rectangle Classes="settings-separator" />
+                    <controls:Setting Icon="{DynamicResource Refresh}" 
+                                      Title="{x:Static locales:Locale.Settings_Advanced_BackupImport_Title}" 
+                                      Subtitle="{x:Static locales:Locale.Settings_Advanced_BackupImport_Subtitle}">
+                        <Button Content="{x:Static locales:Locale.Settings_Advanced_BackupImport_Title}" Click="OnImportBackup" />
+                    </controls:Setting>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+
+        <!-- 托盘图标模块 -->
+        <StackPanel Spacing="6">
+            <TextBlock Classes="dc-section-header" Margin="4,0,0,6"
+                       Text="{x:Static locales:Locale.Settings_Advanced_Tray}"/>
+            <Border Classes="settings-group-card">
+                <controls:Setting Icon="{DynamicResource Windows}"
+                                  Title="{x:Static locales:Locale.Tray_ShowIcon}"
+                                  Subtitle="{x:Static locales:Locale.Settings_Advanced_TrayIcon_Subtitle}">
+                    <ToggleSwitch IsChecked="{Binding ShowTrayIcon}" />
+                </controls:Setting>
+            </Border>
+        </StackPanel>
     </StackPanel>
 </UserControl>

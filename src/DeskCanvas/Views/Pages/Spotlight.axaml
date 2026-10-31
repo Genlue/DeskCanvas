@@ -23,17 +23,21 @@
          its own while being a policy of the 高级 group. No new strings: every header is an existing
          locale key (高级 is the app's shared Settings_Advanced).
     -->
-    <StackPanel Orientation="Vertical" Spacing="3">
+    <StackPanel Orientation="Vertical" Spacing="20">
         <!-- ============ 启用与入口 ============ -->
-        <TextBlock FontSize="14" FontWeight="SemiBold" Margin="0 0 0 10"
-                   Text="{x:Static locales:Locale.Settings_Spotlight_Section_General}"/>
-
-        <controls:Setting Icon="{DynamicResource Spotlight}"
+        <StackPanel Spacing="6">
+            <TextBlock Classes="dc-section-header" Margin="4,0,0,6"
+                       Text="{x:Static locales:Locale.Settings_Spotlight_Section_General}"/>
+            <Border Classes="settings-group-card">
+                <StackPanel>
+<controls:Setting Icon="{DynamicResource Spotlight}"
                           Title="{x:Static locales:Locale.Settings_Spotlight_Enable_Title}"
                           Subtitle="{x:Static locales:Locale.Settings_Spotlight_Enable_Subtitle}">
             <ToggleSwitch IsChecked="{Binding Enabled}"
                           AutomationProperties.Name="{x:Static locales:Locale.Settings_Spotlight_Enable_Title}" />
         </controls:Setting>
+        <Rectangle Classes="settings-separator" />
+
 
         <!-- The app-list gesture. Read-only by design: the gesture is recorded, never typed.
              Clicking the box (or the record button) starts capture, and the live registration is
@@ -67,6 +71,8 @@
                            Foreground="{DynamicResource SecondaryTextBrush}" />
             </StackPanel>
         </controls:Setting>
+        <Rectangle Classes="settings-separator" />
+
 
         <!-- 第二种唤出：搜索栏。Same recorder, its own gesture — the two modes are separate
              surfaces, so one gesture could never choose between them. -->
@@ -96,6 +102,8 @@
                            Foreground="{DynamicResource SecondaryTextBrush}" />
             </StackPanel>
         </controls:Setting>
+        <Rectangle Classes="settings-separator" />
+
 
         <!-- The hook fallback. Deliberately below both recorders: it changes how either gesture
              is registered, not the gesture itself. The admin caveat lives in the subtitle because
@@ -107,6 +115,8 @@
                           IsChecked="{Binding TakeOverSystemHotkeys}"
                           AutomationProperties.Name="{x:Static locales:Locale.Settings_Spotlight_TakeOver_Title}" />
         </controls:Setting>
+        <Rectangle Classes="settings-separator" />
+
 
         <!-- The field's placeholder: the copy of the entry surface, so it stays with the entry. -->
         <controls:Setting Icon="{DynamicResource Spotlight}"
@@ -122,19 +132,24 @@
                         Command="{Binding ResetSearchPlaceholderCommand}" />
             </StackPanel>
         </controls:Setting>
+                </StackPanel>
+            </Border>
+        </StackPanel>
 
         <!-- ============ 外观 ============ -->
-        <!-- 独立于全局主题. Every row here answers "what does the card look like": material,
-             light/dark, translucency, shape, colour, and how it arrives. -->
-        <TextBlock FontSize="14" FontWeight="SemiBold" Margin="0 20 0 10"
-                   Text="{x:Static locales:Locale.Settings_Spotlight_Section_Appearance}"/>
-
-        <controls:Setting Icon="{DynamicResource Appearance}"
+        <StackPanel Spacing="6">
+            <TextBlock Classes="dc-section-header" Margin="4,0,0,6"
+                       Text="{x:Static locales:Locale.Settings_Spotlight_Section_Appearance}"/>
+            <Border Classes="settings-group-card">
+                <StackPanel>
+<controls:Setting Icon="{DynamicResource Appearance}"
                           Title="{x:Static locales:Locale.Settings_Spotlight_Appearance_Theme_Title}"
                           Subtitle="{x:Static locales:Locale.Settings_Spotlight_Appearance_Theme_Subtitle}">
             <ToggleSwitch IsChecked="{Binding UseGlobalTheme}"
                           AutomationProperties.Name="{x:Static locales:Locale.Settings_Spotlight_Appearance_Theme_Title}" />
         </controls:Setting>
+        <Rectangle Classes="settings-separator" />
+
 
         <controls:Setting Icon="{DynamicResource Appearance}"
                           Title="{x:Static locales:Locale.Settings_Spotlight_Appearance_Surface_Title}"
@@ -150,6 +165,8 @@
                 </ComboBox.ItemTemplate>
             </ComboBox>
         </controls:Setting>
+        <Rectangle Classes="settings-separator" />
+
 
         <controls:Setting Icon="{DynamicResource Appearance}"
                           Title="{x:Static locales:Locale.Settings_Spotlight_Appearance_DarkMode_Title}"
@@ -165,6 +182,8 @@
                 </ComboBox.ItemTemplate>
             </ComboBox>
         </controls:Setting>
+        <Rectangle Classes="settings-separator" />
+
 
         <controls:Setting Icon="{DynamicResource Appearance}"
                           Title="{x:Static locales:Locale.Settings_Spotlight_Appearance_Opacity_Title}"
@@ -177,6 +196,8 @@
                               ValueCommitted="OnAppearanceCommitted"
                               AutomationProperties.Name="{x:Static locales:Locale.Settings_Spotlight_Appearance_Opacity_Title}" />
         </controls:Setting>
+        <Rectangle Classes="settings-separator" />
+
 
         <controls:Setting Icon="{DynamicResource Appearance}"
                           Title="{x:Static locales:Locale.Settings_Spotlight_Appearance_Radius_Title}"
@@ -194,6 +215,8 @@
                           ToolTip.Tip="{x:Static locales:Locale.Settings_Spotlight_Appearance_Radius_Follow_Subtitle}" />
             </StackPanel>
         </controls:Setting>
+        <Rectangle Classes="settings-separator" />
+
 
         <!-- 背景色: its own follow switch, and one colour per mode. The pair is resolved against
              the launcher's OWN light/dark mode (明暗模式 above), so a launcher pinned dark takes the
@@ -236,6 +259,8 @@
                 </StackPanel>
             </StackPanel>
         </controls:Setting>
+        <Rectangle Classes="settings-separator" />
+
 
         <!-- 打开动画: on by default; off makes the summon instantaneous. It is motion, which is why
              it sits with the appearance rows and not under 结果行为. -->
@@ -245,12 +270,17 @@
             <ToggleSwitch IsChecked="{Binding AnimateSummon}"
                           AutomationProperties.Name="{x:Static locales:Locale.Settings_Spotlight_Animation_Title}" />
         </controls:Setting>
+                </StackPanel>
+            </Border>
+        </StackPanel>
 
         <!-- ============ 内容 · 搜索范围 ============ -->
-        <TextBlock FontSize="14" FontWeight="SemiBold" Margin="0 20 0 10"
-                   Text="{x:Static locales:Locale.Settings_Spotlight_Section_Scope}"/>
-
-        <controls:Setting Icon="{DynamicResource Layers}"
+        <StackPanel Spacing="6">
+            <TextBlock Classes="dc-section-header" Margin="4,0,0,6"
+                       Text="{x:Static locales:Locale.Settings_Spotlight_Section_Scope}"/>
+            <Border Classes="settings-group-card">
+                <StackPanel>
+<controls:Setting Icon="{DynamicResource Layers}"
                           Title="{x:Static locales:Locale.Settings_Spotlight_Folder_Title}"
                           Subtitle="{x:Static locales:Locale.Settings_Spotlight_Folder_Subtitle}">
             <StackPanel Spacing="6">
@@ -268,6 +298,8 @@
                 </StackPanel>
             </StackPanel>
         </controls:Setting>
+        <Rectangle Classes="settings-separator" />
+
 
         <controls:Setting Icon="{DynamicResource WidgetSize}"
                           Title="{x:Static locales:Locale.Settings_Spotlight_Columns_Title}"
@@ -279,6 +311,8 @@
                               ValueCommitted="OnGridMetricsCommitted"
                               AutomationProperties.Name="{x:Static locales:Locale.Settings_Spotlight_Columns_Title}" />
         </controls:Setting>
+        <Rectangle Classes="settings-separator" />
+
 
         <!-- 应用排序: the grid's order. Pinned tiles stay in front in every mode, so this is a
              preference about the rest of the grid, not a way to unpin anything. -->
@@ -296,6 +330,8 @@
                 </ComboBox.ItemTemplate>
             </ComboBox>
         </controls:Setting>
+        <Rectangle Classes="settings-separator" />
+
 
         <controls:Setting Icon="{DynamicResource WidgetSize}"
                           Title="{x:Static locales:Locale.Settings_Spotlight_Height_Title}"
@@ -307,6 +343,8 @@
                               ValueCommitted="OnGridMetricsCommitted"
                               AutomationProperties.Name="{x:Static locales:Locale.Settings_Spotlight_Height_Title}" />
         </controls:Setting>
+        <Rectangle Classes="settings-separator" />
+
 
         <controls:Setting Icon="{DynamicResource WidgetSize}"
                           Title="{x:Static locales:Locale.Settings_Spotlight_Gap_Title}"
@@ -325,6 +363,8 @@
                            Foreground="{DynamicResource SecondaryTextBrush}" />
             </StackPanel>
         </controls:Setting>
+        <Rectangle Classes="settings-separator" />
+
 
         <controls:Setting Icon="{DynamicResource WidgetSize}"
                           Title="{x:Static locales:Locale.Settings_Spotlight_RowGap_Title}"
@@ -336,6 +376,8 @@
                               ValueCommitted="OnGridMetricsCommitted"
                               AutomationProperties.Name="{x:Static locales:Locale.Settings_Spotlight_RowGap_Title}" />
         </controls:Setting>
+        <Rectangle Classes="settings-separator" />
+
 
         <controls:Setting Icon="{DynamicResource Layers}"
                           Title="{x:Static locales:Locale.Settings_Spotlight_Names_Title}"
@@ -343,6 +385,8 @@
             <ToggleSwitch IsChecked="{Binding ShowNames}"
                           AutomationProperties.Name="{x:Static locales:Locale.Settings_Spotlight_Names_Title}" />
         </controls:Setting>
+        <Rectangle Classes="settings-separator" />
+
 
         <!-- 名称行数: the label box every tile reserves. It is what keeps the icons of a row on one
              baseline, so it belongs right next to 显示名称 and is disabled with it. -->
@@ -357,17 +401,24 @@
                               ValueCommitted="OnGridMetricsCommitted"
                               AutomationProperties.Name="{x:Static locales:Locale.Settings_Spotlight_NameLines_Title}" />
         </controls:Setting>
+                </StackPanel>
+            </Border>
+        </StackPanel>
 
         <!-- ============ 内容 · 结果行为 ============ -->
-        <TextBlock FontSize="14" FontWeight="SemiBold" Margin="0 20 0 10"
-                   Text="{x:Static locales:Locale.Settings_Spotlight_Section_Results}"/>
-
-        <controls:Setting Icon="{DynamicResource Spotlight}"
+        <StackPanel Spacing="6">
+            <TextBlock Classes="dc-section-header" Margin="4,0,0,6"
+                       Text="{x:Static locales:Locale.Settings_Spotlight_Section_Results}"/>
+            <Border Classes="settings-group-card">
+                <StackPanel>
+<controls:Setting Icon="{DynamicResource Spotlight}"
                           Title="{x:Static locales:Locale.Settings_Spotlight_Files_Title}"
                           Subtitle="{x:Static locales:Locale.Settings_Spotlight_Files_Subtitle}">
             <ToggleSwitch IsChecked="{Binding FileSearch}"
                           AutomationProperties.Name="{x:Static locales:Locale.Settings_Spotlight_Files_Title}" />
         </controls:Setting>
+        <Rectangle Classes="settings-separator" />
+
 
         <controls:Setting Icon="{DynamicResource Spotlight}"
                           Title="{x:Static locales:Locale.Settings_Spotlight_Files_AutoStart_Title}"
@@ -376,6 +427,8 @@
             <ToggleSwitch IsChecked="{Binding AutoStartEverything}"
                           AutomationProperties.Name="{x:Static locales:Locale.Settings_Spotlight_Files_AutoStart_Title}" />
         </controls:Setting>
+        <Rectangle Classes="settings-separator" />
+
 
         <controls:Setting Icon="{DynamicResource Refresh}"
                           Title="{x:Static locales:Locale.Settings_Spotlight_Files_Engine_Title}"
@@ -391,6 +444,8 @@
                         Click="OnRefreshIndex" />
             </StackPanel>
         </controls:Setting>
+        <Rectangle Classes="settings-separator" />
+
 
         <controls:Setting Icon="{DynamicResource Spotlight}"
                           Title="{x:Static locales:Locale.Settings_Spotlight_Recent_Title}"
@@ -404,6 +459,8 @@
                         Click="OnClearUsage" />
             </StackPanel>
         </controls:Setting>
+        <Rectangle Classes="settings-separator" />
+
 
         <TextBlock Text="{Binding RecentStatusText}"
                    IsVisible="{Binding HasRecentStatus}"
@@ -417,6 +474,8 @@
             <ToggleSwitch IsChecked="{Binding SpaceShowsRecentLaunches}"
                           AutomationProperties.Name="{x:Static locales:Locale.Settings_Spotlight_SpaceRecent_Title}" />
         </controls:Setting>
+        <Rectangle Classes="settings-separator" />
+
 
         <controls:Setting Icon="{DynamicResource WidgetSize}"
                           Title="{x:Static locales:Locale.Settings_Spotlight_SpaceRecentCount_Title}"
@@ -429,6 +488,8 @@
                               ValueCommitted="OnSpaceRecentLaunchesCountCommitted"
                               AutomationProperties.Name="{x:Static locales:Locale.Settings_Spotlight_SpaceRecentCount_Title}" />
         </controls:Setting>
+        <Rectangle Classes="settings-separator" />
+
 
         <controls:Setting Icon="{DynamicResource Appearance}"
                           Title="{x:Static locales:Locale.Settings_Spotlight_Preview_Title}"
@@ -436,21 +497,24 @@
             <ToggleSwitch IsChecked="{Binding PreviewBar}"
                           AutomationProperties.Name="{x:Static locales:Locale.Settings_Spotlight_Preview_Title}" />
         </controls:Setting>
+                </StackPanel>
+            </Border>
+        </StackPanel>
 
         <!-- ============ 内容 · 网页搜索 ============ -->
-        <!-- The launcher's own web row: same idea as the 搜索 component (an engine, a query, the
-             browser), except it answers "I typed something here and want to keep going" instead of
-             needing a second widget on the desktop. Engine and browser are two settings because they
-             are two independent choices — 默认浏览器 is the value that keeps the second one open. -->
-        <TextBlock FontSize="14" FontWeight="SemiBold" Margin="0 20 0 10"
-                   Text="{x:Static locales:Locale.Settings_Spotlight_Section_Web}"/>
-
-        <controls:Setting Icon="{DynamicResource Spotlight}"
+        <StackPanel Spacing="6">
+            <TextBlock Classes="dc-section-header" Margin="4,0,0,6"
+                       Text="{x:Static locales:Locale.Settings_Spotlight_Section_Web}"/>
+            <Border Classes="settings-group-card">
+                <StackPanel>
+<controls:Setting Icon="{DynamicResource Spotlight}"
                           Title="{x:Static locales:Locale.Settings_Spotlight_Web_Enable_Title}"
                           Subtitle="{x:Static locales:Locale.Settings_Spotlight_Web_Enable_Subtitle}">
             <ToggleSwitch IsChecked="{Binding WebSearch}"
                           AutomationProperties.Name="{x:Static locales:Locale.Settings_Spotlight_Web_Enable_Title}" />
         </controls:Setting>
+        <Rectangle Classes="settings-separator" />
+
 
         <controls:Setting Icon="{DynamicResource Spotlight}"
                           Title="{x:Static locales:Locale.Settings_Spotlight_Web_Engine_Title}"
@@ -467,6 +531,8 @@
                 </ComboBox.ItemTemplate>
             </ComboBox>
         </controls:Setting>
+        <Rectangle Classes="settings-separator" />
+
 
         <!-- 自定义地址: only while 自定义… is the engine. The box is never corrected silently —
              a template that cannot carry the query is reported under it instead. -->
@@ -490,6 +556,8 @@
                            Foreground="{DynamicResource ValidationErrorBrush}" />
             </StackPanel>
         </controls:Setting>
+        <Rectangle Classes="settings-separator" />
+
 
         <controls:Setting Icon="{DynamicResource Spotlight}"
                           Title="{x:Static locales:Locale.Settings_Spotlight_Web_Browser_Title}"
@@ -506,6 +574,8 @@
                 </ComboBox.ItemTemplate>
             </ComboBox>
         </controls:Setting>
+        <Rectangle Classes="settings-separator" />
+
 
         <!-- Inline hits: the launcher lists the engine's own answers under the action row. 0 is a
              real choice (no request leaves the machine), so the slider starts there. -->
@@ -529,17 +599,24 @@
                    Margin="4,0,0,6"
                    TextWrapping="Wrap"
                    Foreground="{DynamicResource SecondaryTextBrush}" />
+                </StackPanel>
+            </Border>
+        </StackPanel>
 
         <!-- ============ 内容 · 剪贴板 ============ -->
-        <TextBlock FontSize="14" FontWeight="SemiBold" Margin="0 20 0 10"
-                   Text="{x:Static locales:Locale.Settings_Spotlight_Section_Clipboard}"/>
-
-        <controls:Setting Icon="{DynamicResource Layers}"
+        <StackPanel Spacing="6">
+            <TextBlock Classes="dc-section-header" Margin="4,0,0,6"
+                       Text="{x:Static locales:Locale.Settings_Spotlight_Section_Clipboard}"/>
+            <Border Classes="settings-group-card">
+                <StackPanel>
+<controls:Setting Icon="{DynamicResource Layers}"
                           Title="{x:Static locales:Locale.Settings_Spotlight_Clipboard_Title}"
                           Subtitle="{x:Static locales:Locale.Settings_Spotlight_Clipboard_Subtitle}">
             <ToggleSwitch IsChecked="{Binding ClipboardHistory}"
                           AutomationProperties.Name="{x:Static locales:Locale.Settings_Spotlight_Clipboard_Title}" />
         </controls:Setting>
+        <Rectangle Classes="settings-separator" />
+
 
         <StackPanel Orientation="Horizontal" Spacing="8" Margin="4,0,0,6">
             <TextBlock Text="{Binding ClipboardCountText}"
@@ -567,6 +644,8 @@
                               ValueCommitted="OnClipboardRetentionCommitted"
                               AutomationProperties.Name="{x:Static locales:Locale.Settings_Spotlight_Clipboard_Retention_Title}" />
         </controls:Setting>
+        <Rectangle Classes="settings-separator" />
+
 
         <controls:Setting Icon="{DynamicResource Lock}"
                           Title="{x:Static locales:Locale.Settings_Spotlight_Clipboard_Excluded_Title}"
@@ -613,20 +692,24 @@
                 </DataTemplate>
             </ItemsControl.ItemTemplate>
         </ItemsControl>
+                </StackPanel>
+            </Border>
+        </StackPanel>
 
         <!-- ============ 高级 ============ -->
-        <!-- Everything below is a policy or a tuning knob, not a choice the launcher needs to be
-             usable. The group owns one header; 黑名单 no longer has a top-level one of its own
-             (two headers for one idea was half of why the page read as a list of sections). -->
-        <TextBlock FontSize="14" FontWeight="SemiBold" Margin="0 20 0 10"
-                   Text="{x:Static locales:Locale.Settings_Advanced}"/>
-
-        <controls:Setting Icon="{DynamicResource Lock}"
+        <StackPanel Spacing="6">
+            <TextBlock Classes="dc-section-header" Margin="4,0,0,6"
+                       Text="{x:Static locales:Locale.Settings_Advanced}"/>
+            <Border Classes="settings-group-card">
+                <StackPanel>
+<controls:Setting Icon="{DynamicResource Lock}"
                           Title="{x:Static locales:Locale.Settings_Spotlight_BlockFullscreen_Title}"
                           Subtitle="{x:Static locales:Locale.Settings_Spotlight_BlockFullscreen_Subtitle}">
             <ToggleSwitch IsChecked="{Binding BlockFullscreen}"
                           AutomationProperties.Name="{x:Static locales:Locale.Settings_Spotlight_BlockFullscreen_Title}" />
         </controls:Setting>
+        <Rectangle Classes="settings-separator" />
+
 
         <controls:Setting Icon="{DynamicResource Lock}"
                           Title="{x:Static locales:Locale.Settings_Spotlight_Blacklist_Title}"
@@ -680,6 +763,9 @@
                 </DataTemplate>
             </ItemsControl.ItemTemplate>
         </ItemsControl>
+                </StackPanel>
+            </Border>
+        </StackPanel>
 
         <!-- ============ 高级 · 类别快捷键 ============ -->
         <!-- Folded: the chips already work without a single key bound, and seven rows of recorders

@@ -5,56 +5,83 @@
              xmlns:locales="clr-namespace:DeskCanvas.Locales"
              x:Class="DeskCanvas.Views.Pages.About"
              x:DataType="pages:About">
-    <StackPanel Orientation="Vertical" Spacing="3">
-        <TextBlock FontSize="14" FontWeight="SemiBold" Margin="0 0 0 10" 
-                   Text="{x:Static locales:Locale.Settings_About}"/>
-        <controls:Setting Icon="{DynamicResource About}" 
-                          Title="{x:Static locales:Locale.Settings_About_Version}"
-                          Subtitle="DeskCanvas · fork of creewick/uWidgets">
-            <TextBlock Text="{Binding Version}" />
-        </controls:Setting>
-        <controls:Setting Name="Update" IsVisible="False" 
-                          Icon="{DynamicResource Download}" 
-                          Title="{x:Static locales:Locale.Update_SoftwareUpdate}">
-            <Button MinWidth="130" HorizontalContentAlignment="Center" Content="{x:Static locales:Locale.Settings_About_Repository_Action}" Click="GoToUpdate" />
-        </controls:Setting>
-        <TextBlock FontSize="14" FontWeight="SemiBold" Margin="0 20 0 10" 
-                   Text="{Binding TipsHeader}"/>
-        <controls:Setting Icon="{DynamicResource Move}"
-                          Title="{Binding QuickMoveTitle}"
-                          Subtitle="{Binding QuickMoveSubtitle}">
-            <Border Background="{DynamicResource SystemAccentColor}" CornerRadius="4" Padding="8,4" VerticalAlignment="Center">
-                <TextBlock Text="{Binding QuickMoveShortcut}" Foreground="{DynamicResource AccentContrastForegroundBrush}" FontSize="11" FontWeight="SemiBold" />
+    <StackPanel Orientation="Vertical" Spacing="20">
+        <!-- 应用概览模块 -->
+        <StackPanel Spacing="6">
+            <TextBlock Classes="dc-section-header" Margin="4,0,0,6"
+                       Text="{x:Static locales:Locale.Settings_About}"/>
+            <Border Classes="settings-group-card">
+                <StackPanel>
+                    <controls:Setting Icon="{DynamicResource About}" 
+                                      Title="{x:Static locales:Locale.Settings_About_Version}"
+                                      Subtitle="DeskCanvas · fork of creewick/uWidgets">
+                        <TextBlock Text="{Binding Version}" VerticalAlignment="Center" FontWeight="SemiBold" />
+                    </controls:Setting>
+                    <controls:Setting Name="Update" IsVisible="False" 
+                                      Icon="{DynamicResource Download}" 
+                                      Title="{x:Static locales:Locale.Update_SoftwareUpdate}">
+                        <Button MinWidth="130" HorizontalContentAlignment="Center" Content="{x:Static locales:Locale.Settings_About_Repository_Action}" Click="GoToUpdate" />
+                    </controls:Setting>
+                </StackPanel>
             </Border>
-        </controls:Setting>
-        <controls:Setting Icon="{DynamicResource Layers}"
-                          Title="{Binding SwitchStackTitle}"
-                          Subtitle="{Binding SwitchStackSubtitle}">
-            <Border Background="{DynamicResource SystemAccentColor}" CornerRadius="4" Padding="8,4" VerticalAlignment="Center">
-                <TextBlock Text="{Binding SwitchStackShortcut}" Foreground="{DynamicResource AccentContrastForegroundBrush}" FontSize="11" FontWeight="SemiBold" />
+        </StackPanel>
+
+        <!-- 快捷操作与技巧模块 -->
+        <StackPanel Spacing="6">
+            <TextBlock Classes="dc-section-header" Margin="4,0,0,6"
+                       Text="{Binding TipsHeader}"/>
+            <Border Classes="settings-group-card">
+                <StackPanel>
+                    <controls:Setting Icon="{DynamicResource Move}"
+                                      Title="{Binding QuickMoveTitle}"
+                                      Subtitle="{Binding QuickMoveSubtitle}">
+                        <Border Background="{DynamicResource SystemAccentColor}" CornerRadius="4" Padding="8,4" VerticalAlignment="Center">
+                            <TextBlock Text="{Binding QuickMoveShortcut}" Foreground="{DynamicResource AccentContrastForegroundBrush}" FontSize="11" FontWeight="SemiBold" />
+                        </Border>
+                    </controls:Setting>
+                    <Rectangle Classes="settings-separator" />
+                    <controls:Setting Icon="{DynamicResource Layers}"
+                                      Title="{Binding SwitchStackTitle}"
+                                      Subtitle="{Binding SwitchStackSubtitle}">
+                        <Border Background="{DynamicResource SystemAccentColor}" CornerRadius="4" Padding="8,4" VerticalAlignment="Center">
+                            <TextBlock Text="{Binding SwitchStackShortcut}" Foreground="{DynamicResource AccentContrastForegroundBrush}" FontSize="11" FontWeight="SemiBold" />
+                        </Border>
+                    </controls:Setting>
+                </StackPanel>
             </Border>
-        </controls:Setting>
-        <TextBlock FontSize="14" FontWeight="SemiBold" Margin="0 20 0 10" 
-                   Text="{x:Static locales:Locale.Settings_About_Actions}"/>
-        <controls:Setting Icon="{DynamicResource GitHub}" 
-                          Title="{x:Static locales:Locale.Settings_About_MyRepository}"
-                          Subtitle="Genlue/DeskCanvas">
-            <Button MinWidth="130" HorizontalContentAlignment="Center" Content="{x:Static locales:Locale.Settings_About_Repository_Action}" Click="GoToMyRepository" />
-        </controls:Setting>
-        <controls:Setting Icon="{DynamicResource GitHub}" 
-                          Title="{x:Static locales:Locale.Settings_About_OriginalRepository}"
-                          Subtitle="creewick/uWidgets">
-            <Button MinWidth="130" HorizontalContentAlignment="Center" Content="{x:Static locales:Locale.Settings_About_Repository_Action}" Click="GoToRepository" />
-        </controls:Setting>
-        <controls:Setting Icon="{DynamicResource Bug}" 
-                          Title="{x:Static locales:Locale.Settings_About_OriginalReportBug}"
-                          Subtitle="creewick/uWidgets/issues">
-            <Button MinWidth="130" HorizontalContentAlignment="Center" Content="{x:Static locales:Locale.Settings_About_Repository_Action}" Click="GoToIssues" />
-        </controls:Setting>
-        <controls:Setting Icon="{DynamicResource Delete}" 
-                          Title="{x:Static locales:Locale.Settings_About_Uninstall_Title}"
-                          Subtitle="{x:Static locales:Locale.Settings_About_Uninstall_Subtitle}">
-            <Button MinWidth="130" HorizontalContentAlignment="Center" Content="{x:Static locales:Locale.Settings_About_Uninstall_Action}" Click="OnUninstallClicked" />
-        </controls:Setting>
+        </StackPanel>
+
+        <!-- 开源与反馈模块 -->
+        <StackPanel Spacing="6">
+            <TextBlock Classes="dc-section-header" Margin="4,0,0,6"
+                       Text="{x:Static locales:Locale.Settings_About_Actions}"/>
+            <Border Classes="settings-group-card">
+                <StackPanel>
+                    <controls:Setting Icon="{DynamicResource GitHub}" 
+                                      Title="{x:Static locales:Locale.Settings_About_MyRepository}"
+                                      Subtitle="Genlue/DeskCanvas">
+                        <Button MinWidth="130" HorizontalContentAlignment="Center" Content="{x:Static locales:Locale.Settings_About_Repository_Action}" Click="GoToMyRepository" />
+                    </controls:Setting>
+                    <Rectangle Classes="settings-separator" />
+                    <controls:Setting Icon="{DynamicResource GitHub}" 
+                                      Title="{x:Static locales:Locale.Settings_About_OriginalRepository}"
+                                      Subtitle="creewick/uWidgets">
+                        <Button MinWidth="130" HorizontalContentAlignment="Center" Content="{x:Static locales:Locale.Settings_About_Repository_Action}" Click="GoToRepository" />
+                    </controls:Setting>
+                    <Rectangle Classes="settings-separator" />
+                    <controls:Setting Icon="{DynamicResource Bug}" 
+                                      Title="{x:Static locales:Locale.Settings_About_OriginalReportBug}"
+                                      Subtitle="creewick/uWidgets/issues">
+                        <Button MinWidth="130" HorizontalContentAlignment="Center" Content="{x:Static locales:Locale.Settings_About_Repository_Action}" Click="GoToIssues" />
+                    </controls:Setting>
+                    <Rectangle Classes="settings-separator" />
+                    <controls:Setting Icon="{DynamicResource Delete}" 
+                                      Title="{x:Static locales:Locale.Settings_About_Uninstall_Title}"
+                                      Subtitle="{x:Static locales:Locale.Settings_About_Uninstall_Subtitle}">
+                        <Button MinWidth="130" HorizontalContentAlignment="Center" Content="{x:Static locales:Locale.Settings_About_Uninstall_Action}" Click="OnUninstallClicked" />
+                    </controls:Setting>
+                </StackPanel>
+            </Border>
+        </StackPanel>
     </StackPanel>
 </UserControl>
