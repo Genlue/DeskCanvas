@@ -156,6 +156,34 @@ internal static class PatchPoolCheck
         Assert(!PatchBitmapPool.Copy(wrongSize, guard), "a differently sized frame is refused");
         PatchBitmapPool.Return(guard);
 
+        // ---- 9. an over-released lease must not hand one buffer to two snapshots -----------
+        // The lease used to release whenever its counter reached zero *or below*, so a second
+        // Dispose pushed the same buffer into the free list twice. Two later rents then returned the
+        // same pixels to two live snapshots, and each publish overwrote the other's content — which
+        // the glass renders as wallpaper sampled from the wrong region.
+        var guarded = PatchBitmapPool.Rent(56, 36);
+        var guardedSnapshot = WallpaperSnapshot.FromBitmap(null, SKColors.Black, guarded,
+            live: true, pooled: true);
+        guardedSnapshot.Dispose();
+        guardedSnapshot.Dispose();   // second release on the same lease
+
+        var firstRent = PatchBitmapPool.Rent(56, 36);
+        var secondRent = PatchBitmapPool.Rent(56, 36);
+        Assert(!ReferenceEquals(firstRent, secondRent),
+            "a double-released lease never yields the same buffer twice");
+        PatchBitmapPool.Return(firstRent);
+        PatchBitmapPool.Return(secondRent);
+
+        var duplicate = PatchBitmapPool.Rent(20, 14);
+        PatchBitmapPool.Return(duplicate);
+        PatchBitmapPool.Return(duplicate);   // duplicate release straight into the pool
+        var afterDuplicateA = PatchBitmapPool.Rent(20, 14);
+        var afterDuplicateB = PatchBitmapPool.Rent(20, 14);
+        Assert(!ReferenceEquals(afterDuplicateA, afterDuplicateB),
+            "the pool ignores a duplicate release instead of pooling one buffer twice");
+        PatchBitmapPool.Return(afterDuplicateA);
+        PatchBitmapPool.Return(afterDuplicateB);
+
         PatchBitmapPool.Clear();
         Console.WriteLine(failures == 0 ? "patch pool check passed" : $"patch pool check FAILED ({failures})");
         return failures;

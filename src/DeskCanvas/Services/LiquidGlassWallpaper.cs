@@ -1045,15 +1045,48 @@ public static class LiquidGlassWallpaper
                     return stale;
 
                 // Live sampling on: reuse the frame while it is fresh (so every widget samples
-                // the same instant), otherwise grab a new one. Live sampling off: the frozen
-                // frame wins; a single one-shot capture runs only if there is nothing to freeze.
+                // the same instant), otherwise grab a new one. Live sampling off: a slow refresh —
+                // "静态材质" is a cadence, not a freeze (see below).
                 if (liveSamplingEnabled && CaptureOnce() is { } live && live.LiveCapture)
                     return live;
 
                 if (!liveSamplingEnabled)
                 {
-                    if (cached is { LiveCapture: true }) return cached;
-                    if (CaptureOnce() is { } once) return once;
+                    // Off does not mean "never sample again": a still desktop still gets a new frame
+                    // every few seconds, because the wallpaper is not always as static as the switch
+                    // implies (a slideshow rotation, a video wallpaper, a host that repaints late at
+                    // start-up), and because the frozen patch is only valid while it holds the
+                    // neighbourhood the cards sit in. That second half is the reported "关掉实时采样
+                    // 后壁纸采样完全乱偏移": the first capture happens on the very first render, when
+                    // exactly one surface has reported its rectangle, so the patch freezes as that one
+                    // card's corner — every card that appears afterwards sits outside it and the
+                    // shader clamps to the patch edge.
+                    var frozen = cached is { LiveCapture: true } frozenFrame ? frozenFrame : null;
+                    if (frozen == null)
+                    {
+                        if (CaptureOnce() is { } first) return first;
+                    }
+                    else
+                    {
+                        var now = Environment.TickCount64;
+                        var interest = GlassInterest.SamplingRegion();
+                        // Refresh on the slow clock, and immediately when the glass has moved outside
+                        // what the last capture was asked for (a card that just appeared, a layout
+                        // that grew). Tracking the requested rect — not the patch we actually got —
+                        // is what keeps a monitor the host cannot cover from turning this into a
+                        // capture every render.
+                        var wanted = now - lastFrozenCaptureAt >= FrozenRefreshMs
+                                     || !lastFrozenInterest.Contains(interest);
+                        if (!wanted) return frozen;
+
+                        // One corrective capture per cooldown, so a grab that keeps failing cannot
+                        // turn every render into a full desktop copy.
+                        if (now - lastFrozenCaptureAt < FrozenRecaptureMs) return frozen;
+
+                        lastFrozenCaptureAt = now;
+                        lastFrozenInterest = interest;
+                        if (CaptureOnce(force: true) is { } refreshed) return refreshed;
+                    }
                 }
 
                 // Live sampling with a persistently unreadable host (a long MPO overlay
@@ -1072,6 +1105,26 @@ public static class LiquidGlassWallpaper
             }
         }
     }
+
+    /// <summary>Cooldown between corrective captures of the frozen frame (see <see cref="GetShared"/>).</summary>
+    private const int FrozenRecaptureMs = 250;
+
+    /// <summary>
+    /// How often the static material refreshes while 实时采样 is off.
+    /// <para>
+    /// Off means "don't repaint a moving wallpaper thirty times a second", not "sample once and never
+    /// again": the desktop is still sampled a few times a second at most, which is free compared with
+    /// the live cadence, and it is what keeps a slideshow rotation, a late-repainting host or a
+    /// layout that moved out from under the patch from being frozen in wrong.
+    /// </para>
+    /// </summary>
+    private const int FrozenRefreshMs = 3000;
+
+    /// <summary>When a live capture was last published; drives both the refresh and its cooldown.</summary>
+    private static long lastFrozenCaptureAt;
+
+    /// <summary>The sampling region the last live capture was taken for (see <see cref="GetShared"/>).</summary>
+    private static CaptureRect lastFrozenInterest;
 
     /// <summary>Force a fresh capture (e.g. the user pressed 刷新壁纸 or the wallpaper changed).</summary>
     public static void Invalidate()
@@ -1159,14 +1212,17 @@ public static class LiquidGlassWallpaper
         }
     }
 
-    private static WallpaperSnapshot? CaptureOnce()
+    private static WallpaperSnapshot? CaptureOnce(bool force = false)
     {
         // A captured frame stays valid until something explicitly invalidates it — the live sampler
         // on its next tick, a wallpaper change, a display change or a fullscreen transition. It is
         // deliberately NOT expired on a timer: keying the life of the frame to the sampling interval
         // meant that at a small interval the widgets stopped sharing one capture (and one shared
         // backdrop build) and each paid for its own, which is exactly backwards.
-        if (cached is { LiveCapture: true }) return cached;
+        // `force` is the one exception: with live sampling off the frozen frame is only valid while
+        // it still covers the glass, and re-freezing for a layout that outgrew it has to look past
+        // the cache (see GetShared).
+        if (!force && cached is { LiveCapture: true }) return cached;
 
         // Two attempts: a wallpaper host can vanish mid-transition (monitor hot-plug, a
         // wallpaper engine restarting) and re-resolving usually succeeds on the second try.
@@ -1243,6 +1299,8 @@ public static class LiquidGlassWallpaper
             firstUnusableAt = 0;
             DropStale();
             lastAcceptedHost = DesktopCapturer.ResolvedHost;
+            lastFrozenCaptureAt = Environment.TickCount64;
+            lastFrozenInterest = GlassInterest.SamplingRegion();
 
             var snapshot = WallpaperSnapshot.FromBitmap(null, new SKColor(32, 38, 48), bmp, live: true,
                 regionX: region.Left, regionY: region.Top, pooled: pooled);
@@ -1421,6 +1479,14 @@ public static class LiquidGlassWallpaper
             // Genuinely new content: publish it exactly as CaptureOnce would.
             var snapshot = WallpaperSnapshot.FromBitmap(null, new SKColor(32, 38, 48), bmp, live: true,
                 regionX: region.Left, regionY: region.Top, pooled: pooled);
+            // Ownership has moved into the snapshot, and this has to be recorded *before* anything
+            // else runs: every step below (a replaced frame's Dispose, the ledger, the invalidation
+            // event raised into widget code) can throw, and the catch above releases the buffer when
+            // it still believes the capture owns it. Releasing a buffer that `cached` is already
+            // publishing puts those pixels back in the pool, and the next capture overwrites them —
+            // which the glass renders as a wallpaper sampled from the wrong region.
+            published = true;
+
             WallpaperSnapshot? old;
             lock (Gate)
             {
@@ -1446,9 +1512,11 @@ public static class LiquidGlassWallpaper
             // live tick used to raise this every round through Invalidate, so this keeps their
             // contract while only real change raises it now.
             NotifyInvalidated();
-            // The buffer's pixels now belong to the snapshot — the next probe captures fresh.
-            published = true;
-            TraceProbe(ProbeOutcome.Published, $"{bmp.Width}x{bmp.Height} new content");
+            // The origin is part of the identity of a published frame: a patch whose content does
+            // not sit where this says it does is the whole "sampling is offset" family of reports,
+            // and it is invisible in a trace that only names the size.
+            TraceProbe(ProbeOutcome.Published,
+                $"{bmp.Width}x{bmp.Height} @ ({region.Left},{region.Top}) new content");
             return ProbeOutcome.Published;
         }
         catch

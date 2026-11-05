@@ -72,6 +72,12 @@ internal static class PatchBitmapPool
         SKBitmap? dropped = null;
         lock (Gate)
         {
+            // A duplicate release must never reach the free list: one buffer sitting in the pool
+            // twice would be handed to two live snapshots, and each publish would overwrite the
+            // other's pixels — the glass then samples a region that is not the one it reports.
+            // Reference equality is the right test here (SKBitmap does not override Equals).
+            if (Idle.Contains(bitmap)) return;
+
             if (Idle.Count >= MaxIdle)
             {
                 dropped = Idle[0];

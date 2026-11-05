@@ -591,7 +591,17 @@ public sealed class WallpaperLease : IDisposable
 
     public void Dispose()
     {
-        if (Interlocked.Decrement(ref references) > 0) return;
+        var remaining = Interlocked.Decrement(ref references);
+        if (remaining > 0) return;
+        if (remaining < 0)
+        {
+            // A second release on the same lease. The pixels already went back to the pool (or were
+            // freed) on the 1 → 0 transition; releasing again would put one buffer in the free list
+            // twice, and the next two rents would hand the same pixels to two live snapshots — every
+            // card then samples whatever region was written last ("壁纸采样完全乱偏移").
+            return;
+        }
+
         Interlocked.Decrement(ref liveLeases);
         if (bitmap is { } released)
         {
