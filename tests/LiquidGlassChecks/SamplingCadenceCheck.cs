@@ -32,6 +32,7 @@ internal static class SamplingCadenceCheck
         IdleStretch();
         StallGuard();
         IdleEvidence();
+        StaticRefresh();
 
         Console.WriteLine(failures == 0 ? "glass sampling cadence check passed" : $"{failures} SAMPLING CADENCE CHECK(S) FAILED");
         return failures;
@@ -130,6 +131,32 @@ internal static class SamplingCadenceCheck
             "the quiet window is never shorter than 250 ms, whatever the interval");
         Check(!GlassSamplingPolicy.CountsAsIdle(sourceSilenceMs: 300, effectiveIntervalMs: 500),
             "a slow request widens the quiet window instead of thrashing between stretch and reset");
+    }
+
+    /// <summary>
+    /// The static material's slow refresh (实时采样 off). The bug: the "every 3 s" rule only ran
+    /// inside a render, and a frozen desktop never renders, so the first capture — taken while a
+    /// single surface had reported its rectangle — was the only one of the session and every card
+    /// sampled a patch that did not cover it.
+    /// </summary>
+    private static void StaticRefresh()
+    {
+        var screen = new CaptureRect(0, 0, 2560, 1440);
+        var firstPatch = new CaptureRect(2048, 448, 2560, 800);
+
+        Check(!GlassSamplingPolicy.StaticRefreshDue(2999, 0, firstPatch, firstPatch),
+            "the static material does not refresh before its 3 s clock");
+        Check(GlassSamplingPolicy.StaticRefreshDue(3000, 0, firstPatch, firstPatch),
+            "the static material refreshes on its 3 s clock even when nothing rendered");
+        Check(GlassSamplingPolicy.StaticRefreshDue(10, 0, firstPatch, screen),
+            "a layout that outgrew the frozen patch is refreshed immediately, not in 3 s");
+        Check(!GlassSamplingPolicy.StaticRefreshDue(10, 5, screen, new CaptureRect(8, 8, 2552, 1432)),
+            "a request still inside the last captured interest needs no capture");
+
+        Check(!GlassSamplingPolicy.StaticRetryAllowed(249, 0),
+            "a static capture is not retried in a tighter loop than the cooldown");
+        Check(GlassSamplingPolicy.StaticRetryAllowed(250, 0),
+            "a failed static capture is retried after the cooldown");
     }
 
     private static void Check(bool condition, string label)

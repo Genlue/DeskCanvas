@@ -135,17 +135,15 @@ public static class LiquidGlassWallpaper
 
     /// <summary>
     /// Turn continuous desktop sampling on or off. Switching it off is the static-wallpaper
-    /// mode: the last captured frame is frozen (a single capture still runs if nothing has
-    /// been sampled yet, so the glass never falls back to a stale wallpaper file).
+    /// mode: the last captured frame becomes the material's source and is refreshed on a slow
+    /// clock (see <see cref="GlassSamplingPolicy.StaticRefreshMs"/>), so a still desktop still
+    /// converges on the current wallpaper without running the live cadence.
     /// </summary>
     public static void ConfigureLiveSampling(bool enabled, int intervalMs)
     {
         liveSamplingEnabled = enabled;
         liveIntervalMs = Math.Clamp(intervalMs, MinIntervalMs, MaxIntervalMs);
         Volatile.Write(ref idleRounds, 0);
-        if (!enabled)
-        {
-        }
 
         if (!OperatingSystem.IsWindows()) return;
         try
@@ -240,10 +238,11 @@ public static class LiquidGlassWallpaper
         // screen, because the sampler is pointless while no widget is on screen — and the
         // wallpaper-change settle window, which must also keep probing for consumers that draw
         // their own material from the published frame (the frameless clock) even with live
-        // sampling off.
+        // sampling off. With live sampling off the pacer still runs while glass is on screen: that
+        // is the static material's slow refresh (see EffectiveIntervalMs).
         var shouldRun = !suspended && (liveSamplingEnabled
             ? LiquidGlassSurface.HasActiveSurfaces
-            : SettleActive && HasFrameConsumers);
+            : LiquidGlassSurface.HasActiveSurfaces || (SettleActive && HasFrameConsumers));
         if (shouldRun)
         {
             EnsurePacer();
@@ -291,7 +290,15 @@ public static class LiquidGlassWallpaper
             }
 
             var intervalMs = EffectiveIntervalMs;
-            if (waitableTimer != IntPtr.Zero)
+            if (!liveSamplingEnabled)
+            {
+                // 实时采样 off: the wait is seconds long (the static material's slow refresh) and
+                // must be interruptible — a render or a wallpaper-change settle window can ask for
+                // an earlier look, and the high-resolution timer cannot be woken. The tick re-checks
+                // its own interval, so a kick costs a cheap round rather than a capture.
+                pacerKick.WaitOne(intervalMs);
+            }
+            else if (waitableTimer != IntPtr.Zero)
             {
                 // One-shot relative wait, re-armed per pulse: the effective interval moves with
                 // the idle backoff, and re-reading it every round keeps the pacer in step without
@@ -393,7 +400,7 @@ public static class LiquidGlassWallpaper
         }
 
         var settle = SettleActive;
-        if ((!liveSamplingEnabled && !settle) || suspended) { UpdateTimerState(); return; }
+        if (suspended) { UpdateTimerState(); return; }
         if (!LiquidGlassSurface.HasActiveSurfaces && !settle) { UpdateTimerState(); return; }
 
         var now = Environment.TickCount64;
@@ -407,7 +414,7 @@ public static class LiquidGlassWallpaper
         // hold the CAPTURE REGION behind the moving card for up to StallGuardMs — and the region
         // moving is the one thing the drag path needs from the sampler. The round is still
         // single-flighted and coalesced, so this cannot stack captures.
-        if (!LiquidGlassSurface.DragActive
+        if ((liveSamplingEnabled || settle) && !LiquidGlassSurface.DragActive
             && LiquidGlassSurface.AnySurfaceRendering && now - Interlocked.Read(ref lastCaptureAt) < StallGuardMs)
             return;
 
@@ -415,6 +422,25 @@ public static class LiquidGlassWallpaper
         if (Interlocked.Exchange(ref probing, 1) == 1) return;
         try
         {
+            // 实时采样 off is the static material: the pacer's job here is the slow refresh, not
+            // a live probe. CaptureOnce is the path that actually grabs a frame for the current
+            // interest and publishes it, so a patch frozen before the layout settled is replaced
+            // by one that covers the glass — whether the desktop moved or not.
+            if (!liveSamplingEnabled && !settle)
+            {
+                // The pacer is a demand source in this mode, exactly like a render: an idle
+                // release may have handed the capture session back while nothing was rendering,
+                // and a refresh must bring it back rather than silently capturing nothing.
+                DesktopCapturer.WallpaperBackdrop.SetActive(true);
+                var refreshed = await Task.Run(() => CaptureOnce(force: true));
+                if (refreshed != null)
+                {
+                    Volatile.Write(ref idleRounds, 0);
+                    LiquidGlassSurface.RefreshAllImmediate();
+                }
+                return;
+            }
+
             var outcome = await Task.Run(ProbeCapture);
             if (outcome == ProbeOutcome.Published)
             {
@@ -491,12 +517,48 @@ public static class LiquidGlassWallpaper
         }
     }
 
-    /// <summary>The period the sampler actually waits for: the configured interval, stretched while the desktop stays unchanged.</summary>
-    private static int EffectiveIntervalMs => GlassSamplingPolicy.EffectiveInterval(
-        liveIntervalMs,
-        Volatile.Read(ref idleRounds),
-        LiquidGlassSurface.DragActive,
-        SettleActive && !liveSamplingEnabled);
+    /// <summary>The period the pacer actually waits for: the configured interval, stretched while the desktop stays unchanged.</summary>
+    private static int EffectiveIntervalMs
+    {
+        get
+        {
+            // 实时采样 off is the static material: the pacer still runs (see UpdateTimerState),
+            // but on its own slow clock instead of the live cadence.
+            if (!liveSamplingEnabled && !SettleActive)
+                return FrozenRefreshIntervalMs();
+
+            return GlassSamplingPolicy.EffectiveInterval(
+                liveIntervalMs,
+                Volatile.Read(ref idleRounds),
+                LiquidGlassSurface.DragActive,
+                SettleActive && !liveSamplingEnabled);
+        }
+    }
+
+    /// <summary>
+    /// The static material's next look: <see cref="GlassSamplingPolicy.StaticRefreshMs"/> once the
+    /// frozen frame covers the glass, the short retry cooldown while it does not.
+    /// </summary>
+    private static int FrozenRefreshIntervalMs()
+    {
+        long lastCapture;
+        CaptureRect requested;
+        CaptureRect interest;
+        lock (Gate)
+        {
+            lastCapture = lastFrozenCaptureAt;
+            requested = lastFrozenInterest;
+            interest = GlassInterest.SamplingRegion();
+        }
+
+        var now = Environment.TickCount64;
+        if (!GlassSamplingPolicy.StaticRefreshDue(now, lastCapture, requested, interest))
+            return GlassSamplingPolicy.StaticRefreshMs;
+
+        // Due: wait out the short cooldown rather than spinning while a previous attempt (or the
+        // first frame of this layout pass) is still inside it.
+        return GlassSamplingPolicy.StaticRetryMs;
+    }
 
     /// <summary>When the desktop was last captured; the stall guard is measured from here.</summary>
     private static long lastCaptureAt;
@@ -1070,22 +1132,27 @@ public static class LiquidGlassWallpaper
                     {
                         var now = Environment.TickCount64;
                         var interest = GlassInterest.SamplingRegion();
-                        // Refresh on the slow clock, and immediately when the glass has moved outside
+                        // Refresh on the slow clock, and as soon as the glass has moved outside
                         // what the last capture was asked for (a card that just appeared, a layout
                         // that grew). Tracking the requested rect — not the patch we actually got —
                         // is what keeps a monitor the host cannot cover from turning this into a
                         // capture every render.
-                        var wanted = now - lastFrozenCaptureAt >= FrozenRefreshMs
-                                     || !lastFrozenInterest.Contains(interest);
-                        if (!wanted) return frozen;
+                        if (!GlassSamplingPolicy.StaticRefreshDue(now, lastFrozenCaptureAt,
+                                lastFrozenInterest, interest))
+                            return frozen;
 
-                        // One corrective capture per cooldown, so a grab that keeps failing cannot
-                        // turn every render into a full desktop copy.
-                        if (now - lastFrozenCaptureAt < FrozenRecaptureMs) return frozen;
+                        // One corrective attempt per cooldown, so a grab that keeps failing (or a
+                        // burst of surfaces reporting their rectangles during one layout pass)
+                        // cannot turn every render into a desktop copy.
+                        if (!GlassSamplingPolicy.StaticRetryAllowed(now,
+                                Volatile.Read(ref lastFrozenAttemptAt)))
+                            return frozen;
 
-                        lastFrozenCaptureAt = now;
-                        lastFrozenInterest = interest;
                         if (CaptureOnce(force: true) is { } refreshed) return refreshed;
+
+                        // The grab failed: the frozen frame is still the wallpaper the user has,
+                        // so keep it instead of swapping in the static file for one bad round.
+                        return frozen;
                     }
                 }
 
@@ -1106,24 +1173,20 @@ public static class LiquidGlassWallpaper
         }
     }
 
-    /// <summary>Cooldown between corrective captures of the frozen frame (see <see cref="GetShared"/>).</summary>
-    private const int FrozenRecaptureMs = 250;
+    // The static material's cadence and the "did the glass outgrow the patch" rule live in
+    // GlassSamplingPolicy (see StaticRefreshDue), so they are assertable without a desktop.
 
-    /// <summary>
-    /// How often the static material refreshes while 实时采样 is off.
-    /// <para>
-    /// Off means "don't repaint a moving wallpaper thirty times a second", not "sample once and never
-    /// again": the desktop is still sampled a few times a second at most, which is free compared with
-    /// the live cadence, and it is what keeps a slideshow rotation, a late-repainting host or a
-    /// layout that moved out from under the patch from being frozen in wrong.
-    /// </para>
-    /// </summary>
-    private const int FrozenRefreshMs = 3000;
-
-    /// <summary>When a live capture was last published; drives both the refresh and its cooldown.</summary>
+    /// <summary>When a frozen static capture last succeeded (see <see cref="GetShared"/>).</summary>
     private static long lastFrozenCaptureAt;
 
-    /// <summary>The sampling region the last live capture was taken for (see <see cref="GetShared"/>).</summary>
+    /// <summary>When a frozen static capture was last attempted, successful or not.</summary>
+    private static long lastFrozenAttemptAt;
+
+    /// <summary>
+    /// The sampling region the last frozen capture was taken for — the region the glass had asked
+    /// for, not the patch that came back. Tracking the request keeps a host that cannot cover the
+    /// whole union from turning this into a capture every render (see <see cref="GetShared"/>).
+    /// </summary>
     private static CaptureRect lastFrozenInterest;
 
     /// <summary>Force a fresh capture (e.g. the user pressed 刷新壁纸 or the wallpaper changed).</summary>
@@ -1224,6 +1287,13 @@ public static class LiquidGlassWallpaper
         // the cache (see GetShared).
         if (!force && cached is { LiveCapture: true }) return cached;
 
+        // The region this capture is honouring, read before the grab. The frozen frame is valid for
+        // what the glass ASKED for, not for whatever the layout had grown to by the time the grab
+        // returned — recording it afterwards is how a patch stayed "covered" while the layout had
+        // already outgrown it.
+        var interest = GlassInterest.SamplingRegion();
+        Volatile.Write(ref lastFrozenAttemptAt, Environment.TickCount64);
+
         // Two attempts: a wallpaper host can vanish mid-transition (monitor hot-plug, a
         // wallpaper engine restarting) and re-resolving usually succeeds on the second try.
         for (var attempt = 0; attempt < 2; attempt++)
@@ -1245,10 +1315,17 @@ public static class LiquidGlassWallpaper
                     // Get() calls reuse it directly instead of re-capturing on every widget.
                     PatchBitmapPool.Release(bmp, pooled);
                     firstUnusableAt = 0;
-                    var restored = stale;
-                    cached = restored;
-                    stale = null;
-                    cachedKey = null;
+                    WallpaperSnapshot? restored;
+                    lock (Gate)
+                    {
+                        // Also reached off the Gate by the static pacer, so the swap is locked like
+                        // the publish below.
+                        restored = stale ?? cached;
+                        cached = restored;
+                        stale = null;
+                        cachedKey = null;
+                        MarkFrozenCaptureLocked(interest);
+                    }
                     Interlocked.Exchange(ref lastCaptureAt, Environment.TickCount64);
                     return restored;
                 }
@@ -1297,10 +1374,7 @@ public static class LiquidGlassWallpaper
             }
 
             firstUnusableAt = 0;
-            DropStale();
             lastAcceptedHost = DesktopCapturer.ResolvedHost;
-            lastFrozenCaptureAt = Environment.TickCount64;
-            lastFrozenInterest = GlassInterest.SamplingRegion();
 
             var snapshot = WallpaperSnapshot.FromBitmap(null, new SKColor(32, 38, 48), bmp, live: true,
                 regionX: region.Left, regionY: region.Top, pooled: pooled);
@@ -1310,6 +1384,8 @@ public static class LiquidGlassWallpaper
                 old = cached;
                 cached = snapshot;
                 cachedKey = null;
+                DropStale();
+                MarkFrozenCaptureLocked(interest);
             }
 
             // Frame coherence: every surface asked for a frame from now on samples this one, so a
@@ -1322,6 +1398,17 @@ public static class LiquidGlassWallpaper
             return snapshot;
         }
         return null;
+    }
+
+    /// <summary>
+    /// Record that a frozen capture succeeded and what region it was asked for. Callers must hold
+    /// <see cref="Gate"/>: the frozen refresh rules read both fields while deciding whether the
+    /// patch still covers the glass.
+    /// </summary>
+    private static void MarkFrozenCaptureLocked(CaptureRect interest)
+    {
+        lastFrozenCaptureAt = Environment.TickCount64;
+        lastFrozenInterest = interest;
     }
 
     /// <summary>

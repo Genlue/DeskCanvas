@@ -72,6 +72,43 @@ internal static class GlassSamplingPolicy
         liveSampling ? Math.Max(1, intervalMs) : StaticCaptureCadenceMs;
 
     /// <summary>
+    /// How often the <b>static material</b> (实时采样 off) re-samples a still desktop.
+    /// <para>
+    /// Off means "don't repaint a moving wallpaper thirty times a second", not "sample once and
+    /// never again": a slideshow rotation, a video wallpaper and a host that repaints late at
+    /// start-up all change pixels without an event, and a frozen patch is only valid while it still
+    /// covers the glass. Keeping the slow clock in the policy makes it assertable — the bug this
+    /// replaces was a "3 s refresh" whose only trigger was a render that a frozen desktop never
+    /// makes, so the material sampled once and stayed there for the whole session.
+    /// </para>
+    /// </summary>
+    internal const int StaticRefreshMs = 3000;
+
+    /// <summary>
+    /// Cooldown between static captures. A capture that fails must not become one grab per render,
+    /// and a burst of surfaces reporting their rectangles in one layout pass must not become one
+    /// grab per surface; a successful capture re-arms the slow clock instead.
+    /// </summary>
+    internal const int StaticRetryMs = 250;
+
+    /// <summary>
+    /// Whether the frozen static frame is due to be captured again: on the slow clock, or as soon
+    /// as the glass has moved outside the region the last capture was <b>asked</b> for (a card that
+    /// just appeared, a layout that grew).
+    /// <para>
+    /// <paramref name="capturedInterest"/> is the request, not the patch that came back — a host
+    /// that cannot cover the whole union would otherwise be re-captured on every render.
+    /// </para>
+    /// </summary>
+    internal static bool StaticRefreshDue(long nowMs, long lastCapturedAt,
+        CaptureRect capturedInterest, CaptureRect interest) =>
+        nowMs - lastCapturedAt >= StaticRefreshMs || !capturedInterest.Contains(interest);
+
+    /// <summary>Whether a due static capture may run now, or the previous attempt is still cooling down.</summary>
+    internal static bool StaticRetryAllowed(long nowMs, long lastAttemptAt) =>
+        nowMs - lastAttemptAt >= StaticRetryMs;
+
+    /// <summary>
     /// The period the pacer actually waits for: the user's interval, stretched while the desktop
     /// stays unchanged, and pinned to the user's interval for the whole of a drag — a drag moves the
     /// sampling <b>region</b> while the wallpaper itself stays still, so the idle probe would read
