@@ -88,6 +88,61 @@ internal static class PatchBitmapPool
         }
     }
 
+    /// <summary>
+    /// Copy <paramref name="source"/>'s pixels into <paramref name="destination"/> <b>without
+    /// touching either buffer's allocation</b>.
+    /// <para>
+    /// <c>SKBitmap.CopyTo</c> is the obvious call and the wrong one: it installs fresh pixel storage
+    /// on the destination — the pixel pointer changes — so the rented buffer's own block is orphaned
+    /// and a whole patch is allocated on every published frame anyway. That is exactly the churn this
+    /// pool exists to remove, and it is invisible unless you check the pointer (see PatchPoolCheck).
+    /// Rows are copied by hand here, the same way the capture's readback does it.
+    /// </para>
+    /// </summary>
+    /// <returns>False when the two buffers do not describe the same rectangle.</returns>
+    public static bool Copy(SKBitmap source, SKBitmap destination)
+    {
+        if (source.Width != destination.Width || source.Height != destination.Height) return false;
+
+        var sourcePixels = source.GetPixels();
+        var destinationPixels = destination.GetPixels();
+        if (sourcePixels == IntPtr.Zero || destinationPixels == IntPtr.Zero) return false;
+
+        var rowBytes = (long)(source.Width * 4);
+        unsafe
+        {
+            var from = (byte*)sourcePixels;
+            var to = (byte*)destinationPixels;
+            for (var y = 0; y < source.Height; y++)
+            {
+                Buffer.MemoryCopy(from + (long)y * source.RowBytes, to + (long)y * destination.RowBytes,
+                    destination.RowBytes, rowBytes);
+            }
+        }
+
+        return true;
+    }
+
+    /// <summary>
+    /// Give a buffer back the way it came: rented ones to the free list, everything else disposed.
+    /// <para>
+    /// The flag has to travel with the pixels — a caller that only knows "here is an SKBitmap" would
+    /// either leak a decoded wallpaper or push a freshly allocated bitmap into the pool and hand it
+    /// out again.
+    /// </para>
+    /// </summary>
+    public static void Release(SKBitmap? bitmap, bool pooled)
+    {
+        if (bitmap == null) return;
+        if (pooled)
+        {
+            Return(bitmap);
+            return;
+        }
+
+        try { bitmap.Dispose(); } catch { }
+    }
+
     /// <summary>Drop every idle buffer (the capture session is being released).</summary>
     public static void Clear()
     {

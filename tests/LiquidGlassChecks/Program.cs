@@ -416,10 +416,11 @@ var gpuFailures = GpuMaterialCheck.Run();
 var v2Failures = LiquidGlassV2Check.Run();
 var clarityFailures = BackdropClarityBlurCheck.Run();
 var samplingFailures = BackdropSamplingCheck.Run();
+var cadenceFailures = SamplingCadenceCheck.Run();
 var geometryFailures = GlassSamplingCheck.Run();
 var coreFailures = GlassCoreCheck.Run();
 var poolFailures = PatchPoolCheck.Run();
-if (gpuFailures + v2Failures + clarityFailures + samplingFailures + geometryFailures + coreFailures + poolFailures > 0)
+if (gpuFailures + v2Failures + clarityFailures + samplingFailures + cadenceFailures + geometryFailures + coreFailures + poolFailures > 0)
     Environment.Exit(1);
 
 SKBitmap Decode(Theme material) => SKBitmap.Decode(LiquidGlassRenderer.Render(frame with { Theme = material }, wallpaper));

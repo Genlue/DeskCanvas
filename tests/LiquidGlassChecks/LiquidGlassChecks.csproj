@@ -4,6 +4,9 @@
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <!-- The capture patch pool is linked in below and copies pixels by pointer (see
+         PatchBitmapPool.Copy — SKBitmap.CopyTo reallocates the destination). -->
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="../../src/DeskCanvas.Core/DeskCanvas.Core.csproj" />
@@ -19,6 +22,8 @@
     <Compile Include="../../src/DeskCanvas/Services/GlassCapture/CaptureSpace.cs" Link="GlassCapture/CaptureSpace.cs" />
     <Compile Include="../../src/DeskCanvas/Services/GlassCapture/WallpaperHostDiscovery.cs" Link="GlassCapture/WallpaperHostDiscovery.cs" />
     <Compile Include="../../src/DeskCanvas/Services/GlassCapture/GlassInterest.cs" Link="GlassCapture/GlassInterest.cs" />
+    <!-- 采样节奏：捕获会话的产帧上限、空闲退避、stall guard —— 纯算术，能在这里钉住。 -->
+    <Compile Include="../../src/DeskCanvas/Services/GlassCapture/GlassSamplingPolicy.cs" Link="GlassCapture/GlassSamplingPolicy.cs" />
     <!-- 缓存帧覆盖规则：屏幕局部采样只在帧真的包含请求矩形时才能复用（聚焦搜索圆钮采样错位）。 -->
     <Compile Include="../../src/DeskCanvas/Services/GlassCapture/SnapshotCoverage.cs" Link="GlassCapture/SnapshotCoverage.cs" />
     <!-- 采集补丁缓冲池：LiquidGlassRenderer 的租约把缓冲还给池子，校验工程必须一起编。 -->

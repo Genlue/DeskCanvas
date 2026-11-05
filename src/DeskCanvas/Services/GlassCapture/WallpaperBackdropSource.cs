@@ -59,6 +59,14 @@ internal sealed class WallpaperBackdropSource : IDisposable
         public bool HasPixels => Bitmap != null;
 
         /// <summary>
+        /// True when <see cref="Bitmap"/> came out of <see cref="PatchBitmapPool"/>: the receiver
+        /// must give it back with <see cref="PatchBitmapPool.Release"/> (or through a pooled
+        /// <c>WallpaperSnapshot</c> lease) instead of disposing it, or the next publish has to
+        /// allocate a fresh desktop-sized patch again.
+        /// </summary>
+        public bool Pooled { get; init; }
+
+        /// <summary>
         /// True when the chain is live but this acquisition found <b>nothing new</b> — no frame
         /// arrived and the region did not move. The caller then knows "the desktop is still" without
         /// being handed (and paying for) a fresh copy of pixels it already has.
@@ -75,8 +83,11 @@ internal sealed class WallpaperBackdropSource : IDisposable
     /// <summary>Backoff after the static wallpaper chain fails to build.</summary>
     internal const int StaticCooldownMs = 2000;
 
-    /// <summary>Default frame-production cadence handed to the capture session.</summary>
-    internal const int DefaultCadenceMs = 250;
+    /// <summary>
+    /// Frame-production cadence handed to the capture session before anyone sets one — the settle
+    /// window's rate, correct only for a sampler that is not driving the session.
+    /// </summary>
+    internal const int DefaultCadenceMs = GlassSamplingPolicy.StaticCaptureCadenceMs;
 
     private static readonly object Gate = new();
 
@@ -88,6 +99,15 @@ internal sealed class WallpaperBackdropSource : IDisposable
     private bool everPulled;
     private bool sessionRestart = true;
     private bool regionChanged;
+
+    /// <summary>
+    /// When the capture session last delivered a compositor frame (0 = none yet). This is the
+    /// difference between "the desktop is still" and "this session produces slower than the probe
+    /// polls" — the two states look identical to a caller that only sees an empty pull, and
+    /// treating the second as the first is what froze animated wallpapers between drags
+    /// (see <see cref="GlassSamplingPolicy.CountsAsIdle"/>).
+    /// </summary>
+    private long lastProducedAt;
 
     // window-capture chain
     private IntPtr host;
@@ -122,7 +142,36 @@ internal sealed class WallpaperBackdropSource : IDisposable
     /// <summary>True once the window chain has produced at least one usable frame.</summary>
     internal bool WindowChainLive { get { lock (Gate) return everPulled; } }
 
-    /// <summary>Set the capture cadence (milliseconds between produced frames; 0 = unthrottled).</summary>
+    /// <summary>
+    /// Milliseconds since the capture session last delivered a frame, or <b>-1</b> when there is no
+    /// live source at all (the static wallpaper image, or a chain that never produced a frame).
+    /// <para>
+    /// The live sampler's idle backoff asks this instead of inferring stillness from an empty pull:
+    /// a session that handed over a frame 20 ms ago is alive, whatever this round found, and
+    /// stretching the probe interval for it would drop the glass below the wallpaper's own rate.
+    /// </para>
+    /// </summary>
+    internal long SourceSilenceMs
+    {
+        get
+        {
+            lock (Gate)
+            {
+                if (!everPulled || lastProducedAt == 0) return -1;
+                return Environment.TickCount64 - lastProducedAt;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Set the capture cadence (milliseconds between produced frames; 0 = unthrottled).
+    /// <para>
+    /// Must mirror the live sampler's interval — <c>LiquidGlassWallpaper.ConfigureLiveSampling</c>
+    /// is what calls this. Leaving it at <see cref="DefaultCadenceMs"/> caps the session at four
+    /// frames a second no matter what the user asked for: the compositor simply does not produce
+    /// the frames a faster probe is looking for, and every such probe reads as "still desktop".
+    /// </para>
+    /// </summary>
     public void SetCadence(int milliseconds)
     {
         lock (Gate)
@@ -151,6 +200,7 @@ internal sealed class WallpaperBackdropSource : IDisposable
 
             capture.Stop();
             everPulled = false;
+            lastProducedAt = 0;
             host = IntPtr.Zero;
             hostBounds = default;
             boundsDirty = true;
@@ -192,7 +242,7 @@ internal sealed class WallpaperBackdropSource : IDisposable
                 // One pull per round. On a still desktop this is a single TryGetNextFrame call that
                 // returns nothing — the copy, the readback and the allocation all stay skipped, and
                 // the cadence above keeps the system from producing frames we would not read anyway.
-                var gotFrame = capture.PullLatest();
+                var gotFrame = capture.PullLatest(out var produced);
                 var regionMoved = regionChanged;
                 regionChanged = false;
 
@@ -206,27 +256,34 @@ internal sealed class WallpaperBackdropSource : IDisposable
                     var first = AwaitFirstFrame(FirstFrameBudgetMs);
                     everPulled |= first;
                     gotFrame |= first;
+                    produced |= first;
                 }
+
+                // Only a frame the compositor actually produced counts as proof of life: a re-crop
+                // of the held frame (region moved) says nothing about whether the desktop moved.
+                if (produced) lastProducedAt = Environment.TickCount64;
 
                 // Nothing arrived and the region did not move: say so instead of copying pixels the
                 // caller already has. This is the still-desktop fast path.
                 if (freshOnly && everPulled && !gotFrame && !regionMoved)
                     return new Frame(null, originX, originY, Source.WindowCapture) { IsCurrent = true };
 
-                // A session that was just (re)started must really produce a frame before its pixels
-                // can be paired with the new origin, or the first card would sample the previous
-                // host's neighbourhood at the new host's offset.
-                // CopyLatest, not Latest: the snapshot takes ownership and disposes it, while the
-                // capture service keeps (and recycles) its own buffer. See CopyLatest.
-                var bitmap = everPulled ? capture.CopyLatest() : null;
-                if (bitmap != null && capture.LatestWidth > 0 && capture.LatestHeight > 0)
+                if (!everPulled)
                 {
+                    // First frame not here yet: fall through so the static chain can fill the gap.
+                }
+                else if (capture.CopyLatest() is { } bitmap && capture.LatestWidth > 0 && capture.LatestHeight > 0)
+                {
+                    // A copy, and a rented one: the snapshot is published to every surface at once
+                    // and outlives this acquisition, so the capture service keeps its own crop —
+                    // but the copy comes out of PatchBitmapPool, so a published frame allocates
+                    // nothing. 背景清晰度 never shrinks this patch (it only scales the blurred
+                    // backdrop built from it): a 2560×1440 desktop is 14.7 MB, and raw alloc/free of
+                    // that per published frame is what pushed the process past a gigabyte.
                     NoteSource($"live host '{HostDescription}' {capture.LatestWidth}x{capture.LatestHeight} " +
                                $"@ ({originX},{originY}) via Windows.Graphics.Capture", Source.WindowCapture);
-                    return new Frame(bitmap, originX, originY, Source.WindowCapture);
+                    return new Frame(bitmap, originX, originY, Source.WindowCapture) { Pooled = true };
                 }
-
-                // First frame not here yet: fall through so the static chain can fill the gap.
             }
             else if (TryGdiHostFrame(interestScreen) is { HasPixels: true } gdi)
             {
@@ -322,6 +379,7 @@ internal sealed class WallpaperBackdropSource : IDisposable
             capture.SetCadence(cadenceMs);
             sessionRestart = false;
             everPulled = false;
+            lastProducedAt = 0;
             return true;    // a fresh session: Acquire pulls one frame immediately
         }
 

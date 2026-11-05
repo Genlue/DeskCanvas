@@ -152,14 +152,51 @@ internal sealed class GlassCaptureService : IDisposable
     /// not pay it: see <see cref="TakeLatest"/>, which hands the crop over and costs one patch per
     /// published frame instead of two.
     /// </para>
+    /// <para>
+    /// The copy is <b>rented from <see cref="PatchBitmapPool"/></b>, so the receiver must give it back
+    /// (<c>PatchBitmapPool.Release</c>, or a pooled <c>WallpaperSnapshot</c> lease) rather than
+    /// dispose it. It used to be <c>latest.Copy()</c> — a fresh native block the size of the whole
+    /// captured region on every published frame, and at the live sampler's real cadence that was
+    /// ~400 MB/s of alloc/free: the process sat at 1–2 GB with 背景清晰度 at 10%, because clarity
+    /// scales the blurred backdrop, never this patch.
+    /// </para>
     /// </summary>
     public SKBitmap? CopyLatest()
     {
         lock (gate)
         {
             if (latest == null) return null;
-            try { return latest.Copy(); }
-            catch { return null; }
+            var width = latest.Width;
+            var height = latest.Height;
+            if (width <= 0 || height <= 0) return null;
+
+            var copy = PatchBitmapPool.Rent(width, height);
+            if (copy.GetPixels() == IntPtr.Zero)
+            {
+                copy.Dispose();
+                return null;
+            }
+
+            try
+            {
+                // Not latest.CopyTo(copy): that installs fresh pixels on the destination and defeats
+                // the rent (see PatchBitmapPool.Copy).
+                if (!PatchBitmapPool.Copy(latest, copy))
+                {
+                    PatchBitmapPool.Return(copy);
+                    return null;
+                }
+
+                // A recycled buffer carries the previous frame's pixels, and the generation id Skia
+                // keys its caches on has to move with them.
+                copy.NotifyPixelsChanged();
+                return copy;
+            }
+            catch
+            {
+                PatchBitmapPool.Return(copy);
+                return null;
+            }
         }
     }
 

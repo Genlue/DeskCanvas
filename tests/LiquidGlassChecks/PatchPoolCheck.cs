@@ -122,6 +122,40 @@ internal static class PatchPoolCheck
             $"the pool recycles at most three idle buffers (reused {reusedCount} of six, cap 3)");
         foreach (var bitmap in nextBatch) PatchBitmapPool.Return(bitmap);
 
+        // ---- 8. copying a frame into a rented buffer keeps that buffer's pixels ------------
+        // This is the whole premise of CopyLatest: rent a buffer, copy the held crop into it, hand
+        // it out. SKBitmap.CopyTo looked like the obvious call and silently broke it — it installs
+        // fresh pixel storage on the destination, so a patch-sized native block was still allocated
+        // per published frame and the pool was decoration. The pointer assertion is the regression
+        // guard: it is the only thing that sees the difference.
+        var sourceInfo = new SKImageInfo(40, 30, SKColorType.Bgra8888, SKAlphaType.Opaque);
+        using var source = new SKBitmap(sourceInfo);
+        source.Erase(new SKColor(200, 40, 10));
+
+        var destination = PatchBitmapPool.Rent(40, 30);
+        var destinationPixels = destination.GetPixels();
+        var copied = PatchBitmapPool.Copy(source, destination);
+        Assert(copied, "copying a frame into a rented buffer succeeds");
+        Assert(destination.GetPixels() == destinationPixels,
+            "the copy writes into the buffer's own pixels instead of reallocating them");
+        Assert(destination.GetPixel(5, 5) == new SKColor(200, 40, 10),
+            "the copied buffer actually carries the source pixels");
+
+        // A recycled buffer is rewritten, not reallocated, on the next round: the steady state of a
+        // live sampler must be "same pointer, new pixels".
+        var secondPixels = destination.GetPixels();
+        source.Erase(new SKColor(20, 90, 240));
+        PatchBitmapPool.Copy(source, destination);
+        Assert(destination.GetPixels() == secondPixels && destination.GetPixel(9, 9) == new SKColor(20, 90, 240),
+            "a reused buffer keeps its allocation across frames and takes the new content");
+        PatchBitmapPool.Return(destination);
+
+        // A mismatched size is refused rather than corrupting the buffer.
+        using var wrongSize = new SKBitmap(new SKImageInfo(20, 10, SKColorType.Bgra8888, SKAlphaType.Opaque));
+        var guard = PatchBitmapPool.Rent(40, 30);
+        Assert(!PatchBitmapPool.Copy(wrongSize, guard), "a differently sized frame is refused");
+        PatchBitmapPool.Return(guard);
+
         PatchBitmapPool.Clear();
         Console.WriteLine(failures == 0 ? "patch pool check passed" : $"patch pool check FAILED ({failures})");
         return failures;
