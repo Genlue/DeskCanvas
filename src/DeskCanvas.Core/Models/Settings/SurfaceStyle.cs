@@ -12,9 +12,6 @@ public enum SurfaceStyle
     /// <summary>液态玻璃 (Liquid Glass): static wallpaper refraction, adjustable blur and specular highlights (Kyant0 optical model).</summary>
     LiquidGlass = 2,
 
-    /// <summary>LiquidGlassV2 alias for LiquidGlass.</summary>
-    LiquidGlassV2 = LiquidGlass,
-
     /// <summary>全彩 (Full Color / 原多彩): rich multi-color elements compatible with OS acrylic blur and solid fill.</summary>
     FullColor = 4,
 

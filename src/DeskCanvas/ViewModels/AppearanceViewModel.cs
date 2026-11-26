@@ -74,20 +74,23 @@ public class AppearanceViewModel : ReactiveObject
             this.RaisePropertyChanged(nameof(GlassRefraction));
             this.RaisePropertyChanged(nameof(GlassHighlight));
             this.RaisePropertyChanged(nameof(GlassHighlightAngle));
+            this.RaisePropertyChanged(nameof(GlassHighlightHalfWidth));
+            this.RaisePropertyChanged(nameof(GlassHighlightFeather));
+            this.RaisePropertyChanged(nameof(GlassHighlightFalloff));
+            this.RaisePropertyChanged(nameof(GlassHighlightCornerGap));
+            this.RaisePropertyChanged(nameof(GlassHighlightBottom));
+            this.RaisePropertyChanged(nameof(GlassHighlightSheen));
+            this.RaisePropertyChanged(nameof(GlassHighlightSheenDepth));
+            this.RaisePropertyChanged(nameof(GlassHighlightDarkWidth));
+            this.RaisePropertyChanged(nameof(GlassHighlightDarkAlpha));
+            this.RaisePropertyChanged(nameof(GlassHighlightLightShift));
+            this.RaisePropertyChanged(nameof(GlassHighlightDarkShift));
+            this.RaisePropertyChanged(nameof(GlassCornerContinuity));
             this.RaisePropertyChanged(nameof(GlassDispersion));
             this.RaisePropertyChanged(nameof(GlassVibrancy));
             this.RaisePropertyChanged(nameof(GlassBackdropClarity));
             this.RaisePropertyChanged(nameof(LiveSampling));
             this.RaisePropertyChanged(nameof(LiveSamplingInterval));
-            this.RaisePropertyChanged(nameof(V2Blur));
-            this.RaisePropertyChanged(nameof(V2Refraction));
-            this.RaisePropertyChanged(nameof(V2Highlight));
-            this.RaisePropertyChanged(nameof(V2HighlightAngle));
-            this.RaisePropertyChanged(nameof(V2Vibrancy));
-            this.RaisePropertyChanged(nameof(V2Dispersion));
-            this.RaisePropertyChanged(nameof(V2LiveSampling));
-            this.RaisePropertyChanged(nameof(V2LiveSamplingInterval));
-            this.RaisePropertyChanged(nameof(V2BackdropClarity));
             this.RaisePropertyChanged(nameof(Monochrome));
             this.RaisePropertyChanged(nameof(MonochromeVariant));
             this.RaisePropertyChanged(nameof(ShowMonochromeVariant));
@@ -200,6 +203,66 @@ public class AppearanceViewModel : ReactiveObject
         get => SliderTheme.EffectiveLiquidGlass.HighlightAngle;
         set => UpdateGlass(glass => glass with { HighlightAngle = value });
     }
+    public double GlassHighlightHalfWidth
+    {
+        get => SliderTheme.EffectiveLiquidGlass.HighlightHalfWidth;
+        set => UpdateGlass(glass => glass with { HighlightHalfWidth = value });
+    }
+    public double GlassHighlightFeather
+    {
+        get => SliderTheme.EffectiveLiquidGlass.HighlightFeather;
+        set => UpdateGlass(glass => glass with { HighlightFeather = value });
+    }
+    public double GlassHighlightFalloff
+    {
+        get => SliderTheme.EffectiveLiquidGlass.HighlightFalloffFactor;
+        set => UpdateGlass(glass => glass with { HighlightFalloffFactor = value });
+    }
+    public double GlassHighlightCornerGap
+    {
+        get => SliderTheme.EffectiveLiquidGlass.HighlightCornerGap;
+        set => UpdateGlass(glass => glass with { HighlightCornerGap = value });
+    }
+    public double GlassHighlightBottom
+    {
+        get => SliderTheme.EffectiveLiquidGlass.HighlightBottom;
+        set => UpdateGlass(glass => glass with { HighlightBottom = value });
+    }
+    public double GlassHighlightSheen
+    {
+        get => SliderTheme.EffectiveLiquidGlass.HighlightSheen;
+        set => UpdateGlass(glass => glass with { HighlightSheen = value });
+    }
+    public double GlassHighlightSheenDepth
+    {
+        get => SliderTheme.EffectiveLiquidGlass.HighlightSheenDepth;
+        set => UpdateGlass(glass => glass with { HighlightSheenDepth = value });
+    }
+    public double GlassHighlightDarkWidth
+    {
+        get => SliderTheme.EffectiveLiquidGlass.HighlightDarkWidth;
+        set => UpdateGlass(glass => glass with { HighlightDarkWidth = value });
+    }
+    public double GlassHighlightDarkAlpha
+    {
+        get => SliderTheme.EffectiveLiquidGlass.HighlightDarkAlpha;
+        set => UpdateGlass(glass => glass with { HighlightDarkAlpha = value });
+    }
+    public double GlassHighlightLightShift
+    {
+        get => SliderTheme.EffectiveLiquidGlass.HighlightLightShift;
+        set => UpdateGlass(glass => glass with { HighlightLightShift = value });
+    }
+    public double GlassHighlightDarkShift
+    {
+        get => SliderTheme.EffectiveLiquidGlass.HighlightDarkShift;
+        set => UpdateGlass(glass => glass with { HighlightDarkShift = value });
+    }
+    public double GlassCornerContinuity
+    {
+        get => SliderTheme.EffectiveLiquidGlass.CornerContinuity;
+        set => UpdateGlass(glass => glass with { CornerContinuity = value });
+    }
     public double GlassDispersion
     {
         get => SliderTheme.EffectiveLiquidGlass.Dispersion;
@@ -238,33 +301,14 @@ public class AppearanceViewModel : ReactiveObject
         set => UpdateGlass(glass => glass with { LiveSamplingInterval = value }, commitImmediately: true);
     }
 
-    // ---------- V2 forwarding aliases for backward compatibility ----------
-
-    public double V2Blur { get => GlassBlur; set => GlassBlur = value; }
-    public double V2Refraction { get => GlassRefraction; set => GlassRefraction = value; }
-    public double V2Highlight { get => GlassHighlight; set => GlassHighlight = value; }
-    public double V2HighlightAngle { get => GlassHighlightAngle; set => GlassHighlightAngle = value; }
-    public double V2Vibrancy { get => GlassVibrancy; set => GlassVibrancy = value; }
-    public double V2Dispersion { get => GlassDispersion; set => GlassDispersion = value; }
-    public bool V2LiveSampling { get => LiveSampling; set => LiveSampling = value; }
-    public int V2LiveSamplingInterval { get => LiveSamplingInterval; set => LiveSamplingInterval = value; }
-    public double V2BackdropClarity { get => GlassBackdropClarity; set => GlassBackdropClarity = value; }
-
-    private void UpdateV2(Func<LiquidGlassV2Settings, LiquidGlassV2Settings> update,
-        bool commitImmediately = false, [CallerMemberName] string? propertyName = null)
-    {
-        UpdateGlass(glass => update(new LiquidGlassV2Settings(glass)), commitImmediately, propertyName);
-    }
-
     private void UpdateGlass(Func<LiquidGlassSettings, LiquidGlassSettings> update,
         bool commitImmediately = false, [CallerMemberName] string? propertyName = null)
     {
         var theme = commitImmediately ? appSettingsProvider.Get().Theme : SliderTheme;
         var glass = update(theme.EffectiveLiquidGlass).Normalize();
         if (glass == theme.EffectiveLiquidGlass) return;
-        var v2 = new LiquidGlassV2Settings(glass);
-        if (commitImmediately) SaveTheme(theme with { LiquidGlass = glass, LiquidGlassV2 = v2 });
-        else StageSlider(draft => draft with { LiquidGlass = glass, LiquidGlassV2 = v2 }, propertyName);
+        if (commitImmediately) SaveTheme(theme with { LiquidGlass = glass });
+        else StageSlider(draft => draft with { LiquidGlass = glass }, propertyName);
     }
 
     private void StageSlider(Func<Theme, Theme> update, string? propertyName)
@@ -291,9 +335,13 @@ public class AppearanceViewModel : ReactiveObject
     private void RaiseSliderProperties()
     {
         foreach (var name in new[] { nameof(OpacityLevel), nameof(GlassBlur), nameof(GlassRefraction),
-            nameof(GlassHighlight), nameof(GlassHighlightAngle), nameof(GlassDispersion), nameof(GlassVibrancy),
-            nameof(GlassBackdropClarity), nameof(V2Blur), nameof(V2Refraction), nameof(V2Highlight),
-            nameof(V2HighlightAngle), nameof(V2Vibrancy), nameof(V2Dispersion), nameof(V2BackdropClarity),
+            nameof(GlassHighlight), nameof(GlassHighlightAngle), nameof(GlassHighlightHalfWidth),
+            nameof(GlassHighlightFeather), nameof(GlassHighlightFalloff), nameof(GlassHighlightCornerGap),
+            nameof(GlassHighlightBottom), nameof(GlassHighlightSheen), nameof(GlassHighlightSheenDepth),
+            nameof(GlassHighlightDarkWidth), nameof(GlassHighlightDarkAlpha),
+            nameof(GlassHighlightLightShift), nameof(GlassHighlightDarkShift),
+            nameof(GlassCornerContinuity), nameof(GlassDispersion),
+            nameof(GlassVibrancy), nameof(GlassBackdropClarity),
             nameof(TextShadowStrength), nameof(AccentShift) })
             this.RaisePropertyChanged(name);
     }

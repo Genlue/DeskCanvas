@@ -38,7 +38,12 @@ public static class LiquidGlassEffect
         float Chroma, float Saturation, float Tint,
         SKColor Coating,
         float StrokeHalf, float StrokeFeather, float StrokeAlpha, float Falloff,
-        float LightX, float LightY);
+        float LightX, float LightY,
+        float CornerGap = 0.5f, float HighlightBottom = 0.88f,
+        float Sheen = 0.12f, float SheenDepth = 4.5f,
+        float DarkWidth = 0.6f, float DarkAlpha = 0.22f,
+        SKColor? HighlightColor = null, SKColor? DarkColor = null,
+        float CornerContinuity = 1.15f);
 
     /// <summary>
     /// Mirror of the CPU coefficient block. <paramref name="sourceScale"/> converts render pixels
@@ -67,7 +72,7 @@ public static class LiquidGlassEffect
         var destToRender = width / destWidth;
 
         var radius = Math.Clamp(frame.Radius * scale, 0f, minSide / 2f);
-        var lens = LiquidGlassV2Lens.Compute(optics.Refraction, minSide, radius);
+        var lens = LiquidGlassLens.Compute(optics.Refraction, minSide, radius);
 
         var colorHex = frame.Dark
             ? frame.Theme.EffectiveSolidBackgroundDark
@@ -76,7 +81,8 @@ public static class LiquidGlassEffect
         var tint = (float)(double.IsFinite(frame.Theme.OpacityLevel) ? Math.Clamp(frame.Theme.OpacityLevel, 0, 1) : 0.20);
 
         var angle = (float)(optics.HighlightAngle * Math.PI / 180.0);
-        var strokeHalf = MathF.Ceiling((float)LiquidGlassSettings.StrokeWidthDips * scale);
+        var strokeHalf = (float)(optics.HighlightHalfWidth * scale);
+        var (highlightColor, darkColor) = ResolveHighlightColors(frame.Theme, frame.SystemAccent);
 
         return new Params(
             Width: width, Height: height, Radius: radius,
@@ -93,10 +99,58 @@ public static class LiquidGlassEffect
             Tint: tint,
             Coating: coating,
             StrokeHalf: strokeHalf,
-            StrokeFeather: (float)LiquidGlassSettings.StrokeFeatherDips * scale,
+            StrokeFeather: (float)(optics.HighlightFeather * scale),
             StrokeAlpha: (float)(optics.Highlight / LiquidGlassSettings.HighlightReference),
-            Falloff: (float)LiquidGlassSettings.HighlightFalloff,
-            LightX: MathF.Cos(angle), LightY: MathF.Sin(angle));
+            Falloff: (float)optics.HighlightFalloffFactor,
+            LightX: MathF.Cos(angle), LightY: MathF.Sin(angle),
+            CornerGap: (float)(optics.HighlightCornerGap * scale),
+            HighlightBottom: (float)optics.HighlightBottom,
+            Sheen: (float)optics.HighlightSheen,
+            SheenDepth: (float)(optics.HighlightSheenDepth * scale),
+            DarkWidth: (float)(optics.HighlightDarkWidth * scale),
+            DarkAlpha: (float)optics.HighlightDarkAlpha,
+            HighlightColor: highlightColor,
+            DarkColor: darkColor,
+            CornerContinuity: (float)optics.CornerContinuity);
+    }
+
+    /// <summary>
+    /// Resolves the light/dark accent highlight pair from the theme's manual accent (or OS
+    /// system accent when following system), shifted toward white / black by the configured
+    /// highlight shift percentages. Falls back to white / black when no accent is available.
+    /// </summary>
+    internal static (SKColor Light, SKColor Dark) ResolveHighlightColors(Theme theme, SKColor? systemAccent)
+    {
+        SKColor? baseAccent = null;
+        if (theme.AccentColor != null)
+        {
+            if (SKColor.TryParse(theme.AccentColor, out var manual))
+                baseAccent = manual;
+        }
+        else
+        {
+            baseAccent = systemAccent;
+        }
+
+        if (baseAccent is not { } accent)
+            return (SKColors.White, SKColors.Black);
+
+        var optics = theme.EffectiveLiquidGlass;
+        return (
+            ShiftAccent(accent, towardWhite: true, optics.HighlightLightShift),
+            ShiftAccent(accent, towardWhite: false, optics.HighlightDarkShift));
+    }
+
+    private static SKColor ShiftAccent(SKColor color, bool towardWhite, double percent)
+    {
+        var amount = double.IsFinite(percent) ? Math.Clamp(percent, 0.0, 100.0) / 100.0 : 0.0;
+        if (amount <= 0.0) return new SKColor(color.Red, color.Green, color.Blue);
+
+        var target = towardWhite ? 255.0 : 0.0;
+        byte Channel(byte value) =>
+            (byte)Math.Clamp((int)Math.Round(value + (target - value) * amount), 0, 255);
+
+        return new SKColor(Channel(color.Red), Channel(color.Green), Channel(color.Blue));
     }
 
     /// <summary>The core parameters this frame's optics describe.</summary>
@@ -112,7 +166,16 @@ public static class LiquidGlassEffect
         StrokeFeather = p.StrokeFeather,
         StrokeAlpha = p.StrokeAlpha,
         HighlightFalloff = p.Falloff,
-        LightDirection = new SKPoint(p.LightX, p.LightY)
+        LightDirection = new SKPoint(p.LightX, p.LightY),
+        CornerGap = p.CornerGap,
+        HighlightBottom = p.HighlightBottom,
+        Sheen = p.Sheen,
+        SheenDepth = p.SheenDepth,
+        DarkWidth = p.DarkWidth,
+        DarkAlpha = p.DarkAlpha,
+        HighlightColor = p.HighlightColor ?? SKColors.White,
+        DarkColor = p.DarkColor ?? SKColors.Black,
+        CornerContinuity = p.CornerContinuity
     };
 
     /// <summary>The backdrop this frame's sampling describes.</summary>

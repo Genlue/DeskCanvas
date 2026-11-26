@@ -32,7 +32,8 @@ public static class LiquidGlassRenderer
         float DesktopX, float DesktopY, float DesktopWidth, float DesktopHeight,
         float ScreenX, float ScreenY, float ScreenWidth, float ScreenHeight,
         Theme Theme, bool Dark, bool SettingsSurface = false, float PixelScale = 1,
-        int Columns = 0, int Rows = 0, float GlyphOpacity = 1f, float BackdropScale = 0f)
+        int Columns = 0, int Rows = 0, float GlyphOpacity = 1f, float BackdropScale = 0f,
+        SKColor? SystemAccent = null)
     {
         public float EffectiveBackdropScale => BackdropScale > 0f ? BackdropScale : Scale;
     }
@@ -160,7 +161,7 @@ public static class LiquidGlassRenderer
         var sigma = (float)optics.Blur * scale / 8f;
         var radius = Math.Clamp(frame.Radius * scale, 0f, minSide / 2f);
 
-        var lens = LiquidGlassV2Lens.Compute(optics.Refraction, minSide, radius);
+        var lens = LiquidGlassLens.Compute(optics.Refraction, minSide, radius);
         var amount = lens.Amount;
         var refrHeight = lens.Band;
         var depthEffect = lens.DepthEffect;
@@ -172,19 +173,36 @@ public static class LiquidGlassRenderer
         if (!SKColor.TryParse(colorHex, out var coating)) coating = frame.Dark ? new SKColor(46, 46, 46) : SKColors.White;
         var tint = (float)(double.IsFinite(frame.Theme.OpacityLevel) ? Math.Clamp(frame.Theme.OpacityLevel, 0, 1) : 0.20);
 
-        var strokeHalf = MathF.Ceiling((float)LiquidGlassSettings.StrokeWidthDips * scale);
-        var strokeFeather = (float)LiquidGlassSettings.StrokeFeatherDips * scale;
+        var strokeHalf = (float)(optics.HighlightHalfWidth * scale);
+        var strokeFeather = (float)(optics.HighlightFeather * scale);
         var strokeAlpha = (float)(optics.Highlight / LiquidGlassSettings.HighlightReference);
-        var falloff = (float)LiquidGlassSettings.HighlightFalloff;
+        var falloff = (float)optics.HighlightFalloffFactor;
         var angle = (float)(optics.HighlightAngle * Math.PI / 180.0);
         var lightX = MathF.Cos(angle);
         var lightY = MathF.Sin(angle);
+        var (highlightColor, darkColor) = LiquidGlassEffect.ResolveHighlightColors(frame.Theme, frame.SystemAccent);
+        var highlightOptics = new LiquidGlass.LiquidGlassParams
+        {
+            StrokeHalf = strokeHalf,
+            StrokeFeather = strokeFeather,
+            StrokeAlpha = strokeAlpha,
+            HighlightFalloff = falloff,
+            LightDirection = new SKPoint(lightX, lightY),
+            CornerGap = (float)(optics.HighlightCornerGap * scale),
+            HighlightBottom = (float)optics.HighlightBottom,
+            Sheen = (float)optics.HighlightSheen,
+            SheenDepth = (float)(optics.HighlightSheenDepth * scale),
+            DarkWidth = (float)(optics.HighlightDarkWidth * scale),
+            DarkAlpha = (float)optics.HighlightDarkAlpha,
+            HighlightColor = highlightColor,
+            DarkColor = darkColor,
+            CornerContinuity = (float)optics.CornerContinuity
+        }.Normalized();
 
         var halfWidth = width / 2f;
         var halfHeight = height / 2f;
         var gradRadius = lens.GradRadius;
 
-        var field = new BevelField(width, height, radius);
         var pad = (int)Math.Ceiling(Math.Max(sigma * 3f, 16f));
         var info = new SKImageInfo(width + 2 * pad, height + 2 * pad);
         using var backdrop = SKSurface.Create(info);
@@ -235,20 +253,26 @@ public static class LiquidGlassRenderer
             {
                 var cx = x + 0.5f - halfWidth;
 
-                var bevel = field.Evaluate(x + 0.5f, y + 0.5f);
-                var sdRaw = -bevel.Depth;
+                var (sdRaw, gradX, gradY, edgeNormalX, edgeNormalY) =
+                    LiquidGlass.LiquidGlassPass.EvaluateRoundedRectField(
+                        halfWidth, halfHeight, radius, gradRadius, highlightOptics.EffectiveCornerContinuity, cx, cy);
+                var mask = 1f - SmoothStep(-0.75f, 0.75f, sdRaw);
+                if (mask <= 0f)
+                {
+                    pixels[y * width + x] = SKColors.Transparent;
+                    continue;
+                }
                 var sd = Math.Min(sdRaw, 0f);
 
                 var depth01 = refrHeight > 0f ? Math.Clamp(-sd / refrHeight, 0f, 1f) : 1f;
                 var lensX = 1f - depth01;
                 var d = (1f - MathF.Sqrt(MathF.Max(0f, 1f - lensX * lensX))) * amount;
 
-                var grad = GradSd(cx, cy, halfWidth, halfHeight, gradRadius);
                 var radialLen = MathF.Sqrt(cx * cx + cy * cy);
-                var rx = cx / MathF.Max(radialLen, 1e-4f);
-                var ry = cy / MathF.Max(radialLen, 1e-4f);
-                var gx = grad.X + depthEffect * rx;
-                var gy = grad.Y + depthEffect * ry;
+                var rx = radialLen > 1e-4f ? cx / radialLen : 0f;
+                var ry = radialLen > 1e-4f ? cy / radialLen : 0f;
+                var gx = gradX + depthEffect * rx;
+                var gy = gradY + depthEffect * ry;
                 var gradLen = MathF.Sqrt(gx * gx + gy * gy);
                 if (gradLen > 1e-5f)
                 {
@@ -295,32 +319,16 @@ public static class LiquidGlassRenderer
                 g = g * (1f - tint) + coating.Green * tint;
                 b = b * (1f - tint) + coating.Blue * tint;
 
-                var strokeMask = 1f - SmoothStep(strokeHalf - strokeFeather, strokeHalf + strokeFeather, Math.Abs(sdRaw));
-                var hgrad = GradSd(cx, cy, halfWidth, halfHeight, gradRadius);
-                var intensity = MathF.Pow(MathF.Abs(hgrad.X * lightX + hgrad.Y * lightY), falloff);
-                var light = 255f * intensity * strokeMask * strokeAlpha;
-                r += light;
-                g += light;
-                b += light;
+                LiquidGlass.LiquidGlassPass.ApplyHighlight(
+                    sdRaw, edgeNormalX, edgeNormalY, in highlightOptics, ref r, ref g, ref b);
 
-                pixels[y * width + x] = new SKColor(ClampByte(r), ClampByte(g), ClampByte(b));
+                pixels[y * width + x] = new SKColor(
+                    ClampByte(r * mask), ClampByte(g * mask), ClampByte(b * mask), ClampByte(255f * mask));
             }
         });
 
-        using var refracted = new SKBitmap(width, height);
-        refracted.Pixels = pixels;
-        using var shader = refracted.ToShader(SKShaderTileMode.Clamp, SKShaderTileMode.Clamp);
-        using var output = SKSurface.Create(new SKImageInfo(width, height));
-        output.Canvas.Clear(SKColors.Transparent);
-        using var glassPaint = new SKPaint { Shader = shader, IsAntialias = true };
-        output.Canvas.DrawRoundRect(new SKRect(0, 0, width, height), radius, radius, glassPaint);
-        using var result = output.Snapshot();
         var bitmap = new SKBitmap(new SKImageInfo(width, height, SKColorType.Bgra8888, SKAlphaType.Premul));
-        if (!result.ReadPixels(bitmap.Info, bitmap.GetPixels(), bitmap.RowBytes, 0, 0))
-        {
-            bitmap.Dispose();
-            return null;
-        }
+        bitmap.Pixels = pixels;
         bitmap.SetImmutable();
         return bitmap;
 

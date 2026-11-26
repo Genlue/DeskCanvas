@@ -9,9 +9,9 @@ using DeskCanvas.Services;
 // assembly it can find and needs a matching DeskCanvas build; this one only needs the linked
 // render sources, so it can be run while other work in the tree is mid-flight. Handled before the
 // output directory is resolved — args[0] is this switch, not an output path.
-if (args.ElementAtOrDefault(0) == "v2-glass")
+if (args.ElementAtOrDefault(0) is "glass" or "v2-glass")
 {
-    Environment.Exit(LiquidGlassV2Check.Run());
+    Environment.Exit(LiquidGlassLensCheck.Run());
     return;
 }
 
@@ -50,6 +50,31 @@ Check(invalid == new LiquidGlassSettings(50, 100, 0, 90, 0, 100), "invalid optic
 Check(new LiquidGlassSettings(HighlightAngle: 400).Normalize().HighlightAngle == 360, "HighlightAngle > 360 clamps to 360");
 Check(new LiquidGlassSettings(HighlightAngle: -10).Normalize().HighlightAngle == 0, "HighlightAngle < 0 clamps to 0");
 Check(new LiquidGlassSettings(HighlightAngle: double.NaN).Normalize().HighlightAngle == 90.0, "HighlightAngle NaN clamps to 90.0");
+var highlightClamp = new LiquidGlassSettings(
+    HighlightHalfWidth: 99, HighlightFeather: -1, HighlightFalloffFactor: 0.01,
+    HighlightCornerGap: 99, HighlightBottom: 2, HighlightSheen: -0.5,
+    HighlightSheenDepth: 200, HighlightDarkWidth: 10, HighlightDarkAlpha: double.NaN,
+    HighlightLightShift: 150, HighlightDarkShift: -20, CornerContinuity: 5.0).Normalize();
+Check(highlightClamp.HighlightHalfWidth == 4
+      && highlightClamp.HighlightFeather == 0
+      && highlightClamp.HighlightFalloffFactor == 0.2
+      && highlightClamp.HighlightCornerGap == 8
+      && highlightClamp.HighlightBottom == 1
+      && highlightClamp.HighlightSheen == 0
+      && highlightClamp.HighlightSheenDepth == 40
+      && highlightClamp.HighlightDarkWidth == 3
+      && highlightClamp.HighlightDarkAlpha == LiquidGlassSettings.DefaultHighlightDarkAlpha
+      && highlightClamp.HighlightLightShift == 100
+      && highlightClamp.HighlightDarkShift == 0
+      && highlightClamp.CornerContinuity == 2,
+    "new highlight optics parameters clamp and fall back to defaults");
+var customHighlight = new LiquidGlassSettings(
+    HighlightHalfWidth: 0.85, HighlightFeather: 0.35, HighlightFalloffFactor: 1.6,
+    HighlightCornerGap: 1.2, HighlightBottom: 0.65, HighlightSheen: 0.24,
+    HighlightSheenDepth: 8.5, HighlightDarkWidth: 0.9, HighlightDarkAlpha: 0.31,
+    HighlightLightShift: 60, HighlightDarkShift: 40, CornerContinuity: 1.3);
+Check(JsonSerializer.Deserialize<LiquidGlassSettings>(JsonSerializer.Serialize(customHighlight)) == customHighlight,
+    "new highlight optics survive JSON round trip");
 var offsetClamp = new LiquidGlassSettings(WallpaperOffsetX: 2500, WallpaperOffsetY: -9999).Normalize();
 Check(offsetClamp.WallpaperOffsetX == LiquidGlassSettings.WallpaperOffsetLimit && offsetClamp.WallpaperOffsetY == -LiquidGlassSettings.WallpaperOffsetLimit,
     "wallpaper offsets are clamped");
@@ -413,14 +438,14 @@ OpticsProfile.Run(output);
 // GpuMaterialCheck / LiquidGlassV2Check), and their failure counts have to reach the process
 // exit code rather than throw mid-sheet.
 var gpuFailures = GpuMaterialCheck.Run();
-var v2Failures = LiquidGlassV2Check.Run();
+var glassLensFailures = LiquidGlassLensCheck.Run();
 var clarityFailures = BackdropClarityBlurCheck.Run();
 var samplingFailures = BackdropSamplingCheck.Run();
 var cadenceFailures = SamplingCadenceCheck.Run();
 var geometryFailures = GlassSamplingCheck.Run();
 var coreFailures = GlassCoreCheck.Run();
 var poolFailures = PatchPoolCheck.Run();
-if (gpuFailures + v2Failures + clarityFailures + samplingFailures + cadenceFailures + geometryFailures + coreFailures + poolFailures > 0)
+if (gpuFailures + glassLensFailures + clarityFailures + samplingFailures + cadenceFailures + geometryFailures + coreFailures + poolFailures > 0)
     Environment.Exit(1);
 
 SKBitmap Decode(Theme material) => SKBitmap.Decode(LiquidGlassRenderer.Render(frame with { Theme = material }, wallpaper));

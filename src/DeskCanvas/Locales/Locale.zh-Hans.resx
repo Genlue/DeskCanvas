@@ -780,39 +780,6 @@
     <data name="Settings_Appearance_Surface_LiquidGlass" xml:space="preserve">
         <value>液态玻璃</value>
     </data>
-    <data name="Settings_Appearance_Surface_LiquidGlassV2" xml:space="preserve">
-        <value>液态玻璃</value>
-    </data>
-    <data name="Settings_Appearance_V2_Blur" xml:space="preserve">
-        <value>模糊</value>
-    </data>
-    <data name="Settings_Appearance_V2_BlurHint" xml:space="preserve">
-        <value>玻璃底层背景的模糊半径。</value>
-    </data>
-    <data name="Settings_Appearance_V2_Refraction" xml:space="preserve">
-        <value>折射</value>
-    </data>
-    <data name="Settings_Appearance_V2_RefractionHint" xml:space="preserve">
-        <value>边缘透镜对背景壁纸的折射形变程度。</value>
-    </data>
-    <data name="Settings_Appearance_V2_Dispersion" xml:space="preserve">
-        <value>色散</value>
-    </data>
-    <data name="Settings_Appearance_V2_DispersionHint" xml:space="preserve">
-        <value>边缘受光处的色散分离强度。</value>
-    </data>
-    <data name="Settings_Appearance_V2_Highlight" xml:space="preserve">
-        <value>边缘高光</value>
-    </data>
-    <data name="Settings_Appearance_V2_HighlightHint" xml:space="preserve">
-        <value>边缘高光轮廓与反光描边强度。</value>
-    </data>
-    <data name="Settings_Appearance_V2_Vibrancy" xml:space="preserve">
-        <value>活力</value>
-    </data>
-    <data name="Settings_Appearance_V2_VibrancyHint" xml:space="preserve">
-        <value>调节透出背景颜色的鲜艳度与饱和度。</value>
-    </data>
     <data name="Settings_Appearance_Surface_SoftGlow" xml:space="preserve">
         <value>柔光玻璃</value>
     </data>
@@ -884,6 +851,78 @@
     </data>
     <data name="Settings_Appearance_Glass_BackdropClarityHint" xml:space="preserve">
         <value>背景画面的采样清晰度</value>
+    </data>
+    <data name="Settings_Appearance_Glass_HighlightHalfWidth" xml:space="preserve">
+        <value>高光半宽</value>
+    </data>
+    <data name="Settings_Appearance_Glass_HighlightHalfWidthHint" xml:space="preserve">
+        <value>内部主高光亮带的半宽 (0–4 DIP)</value>
+    </data>
+    <data name="Settings_Appearance_Glass_HighlightFeather" xml:space="preserve">
+        <value>高光羽化</value>
+    </data>
+    <data name="Settings_Appearance_Glass_HighlightFeatherHint" xml:space="preserve">
+        <value>主高光边缘过渡羽化宽度 (0–2 DIP)</value>
+    </data>
+    <data name="Settings_Appearance_Glass_HighlightFalloff" xml:space="preserve">
+        <value>高光衰减</value>
+    </data>
+    <data name="Settings_Appearance_Glass_HighlightFalloffHint" xml:space="preserve">
+        <value>越高越收拢在迎光法线方向 (0.2–4，1 为宽泛光)</value>
+    </data>
+    <data name="Settings_Appearance_Glass_HighlightCornerGap" xml:space="preserve">
+        <value>圆角高光内敛</value>
+    </data>
+    <data name="Settings_Appearance_Glass_HighlightCornerGapHint" xml:space="preserve">
+        <value>圆角处高光相对外轮廓向内收缩的距离 (0–8 DIP)</value>
+    </data>
+    <data name="Settings_Appearance_Glass_HighlightBottom" xml:space="preserve">
+        <value>背光高光比例</value>
+    </data>
+    <data name="Settings_Appearance_Glass_HighlightBottomHint" xml:space="preserve">
+        <value>背光一侧边缘高光相对迎光侧的强度比例 (0–1)</value>
+    </data>
+    <data name="Settings_Appearance_Glass_HighlightSheen" xml:space="preserve">
+        <value>边缘柔光</value>
+    </data>
+    <data name="Settings_Appearance_Glass_HighlightSheenHint" xml:space="preserve">
+        <value>主高光内侧的玻璃体积过渡柔光强度 (0–1)</value>
+    </data>
+    <data name="Settings_Appearance_Glass_HighlightSheenDepth" xml:space="preserve">
+        <value>柔光深度</value>
+    </data>
+    <data name="Settings_Appearance_Glass_HighlightSheenDepthHint" xml:space="preserve">
+        <value>边缘柔光从轮廓向内衰减的距离 (0–40 DIP)</value>
+    </data>
+    <data name="Settings_Appearance_Glass_HighlightDarkWidth" xml:space="preserve">
+        <value>暗边宽度</value>
+    </data>
+    <data name="Settings_Appearance_Glass_HighlightDarkWidthHint" xml:space="preserve">
+        <value>背光与两侧外轮廓细暗线的宽度 (0–3 DIP)</value>
+    </data>
+    <data name="Settings_Appearance_Glass_HighlightDarkAlpha" xml:space="preserve">
+        <value>暗边浓度</value>
+    </data>
+    <data name="Settings_Appearance_Glass_HighlightDarkAlphaHint" xml:space="preserve">
+        <value>过圆角后两侧外轮廓细暗线的不透明度 (0–1)</value>
+    </data>
+    <data name="Settings_Appearance_Glass_HighlightLightShift" xml:space="preserve">
+        <value>高光浅色偏移</value>
+    </data>
+    <data name="Settings_Appearance_Glass_HighlightLightShiftHint" xml:space="preserve">
+        <value>主高光与柔光使用的浅强调色向白色偏移度 (0–100%)</value>
+    </data>
+    <data name="Settings_Appearance_Glass_HighlightDarkShift" xml:space="preserve">
+        <value>高光深色偏移</value>
+    </data>
+    <data name="Settings_Appearance_Glass_HighlightDarkShiftHint" xml:space="preserve">
+        <value>外轮廓暗边使用的深强调色向黑色偏移度 (0–100%)</value>
+    </data>
+    <data name="Settings_Appearance_Glass_CornerContinuity" xml:space="preserve">
+        <value>圆角连续度</value>
+    </data>
+    <data name="Settings_Appearance_Glass_CornerContinuityHint" xml:space="preserve">
+        <value>超椭圆圆角过渡平滑度 (1.0 为标准圆角，1.15–1.30 为连续平滑圆角)</value>
     </data>
     <data name="Settings_Appearance_Glass_Dispersion" xml:space="preserve">
         <value>色散强度</value>

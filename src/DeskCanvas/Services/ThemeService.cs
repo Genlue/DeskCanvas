@@ -73,10 +73,16 @@ public class ThemeService : IThemeService
                     {
                         lastGlobalScope = default;
                         Apply(settings);
-                        return;
+                    }
+                    else
+                    {
+                        RefreshTextSelectionPaletteCore();
                     }
 
-                    RefreshTextSelectionPaletteCore();
+                    if (theme.AccentColor == null && theme.UsesRenderedGlass)
+                    {
+                        Views.Controls.LiquidGlassSurface.RefreshAll();
+                    }
                 }, DispatcherPriority.Background);
         }
     }

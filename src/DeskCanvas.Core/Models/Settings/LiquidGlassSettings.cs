@@ -22,6 +22,18 @@ namespace DeskCanvas.Core.Models.Settings;
 /// <param name="LiveSampling">Continuously sample the wallpaper; false (default) freezes the latest frame.</param>
 /// <param name="LiveSamplingInterval">Target interval in milliseconds; frames are dropped under load.</param>
 /// <param name="BackdropClarity">背景清晰度: backdrop resolution percentage (100 = native pixels).</param>
+/// <param name="HighlightHalfWidth">Main specular rim half-width in DIPs (0–4), default 0.6.</param>
+/// <param name="HighlightFeather">Main specular rim edge feather in DIPs (0–2), default 0.24.</param>
+/// <param name="HighlightFalloffFactor">Corner angular falloff exponent (0.2–4; 1 = wide glow, higher = tighter), default 1.0.</param>
+/// <param name="HighlightCornerGap">Inward corner indentation of the highlight in DIPs (0–8), default 0.5.</param>
+/// <param name="HighlightBottom">Backlit-side highlight ratio relative to the lit side (0–1), default 0.88.</param>
+/// <param name="HighlightSheen">Inner volume sheen strength inside the rim (0–1), default 0.12.</param>
+/// <param name="HighlightSheenDepth">Inner volume sheen depth in DIPs (0–40), default 4.5.</param>
+/// <param name="HighlightDarkWidth">Outer thin dark rim width on unlit edges in DIPs (0–3), default 0.6.</param>
+/// <param name="HighlightDarkAlpha">Outer thin dark rim opacity on unlit edges (0–1), default 0.22.</param>
+/// <param name="HighlightLightShift">How far the light accent highlight shifts toward white (0–100%), default 85.</param>
+/// <param name="HighlightDarkShift">How far the dark accent rim shifts toward black (0–100%), default 75.</param>
+/// <param name="CornerContinuity">Superellipse corner continuity exponent K (1.0 = circular, 1.15 = Apple continuous), default 1.15.</param>
 public record LiquidGlassSettings(
     double Blur = 50,
     double Refraction = 100,
@@ -33,7 +45,19 @@ public record LiquidGlassSettings(
     double WallpaperOffsetY = 0,
     bool LiveSampling = false,
     int LiveSamplingInterval = 10,
-    double BackdropClarity = 40) : IRenderedGlassSettings
+    double BackdropClarity = 40,
+    double HighlightHalfWidth = LiquidGlassSettings.DefaultHighlightHalfWidth,
+    double HighlightFeather = LiquidGlassSettings.DefaultHighlightFeather,
+    double HighlightFalloffFactor = LiquidGlassSettings.HighlightFalloff,
+    double HighlightCornerGap = LiquidGlassSettings.DefaultHighlightCornerGap,
+    double HighlightBottom = LiquidGlassSettings.DefaultHighlightBottom,
+    double HighlightSheen = LiquidGlassSettings.DefaultHighlightSheen,
+    double HighlightSheenDepth = LiquidGlassSettings.DefaultHighlightSheenDepth,
+    double HighlightDarkWidth = LiquidGlassSettings.DefaultHighlightDarkWidth,
+    double HighlightDarkAlpha = LiquidGlassSettings.DefaultHighlightDarkAlpha,
+    double HighlightLightShift = LiquidGlassSettings.DefaultHighlightLightShift,
+    double HighlightDarkShift = LiquidGlassSettings.DefaultHighlightDarkShift,
+    double CornerContinuity = LiquidGlassSettings.DefaultCornerContinuity) : IRenderedGlassSettings
 {
     /// <summary>Peak rim displacement as a fraction of the card's short side at <see cref="Refraction"/> = 100.</summary>
     public const double RefractionAmountMaxFrac = 0.4;
@@ -52,6 +76,39 @@ public record LiquidGlassSettings(
 
     /// <summary>Light-direction falloff exponent of the highlight.</summary>
     public const double HighlightFalloff = 1.0;
+
+    /// <summary>Default main specular rim half-width in DIPs.</summary>
+    public const double DefaultHighlightHalfWidth = 0.6;
+
+    /// <summary>Default main specular rim edge feather in DIPs.</summary>
+    public const double DefaultHighlightFeather = 0.24;
+
+    /// <summary>Default corner inward indentation of the highlight in DIPs.</summary>
+    public const double DefaultHighlightCornerGap = 0.5;
+
+    /// <summary>Default backlit-side highlight ratio relative to the lit side.</summary>
+    public const double DefaultHighlightBottom = 0.88;
+
+    /// <summary>Default inner volume sheen strength.</summary>
+    public const double DefaultHighlightSheen = 0.12;
+
+    /// <summary>Default inner volume sheen depth in DIPs.</summary>
+    public const double DefaultHighlightSheenDepth = 4.5;
+
+    /// <summary>Default outer dark rim width on unlit sides in DIPs.</summary>
+    public const double DefaultHighlightDarkWidth = 0.6;
+
+    /// <summary>Default outer dark rim opacity on unlit sides.</summary>
+    public const double DefaultHighlightDarkAlpha = 0.22;
+
+    /// <summary>Default light accent shift toward white (%).</summary>
+    public const double DefaultHighlightLightShift = 85.0;
+
+    /// <summary>Default dark accent shift toward black (%).</summary>
+    public const double DefaultHighlightDarkShift = 75.0;
+
+    /// <summary>Default superellipse corner continuity exponent (1.0 = circular, 1.15 = continuous squircle).</summary>
+    public const double DefaultCornerContinuity = 1.15;
 
     /// <summary>Default specular highlight angle in degrees (90°).</summary>
     public const double DefaultHighlightAngle = 90.0;
@@ -116,7 +173,19 @@ public record LiquidGlassSettings(
         WallpaperOffsetX = Clamp(WallpaperOffsetX, -WallpaperOffsetLimit, WallpaperOffsetLimit, 0),
         WallpaperOffsetY = Clamp(WallpaperOffsetY, -WallpaperOffsetLimit, WallpaperOffsetLimit, 0),
         LiveSamplingInterval = Math.Clamp(LiveSamplingInterval, MinLiveSamplingInterval, MaxLiveSamplingInterval),
-        BackdropClarity = Clamp(BackdropClarity, MinBackdropClarity, 100, DefaultBackdropClarity)
+        BackdropClarity = Clamp(BackdropClarity, MinBackdropClarity, 100, DefaultBackdropClarity),
+        HighlightHalfWidth = Clamp(HighlightHalfWidth, 0, 4, DefaultHighlightHalfWidth),
+        HighlightFeather = Clamp(HighlightFeather, 0, 2, DefaultHighlightFeather),
+        HighlightFalloffFactor = Clamp(HighlightFalloffFactor, 0.2, 4, HighlightFalloff),
+        HighlightCornerGap = Clamp(HighlightCornerGap, 0, 8, DefaultHighlightCornerGap),
+        HighlightBottom = Clamp(HighlightBottom, 0, 1, DefaultHighlightBottom),
+        HighlightSheen = Clamp(HighlightSheen, 0, 1, DefaultHighlightSheen),
+        HighlightSheenDepth = Clamp(HighlightSheenDepth, 0, 40, DefaultHighlightSheenDepth),
+        HighlightDarkWidth = Clamp(HighlightDarkWidth, 0, 3, DefaultHighlightDarkWidth),
+        HighlightDarkAlpha = Clamp(HighlightDarkAlpha, 0, 1, DefaultHighlightDarkAlpha),
+        HighlightLightShift = Clamp(HighlightLightShift, 0, 100, DefaultHighlightLightShift),
+        HighlightDarkShift = Clamp(HighlightDarkShift, 0, 100, DefaultHighlightDarkShift),
+        CornerContinuity = Clamp(CornerContinuity, 1, 2, DefaultCornerContinuity)
     };
 
     private static double Clamp(double value, double min, double max, double fallback) =>

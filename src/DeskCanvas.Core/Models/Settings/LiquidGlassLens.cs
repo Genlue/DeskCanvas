@@ -3,7 +3,7 @@ using System;
 namespace DeskCanvas.Core.Models.Settings;
 
 /// <summary>
-/// The 新液态玻璃 (V2) refraction lens, solved for one card. All lengths are render pixels —
+/// The 液态玻璃 refraction lens, solved for one card. All lengths are render pixels —
 /// the caller must convert the frame (bounds, DPI, quality) once, up front.
 /// </summary>
 /// <param name="Amount">Peak displacement at the outline, render px (applied inward).</param>
@@ -14,9 +14,9 @@ public readonly record struct LiquidGlassRefractionLens(
     float Amount, float Band, float GradRadius, float DepthEffect);
 
 /// <summary>
-/// The single source of truth for the 新液态玻璃 (V2) refraction coefficients, shared by the GPU
+/// The single source of truth for the 液态玻璃 refraction coefficients, shared by the GPU
 /// shader (<c>LiquidGlassEffect</c>) and the CPU fallback (<c>LiquidGlassRenderer</c>) so the
-/// two paths cannot drift apart — the previous duplicate blocks could, and did.
+/// two paths cannot drift apart.
 /// <para>
 /// The library's own relation is <c>band = amount / 2</c>, both measured against the card's short
 /// side. That scales the lens with the card but leaves the corner geometry fixed, so on a large
@@ -27,7 +27,7 @@ public readonly record struct LiquidGlassRefractionLens(
 /// derivatives inside a narrower rim.
 /// </para>
 /// </summary>
-public static class LiquidGlassV2Lens
+public static class LiquidGlassLens
 {
     /// <summary>
     /// Solve the refraction lens for one card. Every output is finite and non-negative, whatever
@@ -45,17 +45,17 @@ public static class LiquidGlassV2Lens
         if (!float.IsFinite(radius) || radius <= 0f) radius = 0f;
 
         // The library's rule: displacement proportional to the short side, band half of it.
-        var rawBand = (float)(fraction * LiquidGlassV2Settings.RefractionAmountMaxFrac
-                                      * LiquidGlassV2Settings.BandToAmountRatio) * minSide;
+        var rawBand = (float)(fraction * LiquidGlassSettings.RefractionAmountMaxFrac
+                                      * LiquidGlassSettings.BandToAmountRatio) * minSide;
 
         // ...capped by the corner, so the corners never fold and the direction field's single
         // non-smooth point (the inflated arc centre, 1.5 × radius deep) always carries zero
         // displacement. A radius of 0 closes the lens outright — a deliberate, visible change
         // for square-cornered cards, not an accident of the formula.
-        var band = SmoothCap(rawBand, (float)LiquidGlassV2Settings.CornerBandCapFactor * radius);
+        var band = SmoothCap(rawBand, (float)LiquidGlassSettings.CornerBandCapFactor * radius);
 
-        var amount = band / (float)LiquidGlassV2Settings.BandToAmountRatio;
-        var gradRadius = MathF.Min(radius * (float)LiquidGlassV2Settings.GradRadiusFactor, minSide * 0.5f);
+        var amount = band / (float)LiquidGlassSettings.BandToAmountRatio;
+        var gradRadius = MathF.Min(radius * (float)LiquidGlassSettings.GradRadiusFactor, minSide * 0.5f);
         return new LiquidGlassRefractionLens(amount, band, gradRadius, 1f);
     }
 
@@ -73,7 +73,7 @@ public static class LiquidGlassV2Lens
     {
         if (!(cap > 0f) || !(value > 0f)) return 0f;
 
-        var w = cap * (float)LiquidGlassV2Settings.CornerBandCapTransitionFrac;
+        var w = cap * (float)LiquidGlassSettings.CornerBandCapTransitionFrac;
         if (!(w > 0f)) return MathF.Min(value, cap);
         if (value <= cap - w) return value;
         if (value >= cap + w) return cap;

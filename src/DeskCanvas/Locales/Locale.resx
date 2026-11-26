@@ -681,39 +681,6 @@
     <data name="Settings_Appearance_Surface_LiquidGlass" xml:space="preserve">
         <value>Liquid glass</value>
     </data>
-    <data name="Settings_Appearance_Surface_LiquidGlassV2" xml:space="preserve">
-        <value>Liquid glass</value>
-    </data>
-    <data name="Settings_Appearance_V2_Blur" xml:space="preserve">
-        <value>Blur</value>
-    </data>
-    <data name="Settings_Appearance_V2_BlurHint" xml:space="preserve">
-        <value>Blur radius of the background behind glass.</value>
-    </data>
-    <data name="Settings_Appearance_V2_Refraction" xml:space="preserve">
-        <value>Refraction</value>
-    </data>
-    <data name="Settings_Appearance_V2_RefractionHint" xml:space="preserve">
-        <value>Refractive distortion of background wallpaper along edges.</value>
-    </data>
-    <data name="Settings_Appearance_V2_Dispersion" xml:space="preserve">
-        <value>Dispersion</value>
-    </data>
-    <data name="Settings_Appearance_V2_DispersionHint" xml:space="preserve">
-        <value>Spectral dispersion intensity along edges.</value>
-    </data>
-    <data name="Settings_Appearance_V2_Highlight" xml:space="preserve">
-        <value>Edge highlight</value>
-    </data>
-    <data name="Settings_Appearance_V2_HighlightHint" xml:space="preserve">
-        <value>Highlight and rim reflection intensity along edges.</value>
-    </data>
-    <data name="Settings_Appearance_V2_Vibrancy" xml:space="preserve">
-        <value>Vibrancy</value>
-    </data>
-    <data name="Settings_Appearance_V2_VibrancyHint" xml:space="preserve">
-        <value>Adjust vibrancy and color saturation of the glass background.</value>
-    </data>
     <data name="Settings_Appearance_Surface_SoftGlow" xml:space="preserve">
         <value>Soft glow glass</value>
     </data>
@@ -773,6 +740,78 @@
     </data>
     <data name="Settings_Appearance_Glass_HighlightAngleHint" xml:space="preserve">
         <value>Light incident angle</value>
+    </data>
+    <data name="Settings_Appearance_Glass_HighlightHalfWidth" xml:space="preserve">
+        <value>Highlight half-width</value>
+    </data>
+    <data name="Settings_Appearance_Glass_HighlightHalfWidthHint" xml:space="preserve">
+        <value>Half-width of the inner specular rim (0–4 DIP)</value>
+    </data>
+    <data name="Settings_Appearance_Glass_HighlightFeather" xml:space="preserve">
+        <value>Highlight feather</value>
+    </data>
+    <data name="Settings_Appearance_Glass_HighlightFeatherHint" xml:space="preserve">
+        <value>Softness of the inner specular rim edge (0–2 DIP)</value>
+    </data>
+    <data name="Settings_Appearance_Glass_HighlightFalloff" xml:space="preserve">
+        <value>Highlight falloff</value>
+    </data>
+    <data name="Settings_Appearance_Glass_HighlightFalloffHint" xml:space="preserve">
+        <value>Angular tightness onto the light normal (0.2–4; 1 = wide glow)</value>
+    </data>
+    <data name="Settings_Appearance_Glass_HighlightCornerGap" xml:space="preserve">
+        <value>Corner highlight inset</value>
+    </data>
+    <data name="Settings_Appearance_Glass_HighlightCornerGapHint" xml:space="preserve">
+        <value>Inward indentation of the rim highlight around corners (0–8 DIP)</value>
+    </data>
+    <data name="Settings_Appearance_Glass_HighlightBottom" xml:space="preserve">
+        <value>Backlit highlight ratio</value>
+    </data>
+    <data name="Settings_Appearance_Glass_HighlightBottomHint" xml:space="preserve">
+        <value>Highlight intensity on the opposite side relative to the lit side (0–1)</value>
+    </data>
+    <data name="Settings_Appearance_Glass_HighlightSheen" xml:space="preserve">
+        <value>Edge sheen</value>
+    </data>
+    <data name="Settings_Appearance_Glass_HighlightSheenHint" xml:space="preserve">
+        <value>Subtle interior volume sheen inside the specular rim (0–1)</value>
+    </data>
+    <data name="Settings_Appearance_Glass_HighlightSheenDepth" xml:space="preserve">
+        <value>Sheen depth</value>
+    </data>
+    <data name="Settings_Appearance_Glass_HighlightSheenDepthHint" xml:space="preserve">
+        <value>Inward falloff distance of the edge sheen (0–40 DIP)</value>
+    </data>
+    <data name="Settings_Appearance_Glass_HighlightDarkWidth" xml:space="preserve">
+        <value>Outer dark rim width</value>
+    </data>
+    <data name="Settings_Appearance_Glass_HighlightDarkWidthHint" xml:space="preserve">
+        <value>Width of the thin outer dark outline on unlit edges (0–3 DIP)</value>
+    </data>
+    <data name="Settings_Appearance_Glass_HighlightDarkAlpha" xml:space="preserve">
+        <value>Outer dark rim opacity</value>
+    </data>
+    <data name="Settings_Appearance_Glass_HighlightDarkAlphaHint" xml:space="preserve">
+        <value>Opacity of the thin outer dark outline on unlit edges (0–1)</value>
+    </data>
+    <data name="Settings_Appearance_Glass_HighlightLightShift" xml:space="preserve">
+        <value>Highlight light shift</value>
+    </data>
+    <data name="Settings_Appearance_Glass_HighlightLightShiftHint" xml:space="preserve">
+        <value>How far the light accent highlight shifts toward white (0–100%)</value>
+    </data>
+    <data name="Settings_Appearance_Glass_HighlightDarkShift" xml:space="preserve">
+        <value>Highlight dark shift</value>
+    </data>
+    <data name="Settings_Appearance_Glass_HighlightDarkShiftHint" xml:space="preserve">
+        <value>How far the dark accent rim shifts toward black (0–100%)</value>
+    </data>
+    <data name="Settings_Appearance_Glass_CornerContinuity" xml:space="preserve">
+        <value>Corner continuity</value>
+    </data>
+    <data name="Settings_Appearance_Glass_CornerContinuityHint" xml:space="preserve">
+        <value>Superellipse corner smoothness (1.0 = circular, 1.15–1.30 = continuous squircle)</value>
     </data>
     <data name="Settings_Appearance_Glass_Vibrancy" xml:space="preserve">
         <value>Vibrancy</value>

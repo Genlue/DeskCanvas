@@ -11,7 +11,7 @@ using SkiaSharp;
 /// drawing a runtime shader here is out of scope), so three things carry the corner-defect
 /// regression: the refraction <i>direction field</i>, which is shared verbatim with the CPU twin
 /// (<see cref="DeskCanvas.Services.LiquidGlassRenderer.GradSd"/>) and can be walked numerically;
-/// the shared coefficient solver (<see cref="LiquidGlassV2Lens"/>), which both render paths call;
+/// the shared coefficient solver (<see cref="LiquidGlassLens"/>), which both render paths call;
 /// and the structure of the SkSL itself, which is checked for the seam-causing patterns rather
 /// than drawn.
 /// </para>
@@ -27,7 +27,7 @@ using SkiaSharp;
 /// no unique limit — is left in the zero-displacement region.
 /// </para>
 /// </summary>
-internal static class LiquidGlassV2Check
+internal static class LiquidGlassLensCheck
 {
     /// <summary>SkSL line comments, stripped before the dialect patterns run.</summary>
     private static readonly Regex LineCommentPattern = new(@"//[^\n]*", RegexOptions.Compiled);
@@ -73,6 +73,7 @@ internal static class LiquidGlassV2Check
         CheckShaderTakesSharedCoefficients();
         CheckCpuRender();
         CheckHighlightAngle();
+        CheckGlassDesignHighlight();
 
         Console.WriteLine(failures == 0
             ? "All 液态玻璃 checks passed."
@@ -210,11 +211,11 @@ internal static class LiquidGlassV2Check
         // inside the outline — nearly twice the 0.8 × 24 = 19.2 px the cap allows.
         const float side = 352f;
         const float radius = 24f;
-        var capped = LiquidGlassV2Lens.Compute(100, side, radius);
+        var capped = LiquidGlassLens.Compute(100, side, radius);
         var library = new LiquidGlassRefractionLens(
-            (float)(LiquidGlassV2Settings.RefractionAmountMaxFrac * side),
-            (float)(LiquidGlassV2Settings.RefractionAmountMaxFrac * LiquidGlassV2Settings.BandToAmountRatio * side),
-            MathF.Min(radius * (float)LiquidGlassV2Settings.GradRadiusFactor, side / 2f),
+            (float)(LiquidGlassSettings.RefractionAmountMaxFrac * side),
+            (float)(LiquidGlassSettings.RefractionAmountMaxFrac * LiquidGlassSettings.BandToAmountRatio * side),
+            MathF.Min(radius * (float)LiquidGlassSettings.GradRadiusFactor, side / 2f),
             1f);
 
         var cappedSpread = ArcCentreMapSpread(capped, side, radius);
@@ -284,7 +285,7 @@ internal static class LiquidGlassV2Check
     /// </summary>
     private static void CheckCoefficients()
     {
-        var off = LiquidGlassV2Lens.Compute(0, 352f, 24f);
+        var off = LiquidGlassLens.Compute(0, 352f, 24f);
         Check(off.Amount == 0f && off.Band == 0f, "refraction 0 leaves no lens at all");
 
         var ratioKept = true;
@@ -296,7 +297,7 @@ internal static class LiquidGlassV2Check
                      (352f, 8f), (300f, 40f), (120f, 60f), (96f, 48f), (720f, 16f)
                  })
         {
-            var lens = LiquidGlassV2Lens.Compute(100, side, radius);
+            var lens = LiquidGlassLens.Compute(100, side, radius);
             if (MathF.Abs(lens.Amount - 2f * lens.Band) > 1e-3f) ratioKept = false;
             if (lens.Band > 0.8f * radius + 1e-3f) capKept = false;
             // The cap only has a point because the arc centre is 1.5 × radius deep: keeping the
@@ -307,8 +308,8 @@ internal static class LiquidGlassV2Check
         Check(capKept, "the band never exceeds 0.8 × the corner radius");
         Check(centreMasked, "the band never reaches the 1.5 × radius deep arc centre");
 
-        var big = LiquidGlassV2Lens.Compute(100, 352f, 24f);
-        var small = LiquidGlassV2Lens.Compute(100, 80f, 24f);
+        var big = LiquidGlassLens.Compute(100, 352f, 24f);
+        var small = LiquidGlassLens.Compute(100, 80f, 24f);
         Console.WriteLine($"352px r24: amount {big.Amount:F1} / band {big.Band:F1} (library: 140.8 / 70.4); " +
                           $"80px r24: band {small.Band:F1} (library: 16.0)");
         Check(MathF.Abs(big.Band - 0.8f * 24f) < 1e-3f, "a large card's band saturates at 0.8 × radius");
@@ -317,27 +318,27 @@ internal static class LiquidGlassV2Check
             "below the cap the library's short-side ratio passes through untouched");
 
         var growsWithSlider = true;
-        var previous = LiquidGlassV2Lens.Compute(0, 352f, 24f);
+        var previous = LiquidGlassLens.Compute(0, 352f, 24f);
         for (var percent = 5.0; percent <= 100.0; percent += 5.0)
         {
-            var lens = LiquidGlassV2Lens.Compute(percent, 352f, 24f);
+            var lens = LiquidGlassLens.Compute(percent, 352f, 24f);
             if (lens.Band < previous.Band || lens.Amount < previous.Amount) growsWithSlider = false;
             previous = lens;
         }
         Check(growsWithSlider, "the lens grows monotonically with 折射 across the whole slider");
 
         var growsWithCard = true;
-        previous = LiquidGlassV2Lens.Compute(100, 40f, 24f);
+        previous = LiquidGlassLens.Compute(100, 40f, 24f);
         for (var side = 60f; side <= 720f; side += 20f)
         {
-            var lens = LiquidGlassV2Lens.Compute(100, side, 24f);
+            var lens = LiquidGlassLens.Compute(100, side, 24f);
             if (lens.Band < previous.Band) growsWithCard = false;
             previous = lens;
         }
         Check(growsWithCard, "the lens grows monotonically with the card's short side");
 
-        var unit = LiquidGlassV2Lens.Compute(60, 352f, 24f);
-        var doubled = LiquidGlassV2Lens.Compute(60, 704f, 48f);
+        var unit = LiquidGlassLens.Compute(60, 352f, 24f);
+        var doubled = LiquidGlassLens.Compute(60, 704f, 48f);
         Check(MathF.Abs(doubled.Amount - 2f * unit.Amount) < 1e-2f
               && MathF.Abs(doubled.Band - 2f * unit.Band) < 1e-2f
               && MathF.Abs(doubled.GradRadius - 2f * unit.GradRadius) < 1e-2f,
@@ -349,19 +350,19 @@ internal static class LiquidGlassV2Check
                      (0f, 0f), (0f, 24f), (24f, 0f), (100f, 0f), (200f, 100f), (1f, 1f)
                  })
         {
-            var lens = LiquidGlassV2Lens.Compute(100, side, radius);
+            var lens = LiquidGlassLens.Compute(100, side, radius);
             if (!float.IsFinite(lens.Amount) || !float.IsFinite(lens.Band) || !float.IsFinite(lens.GradRadius)
                 || lens.Amount < 0f || lens.Band < 0f || lens.GradRadius < 0f) degenerateFinite = false;
         }
         Check(degenerateFinite, "degenerate geometry (no radius, no side, a capsule, a 1 px card) stays finite");
 
-        var nonFinite = LiquidGlassV2Lens.Compute(double.NaN, float.NaN, float.NaN);
+        var nonFinite = LiquidGlassLens.Compute(double.NaN, float.NaN, float.NaN);
         Check(float.IsFinite(nonFinite.Amount) && float.IsFinite(nonFinite.Band) && float.IsFinite(nonFinite.GradRadius),
             "non-finite inputs fall back to a finite lens");
 
         // radius 0: the cap closes the lens outright, which is a deliberate and visible change for
         // square-cornered cards. Pinned here so it cannot change silently in either direction.
-        var squareCard = LiquidGlassV2Lens.Compute(100, 200f, 0f);
+        var squareCard = LiquidGlassLens.Compute(100, 200f, 0f);
         Check(squareCard.Amount == 0f && squareCard.Band == 0f,
             "a square card (radius 0) gets no refraction band — the cap's documented side effect");
     }
@@ -374,31 +375,31 @@ internal static class LiquidGlassV2Check
     private static void CheckSmoothCap()
     {
         const float cap = 10f;
-        var transition = cap * (float)LiquidGlassV2Settings.CornerBandCapTransitionFrac;
+        var transition = cap * (float)LiquidGlassSettings.CornerBandCapTransitionFrac;
 
-        Check(LiquidGlassV2Lens.SmoothCap(0f, cap) == 0f, "the cap keeps zero at zero");
-        Check(LiquidGlassV2Lens.SmoothCap(cap * 0.3f, cap) == cap * 0.3f,
+        Check(LiquidGlassLens.SmoothCap(0f, cap) == 0f, "the cap keeps zero at zero");
+        Check(LiquidGlassLens.SmoothCap(cap * 0.3f, cap) == cap * 0.3f,
             "the cap passes the linear range through unchanged");
-        Check(LiquidGlassV2Lens.SmoothCap(cap * 3f, cap) == cap, "the cap saturates at the cap");
-        Check(LiquidGlassV2Lens.SmoothCap(5f, 0f) == 0f, "a zero cap closes the lens");
-        Check(LiquidGlassV2Lens.SmoothCap(-5f, cap) == 0f, "a negative input cannot produce a negative band");
-        Check(float.IsFinite(LiquidGlassV2Lens.SmoothCap(float.NaN, cap)), "a non-finite input stays finite");
+        Check(LiquidGlassLens.SmoothCap(cap * 3f, cap) == cap, "the cap saturates at the cap");
+        Check(LiquidGlassLens.SmoothCap(5f, 0f) == 0f, "a zero cap closes the lens");
+        Check(LiquidGlassLens.SmoothCap(-5f, cap) == 0f, "a negative input cannot produce a negative band");
+        Check(float.IsFinite(LiquidGlassLens.SmoothCap(float.NaN, cap)), "a non-finite input stays finite");
 
         var monotonic = true;
         var previous = 0f;
         for (var i = 0; i <= 20000; i++)
         {
-            var value = LiquidGlassV2Lens.SmoothCap(i * cap * 2f / 20000f, cap);
+            var value = LiquidGlassLens.SmoothCap(i * cap * 2f / 20000f, cap);
             if (value < previous - 1e-6f || value > cap + 1e-4f) monotonic = false;
             previous = value;
         }
         Check(monotonic, "the cap is monotonic and never overshoots the cap");
 
         const float epsilon = 1e-3f;
-        var lower = (LiquidGlassV2Lens.SmoothCap(cap - transition + epsilon, cap)
-                     - LiquidGlassV2Lens.SmoothCap(cap - transition - epsilon, cap)) / (2f * epsilon);
-        var upper = (LiquidGlassV2Lens.SmoothCap(cap + transition + epsilon, cap)
-                     - LiquidGlassV2Lens.SmoothCap(cap + transition - epsilon, cap)) / (2f * epsilon);
+        var lower = (LiquidGlassLens.SmoothCap(cap - transition + epsilon, cap)
+                     - LiquidGlassLens.SmoothCap(cap - transition - epsilon, cap)) / (2f * epsilon);
+        var upper = (LiquidGlassLens.SmoothCap(cap + transition + epsilon, cap)
+                     - LiquidGlassLens.SmoothCap(cap + transition - epsilon, cap)) / (2f * epsilon);
         Console.WriteLine($"Smooth cap slope at the joins: {lower:F4} (linear side), {upper:F4} (saturation side)");
         Check(MathF.Abs(lower - 1f) < 0.02f, "the cap meets the linear segment with slope 1");
         Check(MathF.Abs(upper) < 0.02f, "the cap meets saturation with slope 0");
@@ -447,13 +448,13 @@ internal static class LiquidGlassV2Check
 
         var theme = JsonSerializer.Deserialize<Theme>("""
             {"DarkMode":null,"AccentColor":null,"OpacityLevel":0.2,"Monochrome":true,"UseNativeFrame":false,"FontFamily":"Inter"}
-            """)! with { Surface = SurfaceStyle.LiquidGlassV2 };
+            """)! with { Surface = SurfaceStyle.LiquidGlass };
         // The report's 4×4 case: a 352 px card, radius 24, refraction at its default 100.
         var frame = new LiquidGlassRenderer.Frame(352, 352, 1f, 24f, 0f, 0f, 1200f, 800f, 0f, 0f, 1200f, 800f, theme, false);
 
         using var full = LiquidGlassRenderer.RenderBitmap(frame, wallpaper);
         using var flat = LiquidGlassRenderer.RenderBitmap(
-            frame with { Theme = theme with { LiquidGlassV2 = new LiquidGlassV2Settings(Refraction: 0) } }, wallpaper);
+            frame with { Theme = theme with { LiquidGlass = new LiquidGlassSettings(Refraction: 0) } }, wallpaper);
         Check(full != null && flat != null, "the 4×4 CPU render produces a bitmap");
         if (full == null || flat == null) return;
 
@@ -494,6 +495,117 @@ internal static class LiquidGlassV2Check
             var diff = RimDifference(bmp0, bmp90);
             Console.WriteLine($"Highlight angle 0° vs 90° rim delta: {diff:F2}");
             Check(diff > 0.5, "rotating highlight angle alters specular highlight rim output");
+        }
+    }
+
+    private static void CheckGlassDesignHighlight()
+    {
+        using var surface = SKSurface.Create(new SKImageInfo(800, 600));
+        surface.Canvas.Clear(new SKColor(80, 100, 120));
+        using var image = surface.Snapshot();
+        using var encoded = image.Encode(SKEncodedImageFormat.Png, 100);
+        var wallpaper = new WallpaperSnapshot(encoded.ToArray(), SKColors.Black);
+
+        Theme MakeTheme(LiquidGlassSettings glass) =>
+            new(null, null, 0.2, false, false, "Inter", SurfaceStyle.LiquidGlass, LiquidGlass: glass);
+
+        LiquidGlassRenderer.Frame MakeFrame(Theme t) =>
+            new(200, 200, 1f, 24f, 0f, 0f, 800f, 600f, 0f, 0f, 800f, 600f, t, false);
+
+        // 1. Backlit asymmetry (HighlightBottom = 0.2 vs 1.0): top edge is brighter than bottom edge.
+        var asymTheme = MakeTheme(new LiquidGlassSettings(
+            Blur: 0, Refraction: 0, Dispersion: 0, Vibrancy: 0,
+            Highlight: 100, HighlightAngle: 90.0, HighlightHalfWidth: 1.0,
+            HighlightBottom: 0.2, HighlightSheen: 0.0, HighlightDarkAlpha: 0.0));
+        using var asym = LiquidGlassRenderer.RenderBitmap(MakeFrame(asymTheme), wallpaper);
+        Check(asym != null, "backlit asymmetry render succeeds");
+        if (asym != null)
+        {
+            var topEdge = asym.GetPixel(100, 1);
+            var bottomEdge = asym.GetPixel(100, 198);
+            var sideEdge = asym.GetPixel(1, 100);
+            var interior = asym.GetPixel(100, 100);
+            Check(topEdge.Red > bottomEdge.Red + 30,
+                $"lit top edge ({topEdge.Red}) is brighter than backlit bottom edge ({bottomEdge.Red}) when HighlightBottom=0.2");
+            Check(Math.Abs(sideEdge.Red - interior.Red) <= 2,
+                $"unlit side edge ({sideEdge.Red}) fades out when HighlightDarkAlpha=0 (interior={interior.Red})");
+        }
+
+        // 2. Outer dark rim on unlit sides (HighlightDarkAlpha = 0.6 vs 0.0).
+        var darkTheme = MakeTheme(new LiquidGlassSettings(
+            Blur: 0, Refraction: 0, Dispersion: 0, Vibrancy: 0,
+            Highlight: 80, HighlightAngle: 90.0,
+            HighlightSheen: 0.0, HighlightDarkWidth: 1.8, HighlightDarkAlpha: 0.6));
+        using var withDark = LiquidGlassRenderer.RenderBitmap(MakeFrame(darkTheme), wallpaper);
+        if (withDark != null && asym != null)
+        {
+            var sideWithDark = withDark.GetPixel(1, 100);
+            var sideNoDark = asym.GetPixel(1, 100);
+            Check(sideWithDark.Red < sideNoDark.Red - 10,
+                $"unlit side edge darkens with HighlightDarkAlpha ({sideWithDark.Red} < {sideNoDark.Red})");
+        }
+
+        // 3. Inner volume sheen (HighlightSheen = 0.5, HighlightSheenDepth = 8) illuminates pixels inside the main rim.
+        var sheenTheme = MakeTheme(new LiquidGlassSettings(
+            Blur: 0, Refraction: 0, Dispersion: 0, Vibrancy: 0,
+            Highlight: 0, HighlightAngle: 90.0,
+            HighlightSheen: 0.5, HighlightSheenDepth: 8.0, HighlightDarkAlpha: 0.0));
+        var noSheenTheme = MakeTheme(new LiquidGlassSettings(
+            Blur: 0, Refraction: 0, Dispersion: 0, Vibrancy: 0,
+            Highlight: 0, HighlightAngle: 90.0,
+            HighlightSheen: 0.0, HighlightSheenDepth: 8.0, HighlightDarkAlpha: 0.0));
+        using var withSheen = LiquidGlassRenderer.RenderBitmap(MakeFrame(sheenTheme), wallpaper);
+        using var noSheen = LiquidGlassRenderer.RenderBitmap(MakeFrame(noSheenTheme), wallpaper);
+        if (withSheen != null && noSheen != null)
+        {
+            var sheenPx = withSheen.GetPixel(100, 3);
+            var plainPx = noSheen.GetPixel(100, 3);
+            Check(sheenPx.Red > plainPx.Red + 15,
+                $"inner volume sheen brightens edge interior ({sheenPx.Red} > {plainPx.Red})");
+        }
+
+        // 4. Light & dark accent colors with adjustable shift degrees (manual accent & system accent fallback).
+        var accentGlass = new LiquidGlassSettings(
+            Blur: 0, Refraction: 0, Dispersion: 0, Vibrancy: 0,
+            Highlight: 100, HighlightAngle: 90.0, HighlightHalfWidth: 1.5,
+            HighlightSheen: 0.0, HighlightDarkWidth: 1.5, HighlightDarkAlpha: 1.0,
+            HighlightLightShift: 40, HighlightDarkShift: 30);
+        var redAccentTheme = MakeTheme(accentGlass) with { AccentColor = "#FFFF2020" };
+        using var redAccent = LiquidGlassRenderer.RenderBitmap(MakeFrame(redAccentTheme), wallpaper);
+        if (redAccent != null)
+        {
+            var litTop = redAccent.GetPixel(100, 1);
+            var darkSide = redAccent.GetPixel(1, 100);
+            Check(litTop.Red > litTop.Blue + 80,
+                $"lit edge uses light shifted accent color instead of neutral white (R={litTop.Red}, G={litTop.Green}, B={litTop.Blue})");
+            Check(darkSide.Red > darkSide.Blue + 20 && darkSide.Red < 180,
+                $"unlit side edge uses dark shifted accent color instead of neutral black (R={darkSide.Red}, G={darkSide.Green}, B={darkSide.Blue})");
+        }
+
+        var blueSystemFrame = MakeFrame(MakeTheme(accentGlass)) with { SystemAccent = new SKColor(20, 80, 255) };
+        using var blueSystem = LiquidGlassRenderer.RenderBitmap(blueSystemFrame, wallpaper);
+        if (blueSystem != null)
+        {
+            var litTop = blueSystem.GetPixel(100, 1);
+            var darkSide = blueSystem.GetPixel(1, 100);
+            Check(litTop.Blue > litTop.Red + 60,
+                $"system accent fallback tints light highlight (R={litTop.Red}, G={litTop.Green}, B={litTop.Blue})");
+            Check(darkSide.Blue > darkSide.Red + 20 && darkSide.Blue < 180,
+                $"system accent fallback tints dark rim (R={darkSide.Red}, G={darkSide.Green}, B={darkSide.Blue})");
+        }
+
+        // 5. Continuous superellipse corners (CornerContinuity = 1.3 vs 1.0) alter the corner silhouette smoothly.
+        var squircleFrame = MakeFrame(MakeTheme(accentGlass with { CornerContinuity = 1.3 }));
+        var circularFrame = MakeFrame(MakeTheme(accentGlass with { CornerContinuity = 1.0 }));
+        using var squircleBmp = LiquidGlassRenderer.RenderBitmap(squircleFrame, wallpaper);
+        using var circularBmp = LiquidGlassRenderer.RenderBitmap(circularFrame, wallpaper);
+        if (squircleBmp != null && circularBmp != null)
+        {
+            // At a 24 px corner on a 200×200 card, the 45° apex of CornerK=1.3 sits slightly further outward than CornerK=1.0.
+            var sqCorner = squircleBmp.GetPixel(6, 6);
+            var ciCorner = circularBmp.GetPixel(6, 6);
+            Check(sqCorner.Alpha > ciCorner.Alpha,
+                $"superellipse CornerContinuity=1.3 rounds smoothly outward vs circular 1.0 (alpha {sqCorner.Alpha} > {ciCorner.Alpha})");
         }
     }
 

@@ -285,7 +285,7 @@ internal static partial class Program
             ?? throw new InvalidOperationException("cached field not found");
         var closeSettle = wallpaperType.GetMethod("CloseSettle", BindingFlags.Static | BindingFlags.NonPublic)!;
 
-        var theme = new Theme(true, null, 0.8, false, false, "Inter", SurfaceStyle.LiquidGlassV2);
+        var theme = new Theme(true, null, 0.8, false, false, "Inter", SurfaceStyle.LiquidGlass);
         var frame = new LiquidGlassRenderer.Frame(10, 10, 1f, 4f, 0, 0, 1920, 1080, 0, 0, 1920, 1080, theme, false);
         var preparedCtor = preparedType.GetConstructors(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
             .First(c => c.GetParameters().Length == 4);

@@ -259,6 +259,114 @@
                                                     Value="{Binding GlassBackdropClarity}" ValueCommitted="CommitThemeSliders"
                                                     AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_Glass_BackdropClarity}" />
                         </controls:Setting>
+                        <Rectangle Classes="settings-separator" />
+                        <controls:Setting Title="{x:Static locales:Locale.Settings_Appearance_Glass_HighlightHalfWidth}"
+                                          Subtitle="{x:Static locales:Locale.Settings_Appearance_Glass_HighlightHalfWidthHint}">
+                            <controls:LabeledSlider Width="264" Margin="14 0 0 0"
+                                                    Minimum="0" Maximum="4" Step="0.05"
+                                                    ShowEditableValue="True" DisplayFormat="F2"
+                                                    Value="{Binding GlassHighlightHalfWidth}" ValueCommitted="CommitThemeSliders"
+                                                    AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_Glass_HighlightHalfWidth}" />
+                        </controls:Setting>
+                        <Rectangle Classes="settings-separator" />
+                        <controls:Setting Title="{x:Static locales:Locale.Settings_Appearance_Glass_HighlightFeather}"
+                                          Subtitle="{x:Static locales:Locale.Settings_Appearance_Glass_HighlightFeatherHint}">
+                            <controls:LabeledSlider Width="264" Margin="14 0 0 0"
+                                                    Minimum="0" Maximum="2" Step="0.05"
+                                                    ShowEditableValue="True" DisplayFormat="F2"
+                                                    Value="{Binding GlassHighlightFeather}" ValueCommitted="CommitThemeSliders"
+                                                    AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_Glass_HighlightFeather}" />
+                        </controls:Setting>
+                        <Rectangle Classes="settings-separator" />
+                        <controls:Setting Title="{x:Static locales:Locale.Settings_Appearance_Glass_HighlightFalloff}"
+                                          Subtitle="{x:Static locales:Locale.Settings_Appearance_Glass_HighlightFalloffHint}">
+                            <controls:LabeledSlider Width="264" Margin="14 0 0 0"
+                                                    Minimum="0.2" Maximum="4" Step="0.05"
+                                                    ShowEditableValue="True" DisplayFormat="F2"
+                                                    Value="{Binding GlassHighlightFalloff}" ValueCommitted="CommitThemeSliders"
+                                                    AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_Glass_HighlightFalloff}" />
+                        </controls:Setting>
+                        <Rectangle Classes="settings-separator" />
+                        <controls:Setting Title="{x:Static locales:Locale.Settings_Appearance_Glass_HighlightCornerGap}"
+                                          Subtitle="{x:Static locales:Locale.Settings_Appearance_Glass_HighlightCornerGapHint}">
+                            <controls:LabeledSlider Width="264" Margin="14 0 0 0"
+                                                    Minimum="0" Maximum="8" Step="0.1"
+                                                    ShowEditableValue="True" DisplayFormat="F1"
+                                                    Value="{Binding GlassHighlightCornerGap}" ValueCommitted="CommitThemeSliders"
+                                                    AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_Glass_HighlightCornerGap}" />
+                        </controls:Setting>
+                        <Rectangle Classes="settings-separator" />
+                        <controls:Setting Title="{x:Static locales:Locale.Settings_Appearance_Glass_HighlightBottom}"
+                                          Subtitle="{x:Static locales:Locale.Settings_Appearance_Glass_HighlightBottomHint}">
+                            <controls:LabeledSlider Width="264" Margin="14 0 0 0"
+                                                    Minimum="0" Maximum="1" Step="0.01"
+                                                    ShowEditableValue="True" DisplayFormat="F2"
+                                                    Value="{Binding GlassHighlightBottom}" ValueCommitted="CommitThemeSliders"
+                                                    AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_Glass_HighlightBottom}" />
+                        </controls:Setting>
+                        <Rectangle Classes="settings-separator" />
+                        <controls:Setting Title="{x:Static locales:Locale.Settings_Appearance_Glass_HighlightSheen}"
+                                          Subtitle="{x:Static locales:Locale.Settings_Appearance_Glass_HighlightSheenHint}">
+                            <controls:LabeledSlider Width="264" Margin="14 0 0 0"
+                                                    Minimum="0" Maximum="1" Step="0.01"
+                                                    ShowEditableValue="True" DisplayFormat="F2"
+                                                    Value="{Binding GlassHighlightSheen}" ValueCommitted="CommitThemeSliders"
+                                                    AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_Glass_HighlightSheen}" />
+                        </controls:Setting>
+                        <Rectangle Classes="settings-separator" />
+                        <controls:Setting Title="{x:Static locales:Locale.Settings_Appearance_Glass_HighlightSheenDepth}"
+                                          Subtitle="{x:Static locales:Locale.Settings_Appearance_Glass_HighlightSheenDepthHint}">
+                            <controls:LabeledSlider Width="264" Margin="14 0 0 0"
+                                                    Minimum="0" Maximum="40" Step="0.5"
+                                                    ShowEditableValue="True" DisplayFormat="F1"
+                                                    Value="{Binding GlassHighlightSheenDepth}" ValueCommitted="CommitThemeSliders"
+                                                    AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_Glass_HighlightSheenDepth}" />
+                        </controls:Setting>
+                        <Rectangle Classes="settings-separator" />
+                        <controls:Setting Title="{x:Static locales:Locale.Settings_Appearance_Glass_HighlightDarkWidth}"
+                                          Subtitle="{x:Static locales:Locale.Settings_Appearance_Glass_HighlightDarkWidthHint}">
+                            <controls:LabeledSlider Width="264" Margin="14 0 0 0"
+                                                    Minimum="0" Maximum="3" Step="0.05"
+                                                    ShowEditableValue="True" DisplayFormat="F2"
+                                                    Value="{Binding GlassHighlightDarkWidth}" ValueCommitted="CommitThemeSliders"
+                                                    AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_Glass_HighlightDarkWidth}" />
+                        </controls:Setting>
+                        <Rectangle Classes="settings-separator" />
+                        <controls:Setting Title="{x:Static locales:Locale.Settings_Appearance_Glass_HighlightDarkAlpha}"
+                                          Subtitle="{x:Static locales:Locale.Settings_Appearance_Glass_HighlightDarkAlphaHint}">
+                            <controls:LabeledSlider Width="264" Margin="14 0 0 0"
+                                                    Minimum="0" Maximum="1" Step="0.01"
+                                                    ShowEditableValue="True" DisplayFormat="F2"
+                                                    Value="{Binding GlassHighlightDarkAlpha}" ValueCommitted="CommitThemeSliders"
+                                                    AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_Glass_HighlightDarkAlpha}" />
+                        </controls:Setting>
+                        <Rectangle Classes="settings-separator" />
+                        <controls:Setting Title="{x:Static locales:Locale.Settings_Appearance_Glass_HighlightLightShift}"
+                                          Subtitle="{x:Static locales:Locale.Settings_Appearance_Glass_HighlightLightShiftHint}">
+                            <controls:LabeledSlider Width="264" Margin="14 0 0 0"
+                                                    Minimum="0" Maximum="100" Step="1"
+                                                    ShowEditableValue="True" DisplayFormat="F0" Unit="%"
+                                                    Value="{Binding GlassHighlightLightShift}" ValueCommitted="CommitThemeSliders"
+                                                    AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_Glass_HighlightLightShift}" />
+                        </controls:Setting>
+                        <Rectangle Classes="settings-separator" />
+                        <controls:Setting Title="{x:Static locales:Locale.Settings_Appearance_Glass_HighlightDarkShift}"
+                                          Subtitle="{x:Static locales:Locale.Settings_Appearance_Glass_HighlightDarkShiftHint}">
+                            <controls:LabeledSlider Width="264" Margin="14 0 0 0"
+                                                    Minimum="0" Maximum="100" Step="1"
+                                                    ShowEditableValue="True" DisplayFormat="F0" Unit="%"
+                                                    Value="{Binding GlassHighlightDarkShift}" ValueCommitted="CommitThemeSliders"
+                                                    AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_Glass_HighlightDarkShift}" />
+                        </controls:Setting>
+                        <Rectangle Classes="settings-separator" />
+                        <controls:Setting Title="{x:Static locales:Locale.Settings_Appearance_Glass_CornerContinuity}"
+                                          Subtitle="{x:Static locales:Locale.Settings_Appearance_Glass_CornerContinuityHint}">
+                            <controls:LabeledSlider Width="264" Margin="14 0 0 0"
+                                                    Minimum="1" Maximum="2" Step="0.05"
+                                                    ShowEditableValue="True" DisplayFormat="F2"
+                                                    Value="{Binding GlassCornerContinuity}" ValueCommitted="CommitThemeSliders"
+                                                    AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_Glass_CornerContinuity}" />
+                        </controls:Setting>
                     </StackPanel>
                 </Border>
             </controls:CollapsibleSection.SectionContent>

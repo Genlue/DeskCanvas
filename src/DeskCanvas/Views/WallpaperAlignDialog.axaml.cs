@@ -38,24 +38,15 @@ public partial class WallpaperAlignDialog : HostDialogWindow
     {
         var settings = appSettingsProvider.Get();
         var theme = settings.Theme;
-        // Write the offsets back into the active material's own settings record.
-        var nextTheme = theme.IsLiquidGlassV2
-            ? theme with
+        // Write the offsets back into the unified liquid glass settings record.
+        var nextTheme = theme with
+        {
+            LiquidGlass = (theme.EffectiveLiquidGlass with
             {
-                LiquidGlassV2 = (theme.EffectiveLiquidGlassV2 with
-                {
-                    WallpaperOffsetX = (double)(OffsetX.Value ?? 0),
-                    WallpaperOffsetY = (double)(OffsetY.Value ?? 0)
-                }).Normalize()
-            }
-            : theme with
-            {
-                LiquidGlass = (theme.EffectiveLiquidGlass with
-                {
-                    WallpaperOffsetX = (double)(OffsetX.Value ?? 0),
-                    WallpaperOffsetY = (double)(OffsetY.Value ?? 0)
-                }).Normalize()
-            };
+                WallpaperOffsetX = (double)(OffsetX.Value ?? 0),
+                WallpaperOffsetY = (double)(OffsetY.Value ?? 0)
+            }).Normalize()
+        };
         appSettingsProvider.Save(settings with { Theme = nextTheme });
     }
 

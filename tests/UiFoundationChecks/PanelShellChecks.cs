@@ -88,9 +88,9 @@ internal static partial class Program
         {
             var suffix = isDark ? "dark" : "light";
 
-            // 液态玻璃 / 新液态玻璃: transparent card + live surface, hint Transparent + None fallback.
-            foreach (var surface in new[] { SurfaceStyle.LiquidGlass, SurfaceStyle.LiquidGlassV2 })
+            // 液态玻璃: transparent card + live surface, hint Transparent + None fallback.
             {
+                const SurfaceStyle surface = SurfaceStyle.LiquidGlass;
                 var theme = ThemeOf(surface, isDark);
                 var a = PanelAppearanceResolver.Resolve(theme, isDark, radius);
                 Check(a.UseRenderedGlass && ReferenceEquals(a.GlassMaterial, theme),
@@ -147,7 +147,7 @@ internal static partial class Program
         // The single effective-theme rule: with 失焦自动切换 OFF (or in a headless app without
         // a coordinator) every panel resolves the SHARED theme — the same theme the binder
         // paints the shell with, so the plugin content and the shell can never split states.
-        var sharedTheme = ThemeOf(SurfaceStyle.LiquidGlassV2, isDark: false);
+        var sharedTheme = ThemeOf(SurfaceStyle.LiquidGlass, isDark: false);
         var stubProvider = new StubEffectiveThemeSettings(new AppSettings(
             sharedTheme, [], new Layout(GridMode.Manual, true, false, true, false),
             new Dimensions(80, 12, 16), new Region("zh-Hans"), false, null));

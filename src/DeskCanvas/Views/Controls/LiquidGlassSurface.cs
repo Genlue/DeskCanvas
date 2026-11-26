@@ -891,11 +891,13 @@ public class LiquidGlassSurface : GlassSurfaceBase
         var widget = window as Widget;
         var (cols, rows) = widget?.CurrentSpan ?? (0, 0);
         var material = Material ?? new Theme(null, null, 0.18, true, false, "Microsoft YaHei UI", SurfaceStyle.LiquidGlass);
+        var sysAccent = AccentPalette.TryGetSystemAccent();
+        SKColor? systemAccent = sysAccent is { } accent ? new SKColor(accent.R, accent.G, accent.B, accent.A) : null;
         var frame = new LiquidGlassRenderer.Frame(width, height, renderScale, (float)CornerRadius.TopLeft,
             geometry.DesktopX, geometry.DesktopY, geometry.DesktopWidth, geometry.DesktopHeight,
             geometry.ScreenX, geometry.ScreenY, geometry.ScreenWidth, geometry.ScreenHeight,
             material, ActualThemeVariant == ThemeVariant.Dark, SettingsSurface, (float)quality,
-            Columns: cols, Rows: rows, BackdropScale: backdropScale);
+            Columns: cols, Rows: rows, BackdropScale: backdropScale, SystemAccent: systemAccent);
         if (!Preview) return frame;
         // The preview card is tiny (45×45 in the theme button): calm the material down so the
         // miniature shows the recipe rather than a bloated lens.

@@ -1107,16 +1107,16 @@ internal static partial class Program
             $"({CountStray<Slider, LabeledSlider>(clock)})");
 
         var appearance = new DeskCanvas.Views.Pages.Appearance(new StubSettings(
-            new AppSettings(new Theme(false, null, 1, false, false, "Inter", SurfaceStyle.LiquidGlassV2),
+            new AppSettings(new Theme(false, null, 1, false, false, "Inter", SurfaceStyle.LiquidGlass),
                 [], new Layout(GridMode.Manual, true, false, true, false),
                 new Dimensions(80, 12, 16), new Region("zh-Hans"), false, null)));
         var sliders = appearance.GetLogicalDescendants().OfType<LabeledSlider>().Count();
         var colors = appearance.GetLogicalDescendants().OfType<ColorInput>().Count();
-        // 8 optics rows + opacity + 强调色偏移. The accent shift joined the slider family on
+        // 20 optics rows + opacity + 强调色偏移. The accent shift joined the slider family on
         // purpose: it is a percentage of a colour distance, i.e. the same kind of control as the
         // optics rows, and it commits on release like them rather than writing the settings file
         // once per pixel of the drag.
-        Check(sliders == 10, $"Appearance: 8 optics rows, opacity and 强调色偏移 are LabeledSliders ({sliders})");
+        Check(sliders == 22, $"Appearance: 20 optics rows, opacity and 强调色偏移 are LabeledSliders ({sliders})");
         // 描边颜色 was removed with the 描边 feature; the remaining colour rows are
         // 强调色 and the two 背景颜色 pickers (dark + light).
         Check(colors == 3, $"Appearance: the three remaining colour rows are ColorInputs ({colors})");

@@ -44,14 +44,31 @@ internal static class GpuMaterialCheck
         Check(p.SourceScale > 0f, "backdrop scale is positive");
         Check(p.LightX != 0f || p.LightY != 0f, "light direction vector is non-zero");
 
-        // Highlight angle dynamic uniform verification
-        var angle45Theme = Material(new LiquidGlassSettings(HighlightAngle: 45.0));
+        // Highlight angle & GlassDesign highlight params dynamic uniform verification
+        var angle45Theme = Material(new LiquidGlassSettings(
+            HighlightAngle: 45.0, HighlightHalfWidth: 0.8, HighlightFeather: 0.3,
+            HighlightFalloffFactor: 1.5, HighlightCornerGap: 1.0, HighlightBottom: 0.7,
+            HighlightSheen: 0.25, HighlightSheenDepth: 6.0, HighlightDarkWidth: 0.9, HighlightDarkAlpha: 0.35,
+            HighlightLightShift: 50, HighlightDarkShift: 50, CornerContinuity: 1.30)) with { AccentColor = "#FF0080FF" };
         var p45 = LiquidGlassEffect.BuildParams(Frame(angle45Theme, 400, 260), 1.0f);
         CheckAllFinite(p45, "highlight angle 45.0 uniforms are finite");
         var expectedCos = MathF.Cos(45f * MathF.PI / 180f);
         var expectedSin = MathF.Sin(45f * MathF.PI / 180f);
         Check(MathF.Abs(p45.LightX - expectedCos) < 1e-4f && MathF.Abs(p45.LightY - expectedSin) < 1e-4f,
             $"highlight angle 45° produces unit vector ({expectedCos:F3}, {expectedSin:F3})");
+        Check(MathF.Abs(p45.StrokeHalf - 0.8f) < 1e-4f
+              && MathF.Abs(p45.StrokeFeather - 0.3f) < 1e-4f
+              && MathF.Abs(p45.Falloff - 1.5f) < 1e-4f
+              && MathF.Abs(p45.CornerGap - 1.0f) < 1e-4f
+              && MathF.Abs(p45.HighlightBottom - 0.7f) < 1e-4f
+              && MathF.Abs(p45.Sheen - 0.25f) < 1e-4f
+              && MathF.Abs(p45.SheenDepth - 6.0f) < 1e-4f
+              && MathF.Abs(p45.DarkWidth - 0.9f) < 1e-4f
+              && MathF.Abs(p45.DarkAlpha - 0.35f) < 1e-4f
+              && MathF.Abs(p45.CornerContinuity - 1.30f) < 1e-4f
+              && p45.HighlightColor == new SKColor(128, 192, 255)
+              && p45.DarkColor == new SKColor(0, 64, 128),
+            "new GlassDesign highlight uniforms and light/dark accent colors propagate to LiquidGlassEffect.Params");
 
         // Degenerate geometry must not produce NaN uniforms
         CheckAllFinite(LiquidGlassEffect.BuildParams(Frame(defaultTheme, 1, 1), 1f), "1x1 card optics are finite");

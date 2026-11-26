@@ -47,7 +47,6 @@ namespace DeskCanvas.Core.Models.Settings;
 /// behavior, so old configurations keep their look).
 /// </param>
     /// <param name="LiquidGlass">Static glass optics of 液态玻璃; null uses the default parameters.</param>
-    /// <param name="LiquidGlassV2">Static optics of 新液态玻璃 (<see cref="SurfaceStyle.LiquidGlassV2"/>); null uses the default parameters.</param>
     /// <param name="TextShadowEnabled">
     /// 全局文字阴影: when on, every <c>TextBlock</c> inside a desktop widget window gets a soft
     /// drop shadow so text stays readable over busy wallpapers. Default off.
@@ -82,7 +81,6 @@ namespace DeskCanvas.Core.Models.Settings;
         MonochromeStyle? MonochromeVariant = null,
         bool AutoTheme = false,
         LiquidGlassSettings? LiquidGlass = null,
-        LiquidGlassV2Settings? LiquidGlassV2 = null,
         bool TextShadowEnabled = false,
         double TextShadowStrength = 50,
         double AccentShift = 0,
@@ -114,9 +112,6 @@ namespace DeskCanvas.Core.Models.Settings;
     /// <summary>Static refractive wallpaper material (Kyant0 optical model).</summary>
     public bool IsLiquidGlass => EffectiveSurface == SurfaceStyle.LiquidGlass;
 
-    /// <summary>Legacy alias for IsLiquidGlass.</summary>
-    public bool IsLiquidGlassV2 => IsLiquidGlass;
-
     /// <summary>SoftGlow legacy flag, always false after P11.</summary>
     public bool IsSoftGlow => false;
 
@@ -136,15 +131,7 @@ namespace DeskCanvas.Core.Models.Settings;
 
     /// <summary>Defaults and validated ranges of the liquid glass optics.</summary>
     public LiquidGlassSettings EffectiveLiquidGlass =>
-        (LiquidGlass ?? (LiquidGlassSettings?)LiquidGlassV2 ?? new LiquidGlassSettings()).Normalize();
-
-    /// <summary>Alias for backward compatibility.</summary>
-    public LiquidGlassV2Settings EffectiveLiquidGlassV2 =>
-        new(EffectiveLiquidGlass.Blur, EffectiveLiquidGlass.Refraction, EffectiveLiquidGlass.Highlight,
-            EffectiveLiquidGlass.HighlightAngle, EffectiveLiquidGlass.Vibrancy, EffectiveLiquidGlass.Dispersion,
-            EffectiveLiquidGlass.WallpaperOffsetX, EffectiveLiquidGlass.WallpaperOffsetY,
-            EffectiveLiquidGlass.LiveSampling, EffectiveLiquidGlass.LiveSamplingInterval,
-            EffectiveLiquidGlass.BackdropClarity);
+        (LiquidGlass ?? new LiquidGlassSettings()).Normalize();
 
     /// <summary>
     /// The sampling-pipeline settings of the active wallpaper-sampled material.

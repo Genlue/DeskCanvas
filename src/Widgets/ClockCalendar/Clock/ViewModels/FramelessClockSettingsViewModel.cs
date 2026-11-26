@@ -202,10 +202,10 @@ public class FramelessClockSettingsViewModel : ReactiveObject
         get
         {
             if (model.SurfaceOverride.HasValue)
-                return model.SurfaceOverride.Value == SurfaceStyle.LiquidGlassV2;
+                return model.SurfaceOverride.Value == SurfaceStyle.LiquidGlass;
 
             var globalSurface = appSettingsProvider?.Get().Theme.EffectiveSurface;
-            return globalSurface == SurfaceStyle.LiquidGlassV2;
+            return globalSurface == SurfaceStyle.LiquidGlass;
         }
     }
 

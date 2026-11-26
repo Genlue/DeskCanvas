@@ -108,7 +108,26 @@ public static class LiquidGlassPass
                 ["strokeFeather"] = optics.StrokeFeather,
                 ["strokeAlpha"] = optics.StrokeAlpha,
                 ["falloff"] = optics.HighlightFalloff,
-                ["lightDir"] = new[] { optics.LightDirection.X, optics.LightDirection.Y }
+                ["lightDir"] = new[] { optics.LightDirection.X, optics.LightDirection.Y },
+                ["cornerGap"] = optics.CornerGap,
+                ["hlBottom"] = optics.HighlightBottom,
+                ["sheen"] = optics.Sheen,
+                ["sheenDepth"] = optics.SheenDepth,
+                ["darkWidth"] = optics.DarkWidth,
+                ["darkAlpha"] = optics.DarkAlpha,
+                ["highlightColor"] = new[]
+                {
+                    (float)optics.EffectiveHighlightColor.Red,
+                    (float)optics.EffectiveHighlightColor.Green,
+                    (float)optics.EffectiveHighlightColor.Blue
+                },
+                ["darkColor"] = new[]
+                {
+                    (float)optics.EffectiveDarkColor.Red,
+                    (float)optics.EffectiveDarkColor.Green,
+                    (float)optics.EffectiveDarkColor.Blue
+                },
+                ["cornerK"] = optics.EffectiveCornerContinuity
             };
 
             if (shape.IsPolygon) uniforms["verts"] = PackRing(shape);
@@ -178,8 +197,6 @@ public static class LiquidGlassPass
         }
 
         var source = backdrop.Bitmap;
-        var lightX = optics.LightDirection.X;
-        var lightY = optics.LightDirection.Y;
 
         // Chroma's diagonal term is normalised by the shape's half-extents, exactly as the shader
         // does with size.x * size.y * 0.25 — both sides therefore live in shape units.
@@ -202,9 +219,20 @@ public static class LiquidGlassPass
                 var cx = localX - shape.Size.Width / 2f;
                 var cy = localY - shape.Size.Height / 2f;
 
-                var (sdRaw, gradX, gradY) = shape.IsPolygon
-                    ? PolygonField(shape, cx, cy)
-                    : RoundedRectField(shape, cx, cy);
+                float sdRaw, gradX, gradY, edgeNormalX, edgeNormalY;
+                if (shape.IsPolygon)
+                {
+                    (sdRaw, gradX, gradY) = PolygonField(shape, cx, cy);
+                    edgeNormalX = gradX;
+                    edgeNormalY = gradY;
+                }
+                else
+                {
+                    (sdRaw, gradX, gradY, edgeNormalX, edgeNormalY) = EvaluateRoundedRectField(
+                        shape.Size.Width / 2f, shape.Size.Height / 2f,
+                        shape.CornerRadius, shape.GradientRadius, optics.EffectiveCornerContinuity,
+                        cx, cy);
+                }
 
                 var mask = 1f - SmoothStep(-0.75f, 0.75f, sdRaw);
                 if (mask <= 0f)
@@ -274,16 +302,7 @@ public static class LiquidGlassPass
                 g = g * (1f - coating.Strength) + coating.Color.Green * coating.Strength;
                 b = b * (1f - coating.Strength) + coating.Color.Blue * coating.Strength;
 
-                var strokeMask = 1f - SmoothStep(
-                    optics.StrokeHalf - optics.StrokeFeather,
-                    optics.StrokeHalf + optics.StrokeFeather,
-                    MathF.Abs(sdRaw));
-                var light = 255f
-                            * MathF.Pow(MathF.Abs(gradX * lightX + gradY * lightY), optics.HighlightFalloff)
-                            * strokeMask * optics.StrokeAlpha;
-                r += light;
-                g += light;
-                b += light;
+                ApplyHighlight(sdRaw, edgeNormalX, edgeNormalY, in optics, ref r, ref g, ref b);
 
                 pixels[y * width + x] = new SKColor(
                     ClampByte(r * mask), ClampByte(g * mask), ClampByte(b * mask), ClampByte(255f * mask));
@@ -295,57 +314,145 @@ public static class LiquidGlassPass
         return bitmap;
     }
 
+    /// <summary>
+    /// Shared CPU twin of the SkSL highlight block (ported from GlassDesign's
+    /// <c>glassHighlightField</c> + unlit-side dark rim): inner specular rim with corner
+    /// indentation (<see cref="LiquidGlassParams.CornerGap"/>) and angular fadeout, inner volume
+    /// sheen (<see cref="LiquidGlassParams.Sheen"/>), backlit asymmetry
+    /// (<see cref="LiquidGlassParams.HighlightBottom"/>), and outer unlit-edge darkening
+    /// (<see cref="LiquidGlassParams.DarkWidth"/> / <see cref="LiquidGlassParams.DarkAlpha"/>).
+    /// </summary>
+    internal static void ApplyHighlight(
+        float sdRaw, float normalX, float normalY,
+        in LiquidGlassParams optics,
+        ref float r, ref float g, ref float b)
+    {
+        var dH = normalX * optics.LightDirection.X + normalY * optics.LightDirection.Y;
+        var dhAbs = Math.Clamp(MathF.Abs(dH), 0f, 0.99999f);
+        var cornerT = MathF.Acos(dhAbs) / (MathF.PI * 0.5f);
+        var sideScale = dH <= 0f ? 1f : optics.HighlightBottom;
+
+        var inward = -sdRaw;
+        var curveAA = MathF.Max(0f, MathF.Abs(normalX) + MathF.Abs(normalY) - 1f);
+        var gap = optics.CornerGap * SmoothStep(0f, 0.68f, cornerT);
+
+        var specWidth = MathF.Max(0f, optics.StrokeHalf * 2f);
+        var feather = MathF.Max(0.08f, optics.StrokeFeather) + curveAA * 0.65f;
+        var specVal = 0f;
+        if (optics.StrokeAlpha > 0f && specWidth > 0f && cornerT < 0.82f && sdRaw <= feather)
+        {
+            var outerEdge = SmoothStep(gap - feather * 0.5f, gap + feather * 0.8f, inward);
+            var innerEdge = 1f - SmoothStep(gap + specWidth - feather, gap + specWidth + feather, inward);
+            var cornerFade = 1f - MathF.Pow(SmoothStep(0.06f, 0.80f, cornerT), 1f / MathF.Max(0.2f, optics.HighlightFalloff));
+            specVal = outerEdge * innerEdge * cornerFade * optics.StrokeAlpha * sideScale;
+        }
+
+        var washVal = 0f;
+        if (optics.Sheen > 0f && optics.SheenDepth > 0f && sdRaw <= 0f && cornerT < 0.84f && inward > gap)
+        {
+            var dRel = inward - gap;
+            var sheenFade = MathF.Pow(1f - SmoothStep(0f, MathF.Max(optics.SheenDepth, 1e-3f), dRel), 2f);
+            var washCornerFade = 1f - SmoothStep(0.06f, 0.82f, cornerT);
+            washVal = sheenFade * optics.Sheen * washCornerFade * sideScale;
+        }
+
+        var whiteHighlight = Math.Clamp(MathF.Max(specVal, washVal + specVal * 0.5f), 0f, 1f);
+
+        var darkMix = 0f;
+        if (optics.DarkAlpha > 0f && optics.DarkWidth > 0f && sdRaw <= 0.75f)
+        {
+            var dFeather = MathF.Max(0.26f, MathF.Min(0.45f, optics.DarkWidth * 0.55f)) + curveAA * 0.55f;
+            var darkBand = (1f - SmoothStep(MathF.Max(0f, optics.DarkWidth - dFeather * 0.55f), optics.DarkWidth + dFeather, MathF.Max(0f, inward)))
+                           * SmoothStep(-0.65f, 0.15f, inward);
+            var darkSideFade = SmoothStep(0.28f, 0.90f, cornerT);
+            darkMix = Math.Clamp(optics.DarkAlpha * darkBand * darkSideFade * (1f - whiteHighlight * 0.85f), 0f, 1f);
+        }
+
+        if (darkMix > 0f)
+        {
+            var keep = 1f - darkMix;
+            var dark = optics.EffectiveDarkColor;
+            r = r * keep + dark.Red * darkMix;
+            g = g * keep + dark.Green * darkMix;
+            b = b * keep + dark.Blue * darkMix;
+        }
+
+        if (whiteHighlight > 0f)
+        {
+            var inv = 1f - whiteHighlight;
+            var light = optics.EffectiveHighlightColor;
+            r = r * inv + light.Red * whiteHighlight;
+            g = g * inv + light.Green * whiteHighlight;
+            b = b * inv + light.Blue * whiteHighlight;
+        }
+    }
+
     // ------------------------------------------------------------------ shape fields
 
-    /// <summary>Exact rounded-rectangle SDF and its inflated direction field (iq's formulas).</summary>
-    private static (float Sd, float GradX, float GradY) RoundedRectField(LiquidGlassShape shape, float cx, float cy)
+    /// <summary>Exact rounded-rectangle / continuous superellipse SDF, its inflated direction field, and its actual edge normal.</summary>
+    internal static (float Sd, float GradX, float GradY, float EdgeNormalX, float EdgeNormalY) EvaluateRoundedRectField(
+        float halfWidth, float halfHeight, float radius, float gradRadius, float cornerK, float cx, float cy)
     {
-        var halfWidth = shape.Size.Width / 2f;
-        var halfHeight = shape.Size.Height / 2f;
-        var radius = shape.CornerRadius;
+        var (gradX, gradY) = EvalGradRoundedRect(cx, cy, halfWidth, halfHeight, gradRadius);
 
-        var qx = MathF.Abs(cx) - halfWidth + radius;
-        var qy = MathF.Abs(cy) - halfHeight + radius;
-        var outside = MathF.Sqrt(MathF.Max(qx, 0f) * MathF.Max(qx, 0f) + MathF.Max(qy, 0f) * MathF.Max(qy, 0f));
-        var sd = MathF.Min(MathF.Max(qx, qy), 0f) + outside - radius;
+        if (cornerK <= 1.001f || radius <= 1e-4f)
+        {
+            var qx = MathF.Abs(cx) - halfWidth + radius;
+            var qy = MathF.Abs(cy) - halfHeight + radius;
+            var outside = MathF.Sqrt(MathF.Max(qx, 0f) * MathF.Max(qx, 0f) + MathF.Max(qy, 0f) * MathF.Max(qy, 0f));
+            var sd = MathF.Min(MathF.Max(qx, qy), 0f) + outside - radius;
+            var (edgeNormalX, edgeNormalY) = EvalGradRoundedRect(cx, cy, halfWidth, halfHeight, radius);
+            return (sd, gradX, gradY, edgeNormalX, edgeNormalY);
+        }
 
-        // Inflated field: the same shape with a wider corner radius, so the direction stays smooth
-        // along the straight edges instead of snapping to an axis.
-        var gradRadius = shape.GradientRadius;
-        var cornerX = MathF.Abs(cx) - (halfWidth - gradRadius);
-        var cornerY = MathF.Abs(cy) - (halfHeight - gradRadius);
+        var c = Math.Clamp(radius, 0f, MathF.Min(halfWidth, halfHeight));
+        var sx = cx >= 0f ? 1f : -1f;
+        var sy = cy >= 0f ? 1f : -1f;
+        var sqx = MathF.Abs(cx) - (halfWidth - c);
+        var sqy = MathF.Abs(cy) - (halfHeight - c);
+
+        if (sqx > 0f && sqy > 0f && c > 1e-5f)
+        {
+            var p = MathF.Pow(2f, cornerK);
+            var u = MathF.Max(sqx / c, 1e-5f);
+            var v = MathF.Max(sqy / c, 1e-5f);
+            var sum = MathF.Pow(u, p) + MathF.Pow(v, p);
+            var gx = MathF.Pow(u, p - 1f) / c;
+            var gy = MathF.Pow(v, p - 1f) / c;
+            var gLen = MathF.Max(MathF.Sqrt(gx * gx + gy * gy), 1e-5f);
+            var sd = (sum - MathF.Pow(sum, (p - 1f) / p)) / gLen;
+            return (sd, gradX, gradY, sx * gx / gLen, sy * gy / gLen);
+        }
+
+        if (sqx <= 0f && sqy > 0f) return (sqy - c, gradX, gradY, 0f, sy);
+        if (sqy <= 0f && sqx > 0f) return (sqx - c, gradX, gradY, sx, 0f);
+        return sqx > sqy
+            ? (sqx - c, gradX, gradY, sx, 0f)
+            : (sqy - c, gradX, gradY, 0f, sy);
+    }
+
+    private static (float X, float Y) EvalGradRoundedRect(
+        float cx, float cy, float halfWidth, float halfHeight, float cornerRadius)
+    {
+        var cornerX = MathF.Abs(cx) - (halfWidth - cornerRadius);
+        var cornerY = MathF.Abs(cy) - (halfHeight - cornerRadius);
         var signX = cx >= 0f ? 1f : -1f;
         var signY = cy >= 0f ? 1f : -1f;
 
-        float gradX, gradY;
         if (cornerX >= 0f && cornerY >= 0f)
         {
             var mx = MathF.Max(cornerX, 1e-5f);
             var my = MathF.Max(cornerY, 1e-5f);
             var length = MathF.Sqrt(mx * mx + my * my);
-            gradX = signX * mx / length;
-            gradY = signY * my / length;
+            return (signX * mx / length, signY * my / length);
         }
-        else if (cornerX >= 0f)
-        {
-            gradX = signX;
-            gradY = 0f;
-        }
-        else if (cornerY >= 0f)
-        {
-            gradX = 0f;
-            gradY = signY;
-        }
-        else
-        {
-            var ex = MathF.Max(-cornerX, 1e-5f);
-            var ey = MathF.Max(-cornerY, 1e-5f);
-            var length = MathF.Sqrt(ex * ex + ey * ey);
-            gradX = signX * ey / length;
-            gradY = signY * ex / length;
-        }
+        if (cornerX >= 0f) return (signX, 0f);
+        if (cornerY >= 0f) return (0f, signY);
 
-        return (sd, gradX, gradY);
+        var ex = MathF.Max(-cornerX, 1e-5f);
+        var ey = MathF.Max(-cornerY, 1e-5f);
+        var elen = MathF.Sqrt(ex * ex + ey * ey);
+        return (signX * ey / elen, signY * ex / elen);
     }
 
     /// <summary>
@@ -538,6 +645,7 @@ public static class LiquidGlassPass
                 sdRaw = polySign * polyLength;
                 grad = polyLength > 1e-5 ? polySign * polyNearest / polyLength : float2(0.0);
               }
+              float2 edgeNormal = grad;
 
             """);
         return builder.ToString();
@@ -546,8 +654,40 @@ public static class LiquidGlassPass
     private const string SourceRoundedRectField =
         """
           float2 halfSize = size * 0.5;
-          float sdRaw = sdRoundedRect(c, halfSize, radius);
           float2 grad = gradSdRoundedRect(c, halfSize, gradRadius);
+          float sdRaw;
+          float2 edgeNormal;
+          if (cornerK <= 1.001 || radius <= 1e-4) {
+            sdRaw = sdRoundedRect(c, halfSize, radius);
+            edgeNormal = gradSdRoundedRect(c, halfSize, radius);
+          } else {
+            float cr = clamp(radius, 0.0, min(halfSize.x, halfSize.y));
+            float2 sgn = sgnCoord(c);
+            float2 sq = abs(c) - (halfSize - float2(cr));
+            if (sq.x > 0.0 && sq.y > 0.0 && cr > 1e-5) {
+              float pExp = pow(2.0, cornerK);
+              float u = max(sq.x / cr, 1e-5);
+              float v = max(sq.y / cr, 1e-5);
+              float sum = pow(u, pExp) + pow(v, pExp);
+              float gx = pow(u, pExp - 1.0) / cr;
+              float gy = pow(v, pExp - 1.0) / cr;
+              float gLen = max(length(float2(gx, gy)), 1e-5);
+              sdRaw = (sum - pow(sum, (pExp - 1.0) / pExp)) / gLen;
+              edgeNormal = float2(sgn.x * gx, sgn.y * gy) / gLen;
+            } else if (sq.x <= 0.0 && sq.y > 0.0) {
+              sdRaw = sq.y - cr;
+              edgeNormal = float2(0.0, sgn.y);
+            } else if (sq.y <= 0.0 && sq.x > 0.0) {
+              sdRaw = sq.x - cr;
+              edgeNormal = float2(sgn.x, 0.0);
+            } else if (sq.x > sq.y) {
+              sdRaw = sq.x - cr;
+              edgeNormal = float2(sgn.x, 0.0);
+            } else {
+              sdRaw = sq.y - cr;
+              edgeNormal = float2(0.0, sgn.y);
+            }
+          }
 
         """;
 
@@ -574,11 +714,21 @@ public static class LiquidGlassPass
         uniform float strokeAlpha;
         uniform float falloff;
         uniform float2 lightDir;
+        uniform float cornerGap;
+        uniform float hlBottom;
+        uniform float sheen;
+        uniform float sheenDepth;
+        uniform float darkWidth;
+        uniform float darkAlpha;
+        uniform float3 highlightColor;
+        uniform float3 darkColor;
+        uniform float cornerK;
 
         uniform shader content;
 
         float smoothStep(float edge0, float edge1, float x) {
-          float t = clamp((x - edge0) / (edge1 - edge0), 0.0, 1.0);
+          float span = max(edge1 - edge0, 1e-5);
+          float t = clamp((x - edge0) / span, 0.0, 1.0);
           return t * t * (3.0 - 2.0 * t);
         }
 
@@ -681,10 +831,46 @@ public static class LiquidGlassPass
           // the host draws one layer and nothing has to line up behind it.
           col = col * (1.0 - tint) + coating * tint;
 
-          float strokeMask = 1.0 - smoothStep(strokeHalf - strokeFeather, strokeHalf + strokeFeather, abs(sdRaw));
-          float dH = dot(grad, lightDir);
-          float intensity = pow(abs(dH), falloff);
-          col += float3(255.0) * intensity * strokeMask * strokeAlpha;
+          float dH = dot(edgeNormal, lightDir);
+          float dhAbs = clamp(abs(dH), 0.0, 0.99999);
+          float cornerT = acos(dhAbs) / 1.5707963;
+          float sideScale = dH <= 0.0 ? 1.0 : hlBottom;
+
+          float inward = -sdRaw;
+          float curveAA = max(0.0, abs(edgeNormal.x) + abs(edgeNormal.y) - 1.0);
+          float gap = cornerGap * smoothStep(0.0, 0.68, cornerT);
+
+          float specWidth = max(0.0, strokeHalf * 2.0);
+          float feather = max(0.08, strokeFeather) + curveAA * 0.65;
+          float specVal = 0.0;
+          if (strokeAlpha > 0.0 && specWidth > 0.0 && cornerT < 0.82 && sdRaw <= feather) {
+            float outerEdge = smoothStep(gap - feather * 0.5, gap + feather * 0.8, inward);
+            float innerEdge = 1.0 - smoothStep(gap + specWidth - feather, gap + specWidth + feather, inward);
+            float cornerFade = 1.0 - pow(smoothStep(0.06, 0.80, cornerT), 1.0 / max(0.2, falloff));
+            specVal = outerEdge * innerEdge * cornerFade * strokeAlpha * sideScale;
+          }
+
+          float washVal = 0.0;
+          if (sheen > 0.0 && sheenDepth > 0.0 && sdRaw <= 0.0 && cornerT < 0.84 && inward > gap) {
+            float dRel = inward - gap;
+            float sheenFade = pow(1.0 - smoothStep(0.0, max(sheenDepth, 1e-3), dRel), 2.0);
+            float washCornerFade = 1.0 - smoothStep(0.06, 0.82, cornerT);
+            washVal = sheenFade * sheen * washCornerFade * sideScale;
+          }
+
+          float whiteHighlight = clamp(max(specVal, washVal + specVal * 0.5), 0.0, 1.0);
+
+          float darkMix = 0.0;
+          if (darkAlpha > 0.0 && darkWidth > 0.0 && sdRaw <= 0.75) {
+            float dFeather = max(0.26, min(0.45, darkWidth * 0.55)) + curveAA * 0.55;
+            float darkBand = (1.0 - smoothStep(max(0.0, darkWidth - dFeather * 0.55), darkWidth + dFeather, max(0.0, inward)))
+                           * smoothStep(-0.65, 0.15, inward);
+            float darkSideFade = smoothStep(0.28, 0.90, cornerT);
+            darkMix = clamp(darkAlpha * darkBand * darkSideFade * (1.0 - whiteHighlight * 0.85), 0.0, 1.0);
+          }
+
+          col = mix(col, darkColor, darkMix);
+          col = mix(col, highlightColor, whiteHighlight);
 
           float3 rgb = clamp(col / 255.0, 0.0, 1.0) * mask;
           return half4(half3(rgb), half(mask));

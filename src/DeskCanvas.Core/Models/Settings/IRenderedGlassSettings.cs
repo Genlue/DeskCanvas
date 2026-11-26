@@ -4,9 +4,8 @@ namespace DeskCanvas.Core.Models.Settings;
 /// The infrastructure-level part of a wallpaper-sampled glass material: the fields the
 /// sampling pipeline itself consumes, independent of the optical recipe drawn on top.
 /// <para>
-/// Both <see cref="LiquidGlassSettings"/> (液态玻璃) and <see cref="LiquidGlassV2Settings"/>
-/// (新液态玻璃) implement this, so the shared machinery — the backdrop cache, the wallpaper
-/// alignment offsets and the live sampler — reads the active material through
+/// <see cref="LiquidGlassSettings"/> implements this so the shared machinery — the backdrop cache,
+/// the wallpaper alignment offsets and the live sampler — reads the active material through
 /// <see cref="Theme.EffectiveGlass"/> without branching per surface everywhere.
 /// </para>
 /// </summary>

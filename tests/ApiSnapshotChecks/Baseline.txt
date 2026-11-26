@@ -897,6 +897,9 @@ property DeskCanvas.Core.Models.Settings.Layout LockSize -> System.Boolean
 property DeskCanvas.Core.Models.Settings.Layout ProhibitOverlap -> System.Boolean
 property DeskCanvas.Core.Models.Settings.Layout SnapPosition -> System.Boolean
 property DeskCanvas.Core.Models.Settings.Layout SnapSize -> System.Boolean
+type DeskCanvas.Core.Models.Settings.LiquidGlassLens
+method DeskCanvas.Core.Models.Settings.LiquidGlassLens Compute(System.Double,System.Single,System.Single) -> DeskCanvas.Core.Models.Settings.LiquidGlassRefractionLens
+method DeskCanvas.Core.Models.Settings.LiquidGlassLens SmoothCap(System.Single,System.Single) -> System.Single
 type DeskCanvas.Core.Models.Settings.LiquidGlassRefractionLens
 method DeskCanvas.Core.Models.Settings.LiquidGlassRefractionLens Deconstruct(System.Single,System.Single,System.Single,System.Single) -> System.Void
 method DeskCanvas.Core.Models.Settings.LiquidGlassRefractionLens Equals(System.Object) -> System.Boolean
@@ -910,7 +913,7 @@ property DeskCanvas.Core.Models.Settings.LiquidGlassRefractionLens Band -> Syste
 property DeskCanvas.Core.Models.Settings.LiquidGlassRefractionLens DepthEffect -> System.Single
 property DeskCanvas.Core.Models.Settings.LiquidGlassRefractionLens GradRadius -> System.Single
 type DeskCanvas.Core.Models.Settings.LiquidGlassSettings
-method DeskCanvas.Core.Models.Settings.LiquidGlassSettings Deconstruct(System.Double,System.Double,System.Double,System.Double,System.Double,System.Double,System.Double,System.Double,System.Boolean,System.Int32,System.Double) -> System.Void
+method DeskCanvas.Core.Models.Settings.LiquidGlassSettings Deconstruct(System.Double,System.Double,System.Double,System.Double,System.Double,System.Double,System.Double,System.Double,System.Boolean,System.Int32,System.Double,System.Double,System.Double,System.Double,System.Double,System.Double,System.Double,System.Double,System.Double,System.Double,System.Double,System.Double,System.Double) -> System.Void
 method DeskCanvas.Core.Models.Settings.LiquidGlassSettings Equals(System.Object) -> System.Boolean
 method DeskCanvas.Core.Models.Settings.LiquidGlassSettings Equals(DeskCanvas.Core.Models.Settings.LiquidGlassSettings) -> System.Boolean
 method DeskCanvas.Core.Models.Settings.LiquidGlassSettings GetHashCode() -> System.Int32
@@ -920,9 +923,21 @@ method DeskCanvas.Core.Models.Settings.LiquidGlassSettings op_Equality(DeskCanva
 method DeskCanvas.Core.Models.Settings.LiquidGlassSettings op_Inequality(DeskCanvas.Core.Models.Settings.LiquidGlassSettings,DeskCanvas.Core.Models.Settings.LiquidGlassSettings) -> System.Boolean
 property DeskCanvas.Core.Models.Settings.LiquidGlassSettings BackdropClarity -> System.Double
 property DeskCanvas.Core.Models.Settings.LiquidGlassSettings Blur -> System.Double
+property DeskCanvas.Core.Models.Settings.LiquidGlassSettings CornerContinuity -> System.Double
 property DeskCanvas.Core.Models.Settings.LiquidGlassSettings Dispersion -> System.Double
 property DeskCanvas.Core.Models.Settings.LiquidGlassSettings Highlight -> System.Double
 property DeskCanvas.Core.Models.Settings.LiquidGlassSettings HighlightAngle -> System.Double
+property DeskCanvas.Core.Models.Settings.LiquidGlassSettings HighlightBottom -> System.Double
+property DeskCanvas.Core.Models.Settings.LiquidGlassSettings HighlightCornerGap -> System.Double
+property DeskCanvas.Core.Models.Settings.LiquidGlassSettings HighlightDarkAlpha -> System.Double
+property DeskCanvas.Core.Models.Settings.LiquidGlassSettings HighlightDarkShift -> System.Double
+property DeskCanvas.Core.Models.Settings.LiquidGlassSettings HighlightDarkWidth -> System.Double
+property DeskCanvas.Core.Models.Settings.LiquidGlassSettings HighlightFalloffFactor -> System.Double
+property DeskCanvas.Core.Models.Settings.LiquidGlassSettings HighlightFeather -> System.Double
+property DeskCanvas.Core.Models.Settings.LiquidGlassSettings HighlightHalfWidth -> System.Double
+property DeskCanvas.Core.Models.Settings.LiquidGlassSettings HighlightLightShift -> System.Double
+property DeskCanvas.Core.Models.Settings.LiquidGlassSettings HighlightSheen -> System.Double
+property DeskCanvas.Core.Models.Settings.LiquidGlassSettings HighlightSheenDepth -> System.Double
 property DeskCanvas.Core.Models.Settings.LiquidGlassSettings LightAngle -> System.Double
 property DeskCanvas.Core.Models.Settings.LiquidGlassSettings LiveSampling -> System.Boolean
 property DeskCanvas.Core.Models.Settings.LiquidGlassSettings LiveSamplingInterval -> System.Int32
@@ -934,7 +949,18 @@ field DeskCanvas.Core.Models.Settings.LiquidGlassSettings BandToAmountRatio -> S
 field DeskCanvas.Core.Models.Settings.LiquidGlassSettings CornerBandCapFactor -> System.Double
 field DeskCanvas.Core.Models.Settings.LiquidGlassSettings CornerBandCapTransitionFrac -> System.Double
 field DeskCanvas.Core.Models.Settings.LiquidGlassSettings DefaultBackdropClarity -> System.Double
+field DeskCanvas.Core.Models.Settings.LiquidGlassSettings DefaultCornerContinuity -> System.Double
 field DeskCanvas.Core.Models.Settings.LiquidGlassSettings DefaultHighlightAngle -> System.Double
+field DeskCanvas.Core.Models.Settings.LiquidGlassSettings DefaultHighlightBottom -> System.Double
+field DeskCanvas.Core.Models.Settings.LiquidGlassSettings DefaultHighlightCornerGap -> System.Double
+field DeskCanvas.Core.Models.Settings.LiquidGlassSettings DefaultHighlightDarkAlpha -> System.Double
+field DeskCanvas.Core.Models.Settings.LiquidGlassSettings DefaultHighlightDarkShift -> System.Double
+field DeskCanvas.Core.Models.Settings.LiquidGlassSettings DefaultHighlightDarkWidth -> System.Double
+field DeskCanvas.Core.Models.Settings.LiquidGlassSettings DefaultHighlightFeather -> System.Double
+field DeskCanvas.Core.Models.Settings.LiquidGlassSettings DefaultHighlightHalfWidth -> System.Double
+field DeskCanvas.Core.Models.Settings.LiquidGlassSettings DefaultHighlightLightShift -> System.Double
+field DeskCanvas.Core.Models.Settings.LiquidGlassSettings DefaultHighlightSheen -> System.Double
+field DeskCanvas.Core.Models.Settings.LiquidGlassSettings DefaultHighlightSheenDepth -> System.Double
 field DeskCanvas.Core.Models.Settings.LiquidGlassSettings DefaultLiveSampling -> System.Boolean
 field DeskCanvas.Core.Models.Settings.LiquidGlassSettings DefaultLiveSamplingInterval -> System.Int32
 field DeskCanvas.Core.Models.Settings.LiquidGlassSettings GradRadiusFactor -> System.Double
@@ -949,19 +975,6 @@ field DeskCanvas.Core.Models.Settings.LiquidGlassSettings StrokeFeatherDips -> S
 field DeskCanvas.Core.Models.Settings.LiquidGlassSettings StrokeWidthDips -> System.Double
 field DeskCanvas.Core.Models.Settings.LiquidGlassSettings VibrancySaturationBoost -> System.Double
 field DeskCanvas.Core.Models.Settings.LiquidGlassSettings WallpaperOffsetLimit -> System.Double
-type DeskCanvas.Core.Models.Settings.LiquidGlassV2Lens
-method DeskCanvas.Core.Models.Settings.LiquidGlassV2Lens Compute(System.Double,System.Single,System.Single) -> DeskCanvas.Core.Models.Settings.LiquidGlassRefractionLens
-method DeskCanvas.Core.Models.Settings.LiquidGlassV2Lens SmoothCap(System.Single,System.Single) -> System.Single
-type DeskCanvas.Core.Models.Settings.LiquidGlassV2Settings
-method DeskCanvas.Core.Models.Settings.LiquidGlassV2Settings Deconstruct(System.Double,System.Double,System.Double,System.Double,System.Double,System.Double,System.Double,System.Double,System.Boolean,System.Int32,System.Double) -> System.Void
-method DeskCanvas.Core.Models.Settings.LiquidGlassV2Settings Equals(System.Object) -> System.Boolean
-method DeskCanvas.Core.Models.Settings.LiquidGlassV2Settings Equals(DeskCanvas.Core.Models.Settings.LiquidGlassSettings) -> System.Boolean
-method DeskCanvas.Core.Models.Settings.LiquidGlassV2Settings Equals(DeskCanvas.Core.Models.Settings.LiquidGlassV2Settings) -> System.Boolean
-method DeskCanvas.Core.Models.Settings.LiquidGlassV2Settings GetHashCode() -> System.Int32
-method DeskCanvas.Core.Models.Settings.LiquidGlassV2Settings Normalize() -> DeskCanvas.Core.Models.Settings.LiquidGlassV2Settings
-method DeskCanvas.Core.Models.Settings.LiquidGlassV2Settings ToString() -> System.String
-method DeskCanvas.Core.Models.Settings.LiquidGlassV2Settings op_Equality(DeskCanvas.Core.Models.Settings.LiquidGlassV2Settings,DeskCanvas.Core.Models.Settings.LiquidGlassV2Settings) -> System.Boolean
-method DeskCanvas.Core.Models.Settings.LiquidGlassV2Settings op_Inequality(DeskCanvas.Core.Models.Settings.LiquidGlassV2Settings,DeskCanvas.Core.Models.Settings.LiquidGlassV2Settings) -> System.Boolean
 type DeskCanvas.Core.Models.Settings.MonochromeStyle
 enumvalue DeskCanvas.Core.Models.Settings.MonochromeStyle Accent
 enumvalue DeskCanvas.Core.Models.Settings.MonochromeStyle BackgroundColor
@@ -980,9 +993,8 @@ enumvalue DeskCanvas.Core.Models.Settings.SurfaceStyle Acrylic
 enumvalue DeskCanvas.Core.Models.Settings.SurfaceStyle Colorful
 enumvalue DeskCanvas.Core.Models.Settings.SurfaceStyle FullColor
 enumvalue DeskCanvas.Core.Models.Settings.SurfaceStyle LiquidGlass
-enumvalue DeskCanvas.Core.Models.Settings.SurfaceStyle LiquidGlassV2
 type DeskCanvas.Core.Models.Settings.Theme
-method DeskCanvas.Core.Models.Settings.Theme Deconstruct(System.Nullable<System.Boolean>,System.String,System.Double,System.Boolean,System.Boolean,System.String,System.Nullable<DeskCanvas.Core.Models.Settings.SurfaceStyle>,System.String,System.String,System.Nullable<DeskCanvas.Core.Models.Settings.MonochromeStyle>,System.Boolean,DeskCanvas.Core.Models.Settings.LiquidGlassSettings,DeskCanvas.Core.Models.Settings.LiquidGlassV2Settings,System.Boolean,System.Double,System.Double,System.Boolean) -> System.Void
+method DeskCanvas.Core.Models.Settings.Theme Deconstruct(System.Nullable<System.Boolean>,System.String,System.Double,System.Boolean,System.Boolean,System.String,System.Nullable<DeskCanvas.Core.Models.Settings.SurfaceStyle>,System.String,System.String,System.Nullable<DeskCanvas.Core.Models.Settings.MonochromeStyle>,System.Boolean,DeskCanvas.Core.Models.Settings.LiquidGlassSettings,System.Boolean,System.Double,System.Double,System.Boolean) -> System.Void
 method DeskCanvas.Core.Models.Settings.Theme Equals(System.Object) -> System.Boolean
 method DeskCanvas.Core.Models.Settings.Theme Equals(DeskCanvas.Core.Models.Settings.Theme) -> System.Boolean
 method DeskCanvas.Core.Models.Settings.Theme GetHashCode() -> System.Int32
@@ -998,7 +1010,6 @@ property DeskCanvas.Core.Models.Settings.Theme DarkMode -> System.Nullable<Syste
 property DeskCanvas.Core.Models.Settings.Theme EffectiveAccentShift -> System.Double
 property DeskCanvas.Core.Models.Settings.Theme EffectiveGlass -> DeskCanvas.Core.Models.Settings.IRenderedGlassSettings
 property DeskCanvas.Core.Models.Settings.Theme EffectiveLiquidGlass -> DeskCanvas.Core.Models.Settings.LiquidGlassSettings
-property DeskCanvas.Core.Models.Settings.Theme EffectiveLiquidGlassV2 -> DeskCanvas.Core.Models.Settings.LiquidGlassV2Settings
 property DeskCanvas.Core.Models.Settings.Theme EffectiveMonochromeVariant -> DeskCanvas.Core.Models.Settings.MonochromeStyle
 property DeskCanvas.Core.Models.Settings.Theme EffectiveSolidBackgroundDark -> System.String
 property DeskCanvas.Core.Models.Settings.Theme EffectiveSolidBackgroundLight -> System.String
@@ -1010,10 +1021,8 @@ property DeskCanvas.Core.Models.Settings.Theme IsColorful -> System.Boolean
 property DeskCanvas.Core.Models.Settings.Theme IsFullColor -> System.Boolean
 property DeskCanvas.Core.Models.Settings.Theme IsGlass -> System.Boolean
 property DeskCanvas.Core.Models.Settings.Theme IsLiquidGlass -> System.Boolean
-property DeskCanvas.Core.Models.Settings.Theme IsLiquidGlassV2 -> System.Boolean
 property DeskCanvas.Core.Models.Settings.Theme IsSoftGlow -> System.Boolean
 property DeskCanvas.Core.Models.Settings.Theme LiquidGlass -> DeskCanvas.Core.Models.Settings.LiquidGlassSettings
-property DeskCanvas.Core.Models.Settings.Theme LiquidGlassV2 -> DeskCanvas.Core.Models.Settings.LiquidGlassV2Settings
 property DeskCanvas.Core.Models.Settings.Theme Monochrome -> System.Boolean
 property DeskCanvas.Core.Models.Settings.Theme MonochromeVariant -> System.Nullable<DeskCanvas.Core.Models.Settings.MonochromeStyle>
 property DeskCanvas.Core.Models.Settings.Theme OpacityLevel -> System.Double

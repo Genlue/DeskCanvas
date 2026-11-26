@@ -7,8 +7,7 @@ namespace Clock.Models;
 /// <para>
 /// Supports following the global surface theme (<see cref="SurfaceOverride"/> == <c>null</c>)
 /// or explicitly selecting an independent widget material (<see cref="SurfaceStyle.Acrylic"/>,
-/// <see cref="SurfaceStyle.LiquidGlass"/>, <see cref="SurfaceStyle.LiquidGlassV2"/>,
-/// <see cref="SurfaceStyle.Solid"/>, <see cref="SurfaceStyle.Colorful"/>).
+/// <see cref="SurfaceStyle.LiquidGlass"/>, <see cref="SurfaceStyle.FullColor"/>).
 /// </para>
 /// <para>
 /// <see cref="FontWeight"/> is a 100–900 OpenType weight request passed to native font/variable-axis
